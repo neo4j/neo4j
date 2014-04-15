@@ -24,7 +24,6 @@ import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintStream;
-import java.net.URL;
 import java.util.Map;
 import java.util.Properties;
 
@@ -37,6 +36,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
+import org.neo4j.test.Unzip;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
@@ -160,10 +160,9 @@ public class TestPerformUpgradeIfNecessary
         copyRecursively( resourceDirectory, workingDirectory );
     }
 
-    public static File findOldFormatStoreDirectory()
+    public static File findOldFormatStoreDirectory() throws IOException
     {
-        URL legacyStoreResource = TestPerformUpgradeIfNecessary.class.getResource( "legacystore/exampledb/neostore" );
-        return new File( legacyStoreResource.getFile() ).getParentFile();
+        return Unzip.unzip( TestPerformUpgradeIfNecessary.class, "exampledb.zip" );
     }
 
     private String dots( int count )

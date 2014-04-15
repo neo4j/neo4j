@@ -22,24 +22,23 @@ package org.neo4j.kernel.impl.storemigration;
 import static org.junit.Assert.assertEquals;
 
 import java.io.File;
-import java.net.URL;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.nioneo.store.ProduceUncleanStore;
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.Unzip;
 
 public class NeoStoreVersionRecordUpgradeIssueIT
 {
     public final @Rule TestName testName = new TestName();
-    
+
     @Test
     public void upgradeOneFiveMilestoneTwoWhereStoreVersionRecordShouldBeAddedCorrectly() throws Exception
     {
-        File storeDir = copyResourceStore( "1.5.M02-store" );
+        File storeDir = Unzip.unzip( getClass(), "1.5.M02-store.zip" );
         startAndShutdown( storeDir );
         startAndKill( storeDir );
         startAndShutdown( storeDir );
@@ -54,14 +53,5 @@ public class NeoStoreVersionRecordUpgradeIssueIT
     private void startAndShutdown( File storeDir )
     {
         new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() ).shutdown();
-    }
-
-    private File copyResourceStore( String resource ) throws Exception
-    {
-        URL uri = getClass().getResource( resource );
-        File file = new File( uri.toURI() );
-        File target = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName(), true );
-        FileUtils.copyRecursively( file, target );
-        return target;
     }
 }

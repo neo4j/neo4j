@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
@@ -34,6 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.Unzip;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
@@ -106,7 +106,7 @@ public class MigrationTestUtils
         File resourceDirectory = findOldFormatStoreDirectory();
         workingFs.copyRecursivelyFromOtherFs( resourceDirectory, new DefaultFileSystemAbstraction(), workingDirectory );
     }
-    
+
     public static void prepareSampleLegacyDatabase( FileSystemAbstraction workingFs, File workingDirectory ) throws IOException
     {
         File resourceDirectory = findOldFormatStoreDirectory();
@@ -118,10 +118,9 @@ public class MigrationTestUtils
         FileUtils.copyRecursively( resourceDirectory, workingDirectory );
     }
 
-    public static File findOldFormatStoreDirectory()
+    public static File findOldFormatStoreDirectory() throws IOException
     {
-        URL legacyStoreResource = LegacyStore.class.getResource( "exampledb/neostore" );
-        return new File( legacyStoreResource.getFile() ).getParentFile();
+        return Unzip.unzip( LegacyStore.class, "exampledb.zip" );
     }
 
     public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,
@@ -164,7 +163,7 @@ public class MigrationTestUtils
                         if ( !readAndFlip( originalChannel, buffer, 1 ) )
                             break;
                         int originalByte = buffer.get();
-                        
+
                         if ( !readAndFlip( otherChannel, buffer, 1 ) )
                             fail( "Files have different sizes" );
                         assertEquals( "Different content in " + originalFile.getName(), originalByte, buffer.get() );

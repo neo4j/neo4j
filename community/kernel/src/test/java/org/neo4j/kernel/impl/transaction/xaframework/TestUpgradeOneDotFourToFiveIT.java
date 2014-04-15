@@ -21,45 +21,35 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.File;
 
-import org.junit.BeforeClass;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
 import static org.neo4j.kernel.CommonFactories.defaultFileSystemAbstraction;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
 public class TestUpgradeOneDotFourToFiveIT
 {
-    private static final File PATH = new File( "target/test-data/upgrade-1.4-5" );
-
-    @BeforeClass
-    public static void doBefore() throws Exception
-    {
-        deleteRecursively( PATH );
-    }
-
     @Test( expected=IllegalLogFormatException.class )
     public void cannotRecoverNoncleanShutdownDbWithOlderLogFormat() throws Exception
     {
-        copyRecursively( new File( TestUpgradeOneDotFourToFiveIT.class.getResource( "non-clean-1.4.2-db/neostore" ).getFile() ).getParentFile(), PATH );
+        File storeDir = Unzip.unzip( getClass(), "non-clean-1.4.2-db.zip" );
         KernelHealth kernelHealth = mock( KernelHealth.class );
-        XaLogicalLog log = new XaLogicalLog( resourceFile(), null, null, null,
+        XaLogicalLog log = new XaLogicalLog( resourceFile( storeDir ), null, null, null,
                 defaultFileSystemAbstraction(), new Monitors(), new DevNullLoggingService(), LogPruneStrategies.NO_PRUNING,
                 TransactionStateFactory.noStateFactory( new DevNullLoggingService() ), kernelHealth, 25 * 1024 * 1024 );
         log.open();
         fail( "Shouldn't be able to start" );
     }
 
-    protected File resourceFile()
+    protected File resourceFile( File storeDir )
     {
-        return new File( PATH, "nioneo_logical.log" );
+        return new File( storeDir, "nioneo_logical.log" );
     }
 }

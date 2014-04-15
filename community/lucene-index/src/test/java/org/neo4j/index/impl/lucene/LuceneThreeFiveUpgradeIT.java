@@ -21,22 +21,22 @@ package org.neo4j.index.impl.lucene;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 import java.io.File;
-import java.net.URL;
 import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.ProcessStreamHandler;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.Unzip;
 
 /**
  * Tests upgrade from a neo4j 1.5 store (which had lucene version 3.1.0) to a
@@ -45,48 +45,48 @@ import org.neo4j.test.TargetDirectory;
 public class LuceneThreeFiveUpgradeIT
 {
     public final @Rule TestName testName = new TestName();
-    
+
     @Test
     public void upgradeShouldFailIfNotAllowed() throws Exception
     {
-        File storeDir = copyResourceStore( "1.5-store" );
+        File storeDir = Unzip.unzip( getClass(), "1.5-store.zip" );
         assertDisallowedUpgradeFails( storeDir );
     }
 
     @Test
     public void upgradeShouldSucceedIfAllowed() throws Exception
     {
-        File storeDir = copyResourceStore( "1.5-store" );
+        File storeDir = Unzip.unzip( getClass(), "1.5-store.zip" );
         assertIndexContainsNode( storeDir, stringMap( Config.ALLOW_STORE_UPGRADE, "true" ) );
         assertIndexContainsNode( storeDir, stringMap() );
     }
-    
+
     @Test
     public void upgradeThenUncleanShutdownShouldHaveUpgraded() throws Exception
     {
         // Upgrade, but shutdown unclean
-        File storeDir = copyResourceStore( "1.5-store" );
+        File storeDir = Unzip.unzip( getClass(), "1.5-store.zip" );
         Process process = Runtime.getRuntime().exec( new String[] { "java", "-cp", System.getProperty( "java.class.path" ),
                 StartAndKill.class.getName(), storeDir.getAbsolutePath(), "-" + Config.ALLOW_STORE_UPGRADE + "=true"
         } );
         new ProcessStreamHandler( process, true ).launch();
         assertEquals( 1, process.waitFor() );
-        
+
         // Start again w/o upgrade config set
         assertIndexContainsNode( storeDir, stringMap() );
     }
-    
+
     @Test
     public void upgradeOfNonCleanStoreShouldAlsoWork() throws Exception
     {
-        File storeDir = copyResourceStore( "unclean-1.5-store" );
+        File storeDir = Unzip.unzip( getClass(), "unclean-1.5-store.zip" );
         assertIndexContainsNode( storeDir, stringMap( Config.ALLOW_STORE_UPGRADE, "true" ) );
     }
-    
+
     @Test
     public void upgradeOfNonCleanStoreWithoutAllowUpgradeShouldFail() throws Exception
     {
-        File storeDir = copyResourceStore( "unclean-1.5-store" );
+        File storeDir = Unzip.unzip( getClass(), "unclean-1.5-store.zip" );
         assertDisallowedUpgradeFails( storeDir );
     }
 
@@ -101,7 +101,7 @@ public class LuceneThreeFiveUpgradeIT
         {   // Good
         }
     }
-    
+
     private void assertIndexContainsNode( File storeDir, Map<String, String> config )
     {
         GraphDatabaseService db = new GraphDatabaseFactory().
@@ -116,14 +116,5 @@ public class LuceneThreeFiveUpgradeIT
         {
             db.shutdown();
         }
-    }
-    
-    private File copyResourceStore( String resource ) throws Exception
-    {
-        URL uri = getClass().getResource( resource );
-        File file = new File( uri.toURI() );
-        File target = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName(), true );
-        FileUtils.copyRecursively( file, target );
-        return target;
     }
 }

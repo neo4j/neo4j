@@ -21,10 +21,10 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
@@ -48,6 +48,8 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TargetDirectory.TestDirectory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static org.junit.Assert.assertArrayEquals;
@@ -62,9 +64,9 @@ public class StoreMigratorTestIT
     @Test
     public void shouldMigrate() throws IOException
     {
-        URL legacyStoreResource = getClass().getResource( "legacystore/exampledb/neostore" );
+        MigrationTestUtils.prepareSampleLegacyDatabase( fs, directory.directory() );
 
-        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreResource.getFile() ),
+        LegacyStore legacyStore = new LegacyStore( fs, new File( directory.directory(), NeoStore.DEFAULT_NAME ),
                 StringLogger.DEV_NULL );
 
         Config config = MigrationTestUtils.defaultConfig();
@@ -100,8 +102,9 @@ public class StoreMigratorTestIT
 
         database.shutdown();
     }
-    
+
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+    public final @Rule TestDirectory directory = TargetDirectory.forTest( getClass() ).cleanTestDirectory();
 
     private void verifyNeoStore( NeoStore neoStore )
     {
@@ -164,7 +167,7 @@ public class StoreMigratorTestIT
             assertEquals( Short.MAX_VALUE, node.getProperty( PropertyType.SHORT.name() ) );
             assertEquals( "short", node.getProperty( PropertyType.SHORT_STRING.name() ) );
         }
-    
+
         private void verifyNodeIdsReused()
         {
             try
