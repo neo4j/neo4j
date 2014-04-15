@@ -487,7 +487,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
         highAvailabilityModeSwitcher =
-                new HighAvailabilityModeSwitcher( clusterClient, masterDelegateInvocationHandler,
+                new HighAvailabilityModeSwitcher( clusterClient, clusterClient, masterDelegateInvocationHandler,
                         clusterMemberAvailability, memberStateMachine, this,
                         (HaIdGeneratorFactory) idGeneratorFactory, config,
                         logging, requestContextFactory );

@@ -135,7 +135,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private final HighAvailabilityMemberStateMachine stateHandler;
     private final BindingNotifier bindingNotifier;
-    private Election election;
+    private final Election election;
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final GraphDatabaseAPI graphDb;
