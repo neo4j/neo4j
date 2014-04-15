@@ -668,7 +668,7 @@ RETURN other""")
     val a = createNode()
     val b = createNode("Mark")
     relate(a, b)
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 MATCH n-->x0
 OPTIONAL MATCH x0-->x1
 WHERE x1.foo = 'bar'
@@ -827,6 +827,19 @@ RETURN x0.name""")
 
     result.startNode() should equal (b)
     result.endNode() should equal (a)
+  }
+
+  test("no match in optional match should produce null values") {
+    val result = executeWithNewPlanner("OPTIONAL MATCH n RETURN n")
+
+    result.toList should equal (List(Map("n" ->  null)))
+  }
+
+  test("should preserve the original matched values if optional match matches nothing") {
+    val n = createNode()
+    val result = executeWithNewPlanner("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, x")
+
+    result.toList should equal (List(Map("n" -> n, "x" -> null)))
   }
 
   test("empty collect should not contain null") {

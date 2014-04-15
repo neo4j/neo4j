@@ -47,7 +47,9 @@ abstract class QueryGraph {
 case class OptionalQueryGraph(selections: Selections,
                               patternNodes: Set[IdName],
                               patternRelationships: Set[PatternRelationship],
-                              override val argumentIds: Set[IdName]) extends QueryGraph
+                              override val argumentIds: Set[IdName]) extends QueryGraph {
+  def nullableIds = coveredIds -- argumentIds
+}
 
 /*
 An abstract representation of the query graph being solved at the current step

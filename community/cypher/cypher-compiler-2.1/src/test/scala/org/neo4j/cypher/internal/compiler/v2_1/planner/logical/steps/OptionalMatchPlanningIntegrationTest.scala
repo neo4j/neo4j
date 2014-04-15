@@ -28,14 +28,13 @@ import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.OptionalQueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.OptionalApply
 import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
 import org.neo4j.cypher.internal.compiler.v2_1.planner.MainQueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Optional, Apply, PlanTable}
 
-class OptionalApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should introduce apply for unsolved optional match when all arguments are covered") {
     // MATCH (a) OPTIONAL MATCH (a)-[r]->(b)
@@ -70,9 +69,8 @@ class OptionalApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = Expand(SingleRow(Set("a")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
 
-    optionalApply(planTable).topPlan(context.cost) should equal(Some(OptionalApply(inputPlan, innerPlan)))
+    optionalMatch(planTable).topPlan(context.cost) should equal(Some(Apply(inputPlan, Optional(Set("b", "r"), innerPlan))))
   }
-
 
   test("should introduce apply for unsolved exclusive optional match") {
     // OPTIONAL MATCH (a)-[r]->(b)
@@ -106,6 +104,6 @@ class OptionalApplyTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val planTable = PlanTable(Map())
     val innerPlan = Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
 
-    optionalApply(planTable).topPlan(context.cost) should equal(Some(OptionalApply(SingleRow(), innerPlan)))
+    optionalMatch(planTable).topPlan(context.cost) should equal(Some(Optional(Set("a", "b", "r"), innerPlan)))
   }
 }

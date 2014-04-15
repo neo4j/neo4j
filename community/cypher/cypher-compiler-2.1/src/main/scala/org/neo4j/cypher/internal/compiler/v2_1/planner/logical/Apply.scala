@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, PatternRelationship, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class OptionalApply(inputPlan: LogicalPlan, innerPlan: LogicalPlan) extends LogicalPlan {
+case class Apply(outer: LogicalPlan, inner: LogicalPlan) extends LogicalPlan {
 
-  override val lhs = Some(inputPlan)
-  override val rhs = Some(innerPlan)
+  val lhs = Some(outer)
+  val rhs = Some(inner)
 
-  def coveredIds: Set[IdName] = inputPlan.coveredIds ++ innerPlan.coveredIds
+  def coveredIds: Set[IdName] = outer.coveredIds ++ inner.coveredIds
 
-  def solvedPredicates: Seq[Expression] = innerPlan.solvedPredicates ++ innerPlan.solvedPredicates
-  def solvedPatterns: Seq[PatternRelationship] = innerPlan.solvedPatterns
+  def solvedPredicates: Seq[Expression] = outer.solvedPredicates
+  def solvedPatterns: Seq[PatternRelationship] = outer.solvedPatterns
 }

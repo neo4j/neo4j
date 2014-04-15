@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.includeBestPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, OptionalQueryGraph, CantHandleQueryException}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, OptionalQueryGraph}
 
 class GreedyPlanningStrategy extends PlanningStrategy {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = {
@@ -38,7 +38,7 @@ class GreedyPlanningStrategy extends PlanningStrategy {
 
     qg match {
       case main: MainQueryGraph =>
-        val plansAfterOptionalApplies = iterateUntilConverged(findOptionalApply)(plansAfterCartesianProducts)
+        val plansAfterOptionalApplies = iterateUntilConverged(solveOptionalMatches)(plansAfterCartesianProducts)
         val bestPlan = extractBestPlan(plansAfterOptionalApplies)
         project(bestPlan)
 
@@ -61,8 +61,8 @@ class GreedyPlanningStrategy extends PlanningStrategy {
     includeBestPlan(planTable)(cartesianProductsWithSelections)
   }
 
-  def findOptionalApply(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
-    val optionalApplies = optionalApply(planTable)
+  def solveOptionalMatches(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
+    val optionalApplies = optionalMatch(planTable)
     val optionalAppliesWithSelections = applySelections(optionalApplies)
     includeBestPlan(planTable)(optionalAppliesWithSelections)
   }

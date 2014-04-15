@@ -70,6 +70,9 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
     case cartesian: CartesianProduct =>
       cost(cartesian.left) + cardinality(cartesian.left) * cost(cartesian.right)
 
+    case applyOp: Apply =>
+      cost(applyOp.outer) + cardinality(applyOp.outer) * cost(applyOp.inner)
+
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)
 

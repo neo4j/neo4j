@@ -20,7 +20,6 @@
 package org.neo4j.cypher
 
 import javacompat.ProfilerStatistics
-import scala.collection.JavaConverters._
 import java.lang.{Iterable => JIterable}
 import org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.compiler.v2_1.data.{SimpleVal, MapVal, SeqVal}
@@ -117,7 +116,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result: ExecutionResult = engine.profile("optional match (n) return n")
 
     //WHEN THEN
-    assertRows(1)(result)("NullableMatch")
+    assertRows(1)(result)("Optional")
   }
 
   test("should produce profile when using limit") {

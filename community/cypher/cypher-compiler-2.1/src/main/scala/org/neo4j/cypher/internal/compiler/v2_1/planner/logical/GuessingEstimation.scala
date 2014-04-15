@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, HasLabels, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{HasLabels, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
@@ -81,6 +81,9 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case CartesianProduct(left, right) =>
       cardinality(left) * cardinality(right)
 
+    case Apply(outer, inner) =>
+      cardinality(outer) * cardinality(inner)
+
     case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
       relIds.size
 
@@ -89,6 +92,9 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
 
     case Projection(left, _) =>
       cardinality(left)
+
+    case Optional(_, input) =>
+      cardinality(input)
 
     case SingleRow(_) =>
       1
