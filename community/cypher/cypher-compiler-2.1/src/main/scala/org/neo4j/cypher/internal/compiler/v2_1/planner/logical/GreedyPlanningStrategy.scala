@@ -63,8 +63,8 @@ class GreedyPlanningStrategy extends PlanningStrategy {
 
   def solveOptionalMatches(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
     val optionalApplies = optionalMatch(planTable)
-//    val outerJoins = outerJoin(planTable)
-    val optionalSolutionsWithSelections = applySelections(optionalApplies)// ++ outerJoins)
+    val outerJoins = outerJoin(planTable)
+    val optionalSolutionsWithSelections = applySelections(optionalApplies ++ outerJoins)
 
     includeBestPlan(planTable)(optionalSolutionsWithSelections)
   }
