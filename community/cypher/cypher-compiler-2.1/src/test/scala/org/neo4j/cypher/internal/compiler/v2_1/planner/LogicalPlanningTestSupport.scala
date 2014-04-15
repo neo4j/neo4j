@@ -19,18 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
-import org.scalatest.mock.MockitoSugar
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, LogicalPlan, IdName}
-import org.neo4j.cypher.internal.compiler.v2_1.Monitors
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
+
+import org.neo4j.cypher.internal.compiler.v2_1
+import v2_1._
+import v2_1.spi.{GraphStatistics, PlanContext}
+import v2_1.parser.{ParserMonitor, CypherParser}
+import v2_1.planner.logical._
+import v2_1.planner.logical.plans.{PatternRelationship, LogicalPlan, IdName}
+import v2_1.ast.Query
+import v2_1.planner.logical.Metrics._
+
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{CardinalityModel, SelectivityModel}
+import org.scalatest.mock.MockitoSugar
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
@@ -63,9 +64,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
                                   metrics: Metrics = self.mock[Metrics],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
                                   queryGraph: QueryGraph = self.mock[QueryGraph],
-                                  strategy: PlanningStrategy = new GreedyPlanningStrategy()) =
+                                  strategy: PlanningStrategy = new GreedyPlanningStrategy(),
+                                  argumentIds:Set[String] = Set.empty) =
 
-    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
+    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy, argumentIds.map(IdName.apply))
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.coveredIds -> plan

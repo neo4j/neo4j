@@ -676,6 +676,21 @@ RETURN x0.name""")
     result.toList should equal (List(Map("x0.name" -> "Mark")))
   }
 
+  test("should solve an optional match even when the optional match is highly selective") {
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+    relate(a, b)
+    relate(a, c)
+    val result = executeWithNewPlanner( s"""
+MATCH a-->b
+WHERE id(b) = ${b.getId}
+OPTIONAL MATCH a-->c
+WHERE id(c) = ${c.getId}
+RETURN a.name""")
+    result.toList should equal (List(Map("a.name" -> "A")))
+  }
+
   test("should find nodes both directions") {
     val n = createNode()
     val a = createNode()

@@ -34,7 +34,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
 import org.neo4j.cypher.internal.compiler.v2_1.planner.MainQueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Optional, Apply, PlanTable}
 
-class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class OptionalMatchTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should introduce apply for unsolved optional match when all arguments are covered") {
     // MATCH (a) OPTIONAL MATCH (a)-[r]->(b)

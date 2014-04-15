@@ -33,7 +33,7 @@ object optionalMatch {
       for (optionalQG <- context.queryGraph.optionalMatches;
            lhs <- planTable.plans if applicable(lhs, optionalQG))
       yield {
-        val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG))
+        val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG, argumentIds = lhs.coveredIds))
 
         Apply(lhs, Optional(optionalQG.nullableIds, rhs))
       }
