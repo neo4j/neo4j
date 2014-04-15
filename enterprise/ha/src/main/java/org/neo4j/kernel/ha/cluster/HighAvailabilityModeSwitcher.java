@@ -35,13 +35,14 @@ import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.BindingListener;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
+import org.neo4j.cluster.protocol.election.Election;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
@@ -146,6 +147,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private final HighAvailabilityMemberStateMachine stateHandler;
     private final BindingNotifier bindingNotifier;
+    private final Election election;
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final GraphDatabaseAPI graphDb;
@@ -169,6 +171,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private volatile HighAvailabilityMemberState currentTargetState;
 
     public HighAvailabilityModeSwitcher( BindingNotifier bindingNotifier,
+                                         Election election,
                                          DelegateInvocationHandler<Master> delegateHandler,
                                          ClusterMemberAvailability clusterMemberAvailability,
                                          HighAvailabilityMemberStateMachine stateHandler, GraphDatabaseAPI graphDb,
@@ -178,6 +181,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                                          RequestContextFactory requestContextFactory )
     {
         this.bindingNotifier = bindingNotifier;
+        this.election = election;
         this.masterDelegateHandler = delegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.graphDb = graphDb;
@@ -378,6 +382,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                 catch ( Throwable e )
                 {
                     msgLog.logMessage( "Failed to switch to master", e );
+
+                    // Since this master switch failed, elect someone else
+                    election.demote( new InstanceId(getServerId( me )) );
+
                     return;
                 }
             }

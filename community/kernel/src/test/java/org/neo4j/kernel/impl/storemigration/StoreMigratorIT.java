@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.Unzip;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Integer.MAX_VALUE;
@@ -73,8 +74,8 @@ public class StoreMigratorIT
     public void shouldMigrate() throws IOException
     {
         // GIVEN
-        LegacyStore legacyStore = new LegacyStore( fs,
-                new File( getClass().getResource( "legacystore/exampledb/neostore" ).getFile() ) );
+        File legacyStoreDir = MigrationTestUtils.findOldFormatStoreDirectory();
+        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreDir, NeoStore.DEFAULT_NAME ) );
         NeoStore neoStore = storeFactory.createNeoStore( storeFileName );
 
         // WHEN
@@ -109,8 +110,8 @@ public class StoreMigratorIT
         // GIVEN
         // a store that contains two nodes with property "name" of which there are two key tokens
         // that should be merged in the store migration
-        LegacyStore legacyStore = new LegacyStore( fs,
-                new File( getClass().getResource( "legacystore/propkeydupdb/neostore" ).getFile() ) );
+        File legacyStoreDir = Unzip.unzip( LegacyStore.class, "propkeydupdb.zip" );
+        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreDir, NeoStore.DEFAULT_NAME ) );
         NeoStore neoStore = storeFactory.createNeoStore( storeFileName );
 
         // WHEN

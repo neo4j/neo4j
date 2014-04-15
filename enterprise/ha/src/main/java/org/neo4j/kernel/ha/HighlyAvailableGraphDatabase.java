@@ -410,7 +410,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging, requestContextFactory );
-        highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( clusterClient, masterDelegateInvocationHandler,
+        highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( clusterClient, clusterClient, masterDelegateInvocationHandler,
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
                 config, logging, updateableSchemaState, kernelExtensions.listFactories(), monitors, requestContextFactory );
 

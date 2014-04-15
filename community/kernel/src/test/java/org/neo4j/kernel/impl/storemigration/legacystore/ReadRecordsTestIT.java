@@ -21,15 +21,17 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.File;
 import java.io.IOException;
-import java.net.URL;
 import java.util.Iterator;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.storemigration.MigrationTestUtils;
 
-import static org.junit.Assert.assertEquals;
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class ReadRecordsTestIT
@@ -37,20 +39,31 @@ public class ReadRecordsTestIT
     @Test
     public void shouldReadNodeRecords() throws IOException
     {
-        URL nodeStoreFile = getClass().getResource( "exampledb/neostore.nodestore.db" );
+        File file = exampleDbStore( "neostore.nodestore.db" );
 
-        LegacyNodeStoreReader nodeStoreReader = new LegacyNodeStoreReader( fs, new File( nodeStoreFile.getFile() ) );
-        assertEquals( 1002, nodeStoreReader.getMaxId() );
-        Iterator<NodeRecord> records = nodeStoreReader.readNodeStore();
-        int nodeCount = 0;
-        for ( NodeRecord record : loop( records ) )
+        try ( LegacyNodeStoreReader nodeStoreReader = new LegacyNodeStoreReader( fs, file ) )
         {
-            if ( record.inUse() )
-                nodeCount++;
+            assertEquals( 1002, nodeStoreReader.getMaxId() );
+            Iterator<NodeRecord> records = nodeStoreReader.readNodeStore();
+            int nodeCount = 0;
+            for ( NodeRecord record : loop( records ) )
+            {
+                if ( record.inUse() )
+                    nodeCount++;
+            }
+            assertEquals( 501, nodeCount );
         }
-        assertEquals( 501, nodeCount );
-        nodeStoreReader.close();
     }
-    
+
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+
+    private File exampleDbStore( String fileName ) throws IOException
+    {
+        return new File( exampleDbStore(), fileName );
+    }
+
+    private File exampleDbStore() throws IOException
+    {
+        return MigrationTestUtils.findOldFormatStoreDirectory();
+    }
 }
