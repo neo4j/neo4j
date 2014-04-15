@@ -33,29 +33,32 @@ import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.Unzip;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
+import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class TestPerformUpgradeIfNecessary
 {
-    public static final String HOME_DIRECTORY = TargetDirectory.forTest( TestPerformUpgradeIfNecessary.class ).makeGraphDbDir().getAbsolutePath();
-    public static final String STORE_DIRECTORY = HOME_DIRECTORY + "/data/graph.db";
+    public static final File HOME_DIRECTORY = TargetDirectory.forTest( TestPerformUpgradeIfNecessary.class )
+            .cleanDirectory( "home" );
+    public static final File STORE_DIRECTORY = new File( new File( HOME_DIRECTORY, "data" ), "graph.db" );
 
     @Test
     public void shouldExitImmediatelyIfStoreIsAlreadyAtLatestVersion() throws IOException
     {
         Configuration serverConfig = buildProperties( false );
-        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( STORE_DIRECTORY ).newGraphDatabase().shutdown();
+        new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( STORE_DIRECTORY.getPath() ).newGraphDatabase().shutdown();
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
@@ -72,7 +75,7 @@ public class TestPerformUpgradeIfNecessary
     public void shouldGiveHelpfulMessageIfAutoUpgradeParameterNotSet() throws IOException
     {
         Configuration serverProperties = buildProperties( false );
-        prepareSampleLegacyDatabase( new DefaultFileSystemAbstraction(), new File( STORE_DIRECTORY ) );
+        prepareSampleLegacyDatabase( STORE_DIRECTORY );
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverProperties,
@@ -107,7 +110,7 @@ public class TestPerformUpgradeIfNecessary
     public void shouldUpgradeDatabase() throws IOException
     {
         Configuration serverConfig = buildProperties( true );
-        prepareSampleLegacyDatabase( new DefaultFileSystemAbstraction(), new File( STORE_DIRECTORY ) );
+        prepareSampleLegacyDatabase( STORE_DIRECTORY );
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
@@ -125,19 +128,20 @@ public class TestPerformUpgradeIfNecessary
 
     private Configuration buildProperties(boolean allowStoreUpgrade) throws IOException
     {
-        FileUtils.deleteRecursively( new File( HOME_DIRECTORY ) );
-        new File( HOME_DIRECTORY + "/conf" ).mkdirs();
+        FileUtils.deleteRecursively( HOME_DIRECTORY );
+        File confDir = new File( HOME_DIRECTORY, "conf" );
+        confDir.mkdirs();
 
         Properties databaseProperties = new Properties();
         if (allowStoreUpgrade)
         {
             databaseProperties.setProperty( GraphDatabaseSettings.allow_store_upgrade.name(), "true" );
         }
-        String databasePropertiesFileName = HOME_DIRECTORY + "/conf/neo4j.properties";
+        String databasePropertiesFileName = new File( confDir, "neo4j.properties" ).getAbsolutePath();
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
         Configuration serverProperties = new MapBasedConfiguration();
-        serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, STORE_DIRECTORY );
+        serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, STORE_DIRECTORY.getPath() );
         serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName );
 
         return serverProperties;
@@ -145,8 +149,24 @@ public class TestPerformUpgradeIfNecessary
 
     private Map<String,String> loadNeo4jProperties() throws IOException
     {
-        String databasePropertiesFileName = HOME_DIRECTORY + "/conf/neo4j.properties";
+        String databasePropertiesFileName = new File( new File( HOME_DIRECTORY, "conf" ),
+                "neo4j.properties" ).getAbsolutePath();
         return MapUtil.load(new File(databasePropertiesFileName));
+    }
+
+    public static void prepareSampleLegacyDatabase( File workingDirectory ) throws IOException
+    {
+        File resourceDirectory = findOldFormatStoreDirectory();
+
+        deleteRecursively( workingDirectory );
+        assertTrue( workingDirectory.mkdirs() );
+
+        copyRecursively( resourceDirectory, workingDirectory );
+    }
+
+    public static File findOldFormatStoreDirectory() throws IOException
+    {
+        return Unzip.unzip( TestPerformUpgradeIfNecessary.class, "exampledb.zip" );
     }
 
     private String dots( int count )

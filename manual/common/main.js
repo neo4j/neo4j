@@ -48,7 +48,7 @@ function addBootstrapStyling()
   var $content = $('#content section');
   $('img', $content).addClass('img-responsive');
   $('div.admonitionblock img', $content).removeClass('img-responsive');
-  $('dl', $content).addClass('dl-horizontal');
+  $('#deployment-requirements dl, #rest-api-traverse dl').addClass('dl-horizontal');
   $('div.table table,div.informaltable table', $content).addClass('table table-condensed table-hover');
   var $admonblocks = $('div.admonitionblock');
   $admonblocks.filter('.Note').find('td.content').addClass('alert alert-info');

@@ -3,8 +3,6 @@
 
     <untar src="${project.build.directory}/neo4j-${edition}-${neo4j.version}-unix.tar.gz"
            compression="gzip" dest="${project.build.directory}"/>
-    <fixcrlf srcdir="${project.build.directory}/neo4j-${edition}-${neo4j.version}/doc"
-             includes="**/*" tab="asis"/>
 
     <replaceregexp
             file="${project.build.directory}/neo4j-${edition}-${neo4j.version}/conf/neo4j-server.properties"

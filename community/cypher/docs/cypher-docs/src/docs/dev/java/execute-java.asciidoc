@@ -3,7 +3,7 @@
 
 [TIP]
 The full source code of the example:
-https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/cypher/cypher-docs/src/test/java/org/neo4j/cypher/javacompat/JavaQuery.java[JavaQuery.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/cypher/cypher-docs/src/test/java/org/neo4j/cypher/example/JavaQuery.java[JavaQuery.java]
 
 In Java, you can use the <<cypher-query-lang,Cypher query language>> as per the example below.
 First, let's add some data.
@@ -11,7 +11,7 @@ First, let's add some data.
 [snippet,java]
 ----
 component=neo4j-cypher-docs
-source=org/neo4j/cypher/javacompat/JavaQuery.java
+source=org/neo4j/cypher/example/JavaQuery.java
 tag=addData
 classifier=test-sources
 ----
@@ -21,7 +21,7 @@ Execute a query:
 [snippet,java]
 ----
 component=neo4j-cypher-docs
-source=org/neo4j/cypher/javacompat/JavaQuery.java
+source=org/neo4j/cypher/example/JavaQuery.java
 tag=execute
 classifier=test-sources
 ----
@@ -39,7 +39,7 @@ You can get a list of the columns in the result:
 [snippet,java]
 ----
 component=neo4j-cypher-docs
-source=org/neo4j/cypher/javacompat/JavaQuery.java
+source=org/neo4j/cypher/example/JavaQuery.java
 tag=columns
 classifier=test-sources
 ----
@@ -53,7 +53,7 @@ To fetch the result items from a single column, do like this:
 [snippet,java]
 ----
 component=neo4j-cypher-docs
-source=org/neo4j/cypher/javacompat/JavaQuery.java
+source=org/neo4j/cypher/example/JavaQuery.java
 tag=items
 classifier=test-sources
 ----
@@ -67,7 +67,7 @@ To get all columns, do like this instead:
 [snippet,java]
 ----
 component=neo4j-cypher-docs
-source=org/neo4j/cypher/javacompat/JavaQuery.java
+source=org/neo4j/cypher/example/JavaQuery.java
 tag=rows
 classifier=test-sources
 ----

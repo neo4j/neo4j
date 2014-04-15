@@ -95,15 +95,6 @@
         <include>UPGRADE.txt</include>
       </includes>
     </fileSet>
-    <!-- die manpages -->
-    <fileSet>
-      <directory>target/manpages</directory>
-      <outputDirectory>/doc</outputDirectory>
-      <fileMode>0644</fileMode>
-      <includes>
-        <include>*.txt</include>
-      </includes>
-    </fileSet>
   </fileSets>
 
   <dependencySets>

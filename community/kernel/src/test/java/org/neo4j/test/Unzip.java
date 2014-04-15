@@ -34,12 +34,14 @@ public class Unzip
     public static File unzip( Class<?> testClass, String resource ) throws IOException
     {
         File dir = TargetDirectory.forTest( testClass ).makeGraphDbDir();
-        try ( InputStream source = testClass.getResourceAsStream( resource ) )
+        InputStream source = testClass.getResourceAsStream( resource );
+        if ( source == null )
         {
-            if ( source == null )
-            {
-                throw new FileNotFoundException( "Could not find resource '" + resource + "' to unzip" );
-            }
+            throw new FileNotFoundException( "Could not find resource '" + resource + "' to unzip" );
+        }
+
+        try
+        {
             ZipInputStream zipStream = new ZipInputStream( source );
             ZipEntry entry = null;
             byte[] scratch = new byte[8096];
@@ -51,7 +53,8 @@ public class Unzip
                 }
                 else
                 {
-                    OutputStream file = new BufferedOutputStream( new FileOutputStream( new File( dir, entry.getName() ) ) );
+                    OutputStream file = new BufferedOutputStream(
+                            new FileOutputStream( new File( dir, entry.getName() ) ) );
                     try
                     {
                         long toCopy = entry.getSize();
@@ -69,6 +72,10 @@ public class Unzip
                 }
                 zipStream.closeEntry();
             }
+        }
+        finally
+        {
+            source.close();
         }
         return dir;
     }
