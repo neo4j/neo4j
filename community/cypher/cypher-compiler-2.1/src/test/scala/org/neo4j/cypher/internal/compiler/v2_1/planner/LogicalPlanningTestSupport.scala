@@ -108,7 +108,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     }
   }
 
-  implicit def withPos[T](expr: InputPosition => T): T = expr(DummyPosition(0))
+  val pos = DummyPosition(0)
+
+  implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 
   implicit def idName(name: String) = IdName(name)
 }
