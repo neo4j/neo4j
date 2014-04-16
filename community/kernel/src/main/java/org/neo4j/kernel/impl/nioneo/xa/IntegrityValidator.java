@@ -33,6 +33,8 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
+import static java.lang.String.format;
+
 /**
  * Validates data integrity during the prepare phase of {@link NeoStoreTransaction}.
  */
@@ -60,7 +62,8 @@ public class IntegrityValidator
     public void validateTransactionStartKnowledge( long lastCommittedTxWhenTransactionStarted )
             throws XAException
     {
-        if( lastCommittedTxWhenTransactionStarted < neoStore.getLatestConstraintIntroducingTx() )
+        long latestConstraintIntroducingTx = neoStore.getLatestConstraintIntroducingTx();
+        if( lastCommittedTxWhenTransactionStarted < latestConstraintIntroducingTx )
         {
             // Constraints have changed since the transaction begun
 
@@ -69,9 +72,11 @@ public class IntegrityValidator
             // replicating the constraint validation logic down here, or rethinking where we validate constraints.
             // For now, we just kill these transactions.
             throw Exceptions.withCause( new XAException( XAException.XA_RBINTEGRITY ),
-                    new ConstraintViolationException(
-                            "Database constraints have changed after this transaction started, which is not yet " +
-                            "supported. Please retry your transaction to ensure all constraints are executed." ) );
+                    new ConstraintViolationException( format(
+                            "Database constraints have changed (txId=%d) after this transaction (txId%d) started, " +
+                            "which is not yet supported. Please retry your transaction to ensure all " +
+                            "constraints are executed.", latestConstraintIntroducingTx,
+                            lastCommittedTxWhenTransactionStarted ) ) );
         }
     }
 
