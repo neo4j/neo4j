@@ -37,7 +37,7 @@ import org.neo4j.kernel.{ GraphDatabaseAPI, AbstractGraphDatabase }
 import org.neo4j.cypher.internal.helpers.{ Materialized, GraphIcing }
 import org.neo4j.cypher.export.{ SubGraphExporter, DatabaseSubGraph }
 import org.neo4j.helpers.Settings
-import org.neo4j.cypher.javacompat.JavaExecutionEngineDocTest
+import org.neo4j.cypher.example.JavaExecutionEngineDocTest
 import org.neo4j.tooling.GlobalGraphOperations
 import scala.reflect.ClassTag
 import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
