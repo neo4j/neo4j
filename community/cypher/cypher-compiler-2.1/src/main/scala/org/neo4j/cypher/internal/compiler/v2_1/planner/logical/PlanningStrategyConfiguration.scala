@@ -17,40 +17,40 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LeafPlanner, CandidateList, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 
-object generateLeafPlanCandidateLists {
-  def apply()(implicit context: LogicalPlanContext): Iterable[CandidateList] = {
-    val qg = context.queryGraph
-    val predicates: Seq[Expression] = qg.selections.flatPredicates
-    val labelPredicateMap = qg.selections.labelPredicates
+case class PlanningStrategyConfiguration(
+  leafPlanners: LeafPlannerList,
+  applySelections: PlanTransformer,
+  pickBestCandidate: CandidateSelector
+)
 
-    val plans = Seq(
+object PlanningStrategyConfiguration {
+  val default = PlanningStrategyConfiguration(
+    leafPlanners = LeafPlannerList( leafPlanners = Seq(
       // arguments from the outside in case we are in a sub query,
-      argumentLeafPlanner(qg).plans,
+      argumentLeafPlanner,
 
       // MATCH n WHERE id(n) = {id} RETURN n
-      idSeekLeafPlanner(qg).plans,
+      idSeekLeafPlanner,
 
       // MATCH n WHERE n.prop = {val} RETURN n
-      uniqueIndexSeekLeafPlanner(qg).plans,
+      uniqueIndexSeekLeafPlanner,
 
       // MATCH n WHERE n.prop = {val} RETURN n
-      indexSeekLeafPlanner(qg).plans,
+      indexSeekLeafPlanner,
 
       // MATCH (n:Person) RETURN n
-      labelScanLeafPlanner(qg).plans,
+      labelScanLeafPlanner,
 
       // MATCH n RETURN n
-      allNodesLeafPlanner(qg).plans
-    ).flatten
-
-
-    // val plans = leafPlanners.flatMap(_.apply().plans)
-    plans.groupBy(_.coveredIds).values.map(CandidateList)
-  }
+      allNodesLeafPlanner
+    ) ),
+    applySelections = selectPlan,
+    pickBestCandidate = pickBestPlan
+  )
 }
+
+

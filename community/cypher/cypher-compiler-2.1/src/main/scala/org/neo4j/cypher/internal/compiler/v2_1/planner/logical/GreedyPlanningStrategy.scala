@@ -23,20 +23,19 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.pickBestPlan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, OptionalQueryGraph, CantHandleQueryException}
 
-class GreedyPlanningStrategy extends PlanningStrategy {
+class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = {
 
-    if ( context.queryGraph.namedPaths.nonEmpty )
+    val select = config.applySelections.asFunctionInContext
+    val pickBest = config.pickBestCandidate.asFunctionInContext
+
+    if (context.queryGraph.namedPaths.nonEmpty )
       throw new CantHandleQueryException
 
-    val select = selectPlan.asFunction
-    val pickBest = pickBestPlan.asFunction
-
     def generateLeafPlanTable() = {
-      val leafPlanCandidateLists = generateLeafPlanCandidateLists()
+      val leafPlanCandidateLists = config.leafPlanners.candidateLists(context.queryGraph)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select))
       val topLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(_.bestPlan(context.cost))
       topLeafPlans.foldLeft(PlanTable())(_ + _)
