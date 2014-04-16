@@ -27,25 +27,25 @@ import scala.collection.mutable
 
 case class NodeOuterHashJoinPipe(node: String, source: Pipe, inner: Pipe, nullableIdentifiers: Set[String])
                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+  val nullColumns: Map[String, Any] = nullableIdentifiers.map(_ -> null).toMap
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val probeTable = new mutable.HashMap[Long, mutable.MutableList[ExecutionContext]]
-    val nullLhsRows = Seq.newBuilder[ExecutionContext]
-
-    input.foreach { context =>
+    val nullLhsRows = input.flatMap { context =>
       context(node) match {
         case null =>
-          nullLhsRows += context
+          Some(context)
 
         case node:Node =>
           val joinKey = node.getId
           val seq = probeTable.getOrElseUpdate(joinKey, mutable.MutableList.empty)
           seq += context
+          None
       }
     }
 
     val seenKeys = mutable.Set[Long]()
-    val iter = inner.createResults(state).flatMap { context =>
+    val joinedRows = inner.createResults(state).flatMap { context =>
       context(node) match {
         case n:Node =>
           val joinKey = n.getId
@@ -58,18 +58,15 @@ case class NodeOuterHashJoinPipe(node: String, source: Pipe, inner: Pipe, nullab
       }
     }
 
-    def addNulls(in:ExecutionContext):ExecutionContext = nullableIdentifiers.foldLeft(in) {
-      case (acc, id) => acc += id -> null
-    }
-
-    lazy val missingRows = (probeTable.keySet -- seenKeys).iterator.flatMap {
+    lazy val rowsWithoutRhsMatch: Iterator[ExecutionContext] = (probeTable.keySet -- seenKeys).iterator.flatMap {
       x => probeTable(x).map(addNulls)
     }
-
-    lazy val nullValues = nullLhsRows.result().iterator.map(addNulls)
-
-    iter ++ missingRows ++ nullValues
+    val rowsWithNullAsJoinKey: Iterator[ExecutionContext] = nullLhsRows.map(addNulls)
+    rowsWithNullAsJoinKey ++ joinedRows ++ rowsWithoutRhsMatch
   }
+
+  private def addNulls(in:ExecutionContext): ExecutionContext = in.newWith(nullColumns)
+
 
   def executionPlanDescription: PlanDescription =
     new PlanDescriptionImpl(

@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1
+import v2_1.planner.logical.plans.{Optional, Apply, LogicalPlan}
+import v2_1.planner.QueryGraph
+import v2_1.planner.logical.CandidateList
+import v2_1.planner.logical.LogicalPlanContext
+import v2_1.planner.logical.PlanTable
 
-object optionalMatch {
+object applyOptional {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-
     val applyCandidates =
       for (optionalQG <- context.queryGraph.optionalMatches;
            lhs <- planTable.plans if applicable(lhs, optionalQG))
@@ -38,16 +37,7 @@ object optionalMatch {
         Apply(lhs, Optional(optionalQG.nullableIds, rhs))
       }
 
-    val optionalCandidates =
-      for (optionalQG <- context.queryGraph.optionalMatches if optionalQG.argumentIds.isEmpty)
-      yield {
-        val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG))
-
-        Optional(optionalQG.nullableIds, rhs)
-      }
-
-
-    CandidateList(applyCandidates ++ optionalCandidates)
+    CandidateList(applyCandidates)
   }
 
   private def applicable(outerPlan: LogicalPlan, optionalQG: QueryGraph) = {

@@ -31,8 +31,8 @@ object expand {
       nodeId <- plan.coveredIds
       patternRel <- context.queryGraph.findRelationshipsEndingOn(nodeId)
       if !plan.solvedPatterns.contains(patternRel)
-      dir = patternRel.directionRelativeTo(nodeId)
     } yield {
+      val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)
       val expandF = (otherSide: IdName) => Expand(plan, nodeId, dir, patternRel.types,
                                                   otherSide, patternRel.name, patternRel.length)(patternRel)

@@ -17,18 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, PatternRelationship, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, RelTypeName}
 
-case class Apply(outer: LogicalPlan, inner: LogicalPlan) extends LogicalPlan {
+case class OptionalExpand(left: LogicalPlan,
+                  from: IdName,
+                  dir: Direction,
+                  types: Seq[RelTypeName],
+                  to: IdName,
+                  relName: IdName,
+                  length: PatternLength,
+                  predicates: Seq[Expression])
+                 (pattern: PatternRelationship) extends LogicalPlan {
+  val lhs = Some(left)
+  def rhs = None
 
-  val lhs = Some(outer)
-  val rhs = Some(inner)
+  val coveredIds = left.coveredIds + to + relName
 
-  def coveredIds: Set[IdName] = outer.coveredIds ++ inner.coveredIds
-
-  def solvedPredicates: Seq[Expression] = outer.solvedPredicates
-  def solvedPatterns: Seq[PatternRelationship] = outer.solvedPatterns
+  def solvedPredicates = left.solvedPredicates ++ predicates
+  val solvedPatterns = left.solvedPatterns :+ pattern
 }
