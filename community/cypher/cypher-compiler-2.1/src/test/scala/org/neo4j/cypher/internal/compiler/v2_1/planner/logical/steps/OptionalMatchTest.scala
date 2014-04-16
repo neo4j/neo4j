@@ -25,14 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.OptionalQueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.MainQueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Optional, Apply, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 
 class OptionalMatchTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
