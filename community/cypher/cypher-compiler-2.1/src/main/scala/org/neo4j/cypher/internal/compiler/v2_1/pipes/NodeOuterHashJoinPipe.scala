@@ -30,29 +30,45 @@ case class NodeOuterHashJoinPipe(node: String, source: Pipe, inner: Pipe, nullab
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val probeTable = new mutable.HashMap[Long, mutable.MutableList[ExecutionContext]]
+    val nullLhsRows = Seq.newBuilder[ExecutionContext]
+
     input.foreach { context =>
-      val joinKey = context(node).asInstanceOf[Node].getId
-      val seq = probeTable.getOrElseUpdate(joinKey, mutable.MutableList.empty)
-      seq += context
+      context(node) match {
+        case null =>
+          nullLhsRows += context
+
+        case node:Node =>
+          val joinKey = node.getId
+          val seq = probeTable.getOrElseUpdate(joinKey, mutable.MutableList.empty)
+          seq += context
+      }
     }
 
     val seenKeys = mutable.Set[Long]()
     val iter = inner.createResults(state).flatMap { context =>
-      val joinKey = context(node).asInstanceOf[Node].getId
-      seenKeys.add(joinKey)
-      val seq = probeTable.getOrElse(joinKey, mutable.MutableList.empty)
-      seq.map(context ++ _)
-    }
+      context(node) match {
+        case n:Node =>
+          val joinKey = n.getId
+          seenKeys.add(joinKey)
+          val seq = probeTable.getOrElse(joinKey, mutable.MutableList.empty)
+          seq.map(context ++ _)
 
-    lazy val nullRows = (probeTable.keySet -- seenKeys).iterator.flatMap {
-      x => probeTable(x).map {
-        ctx => nullableIdentifiers.foldLeft(ctx) {
-          case (acc, id) => acc += id -> null
-        }
+        case _ =>
+          None
       }
     }
 
-    iter ++ nullRows
+    def addNulls(in:ExecutionContext):ExecutionContext = nullableIdentifiers.foldLeft(in) {
+      case (acc, id) => acc += id -> null
+    }
+
+    lazy val missingRows = (probeTable.keySet -- seenKeys).iterator.flatMap {
+      x => probeTable(x).map(addNulls)
+    }
+
+    lazy val nullValues = nullLhsRows.result().iterator.map(addNulls)
+
+    iter ++ missingRows ++ nullValues
   }
 
   def executionPlanDescription: PlanDescription =

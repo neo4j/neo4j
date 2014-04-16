@@ -41,7 +41,7 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val r2Rel = PatternRelationship(r2Name, (bNode, cNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
   val r3Rel = PatternRelationship(r3Name, (cNode, dNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
-  test("does not try to join anything if optional pattern is present") {
+  test("does not try to join anything if optional pattern is not present") {
     // MATCH (a)-->(b)
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
@@ -53,7 +53,7 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     outerJoin(planTable) should equal(CandidateList(Seq.empty))
   }
 
-  test("outer join solves things. please?") {
+  test("solve optional match with outer join") {
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg: OptionalQueryGraph = OptionalQueryGraph(Selections(), Set(aNode, bNode), Set(r1Rel), Set(aNode))
 

@@ -75,6 +75,114 @@ class NodeOuterHashJoinPipeTest extends CypherFunSuite {
     ))
   }
 
+  test("empty lhs should give empty results") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe("b")
+
+    val right = newMockedPipe("b",
+      row("b" -> node2, "c" -> 30),
+      row("b" -> node2, "c" -> 40))
+
+    // when
+    val result = NodeOuterHashJoinPipe("b", left, right, Set("c")).createResults(queryState)
+
+    // then
+    result.toList shouldBe 'empty
+  }
+
+  test("empty rhs should give null results") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe("b",
+      row("b" -> node1, "a" -> 10),
+      row("b" -> node2, "a" -> 20),
+      row("b" -> node3, "a" -> 30))
+
+    val right = newMockedPipe("b")
+
+    // when
+    val result = NodeOuterHashJoinPipe("b", left, right, Set("c")).createResults(queryState)
+
+    // then
+    result.toSet should equal(Set(
+      Map("a" -> 10, "b" -> node1, "c" -> null),
+      Map("a" -> 20, "b" -> node2, "c" -> null),
+      Map("a" -> 30, "b" -> node3, "c" -> null)
+    ))
+  }
+
+  test("lhs with null in the join key should not match anything on rhs") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe("b",
+      row("b" -> node1, "a" -> 10),
+      row("b" -> null,  "a" -> 20),
+      row("b" -> node3, "a" -> 30))
+
+    val right = newMockedPipe("b",
+      row("b" -> node1, "c" -> 10),
+      row("b" -> node2,  "c" -> 20),
+      row("b" -> node3, "c" -> 30))
+
+    // when
+    val result = NodeOuterHashJoinPipe("b", left, right, Set("c")).createResults(queryState)
+
+    // then
+    result.toSet should equal(Set(
+      Map("a" -> 10, "b" -> node1, "c" -> 10),
+      Map("a" -> 20, "b" -> null , "c" -> null),
+      Map("a" -> 30, "b" -> node3, "c" -> 30)
+    ))
+  }
+
+  test("rhs with null in the join key should not match anything") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe("b",
+      row("b" -> node1, "a" -> 10),
+      row("b" -> node2, "a" -> 20),
+      row("b" -> node3, "a" -> 30))
+
+    val right = newMockedPipe("b",
+      row("b" -> null,  "c" -> 10),
+      row("b" -> node2, "c" -> 20),
+      row("b" -> node3, "c" -> 30))
+
+    // when
+    val result = NodeOuterHashJoinPipe("b", left, right, Set("c")).createResults(queryState)
+
+    // then
+    result.toSet should equal(Set(
+      Map("a" -> 10, "b" -> node1, "c" -> null),
+      Map("a" -> 20, "b" -> node2, "c" -> 20),
+      Map("a" -> 30, "b" -> node3, "c" -> 30)
+    ))
+  }
+
+  test("null in both sides should still not match anything") {
+    // given
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe("b",
+      row("b" -> null,  "a" -> 20))
+
+    val right = newMockedPipe("b",
+      row("b" -> null,  "c" -> 20))
+
+    // when
+    val result = NodeOuterHashJoinPipe("b", left, right, Set("c")).createResults(queryState)
+
+    // then
+    result.toSet should equal(Set(
+      Map("a" -> 20, "b" -> null , "c" -> null)
+    ))
+  }
+
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
 
   private def newMockedNode(id: Int) = {
