@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.commons.CypherTestSupport
 import org.neo4j.cypher.NewPlannerMonitor.{NewQuerySeen, UnableToHandleQuery, NewPlannerMonitorCall}
 import java.io.{PrintWriter, StringWriter}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
 
 object NewPlannerMonitor {
 
@@ -76,9 +77,21 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     }
 
   def executeWithNewPlanner(queryText: String, params: (String, Any)*): ExecutionResult =
-    monitoringNewPlanner(self.execute(queryText, params: _*)) { trace =>
+    monitoringNewPlanner(innerExecute(queryText, params: _*)) { trace =>
       trace.collect {
         case UnableToHandleQuery(stackTrace) => fail(s"Failed to use the new planner on: $queryText\n$stackTrace")
+      }
+    }
+
+  private def innerExecute(queryText: String, params: (String, Any)*): ExecutionResult =
+    RewindableExecutionResult(engine.execute(queryText, params.toMap))
+
+  override def execute(queryText: String, params: (String, Any)*): ExecutionResult =
+    monitoringNewPlanner(innerExecute(queryText, params: _*)) { trace =>
+      trace.collectFirst {
+        case UnableToHandleQuery(stackTrace) =>
+      }.orElse {
+        fail(s"Unexpectedly used the new planner on: $queryText")
       }
     }
 

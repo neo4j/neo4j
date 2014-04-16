@@ -105,7 +105,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(n1, n2, "KNOWS")
     relate(n2, n3, "FRIEND")
 
-    val result = execute("match n-->a-->b RETURN b").toList
+    val result = executeWithNewPlanner("match n-->a-->b RETURN b").toList
 
     result.toList should equal(List(Map("b" -> n3)))
   }
@@ -724,7 +724,7 @@ RETURN a.name""")
     relate(a, b)
     relate(b, c)
 
-    val result = execute("match a-->b, b-->b return b")
+    val result = executeWithNewPlanner("match a-->b, b-->b return b")
 
     result shouldBe 'isEmpty
   }
@@ -736,7 +736,7 @@ RETURN a.name""")
     val r = relate(a, a)
     relate(a, b)
 
-    val result = execute("match a-[r]->a return r")
+    val result = executeWithNewPlanner("match a-[r]->a return r")
     result.toList should equal (List(Map("r" -> r)))
   }
 
@@ -1089,7 +1089,7 @@ RETURN a.name""")
     graph.createIndex("Label", "property")
 
     // when
-    val result = execute("match (a:Label), (b:Label) where a.property = b.property return *")
+    val result = executeWithNewPlanner("match (a:Label), (b:Label) where a.property = b.property return *")
 
     // then does not throw exceptions
     assert(result.toSet === Set(
@@ -1142,7 +1142,7 @@ RETURN a.name""")
     val b = createNode()
     val r = relate(a, b)
 
-    val result = execute("match (a)-[r*1..1]->(b) return r")
+    val result = executeWithNewPlanner("match (a)-[r*1..1]->(b) return r")
     result.toList should equal (List(Map("r" -> List(r))))
   }
 
