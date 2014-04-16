@@ -38,6 +38,8 @@ import static java.lang.String.format;
  */
 public class JettyLoggerAdapter implements Logger
 {
+    private boolean debugEnabled;
+
     private final Logging logging;
     private final StringLogger logger;
 
@@ -45,37 +47,45 @@ public class JettyLoggerAdapter implements Logger
     {
         this.logging = logging;
         this.logger = StringLogger.SYSTEM;
+        debugEnabled = logger.isDebugEnabled();
     }
 
     private JettyLoggerAdapter( Logging logging, StringLogger logger )
     {
         this.logging = logging;
         this.logger = logger;
+        debugEnabled = logger.isDebugEnabled();
     }
 
     @Override
     public void debug( String arg0, Throwable arg1 )
     {
-        try
+        if (debugEnabled)
         {
-            logger.debug( wrapNull( arg0 ), arg1 );
-        }
-        catch ( IllegalFormatException e )
-        {
-            logger.debug( safeFormat( arg0, arg1 ) );
+            try
+            {
+                logger.debug( wrapNull( arg0 ), arg1 );
+            }
+            catch ( IllegalFormatException e )
+            {
+                logger.debug( safeFormat( arg0, arg1 ) );
+            }
         }
     }
 
     @Override
     public void debug( String arg0, Object arg1, Object arg2 )
     {
-        try
+        if (debugEnabled)
         {
-            logger.debug( format( wrapNull( arg0 ), arg1, arg2 ) );
-        }
-        catch ( IllegalFormatException e )
-        {
-            logger.debug( safeFormat( arg0, arg1, arg2 ) );
+            try
+            {
+                logger.debug( format( wrapNull( arg0 ), arg1, arg2 ) );
+            }
+            catch ( IllegalFormatException e )
+            {
+                logger.debug( safeFormat( arg0, arg1, arg2 ) );
+            }
         }
     }
 
@@ -112,7 +122,7 @@ public class JettyLoggerAdapter implements Logger
     @Override
     public boolean isDebugEnabled()
     {
-        return true;
+        return debugEnabled;
     }
 
     @Override
