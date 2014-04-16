@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 
-import org.scalatest.FunSuite
 import org.neo4j.cypher.internal.compiler.v2_0.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_0.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.commons.CypherFunSuite
@@ -50,8 +49,10 @@ class SplitFunctionTest extends CypherFunSuite {
     split(",", ",") should be(Seq("",""))
   }
 
-  test("using an empty split pattern should throw exception") {
-    evaluating { split("banana", "") } should produce[IllegalArgumentException]
+  test("using an empty separator should split on every character") {
+    split("banana", "") should be(Seq("b", "a", "n", "a", "n", "a"))
+    split("a", "") should be(Seq("a"))
+    split("", "") should be(Seq(""))
   }
 
   private def split(orig: String, splitPattern: String) = {
