@@ -35,7 +35,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
   test("should throw when finding plan that does not solve all selections") {
     implicit val logicalPlanContext = newMockedLogicalPlanContext(
       planContext= newMockedPlanContext,
-      queryGraph = MainQueryGraph(Map.empty, Selections(Seq(Set.empty[IdName] -> null)), Set(IdName("a"), IdName("b")), Set.empty, Seq.empty)
+      queryGraph = MainQueryGraph(Map.empty, Selections(Seq(Set.empty[IdName] -> null)), Set(IdName("a"), IdName("b")), Set.empty, Set.empty, Seq.empty)
     )
     val plan = newMockedLogicalPlan("b")
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))
@@ -49,7 +49,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, VarPatternLength.unlimited)
     implicit val logicalPlanContext = newMockedLogicalPlanContext(
       planContext= newMockedPlanContext,
-      queryGraph = MainQueryGraph(Map.empty, Selections(), Set(IdName("a"), IdName("b")), Set(patternRel), Seq.empty)
+      queryGraph = MainQueryGraph(Map.empty, Selections(), Set(IdName("a"), IdName("b")), Set(patternRel), Set.empty, Seq.empty)
     )
     val plan = newMockedLogicalPlan("b")
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))

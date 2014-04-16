@@ -18,13 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
-import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{VarPatternLength, SimplePatternLength, PatternRelationship, IdName}
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.parser.CypherParser
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 
 class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -162,17 +161,31 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.coveredIds should equal(Set(IdName("n")))
   }
 
-  test("match (a)-[r]->(b) return a,r") {
-    val qg = buildQueryGraph("match (a)-[r]->(b) return a,r")
-    qg.patternRelationships should equal(
-      Set(PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
+  test("match p = (a) return p") {
+    val qg = buildQueryGraph("match p = (a) return p")
+    qg.namedPaths should equal(Set(NamedNodePath("p", "a")))
+    qg.patternRelationships should equal(Set())
+    qg.patternNodes should equal(Set[IdName]("a"))
+    qg.selections should equal(Selections(List()))
+    qg.projections should equal(Map[String, Identifier](
+      "p" -> Identifier("p")_
+    ))
+    qg.coveredIds should equal(Set[IdName]("a", "p"))
+  }
+
+  test("match p = (a)-[r]->(b) return a,r") {
+    val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+
+    val qg = buildQueryGraph("match p = (a)-[r]->(b) return a,r")
+    qg.namedPaths should equal(Set(NamedRelPath("p", Seq(patternRel))))
+    qg.patternRelationships should equal(Set(patternRel))
+    qg.patternNodes should equal(Set[IdName]("a", "b"))
     qg.selections should equal(Selections(List()))
     qg.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
+    qg.coveredIds should equal(Set[IdName]("a", "r", "b", "p"))
   }
 
   test("match (a)-[r]->(b)-[r2]->(c) return a,r,b") {

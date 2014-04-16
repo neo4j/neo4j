@@ -30,7 +30,7 @@ class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should add projection for expressions not already covered") {
     // given
     val projections = Map("42" -> SignedIntegerLiteral("42")(DummyPosition(0)))
-    val qg = MainQueryGraph(projections, Selections(), patternNodes = Set.empty, patternRelationships = Set.empty, Seq.empty)
+    val qg = MainQueryGraph(projections, Selections(), patternNodes = Set.empty, patternRelationships = Set.empty, namedPaths = Set.empty, Seq.empty)
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg
@@ -47,7 +47,7 @@ class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("does not add projection when not needed") {
     // given
     val projections = Map("n" -> Identifier("n")(DummyPosition(0)))
-    val qg = MainQueryGraph(projections, Selections(), patternNodes = Set.empty, patternRelationships = Set.empty, Seq.empty)
+    val qg = MainQueryGraph(projections, Selections(), patternNodes = Set.empty, patternRelationships = Set.empty, namedPaths = Set.empty, Seq.empty)
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg

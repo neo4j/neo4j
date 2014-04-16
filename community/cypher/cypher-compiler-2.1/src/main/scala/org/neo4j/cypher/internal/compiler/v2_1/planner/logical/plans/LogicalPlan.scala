@@ -85,6 +85,20 @@ final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir:
   def coveredIds: Set[IdName] = Set(name, nodes._1, nodes._2)
 }
 
+abstract class NamedPath {
+  def name: IdName
+  def coveredIds: Set[IdName]
+  def dependencies: Set[IdName] = coveredIds - name
+}
+
+final case class NamedRelPath(name: IdName, rels: Seq[PatternRelationship]) extends NamedPath {
+  def coveredIds = rels.flatMap(_.coveredIds).toSet + name
+}
+
+final case class NamedNodePath(name: IdName, node: IdName) extends NamedPath {
+  def coveredIds = Set(name, node)
+}
+
 object VarPatternLength {
   def unlimited = VarPatternLength(1, None)
   def fixed(length: Int) = VarPatternLength(length, Some(length))
@@ -101,4 +115,3 @@ case object SimplePatternLength extends PatternLength {
 case class VarPatternLength(min: Int, max: Option[Int]) extends PatternLength {
   def isSimple = false
 }
-

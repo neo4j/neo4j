@@ -29,7 +29,7 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
 
   test("simple all nodes scan") {
     // given
-    val qg = MainQueryGraph(Map("n" -> Identifier("n")_), Selections(), Set(IdName("n")), Set.empty, Seq.empty)
+    val qg = MainQueryGraph(Map("n" -> Identifier("n")_), Selections(), Set(IdName("n")), Set.empty, Set.empty, Seq.empty)
 
     val statistics = newMockedStatistics
     implicit val planContext = newMockedPlanContext

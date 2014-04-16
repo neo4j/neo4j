@@ -24,12 +24,16 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.includeBestPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, OptionalQueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, MainQueryGraph, OptionalQueryGraph}
 
 class GreedyPlanningStrategy extends PlanningStrategy {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = {
 
     val qg = context.queryGraph
+
+    if ( context.queryGraph.namedPaths.nonEmpty )
+      throw new CantHandleQueryException
+
     val leafPlans = generateLeafPlans()
     val leafPlansWithSelections = applySelections(leafPlans)
 

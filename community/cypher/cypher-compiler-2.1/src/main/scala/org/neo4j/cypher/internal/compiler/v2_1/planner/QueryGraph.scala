@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{NamedPath, PatternRelationship, IdName}
 
 abstract class QueryGraph {
   def selections: Selections
   def patternNodes: Set[IdName]
   def patternRelationships: Set[PatternRelationship]
+  def namedPaths: Set[NamedPath]
 
-  def coveredIds: Set[IdName] = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships)
+  def coveredIds: Set[IdName] = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships, namedPaths)
 
   def argumentIds: Set[IdName] = Set.empty
 
@@ -47,6 +48,7 @@ abstract class QueryGraph {
 case class OptionalQueryGraph(selections: Selections,
                               patternNodes: Set[IdName],
                               patternRelationships: Set[PatternRelationship],
+                              namedPaths: Set[NamedPath],
                               override val argumentIds: Set[IdName]) extends QueryGraph {
   def nullableIds = coveredIds -- argumentIds
 }
@@ -58,21 +60,22 @@ case class MainQueryGraph(projections: Map[String, Expression],
                           selections: Selections,
                           patternNodes: Set[IdName],
                           patternRelationships: Set[PatternRelationship],
+                          namedPaths: Set[NamedPath],
                           override val optionalMatches: Seq[OptionalQueryGraph]) extends QueryGraph {
 
   override def coveredIds: Set[IdName] = super.coveredIds ++ optionalMatches.flatMap(_.coveredIds)
 
-  def withAddedOptionalMatch(selections:Selections, nodes:Set[IdName], rels:Set[PatternRelationship]): MainQueryGraph = {
-    val argumentIds = coveredIds intersect QueryGraph.coveredIdsForPatterns(nodes, rels)
-    copy(optionalMatches = optionalMatches :+ OptionalQueryGraph(selections, nodes, rels, argumentIds))
+  def withAddedOptionalMatch(selections:Selections, nodes:Set[IdName], rels:Set[PatternRelationship], namedPaths: Set[NamedPath]): MainQueryGraph = {
+    val argumentIds = coveredIds intersect QueryGraph.coveredIdsForPatterns(nodes, rels, namedPaths)
+    copy(optionalMatches = optionalMatches :+ OptionalQueryGraph(selections, nodes, rels, namedPaths, argumentIds))
   }
 }
 
 object QueryGraph {
-  def empty: MainQueryGraph = MainQueryGraph(Map.empty, Selections(), Set.empty, Set.empty, Seq.empty)
+  def empty: MainQueryGraph = MainQueryGraph(Map.empty, Selections(), Set.empty, Set.empty, Set.empty, Seq.empty)
 
-  def coveredIdsForPatterns(patternNodes: Set[IdName], patternRels: Set[PatternRelationship]) =
-    patternNodes ++ patternRels.flatMap(_.coveredIds)
+  def coveredIdsForPatterns(patternNodes: Set[IdName], patternRels: Set[PatternRelationship], namedPaths: Set[NamedPath]) =
+    patternNodes ++ patternRels.flatMap(_.coveredIds) ++ namedPaths.flatMap(_.coveredIds)
 }
 
 object SelectionPredicates {

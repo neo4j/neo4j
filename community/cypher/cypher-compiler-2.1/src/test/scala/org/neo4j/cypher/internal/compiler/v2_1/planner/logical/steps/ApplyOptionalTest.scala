@@ -37,10 +37,12 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
       selections = Selections(),
       patternNodes = Set("a"),
       patternRelationships = Set.empty,
+      namedPaths = Set.empty,
       optionalMatches = Seq(OptionalQueryGraph(
         selections = Selections(),
         patternNodes = Set("a", "b"),
         patternRelationships = Set(patternRel),
+        namedPaths = Set.empty,
         argumentIds = Set("a")
       ))
     )
