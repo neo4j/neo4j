@@ -17,12 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan, NodeIndexUniqueSeek, NodeIndexSeek}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, LeafPlanner}
 
 abstract class IndexLeafPlanner extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =

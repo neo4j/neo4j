@@ -19,21 +19,31 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.compiler.v2_1
+import v2_1.planner.logical.plans.{Optional, Apply, LogicalPlan}
+import v2_1.planner.QueryGraph
+import v2_1.planner.logical.CandidateList
+import v2_1.planner.logical.LogicalPlanContext
+import v2_1.planner.logical.PlanTable
 
-object join {
+object applyOptional {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-    val joinPlans: Seq[NodeHashJoin] = (for {
-      planA <- planTable.plans
-      planB <- planTable.plans if planA != planB
-    } yield {
-      (planA.coveredIds & planB.coveredIds).toList match {
-        case id :: Nil => Some(NodeHashJoin(id, planA, planB))
-        case Nil => None
-        case _ => None
+    val applyCandidates =
+      for (optionalQG <- context.queryGraph.optionalMatches;
+           lhs <- planTable.plans if applicable(lhs, optionalQG))
+      yield {
+        val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG, argumentIds = lhs.coveredIds))
+
+        Apply(lhs, Optional(optionalQG.nullableIds, rhs))
       }
-    }).flatten
-    CandidateList(joinPlans)
+
+    CandidateList(applyCandidates)
+  }
+
+  private def applicable(outerPlan: LogicalPlan, optionalQG: QueryGraph) = {
+    val providedIds = outerPlan.coveredIds
+    val hasDependencies = optionalQG.argumentIds.forall(providedIds.contains)
+    val isSolved = (optionalQG.coveredIds -- providedIds).isEmpty
+    hasDependencies && !isSolved
   }
 }

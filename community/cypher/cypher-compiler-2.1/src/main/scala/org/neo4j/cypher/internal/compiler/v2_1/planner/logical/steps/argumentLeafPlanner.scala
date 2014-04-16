@@ -17,18 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, PatternRelationship, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SingleRow, LogicalPlan, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, LeafPlanner}
 
-case class Apply(outer: LogicalPlan, inner: LogicalPlan) extends LogicalPlan {
-
-  val lhs = Some(outer)
-  val rhs = Some(inner)
-
-  def coveredIds: Set[IdName] = outer.coveredIds ++ inner.coveredIds
-
-  def solvedPredicates: Seq[Expression] = outer.solvedPredicates
-  def solvedPatterns: Seq[PatternRelationship] = outer.solvedPatterns
+case class argumentLeafPlanner(argumentIds: Set[IdName]) extends LeafPlanner {
+  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
+    argumentIds.map(argumentId => SingleRow(Set(argumentId))).toSeq
 }

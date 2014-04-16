@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, LogicalPlanningTestSupport, QueryGraph, Selections}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.allNodesLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.allNodesLeafPlanner
 
 class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 

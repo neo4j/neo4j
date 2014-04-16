@@ -17,19 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, LogicalPlan, IdName}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
+case class Apply(outer: LogicalPlan, inner: LogicalPlan) extends LogicalPlan {
 
-case class Optional(nullableIds: Set[IdName], inputPlan: LogicalPlan) extends LogicalPlan {
+  val lhs = Some(outer)
+  val rhs = Some(inner)
 
-  override val lhs = Some(inputPlan)
-  override val rhs = None
+  def coveredIds: Set[IdName] = outer.coveredIds ++ inner.coveredIds
 
-  def coveredIds: Set[IdName] = inputPlan.coveredIds ++ nullableIds
-
-  def solvedPredicates: Seq[Expression] = inputPlan.solvedPredicates
-  def solvedPatterns: Seq[PatternRelationship] = inputPlan.solvedPatterns
+  def solvedPredicates: Seq[Expression] = outer.solvedPredicates
+  def solvedPatterns: Seq[PatternRelationship] = outer.solvedPatterns
 }

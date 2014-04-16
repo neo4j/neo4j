@@ -24,8 +24,8 @@ import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, LabelName, Identifier, HasLabels}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, LogicalPlanningTestSupport, QueryGraph, Selections}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.labelScanLeafPlanner
 import org.mockito.Matchers._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.labelScanLeafPlanner
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
