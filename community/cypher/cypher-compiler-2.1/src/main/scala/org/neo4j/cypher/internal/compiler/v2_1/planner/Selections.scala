@@ -24,14 +24,12 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
 case class Selections(predicates: Seq[(Set[IdName], Expression)] = Seq.empty) {
-  def apply(availableIds: Set[IdName]): Seq[Expression] =
-    predicates.collect { case (k, v) if k.subsetOf(availableIds) => v }
-
-  def flatPredicates: Seq[Expression] = {
-    val flatPredicatesBuilder = Seq.newBuilder[Expression]
-    predicates.foreach( flatPredicatesBuilder += _._2 )
-    flatPredicatesBuilder.result()
+  def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
+    case (deps, predicate) if (deps -- ids).isEmpty => predicate
   }
+
+  def flatPredicates: Seq[Expression] =
+    predicates.map(_._2)
 
   def labelPredicates: Map[IdName, Set[HasLabels]] = {
     predicates.foldLeft(Map.empty[IdName, Set[HasLabels]]) { case (m, pair) =>
@@ -52,8 +50,4 @@ case class Selections(predicates: Seq[(Set[IdName], Expression)] = Seq.empty) {
 
   def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
     flatPredicates.forall( solvedPredicates.contains )
-
-  def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
-    case (deps, predicate) if (deps -- ids).isEmpty => predicate
-  }
 }

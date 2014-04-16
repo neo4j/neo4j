@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{HasLabels, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, HasLabels, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
@@ -62,21 +62,15 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       math.min(cardinality(left), cardinality(right))
 
     case expand @ Expand(left, _, dir, types, _, _, length) =>
-      val degree = if (types.size <= 0)
-        DEFAULT_EXPAND_RELATIONSHIP_DEGREE // statistics.degreeWithoutKnowingAnything()
-      else
-        types.foldLeft(0.0)((sum, t) => sum + degreeByRelationshipTypeAndDirection(t.id, dir)) / types.size
+      val degree = degreeByRelationshipTypesAndDirection(types, dir)
+      cardinality(left) * math.pow(degree, averagePathLength(length))
 
-      val maxLength = length match {
-        case SimplePatternLength              => 1
-        case VarPatternLength(_, Some(depth)) => depth
-        case VarPatternLength(_, None)        => 42
-      }
-
-      cardinality(left) * math.pow(degree, maxLength)
+    case expand @ OptionalExpand(left, _, dir, types, _, _, length, predicates) =>
+      val degree = degreeByRelationshipTypesAndDirection(types, dir)
+      cardinality(left) * math.pow(degree, averagePathLength(length)) * predicateSelectivity(predicates)
 
     case Selection(predicates, left) =>
-      cardinality(left) * predicates.map(selectivity).foldLeft(1.0)(_ * _)
+      cardinality(left) * predicateSelectivity(predicates)
 
     case CartesianProduct(left, right) =>
       cardinality(left) * cardinality(right)
@@ -99,6 +93,21 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case SingleRow(_) =>
       1
   }
+
+  def averagePathLength(length:PatternLength) = length match {
+    case SimplePatternLength              => 1
+    case VarPatternLength(_, Some(depth)) => depth
+    case VarPatternLength(_, None)        => 42
+  }
+
+  private def degreeByRelationshipTypesAndDirection(types: Seq[RelTypeName], dir: Direction) =
+    if (types.size <= 0)
+      DEFAULT_EXPAND_RELATIONSHIP_DEGREE
+    else
+      types.foldLeft(0.0)((sum, t) => sum + degreeByRelationshipTypeAndDirection(t.id, dir)) / types.size
+
+  private def predicateSelectivity(predicates: Seq[Expression]): Double =
+    predicates.map(selectivity).foldLeft(1.0)(_ * _)
 
   private def degreeByRelationshipTypeAndDirection(optId: Option[RelTypeId], direction: Direction) = optId match {
     case Some(id) => statistics.degreeByRelationshipTypeAndDirection(id, direction)
