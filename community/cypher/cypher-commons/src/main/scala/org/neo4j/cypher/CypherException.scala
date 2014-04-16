@@ -58,6 +58,10 @@ class ParameterWrongTypeException(message: String, cause: Throwable) extends Cyp
   val status = Status.Statement.InvalidType
 }
 
+class InvalidArgumentException(message: String, cause: Throwable = null) extends CypherException(message, cause) {
+  val status = Status.Statement.InvalidArguments
+}
+
 class PatternException(message: String) extends CypherException(message, null) {
   val status = Status.Statement.InvalidSemantics
 }

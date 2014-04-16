@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.commands.expressions
 import org.neo4j.cypher.internal.compiler.v2_0._
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.{InvalidArgumentException, CypherTypeException}
 import java.lang.Math
 
 abstract class MathFunction(arg: Expression) extends Expression with NumericHelper {
@@ -235,9 +235,14 @@ case class RandFunction() extends Expression {
 case class RangeFunction(start: Expression, end: Expression, step: Expression) extends Expression with NumericHelper {
   def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
     val startVal = asInt(start(ctx))
-    val endVal = asInt(end(ctx))
+    val inclusiveEndVal = asInt(end(ctx))
     val stepVal = asInt(step(ctx))
-    new Range(startVal, endVal + 1, stepVal).toList
+
+    if (stepVal == 0)
+      throw new InvalidArgumentException("step argument to range() cannot be zero")
+
+    val exclusiveEndVal = inclusiveEndVal + stepVal.signum
+    new Range(startVal, exclusiveEndVal, stepVal).toList
   }
 
   def arguments = Seq(start, end, step)
