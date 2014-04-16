@@ -26,7 +26,7 @@ case class Apply(outer: LogicalPlan, inner: LogicalPlan) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
 
-  def coveredIds: Set[IdName] = outer.coveredIds ++ inner.coveredIds
+  val coveredIds: Set[IdName] = outer.coveredIds ++ inner.coveredIds
 
   def solvedPredicates: Seq[Expression] = outer.solvedPredicates
   def solvedPatterns: Seq[PatternRelationship] = outer.solvedPatterns

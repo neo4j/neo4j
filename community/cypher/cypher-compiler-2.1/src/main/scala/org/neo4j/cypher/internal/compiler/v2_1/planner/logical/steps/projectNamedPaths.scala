@@ -19,19 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Optional
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateGenerator, CandidateList, LogicalPlanContext, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, LogicalPlanContext, PlanTable, CandidateGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, NamedPath, ProjectNamedPath}
 
-object optional extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-    val optionalCandidates =
-      for (optionalQG <- context.queryGraph.optionalMatches if optionalQG.argumentIds.isEmpty)
-      yield {
-        val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG))
-
-        Optional(optionalQG.nullableIds, rhs)
+object projectNamedPaths extends CandidateGenerator[PlanTable] {
+  def apply(input: PlanTable)(implicit context: LogicalPlanContext): CandidateList =
+    CandidateList(
+      for {
+        plan <- input.plans
+        namedPath <- context.queryGraph.namedPaths if applicable(namedPath, plan)
       }
+        yield ProjectNamedPath(namedPath, plan)
+    )
 
-    CandidateList(optionalCandidates)
+  private def applicable(namedPath: NamedPath, plan: LogicalPlan) = {
+    val coveredIds = plan.coveredIds
+
+    def wasProjected = coveredIds(namedPath.name)
+    def dependenciesFulfilled = (namedPath.dependencies -- coveredIds).isEmpty
+
+    !wasProjected && dependenciesFulfilled
   }
 }

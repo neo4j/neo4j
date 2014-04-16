@@ -31,9 +31,6 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
 
-    if (context.queryGraph.namedPaths.nonEmpty )
-      throw new CantHandleQueryException
-
     def generateLeafPlanTable() = {
       val leafPlanCandidateLists = config.leafPlanners.candidateLists(context.queryGraph)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select))
@@ -41,10 +38,11 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
       bestLeafPlans.foldLeft(PlanTable())(_ + _)
     }
 
-    def solveExpandsOrJoins(planTable: PlanTable) = {
+    def solveExtensions(planTable: PlanTable) = {
       val expansions = expand(planTable)
       val joins = join(planTable)
-      selectAndPick(planTable)(expansions ++ joins)
+      val namedPaths = projectNamedPaths(planTable)
+      selectAndPick(planTable)(expansions ++ joins ++ namedPaths)
     }
 
     def solveCartesianProducts(planTable: PlanTable) = {
@@ -64,7 +62,7 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
 
     val leafPlanTable = generateLeafPlanTable()
 
-    val planTableAfterExpandOrJoin = iterateUntilConverged(solveExpandsOrJoins)(leafPlanTable)
+    val planTableAfterExpandOrJoin = iterateUntilConverged(solveExtensions)(leafPlanTable)
     val planTableAfterCartesianProduct = iterateUntilConverged(solveCartesianProducts)(planTableAfterExpandOrJoin)
 
     val bestPlan = context.queryGraph match {

@@ -21,13 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class Optional(nullableIds: Set[IdName], inputPlan: LogicalPlan) extends LogicalPlan {
+case class ProjectNamedPath(namedPath: NamedPath, left: LogicalPlan) extends LogicalPlan {
 
-  val lhs = Some(inputPlan)
-  val rhs = None
+  def lhs = Some(left)
 
-  val coveredIds: Set[IdName] = inputPlan.coveredIds ++ nullableIds
+  def rhs = None
 
-  def solvedPredicates: Seq[Expression] = inputPlan.solvedPredicates
-  def solvedPatterns: Seq[PatternRelationship] = inputPlan.solvedPatterns
+  val coveredIds: Set[IdName] = namedPath.coveredIds ++ left.coveredIds
+
+  def solvedPredicates: Seq[Expression] = left.solvedPredicates
+
+  def solvedPatterns: Seq[PatternRelationship] = left.solvedPatterns
 }
