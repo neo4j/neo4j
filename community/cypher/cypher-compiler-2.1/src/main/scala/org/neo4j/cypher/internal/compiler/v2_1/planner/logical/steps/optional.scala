@@ -20,20 +20,23 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Optional, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 
-object join {
+object optional {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-    val joinPlans: Seq[NodeHashJoin] = (for {
-      planA <- planTable.plans
-      planB <- planTable.plans if planA != planB
-    } yield {
-      (planA.coveredIds & planB.coveredIds).toList match {
-        case id :: Nil => Some(NodeHashJoin(id, planA, planB))
-        case Nil => None
-        case _ => None
+    val optionalCandidates =
+      for (optionalQG <- context.queryGraph.optionalMatches if optionalQG.argumentIds.isEmpty)
+      yield {
+        val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG))
+
+        Optional(optionalQG.nullableIds, rhs)
       }
-    }).flatten
-    CandidateList(joinPlans)
+
+
+    CandidateList(optionalCandidates)
   }
 }

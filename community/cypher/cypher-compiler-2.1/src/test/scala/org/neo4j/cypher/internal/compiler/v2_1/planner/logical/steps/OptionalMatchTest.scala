@@ -25,14 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.OptionalQueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.MainQueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Optional, Apply, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 
 class OptionalMatchTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -69,7 +62,7 @@ class OptionalMatchTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = Expand(SingleRow(Set("a")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
 
-    optionalMatch(planTable).topPlan(context.cost) should equal(Some(Apply(inputPlan, Optional(Set("b", "r"), innerPlan))))
+    applyOptional(planTable).topPlan(context.cost) should equal(Some(Apply(inputPlan, Optional(Set("b", "r"), innerPlan))))
   }
 
   test("should introduce apply for unsolved exclusive optional match") {
@@ -104,6 +97,6 @@ class OptionalMatchTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val planTable = PlanTable(Map())
     val innerPlan = Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
 
-    optionalMatch(planTable).topPlan(context.cost) should equal(Some(Optional(Set("a", "b", "r"), innerPlan)))
+    applyOptional(planTable).topPlan(context.cost) should equal(Some(Optional(Set("a", "b", "r"), innerPlan)))
   }
 }

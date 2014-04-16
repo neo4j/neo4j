@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.idSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 import org.mockito.Matchers._
 import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.idSeekLeafPlanner
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 

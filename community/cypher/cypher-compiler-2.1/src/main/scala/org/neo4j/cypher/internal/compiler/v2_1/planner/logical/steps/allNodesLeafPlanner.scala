@@ -19,21 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, AllNodesScan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, LeafPlanner}
 
-object join {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-    val joinPlans: Seq[NodeHashJoin] = (for {
-      planA <- planTable.plans
-      planB <- planTable.plans if planA != planB
-    } yield {
-      (planA.coveredIds & planB.coveredIds).toList match {
-        case id :: Nil => Some(NodeHashJoin(id, planA, planB))
-        case Nil => None
-        case _ => None
-      }
-    }).flatten
-    CandidateList(joinPlans)
-  }
+case class allNodesLeafPlanner() extends LeafPlanner {
+  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
+    context.queryGraph.patternNodes.toSeq.map {
+      case idName => AllNodesScan(idName)
+    }
 }

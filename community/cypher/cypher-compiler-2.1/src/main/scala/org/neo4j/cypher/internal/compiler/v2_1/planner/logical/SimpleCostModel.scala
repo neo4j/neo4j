@@ -76,6 +76,9 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)
 
+    case expand: OptionalExpand =>
+      cost(expand.left) + cardinality(expand) * expand.predicates.length * EXPRESSION_SELECTION_OVERHEAD_PER_ROW
+
     case optional: Optional =>
       cost(optional.inputPlan)
 
