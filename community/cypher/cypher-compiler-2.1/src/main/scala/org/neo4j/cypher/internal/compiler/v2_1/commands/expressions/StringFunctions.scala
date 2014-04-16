@@ -29,6 +29,7 @@ import org.neo4j.cypher.CypherTypeException
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import scala.collection.Map
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.IsMap
+import scala.annotation.tailrec
 
 abstract class StringFunction(arg: Expression) extends NullInNullOutExpression(arg) with StringHelper with CollectionSupport {
   def innerExpectedType = CTString
@@ -199,45 +200,41 @@ case class ReplaceFunction(orig: Expression, search: Expression, replaceWith: Ex
                                 search.symbolTableDependencies ++
                                 replaceWith.symbolTableDependencies
 }
-case class SplitFunction(orig: Expression, splitPattern: Expression)
+case class SplitFunction(orig: Expression, separator: Expression)
   extends NullInNullOutExpression(orig) with StringHelper {
   def compute(value: Any, m: ExecutionContext)(implicit state: QueryState): Any = {
     val origVal = asString(orig(m))
-    val splitPatternVal = asString(splitPattern(m))
+    val separatorVal = asString(separator(m))
 
-    if (origVal == null || splitPatternVal == null) {
+    if (origVal == null || separatorVal == null) {
       null
     } else {
-      if (splitPatternVal.length > 0) {
-        split(origVal, splitPatternVal)
+      if (separatorVal.length > 0) {
+        split(Vector.empty, origVal, 0, separatorVal)
+      } else if (origVal.isEmpty) {
+        Vector("")
       } else {
-        throw new IllegalArgumentException("The split pattern must not be an empty string")
+        origVal.sliding(1).toList
       }
     }
   }
 
-  private def split(orig: String, splitPattern: String): Seq[String] = {
-    val parts = Seq.newBuilder[String]
-    val splitPatternLen = splitPattern.length
-    var remainder = orig
-    var index = remainder.indexOf(splitPattern)
-    while (index >= 0) {
-      parts += remainder.substring(0, index)
-      remainder = remainder.substring(index + splitPatternLen)
-      index = remainder.indexOf(splitPattern)
-    }
-
-    parts += remainder
-    parts.result()
+  @tailrec
+  private def split(parts: Vector[String], string: String, from: Int, separator: String): Vector[String] = {
+    val index = string.indexOf(separator, from)
+    if (index < 0)
+      parts :+ string.substring(from)
+    else
+      split(parts :+ string.substring(from, index), string, index + separator.length, separator)
   }
 
-  def arguments = Seq(orig, splitPattern)
+  def arguments = Seq(orig, separator)
 
-  def rewrite(f: (Expression) => Expression) = f(SplitFunction(orig.rewrite(f), splitPattern.rewrite(f)))
+  def rewrite(f: (Expression) => Expression) = f(SplitFunction(orig.rewrite(f), separator.rewrite(f)))
 
   def calculateType(symbols: SymbolTable) = CTCollection(CTString)
 
-  def symbolTableDependencies = orig.symbolTableDependencies ++ splitPattern.symbolTableDependencies
+  def symbolTableDependencies = orig.symbolTableDependencies ++ separator.symbolTableDependencies
 }
 
 case class LeftFunction(orig: Expression, length: Expression)
