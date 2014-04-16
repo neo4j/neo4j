@@ -249,6 +249,25 @@
               <outputDirectory>${project.build.directory}/src</outputDirectory>
             </configuration>
           </execution>
+          <execution>
+            <id>copy-csv-to-target</id>
+            <phase>compile</phase>
+            <goals>
+              <goal>copy-resources</goal>
+            </goals>
+            <configuration>
+              <outputDirectory>${project.build.directory}/docbkx/webhelp/csv</outputDirectory>
+              <resources>
+                <resource>
+                  <directory>${docs.sources}/neo4j-cypher-docs-docs-jar/graphgists</directory>
+                  <filtering>false</filtering>
+                  <includes>
+                    <include>**/*.csv</include>
+                  </includes>
+                </resource>
+              </resources>
+            </configuration>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -610,31 +629,6 @@
             <exclude>src/js/**</exclude>
           </excludes>
         </configuration>
-      </plugin>
-      <plugin>
-        <groupId>com.github.goldin</groupId>
-        <artifactId>copy-maven-plugin</artifactId>
-        <version>0.2.5</version>
-        <executions>
-          <execution>
-            <id>copy-images</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <verbose>true</verbose>
-              <resources>
-                <resource>
-                  <directory>${docs.sources}/neo4j-cypher-docs-docs-jar/graphgists</directory>
-                  <targetPath>${project.build.directory}/chunked/csv</targetPath>
-                  <preservePath>true</preservePath>
-                  <include>**/*.csv</include>
-                </resource>
-              </resources>
-            </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <artifactId>maven-jar-plugin</artifactId>
