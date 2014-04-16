@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan, NodeByLabelScan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, AllNodesScan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, LeafPlanner}
 
-case class labelScanLeafPlanner(labelPredicateMap: Map[IdName, Set[HasLabels]]) extends LeafPlanner {
+case class allNodesLeafPlanner() extends LeafPlanner {
   def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
-    for (idName <- context.queryGraph.patternNodes.toSeq;
-         labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
-         labelName <- labelPredicate.labels) yield
-      NodeByLabelScan(idName, labelName.toEither())(Seq(labelPredicate))
+    context.queryGraph.patternNodes.toSeq.map {
+      case idName => AllNodesScan(idName)
+    }
 }

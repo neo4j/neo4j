@@ -26,18 +26,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 
-object optionalMatch {
+object optional {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-
-    val applyCandidates =
-      for (optionalQG <- context.queryGraph.optionalMatches;
-           lhs <- planTable.plans if applicable(lhs, optionalQG))
-      yield {
-        val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG, argumentIds = lhs.coveredIds))
-
-        Apply(lhs, Optional(optionalQG.nullableIds, rhs))
-      }
-
     val optionalCandidates =
       for (optionalQG <- context.queryGraph.optionalMatches if optionalQG.argumentIds.isEmpty)
       yield {
@@ -47,13 +37,6 @@ object optionalMatch {
       }
 
 
-    CandidateList(applyCandidates ++ optionalCandidates)
-  }
-
-  private def applicable(outerPlan: LogicalPlan, optionalQG: QueryGraph) = {
-    val providedIds = outerPlan.coveredIds
-    val hasDependencies = optionalQG.argumentIds.forall(providedIds.contains)
-    val isSolved = (optionalQG.coveredIds -- providedIds).isEmpty
-    hasDependencies && !isSolved
+    CandidateList(optionalCandidates)
   }
 }

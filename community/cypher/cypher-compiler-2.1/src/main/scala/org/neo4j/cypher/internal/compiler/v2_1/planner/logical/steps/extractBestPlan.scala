@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
+import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
-import org.neo4j.cypher.{InternalException, SyntaxException}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, SingleRow}
 
