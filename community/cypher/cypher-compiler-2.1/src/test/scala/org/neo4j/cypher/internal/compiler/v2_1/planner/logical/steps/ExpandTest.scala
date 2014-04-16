@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, LogicalPlanningTestSupport, Selections, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, LogicalPlanningTestSupport, Selections}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Equals}
-import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
 
 class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -94,7 +93,7 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     expand(plan) should equal(CandidateList(Seq(
-      Selection(Seq(Equals(Identifier(aNode.name)(pos), Identifier(aNode.name + "$$$")(pos))(pos)),
+      Selection(Seq(Equals(Identifier(aNode.name)_, Identifier(aNode.name + "$$$")_)_),
         Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty,
           to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength)(null)
       ))))
@@ -109,11 +108,11 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val plan = PlanTable(Map(Set(aNode) -> aAndB))
 
     expand(plan) should equal(CandidateList(Seq(
-      Selection(Seq(Equals(Identifier(bNode.name)(pos), Identifier(bNode.name + "$$$")(pos))(pos)),
+      Selection(Seq(Equals(Identifier(bNode.name)_, Identifier(bNode.name + "$$$")_)_),
         Expand(left = aAndB, from = aNode, dir = Direction.OUTGOING, types = Seq.empty,
           to = IdName(bNode.name + "$$$"), relName = rName, SimplePatternLength)(null)
       ),
-      Selection(Seq(Equals(Identifier(aNode.name)(pos), Identifier(aNode.name + "$$$")(pos))(pos)),
+      Selection(Seq(Equals(Identifier(aNode.name)_, Identifier(aNode.name + "$$$")_)_),
         Expand(left = aAndB, from = bNode, dir = Direction.INCOMING, types = Seq.empty,
           to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength)(null)
       ))))
@@ -131,7 +130,4 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName, rVarRel.length)(null)
     )))
   }
-
-
-  def pos: InputPosition = null
 }

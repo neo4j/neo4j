@@ -20,29 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.DirectedRelationshipByIdSeekPipe
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.ProjectionNewPipe
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.DirectedRelationshipByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByLabelScanPipe
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Collection, SignedIntegerLiteral}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NullPipe
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.AllNodesScanPipe
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.NodeByIdSeekPipe
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.CartesianProductPipe
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
 import org.neo4j.graphdb.Direction
 
 class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -52,10 +36,9 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   implicit val context = newMockedLogicalPlanContext(planContext)
 
   val planBuilder = new PipeExecutionPlanBuilder(monitors)
-  val pos = DummyPosition(0)
 
   test("projection only query") {
-    val logicalPlan = Projection(SingleRow(), Map("42" -> SignedIntegerLiteral("42")(pos)))
+    val logicalPlan = Projection(SingleRow(), Map("42" -> SignedIntegerLiteral("42")_))
     val pipeInfo = planBuilder.build(logicalPlan)
 
     pipeInfo should not be 'updating
@@ -82,7 +65,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("simple node by id seek query") {
-    val astLiteral = SignedIntegerLiteral("42")(pos)
+    val astLiteral: SignedIntegerLiteral = SignedIntegerLiteral("42")_
     val logicalPlan = NodeByIdSeek(IdName("n"), Seq(astLiteral))(Seq.empty)
     val pipeInfo = planBuilder.build(logicalPlan)
 
@@ -92,9 +75,9 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("simple node by id seek query with multiple values") {
-    val astCollection = Collection(
-      Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
-    )(pos)
+    val astCollection: Collection = Collection(
+      Seq(SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_)
+    )_
     val logicalPlan = NodeByIdSeek(IdName("n"), Seq(astCollection))(Seq.empty)
     val pipeInfo = planBuilder.build(logicalPlan)
 
@@ -104,7 +87,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("simple relationship by id seek query") {
-    val astLiteral = SignedIntegerLiteral("42")(pos)
+    val astLiteral: SignedIntegerLiteral = SignedIntegerLiteral("42")_
     val fromNode = "from"
     val toNode = "to"
     val logicalPlan = DirectedRelationshipByIdSeek(IdName("r"), Seq(astLiteral), IdName(fromNode), IdName(toNode))(null, Seq.empty)
@@ -116,8 +99,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("simple relationship by id seek query with multiple values") {
-    val astCollection =
-      Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
+    val astCollection: Seq[SignedIntegerLiteral] =
+      Seq(SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_)
 
     val fromNode = "from"
     val toNode = "to"
@@ -130,8 +113,8 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
   }
 
   test("simple undirected relationship by id seek query with multiple values") {
-    val astCollection =
-      Seq(SignedIntegerLiteral("42")(pos), SignedIntegerLiteral("43")(pos), SignedIntegerLiteral("43")(pos))
+    val astCollection: Seq[SignedIntegerLiteral] =
+      Seq(SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_)
 
     val fromNode = "from"
     val toNode = "to"
