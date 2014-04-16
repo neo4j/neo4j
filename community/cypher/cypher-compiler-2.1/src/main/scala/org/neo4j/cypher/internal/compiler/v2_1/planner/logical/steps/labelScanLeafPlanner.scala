@@ -19,14 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan, NodeByLabelScan}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, LeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, LogicalPlanContext, LeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-case class labelScanLeafPlanner(labelPredicateMap: Map[IdName, Set[HasLabels]]) extends LeafPlanner {
-  def apply(ignored: Unit)(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
-    for (idName <- context.queryGraph.patternNodes.toSeq;
-         labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
-         labelName <- labelPredicate.labels) yield
-      NodeByLabelScan(idName, labelName.toEither())(Seq(labelPredicate))
+object labelScanLeafPlanner extends LeafPlanner {
+  def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
+    val labelPredicateMap = qg.selections.labelPredicates
+
+    CandidateList(
+      for (idName <- qg.patternNodes.toSeq;
+           labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
+           labelName <- labelPredicate.labels) yield
+        NodeByLabelScan(idName, labelName.toEither())(Seq(labelPredicate))
+    )
+  }
 }

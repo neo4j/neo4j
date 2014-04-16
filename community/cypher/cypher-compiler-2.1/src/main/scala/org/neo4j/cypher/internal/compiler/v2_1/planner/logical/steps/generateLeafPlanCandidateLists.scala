@@ -29,28 +29,28 @@ object generateLeafPlanCandidateLists {
     val predicates: Seq[Expression] = qg.selections.flatPredicates
     val labelPredicateMap = qg.selections.labelPredicates
 
-    val leafPlanners: Seq[LeafPlanner] = Seq(
+    val plans = Seq(
       // arguments from the outside in case we are in a sub query,
-      argumentLeafPlanner(context.argumentIds),
+      argumentLeafPlanner(qg).plans,
 
       // MATCH n WHERE id(n) = {id} RETURN n
-      idSeekLeafPlanner(predicates),
+      idSeekLeafPlanner(qg).plans,
 
       // MATCH n WHERE n.prop = {val} RETURN n
-      uniqueIndexSeekLeafPlanner(predicates, labelPredicateMap),
+      uniqueIndexSeekLeafPlanner(qg).plans,
 
       // MATCH n WHERE n.prop = {val} RETURN n
-      indexSeekLeafPlanner(predicates, labelPredicateMap),
+      indexSeekLeafPlanner(qg).plans,
 
       // MATCH (n:Person) RETURN n
-      labelScanLeafPlanner(labelPredicateMap),
+      labelScanLeafPlanner(qg).plans,
 
       // MATCH n RETURN n
-      allNodesLeafPlanner()
-    )
+      allNodesLeafPlanner(qg).plans
+    ).flatten
 
 
-    val plans: Seq[LogicalPlan] = leafPlanners.flatMap(_.apply())
+    // val plans = leafPlanners.flatMap(_.apply().plans)
     plans.groupBy(_.coveredIds).values.map(CandidateList)
   }
 }

@@ -66,7 +66,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     when(context.planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator())
 
     // when
-    val resultPlans = indexSeekLeafPlanner(expressions, Map(idName -> Set(hasLabels)))()
+    val resultPlans = indexSeekLeafPlanner(qg).plans
 
     // then
     resultPlans should equal(Seq(NodeIndexSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)()))
@@ -104,7 +104,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     })
 
     // when
-    val resultPlans = uniqueIndexSeekLeafPlanner(expressions, Map(idName -> Set(hasLabels)))()
+    val resultPlans = uniqueIndexSeekLeafPlanner(qg).plans
 
     // then
     resultPlans should equal(Seq(NodeIndexUniqueSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)()))

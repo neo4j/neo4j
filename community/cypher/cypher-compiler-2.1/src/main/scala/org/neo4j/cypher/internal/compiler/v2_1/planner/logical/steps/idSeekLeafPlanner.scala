@@ -21,36 +21,40 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LeafPlanner, CandidateList, LogicalPlanContext}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, DirectedRelationshipByIdSeek, UndirectedRelationshipByIdSeek}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
-  def apply(ignored: Unit)(implicit context: LogicalPlanContext): Seq[LogicalPlan] = {
-    predicates.collect {
-      // MATCH (a)-[r]->b WHERE id(r) = value
-      // MATCH a WHERE id(a) = value
-      case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr)) =>
-        (predicate, idExpr, Seq(idValueExpr))
+object idSeekLeafPlanner extends LeafPlanner {
+  def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
+    val predicates: Seq[Expression] = qg.selections.flatPredicates
 
-      // MATCH (a)-[r]->b WHERE id(r) IN value
-      // MATCH a WHERE id(a) IN value
-      case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
-        if idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
-        (predicate, idExpr, idValueExprs)
-    }.collect {
-      case (predicate, Identifier(idName), idValues) =>
-        context.queryGraph.patternRelationships.find(_.name.name == idName) match {
-          case Some(relationship) =>
-            createRelationshipByIdSeek(relationship, idValues, predicate)
-          case None =>
-            NodeByIdSeek(IdName(idName), idValues)(Seq(predicate))
-        }
-    }
+    CandidateList(
+      predicates.collect {
+        // MATCH (a)-[r]->b WHERE id(r) = value
+        // MATCH a WHERE id(a) = value
+        case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr)) =>
+          (predicate, idExpr, Seq(idValueExpr))
+
+        // MATCH (a)-[r]->b WHERE id(r) IN value
+        // MATCH a WHERE id(a) IN value
+        case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
+          if idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
+          (predicate, idExpr, idValueExprs)
+      }.collect {
+        case (predicate, Identifier(idName), idValues) =>
+          context.queryGraph.patternRelationships.find(_.name.name == idName) match {
+            case Some(relationship) =>
+              createRelationshipByIdSeek(relationship, idValues, predicate)
+            case None =>
+              NodeByIdSeek(IdName(idName), idValues)(Seq(predicate))
+          }
+      }
+    )
   }
 
   def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): LogicalPlan = {

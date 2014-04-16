@@ -20,11 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 trait LogicalPlanningFunction[-A, +B] {
   def apply(input: A)(implicit context: LogicalPlanContext): B
 
   def asFunction(implicit context: LogicalPlanContext): A => B = apply
+}
+
+trait LogicalPlanningAction[+B] {
+  self: LogicalPlanningFunction[Unit, B] =>
+
+  final def apply(input: Unit)(implicit context: LogicalPlanContext): B = apply
+
+  def apply()(implicit context: LogicalPlanContext): B
 }
 
 trait CandidateGenerator[-T] extends LogicalPlanningFunction[T, CandidateList]
@@ -33,6 +42,6 @@ trait CandidateSelector extends LogicalPlanningFunction[CandidateList, Option[Lo
 
 trait PlanTransformer extends LogicalPlanningFunction[LogicalPlan, LogicalPlan]
 
-trait LeafPlanner extends LogicalPlanningFunction[Unit, Seq[LogicalPlan]]
+trait LeafPlanner extends CandidateGenerator[QueryGraph]
 
 
