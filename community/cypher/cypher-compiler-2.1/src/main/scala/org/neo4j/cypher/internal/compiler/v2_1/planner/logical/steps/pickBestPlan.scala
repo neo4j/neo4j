@@ -19,23 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName, Projection}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.MainQueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, LogicalPlanContext, CandidateSelector}
 
-object project {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
-    val ids: Map[String, Expression] = plan.coveredIds.map {
-      case IdName(id) => id -> Identifier(id)(null)
-    }.toMap
-
-    context.queryGraph match {
-      case main: MainQueryGraph if ids != main.projections =>
-        Projection(plan, main.projections)
-      case _ =>
-        plan
-    }
-  }
+object pickBestPlan extends CandidateSelector {
+  def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): Option[LogicalPlan] =
+    candidateList.bestPlan(context.cost)
 }

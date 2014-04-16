@@ -19,10 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanningFunction, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName, Projection}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.MainQueryGraph
 
-case class includeBestPlan(planTable: PlanTable) {
-  def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): PlanTable = {
-    candidateList.topPlan(context.cost).foldLeft(planTable)(_ + _)
+object projectPlan extends PlanTransformer {
+  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+    val ids: Map[String, Expression] = plan.coveredIds.map {
+      case IdName(id) => id -> Identifier(id)(null)
+    }.toMap
+
+    context.queryGraph match {
+      case main: MainQueryGraph if ids != main.projections =>
+        Projection(plan, main.projections)
+      case _ =>
+        plan
+    }
   }
 }

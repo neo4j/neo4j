@@ -23,6 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SingleRow,
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, LeafPlanner}
 
 case class argumentLeafPlanner(argumentIds: Set[IdName]) extends LeafPlanner {
-  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
+  def apply(ignored: Unit)(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
     argumentIds.map(argumentId => SingleRow(Set(argumentId))).toSeq
 }

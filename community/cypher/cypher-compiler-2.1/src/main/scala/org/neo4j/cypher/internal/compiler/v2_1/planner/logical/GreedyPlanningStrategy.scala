@@ -23,54 +23,62 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.includeBestPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, MainQueryGraph, OptionalQueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.pickBestPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, OptionalQueryGraph, CantHandleQueryException}
 
 class GreedyPlanningStrategy extends PlanningStrategy {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = {
 
-    val qg = context.queryGraph
-
     if ( context.queryGraph.namedPaths.nonEmpty )
       throw new CantHandleQueryException
 
-    val leafPlans = generateLeafPlans()
-    val leafPlansWithSelections = applySelections(leafPlans)
+    val select = selectPlan.asFunction
+    val pickBest = pickBestPlan.asFunction
 
-    val plansAfterExpansionsAndJoins = iterateUntilConverged(findExpandOrJoin)(leafPlansWithSelections)
-    val plansAfterCartesianProducts = iterateUntilConverged(findCartesianProduct)(plansAfterExpansionsAndJoins)
+    def generateLeafPlanTable() = {
+      val leafPlanCandidateLists = generateLeafPlanCandidateLists()
+      val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select))
+      val topLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(_.bestPlan(context.cost))
+      topLeafPlans.foldLeft(PlanTable())(_ + _)
+    }
 
-    qg match {
+    def solveExpandsOrJoins(planTable: PlanTable) = {
+      val expansions = expand(planTable)
+      val expansionsWithSelections = expansions.map(select)
+      val joins = join(planTable)
+      val joinsWithSelections = joins.map(select)
+      planTable + pickBest(expansionsWithSelections ++ joinsWithSelections)
+    }
+
+    def solveCartesianProducts(planTable: PlanTable) = {
+      val cartesianProducts = cartesianProduct(planTable)
+      val cartesianProductsWithSelections = cartesianProducts.map(select)
+      planTable + pickBest(cartesianProductsWithSelections)
+    }
+
+    def solveOptionalMatches(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
+      val optionalApplies = applyOptional(planTable)
+      val optionals = optional(planTable)
+      val outerJoins = outerJoin(planTable)
+      val optionalExpands = optionalExpand(planTable)
+      val optionalSolutionsWithSelections = (optionalApplies ++ optionals ++ outerJoins ++ optionalExpands).map(select)
+      planTable + pickBest(optionalSolutionsWithSelections)
+    }
+
+    val leafPlanTable = generateLeafPlanTable()
+
+    val planTableAfterExpandOrJoin = iterateUntilConverged(solveExpandsOrJoins)(leafPlanTable)
+    val planTableAfterCartesianProduct = iterateUntilConverged(solveCartesianProducts)(planTableAfterExpandOrJoin)
+
+    val bestPlan = context.queryGraph match {
       case main: MainQueryGraph =>
-        val plansAfterOptionalApplies = iterateUntilConverged(solveOptionalMatches)(plansAfterCartesianProducts)
-        val bestPlan = extractBestPlan(plansAfterOptionalApplies)
-        project(bestPlan)
+        val planTableAfterOptionalApplies = iterateUntilConverged(solveOptionalMatches)(planTableAfterCartesianProduct)
+        projectPlan(planTableAfterOptionalApplies.uniquePlan)
 
       case optionalMatch: OptionalQueryGraph =>
-        extractBestPlan(plansAfterCartesianProducts)
+        planTableAfterCartesianProduct.uniquePlan
     }
-  }
 
-  def findExpandOrJoin(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
-    val expansions = expand(planTable)
-    val expansionsWithSelections = applySelections(expansions)
-    val joins = join(planTable)
-    val joinsWithSelections = applySelections(joins)
-    includeBestPlan(planTable)(expansionsWithSelections ++ joinsWithSelections)
-  }
-
-  def findCartesianProduct(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
-    val cartesianProducts = cartesianProduct(planTable)
-    val cartesianProductsWithSelections = applySelections(cartesianProducts)
-    includeBestPlan(planTable)(cartesianProductsWithSelections)
-  }
-
-  def solveOptionalMatches(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
-    val optionalApplies = applyOptional(planTable)
-    val optionals = optional(planTable)
-    val outerJoins = outerJoin(planTable)
-    val optionalExpands = optionalExpand(planTable)
-    val optionalSolutionsWithSelections = applySelections(optionalApplies ++ optionals ++ outerJoins ++ optionalExpands)
-    includeBestPlan(planTable)(optionalSolutionsWithSelections)
+    verifyBestPlan(bestPlan)
   }
 }

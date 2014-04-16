@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, OuterHashJoin}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-object outerJoin {
+object outerJoin extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
 
     val outerJoinPlans: Seq[OuterHashJoin] = for {

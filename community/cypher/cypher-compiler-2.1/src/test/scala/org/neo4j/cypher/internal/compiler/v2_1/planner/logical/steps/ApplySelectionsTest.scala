@@ -56,7 +56,7 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
-    val result = applySelections(plan)
+    val result = selectPlan(plan)
 
     // Then
     result should equal(Selection(Seq(predicate), plan))
@@ -72,7 +72,7 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
-    val result = applySelections(plan)
+    val result = selectPlan(plan)
 
     // Then
     result should equal(Selection(Seq(predicate), plan))
@@ -89,7 +89,7 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
-    val result = applySelections(plan)
+    val result = selectPlan(plan)
 
     // Then
     result should equal(Selection(Seq(predicate1, predicate2), plan))
@@ -106,7 +106,7 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     when(plan.solvedPredicates).thenReturn(Seq(predicate))
 
     // When
-    val result = applySelections(plan)
+    val result = selectPlan(plan)
 
     // Then
     result should equal(plan)
@@ -122,7 +122,7 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
-    val result = applySelections(plan)
+    val result = selectPlan(plan)
 
     // Then
     result should equal(plan)

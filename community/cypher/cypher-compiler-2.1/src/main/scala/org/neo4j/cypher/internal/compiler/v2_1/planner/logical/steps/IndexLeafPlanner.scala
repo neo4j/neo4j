@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, LeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{NodeIndexUniqueSeek, NodeIndexSeek, IdName, LogicalPlan}
 
 abstract class IndexLeafPlanner extends LeafPlanner {
-  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
+  def apply(ignored: Unit)(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
     predicates.collect {
       // n.prop = value
       case propertyPredicate@Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) =>

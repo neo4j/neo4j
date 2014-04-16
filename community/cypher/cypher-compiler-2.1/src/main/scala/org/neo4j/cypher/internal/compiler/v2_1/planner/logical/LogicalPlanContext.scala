@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
 
 case class LogicalPlanContext(planContext: PlanContext,
                               metrics: Metrics,

@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable, LogicalPlanContext, CandidateGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, Selection, Expand, IdName}
 
-object expand {
+object expand extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
     val expandPlans = for {
       plan <- planTable.plans

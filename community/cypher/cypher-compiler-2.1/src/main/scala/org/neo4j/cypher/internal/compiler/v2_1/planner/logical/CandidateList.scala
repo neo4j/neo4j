@@ -43,7 +43,7 @@ case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
 
   def +(plan: LogicalPlan) = copy(plans :+ plan)
 
-  def topPlan(costs: CostModel) = sorted(costs).pruned.plans.headOption
+  def bestPlan(costs: CostModel): Option[LogicalPlan] = sorted(costs).pruned.plans.headOption
 
   def map(f: LogicalPlan => LogicalPlan): CandidateList = copy(plans = plans.map(f))
 }

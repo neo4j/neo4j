@@ -17,14 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, AllNodesScan}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, LeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
-case class allNodesLeafPlanner() extends LeafPlanner {
-  def apply(ignored: Unit)(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
-    context.queryGraph.patternNodes.toSeq.map {
-      case idName => AllNodesScan(idName)
-    }
+trait LogicalPlanningFunction[-A, +B] {
+  def apply(input: A)(implicit context: LogicalPlanContext): B
+
+  def asFunction(implicit context: LogicalPlanContext): A => B = apply
 }
+
+trait CandidateGenerator[-T] extends LogicalPlanningFunction[T, CandidateList]
+
+trait CandidateSelector extends LogicalPlanningFunction[CandidateList, Option[LogicalPlan]]
+
+trait PlanTransformer extends LogicalPlanningFunction[LogicalPlan, LogicalPlan]
+
+trait LeafPlanner extends LogicalPlanningFunction[Unit, Seq[LogicalPlan]]
+
+

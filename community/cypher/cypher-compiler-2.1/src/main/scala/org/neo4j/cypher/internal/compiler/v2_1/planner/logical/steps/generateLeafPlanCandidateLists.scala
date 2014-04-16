@@ -20,16 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LeafPlanner, CandidateList, LogicalPlanContext}
 
-object generateLeafPlans {
-  def apply()(implicit context: LogicalPlanContext): PlanTable = {
+object generateLeafPlanCandidateLists {
+  def apply()(implicit context: LogicalPlanContext): Iterable[CandidateList] = {
     val qg = context.queryGraph
     val predicates: Seq[Expression] = qg.selections.flatPredicates
     val labelPredicateMap = qg.selections.labelPredicates
 
-    val leafPlanners = Seq(
+    val leafPlanners: Seq[LeafPlanner] = Seq(
       // arguments from the outside in case we are in a sub query,
       argumentLeafPlanner(context.argumentIds),
 
@@ -49,9 +49,8 @@ object generateLeafPlans {
       allNodesLeafPlanner()
     )
 
-    val plans: Seq[LogicalPlan] = leafPlanners.flatMap(_.apply)
-    val candidateLists: Iterable[CandidateList] = plans.groupBy(_.coveredIds).values.map(CandidateList)
-    val topPlans: Iterable[LogicalPlan] = candidateLists.flatMap(_.topPlan(context.cost))
-    topPlans.foldLeft(PlanTable())(_ + _)
+
+    val plans: Seq[LogicalPlan] = leafPlanners.flatMap(_.apply())
+    plans.groupBy(_.coveredIds).values.map(CandidateList)
   }
 }

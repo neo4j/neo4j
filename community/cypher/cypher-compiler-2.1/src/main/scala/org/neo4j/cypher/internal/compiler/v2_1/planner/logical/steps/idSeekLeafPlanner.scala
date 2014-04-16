@@ -20,12 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, LeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, DirectedRelationshipByIdSeek, UndirectedRelationshipByIdSeek}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
 
 case class idSeekLeafPlanner(predicates: Seq[Expression]) extends LeafPlanner {
-  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] = {
+  def apply(ignored: Unit)(implicit context: LogicalPlanContext): Seq[LogicalPlan] = {
     predicates.collect {
       // MATCH (a)-[r]->b WHERE id(r) = value
       // MATCH a WHERE id(a) = value

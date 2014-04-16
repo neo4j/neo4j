@@ -38,10 +38,10 @@
 */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, Selection}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
 
-object applySelections {
+object selectPlan extends PlanTransformer {
   def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
     val predicates = context.queryGraph.selections.predicatesGiven(plan.coveredIds).filter {
       case predicate => !plan.solvedPredicates.contains(predicate)
@@ -51,13 +51,5 @@ object applySelections {
       plan
     else
       Selection(predicates, plan)
-  }
-
-  def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): CandidateList = {
-    CandidateList(candidateList.plans.map(applySelections(_)))
-  }
-
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): PlanTable = {
-    PlanTable(planTable.m.mapValues(applySelections(_)))
   }
 }

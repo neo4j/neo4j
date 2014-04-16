@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, Lo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, LeafPlanner}
 
 case class labelScanLeafPlanner(labelPredicateMap: Map[IdName, Set[HasLabels]]) extends LeafPlanner {
-  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
+  def apply(ignored: Unit)(implicit context: LogicalPlanContext): Seq[LogicalPlan] =
     for (idName <- context.queryGraph.patternNodes.toSeq;
          labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
          labelName <- labelPredicate.labels) yield

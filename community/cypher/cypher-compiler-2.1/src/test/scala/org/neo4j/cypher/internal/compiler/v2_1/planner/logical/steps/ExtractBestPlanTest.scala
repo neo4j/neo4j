@@ -41,7 +41,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))
 
     evaluating {
-      extractBestPlan(planTable)
+      verifyBestPlan(planTable.uniquePlan)
     } should produce[CantHandleQueryException]
   }
 
@@ -55,7 +55,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))
 
     evaluating {
-      extractBestPlan(planTable)
+      verifyBestPlan(planTable.uniquePlan)
     } should produce[CantHandleQueryException]
   }
 }
