@@ -28,7 +28,9 @@ case class LogicalPlanContext(planContext: PlanContext,
                               metrics: Metrics,
                               semanticTable: SemanticTable,
                               queryGraph: QueryGraph,
-                              strategy: PlanningStrategy) {
+                              strategy: PlanningStrategy,
+                              argumentIds: Set[IdName] //The ids that can be considered arguments from an subquery perspective
+                              ) {
 
   def statistics = planContext.statistics
   def cost = metrics.cost

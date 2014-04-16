@@ -668,12 +668,27 @@ RETURN other""")
     val a = createNode()
     val b = createNode("Mark")
     relate(a, b)
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 MATCH n-->x0
 OPTIONAL MATCH x0-->x1
 WHERE x1.foo = 'bar'
 RETURN x0.name""")
     result.toList should equal (List(Map("x0.name" -> "Mark")))
+  }
+
+  test("should solve an optional match even when the optional match is highly selective") {
+    val a = createNode("A")
+    val b = createNode("B")
+    val c = createNode("C")
+    relate(a, b)
+    relate(a, c)
+    val result = executeWithNewPlanner( s"""
+MATCH a-->b
+WHERE id(b) = ${b.getId}
+OPTIONAL MATCH a-->c
+WHERE id(c) = ${c.getId}
+RETURN a.name""")
+    result.toList should equal (List(Map("a.name" -> "A")))
   }
 
   test("should find nodes both directions") {
@@ -827,6 +842,19 @@ RETURN x0.name""")
 
     result.startNode() should equal (b)
     result.endNode() should equal (a)
+  }
+
+  test("no match in optional match should produce null values") {
+    val result = executeWithNewPlanner("OPTIONAL MATCH n RETURN n")
+
+    result.toList should equal (List(Map("n" ->  null)))
+  }
+
+  test("should preserve the original matched values if optional match matches nothing") {
+    val n = createNode()
+    val result = executeWithNewPlanner("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, x")
+
+    result.toList should equal (List(Map("n" -> n, "x" -> null)))
   }
 
   test("empty collect should not contain null") {
