@@ -37,22 +37,19 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     def generateLeafPlanTable() = {
       val leafPlanCandidateLists = config.leafPlanners.candidateLists(context.queryGraph)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select))
-      val topLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(_.bestPlan(context.cost))
-      topLeafPlans.foldLeft(PlanTable())(_ + _)
+      val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
+      bestLeafPlans.foldLeft(PlanTable())(_ + _)
     }
 
     def solveExpandsOrJoins(planTable: PlanTable) = {
       val expansions = expand(planTable)
-      val expansionsWithSelections = expansions.map(select)
       val joins = join(planTable)
-      val joinsWithSelections = joins.map(select)
-      planTable + pickBest(expansionsWithSelections ++ joinsWithSelections)
+      selectAndPick(planTable)(expansions ++ joins)
     }
 
     def solveCartesianProducts(planTable: PlanTable) = {
       val cartesianProducts = cartesianProduct(planTable)
-      val cartesianProductsWithSelections = cartesianProducts.map(select)
-      planTable + pickBest(cartesianProductsWithSelections)
+      selectAndPick(planTable)(cartesianProducts)
     }
 
     def solveOptionalMatches(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
@@ -60,9 +57,10 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
       val optionals = optional(planTable)
       val outerJoins = outerJoin(planTable)
       val optionalExpands = optionalExpand(planTable)
-      val optionalSolutionsWithSelections = (optionalApplies ++ optionals ++ outerJoins ++ optionalExpands).map(select)
-      planTable + pickBest(optionalSolutionsWithSelections)
+      selectAndPick(planTable)(optionalApplies ++ optionals ++ outerJoins ++ optionalExpands)
     }
+
+    def selectAndPick(planTable: PlanTable)(candidates: CandidateList) = planTable + pickBest(candidates.map(select))
 
     val leafPlanTable = generateLeafPlanTable()
 
