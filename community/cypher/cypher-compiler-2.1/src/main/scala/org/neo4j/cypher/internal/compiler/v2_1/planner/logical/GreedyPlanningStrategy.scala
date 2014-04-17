@@ -65,8 +65,8 @@ class GreedyPlanningStrategy extends PlanningStrategy {
     val optionalApplies = applyOptional(planTable)
     val optionals = optional(planTable)
     val outerJoins = outerJoin(planTable)
-//    val optionalExpands = optionalExpand(planTable)
-    val optionalSolutionsWithSelections = applySelections(optionalApplies ++ optionals ++ outerJoins)
+    val optionalExpands = optionalExpand(planTable)
+    val optionalSolutionsWithSelections = applySelections(optionalApplies ++ optionals ++ outerJoins ++ optionalExpands)
     includeBestPlan(planTable)(optionalSolutionsWithSelections)
   }
 }
