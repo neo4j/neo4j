@@ -63,6 +63,10 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       cost(projection.left) +
       cardinality(projection.left) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * projection.numExpressions
 
+    case projection: ProjectNamedPath =>
+      cost(projection.left) +
+        cardinality(projection.left) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW
+
     case selection: Selection =>
       cost(selection.left) +
       cardinality(selection.left) * EXPRESSION_SELECTION_OVERHEAD_PER_ROW * selection.numPredicates

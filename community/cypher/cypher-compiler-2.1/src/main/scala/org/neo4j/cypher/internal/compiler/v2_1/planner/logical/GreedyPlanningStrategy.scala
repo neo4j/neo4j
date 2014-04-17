@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, OptionalQueryGraph, CantHandleQueryException}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, OptionalQueryGraph}
 
 class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = {
@@ -40,11 +40,10 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
       bestLeafPlans.foldLeft(PlanTable())(_ + _)
     }
 
-    def solveExtensions(planTable: PlanTable) = {
+    def solveExpandsOrJoins(planTable: PlanTable) = {
       val expansions = expand(planTable)
       val joins = join(planTable)
-      val namedPaths = projectNamedPaths(planTable)
-      addBestPlan(planTable)(expansions ++ joins ++ namedPaths)
+      addBestPlan(planTable)(expansions ++ joins)
     }
 
     def solveCartesianProducts(planTable: PlanTable) = {
@@ -62,13 +61,13 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
 
     val leafPlanTable = generateLeafPlanTable()
 
-    val planTableAfterExpandOrJoin = iterateUntilConverged(solveExtensions)(leafPlanTable)
+    val planTableAfterExpandOrJoin = iterateUntilConverged(solveExpandsOrJoins)(leafPlanTable)
     val planTableAfterCartesianProduct = iterateUntilConverged(solveCartesianProducts)(planTableAfterExpandOrJoin)
 
     val bestPlan = context.queryGraph match {
       case main: MainQueryGraph =>
         val planTableAfterOptionalApplies = iterateUntilConverged(solveOptionalMatches)(planTableAfterCartesianProduct)
-        projectPlan(planTableAfterOptionalApplies.uniquePlan)
+        projectUncovered(planTableAfterOptionalApplies.uniquePlan)
 
       case optionalMatch: OptionalQueryGraph =>
         planTableAfterCartesianProduct.uniquePlan

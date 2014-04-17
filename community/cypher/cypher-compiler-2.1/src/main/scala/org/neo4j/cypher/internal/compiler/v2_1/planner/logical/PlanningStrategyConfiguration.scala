@@ -29,29 +29,27 @@ case class PlanningStrategyConfiguration(
 
 object PlanningStrategyConfiguration {
   val default = PlanningStrategyConfiguration(
-    leafPlanners = defaultLeafPlanners,
-    applySelections = selectPlan,
-    pickBestCandidate = pickBestPlan
-  )
+    pickBestCandidate = pickBestPlan,
+    applySelections = selectProjectables,
+    leafPlanners = LeafPlannerList(
+      // arguments from the outside in case we are in a sub query,
+      argumentLeafPlanner,
 
-  private val defaultLeafPlanners = LeafPlannerList(
-    // arguments from the outside in case we are in a sub query,
-    argumentLeafPlanner,
+      // MATCH n WHERE id(n) = {id} RETURN n
+      idSeekLeafPlanner,
 
-    // MATCH n WHERE id(n) = {id} RETURN n
-    idSeekLeafPlanner,
+      // MATCH n WHERE n.prop = {val} RETURN n
+      uniqueIndexSeekLeafPlanner,
 
-    // MATCH n WHERE n.prop = {val} RETURN n
-    uniqueIndexSeekLeafPlanner,
+      // MATCH n WHERE n.prop = {val} RETURN n
+      indexSeekLeafPlanner,
 
-    // MATCH n WHERE n.prop = {val} RETURN n
-    indexSeekLeafPlanner,
+      // MATCH (n:Person) RETURN n
+      labelScanLeafPlanner,
 
-    // MATCH (n:Person) RETURN n
-    labelScanLeafPlanner,
-
-    // MATCH n RETURN n
-    allNodesLeafPlanner
+      // MATCH n RETURN n
+      allNodesLeafPlanner
+    )
   )
 }
 

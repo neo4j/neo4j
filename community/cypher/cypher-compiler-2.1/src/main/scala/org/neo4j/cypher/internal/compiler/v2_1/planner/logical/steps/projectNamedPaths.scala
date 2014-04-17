@@ -19,25 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, LogicalPlanContext, PlanTable, CandidateGenerator}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, NamedPath, ProjectNamedPath}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
-object projectNamedPaths extends CandidateGenerator[PlanTable] {
-  def apply(input: PlanTable)(implicit context: LogicalPlanContext): CandidateList =
-    CandidateList(
-      for {
-        plan <- input.plans
-        namedPath <- context.queryGraph.namedPaths if applicable(namedPath, plan)
-      }
-        yield ProjectNamedPath(namedPath, plan)
-    )
+case class projectNamedPaths(namedPathFilter: NamedPath => Boolean) extends PlanTransformer {
 
-  private def applicable(namedPath: NamedPath, plan: LogicalPlan) = {
+  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+
+    val qg = context.queryGraph
     val coveredIds = plan.coveredIds
 
-    def wasProjected = coveredIds(namedPath.name)
-    def dependenciesFulfilled = (namedPath.dependencies -- coveredIds).isEmpty
+    val solvableNamedPaths = qg.namedPaths.filter { (namedPath) =>
+      !coveredIds.contains(namedPath.name) && (namedPath.dependencies -- coveredIds).isEmpty
+    }
 
-    !wasProjected && dependenciesFulfilled
+    solvableNamedPaths.filter(namedPathFilter).foldLeft(plan) {
+      (plan: LogicalPlan, namedPath: NamedPath) => ProjectNamedPath(namedPath, plan)
+    }
   }
 }

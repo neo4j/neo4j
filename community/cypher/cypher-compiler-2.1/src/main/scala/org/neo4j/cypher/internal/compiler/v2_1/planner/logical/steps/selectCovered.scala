@@ -40,16 +40,22 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, Selection}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-object selectPlan extends PlanTransformer {
+object selectCovered extends PlanTransformer {
   def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
-    val predicates = context.queryGraph.selections.predicatesGiven(plan.coveredIds).filter {
+
+    val qg = context.queryGraph
+    val coveredIds = plan.coveredIds
+
+    val predicates: Seq[Expression] = qg.selections.predicatesGiven(coveredIds).filter {
       case predicate => !plan.solvedPredicates.contains(predicate)
     }
 
     if (predicates.isEmpty)
       plan
-    else
+    else {
       Selection(predicates, plan)
+    }
   }
 }

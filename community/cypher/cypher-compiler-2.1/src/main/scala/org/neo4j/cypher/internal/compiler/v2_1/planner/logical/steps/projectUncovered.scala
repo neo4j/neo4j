@@ -21,21 +21,23 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanningFunction, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{MainPlanTransformer, PlanTransformer, LogicalPlanningFunction, LogicalPlanContext}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName, Projection}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.MainQueryGraph
 
-object projectPlan extends PlanTransformer {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+object projectUncovered extends MainPlanTransformer {
+  def apply(qg: MainQueryGraph, input: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+
+    // TODO: Only project named paths that are required by the following projection's expressions
+    val plan = projectNamedPaths(_ => true)(input)
+
     val ids: Map[String, Expression] = plan.coveredIds.map {
       case IdName(id) => id -> Identifier(id)(null)
     }.toMap
 
-    context.queryGraph match {
-      case main: MainQueryGraph if ids != main.projections =>
-        Projection(plan, main.projections)
-      case _ =>
+    if (ids != qg.projections)
+        Projection(plan, qg.projections)
+    else
         plan
-    }
   }
 }
