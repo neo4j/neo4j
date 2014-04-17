@@ -31,6 +31,8 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
 
+    def addBestPlan(planTable: PlanTable)(candidates: CandidateList) = planTable + pickBest(candidates.map(select))
+
     def generateLeafPlanTable() = {
       val leafPlanCandidateLists = config.leafPlanners.candidateLists(context.queryGraph)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select))
@@ -42,12 +44,12 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
       val expansions = expand(planTable)
       val joins = join(planTable)
       val namedPaths = projectNamedPaths(planTable)
-      selectAndPick(planTable)(expansions ++ joins ++ namedPaths)
+      addBestPlan(planTable)(expansions ++ joins ++ namedPaths)
     }
 
     def solveCartesianProducts(planTable: PlanTable) = {
       val cartesianProducts = cartesianProduct(planTable)
-      selectAndPick(planTable)(cartesianProducts)
+      addBestPlan(planTable)(cartesianProducts)
     }
 
     def solveOptionalMatches(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
@@ -55,10 +57,8 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
       val optionals = optional(planTable)
       val outerJoins = outerJoin(planTable)
       val optionalExpands = optionalExpand(planTable)
-      selectAndPick(planTable)(optionalApplies ++ optionals ++ outerJoins ++ optionalExpands)
+      addBestPlan(planTable)(optionalApplies ++ optionals ++ outerJoins ++ optionalExpands)
     }
-
-    def selectAndPick(planTable: PlanTable)(candidates: CandidateList) = planTable + pickBest(candidates.map(select))
 
     val leafPlanTable = generateLeafPlanTable()
 

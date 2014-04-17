@@ -27,7 +27,7 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 
-class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport   {
+class ProjectNamedPathIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport   {
 
   test("should build plans containing path projections") {
     implicit val planContext = newMockedPlanContext
