@@ -26,8 +26,9 @@ import org.mockito.Matchers._
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.ast
 
-class ProjectNamedPathIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport   {
+class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport   {
 
   test("should build plans containing path projections") {
     implicit val planContext = newMockedPlanContext
@@ -38,7 +39,7 @@ class ProjectNamedPathIntegrationTest extends CypherFunSuite with LogicalPlannin
 
     produceLogicalPlan("MATCH p = (a:X)-[r]->(b) RETURN b") should equal(
       Projection(
-        ProjectNamedPath(
+        NamedPathProjection(
           NamedRelPath("p", Seq(patternRel)),
           Expand( NodeByLabelScan("a",  Left("X"))(), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength )(patternRel)
         ),
@@ -61,12 +62,37 @@ class ProjectNamedPathIntegrationTest extends CypherFunSuite with LogicalPlannin
             Identifier("a")_,
             FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, Identifier("p")_)_)_
           )_),
-          ProjectNamedPath(
+          NamedPathProjection(
             NamedRelPath("p", Seq(patternRel)),
             Expand( NodeByLabelScan("a",  Left("X"))(), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength )(patternRel)
           )
         ),
         expressions = Map("b" -> Identifier("b") _)
+      )
+    )
+  }
+
+  test("should order operators in plans containing path projections and expand correctly") {
+
+    implicit val planContext = newMockedPlanContext
+    when(planContext.getOptLabelId("X")).thenReturn(None)
+    implicit val planner = newPlanner(newMetricsFactory)
+
+    val patternRel = PatternRelationship("r", ("n", "x"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+
+    produceLogicalPlan("MATCH p = n-[r]->x WHERE length(p)=1 RETURN x") should equal(
+      Projection(
+        Selection(
+          Seq(Equals(
+            FunctionInvocation(FunctionName("length")_, Identifier("p")_)_,
+            SignedIntegerLiteral("1")_
+          )_),
+          NamedPathProjection(
+            NamedRelPath("p", Seq(patternRel)),
+            Expand( AllNodesScan("x"), "x", Direction.INCOMING, Seq.empty, "n", "r", SimplePatternLength )(patternRel)
+          )
+        ),
+        expressions = Map("x" -> Identifier("x")_)
       )
     )
   }

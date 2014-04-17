@@ -38,7 +38,7 @@ case class projectNamedPaths(namedPathFilter: NamedPath => Boolean) extends Plan
     }
 
     solvableNamedPaths.filter(namedPathFilter).foldLeft(plan) {
-      (plan: LogicalPlan, namedPath: NamedPath) => ProjectNamedPath(namedPath, plan)
+      (plan: LogicalPlan, namedPath: NamedPath) => NamedPathProjection(namedPath, plan)
     }
   }
 }

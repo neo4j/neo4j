@@ -87,7 +87,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case Projection(left, _) =>
       cardinality(left)
 
-    case ProjectNamedPath(_, left) =>
+    case NamedPathProjection(_, left) =>
       cardinality(left)
 
     case Optional(_, input) =>
