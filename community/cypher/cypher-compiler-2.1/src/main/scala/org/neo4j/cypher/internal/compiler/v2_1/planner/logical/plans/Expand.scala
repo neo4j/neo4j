@@ -33,8 +33,5 @@ case class Expand(left: LogicalPlan,
   val lhs = Some(left)
   def rhs = None
 
-  val coveredIds = left.coveredIds + to + relName
-
-  def solvedPredicates = left.solvedPredicates
-  val solvedPatterns = left.solvedPatterns :+ pattern
+  val solved = left.solved.add(pattern)
 }

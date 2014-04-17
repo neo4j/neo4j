@@ -114,14 +114,14 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
           AllNodesScan("b")
         ),
         "b", Direction.OUTGOING, Seq.empty, "c", "r1", SimplePatternLength
-      )( null )
+      )( mockRel )
     )
 
     val cost2 = cost(
       Expand(
         AllNodesScan("a"),
         "a", Direction.OUTGOING, Seq.empty, "d", "r2", SimplePatternLength
-      )( null )
+      )( mockRel )
     )
 
     cost1 should be < cost2
@@ -142,7 +142,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
           AllNodesScan("a")
         ),
         "a", Direction.BOTH, relTypeX, "start", "rel", SimplePatternLength
-      )( null )
+      )( mockRel )
     )
 
     val cost2 = cost(
@@ -151,7 +151,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
         Expand(
           AllNodesScan("start"),
           "start", Direction.BOTH, relTypeX, "a", "rel", SimplePatternLength
-        )( null )
+        )( mockRel )
       )
     )
 

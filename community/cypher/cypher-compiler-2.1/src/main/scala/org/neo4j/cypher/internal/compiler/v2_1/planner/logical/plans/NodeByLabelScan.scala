@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId])
                           (val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
-  val coveredIds = Set(idName)
-  val solvedPatterns = Seq.empty
+  val solved = QueryGraph.empty.addPatternNode(idName).add(solvedPredicates)
 }

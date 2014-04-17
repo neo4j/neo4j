@@ -19,15 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
+import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
-import org.neo4j.cypher.{InternalException, SyntaxException}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{VarPatternLength, PatternRelationship, IdName}
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -35,7 +30,9 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
   test("should throw when finding plan that does not solve all selections") {
     implicit val logicalPlanContext = newMockedLogicalPlanContext(
       planContext= newMockedPlanContext,
-      queryGraph = MainQueryGraph(Map.empty, Selections(Seq(Set.empty[IdName] -> null)), Set(IdName("a"), IdName("b")), Set.empty, Set.empty, Seq.empty)
+      queryGraph = QueryGraph(
+        selections = Selections(Set(Set.empty[IdName] -> null)),
+        patternNodes = Set(IdName("a"), IdName("b")))
     )
     val plan = newMockedLogicalPlan("b")
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))
@@ -49,7 +46,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, VarPatternLength.unlimited)
     implicit val logicalPlanContext = newMockedLogicalPlanContext(
       planContext= newMockedPlanContext,
-      queryGraph = MainQueryGraph(Map.empty, Selections(), Set(IdName("a"), IdName("b")), Set(patternRel), Set.empty, Seq.empty)
+      queryGraph = QueryGraph(patternNodes = Set(IdName("a"), IdName("b")), patternRelationships = Set(patternRel))
     )
     val plan = newMockedLogicalPlan("b")
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))

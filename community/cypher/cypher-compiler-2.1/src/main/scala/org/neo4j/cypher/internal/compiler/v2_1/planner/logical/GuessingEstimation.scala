@@ -21,8 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, HasLabels, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 import org.neo4j.graphdb.Direction
@@ -69,7 +67,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       val degree = degreeByRelationshipTypesAndDirection(types, dir)
       cardinality(left) * math.pow(degree, averagePathLength(length)) * predicateSelectivity(predicates)
 
-    case Selection(predicates, left) =>
+    case Selection(predicates, left, _) =>
       cardinality(left) * predicateSelectivity(predicates)
 
     case CartesianProduct(left, right) =>

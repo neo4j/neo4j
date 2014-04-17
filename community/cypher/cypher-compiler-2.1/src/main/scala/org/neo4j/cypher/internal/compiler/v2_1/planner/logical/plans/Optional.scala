@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class Optional(nullableIds: Set[IdName], inputPlan: LogicalPlan) extends LogicalPlan {
-
   val lhs = Some(inputPlan)
   val rhs = None
 
-  val coveredIds: Set[IdName] = inputPlan.coveredIds ++ nullableIds
-
-  def solvedPredicates: Seq[Expression] = inputPlan.solvedPredicates
-  def solvedPatterns: Seq[PatternRelationship] = inputPlan.solvedPatterns
+  val solved: QueryGraph =
+    QueryGraph().
+      withAddedOptionalMatch(inputPlan.solved).
+      changeProjections(inputPlan.solved.projections)
 }

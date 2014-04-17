@@ -19,15 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-
 case class Apply(outer: LogicalPlan, inner: LogicalPlan) extends LogicalPlan {
-
   val lhs = Some(outer)
   val rhs = Some(inner)
 
-  val coveredIds: Set[IdName] = outer.coveredIds ++ inner.coveredIds
-
-  def solvedPredicates: Seq[Expression] = outer.solvedPredicates
-  def solvedPatterns: Seq[PatternRelationship] = outer.solvedPatterns
+  def solved = outer.solved ++ inner.solved
 }

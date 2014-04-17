@@ -20,26 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
-import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{SelectivityModel, CardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_1
+import v2_1.planner.LogicalPlanningTestSupport
+import v2_1.planner.logical.plans._
+import v2_1.ast._
+import v2_1.LabelId
+import v2_1.planner.logical.Metrics.{SelectivityModel, CardinalityModel}
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
+import org.mockito.Matchers._
+import org.mockito.Mockito._
 
 class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport  {
 
@@ -131,7 +121,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
             case _: AllNodesScan                             => 1000
             case NodeByLabelScan(_, Right(LabelId(labelId))) => labelId
             case CartesianProduct(left, right)               => apply(left) * apply(right)
-            case Selection(predicates, left)                 => predicates.foldLeft(1.0)(_ * selectivity(_)) * apply(left)
+            case Selection(predicates, left, _)              => predicates.foldLeft(1.0)(_ * selectivity(_)) * apply(left)
             case _                                           => Double.MaxValue
           }
         }
@@ -158,14 +148,14 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
             Property(Identifier("c")_, PropertyKeyName("x")()_)_
           )_
         ),
-        CartesianProduct(
+        left = CartesianProduct(
           NodeByLabelScan("b", labelIdB)(),
           Selection(
             predicates = Seq(Equals(
               Property(Identifier("a")_, PropertyKeyName("x")()_)_,
               Property(Identifier("c")_, PropertyKeyName("x")()_)_
             )_),
-            CartesianProduct(
+            left = CartesianProduct(
               NodeByLabelScan("c", labelIdC)(),
               NodeByLabelScan("a", labelIdA)()
             )

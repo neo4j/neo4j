@@ -23,18 +23,17 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
-// TODO: Use Seq[SelectionPredicate] (with case class SelectionPredicate(expression, dependencies))
-case class Selections(predicates: Seq[(Set[IdName], Expression)] = Seq.empty) {
+case class Selections(predicates: Set[(Set[IdName], Expression)] = Set.empty) {
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
     case (deps, predicate) if (deps -- ids).isEmpty => predicate
-  }
+  }.toSeq
 
-  def predicatesAndDependenciesGiven(ids: Set[IdName]): Seq[(Set[IdName], Expression)] = predicates.collect {
+  def predicatesAndDependenciesGiven(ids: Set[IdName]): Set[(Set[IdName], Expression)] = predicates.collect {
     case (deps, predicate) if (deps -- ids).isEmpty => (deps, predicate)
   }
 
   def flatPredicates: Seq[Expression] =
-    predicates.map(_._2)
+    predicates.map(_._2).toSeq
 
   def labelPredicates: Map[IdName, Set[HasLabels]] = {
     predicates.foldLeft(Map.empty[IdName, Set[HasLabels]]) { case (m, pair) =>
@@ -55,4 +54,10 @@ case class Selections(predicates: Seq[(Set[IdName], Expression)] = Seq.empty) {
 
   def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
     flatPredicates.forall( solvedPredicates.contains )
+
+  def contains(e: Expression): Boolean = predicates.exists {
+    case (_, expression) => expression == e
+  }
+
+  def ++(other: Selections): Selections = Selections(predicates ++  other.predicates)
 }

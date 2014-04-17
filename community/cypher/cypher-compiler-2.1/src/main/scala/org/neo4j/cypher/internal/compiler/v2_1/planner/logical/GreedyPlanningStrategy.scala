@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, OptionalQueryGraph}
 
 class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = {
@@ -38,22 +37,15 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
       bestLeafPlans.foldLeft(PlanTable.empty)(_ + _)
     }
 
-    val leafPlanTable = generateLeafPlanTable()
-
     def findBestPlan(planGenerator: CandidateGenerator[PlanTable]) =
       (planTable: PlanTable) => pickBest(planGenerator(planTable).map(select)).map(planTable + _).getOrElse(planTable)
 
-    val planTableAfterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leafPlanTable)
-    val planTableAfterCartesianProduct = iterateUntilConverged(findBestPlan(cartesianProduct))(planTableAfterExpandOrJoin)
-
-    val bestPlan = context.queryGraph match {
-      case main: MainQueryGraph =>
-        val planTableAfterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(planTableAfterCartesianProduct)
-        projectUncovered(planTableAfterOptionalApplies.uniquePlan)
-
-      case optionalMatch: OptionalQueryGraph =>
-        planTableAfterCartesianProduct.uniquePlan
-    }
+    val leaves = generateLeafPlanTable()
+    val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)
+    val afterCartesianProduct1 = iterateUntilConverged(findBestPlan(cartesianProduct))(afterExpandOrJoin)
+    val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(afterCartesianProduct1)
+    val afterCartesianProduct2 = iterateUntilConverged(findBestPlan(cartesianProduct))(afterOptionalApplies)
+    val bestPlan = projectUncovered(afterCartesianProduct2.uniquePlan)
 
     verifyBestPlan(bestPlan)
   }

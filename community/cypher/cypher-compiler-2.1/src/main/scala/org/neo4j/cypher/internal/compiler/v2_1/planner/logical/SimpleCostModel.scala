@@ -36,7 +36,7 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
   def apply(plan: LogicalPlan): Double = plan match {
     case _: SingleRow =>
-      cardinality(plan)
+      0
 
     case _: AllNodesScan =>
       cardinality(plan)

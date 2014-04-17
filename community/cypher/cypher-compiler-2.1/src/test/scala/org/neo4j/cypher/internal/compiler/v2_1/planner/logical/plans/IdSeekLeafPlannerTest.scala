@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
+import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 import org.mockito.Matchers._
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.idSeekLeafPlanner
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
@@ -40,7 +40,10 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       FunctionInvocation(FunctionName("id")_, distinct = false, Array(identifier))_,
       SignedIntegerLiteral("42")_
     )_
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")), Set.empty, Set.empty, Seq.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(Set(IdName("n")) -> expr)),
+      patternNodes = Set(IdName("n")))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -71,7 +74,10 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
         Seq(SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_)
       )_
     )_
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(IdName("n")) -> expr)), Set(IdName("n")), Set.empty, Set.empty, Seq.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(Set(IdName("n")) -> expr)),
+      patternNodes = Set(IdName("n")))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -107,7 +113,11 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val from = IdName("from")
     val end = IdName("to")
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel), Set.empty, Seq.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(Set(IdName("r")) -> expr)),
+      patternNodes = Set(from, end),
+      patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -125,7 +135,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg).plans
 
     // then
-    resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(null)))
+    resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(mockRel)))
   }
 
   test("simple undirected relationship by id seek with a rel id expression") {
@@ -141,7 +151,11 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val from = IdName("from")
     val end = IdName("to")
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty, SimplePatternLength)
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel), Set.empty, Seq.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(Set(IdName("r")) -> expr)),
+      patternNodes = Set(from, end),
+      patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -160,7 +174,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg).plans
 
     // then
-    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(null)))
+    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(mockRel)))
   }
 
   test("simple directed relationship by id seek with a collection of relationship ids") {
@@ -178,7 +192,11 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val from = IdName("from")
     val end = IdName("to")
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel), Set.empty, Seq.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(Set(IdName("r")) -> expr)),
+      patternNodes = Set(from, end),
+      patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -198,7 +216,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), Seq(
       SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
-    ), from, end)(null)))
+    ), from, end)(mockRel)))
   }
 
   test("simple undirected relationship by id seek with a collection of relationship ids") {
@@ -216,7 +234,11 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val from = IdName("from")
     val end = IdName("to")
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty, SimplePatternLength)
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel), Set.empty, Seq.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(Set(IdName("r")) -> expr)),
+      patternNodes = Set(from, end),
+      patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -236,7 +258,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), Seq(
       SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
-    ), from, end)(null)))
+    ), from, end)(mockRel)))
   }
 
   test("simple undirected typed relationship by id seek with a rel id expression") {
@@ -256,7 +278,11 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       Seq(RelTypeName("X")(Some(RelTypeId(1)))_),
       SimplePatternLength
     )
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel), Set.empty, Seq.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(Set(IdName("r")) -> expr)),
+      patternNodes = Set(from, end),
+      patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -277,7 +303,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     resultPlans should equal(Seq(
       Selection(
         Seq(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_),
-        UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(null)
+        UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(mockRel),
+        hideSelections = true
       )
     ))
   }
@@ -302,7 +329,11 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       ),
       SimplePatternLength
     )
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(IdName("r")) -> expr)), Set(from, end), Set(patternRel), Set.empty, Seq.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(Set(IdName("r")) -> expr)),
+      patternNodes = Set(from, end),
+      patternRelationships = Set(patternRel))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -328,8 +359,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)_
           )_
         ),
-        UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(null)
-      )
+        UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(mockRel),
+        hideSelections = true)
     ))
   }
 }

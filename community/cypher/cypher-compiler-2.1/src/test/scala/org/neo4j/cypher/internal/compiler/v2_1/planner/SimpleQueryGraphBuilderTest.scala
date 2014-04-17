@@ -30,7 +30,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   // TODO: we may want to have normalized queries instead than simply parse queries
   val builder = new SimpleQueryGraphBuilder
 
-  def buildQueryGraph(query: String): MainQueryGraph = {
+  def buildQueryGraph(query: String): QueryGraph = {
     val ast = parser.parse(query).asInstanceOf[Query]
     builder.produce(ast)
   }
@@ -64,7 +64,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "n" -> Identifier("n")_
     ))
 
-    qg.selections should equal(Selections(Seq(
+    qg.selections should equal(Selections(Set(
       Set(IdName("n")) -> HasLabels(Identifier("n")_, Seq(LabelName("Awesome")()_))_,
       Set(IdName("n")) -> HasLabels(Identifier("n")_, Seq(LabelName("Foo")()_))_
     )))
@@ -79,7 +79,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "n" -> Identifier("n")_
     ))
 
-    qg.selections should equal(Selections(Seq(
+    qg.selections should equal(Selections(Set(
       Set(IdName("n")) -> Or(
         HasLabels(Identifier("n")_, Seq(LabelName("X")()_))_,
         HasLabels(Identifier("n")_, Seq(LabelName("Y")()_))_
@@ -96,7 +96,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "n" -> Identifier("n")_
     ))
 
-    qg.selections should equal(Selections(Seq(
+    qg.selections should equal(Selections(Set(
       Set(IdName("n")) -> Or(
         HasLabels(Identifier("n")_, Seq(LabelName("X")()_))_,
         And(
@@ -116,7 +116,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "n" -> Identifier("n")_
     ))
 
-    qg.selections should equal(Selections(List(
+    qg.selections should equal(Selections(Set(
       Set(IdName("n")) -> Equals(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
         SignedIntegerLiteral("42")_
@@ -133,7 +133,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "n" -> Identifier("n")_
     ))
 
-    qg.selections should equal(Selections(List(
+    qg.selections should equal(Selections(Set(
       Set(IdName("n")) -> In(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
         Collection(Seq(SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_))_
@@ -149,7 +149,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "n" -> Identifier("n")_
     ))
 
-    qg.selections should equal(Selections(List(
+    qg.selections should equal(Selections(Set(
       Set(IdName("n")) -> HasLabels(Identifier("n")_, Seq(LabelName("Label")()_))_,
       Set(IdName("n")) -> Equals(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
@@ -166,7 +166,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.namedPaths should equal(Set(NamedNodePath("p", "a")))
     qg.patternRelationships should equal(Set())
     qg.patternNodes should equal(Set[IdName]("a"))
-    qg.selections should equal(Selections(List()))
+    qg.selections should equal(Selections(Set.empty))
     qg.projections should equal(Map[String, Identifier](
       "p" -> Identifier("p")_
     ))
@@ -180,7 +180,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.namedPaths should equal(Set(NamedRelPath("p", Seq(patternRel))))
     qg.patternRelationships should equal(Set(patternRel))
     qg.patternNodes should equal(Set[IdName]("a", "b"))
-    qg.selections should equal(Selections(List()))
+    qg.selections should equal(Selections(Set.empty))
     qg.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
@@ -194,7 +194,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    qg.selections should equal(Selections(List()))
+    qg.selections should equal(Selections(Set.empty))
     qg.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_,
@@ -209,7 +209,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    qg.selections should equal(Selections(List()))
+    qg.selections should equal(Selections(Set.empty))
     qg.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
@@ -223,7 +223,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    qg.selections should equal(Selections(List()))
+    qg.selections should equal(Selections(Set.empty))
     qg.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
@@ -237,7 +237,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    qg.selections should equal(Selections(List()))
+    qg.selections should equal(Selections())
     qg.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
@@ -250,7 +250,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("b"), IdName("c")), Direction.BOTH, Seq(relType("Type")), SimplePatternLength)))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    qg.selections should equal(Selections(List(
+    qg.selections should equal(Selections(Set(
       Set(IdName("b")) -> HasLabels(Identifier("b")_, Seq(LabelName("Label")()_))_
     )))
     qg.projections should equal(Map[String, Identifier](
@@ -333,7 +333,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, VarPatternLength(1, None)),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, VarPatternLength(1, None))))
     qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    qg.selections should equal(Selections(List()))
+    qg.selections should equal(Selections(Set.empty))
     qg.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
@@ -345,7 +345,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     val qg = buildQueryGraph("optional match (a) return a")
     qg.patternRelationships should equal(Set())
     qg.patternNodes should equal(Set())
-    qg.selections should equal(Selections(List()))
+    qg.selections should equal(Selections(Set.empty))
     qg.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_
     ))
@@ -357,7 +357,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     val optMatchQG = qg.optionalMatches.head
     optMatchQG.patternRelationships should equal(Set())
     optMatchQG.patternNodes should equal(Set(IdName("a")))
-    optMatchQG.selections should equal(Selections(List()))
+    optMatchQG.selections should equal(Selections(Set.empty))
     optMatchQG.optionalMatches.isEmpty should be(true)
     optMatchQG.coveredIds should equal(Set("a").map(IdName(_)))
     optMatchQG.argumentIds should equal(Set())
@@ -367,7 +367,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     val qg = buildQueryGraph("optional match (a)-[r]->(b) return a,b,r")
     qg.patternRelationships should equal(Set())
     qg.patternNodes should equal(Set())
-    qg.selections should equal(Selections(List()))
+    qg.selections should equal(Selections(Set.empty))
     qg.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "b" -> Identifier("b")_,
@@ -384,7 +384,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     ))
     optMatchQG.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    optMatchQG.selections should equal(Selections(List()))
+    optMatchQG.selections should equal(Selections(Set.empty))
     optMatchQG.optionalMatches.isEmpty should be(true)
     optMatchQG.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
     optMatchQG.argumentIds should equal(Set())
@@ -394,7 +394,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     val qg = buildQueryGraph("match a optional match (a)-[r]->(b) return a,b,r")
     qg.patternNodes should equal(Set(IdName("a")))
     qg.patternRelationships should equal(Set())
-    qg.selections should equal(Selections(List()))
+    qg.selections should equal(Selections(Set.empty))
     qg.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "b" -> Identifier("b")_,
@@ -404,16 +404,20 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
     qg.argumentIds should equal(Set())
 
-
     val optMatchQG = qg.optionalMatches.head
     optMatchQG.patternNodes should equal(Set(IdName("a"), IdName("b")))
     optMatchQG.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     ))
-    optMatchQG.selections should equal(Selections(List()))
+    optMatchQG.selections should equal(Selections(Set.empty))
     optMatchQG.optionalMatches.isEmpty should be(true)
     optMatchQG.coveredIds should equal(Set("a", "r", "b").map(IdName(_)))
     optMatchQG.argumentIds should equal(Set(IdName("a")))
+    optMatchQG.projections should equal(Map[String, Identifier](
+      "a" -> Identifier("a")_,
+      "b" -> Identifier("b")_,
+      "r" -> Identifier("r")_
+    ))
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)(None)_

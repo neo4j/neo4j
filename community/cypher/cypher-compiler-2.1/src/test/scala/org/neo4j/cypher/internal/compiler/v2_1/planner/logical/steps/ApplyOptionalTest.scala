@@ -32,20 +32,11 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // MATCH (a) OPTIONAL MATCH (a)-[r]->(b)
 
     val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val qg = MainQueryGraph(
-      projections = Map.empty,
-      selections = Selections(),
-      patternNodes = Set("a"),
-      patternRelationships = Set.empty,
-      namedPaths = Set.empty,
-      optionalMatches = Seq(OptionalQueryGraph(
-        selections = Selections(),
-        patternNodes = Set("a", "b"),
-        patternRelationships = Set(patternRel),
-        namedPaths = Set.empty,
-        argumentIds = Set("a")
-      ))
-    )
+    val optionalMatch = QueryGraph(
+      patternNodes = Set("a", "b"),
+      patternRelationships = Set(patternRel)
+    ).addCoveredIdsAsProjections()
+    val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {

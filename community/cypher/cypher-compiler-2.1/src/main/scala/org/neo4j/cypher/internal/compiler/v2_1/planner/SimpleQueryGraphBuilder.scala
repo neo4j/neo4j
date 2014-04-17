@@ -75,7 +75,10 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
       (Seq(IdName(node.identifier.get.name)), Seq.empty, Seq.empty)
   }
 
-  override def produce(ast: Query): MainQueryGraph = ast match {
+  private def getSelections(optWhere: Option[Where]) =
+    Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Set.empty))
+
+  override def produce(ast: Query): QueryGraph = ast match {
     case Query(None, SingleQuery(clauses)) =>
       clauses.foldLeft(QueryGraph.empty)(
         (qg, clause) =>
@@ -86,20 +89,30 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
                 case (_,e) => e.asCommandExpression.containsAggregate
               }) throw new CantHandleQueryException
 
-              qg.copy(projections = projections.toMap)
+              qg.changeProjections(projections.toMap)
 
             case Match(optional@false, pattern: Pattern, Seq(), optWhere) =>
               if (qg.patternRelationships.nonEmpty || qg.patternNodes.nonEmpty)
                 throw new CantHandleQueryException
 
               val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], namedPaths: Seq[NamedPath]) = PatternDestructuring.destruct(pattern)
-              val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
-              qg.copy(selections = selections, patternNodes = nodeIds.toSet, patternRelationships = rels.toSet, namedPaths = namedPaths.toSet)
+              val matchClause = QueryGraph(
+                selections = getSelections(optWhere),
+                patternNodes = nodeIds.toSet,
+                patternRelationships = rels.toSet,
+                namedPaths = namedPaths.toSet)
+
+              qg ++ matchClause
 
             case Match(optional@true, pattern: Pattern, Seq(), optWhere) =>
               val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], namedPaths: Seq[NamedPath]) = PatternDestructuring.destruct(pattern)
-              val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
-              qg.withAddedOptionalMatch(selections, nodeIds.toSet, rels.toSet, namedPaths.toSet)
+              val optionalMatch = QueryGraph(
+                selections = getSelections(optWhere),
+                patternNodes = nodeIds.toSet,
+                namedPaths = namedPaths.toSet,
+                patternRelationships = rels.toSet).addCoveredIdsAsProjections()
+
+              qg.withAddedOptionalMatch(optionalMatch)
 
             case _ =>
               throw new CantHandleQueryException

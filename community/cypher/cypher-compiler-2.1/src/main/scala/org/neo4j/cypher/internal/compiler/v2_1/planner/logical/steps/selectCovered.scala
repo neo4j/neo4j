@@ -44,14 +44,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
 object selectCovered extends PlanTransformer {
   def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
-
     val qg = context.queryGraph
     val coveredIds = plan.coveredIds
 
     val predicates: Seq[Expression] = qg.selections.predicatesGiven(coveredIds).filter {
-      case predicate => !plan.solvedPredicates.contains(predicate)
+      case predicate => !plan.solved.selections.contains(predicate)
     }
-
     if (predicates.isEmpty)
       plan
     else {

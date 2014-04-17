@@ -35,7 +35,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val compareTwoNodes: Equals = compareBothSides("a", "b")
 
   test("can flat predicates to a sequence") {
-    val selections = Selections(Seq(idNames("a") -> aIsPerson))
+    val selections = Selections(Set(idNames("a") -> aIsPerson))
 
     selections.flatPredicates should equal(Seq(aIsPerson))
   }
@@ -45,7 +45,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should be able to sense that predicates are not covered") {
-    val selections = Selections(Seq(
+    val selections = Selections(Set(
       idNames("a") -> aIsPerson,
       idNames("b") -> bIsAnimal
     ))
@@ -54,7 +54,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should be able to tell when all predicates are covered") {
-    val selections = Selections(Seq(
+    val selections = Selections(Set(
       idNames("a") -> aIsPerson
     ))
 
@@ -62,7 +62,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("can extract HasLabels Predicates") {
-    val selections = Selections(Seq(
+    val selections = Selections(Set(
       idNames("a") -> aIsPerson,
       idNames("a") -> aIsPerson,
       idNames("b") -> bIsAnimal,
@@ -79,7 +79,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val a = idNames("a")
     val b = idNames("b")
 
-    val selections = Selections(Seq(
+    val selections = Selections(Set(
       a -> aIsPerson,
       b -> bIsAnimal
     ))
@@ -91,7 +91,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val a = idNames("a")
     val b = idNames("b")
 
-    val selections = Selections(Seq(
+    val selections = Selections(Set(
       a -> aIsPerson,
       b -> bIsAnimal
     ))
@@ -103,7 +103,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val aAndB = idNames("a", "b")
     val a = Set(aAndB.head)
 
-    val selections = Selections(Seq(
+    val selections = Selections(Set(
       aAndB -> compareTwoNodes
     ))
 

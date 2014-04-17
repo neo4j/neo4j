@@ -19,17 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-
 case class NamedPathProjection(namedPath: NamedPath, left: LogicalPlan) extends LogicalPlan {
-
   def lhs = Some(left)
 
   def rhs = None
 
-  val coveredIds: Set[IdName] = namedPath.coveredIds ++ left.coveredIds
-
-  def solvedPredicates: Seq[Expression] = left.solvedPredicates
-
-  def solvedPatterns: Seq[PatternRelationship] = left.solvedPatterns
+  def solved = left.solved.add(namedPath)
 }

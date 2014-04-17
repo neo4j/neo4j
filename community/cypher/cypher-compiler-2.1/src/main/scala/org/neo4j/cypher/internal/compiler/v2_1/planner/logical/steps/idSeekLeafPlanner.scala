@@ -84,6 +84,6 @@ object idSeekLeafPlanner extends LeafPlanner {
       }
 
       val predicate = predicates.reduce(Or(_, _)(null))
-      Selection(Seq(predicate), plan)
+      Selection(Seq(predicate), plan, hideSelections = true)
     }
 }

@@ -32,20 +32,11 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // OPTIONAL MATCH (a)-[r]->(b)
 
     val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val qg = MainQueryGraph(
-      projections = Map.empty,
-      selections = Selections(),
-      patternNodes = Set.empty,
-      patternRelationships = Set.empty,
-      namedPaths = Set.empty,
-      optionalMatches = Seq(OptionalQueryGraph(
-        selections = Selections(),
-        patternNodes = Set("a", "b"),
-        patternRelationships = Set(patternRel),
-        namedPaths = Set.empty,
-        argumentIds = Set.empty
-      ))
-    )
+    val optionalMatch = QueryGraph(
+      patternNodes = Set("a", "b"),
+      patternRelationships = Set(patternRel)
+    ).addCoveredIdsAsProjections()
+    val qg = QueryGraph().withAddedOptionalMatch(optionalMatch)
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -62,6 +53,7 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val planTable = PlanTable(Map())
     val innerPlan = Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
 
-    optional(planTable).bestPlan(context.cost) should equal(Some(Optional(Set("a", "b", "r"), innerPlan)))
+    val optional2 = optional(planTable)
+    optional2.bestPlan(context.cost) should equal(Some(Optional(Set("a", "b", "r"), innerPlan)))
   }
 }
