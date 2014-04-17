@@ -19,10 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
 
-case class includeBestPlan(planTable: PlanTable) {
-  def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): PlanTable = {
-    candidateList.topPlan(context.cost).foldLeft(planTable)(_ + _)
+object verifyBestPlan extends PlanTransformer {
+  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+    if (!context.queryGraph.selections.coveredBy(plan.solvedPredicates))
+      throw new CantHandleQueryException
+
+    val remainingPatterns = context.queryGraph.patternRelationships -- plan.solvedPatterns.toSet
+    if (remainingPatterns.nonEmpty)
+      throw new CantHandleQueryException
+
+    plan
   }
 }

@@ -19,21 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, LogicalPlanContext, PlanTable, CandidateGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, NamedPath, ProjectNamedPath}
 
-object cartesianProduct extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-    if (planTable.size > 1) {
-      val plans = planTable.plans
-      val cartesianProducts =
-        for {
-          planA <- plans
-          planB <- plans if planA != planB
-        } yield CartesianProduct(planA, planB)
-      CandidateList(cartesianProducts.toList)
-    } else {
-      CandidateList(Seq.empty)
-    }
+object projectNamedPaths extends CandidateGenerator[PlanTable] {
+  def apply(input: PlanTable)(implicit context: LogicalPlanContext): CandidateList =
+    CandidateList(
+      for {
+        plan <- input.plans
+        namedPath <- context.queryGraph.namedPaths if applicable(namedPath, plan)
+      }
+        yield ProjectNamedPath(namedPath, plan)
+    )
+
+  private def applicable(namedPath: NamedPath, plan: LogicalPlan) = {
+    val coveredIds = plan.coveredIds
+
+    def wasProjected = coveredIds(namedPath.name)
+    def dependenciesFulfilled = (namedPath.dependencies -- coveredIds).isEmpty
+
+    !wasProjected && dependenciesFulfilled
   }
 }

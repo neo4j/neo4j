@@ -26,14 +26,14 @@ import org.neo4j.graphdb.Direction
 class QueryGraphTest extends CypherFunSuite {
   test("returns no pattern relationships when the query graph doesn't contain any") {
     val rels: Set[PatternRelationship] = Set.empty
-    val qg = MainQueryGraph(Map.empty, Selections(), Set.empty, rels, Seq.empty)
+    val qg = MainQueryGraph(Map.empty, Selections(), Set.empty, rels, Set.empty, Seq.empty)
 
     qg.findRelationshipsEndingOn(IdName("x")) shouldBe empty
   }
 
   test("finds single pattern relationship") {
     val r = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq.empty, SimplePatternLength)
-    val qg = MainQueryGraph(Map.empty, Selections(), Set.empty, Set(r), Seq.empty)
+    val qg = MainQueryGraph(Map.empty, Selections(), Set.empty, Set(r), Set.empty, Seq.empty)
 
     qg.findRelationshipsEndingOn(IdName("x")) shouldBe empty
     qg.findRelationshipsEndingOn(IdName("a")) should equal(Set(r))
@@ -43,7 +43,7 @@ class QueryGraphTest extends CypherFunSuite {
   test("finds multiple pattern relationship") {
     val r = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq.empty, SimplePatternLength)
     val r2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)
-    val qg = MainQueryGraph(Map.empty, Selections(), Set.empty, Set(r, r2), Seq.empty)
+    val qg = MainQueryGraph(Map.empty, Selections(), Set.empty, Set(r, r2), Set.empty, Seq.empty)
 
     qg.findRelationshipsEndingOn(IdName("x")) shouldBe empty
     qg.findRelationshipsEndingOn(IdName("a")) should equal(Set(r))

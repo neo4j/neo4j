@@ -36,7 +36,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val idName = IdName("n")
     val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")()_))_
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty, Seq.empty)
+    val qg = MainQueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty, Set.empty, Seq.empty)
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -50,7 +50,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     )
 
     // when
-    val resultPlans = labelScanLeafPlanner(Map(idName -> Set(hasLabels)))()
+    val resultPlans = labelScanLeafPlanner(qg).plans
 
     // then
     resultPlans should equal(Seq(NodeByLabelScan(idName, Left("Awesome"))()))
@@ -62,7 +62,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
     val labelId = LabelId(12)
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")(Some(labelId))_))_
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty, Seq.empty)
+    val qg = MainQueryGraph(projections, Selections(Seq(Set(idName) -> hasLabels)), Set(idName), Set.empty, Set.empty, Seq.empty)
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -77,7 +77,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)
 
     // when
-    val resultPlans = labelScanLeafPlanner(Map(idName -> Set(hasLabels)))()
+    val resultPlans = labelScanLeafPlanner(qg).plans
 
     // then
     resultPlans should equal(Seq(NodeByLabelScan(idName, Right(labelId))()))

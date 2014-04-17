@@ -23,13 +23,14 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{MainQueryGraph, LogicalPlanningTestSupport, QueryGraph, Selections}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.allNodesLeafPlanner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
 
 class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
 
   test("simple all nodes scan") {
     // given
-    val qg = MainQueryGraph(Map("n" -> Identifier("n")_), Selections(), Set(IdName("n")), Set.empty, Seq.empty)
+    val qg = MainQueryGraph(Map("n" -> Identifier("n")_), Selections(), Set(IdName("n")), Set.empty, Set.empty, Seq.empty)
 
     val statistics = newMockedStatistics
     implicit val planContext = newMockedPlanContext
@@ -39,9 +40,9 @@ class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       metrics = newMockedMetricsFactory.newMetrics(statistics))
 
     // when
-    val resultPlans = allNodesLeafPlanner()()
+    val resultPlans = allNodesLeafPlanner(context.queryGraph)
 
     // then
-    resultPlans should equal(Seq(AllNodesScan(IdName("n"))))
+    resultPlans should equal(CandidateList(Seq(AllNodesScan(IdName("n")))))
   }
 }

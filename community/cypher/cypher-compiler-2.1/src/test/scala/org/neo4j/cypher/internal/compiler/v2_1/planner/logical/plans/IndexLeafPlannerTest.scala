@@ -47,7 +47,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       SignedIntegerLiteral("42")_
     )_
     val expressions: Seq[Expression] = Seq(equals, hasLabels)
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty, Seq.empty)
+    val qg = MainQueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty, Set.empty, Seq.empty)
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -66,7 +66,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     when(context.planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator())
 
     // when
-    val resultPlans = indexSeekLeafPlanner(expressions, Map(idName -> Set(hasLabels)))()
+    val resultPlans = indexSeekLeafPlanner(qg).plans
 
     // then
     resultPlans should equal(Seq(NodeIndexSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)()))
@@ -85,7 +85,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       SignedIntegerLiteral("42")_
     )_
     val expressions: Seq[Expression] = Seq(equals, hasLabels)
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty, Seq.empty)
+    val qg = MainQueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty, Set.empty, Seq.empty)
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -104,7 +104,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     })
 
     // when
-    val resultPlans = uniqueIndexSeekLeafPlanner(expressions, Map(idName -> Set(hasLabels)))()
+    val resultPlans = uniqueIndexSeekLeafPlanner(qg).plans
 
     // then
     resultPlans should equal(Seq(NodeIndexUniqueSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)()))

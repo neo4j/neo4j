@@ -27,39 +27,52 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
   object PatternDestructuring {
 
-    def destruct(pattern: Pattern): (Set[IdName], Set[PatternRelationship]) =
-      pattern.patternParts.foldLeft((Set.empty[IdName], Set.empty[PatternRelationship])) {
-        case ((accIdNames, accRels), everyPath: EveryPath) =>
-          val (idNames, rels) = destruct(everyPath.element)
-          (accIdNames ++ idNames, accRels ++ rels)
+    def destruct(pattern: Pattern): (Seq[IdName], Seq[PatternRelationship], Seq[NamedPath]) =
+      pattern.patternParts.foldLeft((Seq.empty[IdName], Seq.empty[PatternRelationship], Seq.empty[NamedPath])) {
+        case ((accIdNames, accRels, accPaths), everyPath: EveryPath) =>
+          val (idNames, rels, paths) = destruct(everyPath.element)
+          (accIdNames ++ idNames, accRels ++ rels, accPaths ++ paths)
+
+        case ((accIdNames, accRels, accPaths), NamedPatternPart(Identifier(name), everyPath@EveryPath(_))) =>
+          val (idNames, rels, paths) = destruct(everyPath.element)
+          val namedPath = if (rels.isEmpty)
+            // EveryPath contains a NodePattern (having only one idName)
+            NamedNodePath(IdName(name), idNames.head)
+          else
+            // EveryPath contains a RelationshipChain
+            NamedRelPath(IdName(name), rels)
+
+          (accIdNames ++ idNames, accRels ++ rels, accPaths ++ Seq(namedPath) ++ paths)
+
         case _ => throw new CantHandleQueryException
       }
 
-    private def destruct(element: PatternElement): (Set[IdName], Set[PatternRelationship]) = element match {
+    private def destruct(element: PatternElement): (Seq[IdName], Seq[PatternRelationship], Seq[NamedPath]) = element match {
       case relchain: RelationshipChain => destruct(relchain)
       case node: NodePattern => destruct(node)
     }
 
-    private def destruct(chain: RelationshipChain): (Set[IdName], Set[PatternRelationship]) = chain match {
+    private def destruct(chain: RelationshipChain): (Seq[IdName], Seq[PatternRelationship], Seq[NamedPath]) = chain match {
       // (a)->[r]->(b)
       case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None, _), RelationshipPattern(Some(relId), _, relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
         val leftNode = IdName(leftNodeId.name)
         val rightNode = IdName(rightNodeId.name)
         val r = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length)
-        (Set(leftNode, rightNode), Set(r))
+        (Seq(leftNode, rightNode), Seq(r), Seq.empty)
 
       // ...->[r]->(b)
       case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), _, relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
-        val (idNames, rels) = destruct(relChain)
+        val (idNames, rels, paths) = destruct(relChain)
         val leftNode = IdName(rels.last.nodes._2.name)
         val rightNode = IdName(rightNodeId.name)
-        val resultRels = rels + PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length)
-        (idNames + rightNode, resultRels)
+        val resultRels = rels :+ PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, length)
+        (idNames :+ rightNode, resultRels, paths)
 
       case _ => throw new CantHandleQueryException
     }
 
-    private def destruct(node: NodePattern): (Set[IdName], Set[PatternRelationship]) = (Set(IdName(node.identifier.get.name)), Set.empty)
+    private def destruct(node: NodePattern): (Seq[IdName], Seq[PatternRelationship], Seq[NamedPath]) =
+      (Seq(IdName(node.identifier.get.name)), Seq.empty, Seq.empty)
   }
 
   override def produce(ast: Query): MainQueryGraph = ast match {
@@ -79,14 +92,14 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
               if (qg.patternRelationships.nonEmpty || qg.patternNodes.nonEmpty)
                 throw new CantHandleQueryException
 
-              val (nodeIds: Set[IdName], rels: Set[PatternRelationship]) = PatternDestructuring.destruct(pattern)
+              val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], namedPaths: Seq[NamedPath]) = PatternDestructuring.destruct(pattern)
               val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
-              qg.copy(selections = selections, patternNodes = nodeIds, patternRelationships = rels)
+              qg.copy(selections = selections, patternNodes = nodeIds.toSet, patternRelationships = rels.toSet, namedPaths = namedPaths.toSet)
 
             case Match(optional@true, pattern: Pattern, Seq(), optWhere) =>
-              val (nodeIds: Set[IdName], rels: Set[PatternRelationship]) = PatternDestructuring.destruct(pattern)
+              val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], namedPaths: Seq[NamedPath]) = PatternDestructuring.destruct(pattern)
               val selections = Selections(optWhere.map(SelectionPredicates.fromWhere).getOrElse(Seq.empty))
-              qg.withAddedOptionalMatch(selections, nodeIds, rels)
+              qg.withAddedOptionalMatch(selections, nodeIds.toSet, rels.toSet, namedPaths.toSet)
 
             case _ =>
               throw new CantHandleQueryException

@@ -17,10 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-trait LeafPlanner {
-  def apply()(implicit context: LogicalPlanContext): Seq[LogicalPlan]
+case class ProjectNamedPath(namedPath: NamedPath, left: LogicalPlan) extends LogicalPlan {
+
+  def lhs = Some(left)
+
+  def rhs = None
+
+  val coveredIds: Set[IdName] = namedPath.coveredIds ++ left.coveredIds
+
+  def solvedPredicates: Seq[Expression] = left.solvedPredicates
+
+  def solvedPatterns: Seq[PatternRelationship] = left.solvedPatterns
 }

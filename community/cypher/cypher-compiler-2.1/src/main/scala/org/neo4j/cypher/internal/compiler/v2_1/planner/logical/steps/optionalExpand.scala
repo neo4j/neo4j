@@ -22,15 +22,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import v2_1.planner.QueryGraph
-import v2_1.planner.logical.CandidateList
-import v2_1.planner.logical.LogicalPlanContext
-import v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.OptionalExpand
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 
-object optionalExpand {
+object optionalExpand extends CandidateGenerator[PlanTable] {
 
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
 

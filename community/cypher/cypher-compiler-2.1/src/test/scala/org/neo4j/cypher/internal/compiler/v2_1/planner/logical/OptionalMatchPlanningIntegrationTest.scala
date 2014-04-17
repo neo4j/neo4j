@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 
-class OptionalMatchIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport   {
+class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport   {
 
   test("should build plans containing joins") {
     implicit val planContext = newMockedPlanContext

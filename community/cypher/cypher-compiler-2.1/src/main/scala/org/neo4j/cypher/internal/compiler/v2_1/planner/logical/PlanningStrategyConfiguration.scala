@@ -19,13 +19,38 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 
-trait PlanningStrategy {
-  def plan(implicit context: LogicalPlanContext): LogicalPlan
+case class PlanningStrategyConfiguration(
+  leafPlanners: LeafPlannerList,
+  applySelections: PlanTransformer,
+  pickBestCandidate: CandidateSelector
+)
+
+object PlanningStrategyConfiguration {
+  val default = PlanningStrategyConfiguration(
+    leafPlanners = LeafPlannerList( leafPlanners = Seq(
+      // arguments from the outside in case we are in a sub query,
+      argumentLeafPlanner,
+
+      // MATCH n WHERE id(n) = {id} RETURN n
+      idSeekLeafPlanner,
+
+      // MATCH n WHERE n.prop = {val} RETURN n
+      uniqueIndexSeekLeafPlanner,
+
+      // MATCH n WHERE n.prop = {val} RETURN n
+      indexSeekLeafPlanner,
+
+      // MATCH (n:Person) RETURN n
+      labelScanLeafPlanner,
+
+      // MATCH n RETURN n
+      allNodesLeafPlanner
+    ) ),
+    applySelections = selectPlan,
+    pickBestCandidate = pickBestPlan
+  )
 }
-
-
 
 

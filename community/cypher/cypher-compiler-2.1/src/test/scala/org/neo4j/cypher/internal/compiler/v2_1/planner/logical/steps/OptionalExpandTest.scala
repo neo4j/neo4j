@@ -56,10 +56,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       selections = Selections(),
       patternNodes = Set("a"),
       patternRelationships = Set.empty,
+      namedPaths = Set.empty,
       optionalMatches = Seq(OptionalQueryGraph(
         selections = Selections(),
         patternNodes = Set("a", "b"),
         patternRelationships = Set(patternRel1),
+        namedPaths = Set.empty,
         argumentIds = Set("a")
       ))
     )
@@ -84,10 +86,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       selections = Selections(),
       patternNodes = Set("a"),
       patternRelationships = Set.empty,
+      namedPaths = Set.empty,
       optionalMatches = Seq(OptionalQueryGraph(
         selections = Selections(),
         patternNodes = Set("a", "b", "c"),
         patternRelationships = Set(patternRel1, patternRel2),
+        namedPaths = Set.empty,
         argumentIds = Set("a")
       ))
     )
@@ -110,10 +114,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       selections = Selections(),
       patternNodes = Set("a"),
       patternRelationships = Set.empty,
+      namedPaths = Set.empty,
       optionalMatches = Seq(OptionalQueryGraph(
         selections = Selections(Seq(Set(IdName("r1")) -> r1Predicate)),
         patternNodes = Set("a", "b"),
         patternRelationships = Set(patternRel1),
+        namedPaths = Set.empty,
         argumentIds = Set("a")
       ))
     )
@@ -138,10 +144,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       selections = Selections(),
       patternNodes = Set("a"),
       patternRelationships = Set.empty,
+      namedPaths = Set.empty,
       optionalMatches = Seq(OptionalQueryGraph(
         selections = Selections(Seq(Set(IdName("b")) -> bPredicate)),
         patternNodes = Set("a", "b"),
         patternRelationships = Set(patternRel1),
+        namedPaths = Set.empty,
         argumentIds = Set("a")
       ))
     )
@@ -166,10 +174,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       selections = Selections(),
       patternNodes = Set("a"),
       patternRelationships = Set.empty,
+      namedPaths = Set.empty,
       optionalMatches = Seq(OptionalQueryGraph(
         selections = Selections(Seq(Set(IdName("b")) -> bPredicate)),
         patternNodes = Set("a", "b"),
         patternRelationships = Set(patternRel3),
+        namedPaths = Set.empty,
         argumentIds = Set("a")
       ))
     )
@@ -194,10 +204,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       selections = Selections(),
       patternNodes = Set("a", "b"),
       patternRelationships = Set(patternRel1),
+      namedPaths = Set.empty,
       optionalMatches = Seq(OptionalQueryGraph(
         selections = Selections(Seq(Set(IdName("r1"), IdName("a")) -> aAndR1Predicate)),
         patternNodes = Set("b", "x"),
         patternRelationships = Set(patternRel4),
+        namedPaths = Set.empty,
         argumentIds = Set(IdName("b"))
       ))
     )

@@ -17,17 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-case class Optional(nullableIds: Set[IdName], inputPlan: LogicalPlan) extends LogicalPlan {
+trait LogicalPlanningFunction[-A, +B] {
+  def apply(input: A)(implicit context: LogicalPlanContext): B
 
-  val lhs = Some(inputPlan)
-  val rhs = None
-
-  val coveredIds: Set[IdName] = inputPlan.coveredIds ++ nullableIds
-
-  def solvedPredicates: Seq[Expression] = inputPlan.solvedPredicates
-  def solvedPatterns: Seq[PatternRelationship] = inputPlan.solvedPatterns
+  def asFunctionInContext(implicit context: LogicalPlanContext): A => B = apply
 }
+
+trait CandidateGenerator[-T] extends LogicalPlanningFunction[T, CandidateList]
+
+trait CandidateSelector extends LogicalPlanningFunction[CandidateList, Option[LogicalPlan]]
+
+trait PlanTransformer extends LogicalPlanningFunction[LogicalPlan, LogicalPlan]
+
+trait LeafPlanner extends CandidateGenerator[QueryGraph]
+
+

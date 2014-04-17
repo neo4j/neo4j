@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable, LogicalPlanContext, CandidateGenerator}
 
-object join {
+object join extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
     val joinPlans: Seq[NodeHashJoin] = (for {
       planA <- planTable.plans

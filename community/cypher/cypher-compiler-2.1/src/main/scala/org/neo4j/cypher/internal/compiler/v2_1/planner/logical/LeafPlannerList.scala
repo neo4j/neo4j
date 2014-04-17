@@ -17,17 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-case class Optional(nullableIds: Set[IdName], inputPlan: LogicalPlan) extends LogicalPlan {
-
-  val lhs = Some(inputPlan)
-  val rhs = None
-
-  val coveredIds: Set[IdName] = inputPlan.coveredIds ++ nullableIds
-
-  def solvedPredicates: Seq[Expression] = inputPlan.solvedPredicates
-  def solvedPatterns: Seq[PatternRelationship] = inputPlan.solvedPatterns
+case class LeafPlannerList(leafPlanners: Seq[LeafPlanner]) {
+  def candidateLists(qg: QueryGraph)(implicit context: LogicalPlanContext): Iterable[CandidateList] =
+    leafPlanners.flatMap(_(qg).plans).groupBy(_.coveredIds).values.map(CandidateList)
 }

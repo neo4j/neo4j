@@ -37,10 +37,12 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
       selections = Selections(),
       patternNodes = Set.empty,
       patternRelationships = Set.empty,
+      namedPaths = Set.empty,
       optionalMatches = Seq(OptionalQueryGraph(
         selections = Selections(),
         patternNodes = Set("a", "b"),
         patternRelationships = Set(patternRel),
+        namedPaths = Set.empty,
         argumentIds = Set.empty
       ))
     )
@@ -60,6 +62,6 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val planTable = PlanTable(Map())
     val innerPlan = Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
 
-    optional(planTable).topPlan(context.cost) should equal(Some(Optional(Set("a", "b", "r"), innerPlan)))
+    optional(planTable).bestPlan(context.cost) should equal(Some(Optional(Set("a", "b", "r"), innerPlan)))
   }
 }
