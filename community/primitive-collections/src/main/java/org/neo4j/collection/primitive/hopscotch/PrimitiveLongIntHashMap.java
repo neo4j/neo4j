@@ -90,11 +90,11 @@ public class PrimitiveLongIntHashMap extends AbstractLongHopScotchCollection<int
         int capacity = table.capacity();
         for ( int i = 0; i < capacity; i++ )
         {
-            long key = table.key( i );
-            if ( key != nullKey )
+            int[] value = table.value( i );
+            if ( value != null )
             {
-                int[] value = table.value( i );
-                if ( value != null )
+                long key = table.key( i );
+                if ( key != nullKey )
                 {
                     visitor.visited( key, value[0] );
                 }
