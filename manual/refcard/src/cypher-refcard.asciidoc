@@ -1,4 +1,5 @@
 = Neo4j Cypher Refcard {neo4j-version} =
+:sources: ../docs/neo4j-cypher-refcard-tests-docs-jar/dev/ql/refcard
 
 *Cypher is the declarative query language for Neo4j, the world’s leading graph database.*
 
@@ -32,17 +33,17 @@ Cypher also supports maps and collections.
 RETURN [ORDER BY] [SKIP] [LIMIT]
 ----
 
-//include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/query-structure.asciidoc[]
+//include::{sources}/query-structure.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/match.asciidoc[]
+include::{sources}/match.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/where.asciidoc[]
+include::{sources}/where.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/return.asciidoc[]
+include::{sources}/return.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/with.asciidoc[]
+include::{sources}/with.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/union.asciidoc[]
+include::{sources}/union.asciidoc[]
 
 .Write-Only Query Structure 
 ["refcard", cardcss="write c2-2 c4-4 c5-5 c6-3"]
@@ -63,19 +64,19 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/union.ascii
 [RETURN [ORDER BY] [SKIP] [LIMIT]]
 ----
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create.asciidoc[]
+include::{sources}/create.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/merge.asciidoc[]
+include::{sources}/merge.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/set.asciidoc[]
+include::{sources}/set.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/delete.asciidoc[]
+include::{sources}/delete.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/remove.asciidoc[]
+include::{sources}/remove.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/index.asciidoc[]
+include::{sources}/index.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/constraint.asciidoc[]
+include::{sources}/constraint.asciidoc[]
 
 ++++
 <div class="col cardgeneral c3-2 c6-1"><div class="blk">
@@ -118,33 +119,33 @@ include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/constraint.
 </div></div>
 ++++
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/patterns.asciidoc[]
+include::{sources}/patterns.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/labels.asciidoc[]
+include::{sources}/labels.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/collections.asciidoc[]
+include::{sources}/collections.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/maps.asciidoc[]
+include::{sources}/maps.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/relationship-functions.asciidoc[]
+include::{sources}/relationship-functions.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/predicates.asciidoc[]
+include::{sources}/predicates.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/collection-predicates.asciidoc[]
+include::{sources}/collection-predicates.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/functions.asciidoc[]
+include::{sources}/functions.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/path-functions.asciidoc[]
+include::{sources}/path-functions.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/collection-functions.asciidoc[]
+include::{sources}/collection-functions.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/mathematical-functions.asciidoc[]
+include::{sources}/mathematical-functions.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/string-functions.asciidoc[]
+include::{sources}/string-functions.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/aggregation.asciidoc[]
+include::{sources}/aggregation.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/case.asciidoc[]
+include::{sources}/case.asciidoc[]
 
 ++++
 <div class="col carddeprecation c2-2 c3-3 c4-4 c5-5 c6-6"><div class="blk">
@@ -174,9 +175,9 @@ With Neo4j 2.0 several Cypher features in version 1.9 have been deprecated or re
 </div></div>
 ++++
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/start.asciidoc[]
+include::{sources}/start.asciidoc[]
 
-include::../../neo4j-cypher-refcard-tests/target/docs/dev/ql/refcard/create-unique.asciidoc[]
+include::{sources}/create-unique.asciidoc[]
 
 
 ++++
