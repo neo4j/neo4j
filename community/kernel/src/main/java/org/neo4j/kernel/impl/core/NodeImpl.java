@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -291,7 +292,7 @@ public class NodeImpl extends ArrayBasedPrimitive
                 updateSize( nodeManager );
             }
         }
-        if ( rels != null )
+        if ( rels != null && rels.second().size() > 0 )
         {
             nodeManager.putAllInRelCache( rels.second() );
         }
@@ -351,15 +352,16 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         if ( !hasMoreRelationshipsToLoad( direction, types ) )
         {
-            return null;
+            return Triplet.of( null, Collections.<RelationshipImpl>emptyList(), relChainPosition );
         }
+
         Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>,RelationshipLoadingPosition> rels =
                 loadMoreRelationshipsFromNodeManager( nodeManager, direction, types );
 
         ArrayMap<Integer, RelIdArray> addMap = rels.first();
         if ( addMap.size() == 0 )
         {
-            return null;
+            return rels;
         }
         for ( Integer type : addMap.keySet() )
         {
