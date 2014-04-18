@@ -78,11 +78,15 @@ abstract class LogicalLeafPlan extends LogicalPlan {
 final case class IdName(name: String) extends AnyVal
 
 final case class PatternRelationship(name: IdName, nodes: (IdName, IdName), dir: Direction, types: Seq[RelTypeName], length: PatternLength) {
-  def directionRelativeTo(node: IdName): Direction = if (node == nodes._1) dir else dir.reverse()
+  def directionRelativeTo(node: IdName): Direction = if (node == left) dir else dir.reverse()
 
-  def otherSide(node: IdName) = if (node == nodes._1) nodes._2 else nodes._1
+  def otherSide(node: IdName) = if (node == left) right else left
 
-  def coveredIds: Set[IdName] = Set(name, nodes._1, nodes._2)
+  def coveredIds: Set[IdName] = Set(name, left, right)
+
+  def left = nodes._1
+
+  def right = nodes._2
 }
 
 abstract class NamedPath {

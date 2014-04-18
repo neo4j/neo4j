@@ -38,7 +38,7 @@ class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val input = newMockedLogicalPlan("n")
 
     // when
-    val result = projectPlan(input)
+    val result = projectUncovered(input)
 
     // then
     result should equal(Projection(input, projections))
@@ -55,7 +55,7 @@ class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val input = newMockedLogicalPlan("n")
 
     // when
-    val result = projectPlan(input)
+    val result = projectUncovered(input)
 
     // then
     result should equal(input)

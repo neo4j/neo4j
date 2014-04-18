@@ -29,7 +29,9 @@ case class PlanningStrategyConfiguration(
 
 object PlanningStrategyConfiguration {
   val default = PlanningStrategyConfiguration(
-    leafPlanners = LeafPlannerList( leafPlanners = Seq(
+    pickBestCandidate = pickBestPlan,
+    applySelections = selectProjectables,
+    leafPlanners = LeafPlannerList(
       // arguments from the outside in case we are in a sub query,
       argumentLeafPlanner,
 
@@ -47,9 +49,7 @@ object PlanningStrategyConfiguration {
 
       // MATCH n RETURN n
       allNodesLeafPlanner
-    ) ),
-    applySelections = selectPlan,
-    pickBestCandidate = pickBestPlan
+    )
   )
 }
 

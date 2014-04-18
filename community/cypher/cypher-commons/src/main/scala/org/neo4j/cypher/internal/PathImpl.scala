@@ -26,13 +26,17 @@ import collection.mutable
 import org.neo4j.graphdb.traversal.Paths
 import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
 
+object PathImpl {
+  val empty = new PathImpl()
+}
+
 case class PathImpl(pathEntities: PropertyContainer*)
   extends org.neo4j.graphdb.Path
   with Traversable[PropertyContainer]
   with CypherArray {
 
   val (nodeList,relList) = {
-    if (pathEntities.size % 2 == 0) throw new IllegalArgumentException("Tried to construct a path that is not built like a path: even number of elements.");
+    if (pathEntities.size % 2 == 0) throw new IllegalArgumentException("Tried to construct a path that is not built like a path: even number of elements.")
     var x = 0
     val nodes = new Array[Node](pathEntities.size/2+1)
     val rels = new Array[Relationship](pathEntities.size/2)
@@ -43,7 +47,7 @@ case class PathImpl(pathEntities: PropertyContainer*)
         x+=1
       })
     } catch {
-      case e: ClassCastException => throw new IllegalArgumentException("Tried to construct a path that is not built like a path",e);
+      case e: ClassCastException => throw new IllegalArgumentException("Tried to construct a path that is not built like a path",e)
     }
     (new mutable.WrappedArray.ofRef(nodes),new mutable.WrappedArray.ofRef(rels))
   }
@@ -71,7 +75,7 @@ case class PathImpl(pathEntities: PropertyContainer*)
   def iterator(): JavaIterator[PropertyContainer] = pathEntities.asJava.iterator()
 
   def foreach[U](f: (PropertyContainer) => U) {
-    pathEntities.foreach(f(_))
+    pathEntities.foreach(f)
   }
 
   override def toString(): String = Paths.defaultPathToString(this)

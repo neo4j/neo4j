@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, LogicalPlanningTestSupport}
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, Selection}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{NamedPath, IdName, Selection}
 
 class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("when a predicate that isn't already solved is solvable it should be applied") {
@@ -52,11 +52,11 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val plan = newMockedLogicalPlan("x")
     val predicate = mock[Expression]
     val selections = Selections(Seq(plan.coveredIds -> predicate))
-
+    when(context.queryGraph.namedPaths).thenReturn(Set.empty[NamedPath])
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
-    val result = selectPlan(plan)
+    val result = selectCovered(plan)
 
     // Then
     result should equal(Selection(Seq(predicate), plan))
@@ -69,10 +69,11 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val plan = newMockedLogicalPlan("x")
     val predicate = mock[Expression]
     val selections = Selections(Seq(plan.coveredIds -> predicate))
+    when(context.queryGraph.namedPaths).thenReturn(Set.empty[NamedPath])
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
-    val result = selectPlan(plan)
+    val result = selectCovered(plan)
 
     // Then
     result should equal(Selection(Seq(predicate), plan))
@@ -86,10 +87,11 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val predicate1 = mock[Expression]
     val predicate2 = mock[Expression]
     val selections = Selections(Seq(plan.coveredIds -> predicate1, plan.coveredIds -> predicate2))
+    when(context.queryGraph.namedPaths).thenReturn(Set.empty[NamedPath])
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
-    val result = selectPlan(plan)
+    val result = selectCovered(plan)
 
     // Then
     result should equal(Selection(Seq(predicate1, predicate2), plan))
@@ -103,10 +105,11 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val predicate = mock[Expression]
     val selections = Selections(Seq(plan.coveredIds -> predicate))
     when(context.queryGraph.selections).thenReturn(selections)
+    when(context.queryGraph.namedPaths).thenReturn(Set.empty[NamedPath])
     when(plan.solvedPredicates).thenReturn(Seq(predicate))
 
     // When
-    val result = selectPlan(plan)
+    val result = selectCovered(plan)
 
     // Then
     result should equal(plan)
@@ -119,10 +122,11 @@ class ApplySelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport
     val plan = newMockedLogicalPlan("x")
     val predicate = mock[Expression]
     val selections = Selections(Seq(Set(IdName("x"), IdName("y")) -> predicate))
+    when(context.queryGraph.namedPaths).thenReturn(Set.empty[NamedPath])
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
-    val result = selectPlan(plan)
+    val result = selectCovered(plan)
 
     // Then
     result should equal(plan)

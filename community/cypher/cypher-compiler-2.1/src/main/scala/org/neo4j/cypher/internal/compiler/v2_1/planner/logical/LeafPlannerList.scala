@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-case class LeafPlannerList(leafPlanners: Seq[LeafPlanner]) {
+case class LeafPlannerList(leafPlanners: LeafPlanner*) {
   def candidateLists(qg: QueryGraph)(implicit context: LogicalPlanContext): Iterable[CandidateList] =
     leafPlanners.flatMap(_(qg).plans).groupBy(_.coveredIds).values.map(CandidateList)
 }

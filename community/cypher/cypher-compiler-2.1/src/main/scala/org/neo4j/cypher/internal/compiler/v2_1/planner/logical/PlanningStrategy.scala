@@ -25,7 +25,3 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 trait PlanningStrategy {
   def plan(implicit context: LogicalPlanContext): LogicalPlan
 }
-
-
-
-

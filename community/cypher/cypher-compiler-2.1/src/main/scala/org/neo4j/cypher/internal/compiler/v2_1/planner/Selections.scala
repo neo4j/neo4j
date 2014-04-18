@@ -23,9 +23,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
+// TODO: Use Seq[SelectionPredicate] (with case class SelectionPredicate(expression, dependencies))
 case class Selections(predicates: Seq[(Set[IdName], Expression)] = Seq.empty) {
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
     case (deps, predicate) if (deps -- ids).isEmpty => predicate
+  }
+
+  def predicatesAndDependenciesGiven(ids: Set[IdName]): Seq[(Set[IdName], Expression)] = predicates.collect {
+    case (deps, predicate) if (deps -- ids).isEmpty => (deps, predicate)
   }
 
   def flatPredicates: Seq[Expression] =
