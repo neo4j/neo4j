@@ -22,18 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SingleRow, IdName, LogicalPlan}
 import org.neo4j.cypher.InternalException
 
-
 case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
   def size = m.size
 
   def isEmpty = m.isEmpty
 
   def -(ids: Set[IdName]) = copy(m = m - ids)
-
-  def +(optNewPlan: Option[LogicalPlan]): PlanTable = optNewPlan match {
-    case Some(newPlan) => this + newPlan
-    case None          => this
-  }
 
   def +(newPlan: LogicalPlan): PlanTable = {
     if (m.keys.exists(newPlan.isCoveredBy)) {
@@ -56,4 +50,8 @@ case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
 
     allPlans.headOption.getOrElse(SingleRow())
   }
+}
+
+object PlanTable {
+  val empty = PlanTable()
 }
