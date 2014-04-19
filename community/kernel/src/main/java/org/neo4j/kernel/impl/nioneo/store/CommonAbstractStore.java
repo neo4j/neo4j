@@ -59,7 +59,7 @@ public abstract class CommonAbstractStore implements IdSequence
         public static final Setting<Boolean> use_memory_mapped_buffers = GraphDatabaseSettings.use_memory_mapped_buffers;
     }
 
-    public static final String ALL_STORES_VERSION = "v0.A.2";
+    public static final String ALL_STORES_VERSION = "v0.A.3";
     public static final String UNKNOWN_VERSION = "Uknown";
 
     protected Config configuration;

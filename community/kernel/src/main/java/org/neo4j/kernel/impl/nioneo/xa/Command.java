@@ -729,12 +729,13 @@ public abstract class Command extends XaCommand
             buffer.putLong( record.getFirstOut() );
             buffer.putLong( record.getFirstIn() );
             buffer.putLong( record.getFirstLoop() );
+            buffer.putLong( record.getOwningNode() );
         }
 
         public static Command readFromFile( NeoStore neoStore, ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
         {
             buffer.clear();
-            buffer.limit( 43 );
+            buffer.limit( 51 );
             if ( byteChannel.read( buffer ) != buffer.limit() )
             {
                 return null;
@@ -754,6 +755,7 @@ public abstract class Command extends XaCommand
             record.setFirstOut( buffer.getLong() );
             record.setFirstIn( buffer.getLong() );
             record.setFirstLoop( buffer.getLong() );
+            record.setOwningNode( buffer.getLong() );
             return new RelationshipGroupCommand( neoStore != null ? neoStore.getRelationshipGroupStore() : null, record );
         }
 

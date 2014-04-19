@@ -35,11 +35,11 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
 {
     /* Record layout
      *
-     * [type+inUse+highbits,next,firstOut,firstIn,firstLoop] = 20B
+     * [type+inUse+highbits,next,firstOut,firstIn,firstLoop,owningNode] = 25B
      *
      * One record holds first relationship links (out,in,loop) to relationships for one type for one entity.
      */
-    public static final int RECORD_SIZE = 20;
+    public static final int RECORD_SIZE = 25;
     public static final String TYPE_DESCRIPTOR = "RelationshipGroupStore";
 
     private int denseNodeThreshold;
@@ -114,6 +114,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         long nextOutLowBits = buffer.getUnsignedInt();
         long nextInLowBits = buffer.getUnsignedInt();
         long nextLoopLowBits = buffer.getUnsignedInt();
+        long owningNode = buffer.getUnsignedInt() | (((long)buffer.get()) << 32);
 
         long nextMod = (inUseByte & 0xE) << 31;
         long nextOutMod = (inUseByte & 0x70) << 28;
@@ -126,6 +127,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         record.setFirstOut( longFromIntAndMod( nextOutLowBits, nextOutMod ) );
         record.setFirstIn( longFromIntAndMod( nextInLowBits, nextInMod ) );
         record.setFirstLoop( longFromIntAndMod( nextLoopLowBits, nextLoopMod ) );
+        record.setOwningNode( owningNode );
         return record;
     }
 
@@ -185,7 +187,8 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
                 .putInt( (int) record.getNext() )
                 .putInt( (int) record.getFirstOut() )
                 .putInt( (int) record.getFirstIn() )
-                .putInt( (int) record.getFirstLoop() );
+                .putInt( (int) record.getFirstLoop() )
+                .putInt( (int) record.getOwningNode() ).put( (byte) (record.getOwningNode() >> 32) );
         }
         else
         {

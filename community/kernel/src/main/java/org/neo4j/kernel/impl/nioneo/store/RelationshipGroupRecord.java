@@ -26,6 +26,7 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
     private long firstOut = Record.NO_NEXT_RELATIONSHIP.intValue();
     private long firstIn = Record.NO_NEXT_RELATIONSHIP.intValue();
     private long firstLoop = Record.NO_NEXT_RELATIONSHIP.intValue();
+    private long owningNode = Record.NO_NEXT_RELATIONSHIP.intValue();
 
     // Not stored, just kept in memory temporarily when loading the group chain
     private long prev = Record.NO_NEXT_RELATIONSHIP.intValue();
@@ -103,6 +104,16 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
         return prev;
     }
 
+    public long getOwningNode()
+    {
+        return owningNode;
+    }
+
+    public void setOwningNode( long owningNode )
+    {
+        this.owningNode = owningNode;
+    }
+
     @Override
     public String toString()
     {
@@ -114,6 +125,7 @@ public class RelationshipGroupRecord extends Abstract64BitRecord
                 .append( ",prev=" + prev )
                 .append( ",next=" + next )
                 .append( ",used=" + inUse() )
+                .append( ",owner=" + getOwningNode() )
                 .append( "]" ).toString();
     }
 }

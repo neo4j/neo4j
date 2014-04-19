@@ -74,6 +74,7 @@ public class RelationshipGroupGetter
             RelationshipGroupRecord record = change.forChangingData();
             record.setInUse( true );
             record.setCreated();
+            record.setOwningNode( node.getId() );
 
             // Attach it...
             RecordProxy<Long, RelationshipGroupRecord, Integer> closestPreviousChange = existingGroup.closestPrevious();
