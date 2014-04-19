@@ -31,42 +31,24 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
 
-    def addBestPlan(planTable: PlanTable)(candidates: CandidateList) = planTable + pickBest(candidates.map(select))
-
     def generateLeafPlanTable() = {
       val leafPlanCandidateLists = config.leafPlanners.candidateLists(context.queryGraph)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select))
       val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
-      bestLeafPlans.foldLeft(PlanTable())(_ + _)
-    }
-
-    def solveExpandsOrJoins(planTable: PlanTable) = {
-      val expansions = expand(planTable)
-      val joins = join(planTable)
-      addBestPlan(planTable)(expansions ++ joins)
-    }
-
-    def solveCartesianProducts(planTable: PlanTable) = {
-      val cartesianProducts = cartesianProduct(planTable)
-      addBestPlan(planTable)(cartesianProducts)
-    }
-
-    def solveOptionalMatches(planTable: PlanTable)(implicit context: LogicalPlanContext) = {
-      val optionalApplies = applyOptional(planTable)
-      val optionals = optional(planTable)
-      val outerJoins = outerJoin(planTable)
-      val optionalExpands = optionalExpand(planTable)
-      addBestPlan(planTable)(optionalApplies ++ optionals ++ outerJoins ++ optionalExpands)
+      bestLeafPlans.foldLeft(PlanTable.empty)(_ + _)
     }
 
     val leafPlanTable = generateLeafPlanTable()
 
-    val planTableAfterExpandOrJoin = iterateUntilConverged(solveExpandsOrJoins)(leafPlanTable)
-    val planTableAfterCartesianProduct = iterateUntilConverged(solveCartesianProducts)(planTableAfterExpandOrJoin)
+    def findBestPlan(planGenerator: CandidateGenerator[PlanTable]) =
+      (planTable: PlanTable) => pickBest(planGenerator(planTable).map(select)).map(planTable + _).getOrElse(planTable)
+
+    val planTableAfterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leafPlanTable)
+    val planTableAfterCartesianProduct = iterateUntilConverged(findBestPlan(cartesianProduct))(planTableAfterExpandOrJoin)
 
     val bestPlan = context.queryGraph match {
       case main: MainQueryGraph =>
-        val planTableAfterOptionalApplies = iterateUntilConverged(solveOptionalMatches)(planTableAfterCartesianProduct)
+        val planTableAfterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(planTableAfterCartesianProduct)
         projectUncovered(planTableAfterOptionalApplies.uniquePlan)
 
       case optionalMatch: OptionalQueryGraph =>
@@ -76,3 +58,5 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     verifyBestPlan(bestPlan)
   }
 }
+
+
