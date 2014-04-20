@@ -40,6 +40,10 @@ object nameMatchPatternElements extends Rewriter {
     case m: Match =>
       val rewrittenPattern = m.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[Pattern]
       m.copy(pattern = rewrittenPattern)(m.position)
+
+    case exp: PatternExpression =>
+      val rewrittenPattern = exp.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[RelationshipsPattern]
+      exp.copy(pattern = rewrittenPattern)
   }
 }
 

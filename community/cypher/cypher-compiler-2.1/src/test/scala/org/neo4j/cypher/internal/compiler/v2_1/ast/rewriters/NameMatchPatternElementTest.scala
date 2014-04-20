@@ -36,7 +36,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
 
   test("name all RelationshipPatterns in Query") {
     val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
-    val expected = parser.parse("MATCH (n)-[`  UNNAMED9`:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
+    val expected = parser.parse("MATCH (n)-[`  UNNAMED9`:Foo]->(m) WHERE (n)-[`  UNNAMED31`:Bar]->(m) RETURN n")
 
     val result = original.rewrite(bottomUp(nameMatchPatternElements))
     assert(result === expected)
