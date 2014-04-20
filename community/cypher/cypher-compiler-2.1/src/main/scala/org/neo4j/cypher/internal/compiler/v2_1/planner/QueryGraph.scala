@@ -23,6 +23,13 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NamedPath
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
 
+
+trait SubQuery {
+  def queryGraph:QueryGraph
+}
+
+case class OptionalMatch(queryGraph:QueryGraph) extends SubQuery
+
 // An abstract representation of the query graph being solved at the current step
 case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
                       patternNodes: Set[IdName] = Set.empty,
@@ -30,7 +37,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       argumentIds: Set[IdName] = Set.empty,
                       selections: Selections = Selections(),
                       projections: Map[String, Expression] = Map.empty,
-                      optionalMatches: Seq[QueryGraph] = Seq.empty) {
+                      subQueries: Seq[SubQuery] = Seq.empty) {
 
   def ++(in: QueryGraph): QueryGraph = in match {
     case other: QueryGraph => QueryGraph(
@@ -38,14 +45,14 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       selections = selections ++ other.selections,
       patternNodes = patternNodes ++ other.patternNodes,
       patternRelationships = patternRelationships ++ other.patternRelationships,
-      optionalMatches = optionalMatches ++ other.optionalMatches,
+      subQueries = subQueries ++ other.subQueries,
       namedPaths = namedPaths ++ other.namedPaths,
       argumentIds = argumentIds ++ other.argumentIds)
   }
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = coveredIds intersect optionalMatch.coveredIds
-    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentId(argumentIds.toSeq)).
+    copy(subQueries = subQueries :+ OptionalMatch(optionalMatch.addArgumentId(argumentIds.toSeq))).
       addCoveredIdsAsProjections()
   }
 
@@ -62,10 +69,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def add(rel: PatternRelationship) =
     addPatternNode(rel.nodes._1).
-    addPatternNode(rel.nodes._2).
-    copy(
-      patternRelationships = addPatternNode(rel.nodes._1).addPatternNode(rel.nodes._2).patternRelationships + rel,
-      projections = addPatternNode(rel.nodes._1).addPatternNode(rel.nodes._2).projections + symbol(rel.name.name))
+      addPatternNode(rel.nodes._2).
+      copy(
+        patternRelationships = addPatternNode(rel.nodes._1).addPatternNode(rel.nodes._2).patternRelationships + rel,
+        projections = addPatternNode(rel.nodes._1).addPatternNode(rel.nodes._2).projections + symbol(rel.name.name))
 
   def add(path: NamedPath) = copy(
     namedPaths = namedPaths + path,
@@ -84,7 +91,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def coveredIds: Set[IdName] = {
     val patternIds = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships, namedPaths)
-    val optionalMatchIds = optionalMatches.flatMap(_.coveredIds)
+    val optionalMatchIds = subQueries.flatMap {
+      case OptionalMatch(qg) => qg.coveredIds
+    }
     patternIds ++ argumentIds ++ optionalMatchIds
   }
 
@@ -103,6 +112,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   def addCoveredIdsAsProjections(): QueryGraph = {
     val coveredIdProjections = coveredIds.map(x => x.name -> Identifier(x.name)(null)).toMap
     copy(projections = projections ++ coveredIdProjections)
+  }
+
+  def optionalMatches : Seq[QueryGraph] = subQueries.collect {
+    case OptionalMatch(qg) => qg
   }
 }
 
@@ -139,5 +152,3 @@ object SelectionPredicates {
     }
   }.toSet
 }
-
-
