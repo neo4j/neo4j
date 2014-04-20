@@ -17,26 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v2_1.helpers
 
-import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
+object NameSupport {
 
-
-object expandStar extends Rewriter {
-
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
-
-  private val instance: Rewriter = Rewriter.lift {
-    case x: ReturnAll if x.seenIdentifiers.nonEmpty =>
-
-      val identifiers = x.seenIdentifiers.get.filter(isNamed).toSeq.sorted
-
-      val returnItems: Seq[ReturnItem] = identifiers.map {
-        id => UnaliasedReturnItem(Identifier(id)(x.position), id)(x.position)
-      }.toSeq
-
-      ListedReturnItems(returnItems)(x.position)
+  implicit class NameString(name: String) {
+    def isNamed = !unnamed
+    def unnamed = NameSupport.notNamed(name)
   }
+
+  def isNamed(x: String) = !notNamed(x)
+
+  def notNamed(x: String) = x.startsWith("  UNNAMED")
 }
