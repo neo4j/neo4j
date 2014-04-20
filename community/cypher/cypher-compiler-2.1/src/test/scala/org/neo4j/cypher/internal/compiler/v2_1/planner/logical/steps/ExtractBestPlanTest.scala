@@ -31,7 +31,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
     implicit val logicalPlanContext = newMockedLogicalPlanContext(
       planContext= newMockedPlanContext,
       queryGraph = QueryGraph(
-        selections = Selections(Set(Set.empty[IdName] -> null)),
+        selections = Selections(Set(Predicate(Set.empty[IdName], null))),
         patternNodes = Set(IdName("a"), IdName("b")))
     )
     val plan = newMockedLogicalPlan("b")

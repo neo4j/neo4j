@@ -76,7 +76,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val optionalMatch = QueryGraph(
       patternNodes = Set("a", "b"),
       patternRelationships = Set(patternRel1),
-      selections = Selections(Set(Set(IdName("r1")) -> r1Predicate)))
+      selections = Selections(Set(Predicate(Set(IdName("r1")), r1Predicate))))
     val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
     implicit val context = newMockedLogicalPlanContext(
@@ -96,7 +96,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val optionalMatch = QueryGraph(
       patternNodes = Set("a", "b"),
       patternRelationships = Set(patternRel1),
-      selections = Selections(Set(Set(IdName("b")) -> bPredicate)))
+      selections = Selections(Set(Predicate(Set(IdName("b")), bPredicate))))
     val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
     implicit val context = newMockedLogicalPlanContext(
@@ -116,7 +116,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val optionalMatch = QueryGraph(
       patternNodes = Set("a", "b"),
       patternRelationships = Set(patternRel3),
-      selections = Selections(Set(Set(IdName("b")) -> bPredicate)))
+      selections = Selections(Set(Predicate(Set(IdName("b")), bPredicate))))
     val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
     implicit val context = newMockedLogicalPlanContext(
@@ -136,7 +136,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val optionalMatch = QueryGraph(
       patternNodes = Set("b", "x"),
       patternRelationships = Set(patternRel4),
-      selections = Selections(Set(Set(IdName("r1"), IdName("a")) -> aAndR1Predicate)))
+      selections = Selections(Set(Predicate(Set(IdName("r1"), IdName("a")), aAndR1Predicate))))
     val qg = QueryGraph(
       patternNodes = Set("a", "b"),
       patternRelationships = Set(patternRel1)).

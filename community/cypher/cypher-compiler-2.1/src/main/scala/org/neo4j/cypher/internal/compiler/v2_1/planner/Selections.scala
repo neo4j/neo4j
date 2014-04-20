@@ -23,40 +23,37 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
-case class Selections(predicates: Set[(Set[IdName], Expression)] = Set.empty) {
+case class Predicate(dependencies: Set[IdName], exp:Expression)
+
+case class Selections(predicates: Set[Predicate] = Set.empty) {
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
-    case (deps, predicate) if (deps -- ids).isEmpty => predicate
+    case Predicate(deps, predicate) if (deps -- ids).isEmpty => predicate
   }.toSeq
 
   def predicatesAndDependenciesGiven(ids: Set[IdName]): Set[(Set[IdName], Expression)] = predicates.collect {
-    case (deps, predicate) if (deps -- ids).isEmpty => (deps, predicate)
+    case Predicate(deps, predicate) if (deps -- ids).isEmpty => (deps, predicate)
   }
 
   def flatPredicates: Seq[Expression] =
-    predicates.map(_._2).toSeq
+    predicates.map(_.exp).toSeq
 
-  def labelPredicates: Map[IdName, Set[HasLabels]] = {
-    predicates.foldLeft(Map.empty[IdName, Set[HasLabels]]) { case (m, pair) =>
-      val (_, expr) = pair
-      expr match {
-        case hasLabels @ HasLabels(Identifier(name), labels) =>
-          // FIXME: remove when we have test for checking that we construct the expected plan
-          if (labels.size > 1) {
-            throw new ThisShouldNotHappenError("Davide", "Rewriting should introduce single label HasLabels predicates in the WHERE clause")
-          }
-          val idName = IdName(name)
-          m.updated(idName, m.getOrElse(idName, Set.empty) + hasLabels)
-        case _ =>
-          m
-      }
+  def labelPredicates: Map[IdName, Set[HasLabels]] =
+    predicates.foldLeft(Map.empty[IdName, Set[HasLabels]]) {
+      case (m, Predicate(_, hasLabels@HasLabels(Identifier(name), labels))) =>
+        // FIXME: remove when we have test for checking that we construct the expected plan
+        if (labels.size > 1) {
+          throw new ThisShouldNotHappenError("Davide", "Rewriting should introduce single label HasLabels predicates in the WHERE clause")
+        }
+        val idName = IdName(name)
+        m.updated(idName, m.getOrElse(idName, Set.empty) + hasLabels)
+      case (m, _) => m
     }
-  }
 
   def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
     flatPredicates.forall( solvedPredicates.contains )
 
   def contains(e: Expression): Boolean = predicates.exists {
-    case (_, expression) => expression == e
+    case pred => pred.exp == e
   }
 
   def ++(other: Selections): Selections = Selections(predicates ++  other.predicates)

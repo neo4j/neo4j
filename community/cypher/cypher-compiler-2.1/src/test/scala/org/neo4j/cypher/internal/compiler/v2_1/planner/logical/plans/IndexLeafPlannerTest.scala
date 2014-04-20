@@ -48,7 +48,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )_
     val qg = QueryGraph(
       projections = projections,
-      selections = Selections(Set(Set(idName) -> equals, Set(idName) -> hasLabels)),
+      selections = Selections(Set(Predicate(Set(idName), equals), Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
@@ -88,7 +88,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )_
     val qg = QueryGraph(
       projections = projections,
-      selections = Selections(Set(Set(idName) -> equals, Set(idName) -> hasLabels)),
+      selections = Selections(Set(
+        Predicate(Set(idName), equals),
+        Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory

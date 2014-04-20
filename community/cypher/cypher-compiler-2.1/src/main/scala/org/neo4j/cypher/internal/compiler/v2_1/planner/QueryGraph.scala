@@ -75,7 +75,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   private def symbol(name: String) = name -> Identifier(name)(null)
 
-  protected def addPreparedPredicates(predicates: Seq[(Set[IdName], Expression)]) =
+  protected def addPreparedPredicates(predicates: Seq[Predicate]) =
     copy(selections = selections.copy(predicates = selections.predicates ++ predicates))
 
   def changeProjections(projections: Map[String, Expression]) = copy(projections = projections)
@@ -117,25 +117,25 @@ object QueryGraph {
 }
 
 object SelectionPredicates {
-  def fromWhere(where: Where): Set[(Set[IdName], Expression)] = extractPredicates(where.expression)
+  def fromWhere(where: Where): Set[Predicate] = extractPredicates(where.expression)
 
   private def idNames(predicate: Expression): Set[IdName] = predicate.treeFold(Set.empty[IdName]) {
     case id: Identifier =>
       (acc: Set[IdName], _) => acc + IdName(id.name)
   }
 
-  def extractPredicates(predicate: Expression): Set[(Set[IdName], Expression)] = {
-    predicate.treeFold(Seq.empty[(Set[IdName], Expression)]) {
+  def extractPredicates(predicate: Expression): Set[Predicate] = {
+    predicate.treeFold(Set.empty[Predicate]) {
       // n:Label
       case predicate@HasLabels(identifier@Identifier(name), labels) =>
         (acc, _) => acc ++ labels.map { label: LabelName =>
-          Set(IdName(name)) -> predicate.copy(labels = Seq(label))(predicate.position)
+          Predicate(Set(IdName(name)), predicate.copy(labels = Seq(label))(predicate.position))
         }
       // and
       case _: And =>
         (acc, children) => children(acc)
       case predicate: Expression =>
-        (acc, _) => acc :+ (idNames(predicate) -> predicate)
+        (acc, _) => acc + Predicate(idNames(predicate), predicate)
     }
   }.toSet
 }
