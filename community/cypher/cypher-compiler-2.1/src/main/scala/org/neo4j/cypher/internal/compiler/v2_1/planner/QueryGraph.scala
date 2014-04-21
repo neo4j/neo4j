@@ -22,15 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NamedPath
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport
-
 
 trait SubQuery {
   def queryGraph:QueryGraph
 }
 
 case class OptionalMatch(queryGraph:QueryGraph) extends SubQuery
-case class Exists(exp:PatternExpression, queryGraph:QueryGraph) extends SubQuery
+case class Exists(predicate: Predicate, queryGraph: QueryGraph) extends SubQuery
 
 // An abstract representation of the query graph being solved at the current step
 case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
@@ -95,6 +93,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     val patternIds = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships, namedPaths)
     val optionalMatchIds = subQueries.flatMap {
       case OptionalMatch(qg) => qg.coveredIds
+      case _ => Vector.empty
     }
     patternIds ++ argumentIds ++ optionalMatchIds
   }
@@ -118,6 +117,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def optionalMatches : Seq[QueryGraph] = subQueries.collect {
     case OptionalMatch(qg) => qg
+  }
+
+  def patternPredicates = subQueries.collect {
+    case e: Exists => e
   }
 }
 

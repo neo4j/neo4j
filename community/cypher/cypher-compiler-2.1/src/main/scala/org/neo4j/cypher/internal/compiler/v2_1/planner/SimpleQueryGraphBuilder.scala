@@ -46,8 +46,8 @@ object SimpleQueryGraphBuilder {
         patternRelationships = relationships.toSet,
         patternNodes = patternNodes.toSet,
         namedPaths = namedPaths.toSet
-      ).add(predicates)
-      qg.addArgumentId(qg.coveredIds.toSeq.filter(_.name.isNamed))
+      ).add(predicates).addCoveredIdsAsProjections()
+      qg.copy(argumentIds = qg.coveredIds.filter(_.name.isNamed))
     }
   }
 
@@ -118,12 +118,19 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     import SimpleQueryGraphBuilder.SubQueryExtraction.extractQueryGraph
 
     val predicates: Set[Predicate] = optWhere.map(SelectionPredicates.fromWhere).getOrElse(Set.empty)
-    val subQueries: Seq[SubQuery] = predicates.collect {
-      case Predicate(_, exp: PatternExpression) =>
-        Exists(exp, extractQueryGraph(exp))
+
+    val predicatesWithCorrectDeps = predicates.map {
+      case Predicate(deps, e:PatternExpression) => Predicate(deps.filter(x => isNamed(x.name)), e)
+      case p => p
+    }
+
+    val subQueries: Seq[SubQuery] = predicatesWithCorrectDeps.collect {
+      case p@Predicate(_, exp: PatternExpression) =>
+        Exists(p, extractQueryGraph(exp))
     }.toSeq
 
-    (Selections(predicates), subQueries)
+
+    (Selections(predicatesWithCorrectDeps), subQueries)
   }
 
   override def produce(ast: Query): QueryGraph = ast match {

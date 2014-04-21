@@ -69,8 +69,7 @@ object namePatternPredicates extends Rewriter {
       val syntheticName = "  UNNAMED" + (pattern.position.offset + 1)
       pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
 
-    // TODO: Don't exclude varlength relationships (currently need to be for legacy conversion)
-    case pattern: RelationshipPattern if !pattern.identifier.isDefined && !pattern.length.isDefined =>
+    case pattern: RelationshipPattern if !pattern.identifier.isDefined =>
       val syntheticName = "  UNNAMED" + pattern.position.offset
       pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
   }

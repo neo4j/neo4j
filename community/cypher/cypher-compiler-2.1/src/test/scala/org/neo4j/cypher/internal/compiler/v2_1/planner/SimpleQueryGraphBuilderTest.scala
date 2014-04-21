@@ -18,6 +18,8 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{namePatternPredicates, nameVarLengthRelationships}
+import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
@@ -40,10 +42,12 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   def buildQueryGraph(query: String, normalize:Boolean = false): QueryGraph = {
     val ast = parser.parse(query)
 
-    val rewrittenAst: Statement = if (normalize)
-      astRewriter.rewrite(query, ast)._1
-    else
+    val rewrittenAst: Statement = if (normalize) {
+      val step1: Statement = astRewriter.rewrite(query, ast)._1
+      step1.rewrite(bottomUp(inSequence(nameVarLengthRelationships, namePatternPredicates))).asInstanceOf[Statement]
+    } else {
       ast
+    }
 
     builder.produce(rewrittenAst.asInstanceOf[Query])
   }
@@ -434,8 +438,10 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("match a where (a)-->() return a") {
+    // Given
     val qg = buildQueryGraph("match a where (a)-->() return a", normalize = true)
 
+    // Then inner pattern query graph
     val relName = "  UNNAMED17"
     val nodeName = "  UNNAMED21"
     val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
@@ -443,13 +449,15 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, Direction.OUTGOING) _,
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
-    val selections = Selections(Set(Predicate(Set(IdName("a")), exp)))
     val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val exists = Exists(exp,
+    val predicate= Predicate(Set(IdName("a")), exp)
+    val exists = Exists(predicate,
       QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
-        argumentIds = Set(IdName("a"))))
+        argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
+
+    val selections = Selections(Set(predicate))
 
     qg.selections should equal(selections)
     qg.patternNodes should equal(Set(IdName("a")))

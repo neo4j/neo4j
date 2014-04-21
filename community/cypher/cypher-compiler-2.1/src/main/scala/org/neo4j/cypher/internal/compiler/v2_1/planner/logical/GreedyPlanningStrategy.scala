@@ -27,8 +27,20 @@ import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
   def plan(implicit context: LogicalPlanContext): LogicalPlan = {
 
-    val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
+    val simpleSelections = config.applySelections.asFunctionInContext
+
+    def select(in: LogicalPlan): LogicalPlan = {
+      val plan = simpleSelections(in)
+
+      def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
+        val secretPlanTable = PlanTable(Map(plan.coveredIds -> plan))
+        val result: CandidateList = selectPatternPredicates(secretPlanTable)
+        result.bestPlan(context.cost).getOrElse(plan)
+      }
+
+      iterateUntilConverged(findBestPlanForPatternPredicates)(plan)
+    }
 
     def generateLeafPlanTable() = {
       val leafPlanCandidateLists = config.leafPlanners.candidateLists(context.queryGraph)
@@ -50,5 +62,3 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     verifyBestPlan(bestPlan)
   }
 }
-
-

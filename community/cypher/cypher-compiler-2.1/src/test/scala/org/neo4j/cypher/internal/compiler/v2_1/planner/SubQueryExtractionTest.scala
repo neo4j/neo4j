@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SimplePatternLength, IdName, PatternRelationship}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Expression}
 
 class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -39,6 +40,10 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
   val planRel = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
   val planRelWithType = PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(TYP), SimplePatternLength)
 
+  private def projections(names: String*): Map[String, Expression] = names.map {
+    case x => x -> Identifier(x)(pos)
+  }.toMap
+
   test("(a)-[r]->(b)") {
     // Given
     val patternExpression = createPatternExpression(aNode, rRel, bNode)
@@ -47,10 +52,11 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projections should equal(Map.empty)
+    qg.projections should equal(projections("a", "r", "b"))
     qg.selections should equal(Selections())
     qg.patternRelationships should equal(Set(planRel))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r"), IdName("b")))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
   }
 
   test("(a)-[r:TYP]->(b)") {
@@ -61,10 +67,11 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projections should equal(Map.empty)
+    qg.projections should equal(projections("a", "r", "b"))
     qg.selections should equal(Selections())
     qg.patternRelationships should equal(Set(planRelWithType))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r"), IdName("b")))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
   }
 
   test("(a)-[r]->(  UNNAMED1)") {
@@ -75,10 +82,11 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projections should equal(Map.empty)
+    qg.projections should equal(projections("a", "r", "  UNNAMED1"))
     qg.selections should equal(Selections())
     qg.patternRelationships should equal(Set(planRel.copy(nodes = (IdName("a"), IdName("  UNNAMED1")))))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r")))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("  UNNAMED1")))
   }
 
   test("(a)-[r]->(b:Label)") {
@@ -90,11 +98,12 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projections should equal(Map.empty)
+    qg.projections should equal(projections("a", "r", "b"))
     val predicate: ast.HasLabels = ast.HasLabels(ast.Identifier("b")(pos), Seq(labelName)) _
     qg.selections should equal(Selections(Set(Predicate(Set(IdName("b")), predicate))))
     qg.patternRelationships should equal(Set(planRel))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r"), IdName("b")))
+    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
   }
 
   def createPatternExpression(n1: ast.NodePattern, r: ast.RelationshipPattern, n2: ast.NodePattern): ast.PatternExpression =
