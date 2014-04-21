@@ -748,7 +748,7 @@ RETURN a.name""")
     relate(a, x, "A")
     relate(b, x, "B")
 
-    val result = execute("match a where a-[:A|:B]->() return a").toList
+    val result = executeWithNewPlanner("match a where a-[:A|:B]->() return a").toList
 
     result should equal (List(Map("a" -> a), Map("a" -> b)))
   }
@@ -800,7 +800,6 @@ RETURN a.name""")
     //THEN
     result.toList should equal (List(Map("n" -> n)))
   }
-
 
   test("issue 479") {
     createNode()

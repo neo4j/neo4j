@@ -99,6 +99,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case Apply(outer, inner) =>
           ApplyPipe(buildPipe(outer), buildPipe(inner))
 
+        case SemiApply(outer, inner) =>
+          SemiApplyPipe(buildPipe(outer), buildPipe(inner))
+
         case _ =>
           throw new CantHandleQueryException
       }
