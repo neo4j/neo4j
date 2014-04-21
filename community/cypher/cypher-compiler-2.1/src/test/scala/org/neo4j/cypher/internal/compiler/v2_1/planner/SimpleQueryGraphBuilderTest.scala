@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 
 class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  // TODO: we may want to have normalized queries instead than simply parse queries
   val builder = new SimpleQueryGraphBuilder
 
   val nIdent: Identifier = Identifier("n")_
@@ -38,9 +37,15 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   val lit43: SignedIntegerLiteral = SignedIntegerLiteral("43")_
 
 
-  def buildQueryGraph(query: String): QueryGraph = {
-    val ast = parser.parse(query).asInstanceOf[Query]
-    builder.produce(ast)
+  def buildQueryGraph(query: String, normalize:Boolean = false): QueryGraph = {
+    val ast = parser.parse(query)
+
+    val rewrittenAst: Statement = if (normalize)
+      astRewriter.rewrite(query, ast)._1
+    else
+      ast
+
+    builder.produce(rewrittenAst.asInstanceOf[Query])
   }
 
   test("RETURN 42") {
@@ -426,6 +431,29 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "b" -> Identifier("b")_,
       "r" -> Identifier("r")_
     ))
+  }
+
+  test("match a where (a)-->() return a") {
+    val qg = buildQueryGraph("match a where (a)-->() return a", normalize = true)
+
+    val relName = "  UNNAMED17"
+    val nodeName = "  UNNAMED21"
+    val exp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, Direction.OUTGOING) _,
+      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
+    ) _) _)
+    val selections = Selections(Set(Predicate(Set(IdName("a")), exp)))
+    val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val exists = Exists(exp,
+      QueryGraph(
+        patternRelationships = Set(relationship),
+        patternNodes = Set("a", nodeName),
+        argumentIds = Set(IdName("a"))))
+
+    qg.selections should equal(selections)
+    qg.patternNodes should equal(Set(IdName("a")))
+    qg.subQueries should equal(Seq(exists))
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)(None)_

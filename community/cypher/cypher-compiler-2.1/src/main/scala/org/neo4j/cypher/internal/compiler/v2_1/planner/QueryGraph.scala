@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NamedPath
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport
 
 
 trait SubQuery {
@@ -29,6 +30,7 @@ trait SubQuery {
 }
 
 case class OptionalMatch(queryGraph:QueryGraph) extends SubQuery
+case class Exists(exp:PatternExpression, queryGraph:QueryGraph) extends SubQuery
 
 // An abstract representation of the query graph being solved at the current step
 case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
@@ -94,7 +96,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     val optionalMatchIds = subQueries.flatMap {
       case OptionalMatch(qg) => qg.coveredIds
     }
-    patternIds ++ argumentIds ++ optionalMatchIds
+    (patternIds ++ argumentIds ++ optionalMatchIds).filter(x => NameSupport.isNamed(x.name))
   }
 
   def knownLabelsOnNode(node: IdName): Seq[LabelName] =
@@ -130,11 +132,13 @@ object QueryGraph {
 }
 
 object SelectionPredicates {
+  import NameSupport._
+
   def fromWhere(where: Where): Set[Predicate] = extractPredicates(where.expression)
 
   private def idNames(predicate: Expression): Set[IdName] = predicate.treeFold(Set.empty[IdName]) {
-    case id: Identifier =>
-      (acc: Set[IdName], _) => acc + IdName(id.name)
+    case Identifier(name) if name.isNamed =>
+      (acc: Set[IdName], _) => acc + IdName(name)
   }
 
   def extractPredicates(predicate: Expression): Set[Predicate] = {
