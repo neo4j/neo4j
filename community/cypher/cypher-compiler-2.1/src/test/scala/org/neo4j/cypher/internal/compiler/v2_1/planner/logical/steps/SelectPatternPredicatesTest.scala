@@ -24,8 +24,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, PlanTransformer, PlanTable, CandidateList}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 
@@ -47,6 +46,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
     case _ => 1000.0
   })
+
+  val passThrough = new PlanTransformer {
+    def apply(input: LogicalPlan)(implicit context: LogicalPlanContext) = input
+  }
 
   test("should introduce semi apply for unsolved exclusive optional match") {
     // Given
@@ -72,15 +75,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
 
     val aPlan = newMockedLogicalPlan("a")
-    val planTable = PlanTable(Map(Set(IdName("a")) -> aPlan))
     val inner: Expand = Expand(SingleRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength)(patternRel)
 
-
     // When
-    val result = selectPatternPredicates(planTable)
+    val result = selectPatternPredicates(passThrough)(aPlan)
 
     // Then
-    result should equal(CandidateList(Seq(SemiApply(aPlan, inner)(exists))))
+    result should equal(SemiApply(aPlan, inner)(exists))
   }
 
   test("should not introduce semi apply for unsolved exclusive optional match when nodes not applicable") {
@@ -104,13 +105,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(newMockedStatistics)
     )
 
-
-    val planTable = PlanTable(Map(Set(IdName("b")) -> newMockedLogicalPlan("b")))
-
+    val bPlan = newMockedLogicalPlan("b")
     // When
-    val result = selectPatternPredicates(planTable)
+    val result = selectPatternPredicates(passThrough)(bPlan)
 
     // Then
-    result should equal(CandidateList(Seq.empty))
+    result should equal(bPlan)
   }
 }

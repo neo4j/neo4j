@@ -23,26 +23,43 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, Exists}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SimplePatternLength, SemiApply, LogicalPlan}
+import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
-object selectPatternPredicates extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-    val applyCandidates =
-      for (pattern <- context.queryGraph.patternPredicates;
-           lhs <- planTable.plans if applicable(lhs, pattern))
-      yield {
-        val rhs = context.strategy.plan(context.copy(queryGraph = pattern.queryGraph))
-        if (pattern.queryGraph.patternRelationships.exists(_.length != SimplePatternLength))
-          throw new CantHandleQueryException
+case class selectPatternPredicates(simpleSelection: PlanTransformer) extends PlanTransformer {
+  private object candidateListProducer extends CandidateGenerator[PlanTable] {
+    def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+      val applyCandidates =
+        for (pattern <- context.queryGraph.patternPredicates;
+             lhs <- planTable.plans if applicable(lhs, pattern))
+        yield {
+          val rhs = context.strategy.plan(context.copy(queryGraph = pattern.queryGraph))
+          if (pattern.queryGraph.patternRelationships.exists(_.length != SimplePatternLength))
+            throw new CantHandleQueryException
 
-        SemiApply(lhs, rhs)(pattern)
-      }
-    CandidateList(applyCandidates)
+          SemiApply(lhs, rhs)(pattern)
+        }
+      CandidateList(applyCandidates)
+    }
+
+    private def applicable(outerPlan: LogicalPlan, inner: Exists) = {
+      val providedIds = outerPlan.coveredIds
+      val hasDependencies = inner.queryGraph.argumentIds.forall(providedIds.contains)
+      val isSolved = outerPlan.solved.selections.contains(inner.predicate.exp)
+      hasDependencies && !isSolved
+    }
+
   }
 
-  private def applicable(outerPlan: LogicalPlan, inner: Exists) = {
-    val providedIds = outerPlan.coveredIds
-    val hasDependencies = inner.queryGraph.argumentIds.forall(providedIds.contains)
-    val isSolved = outerPlan.solved.selections.contains(inner.predicate.exp)
-    hasDependencies && !isSolved
+  def apply(input: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+    val plan = simpleSelection(input)
+
+    def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
+      val secretPlanTable = PlanTable(Map(plan.coveredIds -> plan))
+      val result: CandidateList = candidateListProducer(secretPlanTable)
+      result.bestPlan(context.cost).getOrElse(plan)
+    }
+
+    val temp = iterateUntilConverged(findBestPlanForPatternPredicates)(plan)
+    temp
   }
 }
