@@ -26,10 +26,6 @@ import collection.mutable
 import org.neo4j.graphdb.traversal.Paths
 import org.neo4j.graphdb.{Path, Relationship, PropertyContainer, Node}
 
-object PathImpl {
-  val empty = new PathImpl()
-}
-
 case class PathImpl(pathEntities: PropertyContainer*)
   extends org.neo4j.graphdb.Path
   with Traversable[PropertyContainer]
