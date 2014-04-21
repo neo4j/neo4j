@@ -656,7 +656,7 @@ return p, leaf""")
     val c = createNode("B")
     relate(a, b)
 
-    val result = executeWithNewPlanner( """
+    val result = execute( """
 MATCH (a {name:'A'}), (other {name:'B'})
 WHERE NOT a-->other
 RETURN other""")
@@ -748,7 +748,7 @@ RETURN a.name""")
     relate(a, x, "A")
     relate(b, x, "B")
 
-    val result = executeWithNewPlanner("match a where a-[:A|:B]->() return a").toList
+    val result = execute("match a where a-[:A|:B]->() return a").toList
 
     result should equal (List(Map("a" -> a), Map("a" -> b)))
   }

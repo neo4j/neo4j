@@ -96,7 +96,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     val optionalMatchIds = subQueries.flatMap {
       case OptionalMatch(qg) => qg.coveredIds
     }
-    (patternIds ++ argumentIds ++ optionalMatchIds).filter(x => NameSupport.isNamed(x.name))
+    patternIds ++ argumentIds ++ optionalMatchIds
   }
 
   def knownLabelsOnNode(node: IdName): Seq[LabelName] =
@@ -132,12 +132,10 @@ object QueryGraph {
 }
 
 object SelectionPredicates {
-  import NameSupport._
-
   def fromWhere(where: Where): Set[Predicate] = extractPredicates(where.expression)
 
   private def idNames(predicate: Expression): Set[IdName] = predicate.treeFold(Set.empty[IdName]) {
-    case Identifier(name) if name.isNamed =>
+    case Identifier(name) =>
       (acc: Set[IdName], _) => acc + IdName(name)
   }
 

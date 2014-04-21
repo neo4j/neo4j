@@ -40,14 +40,10 @@ object nameMatchPatternElements extends Rewriter {
     case m: Match =>
       val rewrittenPattern = m.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[Pattern]
       m.copy(pattern = rewrittenPattern)(m.position)
-
-    case exp: PatternExpression =>
-      val rewrittenPattern = exp.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[RelationshipsPattern]
-      exp.copy(pattern = rewrittenPattern)
   }
 }
 
-// TODO: When Ronja is the only planner left, move this to the object above
+// TODO: When Ronja is the only planner left, move these to nameMatchPatternElements
 object nameVarLengthRelationships extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] = findingRewriter.apply(that)
 
@@ -61,5 +57,27 @@ object nameVarLengthRelationships extends Rewriter {
     case m: Match =>
       val rewrittenPattern = m.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[Pattern]
       m.copy(pattern = rewrittenPattern)(m.position)
+  }
+}
+
+// TODO: When Ronja is the only planner left, move these to nameMatchPatternElements
+object namePatternPredicates extends Rewriter {
+  def apply(that: AnyRef): Option[AnyRef] = findingRewriter.apply(that)
+
+  private val namingRewriter: Rewriter = Rewriter.lift {
+    case pattern: NodePattern if !pattern.identifier.isDefined =>
+      val syntheticName = "  UNNAMED" + (pattern.position.offset + 1)
+      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
+
+    // TODO: Don't exclude varlength relationships (currently need to be for legacy conversion)
+    case pattern: RelationshipPattern if !pattern.identifier.isDefined && !pattern.length.isDefined =>
+      val syntheticName = "  UNNAMED" + pattern.position.offset
+      pattern.copy(identifier = Some(Identifier(syntheticName)(pattern.position)))(pattern.position)
+  }
+
+  private val findingRewriter: Rewriter = Rewriter.lift {
+    case exp: PatternExpression =>
+      val rewrittenPattern = exp.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[RelationshipsPattern]
+      exp.copy(pattern = rewrittenPattern)
   }
 }

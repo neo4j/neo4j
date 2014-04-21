@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{bottomUp, ParsedQuery, Monitors}
+import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp, ParsedQuery, Monitors}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.nameVarLengthRelationships
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: PlanningMonitor) extends PipeBuilder {
@@ -42,7 +41,7 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
 
   private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo =
     // TODO: When Ronja is the only planner around, move this to ASTRewriter
-    statement.rewrite(bottomUp(nameVarLengthRelationships)) match {
+    statement.rewrite(bottomUp(inSequence(nameVarLengthRelationships, namePatternPredicates))) match {
       case ast: Query =>
         monitor.startedPlanning(query)
         val logicalPlan = produceLogicalPlan(ast, semanticTable)(planContext)

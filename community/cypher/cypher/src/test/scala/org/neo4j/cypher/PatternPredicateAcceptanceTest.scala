@@ -30,7 +30,7 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
     relate(createNode(), createNode(), "id" -> 2)
 
     // when
-    val result = executeWithNewPlanner("match (n) where (n)-[{id: 1}]->() return n").columnAs[Node]("n").toList
+    val result = execute("match (n) where (n)-[{id: 1}]->() return n").columnAs[Node]("n").toList
 
     // then
     result.size should be(1)
@@ -53,7 +53,7 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
     createPath(666)
 
     // when
-    val result = executeScalarWithNewPlanner[Node]("match (n:Start) where (n)-[*2 {prop: 42}]->() return n")
+    val result = executeScalar[Node]("match (n:Start) where (n)-[*2 {prop: 42}]->() return n")
 
     // then
     assert(start1 == result)
