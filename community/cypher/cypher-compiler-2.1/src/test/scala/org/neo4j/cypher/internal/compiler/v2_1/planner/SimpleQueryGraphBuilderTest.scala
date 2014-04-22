@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{namePatternPredicates, nameVarLengthRelationships}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{inlineNamedPaths, namePatternPredicates, nameVarLengthRelationships}
 import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
@@ -44,7 +44,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
 
     val rewrittenAst: Statement = if (normalize) {
       val step1: Statement = astRewriter.rewrite(query, ast)._1
-      step1.rewrite(bottomUp(inSequence(nameVarLengthRelationships, namePatternPredicates))).asInstanceOf[Statement]
+      inlineNamedPaths(step1.rewrite(bottomUp(inSequence(nameVarLengthRelationships, namePatternPredicates))).asInstanceOf[Statement])
     } else {
       ast
     }
@@ -179,22 +179,20 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("match p = (a) return p") {
-    val qg = buildQueryGraph("match p = (a) return p")
-    qg.namedPaths should equal(Set(NamedNodePath("p", "a")))
+    val qg = buildQueryGraph("match p = (a) return p", normalize = true)
     qg.patternRelationships should equal(Set())
     qg.patternNodes should equal(Set[IdName]("a"))
     qg.selections should equal(Selections(Set.empty))
-    qg.projections should equal(Map[String, Identifier](
-      "p" -> Identifier("p")_
+    qg.projections should equal(Map[String, Expression](
+      "p" -> PathExpression(NodePathStep(Identifier("a")_, NilPathStep))_
     ))
-    qg.coveredIds should equal(Set[IdName]("a", "p"))
+    qg.coveredIds should equal(Set[IdName]("a"))
   }
 
   test("match p = (a)-[r]->(b) return a,r") {
     val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
-    val qg = buildQueryGraph("match p = (a)-[r]->(b) return a,r")
-    qg.namedPaths should equal(Set(NamedRelPath("p", Seq(patternRel))))
+    val qg = buildQueryGraph("match p = (a)-[r]->(b) return a,r", normalize = true)
     qg.patternRelationships should equal(Set(patternRel))
     qg.patternNodes should equal(Set[IdName]("a", "b"))
     qg.selections should equal(Selections(Set.empty))
@@ -202,7 +200,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set[IdName]("a", "r", "b", "p"))
+    qg.coveredIds should equal(Set[IdName]("a", "r", "b"))
   }
 
   test("match (a)-[r]->(b)-[r2]->(c) return a,r,b") {

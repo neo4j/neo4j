@@ -105,7 +105,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, _) = astRewriter.rewrite(queryText, parsedStatement)
-    rewrittenStatement match {
+    planner.rewriteStatement(rewrittenStatement) match {
       case ast: Query =>
         val semanticTable = semanticChecker.check(queryText, rewrittenStatement)
         planner.produceLogicalPlan(ast, semanticTable)(planContext)

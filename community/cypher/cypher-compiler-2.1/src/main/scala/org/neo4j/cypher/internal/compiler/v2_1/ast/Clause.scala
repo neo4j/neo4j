@@ -85,6 +85,7 @@ case class Start(items: Seq[StartItem], where: Option[Where])(val position: Inpu
   def semanticCheck = items.semanticCheck then where.semanticCheck
 }
 
+
 case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: Option[Where])(val position: InputPosition) extends Clause with SemanticChecking {
   def name = "MATCH"
 

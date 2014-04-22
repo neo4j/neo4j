@@ -48,12 +48,12 @@ object ProjectedPath {
       tailProjector(ctx, builder.addOutgoingRelationship(ctx(rel).asInstanceOf[Relationship]))
   }
 
-  case class varLengthIncomingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
+  case class multiIncomingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
       tailProjector(ctx, builder.addIncomingRelationships(ctx(rel).asInstanceOf[Iterable[Relationship]]))
   }
 
-  case class varLengthOutgoingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
+  case class multiOutgoingRelationshipProjector(rel: String, tailProjector: Projector) extends Projector {
     def apply(ctx: ExecutionContext, builder: PathValueBuilder) =
       tailProjector(ctx, builder.addOutgoingRelationships(ctx(rel).asInstanceOf[Iterable[Relationship]]))
   }

@@ -41,63 +41,51 @@ object SimpleQueryGraphBuilder {
 
       val rewrittenChain = relChain.rewrite(topDown(Rewriter.lift(normalizer.replace))).asInstanceOf[RelationshipChain]
 
-      val (patternNodes, relationships, namedPaths) = PatternDestructuring.destruct(rewrittenChain)
+      val (patternNodes, relationships) = PatternDestructuring.destruct(rewrittenChain)
       val qg = QueryGraph(
         patternRelationships = relationships.toSet,
-        patternNodes = patternNodes.toSet,
-        namedPaths = namedPaths.toSet
+        patternNodes = patternNodes.toSet
       ).add(predicates).addCoveredIdsAsProjections()
       qg.copy(argumentIds = qg.coveredIds.filter(_.name.isNamed))
     }
   }
 
   object PatternDestructuring {
-    def destruct(pattern: Pattern): (Seq[IdName], Seq[PatternRelationship], Seq[NamedPath]) =
-      pattern.patternParts.foldLeft((Seq.empty[IdName], Seq.empty[PatternRelationship], Seq.empty[NamedPath])) {
-        case ((accIdNames, accRels, accPaths), everyPath: EveryPath) =>
-          val (idNames, rels, paths) = destruct(everyPath.element)
-          (accIdNames ++ idNames, accRels ++ rels, accPaths ++ paths)
-
-        case ((accIdNames, accRels, accPaths), NamedPatternPart(Identifier(name), everyPath@EveryPath(_))) =>
-          val (idNames, rels, paths) = destruct(everyPath.element)
-          val namedPath = if (rels.isEmpty)
-          // EveryPath contains a NodePattern (having only one idName)
-            NamedNodePath(IdName(name), idNames.head)
-          else
-          // EveryPath contains a RelationshipChain
-            NamedRelPath(IdName(name), rels)
-
-          (accIdNames ++ idNames, accRels ++ rels, accPaths ++ Seq(namedPath) ++ paths)
+    def destruct(pattern: Pattern): (Seq[IdName], Seq[PatternRelationship]) =
+      pattern.patternParts.foldLeft((Seq.empty[IdName], Seq.empty[PatternRelationship])) {
+        case ((accIdNames, accRels), everyPath: EveryPath) =>
+          val (idNames, rels) = destruct(everyPath.element)
+          (accIdNames ++ idNames, accRels ++ rels)
 
         case _ => throw new CantHandleQueryException
       }
 
-    private def destruct(element: PatternElement): (Seq[IdName], Seq[PatternRelationship], Seq[NamedPath]) = element match {
+    private def destruct(element: PatternElement): (Seq[IdName], Seq[PatternRelationship]) = element match {
       case relchain: RelationshipChain => destruct(relchain)
       case node: NodePattern => destruct(node)
     }
 
-    def destruct(chain: RelationshipChain): (Seq[IdName], Seq[PatternRelationship], Seq[NamedPath]) = chain match {
+    def destruct(chain: RelationshipChain): (Seq[IdName], Seq[PatternRelationship]) = chain match {
       // (a)->[r]->(b)
       case RelationshipChain(NodePattern(Some(leftNodeId), Seq(), None, _), RelationshipPattern(Some(relId), _, relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
         val leftNode = IdName(leftNodeId.name)
         val rightNode = IdName(rightNodeId.name)
         val r = PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, asPatternLength(length))
-        (Seq(leftNode, rightNode), Seq(r), Seq.empty)
+        (Seq(leftNode, rightNode), Seq(r))
 
       // ...->[r]->(b)
       case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), _, relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
-        val (idNames, rels, paths) = destruct(relChain)
+        val (idNames, rels) = destruct(relChain)
         val leftNode = IdName(rels.last.nodes._2.name)
         val rightNode = IdName(rightNodeId.name)
         val resultRels = rels :+ PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, asPatternLength(length))
-        (idNames :+ rightNode, resultRels, paths)
+        (idNames :+ rightNode, resultRels)
 
       case _ => throw new CantHandleQueryException
     }
 
-    private def destruct(node: NodePattern): (Seq[IdName], Seq[PatternRelationship], Seq[NamedPath]) =
-      (Seq(IdName(node.identifier.get.name)), Seq.empty, Seq.empty)
+    private def destruct(node: NodePattern): (Seq[IdName], Seq[PatternRelationship]) =
+      (Seq(IdName(node.identifier.get.name)), Seq.empty)
 
     private def asPatternLength(length: Option[Option[Range]]): PatternLength = length match {
       case Some(Some(Range(Some(left), Some(right)))) => VarPatternLength(left.value.toInt, Some(right.value.toInt))
@@ -152,23 +140,21 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
               val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
-              val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], namedPaths: Seq[NamedPath]) = destruct(pattern)
+              val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
               val matchClause = QueryGraph(
                 selections = selections,
                 patternNodes = nodeIds.toSet,
                 patternRelationships = rels.toSet,
-                namedPaths = namedPaths.toSet,
                 subQueries = subQueries)
 
               qg ++ matchClause
 
             case Match(optional@true, pattern: Pattern, Seq(), optWhere) =>
-              val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], namedPaths: Seq[NamedPath]) = destruct(pattern)
+              val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
               val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
               val optionalMatch = QueryGraph(
                 selections = selections,
                 patternNodes = nodeIds.toSet,
-                namedPaths = namedPaths.toSet,
                 subQueries = subQueries,
                 patternRelationships = rels.toSet).addCoveredIdsAsProjections()
 
