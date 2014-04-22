@@ -33,9 +33,6 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
              lhs <- planTable.plans if applicable(lhs, pattern))
         yield {
           val rhs = context.strategy.plan(context.copy(queryGraph = pattern.queryGraph))
-          if (pattern.queryGraph.patternRelationships.exists(_.length != SimplePatternLength))
-            throw new CantHandleQueryException
-
           SemiApply(lhs, rhs)(pattern)
         }
       CandidateList(applyCandidates)

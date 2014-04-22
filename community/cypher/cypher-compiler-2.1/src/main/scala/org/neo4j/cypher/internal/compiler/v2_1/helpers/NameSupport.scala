@@ -26,6 +26,10 @@ object NameSupport {
     def unnamed = NameSupport.notNamed(name)
   }
 
+  def newIdName(n: Int): String = "  FRESHID" + n
+
+  def unamedEntity(n: Int): String = "  UNNAMED" + n
+
   def isNamed(x: String) = !notNamed(x)
 
   def notNamed(x: String) = x.startsWith("  UNNAMED")
