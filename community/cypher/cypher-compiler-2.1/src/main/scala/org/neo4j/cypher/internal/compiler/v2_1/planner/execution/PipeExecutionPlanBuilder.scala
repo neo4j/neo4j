@@ -27,7 +27,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_1.commands.True
-import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.convert.namedPathConverter
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
 
@@ -39,9 +38,6 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
       plan match {
         case Projection(left, expressions) =>
           ProjectionNewPipe(buildPipe(left), toLegacyExpressions(expressions))
-
-        case NamedPathProjection(namedPath, left) =>
-          LetPipe(buildPipe(left), Map(namedPath.name.name -> namedPathConverter(namedPath)))
 
         case SingleRow(_) =>
           NullPipe()

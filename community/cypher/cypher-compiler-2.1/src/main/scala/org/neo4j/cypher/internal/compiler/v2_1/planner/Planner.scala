@@ -39,9 +39,10 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
     producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)
 
-  private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo =
+  private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo = {
     // TODO: When Ronja is the only planner around, move this to ASTRewriter
-    statement.rewrite(bottomUp(inSequence(nameVarLengthRelationships, namePatternPredicates))) match {
+    val rewrittenStatement = rewriteStatement(statement)
+    rewrittenStatement match {
       case ast: Query =>
         monitor.startedPlanning(query)
         val logicalPlan = produceLogicalPlan(ast, semanticTable)(planContext)
@@ -53,6 +54,15 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
       case _ =>
         throw new CantHandleQueryException
     }
+  }
+
+  def rewriteStatement(statement: Statement) = {
+    val namedStatement = statement.rewrite(bottomUp(
+      inSequence(nameVarLengthRelationships, namePatternPredicates)
+    )).asInstanceOf[Statement]
+
+    inlineNamedPaths(namedStatement)
+  }
 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): LogicalPlan = {
     val resolvedAst = tokenResolver.resolve(ast)(planContext)

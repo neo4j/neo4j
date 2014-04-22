@@ -24,10 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer,
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName, Projection}
 
 object projectUncovered extends PlanTransformer {
-  def apply(input: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
-    // TODO: Only project named paths that are required by the following projection's expressions
-    val plan = projectNamedPaths(_ => true)(input)
-
+  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
     val projectAllCoveredIds = plan.coveredIds.map {
       case IdName(id) => id -> Identifier(id)(null)
     }.toMap

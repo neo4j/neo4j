@@ -22,9 +22,16 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.convert
 import PatternConverters._
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.{expressions => commandexpressions, values => commandvalues, Predicate => CommandPredicate}
-import commands.expressions.{Expression => CommandExpression}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression => CommandExpression, ProjectedPath}
 import commands.values.TokenType._
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.ast.NodePathStep
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import scala.Some
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SingleRelationshipPathStep
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
 object ExpressionConverters {
 
@@ -77,6 +84,7 @@ object ExpressionConverters {
       case e: ast.NoneIterablePredicate => e.asCommandNoneInCollection
       case e: ast.SingleIterablePredicate => e.asCommandSingleInCollection
       case e: ast.ReduceExpression => e.asCommandReduce
+      case e: ast.PathExpression => e.asCommandProjectedPath
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown expression type during transformation (${expression.getClass})")
     }
@@ -269,7 +277,7 @@ object ExpressionConverters {
     }
   }
 
-  implicit class PathConverter(val e: ast.PatternExpression) extends AnyVal {
+  implicit class PatternPathConverter(val e: ast.PatternExpression) extends AnyVal {
     def asCommandPath =
       commands.PathExpression(e.pattern.asLegacyPatterns)
   }
@@ -363,5 +371,37 @@ object ExpressionConverters {
 
   implicit class FunctionConverter(val e: ast.FunctionInvocation) extends AnyVal {
     def asCommandFunction: CommandExpression = e.function.get.asCommandExpression(e)
+  }
+
+  implicit class PathConverter(val e: ast.PathExpression) extends AnyVal {
+    import commandexpressions.ProjectedPath._
+
+    def asCommandProjectedPath: commandexpressions.ProjectedPath = {
+      def project(pathStep: PathStep): Projector = pathStep match {
+
+        case NodePathStep(Identifier(node), next) =>
+          singleNodeProjector(node, project(next))
+
+        case SingleRelationshipPathStep(Identifier(rel), Direction.INCOMING, next) =>
+          singleIncomingRelationshipProjector(rel, project(next))
+
+        case SingleRelationshipPathStep(Identifier(rel), _, next) =>
+          singleOutgoingRelationshipProjector(rel, project(next))
+
+        case MultiRelationshipPathStep(Identifier(rel), Direction.INCOMING, next) =>
+          multiIncomingRelationshipProjector(rel, project(next))
+
+        case MultiRelationshipPathStep(Identifier(rel), _, next) =>
+          multiOutgoingRelationshipProjector(rel, project(next))
+
+        case NilPathStep =>
+          nilProjector
+      }
+
+      val projector = project(e.step)
+      val dependencies = e.step.dependencies.map(_.name)
+
+      ProjectedPath(dependencies, projector)
+    }
   }
 }
