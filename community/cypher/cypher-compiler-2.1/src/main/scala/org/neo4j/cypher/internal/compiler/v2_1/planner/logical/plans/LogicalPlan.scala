@@ -94,12 +94,12 @@ abstract class NamedPath {
   def dependencies: Set[IdName] = coveredIds - name
 }
 
-final case class NamedRelPath(name: IdName, rels: Seq[PatternRelationship]) extends NamedPath {
-  def coveredIds = rels.flatMap(_.coveredIds).toSet + name
-}
-
 final case class NamedNodePath(name: IdName, node: IdName) extends NamedPath {
   def coveredIds = Set(name, node)
+}
+
+final case class NamedRelPath(name: IdName, rels: Seq[PatternRelationship]) extends NamedPath {
+  def coveredIds = rels.flatMap(_.coveredIds).toSet + name
 }
 
 object VarPatternLength {
@@ -115,6 +115,6 @@ case object SimplePatternLength extends PatternLength {
   def isSimple = true
 }
 
-case class VarPatternLength(min: Int, max: Option[Int]) extends PatternLength {
+final case class VarPatternLength(min: Int, max: Option[Int]) extends PatternLength {
   def isSimple = false
 }

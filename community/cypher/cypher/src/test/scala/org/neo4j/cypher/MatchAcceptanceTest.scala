@@ -1182,7 +1182,7 @@ RETURN a.name""")
   }
 
   test("match p = (a) return p") {
-    // Given empty db
+    // Given a single node
     val node = createNode()
 
     // when
@@ -1190,5 +1190,17 @@ RETURN a.name""")
 
     // should give us a number in the middle, not all or nothing
     result.toList should equal (List(Map("p"->new PathImpl(node))))
+  }
+
+
+  test("match p = (a)-[r*0..]->(b) return p") {
+    // Given a single node
+    val node = createNode()
+
+    // when
+    val result = executeWithNewPlanner("match p = (a)-[r*0..]->(b) return p")
+
+    // should give us a single, empty path starting at one end
+    result.toList should equal (List(Map("p"-> new PathImpl(node))))
   }
 }

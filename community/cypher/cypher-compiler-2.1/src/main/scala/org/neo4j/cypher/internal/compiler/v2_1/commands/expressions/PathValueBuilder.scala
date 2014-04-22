@@ -20,33 +20,48 @@
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
-import scala.collection.mutable
 import org.neo4j.cypher.internal.PathImpl
 
-final class PathBuilder extends mutable.Builder[PropertyContainer, org.neo4j.graphdb.Path] {
+final class PathValueBuilder {
   private val builder = Vector.newBuilder[PropertyContainer]
-  private var lastNode: Node = null
 
-  def result(): PathImpl =
-    if (lastNode == null) PathImpl.empty else new PathImpl(builder.result(): _*)
+  def result(): PathImpl = new PathImpl(builder.result(): _*)
 
-  def clear() {
-    lastNode = null
+  def clear(): this.type =  {
     builder.clear()
+    this
   }
 
-  def +=(elem: PropertyContainer): this.type = {
-    elem match {
-      case node: Node =>
-        builder += node
-        lastNode = node
-      case rel: Relationship =>
-        val otherNode = rel.getOtherNode(lastNode)
-        builder += rel
-        builder += otherNode
-        lastNode = otherNode
-    }
+  def addNode(node: Node): this.type = {
+    builder += node
+    this
+  }
 
+  def addIncomingRelationship(rel: Relationship): this.type = {
+    builder += rel
+    builder += rel.getStartNode
+    this
+  }
+
+  def addOutgoingRelationship(rel: Relationship): this.type = {
+    builder += rel
+    builder += rel.getEndNode
+    this
+  }
+
+  def addIncomingRelationships(rels: Iterable[Relationship]): this.type = addIncomingRelationships(rels.iterator)
+
+  def addIncomingRelationships(rels: Iterator[Relationship]): this.type = {
+    while (rels.hasNext)
+      addIncomingRelationship(rels.next())
+    this
+  }
+
+  def addOutgoingRelationships(rels: Iterable[Relationship]): this.type = addOutgoingRelationships(rels.iterator)
+
+  def addOutgoingRelationships(rels: Iterator[Relationship]): this.type = {
+    while (rels.hasNext)
+      addOutgoingRelationship(rels.next())
     this
   }
 }

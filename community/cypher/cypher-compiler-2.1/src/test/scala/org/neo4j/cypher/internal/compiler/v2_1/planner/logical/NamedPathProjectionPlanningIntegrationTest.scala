@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast
 
 class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport   {
 
-  test("should build plans containing path projections") {
+  test("should build plans containing outgoing path projections") {
     implicit val planContext = newMockedPlanContext
     when(planContext.getOptLabelId("X")).thenReturn(None)
     implicit val planner = newPlanner(newMetricsFactory)
@@ -42,6 +42,42 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
         NamedPathProjection(
           NamedRelPath("p", Seq(patternRel)),
           Expand( NodeByLabelScan("a",  Left("X"))(), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength )(patternRel)
+        ),
+        expressions = Map("b" -> Identifier("b") _)
+      )
+    )
+  }
+
+  test("should build plans containing incoming path projections") {
+    implicit val planContext = newMockedPlanContext
+    when(planContext.getOptLabelId("X")).thenReturn(None)
+    implicit val planner = newPlanner(newMetricsFactory)
+
+    val patternRel = PatternRelationship("r", ("a", "b"), Direction.INCOMING, Seq.empty, SimplePatternLength)
+
+    produceLogicalPlan("MATCH p = (a:X)<-[r]-(b) RETURN b") should equal(
+      Projection(
+        NamedPathProjection(
+          NamedRelPath("p", Seq(patternRel)),
+          Expand( NodeByLabelScan("a",  Left("X"))(), "a", Direction.INCOMING, Seq.empty, "b", "r", SimplePatternLength )(patternRel)
+        ),
+        expressions = Map("b" -> Identifier("b") _)
+      )
+    )
+  }
+
+  test("should build plans containing var length path projections") {
+    implicit val planContext = newMockedPlanContext
+    when(planContext.getOptLabelId("X")).thenReturn(None)
+    implicit val planner = newPlanner(newMetricsFactory)
+
+    val patternRel = PatternRelationship("r", ("a", "b"), Direction.INCOMING, Seq.empty, VarPatternLength(0, Some(1)))
+
+    produceLogicalPlan("MATCH p = (a:X)<-[r*0..1]-(b) RETURN b") should equal(
+      Projection(
+        NamedPathProjection(
+          NamedRelPath("p", Seq(patternRel)),
+          Expand( NodeByLabelScan("a",  Left("X"))(), "a", Direction.INCOMING, Seq.empty, "b", "r", VarPatternLength(0, Some(1)) )(patternRel)
         ),
         expressions = Map("b" -> Identifier("b") _)
       )

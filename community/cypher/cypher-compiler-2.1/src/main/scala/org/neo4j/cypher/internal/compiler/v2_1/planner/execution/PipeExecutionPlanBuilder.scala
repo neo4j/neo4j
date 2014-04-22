@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.convert.ProjectedPathConverter._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
@@ -28,9 +27,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_1.commands.True
+import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.convert.namedPathConverter
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
-
 
   def build(plan: LogicalPlan): PipeInfo = {
     val updating = false
@@ -42,7 +41,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           ProjectionNewPipe(buildPipe(left), toLegacyExpressions(expressions))
 
         case NamedPathProjection(namedPath, left) =>
-          LetPipe(buildPipe(left), Map(namedPath.name.name -> namedPath.asProjectedPath))
+          LetPipe(buildPipe(left), Map(namedPath.name.name -> namedPathConverter(namedPath)))
 
         case SingleRow(_) =>
           NullPipe()
