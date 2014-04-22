@@ -245,7 +245,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result shouldBe 'nonEmpty
   }
 
-  ignore("should be able to filter on path nodes") { // Problems with predicate selection for expressions that introduce identifiers
+  test("should be able to filter on path nodes") {
     val a = createNode(Map("foo" -> "bar"))
     val b = createNode(Map("foo" -> "bar"))
     val c = createNode(Map("foo" -> "bar"))

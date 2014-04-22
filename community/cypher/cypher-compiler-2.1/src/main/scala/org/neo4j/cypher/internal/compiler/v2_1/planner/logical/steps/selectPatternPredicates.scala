@@ -33,9 +33,6 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
              lhs <- planTable.plans if applicable(lhs, pattern))
         yield {
           val rhs = context.strategy.plan(context.copy(queryGraph = pattern.queryGraph))
-          if (pattern.queryGraph.patternRelationships.exists(_.length != SimplePatternLength))
-            throw new CantHandleQueryException
-
           SemiApply(lhs, rhs)(pattern)
         }
       CandidateList(applyCandidates)
@@ -47,7 +44,6 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
       val isSolved = outerPlan.solved.selections.contains(inner.predicate.exp)
       hasDependencies && !isSolved
     }
-
   }
 
   def apply(input: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
@@ -59,7 +55,6 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
       result.bestPlan(context.cost).getOrElse(plan)
     }
 
-    val temp = iterateUntilConverged(findBestPlanForPatternPredicates)(plan)
-    temp
+    iterateUntilConverged(findBestPlanForPatternPredicates)(plan)
   }
 }

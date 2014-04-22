@@ -39,22 +39,20 @@ case class Selections(predicates: Set[Predicate] = Set.empty) {
 
   def labelPredicates: Map[IdName, Set[HasLabels]] =
     predicates.foldLeft(Map.empty[IdName, Set[HasLabels]]) {
-      case (m, Predicate(_, hasLabels@HasLabels(Identifier(name), labels))) =>
+      case (acc, Predicate(_, hasLabels@HasLabels(Identifier(name), labels))) =>
         // FIXME: remove when we have test for checking that we construct the expected plan
         if (labels.size > 1) {
           throw new ThisShouldNotHappenError("Davide", "Rewriting should introduce single label HasLabels predicates in the WHERE clause")
         }
         val idName = IdName(name)
-        m.updated(idName, m.getOrElse(idName, Set.empty) + hasLabels)
-      case (m, _) => m
+        acc.updated(idName, acc.getOrElse(idName, Set.empty) + hasLabels)
+      case (acc, _) => acc
     }
 
   def coveredBy(solvedPredicates: Seq[Expression]): Boolean =
     flatPredicates.forall( solvedPredicates.contains )
 
-  def contains(e: Expression): Boolean = predicates.exists {
-    case pred => pred.exp == e
-  }
+  def contains(e: Expression): Boolean = predicates.exists { _.exp == e }
 
   def ++(other: Selections): Selections = Selections(predicates ++  other.predicates)
 }

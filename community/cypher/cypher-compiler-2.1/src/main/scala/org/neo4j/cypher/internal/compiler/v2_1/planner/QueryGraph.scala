@@ -37,15 +37,13 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       projections: Map[String, Expression] = Map.empty,
                       subQueries: Seq[SubQuery] = Seq.empty) {
 
-  def ++(in: QueryGraph): QueryGraph = in match {
-    case other: QueryGraph => QueryGraph(
+  def ++(other: QueryGraph): QueryGraph = QueryGraph(
       projections = projections ++ other.projections,
       selections = selections ++ other.selections,
       patternNodes = patternNodes ++ other.patternNodes,
       patternRelationships = patternRelationships ++ other.patternRelationships,
       subQueries = subQueries ++ other.subQueries,
       argumentIds = argumentIds ++ other.argumentIds)
-  }
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = coveredIds intersect optionalMatch.coveredIds
@@ -144,6 +142,11 @@ object SelectionPredicates {
       // and
       case _: And =>
         (acc, children) => children(acc)
+      // iterable expression should not depend on the identifier they introduce
+      case predicate: IterablePredicateExpression =>
+        val innerDeps = predicate.innerPredicate.map(idNames(_)).getOrElse(Set.empty) - IdName(predicate.identifier.name)
+        (acc, _) => acc + Predicate(idNames(predicate.expression) ++ innerDeps, predicate)
+      // generic expression
       case predicate: Expression =>
         (acc, _) => acc + Predicate(idNames(predicate), predicate)
     }

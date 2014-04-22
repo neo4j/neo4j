@@ -26,6 +26,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.RelationshipPattern
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.MapExpression
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport
+import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 trait MatchPredicateNormalizer {
   val extract: PartialFunction[AnyRef, Vector[Expression]]
@@ -39,8 +43,9 @@ case class MatchPredicateNormalizerChain(normalizers: MatchPredicateNormalizer*)
 
 object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
   override val extract: PartialFunction[AnyRef, Vector[Expression]] = {
-    case NodePattern(Some(id), _, Some(props), false) if !isParameter(props)           => propertyPredicates(id, props)
-    case RelationshipPattern(Some(id), _, _, _, Some(props), _) if !isParameter(props) => propertyPredicates(id, props)
+    case NodePattern(Some(id), _, Some(props), false) if !isParameter(props)                 => propertyPredicates(id, props)
+    case RelationshipPattern(Some(id), _, _, None, Some(props), _) if !isParameter(props)    => propertyPredicates(id, props)
+    case rp@RelationshipPattern(Some(id), _, _, Some(_), Some(props), _) if !isParameter(props) => Vector(varLengthPropertyPredicates(id, props, rp.position))
   }
 
   override val replace: PartialFunction[AnyRef, AnyRef] = {
@@ -62,6 +67,20 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
       Vector(Equals(id, expr)(expr.position))
     case _ =>
       Vector.empty
+  }
+
+  private def varLengthPropertyPredicates(id: Identifier, props: Expression, patternPosition: InputPosition): Expression = {
+    val idName = NameSupport.newIdName(patternPosition.offset)
+    val newId = Identifier(idName)(id.position)
+    val expressions = propertyPredicates(newId, props)
+    val conjunction = conjunct(expressions)
+    AllIterablePredicate(newId, id, Some(conjunction))(props.position)
+  }
+
+  private def conjunct(exprs: Seq[Expression]): Expression = exprs match {
+    case Nil           => throw new ThisShouldNotHappenError("Davide", "There should be at least one predicate to be rewritten")
+    case expr +: Nil   => expr
+    case expr +: exprs => And(expr, conjunct(exprs))(expr.position)
   }
 }
 
