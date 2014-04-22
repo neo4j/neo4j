@@ -19,8 +19,6 @@
  */
 package org.neo4j.cypher.internal
 
-import scala.Int
-
 trait CypherArray {
    def length(): Int
 }
