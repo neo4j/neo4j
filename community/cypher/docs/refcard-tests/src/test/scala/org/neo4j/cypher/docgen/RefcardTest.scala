@@ -117,8 +117,8 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   @Test
   def produceDocumentation() {
     val writer: PrintWriter = createWriter(title, dir)
-    val queryText = includeQueries(text, dir)
-    val queryLines = queryText.replaceAll("\r\n", "\n").split("\n\n")
+    val queryText = includeQueries(text.replaceAll("\r\n", "\n"), dir)
+    val queryLines = queryText.split("\n\n")
     writer.println("++++")
     writer.println("<div class='col card" + css +
       "\'><div class='blk'>")
@@ -167,8 +167,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     queries.foreach {
       in =>
         {
-          // being Windows friendly
-          val query = in.replaceAll("\r\n", "\n")
+          val query = in
 
           val firstLine = query.split("\n").head
 
