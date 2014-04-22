@@ -30,7 +30,6 @@ import org.neo4j.cypher.javacompat.GraphImpl
 import org.neo4j.cypher._
 import org.neo4j.test.{ ImpermanentGraphDatabase, TestGraphDatabaseFactory, GraphDescription }
 import org.scalatest.Assertions
-import org.neo4j.test.AsciiDocGenerator
 import org.junit.Before
 import org.junit.After
 import org.neo4j.cypher.internal.helpers.GraphIcing
@@ -166,8 +165,11 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
 
     var producedText = startText
     queries.foreach {
-      query =>
+      in =>
         {
+          // being Windows friendly
+          val query = in.replaceAll("\r\n", "\n")
+
           val firstLine = query.split("\n").head
 
           val asserts: Seq[String] = assertiongRegEx.findFirstMatchIn(firstLine).toSeq.flatMap(_.subgroups)
