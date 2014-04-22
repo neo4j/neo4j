@@ -44,7 +44,6 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
       val isSolved = outerPlan.solved.selections.contains(inner.predicate.exp)
       hasDependencies && !isSolved
     }
-
   }
 
   def apply(input: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
@@ -56,7 +55,6 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
       result.bestPlan(context.cost).getOrElse(plan)
     }
 
-    val temp = iterateUntilConverged(findBestPlanForPatternPredicates)(plan)
-    temp
+    iterateUntilConverged(findBestPlanForPatternPredicates)(plan)
   }
 }

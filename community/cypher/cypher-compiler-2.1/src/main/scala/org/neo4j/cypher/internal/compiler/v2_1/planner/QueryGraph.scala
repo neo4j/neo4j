@@ -150,6 +150,11 @@ object SelectionPredicates {
       // and
       case _: And =>
         (acc, children) => children(acc)
+      // iterable expression should not depend on the identifier they introduce
+      case predicate: IterablePredicateExpression =>
+        val innerDeps = predicate.innerPredicate.map(idNames(_)).getOrElse(Set.empty) - IdName(predicate.identifier.name)
+        (acc, _) => acc + Predicate(idNames(predicate.expression) ++ innerDeps, predicate)
+      // generic expression
       case predicate: Expression =>
         (acc, _) => acc + Predicate(idNames(predicate), predicate)
     }
