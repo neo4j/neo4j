@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
 import expressions.Expression
-import expressions.Identifier._
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.notNamed
 import org.neo4j.graphdb.Direction
 import collection.Seq
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._

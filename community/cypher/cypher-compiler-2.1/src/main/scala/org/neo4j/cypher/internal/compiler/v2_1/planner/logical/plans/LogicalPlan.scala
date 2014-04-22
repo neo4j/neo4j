@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, Expression}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 trait Visitor[T, R] {
   def visit(target: T): R
@@ -38,7 +39,7 @@ class LogicalPlanTreeStringVisitor(optContext: Option[LogicalPlanContext] = None
       case None => ""
     }
 
-    target.productPrefix + target.coveredIds.map(_.name).mkString("[", ",", "]") + s"$metrics->" +
+    target.productPrefix + target.solved.coveredIds.map(_.name).mkString("[", ",", "]") + s"$metrics->" +
       target.productIterator.filterNot(_.isInstanceOf[LogicalPlan]).mkString("(", ", ", ")") +
       target.lhs.map { plan => "\nleft - " + plan.accept(this) }.map(indent).getOrElse("") +
       target.rhs.map { plan => "\nright- " + plan.accept(this) }.map(indent).getOrElse("")
@@ -57,10 +58,8 @@ abstract class LogicalPlan extends Product with Visitable[LogicalPlan] {
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
 
-  def solvedPatterns: Seq[PatternRelationship]
-  def solvedPredicates: Seq[Expression]
-
-  def coveredIds: Set[IdName]
+  def solved: QueryGraph
+  def coveredIds: Set[IdName] = solved.coveredIds
 
   final def isCoveredBy(otherIds: Set[IdName]) = (coveredIds -- otherIds).isEmpty
   final def covers(other: LogicalPlan): Boolean = other.isCoveredBy(coveredIds)

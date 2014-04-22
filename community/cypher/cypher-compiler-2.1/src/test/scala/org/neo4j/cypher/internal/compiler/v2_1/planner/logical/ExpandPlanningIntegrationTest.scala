@@ -19,24 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.ast.StringLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.ast.NotEquals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -50,7 +39,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         Expand(
           AllNodesScan("a"),
           "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength
-        )( null ),
+        )( mockRel ),
         Map("r" -> Identifier("r") _)
       )
     )
@@ -69,11 +58,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Expand(
               AllNodesScan("a"),
               "a", Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength
-            )( null ),
+            )( mockRel ),
             Expand(
               AllNodesScan("c"),
               "c", Direction.OUTGOING, Seq.empty, "d", "r2", SimplePatternLength
-            )( null )
+            )( mockRel )
           )
         ),
         Map(
@@ -92,11 +81,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
     produceLogicalPlan("MATCH (a)-[r]->(a) RETURN r") should equal(
       Projection(
         Selection(
-          Seq(Equals(Identifier("a") _, Identifier("a$$$") _) _),
-          Expand(
+          predicates = Seq(Equals(Identifier("a") _, Identifier("a$$$") _) _),
+          left = Expand(
             AllNodesScan("a"),
-            "a", Direction.OUTGOING, Seq.empty, "a$$$", "r", SimplePatternLength
-          )( null )
+            "a", Direction.OUTGOING, Seq.empty, "a$$$", "r", SimplePatternLength)(mockRel),
+          hideSelections = true
         ),
         Map("r" -> Identifier("r") _)
       )
@@ -111,14 +100,13 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
     produceLogicalPlan("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2") should equal(
       Projection(
         Selection(
-          Seq(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
-          Selection(
+          predicates = Seq(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
+          left = Selection(
             Seq(Equals(Identifier("b") _, Identifier("b$$$") _) _),
             Expand(
-              Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength)(null),
-              "a", Direction.OUTGOING, Seq.empty, "b$$$", "r2", SimplePatternLength
-            )( null )
-          )
+              Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength)(mockRel),
+              "a", Direction.OUTGOING, Seq.empty, "b$$$", "r2", SimplePatternLength)(mockRel)
+            , hideSelections = true)
         ),
         Map(
           "r1" -> Identifier("r1") _,
@@ -149,7 +137,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             AllNodesScan("a")
           ),
           "a", Direction.BOTH, Seq(RelTypeName("x")() _), "start", "rel", SimplePatternLength
-        )( null ),
+        )( mockRel ),
         Map("a" -> Identifier("a") _)
       )
     )

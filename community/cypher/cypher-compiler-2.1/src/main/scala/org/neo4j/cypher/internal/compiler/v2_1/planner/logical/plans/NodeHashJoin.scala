@@ -25,7 +25,5 @@ case class NodeHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan) ext
   val lhs = Some(left)
   val rhs = Some(right)
 
-  val coveredIds = left.coveredIds ++ right.coveredIds
-  val solvedPredicates = left.solvedPredicates ++ right.solvedPredicates
-  val solvedPatterns = left.solvedPatterns ++ right.solvedPatterns
+  val solved = left.solved ++ right.solved
 }

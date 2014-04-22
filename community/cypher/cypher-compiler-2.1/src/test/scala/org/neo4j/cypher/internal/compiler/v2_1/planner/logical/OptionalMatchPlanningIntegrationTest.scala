@@ -37,6 +37,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       case _: NodeByLabelScan => 20
       case _: Expand => 10
       case _: OuterHashJoin => 20
+      case _: SingleRow => 1
       case _ => Double.MaxValue
     })
     implicit val planner = newPlanner(factory)
@@ -46,8 +47,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     produceLogicalPlan("MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b") should equal(
       Projection(
         OuterHashJoin("b",
-          Expand(NodeByLabelScan("a", Left("X"))(), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength)(null),
-          Expand(NodeByLabelScan("c", Left("Y"))(), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(null),
+          Expand(NodeByLabelScan("a", Left("X"))(), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength)(mockRel),
+          Expand(NodeByLabelScan("c", Left("Y"))(), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(mockRel),
           Set(IdName("r2"), IdName("c"))
         ),
         expressions = Map("b" -> Identifier("b") _)

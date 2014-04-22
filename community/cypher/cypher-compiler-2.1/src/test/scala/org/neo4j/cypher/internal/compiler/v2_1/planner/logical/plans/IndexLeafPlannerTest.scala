@@ -46,8 +46,10 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       Property(identifier, PropertyKeyName("prop")(Some(propertyKeyId))_)_,
       SignedIntegerLiteral("42")_
     )_
-    val expressions: Seq[Expression] = Seq(equals, hasLabels)
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty, Set.empty, Seq.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(Predicate(Set(idName), equals), Predicate(Set(idName), hasLabels))),
+      patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -84,8 +86,12 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       Property(identifier, PropertyKeyName("prop")(Some(propertyKeyId))_)_,
       SignedIntegerLiteral("42")_
     )_
-    val expressions: Seq[Expression] = Seq(equals, hasLabels)
-    val qg = MainQueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty, Set.empty, Seq.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(
+        Predicate(Set(idName), equals),
+        Predicate(Set(idName), hasLabels))),
+      patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {

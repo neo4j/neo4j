@@ -30,7 +30,7 @@ object expand extends CandidateGenerator[PlanTable] {
       plan <- planTable.plans
       nodeId <- plan.coveredIds
       patternRel <- context.queryGraph.findRelationshipsEndingOn(nodeId)
-      if !plan.solvedPatterns.contains(patternRel)
+      if !plan.solved.patternRelationships(patternRel)
     } yield {
       val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)
@@ -62,6 +62,6 @@ object expand extends CandidateGenerator[PlanTable] {
     val expand = f(temp)
     val left = Identifier(otherSide.name)(null)
     val right = Identifier(temp.name)(null)
-    Selection(Seq(Equals(left, right)(null)), expand)
+    Selection(Seq(Equals(left, right)(null)), expand, hideSelections = true)
   }
 }

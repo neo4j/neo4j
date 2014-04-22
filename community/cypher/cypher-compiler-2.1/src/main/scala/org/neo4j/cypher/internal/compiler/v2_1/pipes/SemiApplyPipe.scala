@@ -19,22 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 
-case class ApplyPipe(source: Pipe, inner: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
-    input.flatMap {
+case class SemiApplyPipe(source: Pipe, inner: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+  def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    input.filter {
       (outerContext) =>
-        val original = outerContext.clone()
         val innerState = state.copy(initialContext = Some(outerContext))
         val innerResults = inner.createResults(innerState)
-        innerResults.map { context => context ++ original }
+        innerResults.nonEmpty
     }
+  }
 
   def executionPlanDescription = source.executionPlanDescription.
-    andThen(this, "Apply", "inner" -> inner.executionPlanDescription)
+    andThen(this, "SemiApply", "inner" -> inner.executionPlanDescription)
 
-  def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
+  def symbols: SymbolTable = source.symbols
 }

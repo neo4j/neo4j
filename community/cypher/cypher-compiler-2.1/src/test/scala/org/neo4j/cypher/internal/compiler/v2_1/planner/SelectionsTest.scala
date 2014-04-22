@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, DummyPosition}
+import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
 import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
@@ -35,7 +35,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val compareTwoNodes: Equals = compareBothSides("a", "b")
 
   test("can flat predicates to a sequence") {
-    val selections = Selections(Seq(idNames("a") -> aIsPerson))
+    val selections = Selections(Set(Predicate(idNames("a"), aIsPerson)))
 
     selections.flatPredicates should equal(Seq(aIsPerson))
   }
@@ -45,28 +45,28 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("should be able to sense that predicates are not covered") {
-    val selections = Selections(Seq(
-      idNames("a") -> aIsPerson,
-      idNames("b") -> bIsAnimal
+    val selections = Selections(Set(
+      Predicate(idNames("a"), aIsPerson),
+      Predicate(idNames("b"), bIsAnimal)
     ))
 
     selections.coveredBy(Seq(aIsPerson)) should be(false)
   }
 
   test("should be able to tell when all predicates are covered") {
-    val selections = Selections(Seq(
-      idNames("a") -> aIsPerson
+    val selections = Selections(Set(
+      Predicate(idNames("a"), aIsPerson)
     ))
 
     selections.coveredBy(Seq(aIsPerson)) should be(true)
   }
 
   test("can extract HasLabels Predicates") {
-    val selections = Selections(Seq(
-      idNames("a") -> aIsPerson,
-      idNames("a") -> aIsPerson,
-      idNames("b") -> bIsAnimal,
-      idNames("c") -> Equals(Identifier("c")_, SignedIntegerLiteral("42")_)_
+    val selections = Selections(Set(
+      Predicate(idNames("a"), aIsPerson),
+      Predicate(idNames("a"), aIsPerson),
+      Predicate(idNames("b"), bIsAnimal),
+      Predicate(idNames("c"), Equals(Identifier("c") _, SignedIntegerLiteral("42") _) _)
     ))
 
     selections.labelPredicates should equal(Map(
@@ -79,9 +79,9 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val a = idNames("a")
     val b = idNames("b")
 
-    val selections = Selections(Seq(
-      a -> aIsPerson,
-      b -> bIsAnimal
+    val selections = Selections(Set(
+      Predicate(a, aIsPerson),
+      Predicate(b, bIsAnimal)
     ))
 
     selections.predicatesGiven(a) should equal(Seq(aIsPerson))
@@ -91,9 +91,9 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val a = idNames("a")
     val b = idNames("b")
 
-    val selections = Selections(Seq(
-      a -> aIsPerson,
-      b -> bIsAnimal
+    val selections = Selections(Set(
+      Predicate(a, aIsPerson),
+      Predicate(b, bIsAnimal)
     ))
 
     selections.predicatesGiven(Set.empty) should equal(Seq.empty)
@@ -103,8 +103,8 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val aAndB = idNames("a", "b")
     val a = Set(aAndB.head)
 
-    val selections = Selections(Seq(
-      aAndB -> compareTwoNodes
+    val selections = Selections(Set(
+      Predicate(aAndB, compareTwoNodes)
     ))
 
     selections.predicatesGiven(a) should equal(Seq.empty)
@@ -112,8 +112,10 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   private def idNames(names: String*) = names.map(IdName(_)).toSet
 
-  private def identHasLabel(name: String, labelName: String): HasLabels =
-    HasLabels(Identifier(name)_, Seq(LabelName(labelName)()_))_
+  private def identHasLabel(name: String, labelName: String): HasLabels = {
+    val labelNameObj: LabelName = LabelName(labelName)() _
+    HasLabels(Identifier(name) _, Seq(labelNameObj)) _
+  }
 
   private def compareBothSides(left: String, right: String): Equals = {
     val l: Identifier = Identifier(left)_

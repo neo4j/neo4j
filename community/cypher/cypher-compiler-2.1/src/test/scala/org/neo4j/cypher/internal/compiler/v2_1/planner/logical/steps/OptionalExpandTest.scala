@@ -24,19 +24,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.StringLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.planner.OptionalQueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.OptionalExpand
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.MainQueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTable, CandidateList}
 
 class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -50,21 +38,8 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   test("should introduce optional expand for unsolved optional match when all arguments are covered and there's a single unsolved pattern relationship") {
     // MATCH (a) OPTIONAL MATCH (a)-[r]->(b)
-
-    val qg = MainQueryGraph(
-      projections = Map.empty,
-      selections = Selections(),
-      patternNodes = Set("a"),
-      patternRelationships = Set.empty,
-      namedPaths = Set.empty,
-      optionalMatches = Seq(OptionalQueryGraph(
-        selections = Selections(),
-        patternNodes = Set("a", "b"),
-        patternRelationships = Set(patternRel1),
-        namedPaths = Set.empty,
-        argumentIds = Set("a")
-      ))
-    )
+    val optionalMatch = QueryGraph(patternNodes = Set("a", "b"), patternRelationships = Set(patternRel1))
+    val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
@@ -73,28 +48,18 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     val inputPlan = SingleRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
-    val innerPlan = OptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq.empty)(patternRel1)
+    val innerPlan = OptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq.empty)(QueryGraph.empty)
 
     optionalExpand(planTable) should equal(CandidateList(Seq(innerPlan)))
   }
 
   test("should not introduce optional expand when there's more than one unsolved pattern relationship") {
     // MATCH (a) OPTIONAL MATCH (c)<-[r2]-(a)-[r1]->(b)
+    val optionalMatch = QueryGraph(
+      patternNodes = Set("a", "b", "c"),
+      patternRelationships = Set(patternRel1, patternRel2))
 
-    val qg = MainQueryGraph(
-      projections = Map.empty,
-      selections = Selections(),
-      patternNodes = Set("a"),
-      patternRelationships = Set.empty,
-      namedPaths = Set.empty,
-      optionalMatches = Seq(OptionalQueryGraph(
-        selections = Selections(),
-        patternNodes = Set("a", "b", "c"),
-        patternRelationships = Set(patternRel1, patternRel2),
-        namedPaths = Set.empty,
-        argumentIds = Set("a")
-      ))
-    )
+    val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
@@ -108,21 +73,11 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
   test("should introduce optional expand and bring along predicates on the relationship") {
     // MATCH (a) OPTIONAL MATCH (a)-[r1]->(b) WHERE r1.foo = 42
-
-    val qg = MainQueryGraph(
-      projections = Map.empty,
-      selections = Selections(),
-      patternNodes = Set("a"),
-      patternRelationships = Set.empty,
-      namedPaths = Set.empty,
-      optionalMatches = Seq(OptionalQueryGraph(
-        selections = Selections(Seq(Set(IdName("r1")) -> r1Predicate)),
-        patternNodes = Set("a", "b"),
-        patternRelationships = Set(patternRel1),
-        namedPaths = Set.empty,
-        argumentIds = Set("a")
-      ))
-    )
+    val optionalMatch = QueryGraph(
+      patternNodes = Set("a", "b"),
+      patternRelationships = Set(patternRel1),
+      selections = Selections(Set(Predicate(Set(IdName("r1")), r1Predicate))))
+    val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
@@ -131,28 +86,18 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     val inputPlan = SingleRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
-    val innerPlan = OptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(r1Predicate))(patternRel1)
+    val innerPlan = OptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(r1Predicate))(QueryGraph.empty)
 
     optionalExpand(planTable) should equal(CandidateList(Seq(innerPlan)))
   }
 
   test("should introduce optional expand and bring along predicates on the end node") {
     // MATCH (a) OPTIONAL MATCH (a)-[r1]->(b) WHERE b.foo = 42
-
-    val qg = MainQueryGraph(
-      projections = Map.empty,
-      selections = Selections(),
-      patternNodes = Set("a"),
-      patternRelationships = Set.empty,
-      namedPaths = Set.empty,
-      optionalMatches = Seq(OptionalQueryGraph(
-        selections = Selections(Seq(Set(IdName("b")) -> bPredicate)),
-        patternNodes = Set("a", "b"),
-        patternRelationships = Set(patternRel1),
-        namedPaths = Set.empty,
-        argumentIds = Set("a")
-      ))
-    )
+    val optionalMatch = QueryGraph(
+      patternNodes = Set("a", "b"),
+      patternRelationships = Set(patternRel1),
+      selections = Selections(Set(Predicate(Set(IdName("b")), bPredicate))))
+    val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
@@ -161,28 +106,18 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     val inputPlan = SingleRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
-    val innerPlan = OptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(bPredicate))(patternRel1)
+    val innerPlan = OptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(bPredicate))(QueryGraph.empty)
 
     optionalExpand(planTable) should equal(CandidateList(Seq(innerPlan)))
   }
 
   test("should introduce optional expand with the right relationship direction") {
     // MATCH (a) OPTIONAL MATCH (b)-[r1]->(a) WHERE b.foo = 42
-
-    val qg = MainQueryGraph(
-      projections = Map.empty,
-      selections = Selections(),
-      patternNodes = Set("a"),
-      patternRelationships = Set.empty,
-      namedPaths = Set.empty,
-      optionalMatches = Seq(OptionalQueryGraph(
-        selections = Selections(Seq(Set(IdName("b")) -> bPredicate)),
-        patternNodes = Set("a", "b"),
-        patternRelationships = Set(patternRel3),
-        namedPaths = Set.empty,
-        argumentIds = Set("a")
-      ))
-    )
+    val optionalMatch = QueryGraph(
+      patternNodes = Set("a", "b"),
+      patternRelationships = Set(patternRel3),
+      selections = Selections(Set(Predicate(Set(IdName("b")), bPredicate))))
+    val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
@@ -191,28 +126,21 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     val inputPlan = SingleRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
-    val innerPlan = OptionalExpand(inputPlan, IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r3"), SimplePatternLength, Seq(bPredicate))(patternRel3)
+    val innerPlan = OptionalExpand(inputPlan, IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r3"), SimplePatternLength, Seq(bPredicate))(QueryGraph.empty)
 
     optionalExpand(planTable) should equal(CandidateList(Seq(innerPlan)))
   }
 
   test("should not introduce optional expand until predicates have their dependencies satisfied") {
     // MATCH (a)-->(b) OPTIONAL MATCH (b)-[r1]->(x) WHERE r1.foo = a.foo
-
-    val qg = MainQueryGraph(
-      projections = Map.empty,
-      selections = Selections(),
+    val optionalMatch = QueryGraph(
+      patternNodes = Set("b", "x"),
+      patternRelationships = Set(patternRel4),
+      selections = Selections(Set(Predicate(Set(IdName("r1"), IdName("a")), aAndR1Predicate))))
+    val qg = QueryGraph(
       patternNodes = Set("a", "b"),
-      patternRelationships = Set(patternRel1),
-      namedPaths = Set.empty,
-      optionalMatches = Seq(OptionalQueryGraph(
-        selections = Selections(Seq(Set(IdName("r1"), IdName("a")) -> aAndR1Predicate)),
-        patternNodes = Set("b", "x"),
-        patternRelationships = Set(patternRel4),
-        namedPaths = Set.empty,
-        argumentIds = Set(IdName("b"))
-      ))
-    )
+      patternRelationships = Set(patternRel1)).
+      withAddedOptionalMatch(optionalMatch)
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
 import expressions.{Identifier, Expression}
-import expressions.Identifier._
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import collection.Map
 

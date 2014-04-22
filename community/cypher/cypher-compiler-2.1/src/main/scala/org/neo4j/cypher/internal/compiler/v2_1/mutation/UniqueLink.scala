@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.mutation
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
 import commands.expressions.{Expression, Identifier, Literal}
-import commands.expressions.Identifier._
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.notNamed
 import commands.values.KeyToken
 import pipes.QueryState
 import symbols._

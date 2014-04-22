@@ -30,7 +30,7 @@ case class PlanningStrategyConfiguration(
 object PlanningStrategyConfiguration {
   val default = PlanningStrategyConfiguration(
     pickBestCandidate = pickBestPlan,
-    applySelections = selectProjectables,
+    applySelections = selectPatternPredicates(selectProjectables),
     leafPlanners = LeafPlannerList(
       // arguments from the outside in case we are in a sub query,
       argumentLeafPlanner,

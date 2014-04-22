@@ -22,15 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, SemanticTable}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
 case class LogicalPlanContext(planContext: PlanContext,
                               metrics: Metrics,
                               semanticTable: SemanticTable,
                               queryGraph: QueryGraph,
-                              strategy: PlanningStrategy,
-                              argumentIds: Set[IdName] //The ids that can be considered arguments from an subquery perspective
-                              ) {
+                              strategy: PlanningStrategy) {
 
   def statistics = planContext.statistics
   def cost = metrics.cost

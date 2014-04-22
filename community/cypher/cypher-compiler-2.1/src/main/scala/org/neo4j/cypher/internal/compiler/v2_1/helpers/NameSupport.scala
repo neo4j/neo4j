@@ -17,22 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.helpers
 
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, RelTypeName}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+object NameSupport {
 
-case class OptionalExpand(left: LogicalPlan,
-                  from: IdName,
-                  dir: Direction,
-                  types: Seq[RelTypeName],
-                  to: IdName,
-                  relName: IdName,
-                  length: PatternLength,
-                  predicates: Seq[Expression])(solvedQueryGraph: QueryGraph) extends LogicalPlan {
-  val lhs = Some(left)
-  def rhs = None
+  implicit class NameString(name: String) {
+    def isNamed = !unnamed
+    def unnamed = NameSupport.notNamed(name)
+  }
 
-  val solved = left.solved.withAddedOptionalMatch(solvedQueryGraph)
+  def isNamed(x: String) = !notNamed(x)
+
+  def notNamed(x: String) = x.startsWith("  UNNAMED")
 }

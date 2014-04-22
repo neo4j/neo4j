@@ -68,7 +68,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case NodeIndexUniqueSeek(IdName(id), labelId, propertyKeyId, valueExpr) =>
           NodeUniqueIndexSeekPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)
 
-        case Selection(predicates, left) =>
+        case Selection(predicates, left, _) =>
           FilterPipe(buildPipe(left), predicates.map(_.asCommandPredicate).reduce(_ ++ _))
 
         case CartesianProduct(left, right) =>
@@ -98,6 +98,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
         case Apply(outer, inner) =>
           ApplyPipe(buildPipe(outer), buildPipe(inner))
+
+        case SemiApply(outer, inner) =>
+          SemiApplyPipe(buildPipe(outer), buildPipe(inner))
 
         case _ =>
           throw new CantHandleQueryException

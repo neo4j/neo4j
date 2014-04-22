@@ -43,7 +43,7 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
       if optionalQG.selections.predicatesGiven(lhs.coveredIds + otherSide + patternRel.name) == optionalQG.selections.flatPredicates
     } yield {
       val dir = patternRel.directionRelativeTo(argumentId)
-      OptionalExpand(lhs, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length, optionalQG.selections.flatPredicates)(patternRel)
+      OptionalExpand(lhs, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length, optionalQG.selections.flatPredicates)(optionalQG)
     }
 
     CandidateList(outerJoinPlans)

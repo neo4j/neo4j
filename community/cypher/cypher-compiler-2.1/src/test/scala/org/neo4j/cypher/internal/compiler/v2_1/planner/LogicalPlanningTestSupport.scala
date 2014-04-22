@@ -26,12 +26,13 @@ import v2_1._
 import v2_1.spi.{GraphStatistics, PlanContext}
 import v2_1.parser.{ParserMonitor, CypherParser}
 import v2_1.planner.logical._
-import v2_1.planner.logical.plans.{PatternRelationship, LogicalPlan, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SimplePatternLength, PatternRelationship, LogicalPlan, IdName}
 import v2_1.ast.Query
 import v2_1.planner.logical.Metrics._
 
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
+import org.neo4j.graphdb.Direction
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
@@ -42,6 +43,11 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
   val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
   val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
+  val mockRel = {
+    val a = IdName("a")
+    val b = IdName("b")
+    PatternRelationship(IdName("r"), (a,b), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+  }
 
   class SpyableMetricsFactory extends MetricsFactory {
     def newSelectivityEstimator(statistics: GraphStatistics) =
@@ -64,10 +70,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
                                   metrics: Metrics = self.mock[Metrics],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
                                   queryGraph: QueryGraph = self.mock[QueryGraph],
-                                  strategy: PlanningStrategy = new GreedyPlanningStrategy(),
-                                  argumentIds:Set[String] = Set.empty) =
+                                  strategy: PlanningStrategy = new GreedyPlanningStrategy()): LogicalPlanContext =
 
-    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy, argumentIds.map(IdName.apply))
+    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.coveredIds -> plan
@@ -88,8 +93,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     val plan = mock[LogicalPlan]
     doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
     doReturn(ids).when(plan).coveredIds
-    doReturn(Seq.empty).when(plan).solvedPredicates
-    doReturn(patterns).when(plan).solvedPatterns
+    doReturn(QueryGraph(patternRelationships = patterns.toSet)).when(plan).solved
     plan
   }
 

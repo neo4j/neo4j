@@ -19,20 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, RelTypeName}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, Exists}
 
-case class OptionalExpand(left: LogicalPlan,
-                  from: IdName,
-                  dir: Direction,
-                  types: Seq[RelTypeName],
-                  to: IdName,
-                  relName: IdName,
-                  length: PatternLength,
-                  predicates: Seq[Expression])(solvedQueryGraph: QueryGraph) extends LogicalPlan {
-  val lhs = Some(left)
-  def rhs = None
+case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(exists: Exists) extends LogicalPlan {
+  val lhs = Some(outer)
+  val rhs = Some(inner)
 
-  val solved = left.solved.withAddedOptionalMatch(solvedQueryGraph)
+  val solved = {
+    val newSelections = Selections(outer.solved.selections.predicates + exists.predicate)
+
+    outer.solved.copy(subQueries = outer.solved.subQueries :+ exists, selections = newSelections)
+  }
 }

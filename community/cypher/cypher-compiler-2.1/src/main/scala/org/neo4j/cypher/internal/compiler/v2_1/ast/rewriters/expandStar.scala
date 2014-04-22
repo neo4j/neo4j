@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier.isNamed
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
 
 
 object expandStar extends Rewriter {

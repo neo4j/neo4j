@@ -36,7 +36,7 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
   def apply(plan: LogicalPlan): Double = plan match {
     case _: SingleRow =>
-      cardinality(plan)
+      0
 
     case _: AllNodesScan =>
       cardinality(plan)
@@ -76,6 +76,9 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
     case applyOp: Apply =>
       cost(applyOp.outer) + cardinality(applyOp.outer) * cost(applyOp.inner)
+
+    case applyOp: SemiApply =>
+      cost(applyOp.outer) + cardinality(applyOp.outer) * cost(applyOp.inner) * .001 // TODO: This is entirely made up
 
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)
