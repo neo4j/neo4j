@@ -118,7 +118,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   def produceDocumentation() {
     val writer: PrintWriter = createWriter(title, dir)
     val queryText = includeQueries(text, dir)
-    val queryLines = queryText.split("\n\n")
+    val queryLines = queryText.replaceAll("\r\n", "\n").split("\n\n")
     writer.println("++++")
     writer.println("<div class='col card" + css +
       "\'><div class='blk'>")
