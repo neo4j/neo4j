@@ -39,8 +39,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       projections: Map[String, Expression] = Map.empty,
                       subQueries: Seq[SubQuery] = Seq.empty) {
 
-  def ++(in: QueryGraph): QueryGraph = in match {
-    case other: QueryGraph => QueryGraph(
+  def ++(other: QueryGraph): QueryGraph = QueryGraph(
       projections = projections ++ other.projections,
       selections = selections ++ other.selections,
       patternNodes = patternNodes ++ other.patternNodes,
@@ -48,7 +47,6 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       subQueries = subQueries ++ other.subQueries,
       namedPaths = namedPaths ++ other.namedPaths,
       argumentIds = argumentIds ++ other.argumentIds)
-  }
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = coveredIds intersect optionalMatch.coveredIds
