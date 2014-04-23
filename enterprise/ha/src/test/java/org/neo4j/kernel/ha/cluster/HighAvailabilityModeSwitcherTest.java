@@ -20,24 +20,30 @@
 package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.protocol.election.Election;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.ha.DelegateInvocationHandler;
-import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doReturn;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyZeroInteractions;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.PENDING;
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState.TO_SLAVE;
 
 public class HighAvailabilityModeSwitcherTest
 {
@@ -46,12 +52,11 @@ public class HighAvailabilityModeSwitcherTest
     {
         // Given
         ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
-        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( BindingNotifier.class ),
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( SwitchToSlave.class ),
+                mock(SwitchToMaster.class),
                 mock( Election.class ),
-                mock( DelegateInvocationHandler.class ), availability,
-                mock( HighAvailabilityMemberStateMachine.class),  mock( GraphDatabaseAPI.class ),
-                mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ),
-                mock( RequestContextFactory.class ) );
+                availability,
+                StringLogger.DEV_NULL );
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
@@ -71,12 +76,11 @@ public class HighAvailabilityModeSwitcherTest
 
         // Given
         ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
-        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( BindingNotifier.class ),
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( SwitchToSlave.class ),
+                mock(SwitchToMaster.class),
                 mock( Election.class ),
-                mock( DelegateInvocationHandler.class ), availability,
-                mock( HighAvailabilityMemberStateMachine.class),  mock( GraphDatabaseAPI.class ),
-                mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ),
-                mock( RequestContextFactory.class ) );
+                availability,
+                StringLogger.DEV_NULL );
 
         // When
         toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
@@ -96,12 +100,11 @@ public class HighAvailabilityModeSwitcherTest
 
         // Given
         ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
-        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( BindingNotifier.class ),
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( SwitchToSlave.class ),
+                mock(SwitchToMaster.class),
                 mock( Election.class ),
-                mock( DelegateInvocationHandler.class ), availability,
-                mock( HighAvailabilityMemberStateMachine.class), mock( GraphDatabaseAPI.class ),
-                mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ),
-                mock( RequestContextFactory.class ) );
+                availability,
+                StringLogger.DEV_NULL );
 
         // When
         toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.SLAVE,
@@ -121,12 +124,11 @@ public class HighAvailabilityModeSwitcherTest
 
         // Given
         ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
-        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( BindingNotifier.class ),
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( mock( SwitchToSlave.class ),
+                mock(SwitchToMaster.class),
                 mock( Election.class ),
-                mock( DelegateInvocationHandler.class ), availability,
-                mock( HighAvailabilityMemberStateMachine.class), mock( GraphDatabaseAPI.class ),
-                mock( HaIdGeneratorFactory.class ), mock( Config.class ), mock( Logging.class ),
-                mock( RequestContextFactory.class ) );
+                availability,
+                StringLogger.DEV_NULL );
 
         // When
         toTest.slaveIsAvailable( new HighAvailabilityMemberChangeEvent( HighAvailabilityMemberState.MASTER,
@@ -138,6 +140,53 @@ public class HighAvailabilityModeSwitcherTest
            * a switch to master which we don't do here.
            */
         verifyZeroInteractions(  availability );
+    }
+
+    @Test
+    public void shouldReswitchToSlaveIfNewMasterBecameAvailableDuringSwitch() throws Throwable
+    {
+        // Given
+        final CountDownLatch switching = new CountDownLatch( 1 );
+        final CountDownLatch latch = new CountDownLatch( 1 );
+        final CountDownLatch slaveAvailable = new CountDownLatch( 2 );
+        ClusterMemberAvailability availability = mock( ClusterMemberAvailability.class );
+        SwitchToSlave switchToSlave = mock( SwitchToSlave.class );
+        SwitchToMaster switchToMaster = mock( SwitchToMaster.class );
+
+        when( switchToSlave.switchToSlave(any( LifeSupport.class), any(URI.class), any(URI.class))).thenAnswer( new Answer<URI>()
+                {
+                    @Override
+                    public URI answer( InvocationOnMock invocationOnMock ) throws Throwable
+                    {
+                        switching.countDown();
+                        latch.await();
+                        slaveAvailable.countDown();
+                        return URI.create("ha://slave");
+                    }
+                } );
+
+        Logging logging = mock( Logging.class );
+        doReturn( new ConsoleLogger( StringLogger.DEV_NULL) ).when( logging ).getConsoleLog( HighAvailabilityModeSwitcher.class );
+
+        HighAvailabilityModeSwitcher toTest = new HighAvailabilityModeSwitcher( switchToSlave,
+                switchToMaster,
+                mock( Election.class ),
+                availability,
+                StringLogger.DEV_NULL );
+        toTest.init();
+        toTest.start();
+
+        // When
+        toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( PENDING,
+                TO_SLAVE, new InstanceId( 1 ), URI.create( "ha://server1" ) ) );
+        switching.await();
+        toTest.masterIsElected( new HighAvailabilityMemberChangeEvent( TO_SLAVE, PENDING, new InstanceId( 2 ),
+                URI.create( "ha://server2" ) ) );
+        toTest.masterIsAvailable( new HighAvailabilityMemberChangeEvent( PENDING, TO_SLAVE, new InstanceId( 2 ), URI.create( "ha://server2" ) ) );
+        latch.countDown();
+
+        // Then
+        slaveAvailable.await();
     }
 
 }
