@@ -379,6 +379,10 @@ public class PersistenceWindowPool implements WindowPool
                 {
                     brickSize = Integer.MAX_VALUE;
                 }
+                if ( brickSize == 0 )
+                {
+                    brickSize = blockSize;
+                }
                 brickSize = (brickSize / blockSize) * blockSize;
                 brickCount = (int) (fileSize / brickSize);
             }
@@ -407,11 +411,15 @@ public class PersistenceWindowPool implements WindowPool
                     brickSize = (brickSize / blockSize) * blockSize;
                     brickCount = (int) (fileSize / brickSize);
                 }
+                else if ( brickSize < blockSize )
+                {
+                    brickSize = blockSize;
+                }
                 else
                 {
                     brickSize = (brickSize / blockSize) * blockSize;
                 }
-                assert brickSize > blockSize;
+                assert brickSize >= blockSize;
             }
         }
         else if ( availableMem > 0 )
@@ -634,23 +642,8 @@ public class PersistenceWindowPool implements WindowPool
     {
         try
         {
-            LockableWindow window = null;
-            if ( useMemoryMapped )
-            {
-                 window = new MappedPersistenceWindow(
-                    brickIndexToPosition( brick.index() ), blockSize,
-                    brickSize, fileChannel, mapMode );
-            }
-            else
-            {
-                PlainPersistenceWindow dpw =
-                    new PlainPersistenceWindow(
-                        brickIndexToPosition( brick.index() ),
-                        blockSize, brickSize, fileChannel );
-                dpw.readFullWindow();
-                window = dpw;
-            }
-            while ( true )
+            int maxWindowMappingAttempts = 5;
+            for ( int attempt = 0; attempt < maxWindowMappingAttempts; attempt++ )
             {
                 /*
                  * This is a busy wait, given that rows are kept for a very short time. What we do is lock the brick so
@@ -663,13 +656,30 @@ public class PersistenceWindowPool implements WindowPool
                 {
                     if ( brick.lockCount.get() == 0 )
                     {
-                        brick.setWindow( window );
-                        break;
+                        if ( useMemoryMapped )
+                        {
+                            LockableWindow window = new MappedPersistenceWindow(
+                                    brickIndexToPosition( brick.index() ), blockSize,
+                                    brickSize, fileChannel, mapMode );
+                            brick.setWindow( window );
+                        }
+                        else
+                        {
+                            PlainPersistenceWindow window =
+                                    new PlainPersistenceWindow(
+                                            brickIndexToPosition( brick.index() ),
+                                            blockSize, brickSize, fileChannel );
+                            window.readFullWindow();
+                            brick.setWindow( window );
+                        }
+                        memUsed += brickSize;
+                        return true;
                     }
                 }
+                // Locks are still held on this brick, give others some breething space to release their locks:
+                Thread.yield();
             }
-            memUsed += brickSize;
-            return true;
+            return false;
         }
         catch ( MappedMemException e )
         {
