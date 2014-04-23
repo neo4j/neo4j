@@ -17,22 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Sort, LogicalPlan, IdName, Projection}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{SortItem, Expression}
 
-object projectUncovered extends PlanTransformer {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
-    val projectAllCoveredIds = plan.coveredIds.map {
-      case IdName(id) => id -> Identifier(id)(null)
-    }.toMap
+case class Sort(left: LogicalPlan, sortItems: Seq[SortItem]) extends LogicalPlan {
+  val lhs = Some(left)
+  val rhs = None
 
-    val queryGraph = context.queryGraph
-    if (queryGraph.projections == projectAllCoveredIds)
-      plan
-    else
-      Projection(plan, queryGraph.projections)
-  }
+  val solved = left.solved.changeSortItems(sortItems)
 }

@@ -126,13 +126,15 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
       clauses.foldLeft(QueryGraph.empty)(
         (qg, clause) =>
           clause match {
-            case Return(false, ListedReturnItems(expressions), None, None, None) =>
+            case Return(false, ListedReturnItems(expressions), optOrderBy, None, None) =>
               val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
               if (projections.exists {
                 case (_,e) => e.asCommandExpression.containsAggregate
               }) throw new CantHandleQueryException
 
-              qg.changeProjections(projections.toMap)
+              qg.changeSortItems(
+                optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
+              ).changeProjections(projections.toMap)
 
             case Match(optional@false, pattern: Pattern, Seq(), optWhere) =>
               if (qg.patternRelationships.nonEmpty || qg.patternNodes.nonEmpty)

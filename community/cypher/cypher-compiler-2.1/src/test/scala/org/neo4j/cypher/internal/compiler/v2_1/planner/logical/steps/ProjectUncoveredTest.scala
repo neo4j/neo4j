@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SignedIntegerLit
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
 
-class ProjectTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class ProjectUncoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should add projection for expressions not already covered") {
     // given

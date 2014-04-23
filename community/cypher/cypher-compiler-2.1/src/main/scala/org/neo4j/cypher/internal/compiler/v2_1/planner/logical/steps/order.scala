@@ -23,16 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Sort, LogicalPlan, IdName, Projection}
 
-object projectUncovered extends PlanTransformer {
+object order extends PlanTransformer {
   def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
-    val projectAllCoveredIds = plan.coveredIds.map {
-      case IdName(id) => id -> Identifier(id)(null)
-    }.toMap
-
     val queryGraph = context.queryGraph
-    if (queryGraph.projections == projectAllCoveredIds)
+    if (queryGraph.sortItems.isEmpty)
       plan
     else
-      Projection(plan, queryGraph.projections)
+      Sort(plan, queryGraph.sortItems)
   }
 }

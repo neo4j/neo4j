@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
@@ -96,6 +97,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
         case SemiApply(outer, inner) =>
           SemiApplyPipe(buildPipe(outer), buildPipe(inner))
+
+        case Sort(left, sortItems) =>
+          SortPipe(buildPipe(left), sortItems.map(_.asCommandSortItem).toList)
 
         case _ =>
           throw new CantHandleQueryException
