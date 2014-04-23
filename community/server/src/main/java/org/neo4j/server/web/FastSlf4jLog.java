@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.log.Slf4jLog;
 public class FastSlf4jLog
         extends Slf4jLog
 {
-    private static boolean debugEnabled;
+    private boolean debugEnabled;
 
     public FastSlf4jLog() throws Exception
     {
