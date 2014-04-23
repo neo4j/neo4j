@@ -17,16 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{HoldsOrExists, Predicate, Selections}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, Or}
 
-object verifyBestPlan extends PlanTransformer {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
-    if (!context.queryGraph.equivalent(plan.solved))
-      throw new CantHandleQueryException()
-    plan
+case class SelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: HoldsOrExists) extends LogicalPlan {
+  val lhs = Some(outer)
+  val rhs = Some(inner)
+
+  val solved = {
+    val newSelections = Selections(outer.solved.selections.predicates + exists.orPredicate)
+    outer.solved.copy(subQueries = outer.solved.subQueries :+ exists, selections = newSelections)
   }
 }

@@ -21,13 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport
 
 trait SubQuery {
-  def queryGraph:QueryGraph
+  def queryGraph: QueryGraph
 }
 
-case class OptionalMatch(queryGraph:QueryGraph) extends SubQuery
+case class OptionalMatch(queryGraph: QueryGraph) extends SubQuery
 case class Exists(predicate: Predicate, queryGraph: QueryGraph) extends SubQuery
+case class HoldsOrExists(orPredicate: Predicate, predicate: Expression, queryGraph: QueryGraph) extends SubQuery
 
 // An abstract representation of the query graph being solved at the current step
 case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
@@ -45,6 +47,13 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       patternRelationships = patternRelationships ++ other.patternRelationships,
       subQueries = subQueries ++ other.subQueries,
       argumentIds = argumentIds ++ other.argumentIds)
+
+  def equivalent(other: QueryGraph) =
+    patternRelationships == other.patternRelationships &&
+    patternNodes == other.patternNodes &&
+    selections == other.selections &&
+    projections == other.projections &&
+    sortItems == other.sortItems
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = coveredIds intersect optionalMatch.coveredIds
@@ -115,6 +124,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def patternPredicates = subQueries.collect {
     case e: Exists => e
+    case e: HoldsOrExists => e
   }
 }
 
@@ -130,7 +140,7 @@ object QueryGraph {
 object SelectionPredicates {
   def fromWhere(where: Where): Set[Predicate] = extractPredicates(where.expression)
 
-  private def idNames(predicate: Expression): Set[IdName] = predicate.treeFold(Set.empty[IdName]) {
+  def idNames(predicate: Expression): Set[IdName] = predicate.treeFold(Set.empty[IdName]) {
     case Identifier(name) =>
       (acc: Set[IdName], _) => acc + IdName(name)
   }

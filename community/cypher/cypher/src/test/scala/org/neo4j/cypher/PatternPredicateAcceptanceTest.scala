@@ -39,23 +39,53 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
   test("should filter var length relationships with properties") {
     // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
 
-    def createPath(value: Any): Node = {
-      val node0 = createLabeledNode("Start")
-      val node1 = createNode()
 
-      relate(node0, node1, "prop" -> value)
-      relate(node1, createNode(), "prop" -> value)
-
-      node0
-    }
-
-    val start1 = createPath(42)
-    createPath(666)
+    val start1 = createPath(12, 42)
+    createPath(324234,666)
 
     // when
     val result = executeScalarWithNewPlanner[Node]("match (n:Start) where (n)-[*2 {prop: 42}]->() return n")
 
     // then
     assert(start1 == result)
+  }
+
+  test("should handle or between an expression and a subquery") {
+    // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
+
+    val start1 = createPath(33, 42)
+    val start2 = createPath(12, 666)
+    createPath(55555, 7777)
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where n.p = 12 OR (n)-[*2 {prop: 42}]->() return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start2) == result)
+  }
+
+  test("should handle or between 2 expressions and a subquery") {
+    // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
+
+    val start1 = createPath(33, 42)
+    val start2 = createPath(12, 666)
+    val start3 = createPath(25, 444)
+    createPath(55555, 7777)
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where n.p = 12 OR (n)-[*2 {prop: 42}]->() OR n.p = 25 return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start2, start3) == result)
+  }
+
+  private def createPath(nodeValue: Any, relValue: Any): Node = {
+    val node0 = createLabeledNode(Map("p" -> nodeValue), "Start")
+    val node1 = createNode()
+
+    relate(node0, node1, "prop" -> relValue)
+    relate(node1, createNode(), "prop" -> relValue)
+
+    node0
   }
 }

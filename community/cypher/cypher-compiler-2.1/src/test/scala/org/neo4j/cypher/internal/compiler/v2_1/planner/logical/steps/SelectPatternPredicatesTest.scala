@@ -51,7 +51,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     def apply(input: LogicalPlan)(implicit context: LogicalPlanContext) = input
   }
 
-  test("should introduce semi apply for unsolved exclusive optional match") {
+  test("should introduce semi apply for unsolved exclusive pattern predicate") {
     // Given
     val predicate = Predicate(Set(IdName("a")), exp)
     val selections = Selections(Set(predicate))
@@ -84,7 +84,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     result should equal(SemiApply(aPlan, inner)(exists))
   }
 
-  test("should not introduce semi apply for unsolved exclusive optional match when nodes not applicable") {
+  test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
     // Given
     val predicate = Predicate(Set(IdName("a")), exp)
     val selections = Selections(Set(predicate))
@@ -111,5 +111,41 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     // Then
     result should equal(bPlan)
+  }
+
+  test("should introduce select or semi apply for unsolved pattern predicates in disjunction with expressions") {
+    // Given
+    val exp2: Expression = Equals(
+      Property(Identifier("a")_, PropertyKeyName("prop")(None)_)_,
+      StringLiteral("42")_
+    )_
+    val orPredicate = Predicate(Set(IdName("a")), Or(exp2, exp)_)
+    val selections = Selections(Set(orPredicate))
+    val patternQG = QueryGraph().
+      add(patternRel).
+      addArgumentId(Seq(IdName("a"))).
+      addCoveredIdsAsProjections()
+
+    val exists = HoldsOrExists(orPredicate, exp2, patternQG)
+    val qg = QueryGraph(
+      patternNodes = Set("a"),
+      selections = selections,
+      subQueries = Seq(exists)
+    )
+
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = qg,
+      metrics = factory.newMetrics(newMockedStatistics)
+    )
+
+    val aPlan = newMockedLogicalPlan("a")
+    val inner: Expand = Expand(SingleRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength)(patternRel)
+
+    // When
+    val result = selectPatternPredicates(passThrough)(aPlan)
+
+    // Then
+    result should equal(SelectOrSemiApply(aPlan, inner, exp2)(exists))
   }
 }
