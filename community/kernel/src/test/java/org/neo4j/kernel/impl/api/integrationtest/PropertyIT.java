@@ -277,6 +277,8 @@ public class PropertyIT extends KernelIntegrationTest
     public void nodeHasStringPropertyIfSetAndLazyPropertyIfRead() throws Exception
     {
         // GIVEN
+        dbWithNoCache();
+
         int propertyKeyId;
         long nodeId;
         String value = "Bozo the Clown is a clown character very popular in the United States, peaking in the 1960s";
@@ -310,6 +312,8 @@ public class PropertyIT extends KernelIntegrationTest
     public void nodeHasArrayPropertyIfSetAndLazyPropertyIfRead() throws Exception
     {
         // GIVEN
+        dbWithNoCache();
+
         int propertyKeyId;
         long nodeId;
         int[] value = new int[] {-1,0,1,2,3,4,5,6,7,8,9,10};
@@ -343,6 +347,8 @@ public class PropertyIT extends KernelIntegrationTest
     public void shouldListAllPropertyKeys() throws Exception
     {
         // given
+        dbWithNoCache();
+
         long prop1;
         long prop2;
         {
