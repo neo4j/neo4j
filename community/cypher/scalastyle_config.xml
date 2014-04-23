@@ -8,4 +8,9 @@
       <parameter name="regex"><![CDATA[println]]></parameter>
     </parameters>
   </check>
+  <check class="org.scalastyle.scalariform.IllegalImportsChecker" enabled="true" level="error">
+    <parameters>
+      <parameter name="illegalImports">scala.Some,scala.Int,scala.Long,scala.Double</parameter>
+    </parameters>
+  </check>
 </scalastyle>
