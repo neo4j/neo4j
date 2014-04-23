@@ -19,16 +19,17 @@
  */
 package org.neo4j.graphdb.factory;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.util.ArrayList;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.SoftCacheProvider;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SetCacheProvidersTest
 {
@@ -44,7 +45,6 @@ public class SetCacheProvidersTest
         }
         catch ( IllegalArgumentException iae )
         {
-            iae.printStackTrace();
             assertTrue( iae.getMessage().contains( "No provider for cache type" ) );
             assertTrue( iae.getMessage().contains( "register" ) );
             assertTrue( iae.getMessage().contains( "missing" ) );

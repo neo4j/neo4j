@@ -60,7 +60,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
     @Override
     public Buffer getOffsettedBuffer( long id )
     {
-        int offset = (int) (id - buffer.position()) * recordSize;
+        int offset = (int) (id - position) * recordSize;
         buffer.setOffset( offset );
         return buffer;
     }

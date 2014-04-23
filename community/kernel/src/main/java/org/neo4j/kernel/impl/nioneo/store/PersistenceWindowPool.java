@@ -183,7 +183,7 @@ public class PersistenceWindowPool implements WindowPool
                     // Someone else put it there before us. Close this row
                     // which was unnecessarily opened. The next go in this loop
                     // will get that one instead.
-                    dpw.close();;
+                    dpw.close();
                     if(theBrick != null)
                     {
                         // theBrick may be null here if brick size is 0.
@@ -552,7 +552,7 @@ public class PersistenceWindowPool implements WindowPool
             }
 
             LockableWindow window = mappedBrick.getWindow();
-            if (window.writeOutAndCloseIfFree( readOnly ) )
+            if ( window.writeOutAndCloseIfFree( readOnly ) )
             {
                 mappedBrick.setWindow( null );
                 memUsed -= brickSize;
