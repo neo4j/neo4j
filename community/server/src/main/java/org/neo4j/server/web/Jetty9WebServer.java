@@ -457,12 +457,12 @@ public class Jetty9WebServer implements WebServer
         final RequestLogImpl requestLog = new RequestLogImpl();
         requestLog.setFileName( requestLoggingConfiguration.getAbsolutePath() );
 
+        // This makes the request log handler decorate whatever other handlers are already set up
         final RequestLogHandler requestLogHandler = new RequestLogHandler();
         requestLogHandler.setRequestLog( requestLog );
         requestLogHandler.setServer( jetty );
         requestLogHandler.setHandler( jetty.getHandler() );
         jetty.setHandler( requestLogHandler );
-//        handlers.addHandler( requestLogHandler );
     }
 
     private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
