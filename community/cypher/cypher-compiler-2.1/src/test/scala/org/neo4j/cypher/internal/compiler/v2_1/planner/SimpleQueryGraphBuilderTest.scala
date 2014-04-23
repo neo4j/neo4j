@@ -474,6 +474,33 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.sortItems should equal(Seq(sortItem))
   }
 
+  test("MATCH (a) WITH 1 as b RETURN b") {
+    val qg = buildQueryGraph("MATCH (a) WITH 1 as b RETURN b")
+    qg.patternNodes should equal(Set(IdName("a")))
+    qg.projections should equal(Map[String, Expression]("b" -> SignedIntegerLiteral("1")_))
+
+    val tail = qg.tail.get
+    tail.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
+  }
+
+  test("WITH 1 as b RETURN b") {
+    val qg = buildQueryGraph("WITH 1 as b RETURN b")
+    qg.projections should equal(Map[String, Expression]("b" -> SignedIntegerLiteral("1")_))
+
+    val tail = qg.tail.get
+    tail.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
+  }
+
+  test("MATCH (a) WITH a WHERE TRUE RETURN a") {
+    val qg = buildQueryGraph("MATCH (a) WITH a WHERE TRUE RETURN a")
+    qg.patternNodes should equal(Set(IdName("a")))
+    qg.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+
+    val tail = qg.tail.get
+    tail.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    tail.selections should equal(Selections(Set(Predicate(Set.empty, True()_))))
+  }
+
   test("match a where a.prop = 42 OR (a)-->() return a") {
     // Given
     val qg = buildQueryGraph("match a where a.prop = 42 OR (a)-->() return a", normalize = true)
