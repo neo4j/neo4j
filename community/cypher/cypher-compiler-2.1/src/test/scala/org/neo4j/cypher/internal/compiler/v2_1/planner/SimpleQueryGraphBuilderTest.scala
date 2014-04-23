@@ -462,5 +462,17 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.subQueries should equal(Seq(exists))
   }
 
+  test("match n return n.prop order by n.prop2 DESC") {
+    // Given
+    val qg = buildQueryGraph("match n return n.prop order by n.prop2 DESC", normalize = true)
+
+    // Then inner pattern query graph
+    qg.selections should equal(Selections())
+    qg.patternNodes should equal(Set(IdName("n")))
+    qg.subQueries should be(empty)
+    val sortItem: DescSortItem = DescSortItem(Property(Identifier("n")_, PropertyKeyName("prop2")(None)_)_)_
+    qg.sortItems should equal(Seq(sortItem))
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)(None)_
 }

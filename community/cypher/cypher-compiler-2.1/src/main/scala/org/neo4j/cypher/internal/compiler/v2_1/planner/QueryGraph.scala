@@ -35,6 +35,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       argumentIds: Set[IdName] = Set.empty,
                       selections: Selections = Selections(),
                       projections: Map[String, Expression] = Map.empty,
+                      sortItems: Seq[SortItem] = Seq.empty,
                       subQueries: Seq[SubQuery] = Seq.empty) {
 
   def ++(other: QueryGraph): QueryGraph = QueryGraph(
@@ -77,6 +78,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     copy(selections = selections.copy(predicates = selections.predicates ++ predicates))
 
   def changeProjections(projections: Map[String, Expression]) = copy(projections = projections)
+
+  def changeSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
 
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
 
