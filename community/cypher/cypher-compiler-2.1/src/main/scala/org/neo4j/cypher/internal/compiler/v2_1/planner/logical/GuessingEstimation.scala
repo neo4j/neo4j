@@ -76,6 +76,9 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case Apply(outer, inner) =>
       cardinality(outer) * cardinality(inner)
 
+    case semiApply @ SemiApply(outer, inner) =>
+      cardinality(outer) * predicateSelectivity(Seq(semiApply.exists.predicate.exp))
+
     case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
       relIds.size
 

@@ -753,6 +753,17 @@ RETURN a.name""")
     result should equal (List(Map("a" -> a), Map("a" -> b)))
   }
 
+  test("relationship predicate") {
+    val a = createNode()
+    val x = createNode()
+
+    relate(a, x, "A")
+
+    val result = executeWithNewPlanner("match a where a-[:A]->() return a").toList
+
+    result should equal (List(Map("a" -> a)))
+  }
+
   test("nullable var length path should work") {
     createNode()
     val b = createNode()

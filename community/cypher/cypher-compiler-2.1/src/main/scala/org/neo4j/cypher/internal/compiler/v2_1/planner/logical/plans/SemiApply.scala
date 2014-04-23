@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, Exists}
 
-case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(exists: Exists) extends LogicalPlan {
+case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(val exists: Exists) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
 
