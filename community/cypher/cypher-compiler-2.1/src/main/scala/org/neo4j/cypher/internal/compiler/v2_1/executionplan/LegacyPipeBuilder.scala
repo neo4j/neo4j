@@ -124,6 +124,7 @@ The Neo4j Team""")
    */
   private def prepare = new Phase {
     def myBuilders: Seq[PlanBuilder] = Seq(
+      new LoadCSVBuilder,
       new PredicateRewriter,
       new KeyTokenResolver,
       new IndexLookupBuilder,
@@ -138,7 +139,6 @@ The Neo4j Team""")
       new TraversalMatcherBuilder,
       new FilterBuilder,
       new NamedPathBuilder,
-      new LoadCSVBuilder,
       new StartPointBuilder,
       new MatchBuilder,
       new ShortestPathBuilder
