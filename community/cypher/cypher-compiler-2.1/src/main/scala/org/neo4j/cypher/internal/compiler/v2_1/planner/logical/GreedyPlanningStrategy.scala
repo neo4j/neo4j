@@ -42,10 +42,9 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
 
     val leaves = generateLeafPlanTable()
     val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)
-    val afterCartesianProduct1 = iterateUntilConverged(findBestPlan(cartesianProduct))(afterExpandOrJoin)
-    val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(afterCartesianProduct1)
-    val afterCartesianProduct2 = iterateUntilConverged(findBestPlan(cartesianProduct))(afterOptionalApplies)
-    val bestPlan = projectUncovered(order(afterCartesianProduct2.uniquePlan))
+    val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(afterExpandOrJoin)
+    val afterCartesianProduct = iterateUntilConverged(findBestPlan(cartesianProduct))(afterOptionalApplies)
+    val bestPlan = projectUncovered(order(afterCartesianProduct.uniquePlan))
 
     verifyBestPlan(bestPlan)
   }
