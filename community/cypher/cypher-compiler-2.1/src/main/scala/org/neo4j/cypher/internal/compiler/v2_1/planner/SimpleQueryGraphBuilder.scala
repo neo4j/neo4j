@@ -120,53 +120,57 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
     (Selections(predicatesWithCorrectDeps), subQueries)
   }
+  override def produce(ast: Query): QueryGraph = {
+    val qg = ast match {
+      case Query(None, SingleQuery(clauses)) =>
+        clauses.foldLeft(QueryGraph.empty)(
+          (qg, clause) =>
+            clause match {
+              case Return(false, ListedReturnItems(expressions), None, None, None) =>
+                val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
+                if (projections.exists {
+                  case (_,e) => e.asCommandExpression.containsAggregate
+                }) throw new CantHandleQueryException
 
-  override def produce(ast: Query): QueryGraph = ast match {
-    case Query(None, SingleQuery(clauses)) =>
-      clauses.foldLeft(QueryGraph.empty)(
-        (qg, clause) =>
-          clause match {
-            case Return(false, ListedReturnItems(expressions), None, None, None) =>
-              val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
-              if (projections.exists {
-                case (_,e) => e.asCommandExpression.containsAggregate
-              }) throw new CantHandleQueryException
+                qg.changeProjections(projections.toMap)
 
-              qg.changeProjections(projections.toMap)
+              case Match(optional@false, pattern: Pattern, Seq(), optWhere) =>
+                if (qg.patternRelationships.nonEmpty || qg.patternNodes.nonEmpty)
+                  throw new CantHandleQueryException
 
-            case Match(optional@false, pattern: Pattern, Seq(), optWhere) =>
-              if (qg.patternRelationships.nonEmpty || qg.patternNodes.nonEmpty)
+                val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+
+                val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
+                val matchClause = QueryGraph(
+                  selections = selections,
+                  patternNodes = nodeIds.toSet,
+                  patternRelationships = rels.toSet,
+                  subQueries = subQueries)
+
+                qg ++ matchClause
+
+              case Match(optional@true, pattern: Pattern, Seq(), optWhere) =>
+                val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
+                val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+                val optionalMatch = QueryGraph(
+                  selections = selections,
+                  patternNodes = nodeIds.toSet,
+                  subQueries = subQueries,
+                  patternRelationships = rels.toSet).addCoveredIdsAsProjections()
+
+                qg.withAddedOptionalMatch(optionalMatch)
+
+              case _ =>
                 throw new CantHandleQueryException
+            }
+        )
 
-              val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+      case _ =>
+        throw new CantHandleQueryException
+    }
 
-              val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
-              val matchClause = QueryGraph(
-                selections = selections,
-                patternNodes = nodeIds.toSet,
-                patternRelationships = rels.toSet,
-                subQueries = subQueries)
-
-              qg ++ matchClause
-
-            case Match(optional@true, pattern: Pattern, Seq(), optWhere) =>
-              val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
-              val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-              val optionalMatch = QueryGraph(
-                selections = selections,
-                patternNodes = nodeIds.toSet,
-                subQueries = subQueries,
-                patternRelationships = rels.toSet).addCoveredIdsAsProjections()
-
-              qg.withAddedOptionalMatch(optionalMatch)
-
-            case _ =>
-              throw new CantHandleQueryException
-          }
-      )
-
-    case _ =>
-      throw new CantHandleQueryException
+    qg.verify()
+    qg
   }
 
 }

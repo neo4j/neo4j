@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName}
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.{InvalidSemanticsException, SyntaxException}
 
 class QueryGraphTest extends CypherFunSuite {
   test("returns no pattern relationships when the query graph doesn't contain any") {
@@ -49,5 +50,33 @@ class QueryGraphTest extends CypherFunSuite {
     qg.findRelationshipsEndingOn(IdName("a")) should equal(Set(r))
     qg.findRelationshipsEndingOn(IdName("b")) should equal(Set(r, r2))
     qg.findRelationshipsEndingOn(IdName("c")) should equal(Set(r2))
+  }
+
+  test("rejects multiple pattern relationships for the same relationship identifier") {
+    val qg = QueryGraph( // MATCH a-[r]->b, a-[r]->c
+      patternRelationships = Set(
+        PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
+        PatternRelationship(IdName("r"), (IdName("a"), IdName("c")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+      )
+    )
+
+    evaluating {
+      qg.verify()
+    } should produce[InvalidSemanticsException]
+  }
+
+  test("rejects multiple pattern relationships for the same relationship identifier2") {
+    val optionalQG = QueryGraph( // MATCH a-[r]->b, a-[r]->c
+      patternRelationships = Set(
+        PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
+        PatternRelationship(IdName("r"), (IdName("a"), IdName("c")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+      )
+    )
+
+    val qg = QueryGraph(patternNodes = Set(IdName("a")), subQueries = Seq(OptionalMatch(optionalQG)))
+
+    evaluating {
+      qg.verify()
+    } should produce[InvalidSemanticsException]
   }
 }
