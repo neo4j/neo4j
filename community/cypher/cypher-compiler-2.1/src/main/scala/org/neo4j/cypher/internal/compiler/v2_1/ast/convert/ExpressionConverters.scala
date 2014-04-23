@@ -27,11 +27,6 @@ import commands.values.TokenType._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.ast.NodePathStep
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SingleRelationshipPathStep
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
 object ExpressionConverters {
 
