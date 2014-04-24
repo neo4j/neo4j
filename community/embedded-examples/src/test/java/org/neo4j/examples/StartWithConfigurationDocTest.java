@@ -58,5 +58,5 @@ public class StartWithConfigurationDocTest
         graphDb.shutdown();
     }
     
-    private final String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
+    private final String storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
 }

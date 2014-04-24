@@ -19,11 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.number.OrderingComparison.lessThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
+
 import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
@@ -32,7 +48,6 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -42,6 +57,7 @@ import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
@@ -53,22 +69,6 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.number.OrderingComparison.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
-
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
 
 public class XaLogicalLogTest
 {
@@ -87,7 +87,7 @@ public class XaLogicalLogTest
         when( xaTf.getCurrentVersion() ).thenAnswer( new TxVersion( TxVersion.GET ) );
         // spy on the file system abstraction so that we can spy on the file channel for the logical log
         FileSystemAbstraction fs = spy( ephemeralFs.get() );
-        File dir = TargetDirectory.forTest( fs, XaLogicalLogTest.class ).directory( "log", true );
+        File dir = TargetDirectory.forTest( fs, XaLogicalLogTest.class ).cleanDirectory( "log" );
         // -- when opening the logical log, spy on the file channel we return and count invocations to channel.read(*)
         when( fs.open( new File( dir, "logical.log.1" ), "rw" ) ).thenAnswer( new Answer<StoreChannel>()
         {
@@ -122,6 +122,7 @@ public class XaLogicalLogTest
                                                       new SingleLoggingService( StringLogger.wrap( output.writer() ) ),
                                                       LogPruneStrategies.NO_PRUNING,
                                                       mock( TransactionStateFactory.class ),
+                                                      mock( KernelHealth.class ),
                                                       25 * 1024 * 1024,
                                                       ALLOW_ALL, Functions.<List<LogEntry>>identity(),
                                                       Functions.<List<LogEntry>>identity());
@@ -164,7 +165,9 @@ public class XaLogicalLogTest
                 new Monitors(),
                 new DevNullLoggingService(),
                 NO_PRUNING,
-                mock( TransactionStateFactory.class ), maxSize,
+                mock( TransactionStateFactory.class ),
+                mock( KernelHealth.class ),
+                maxSize,
                 ALLOW_ALL, Functions.<List<LogEntry>>identity(), Functions.<List<LogEntry>>identity() );
         log.open();
         long initialLogVersion = log.getHighestLogVersion();
@@ -218,7 +221,7 @@ public class XaLogicalLogTest
                 new Monitors(),
                 new DevNullLoggingService(),
                 NO_PRUNING,
-                mock( TransactionStateFactory.class ), 10,
+                mock( TransactionStateFactory.class ), mock( KernelHealth.class ), 10,
                 ALLOW_ALL, Functions.<List<LogEntry>>identity(), Functions.<List<LogEntry>>identity());
         log.open();
         log.rotate();

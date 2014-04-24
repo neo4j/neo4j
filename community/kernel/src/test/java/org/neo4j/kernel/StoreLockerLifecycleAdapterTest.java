@@ -42,7 +42,7 @@ public class StoreLockerLifecycleAdapterTest
     @Before
     public void before()
     {
-        storeDir = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName(), true ).getAbsolutePath();
+        storeDir = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() ).getAbsolutePath();
     }
 
     @Test

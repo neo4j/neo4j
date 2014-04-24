@@ -41,6 +41,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.CommitNotificationFailedException;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -274,13 +275,14 @@ public class XaResourceManager
         }
     }
 
-    private static class TransactionStatus
+    private static class TransactionStatus implements Comparable<TransactionStatus>
     {
         private boolean prepared = false;
         private boolean commitStarted = false;
         private boolean rollback = false;
         private boolean startWritten = false;
         private final XaTransaction xaTransaction;
+        private int sequenceNumber;
 
         TransactionStatus( XaTransaction xaTransaction )
         {
@@ -338,6 +340,18 @@ public class XaResourceManager
             return "TransactionStatus[" + xaTransaction.getIdentifier()
                     + ", prepared=" + prepared + ", commitStarted=" + commitStarted
                     + ", rolledback=" + rollback + "]";
+        }
+
+        public void setSequenceNumber( int sequenceNumber )
+        {
+            this.sequenceNumber = sequenceNumber;
+        }
+
+        @Override
+        public int compareTo( TransactionStatus that )
+        {
+            return this.sequenceNumber > that.sequenceNumber ? 1
+                 : this.sequenceNumber < that.sequenceNumber ? -1 : 0;
         }
     }
 
@@ -421,13 +435,12 @@ public class XaResourceManager
         }
         else
         {
-            txOrderMap.put( xid, nextTxOrder++ );
+            txStatus.setSequenceNumber( nextTxOrder++ );
             txStatus.markAsPrepared();
             return false;
         }
     }
 
-    private final Map<Xid,Integer> txOrderMap = new HashMap<>();
     private int nextTxOrder = 0;
 
     // called during recovery
@@ -440,7 +453,7 @@ public class XaResourceManager
             throw new XAException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
-        txOrderMap.put( xid, nextTxOrder++ );
+        txStatus.setSequenceNumber( nextTxOrder++ );
         txStatus.markAsPrepared();
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
@@ -456,7 +469,7 @@ public class XaResourceManager
             throw new XAException( "Unknown xid[" + xid + "]" );
         }
         TransactionStatus txStatus = status.getTransactionStatus();
-        txOrderMap.put( xid, nextTxOrder++ );
+        txStatus.setSequenceNumber( nextTxOrder++ );
         txStatus.markAsPrepared();
         txStatus.markCommitStarted();
         XaTransaction xaTransaction = txStatus.getTransaction();
@@ -515,7 +528,14 @@ public class XaResourceManager
 
         if ( !xaTransaction.isRecovered() && !isReadOnly )
         {
-            txIdGenerator.committed( dataSource, xaTransaction.getIdentifier(), xaTransaction.getCommitTxId(), null );
+            try
+            {
+                txIdGenerator.committed( dataSource, xaTransaction.getIdentifier(), xaTransaction.getCommitTxId(), null );
+            }
+            catch ( Exception e )
+            {
+                throw new CommitNotificationFailedException( e );
+            }
         }
         return xaTransaction;
     }
@@ -560,6 +580,8 @@ public class XaResourceManager
                 long txId = txIdGenerator.generate( dataSource,
                         xaTransaction.getIdentifier() );
                 xaTransaction.setCommitTxId( txId );
+                // The call to getForceMode() is critical for correctness.
+                // See TxManager.getTransaction() for details.
                 log.commitOnePhase( xaTransaction.getIdentifier(),
                         xaTransaction.getCommitTxId(), getForceMode() );
             }
@@ -576,6 +598,8 @@ public class XaResourceManager
             long txId = txIdGenerator.generate( dataSource,
                     xaTransaction.getIdentifier() );
             xaTransaction.setCommitTxId( txId );
+            // The call to getForceMode() is critical for correctness.
+            // See TxManager.getTransaction() for details.
             log.commitTwoPhase( xaTransaction.getIdentifier(),
                     xaTransaction.getCommitTxId(), getForceMode() );
         }
@@ -722,25 +746,11 @@ public class XaResourceManager
             @Override
             public int compare( Xid o1, Xid o2 )
             {
-
-                Integer id1 = txOrderMap.get( o1 );
-                Integer id2 = txOrderMap.get( o2 );
-                if ( id1 == null && id2 == null )
-                {
-                    return 0;
-                }
-                if ( id1 == null )
-                {
-                    return Integer.MAX_VALUE;
-                }
-                if ( id2 == null )
-                {
-                    return Integer.MIN_VALUE;
-                }
-                return id1 - id2;
+                TransactionStatus a = xidMap.get( o1 ).txStatus;
+                TransactionStatus b = xidMap.get( o2 ).txStatus;
+                return a.compareTo( b );
             }
         } );
-        txOrderMap.clear(); // = null;
         while ( !xids.isEmpty() )
         {
             Xid xid = xids.removeFirst();

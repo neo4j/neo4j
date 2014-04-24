@@ -22,11 +22,11 @@ package org.neo4j.kernel.impl.api.index.inmemory;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.singletonPrimitiveLongIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.singleton;
 
 class UniqueInMemoryIndexReader implements IndexReader
 {
@@ -41,7 +41,7 @@ class UniqueInMemoryIndexReader implements IndexReader
     public PrimitiveLongIterator lookup( Object value )
     {
         Long result = indexData.get( value );
-        return result != null ? singletonPrimitiveLongIterator( result ) : emptyPrimitiveLongIterator();
+        return result != null ? singleton( result ) : PrimitiveLongCollections.emptyIterator();
     }
 
     @Override

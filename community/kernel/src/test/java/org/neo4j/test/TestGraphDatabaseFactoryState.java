@@ -49,14 +49,4 @@ public class TestGraphDatabaseFactoryState extends GraphDatabaseFactoryState
     {
         this.fileSystem = fileSystem;
     }
-
-    public void setSystemOutLogging( boolean systemOutLogging )
-    {
-        this.systemOutLogging = systemOutLogging;
-    }
-
-    public boolean isSystemOutLogging()
-    {
-        return systemOutLogging;
-    }
 }

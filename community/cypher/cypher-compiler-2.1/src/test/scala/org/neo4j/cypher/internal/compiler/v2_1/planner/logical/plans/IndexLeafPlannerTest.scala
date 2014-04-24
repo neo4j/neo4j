@@ -27,8 +27,8 @@ import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
 import org.mockito.Matchers._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -46,8 +46,10 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       Property(identifier, PropertyKeyName("prop")(Some(propertyKeyId))_)_,
       SignedIntegerLiteral("42")_
     )_
-    val expressions: Seq[Expression] = Seq(equals, hasLabels)
-    val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(Predicate(Set(idName), equals), Predicate(Set(idName), hasLabels))),
+      patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -66,7 +68,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     when(context.planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator())
 
     // when
-    val resultPlans = indexSeekLeafPlanner(expressions, Map(idName -> Set(hasLabels)))()
+    val resultPlans = indexSeekLeafPlanner(qg).plans
 
     // then
     resultPlans should equal(Seq(NodeIndexSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)()))
@@ -84,8 +86,12 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       Property(identifier, PropertyKeyName("prop")(Some(propertyKeyId))_)_,
       SignedIntegerLiteral("42")_
     )_
-    val expressions: Seq[Expression] = Seq(equals, hasLabels)
-    val qg = QueryGraph(projections, Selections(Seq(Set(idName) -> equals, Set(idName) -> hasLabels)), Set(idName), Set.empty)
+    val qg = QueryGraph(
+      projections = projections,
+      selections = Selections(Set(
+        Predicate(Set(idName), equals),
+        Predicate(Set(idName), hasLabels))),
+      patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -104,7 +110,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     })
 
     // when
-    val resultPlans = uniqueIndexSeekLeafPlanner(expressions, Map(idName -> Set(hasLabels)))()
+    val resultPlans = uniqueIndexSeekLeafPlanner(qg).plans
 
     // then
     resultPlans should equal(Seq(NodeIndexUniqueSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)()))

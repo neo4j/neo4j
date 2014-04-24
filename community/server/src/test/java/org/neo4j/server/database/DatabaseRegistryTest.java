@@ -26,7 +26,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.TestLogging;
@@ -173,11 +172,10 @@ public class DatabaseRegistryTest
         return new Database.Factory()
         {
             @Override
-            public Database newDatabase( Config config, Function<Config, Logging> loggingProvider )
+            public Database newDatabase( Config config, Logging logging )
             {
                 return db;
             }
         };
     }
-
 }

@@ -36,6 +36,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.Visitor;
@@ -89,6 +90,7 @@ import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
@@ -97,7 +99,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaResource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -391,12 +392,21 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
             fileListing = new NeoStoreFileListing( xaContainer, storeDir, labelScanStore, indexingService );
 
-            kernel = life.add( new Kernel( txManager, propertyKeyTokens,
+            Provider<NeoStore> neoStoreProvider = new Provider<NeoStore>()
+            {
+                @Override
+                public NeoStore instance()
+                {
+                    return getNeoStore();
+                }
+            };
+
+            kernel = life.add( new Kernel( txManager, propertyKeyTokens, labelTokens, relationshipTypeTokens,
                     persistenceManager, updateableSchemaState, schemaWriteGuard,
-                    indexingService, nodeManager, neoStore, schemaCache, providerMap, fs, config, labelScanStore,
+                    indexingService, nodeManager, neoStoreProvider, persistenceCache, schemaCache, providerMap, fs, config, labelScanStore,
                     new CacheLayer(
                         new DiskLayer( propertyKeyTokens, labelTokens, relationshipTypeTokens,
-                            new SchemaStorage( neoStore.getSchemaStore() ), neoStore, indexingService ),
+                            new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
                         persistenceCache, indexingService, schemaCache, nodeManager ),
                     scheduler,
                     readOnly ));

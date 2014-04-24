@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,6 +33,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
@@ -47,6 +54,7 @@ import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogWriter;
 import org.neo4j.kernel.impl.nioneo.xa.command.MasterLogWriter;
 import org.neo4j.kernel.impl.nioneo.xa.command.SlaveLogWriter;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
@@ -61,12 +69,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.Math.max;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -134,12 +136,13 @@ public class XaLogicalLog implements LogLoader
     private final XaCommandReaderFactory commandReaderFactory;
     private final XaCommandWriterFactory commandWriterFactory;
     private final LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
+    private final KernelHealth kernelHealth;
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandReaderFactory commandReaderFactory,
                          XaCommandWriterFactory commandWriterFactory,
                          XaTransactionFactory xaTf, FileSystemAbstraction fileSystem, Monitors monitors,
                          Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory,
-                         long rotateAtSize, InjectedTransactionValidator injectedTxValidator,
+                         KernelHealth kernelHealth, long rotateAtSize, InjectedTransactionValidator injectedTxValidator,
                          Function<List<LogEntry>, List<LogEntry>> interceptor, Function<List<LogEntry>,
             List<LogEntry>> transactionTranslator )
     {
@@ -151,6 +154,7 @@ public class XaLogicalLog implements LogLoader
         this.fileSystem = fileSystem;
         this.interceptor = interceptor;
         this.transactionTranslator = transactionTranslator;
+        this.kernelHealth = kernelHealth;
         this.bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, XaLogicalLog.class );
         this.logDeserializerMonitor = monitors.newMonitor( ByteCounterMonitor.class, "logdeserializer" );
         this.pruneStrategy = pruneStrategy;
@@ -305,7 +309,7 @@ public class XaLogicalLog implements LogLoader
      */
     // returns identifier for transaction
     // [TX_START][xid[gid.length,bid.lengh,gid,bid]][identifier][format id]
-    public synchronized int start( Xid xid, int masterId, int myId, long highestKnownCommittedTx ) throws XAException
+    public synchronized int start( Xid xid, int masterId, int myId, long highestKnownCommittedTx )
     {
         int xidIdent = getNextIdentifier();
         long timeWritten = System.currentTimeMillis();
@@ -323,6 +327,7 @@ public class XaLogicalLog implements LogLoader
     public synchronized void writeStartEntry( int identifier )
             throws XAException
     {
+        kernelHealth.assertHealthy( XAException.class );
         try
         {
             long position = writeBuffer.getFileChannelPosition();
@@ -1013,6 +1018,7 @@ public class XaLogicalLog implements LogLoader
     public synchronized void applyTransactionWithoutTxId( ReadableByteChannel byteChannel,
                                                           long nextTxId, ForceMode forceMode ) throws IOException
     {
+        kernelHealth.assertHealthy( IOException.class );
         if ( nextTxId != (xaTf.getLastCommittedTx() + 1) )
         {
             throw new IllegalStateException( "Tried to apply tx " +
@@ -1048,7 +1054,9 @@ public class XaLogicalLog implements LogLoader
         }
         catch( IOException e )
         {
+            kernelHealth.panic( e );
             success = false;
+            throw launderedException( IOException.class, "Failure applying transaction", e );
         }
         finally
         {
@@ -1063,12 +1071,13 @@ public class XaLogicalLog implements LogLoader
     public synchronized void applyTransaction( ReadableByteChannel byteChannel )
             throws IOException
     {
+        kernelHealth.assertHealthy( IOException.class );
         scanIsComplete = false;
 
         LogEntryConsumer consumer = new LogEntryConsumer( transactionTranslator );
         consumer.setXidIdentifier( getNextIdentifier() );
-        ForgetUnsuccessfulReceivedTransaction handler = new ForgetUnsuccessfulReceivedTransaction(
-                new SlaveLogWriter( new LogApplier(), logWriterSPI, logEntryWriter ) );
+        LogHandler handler = new LogFilter( interceptor, new ForgetUnsuccessfulReceivedTransaction(
+                new SlaveLogWriter( new LogApplier(), logWriterSPI, logEntryWriter ) ) );
         consumer.setHandler( handler );
 
         LogReader<ReadableByteChannel> logDeserializer =
@@ -1081,9 +1090,22 @@ public class XaLogicalLog implements LogLoader
             while( cursor.next( consumer ) );
             success = true;
         }
+        catch( Exception e )
+        {
+            kernelHealth.panic( e );
+            throw launderedException( IOException.class, "Failure applying transaction", e );
+        }
         finally
         {
-            handler.endLog( success );
+            try
+            {
+                handler.endLog( success );
+            }
+            catch( Exception e )
+            {
+                kernelHealth.panic( e );
+                throw launderedException( IOException.class, "Failure applying transaction", e );
+            }
             scanIsComplete = true;
         }
 

@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -38,8 +38,14 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyRecordChange;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class PropertyPhysicalToLogicalConverterTest
 {
@@ -53,7 +59,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
+        NodePropertyUpdate update = single( convert( none, none, change( before, after ) ) );
 
         // THEN
         assertEquals( UpdateMode.ADDED, update.getUpdateMode() );
@@ -69,12 +75,12 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, valueAfter ) );
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
+        NodePropertyUpdate update = single( convert( none, none, change( before, after ) ) );
 
         // THEN
         assertEquals( UpdateMode.CHANGED, update.getUpdateMode() );
     }
-    
+
     @Test
     public void shouldIgnoreInlinedUnchangedProperty() throws Exception
     {
@@ -85,9 +91,9 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, value ) );
 
         // WHEN
-        assertEquals( 0, count( converter.apply( before, none, after, none ) ) );
+        assertEquals( 0, count( convert( none, none, change( before, after ) ) ) );
     }
-    
+
     @Test
     public void shouldConvertInlinedRemovedProperty() throws Exception
     {
@@ -98,7 +104,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord();
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
+        NodePropertyUpdate update = single( convert( none, none, change( before, after ) ) );
 
         // THEN
         assertEquals( UpdateMode.REMOVED, update.getUpdateMode() );
@@ -113,7 +119,7 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, longString ) );
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
+        NodePropertyUpdate update = single( convert( none, none, change( before, after ) ) );
 
         // THEN
         assertEquals( UpdateMode.ADDED, update.getUpdateMode() );
@@ -128,12 +134,12 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord( property( key, longerString ) );
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
+        NodePropertyUpdate update = single( convert( none, none, change( before, after ) ) );
 
         // THEN
         assertEquals( UpdateMode.CHANGED, update.getUpdateMode() );
     }
-    
+
     @Test
     public void shouldConvertDynamicInlinedRemovedProperty() throws Exception
     {
@@ -143,12 +149,35 @@ public class PropertyPhysicalToLogicalConverterTest
         PropertyRecord after = propertyRecord();
 
         // WHEN
-        NodePropertyUpdate update = single( converter.apply( before, none, after, none ) );
+        NodePropertyUpdate update = single( convert( none, none, change( before, after ) ) );
 
         // THEN
         assertEquals( UpdateMode.REMOVED, update.getUpdateMode() );
     }
-    
+
+    @Test
+    public void shouldTreatPropertyThatMovedToAnotherRecordAsChange() throws Exception
+    {
+        // GIVEN
+        long key = 12;
+        String oldValue = "value1";
+        String newValue = "value two";
+        PropertyRecordChange movedFrom = change(
+                propertyRecord( property( key, oldValue ) ),
+                propertyRecord() );
+        PropertyRecordChange movedTo = change(
+                propertyRecord(),
+                propertyRecord( property( key, newValue ) ) );
+
+        // WHEN
+        NodePropertyUpdate update = single( convert( none, none, movedFrom, movedTo ) );
+
+        // THEN
+        assertEquals( UpdateMode.CHANGED, update.getUpdateMode() );
+        assertEquals( oldValue, update.getValueBefore() );
+        assertEquals( newValue, update.getValueAfter() );
+    }
+
     private PropertyRecord propertyRecord( PropertyBlock... propertyBlocks )
     {
         PropertyRecord record = new PropertyRecord( 0 );
@@ -156,7 +185,9 @@ public class PropertyPhysicalToLogicalConverterTest
         {
             record.setInUse( true );
             for ( PropertyBlock propertyBlock : propertyBlocks )
+            {
                 record.addPropertyBlock( propertyBlock );
+            }
         }
         return record;
     }
@@ -167,14 +198,14 @@ public class PropertyPhysicalToLogicalConverterTest
         store.encodeValue( block, (int) key, value );
         return block;
     }
-    
+
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private PropertyStore store;
     private final String longString = "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiing";
     private final String longerString = "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiingdd";
     private PropertyPhysicalToLogicalConverter converter;
     private final long[] none = new long[0];
-    
+
     @Before
     public void before() throws Exception
     {
@@ -190,5 +221,38 @@ public class PropertyPhysicalToLogicalConverterTest
     public void after() throws Exception
     {
         store.close();
+    }
+
+    private Iterable<NodePropertyUpdate> convert( long[] labelsBefore,
+            long[] labelsAfter, PropertyRecordChange change )
+    {
+        return convert( labelsBefore, labelsAfter, new PropertyRecordChange[] {change} );
+    }
+
+    private Iterable<NodePropertyUpdate> convert( long[] labelsBefore,
+            long[] labelsAfter, PropertyRecordChange... changes )
+    {
+        Collection<NodePropertyUpdate> updates = new ArrayList<>();
+        converter.apply( updates, Iterables.<PropertyRecordChange,PropertyRecordChange>iterable( changes ),
+                labelsBefore, labelsAfter );
+        return updates;
+    }
+
+    private PropertyRecordChange change( final PropertyRecord before, final PropertyRecord after )
+    {
+        return new PropertyRecordChange()
+        {
+            @Override
+            public PropertyRecord getBefore()
+            {
+                return before;
+            }
+
+            @Override
+            public PropertyRecord getAfter()
+            {
+                return after;
+            }
+        };
     }
 }

@@ -19,35 +19,33 @@
  */
 package org.neo4j.graphdb.traversal;
 
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
-import java.util.Set;
-
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Path;
 
 class LevelUnique extends AbstractUniquenessFilter
 {
-    private final Map<Integer, Set<Long>> idsPerLevel = new HashMap<Integer, Set<Long>>();
-    
+    private final PrimitiveIntObjectMap<PrimitiveLongSet> idsPerLevel = Primitive.intObjectMap();
+
     LevelUnique( PrimitiveTypeFetcher type )
     {
         super( type );
     }
-    
+
     @Override
     public boolean check( TraversalBranch branch )
     {
-        Integer level = branch.length();
-        Set<Long> levelIds = idsPerLevel.get( level );
+        int level = branch.length();
+        PrimitiveLongSet levelIds = idsPerLevel.get( level );
         if ( levelIds == null )
         {
-            levelIds = new HashSet<Long>();
+            levelIds = Primitive.longSet();
             idsPerLevel.put( level, levelIds );
         }
         return levelIds.add( type.getId( branch ) );
     }
-    
+
     @Override
     public boolean checkFull( Path path )
     {

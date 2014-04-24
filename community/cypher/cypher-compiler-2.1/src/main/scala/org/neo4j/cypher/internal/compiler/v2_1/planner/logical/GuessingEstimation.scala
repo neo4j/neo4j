@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, HasLabels, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, HasLabels, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
+import org.neo4j.graphdb.Direction
 
 object GuessingEstimation {
   val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
@@ -34,7 +34,7 @@ object GuessingEstimation {
 }
 
 class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
-                                   selectivity: Metrics.SelectivityModel) extends Metrics.CardinalityModel {
+                                       selectivity: Metrics.SelectivityModel) extends Metrics.CardinalityModel {
   import GuessingEstimation._
 
   def apply(plan: LogicalPlan): Double = plan match {
@@ -57,20 +57,27 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       statistics.nodesCardinality * UNIQUE_INDEX_SEEK_SELECTIVITY
 
     case NodeHashJoin(_, left, right) =>
-      (cardinality(left) + cardinality(right)) / 2
+      math.min(cardinality(left), cardinality(right))
 
-    case expand @ Expand(left, _, dir, types, _, _) =>
-      val degree = if (types.size <= 0)
-        DEFAULT_EXPAND_RELATIONSHIP_DEGREE
-      else
-        types.foldLeft(0.0)((sum, t) => sum + statistics.degreeByLabelTypeAndDirection(t.id.get, dir)) / types.size
-      cardinality(left) * degree
+    case expand @ Expand(left, _, dir, types, _, _, length) =>
+      val degree = degreeByRelationshipTypesAndDirection(types, dir)
+      cardinality(left) * math.pow(degree, averagePathLength(length))
 
-    case Selection(predicates, left) =>
-      cardinality(left) * predicates.map(selectivity).foldLeft(1.0)(_ * _)
+    case expand @ OptionalExpand(left, _, dir, types, _, _, length, predicates) =>
+      val degree = degreeByRelationshipTypesAndDirection(types, dir)
+      cardinality(left) * math.pow(degree, averagePathLength(length)) * predicateSelectivity(predicates)
+
+    case Selection(predicates, left, _) =>
+      cardinality(left) * predicateSelectivity(predicates)
 
     case CartesianProduct(left, right) =>
       cardinality(left) * cardinality(right)
+
+    case Apply(outer, inner) =>
+      cardinality(outer) * cardinality(inner)
+
+    case semiApply @ SemiApply(outer, inner) =>
+      cardinality(outer) * predicateSelectivity(Seq(semiApply.exists.predicate.exp))
 
     case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
       relIds.size
@@ -81,8 +88,31 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case Projection(left, _) =>
       cardinality(left)
 
-    case SingleRow() =>
+    case Optional(_, input) =>
+      cardinality(input)
+
+    case SingleRow(_) =>
       1
+  }
+
+  def averagePathLength(length:PatternLength) = length match {
+    case SimplePatternLength              => 1
+    case VarPatternLength(_, Some(depth)) => depth
+    case VarPatternLength(_, None)        => 42
+  }
+
+  private def degreeByRelationshipTypesAndDirection(types: Seq[RelTypeName], dir: Direction) =
+    if (types.size <= 0)
+      DEFAULT_EXPAND_RELATIONSHIP_DEGREE
+    else
+      types.foldLeft(0.0)((sum, t) => sum + degreeByRelationshipTypeAndDirection(t.id, dir)) / types.size
+
+  private def predicateSelectivity(predicates: Seq[Expression]): Double =
+    predicates.map(selectivity).foldLeft(1.0)(_ * _)
+
+  private def degreeByRelationshipTypeAndDirection(optId: Option[RelTypeId], direction: Direction) = optId match {
+    case Some(id) => statistics.degreeByRelationshipTypeAndDirection(id, direction)
+    case None     => DEFAULT_EXPAND_RELATIONSHIP_DEGREE
   }
 
   private def cardinality(plan: LogicalPlan) = apply(plan)

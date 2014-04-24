@@ -199,7 +199,7 @@ public class ConcurrentPropertyAccessIT
     public void before() throws Exception
     {
         db =
-          new GraphDatabaseFactory().newEmbeddedDatabase( forTest( getClass() ).graphDbDir( true ).getAbsolutePath() );
+          new GraphDatabaseFactory().newEmbeddedDatabase( forTest( getClass() ).makeGraphDbDir().getAbsolutePath() );
         nodes = createInitialNodes();
     }
 

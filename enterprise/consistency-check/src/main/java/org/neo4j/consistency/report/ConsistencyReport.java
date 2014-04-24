@@ -260,6 +260,10 @@ public interface ConsistencyReport
         @Documented
         @IncrementalOnly
         void relationshipGroupNotUpdated();
+
+        /** The first relationship group record has another node set as owner. */
+        @Documented
+        void relationshipGroupHasOtherOwner( RelationshipGroupRecord group );
     }
 
     interface RelationshipConsistencyReport
@@ -576,6 +580,18 @@ public interface ConsistencyReport
         /** The first loop relationship is of a different type than its group. */
         @Documented
         void firstLoopRelationshipOfOfOtherType();
+
+        /** The owner of the relationship group is not in use. */
+        @Documented
+        void ownerNotInUse();
+
+        /** Illegal owner value. */
+        @Documented
+        void illegalOwner();
+
+        /** Next chained relationship group has another owner. */
+        @Documented
+        void nextHasOtherOwner( RelationshipGroupRecord referred );
     }
 
     interface DynamicConsistencyReport extends ConsistencyReport

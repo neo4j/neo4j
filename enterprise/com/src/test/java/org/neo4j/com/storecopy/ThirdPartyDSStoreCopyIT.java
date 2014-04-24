@@ -83,7 +83,7 @@ import org.neo4j.test.TargetDirectory;
 public class ThirdPartyDSStoreCopyIT
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     @Test
@@ -119,6 +119,12 @@ public class ThirdPartyDSStoreCopyIT
                 {
                     original.shutdown();
                 }
+            }
+
+            @Override
+            public void done()
+            {
+
             }
         });
 

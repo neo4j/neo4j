@@ -27,8 +27,5 @@ case class Projection(left: LogicalPlan, expressions: Map[String, Expression]) e
 
   def numExpressions = expressions.size
 
-  def coveredIds = expressions.keySet.map(IdName)
-
-  def solvedPredicates = left.solvedPredicates
-  def solvedPatterns =left.solvedPatterns
+  val solved = left.solved.changeProjections(expressions)
 }

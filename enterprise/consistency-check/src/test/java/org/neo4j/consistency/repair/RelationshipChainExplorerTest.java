@@ -43,7 +43,7 @@ public class RelationshipChainExplorerTest
     private static final int NDegreeTwoNodes = 10;
 
     @Rule
-    public TargetDirectory.TestDirectory storeLocation = target.cleanTestDirectory();
+    public TargetDirectory.TestDirectory storeLocation = target.testDirectory();
     private StoreAccess store;
 
     @Before

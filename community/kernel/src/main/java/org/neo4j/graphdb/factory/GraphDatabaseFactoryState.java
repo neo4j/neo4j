@@ -24,17 +24,25 @@ import java.util.List;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 
 public class GraphDatabaseFactoryState
 {
+    private List<Class<?>> settingsClasses;
     private List<KernelExtensionFactory<?>> kernelExtensions;
     private List<CacheProvider> cacheProviders;
     private List<TransactionInterceptorProvider> txInterceptorProviders;
+    private Logging logging;
 
     public GraphDatabaseFactoryState() {
+        settingsClasses = new ArrayList<>();
+        settingsClasses.add( GraphDatabaseSettings.class );
         kernelExtensions = new ArrayList<>();
         for ( KernelExtensionFactory factory : Service.load( KernelExtensionFactory.class ) )
         {
@@ -46,9 +54,11 @@ public class GraphDatabaseFactoryState
 
     public GraphDatabaseFactoryState( GraphDatabaseFactoryState previous )
     {
+        settingsClasses = new ArrayList<>( previous.settingsClasses );
         kernelExtensions = new ArrayList<>( previous.kernelExtensions );
         cacheProviders = new ArrayList<>( previous.cacheProviders );
         txInterceptorProviders = new ArrayList<>( previous.txInterceptorProviders );
+        logging = previous.logging;
     }
 
     public Iterable<KernelExtensionFactory<?>> getKernelExtension()
@@ -97,5 +107,20 @@ public class GraphDatabaseFactoryState
         {
             txInterceptorProviders.add( newTxInterceptorProvider );
         }
+    }
+
+    public void setLogging( Logging logging )
+    {
+        this.logging = logging;
+    }
+
+    public Dependencies databaseDependencies()
+    {
+        return new GraphDatabaseDependencies(
+                logging,
+                settingsClasses,
+                kernelExtensions,
+                cacheProviders,
+                txInterceptorProviders );
     }
 }

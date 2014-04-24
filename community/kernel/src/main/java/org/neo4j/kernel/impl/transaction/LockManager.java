@@ -19,13 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import java.util.List;
-
 import javax.transaction.Transaction;
 
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.community.LockNotFoundException;
-import org.neo4j.kernel.info.LockInfo;
 import org.neo4j.kernel.logging.Logging;
 
 /**

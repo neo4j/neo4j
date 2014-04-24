@@ -33,7 +33,7 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.mockito.ArgumentCaptor;
 
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
 import static java.util.Arrays.asList;
 
@@ -48,7 +48,7 @@ import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
 
-import static org.neo4j.helpers.collection.IteratorUtil.flatten;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.concat;
 import static org.neo4j.helpers.collection.IteratorUtil.primitivesList;
 
 /**
@@ -99,7 +99,7 @@ public class PageOfRangesIteratorTest
         when( searcher.doc( 11 ) ).thenReturn( document( format.rangeField( 0x3 ),
                                                          format.labelField( labelId, 0x30 ) ) );
 
-        PrimitiveLongIterator iterator = flatten(
+        PrimitiveLongIterator iterator = concat(
                 new PageOfRangesIterator( format, searcher, pageSize, query, labelId ) );
 
         // when

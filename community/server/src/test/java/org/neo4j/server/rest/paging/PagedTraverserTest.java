@@ -24,6 +24,7 @@ import java.util.List;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,7 +36,8 @@ import org.neo4j.kernel.Traversal;
 import org.neo4j.kernel.Uniqueness;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNull;
 
 public class PagedTraverserTest
 {

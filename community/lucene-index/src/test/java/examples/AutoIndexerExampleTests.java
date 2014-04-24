@@ -304,7 +304,7 @@ public class AutoIndexerExampleTests implements GraphHolder
     @BeforeClass
     public static void startDatabase()
     {
-        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( target.graphDbDir( true ).getAbsolutePath() );
+        graphdb = new GraphDatabaseFactory().newEmbeddedDatabase( target.makeGraphDbDir().getAbsolutePath() );
     }
 
     @AfterClass

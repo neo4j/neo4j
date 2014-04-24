@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyRecordChange;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 /**
@@ -357,7 +358,7 @@ public abstract class Command extends XaCommand
         }
     }
 
-    public static class PropertyCommand extends Command
+    public static class PropertyCommand extends Command implements PropertyRecordChange
     {
         private PropertyRecord before;
         private PropertyRecord after;
@@ -404,11 +405,13 @@ public abstract class Command extends XaCommand
             }
         }
 
+        @Override
         public PropertyRecord getBefore()
         {
             return before;
         }
 
+        @Override
         public PropertyRecord getAfter()
         {
             return after;

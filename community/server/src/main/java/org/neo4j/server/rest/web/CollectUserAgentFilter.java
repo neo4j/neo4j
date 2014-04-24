@@ -19,51 +19,71 @@
  */
 package org.neo4j.server.rest.web;
 
-import com.sun.jersey.spi.container.ContainerRequest;
-import com.sun.jersey.spi.container.ContainerRequestFilter;
-import org.neo4j.server.logging.Logger;
-
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
-/**
- * This filter collects the User-Agent of the request and stores it in a Set for UDC to report
- * TODO move to a real UDC-mbean
- */
+import com.sun.jersey.spi.container.ContainerRequest;
+import com.sun.jersey.spi.container.ContainerRequestFilter;
+
 public class CollectUserAgentFilter implements ContainerRequestFilter
 {
+    private static CollectUserAgentFilter INSTANCE;
 
-    private static final Logger log = Logger.getLogger( CollectUserAgentFilter.class );
-    private static final String USER_AGENT = "User-Agent";
-    private final static Set<String> userAgents = new HashSet<String>();
-    static final int SAMPLE_FREQ = 100;
-    // race conditions are not important, record first request
-    private int counter=SAMPLE_FREQ;
+    public static CollectUserAgentFilter instance()
+    {
+        if ( INSTANCE == null )
+        {
+            new CollectUserAgentFilter();
+        }
+        return INSTANCE;
+    }
+
+    private final Collection<String> userAgents = Collections.synchronizedCollection( new HashSet<String>() );
+
+    public CollectUserAgentFilter()
+    {
+        // Bear with me here. There are some fairly unpleasant constraints that have led me to this solution.
+        //
+        // 1. The UDC can't depend on server components, because it has to work in embedded. So the read side of this
+        //    in DefaultUdcInformationCollector is invoked by reflection. For that reason we need the actual list of
+        //    user agents in a running system to be statically accessible.
+        //
+        // 2. On the write side, Jersey's contract is that we provide a class which it instantiates itself. So we need
+        //    to write the list of user agents from any instance. However Jersey will only create one instance, so we
+        //     can rely on the constructor being called only once in the running system.
+        //
+        // 3. For testing purposes, we would like to be able to create independent instances; otherwise we get problems
+        //    with global state being carried over between tests.
+        INSTANCE = this;
+    }
 
     @Override
-    public ContainerRequest filter(ContainerRequest request) {
-        if (counter++ < SAMPLE_FREQ) return request;
-        counter = 0;
-        try {
-            List<String> headers = request.getRequestHeader(USER_AGENT);
-            if (headers!=null) {
-                for (String header : headers) {
-                    if (header==null) continue;
-                    userAgents.add(header.replaceAll(" .*",""));
-                }
+    public ContainerRequest filter( ContainerRequest request )
+    {
+        try
+        {
+            List<String> headers = request.getRequestHeader( "User-Agent" );
+            if ( ! headers.isEmpty() )
+            {
+                userAgents.add( headers.get( 0 ).split( " " )[0] );
             }
-        } catch(Exception e) {
-            log.debug( "Error retrieving User-Agent from " + request.getPath(),e );
+        }
+        catch ( RuntimeException e )
+        {
+            // We're fine with that
         }
         return request;
     }
 
-    public static Set<String> getUserAgents() {
-        return userAgents;
-    }
-    public static void reset() {
+    public void reset()
+    {
         userAgents.clear();
     }
 
+    public Collection<String> getUserAgents()
+    {
+        return Collections.unmodifiableCollection( userAgents );
+    }
 }

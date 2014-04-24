@@ -19,48 +19,57 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.ParsedQuery
-import org.neo4j.cypher.internal.compiler.v2_1.Monitors
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp, ParsedQuery, Monitors}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: PlanningMonitor) extends PipeBuilder {
   val tokenResolver = new SimpleTokenResolver()
   val queryGraphBuilder = new SimpleQueryGraphBuilder
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
-  val logicalPlanner = new GreedyOperatorOrderingPlanner()
+  val strategy = new GreedyPlanningStrategy()
 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
     producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)
 
+  private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo = {
+    // TODO: When Ronja is the only planner around, move this to ASTRewriter
+    val rewrittenStatement = rewriteStatement(statement)
+    rewrittenStatement match {
+      case ast: Query =>
+        monitor.startedPlanning(query)
+        val logicalPlan = produceLogicalPlan(ast, semanticTable)(planContext)
+        monitor.foundPlan(query, logicalPlan)
+        val result = executionPlanBuilder.build(logicalPlan)
+        monitor.successfulPlanning(query, result)
+        result
 
-  private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo = statement match {
-    case ast: Query =>
-      monitor.startedPlanning(query)
-      val logicalPlan = produceLogicalPlan(ast, semanticTable)(planContext)
-      monitor.foundPlan(query, logicalPlan)
-      val result = executionPlanBuilder.build(logicalPlan)
-      monitor.successfulPlanning(query, result)
-      result
+      case _ =>
+        throw new CantHandleQueryException
+    }
+  }
 
-    case _ =>
-      throw new CantHandleQueryException
+  def rewriteStatement(statement: Statement) = {
+    val namedStatement = statement.rewrite(bottomUp(
+      inSequence(nameVarLengthRelationships, namePatternPredicates)
+    )).asInstanceOf[Statement]
+
+    inlineNamedPaths(namedStatement)
   }
 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): LogicalPlan = {
     val resolvedAst = tokenResolver.resolve(ast)(planContext)
     val queryGraph = queryGraphBuilder.produce(resolvedAst)
     val metrics = metricsFactory.newMetrics(planContext.statistics)
-    val context = LogicalPlanContext(planContext, metrics, semanticTable, queryGraph)
-    logicalPlanner.plan(context)
+    val context = LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
+    strategy.plan(context)
   }
 }
 

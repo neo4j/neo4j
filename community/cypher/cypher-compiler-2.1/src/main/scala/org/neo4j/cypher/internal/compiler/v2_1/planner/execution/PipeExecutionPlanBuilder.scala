@@ -19,29 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
-import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.OtherConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
-
+import org.neo4j.cypher.internal.compiler.v2_1.commands.True
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
+
   def build(plan: LogicalPlan): PipeInfo = {
     val updating = false
 
     def buildPipe(plan: LogicalPlan): Pipe = {
-      val left = plan.lhs.map(buildPipe)
-      val right = plan.rhs.map(buildPipe)
-
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
       plan match {
-        case Projection(_, expressions) =>
-          ProjectionNewPipe(left.get, toLegacyExpressions(expressions))
+        case Projection(left, expressions) =>
+          ProjectionNewPipe(buildPipe(left), toLegacyExpressions(expressions))
 
-        case SingleRow() =>
+        case SingleRow(_) =>
           NullPipe()
 
         case AllNodesScan(IdName(id)) =>
@@ -65,17 +64,42 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case NodeIndexUniqueSeek(IdName(id), labelId, propertyKeyId, valueExpr) =>
           NodeUniqueIndexSeekPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)
 
-        case Selection(predicates, _) =>
-          FilterPipe(left.get, predicates.map(_.asCommandPredicate).reduce(_ ++ _))
+        case Selection(predicates, left, _) =>
+          FilterPipe(buildPipe(left), predicates.map(_.asCommandPredicate).reduce(_ ++ _))
 
-        case CartesianProduct(_, _) =>
-          CartesianProductPipe(left.get, right.get)
+        case CartesianProduct(left, right) =>
+          CartesianProductPipe(buildPipe(left), buildPipe(right))
 
-        case Expand(_, IdName(fromName), dir, types, IdName(toName), IdName(relName)) =>
-          ExpandPipe(left.get, fromName, relName, toName, dir, types.map(_.name))
+        case Expand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength) =>
+          ExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name))
+
+        case Expand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), VarPatternLength(min, max)) =>
+          VarLengthExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name), min, max)
+
+        case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
+          val predicate = predicates
+            .map(_.asCommandPredicate)
+            .reduceOption(_ ++ _)
+            .getOrElse(True())
+          OptionalExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name), predicate)
 
         case NodeHashJoin(node, left, right) =>
           NodeHashJoinPipe(node.name, buildPipe(left), buildPipe(right))
+
+        case OuterHashJoin(node, left, right, nullableIds) =>
+          NodeOuterHashJoinPipe(node.name, buildPipe(left), buildPipe(right), nullableIds.map(_.name))
+
+        case Optional(nullableIds, inner) =>
+          OptionalPipe(nullableIds.map(_.name), buildPipe(inner))
+
+        case Apply(outer, inner) =>
+          ApplyPipe(buildPipe(outer), buildPipe(inner))
+
+        case SemiApply(outer, inner) =>
+          SemiApplyPipe(buildPipe(outer), buildPipe(inner))
+
+        case Sort(left, sortItems) =>
+          SortPipe(buildPipe(left), sortItems.map(_.asCommandSortItem).toList)
 
         case _ =>
           throw new CantHandleQueryException

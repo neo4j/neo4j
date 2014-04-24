@@ -58,7 +58,7 @@ public class TestLogPruneStrategy
     public void before()
     {
         FS = fs.get();
-        directory = TargetDirectory.forTest( FS, getClass() ).directory( "prune", true );
+        directory = TargetDirectory.forTest( FS, getClass() ).cleanDirectory( "prune" );
     }
     
     @Test

@@ -31,14 +31,13 @@ import java.util.Properties;
 
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.FakeClock;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.logging.BufferingConsoleLogger;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.ServerTestUtils;
@@ -46,6 +45,7 @@ import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.PropertyFileConfigurator;
 import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
 import org.neo4j.server.configuration.validation.Validator;
+import org.neo4j.server.database.Database;
 import org.neo4j.server.database.LifecycleManagingDatabase;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.preflight.PreflightTask;
@@ -55,17 +55,19 @@ import org.neo4j.test.ImpermanentGraphDatabase;
 
 import static java.lang.Boolean.FALSE;
 import static java.lang.Boolean.TRUE;
+
 import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-import static org.neo4j.kernel.InternalAbstractGraphDatabase.Configuration.ephemeral;
 import static org.neo4j.server.ServerTestUtils.asOneLine;
 import static org.neo4j.server.ServerTestUtils.createTempPropertyFile;
 import static org.neo4j.server.ServerTestUtils.writePropertiesToFile;
 import static org.neo4j.server.ServerTestUtils.writePropertyToFile;
 import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
+import static org.neo4j.server.helpers.LoggingFactory.given;
 
 public class CommunityServerBuilder
 {
+    protected LoggingFactory loggingFactory;
     private String portNo = "7474";
     private String maxThreads = null;
     protected String dbDir = null;
@@ -78,16 +80,10 @@ public class CommunityServerBuilder
     public static LifecycleManagingDatabase.GraphFactory IN_MEMORY_DB = new LifecycleManagingDatabase.GraphFactory()
     {
         @Override
-        public GraphDatabaseAPI newGraphDatabase( Config config, Function<Config, Logging> logProvider,
-                                                  Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                                  Iterable<CacheProvider> cacheProviders,
-                                                  Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+        public GraphDatabaseAPI newGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
         {
-            Map<String, String> params = config.getParams();
-            params.put( ephemeral.name(), "true" );
-            config.applyChanges( params );
-            return new ImpermanentGraphDatabase( config, logProvider, kernelExtensions, cacheProviders,
-                    txInterceptorProviders );
+            params.put( InternalAbstractGraphDatabase.Configuration.ephemeral.name(), "true" );
+            return new ImpermanentGraphDatabase( storeDir, params, dependencies );
         }
     };
 
@@ -107,9 +103,14 @@ public class CommunityServerBuilder
     public boolean persistent;
     private Boolean httpsEnabled = FALSE;
 
+    public static CommunityServerBuilder server( Logging logging )
+    {
+        return new CommunityServerBuilder( given( logging ) );
+    }
+
     public static CommunityServerBuilder server()
     {
-        return new CommunityServerBuilder();
+        return new CommunityServerBuilder( null );
     }
 
     public CommunityNeoServer build() throws IOException
@@ -118,22 +119,19 @@ public class CommunityServerBuilder
         {
             throw new IllegalStateException( "Must specify path" );
         }
-        final File configFile = createPropertiesFiles();
+        final File configFile = buildBefore();
 
-        if ( preflightTasks == null )
-        {
-            preflightTasks = new PreFlightTasks()
-            {
-                @Override
-                public boolean run()
-                {
-                    return true;
-                }
-            };
-        }
+        BufferingConsoleLogger console = new BufferingConsoleLogger();
+        Validator validator = new Validator( new DatabaseLocationMustBeSpecifiedRule() );
+        Configurator configurator = new PropertyFileConfigurator( validator, configFile, console );
+        Logging logging = loggingFactory().create( configurator );
+        console.replayInto( logging.getConsoleLog( getClass() ) );
+        return build( configFile, configurator, logging );
+    }
 
-        return new TestCommunityNeoServer( new PropertyFileConfigurator( new Validator(
-                new DatabaseLocationMustBeSpecifiedRule() ), configFile ), configFile );
+    protected CommunityNeoServer build( File configFile, Configurator configurator, Logging logging )
+    {
+        return new TestCommunityNeoServer( configurator, configFile, logging );
     }
 
     public File createPropertiesFiles() throws IOException
@@ -154,6 +152,7 @@ public class CommunityServerBuilder
 
     public CommunityServerBuilder withLogging( Logging logging )
     {
+        this.loggingFactory = given( logging );
         return this;
     }
 
@@ -268,8 +267,9 @@ public class CommunityServerBuilder
         return f;
     }
 
-    protected CommunityServerBuilder()
+    protected CommunityServerBuilder( LoggingFactory loggingFactory )
     {
+        this.loggingFactory = loggingFactory;
     }
 
     public CommunityServerBuilder persistent()
@@ -340,7 +340,7 @@ public class CommunityServerBuilder
 
     public CommunityServerBuilder withFailingPreflightTasks()
     {
-        preflightTasks = new PreFlightTasks()
+        preflightTasks = new PreFlightTasks( DevNullLoggingService.DEV_NULL )
         {
             @Override
             public boolean run()
@@ -439,17 +439,56 @@ public class CommunityServerBuilder
 
     public CommunityServerBuilder withPreflightTasks( PreflightTask... tasks )
     {
-        this.preflightTasks = new PreFlightTasks( tasks );
+        this.preflightTasks = new PreFlightTasks( DevNullLoggingService.DEV_NULL, tasks );
         return this;
+    }
+
+    private LoggingFactory loggingFactory()
+    {
+        if ( loggingFactory != null )
+        {
+            return loggingFactory;
+        }
+        return persistent ? LoggingFactory.DEFAULT_LOGGING : LoggingFactory.IMPERMANENT_LOGGING;
+    }
+
+    protected DatabaseActions createDatabaseActionsObject( Database database, Configurator configurator )
+    {
+        Clock clockToUse = (clock != null) ? clock : SYSTEM_CLOCK;
+
+        return new DatabaseActions(
+                new LeaseManager( clockToUse ),
+                ForceMode.forced,
+                configurator.configuration().getBoolean(
+                        Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
+                        Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
+    }
+
+    protected File buildBefore() throws IOException
+    {
+        File configFile = createPropertiesFiles();
+
+        if ( preflightTasks == null )
+        {
+            preflightTasks = new PreFlightTasks( DevNullLoggingService.DEV_NULL )
+            {
+                @Override
+                public boolean run()
+                {
+                    return true;
+                }
+            };
+        }
+        return configFile;
     }
 
     private class TestCommunityNeoServer extends CommunityNeoServer
     {
         private final File configFile;
 
-        private TestCommunityNeoServer( PropertyFileConfigurator propertyFileConfigurator, File configFile )
+        private TestCommunityNeoServer( Configurator propertyFileConfigurator, File configFile, Logging logging )
         {
-            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ));
+            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ), logging );
             this.configFile = configFile;
         }
 
@@ -462,14 +501,7 @@ public class CommunityServerBuilder
         @Override
         protected DatabaseActions createDatabaseActions()
         {
-            Clock clockToUse = (clock != null) ? clock : SYSTEM_CLOCK;
-
-            return new DatabaseActions(
-                    new LeaseManager( clockToUse ),
-                    ForceMode.forced,
-                    configurator.configuration().getBoolean(
-                            Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                            Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
+            return createDatabaseActionsObject( database, configurator );
         }
 
         @Override
@@ -479,6 +511,4 @@ public class CommunityServerBuilder
             configFile.delete();
         }
     }
-
-    ;
 }

@@ -19,13 +19,14 @@
  */
 package org.neo4j.kernel.impl.storemigration.legacystore.indexcompat;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
 import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Rule;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -33,7 +34,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.Unzip;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -42,21 +43,18 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
-import static org.neo4j.test.Unzip.unzip;
 
+@Ignore( "This test is for an index format change between 2.0.0 and 2.0.x so not applicable for later versions" )
 public class IndexFormatCompatibilityTest
 {
-    @Rule
-    public TargetDirectory.TestDirectory storeDir = TargetDirectory.cleanTestDirForTest( getClass() );
     private GraphDatabaseService db;
 
     @Before
     public void startDatabase() throws IOException
     {
-        copyRecursively( unzip( getClass(), "db.zip" ), storeDir.directory() );
+        File storeDir = Unzip.unzip( getClass(), "db.zip" );
 
-        db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.directory().getPath() );
+        db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
     }
 
     @After

@@ -55,7 +55,7 @@ import static org.neo4j.tooling.GlobalGraphOperations.at;
 public class TestMigrateToDenseNodeSupport
 {
     private static final Label referenceNode = label( "ReferenceNode" );
-    
+
     private static enum Types implements RelationshipType
     {
         DENSE,
@@ -63,7 +63,7 @@ public class TestMigrateToDenseNodeSupport
         OTHER,
         FOURTH;
     }
-    
+
     private static enum Properties
     {
         BYTE( (byte)10 ),
@@ -91,25 +91,25 @@ public class TestMigrateToDenseNodeSupport
                 assertArrayEquals( (Object[]) value, (Object[]) otherValue );
             }
         };
-        
+
         protected final Object value;
 
         private Properties( Object value )
         {
             this.value = value;
         }
-        
+
         public Object getValue()
         {
             return value;
         }
-        
+
         public void assertValueEquals( Object otherValue )
         {
             assertEquals( value, otherValue );
         }
     }
-    
+
     private File dir;
 
     @Before
@@ -117,13 +117,13 @@ public class TestMigrateToDenseNodeSupport
     {
         dir = AbstractNeo4jTestCase.unzip( getClass(), "0.A.1-db.zip" );
     }
-    
+
     @Test
     @Ignore( "Used for creating the dataset, using the previous store version" )
     public void createDb()
     {
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase(
-                TargetDirectory.forTest( getClass() ).graphDbDir( true ).getPath() );
+                TargetDirectory.forTest( getClass() ).makeGraphDbDir().getPath() );
         try
         {
             try ( Transaction tx = db.beginTx() )
@@ -147,7 +147,7 @@ public class TestMigrateToDenseNodeSupport
             db.shutdown();
         }
     }
-    
+
     private void createSparseNode( GraphDatabaseService db, Node refNode )
     {
         Node node = db.createNode();
@@ -164,7 +164,7 @@ public class TestMigrateToDenseNodeSupport
         createRelationships( db, node, 2, Types.FOURTH );
         setProperties( node );
     }
-    
+
     private void createRelationships( GraphDatabaseService db, Node node, int count, RelationshipType type )
     {
         for ( int i = 0; i < count; i++ )
@@ -186,7 +186,7 @@ public class TestMigrateToDenseNodeSupport
     {
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dir.getAbsolutePath() )
                 .setConfig( allow_store_upgrade, "true" ).newGraphDatabase();
-        
+
         try ( Transaction tx = db.beginTx() )
         {
             Node refNode = single( at( db ).getAllNodesWithLabel( referenceNode ) );
@@ -196,17 +196,17 @@ public class TestMigrateToDenseNodeSupport
                 verifySparseNode( db, relationship.getEndNode() );
                 sparseCount++;
             }
-            
+
             int denseCount = 0;
             for ( Relationship relationship : refNode.getRelationships( Types.DENSE, OUTGOING ) )
             {
                 verifyDenseNode( db, relationship.getEndNode() );
                 denseCount++;
             }
-            
+
             assertEquals( 10, sparseCount );
             assertEquals( 10, denseCount );
-            
+
             tx.success();
         }
         db.shutdown();

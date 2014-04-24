@@ -23,14 +23,15 @@ import java.util.Set;
 
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -42,7 +43,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray.primitiveIntIteratorToIntArray;
 
 public class CacheLayerTest
 {
@@ -67,7 +67,7 @@ public class CacheLayerTest
         PrimitiveIntIterator receivedLabels = context.nodeGetLabels( nodeId );
 
         // THEN
-        assertArrayEquals( labels, primitiveIntIteratorToIntArray( receivedLabels ) );
+        assertArrayEquals( labels, PrimitiveIntCollections.asArray( receivedLabels ) );
     }
 
     @Test
@@ -112,7 +112,7 @@ public class CacheLayerTest
         // GIVEN
         long nodeId = 3;
         int[] relTypes = new int[] {1,2};
-        PrimitiveLongIterator rels = IteratorUtil.asPrimitiveIterator(1l,2l,3l);
+        PrimitiveLongIterator rels = PrimitiveLongCollections.iterator( 1l, 2l, 3l );
         when( persistenceCache.nodeGetRelationships( eq( nodeId ), eq( Direction.BOTH ), eq(relTypes) ) )
                 .thenReturn( rels );
 

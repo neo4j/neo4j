@@ -27,10 +27,12 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
@@ -49,12 +51,12 @@ class LazyIndexUpdates implements IndexUpdates
 {
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
-    private final Collection<PropertyCommand> propCommands;
+    private final Collection<List<PropertyCommand>> propCommands;
     private final Map<Long, NodeCommand> nodeCommands;
     private Collection<NodePropertyUpdate> updates;
 
     public LazyIndexUpdates( NodeStore nodeStore, PropertyStore propertyStore,
-                             Collection<PropertyCommand> propCommands, Map<Long, NodeCommand> nodeCommands )
+                             Collection<List<PropertyCommand>> propCommands, Map<Long, NodeCommand> nodeCommands )
     {
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
@@ -76,9 +78,9 @@ class LazyIndexUpdates implements IndexUpdates
     public Set<Long> changedNodeIds()
     {
         Set<Long> nodeIds = new HashSet<>( nodeCommands.keySet() );
-        for ( PropertyCommand propCmd : propCommands )
+        for ( List<PropertyCommand> propCmd : propCommands )
         {
-            PropertyRecord record = propCmd.getAfter();
+            PropertyRecord record = propCmd.get( 0 ).getAfter();
             if ( record.isNodeSet() )
             {
                 nodeIds.add( record.getNodeId() );
@@ -99,16 +101,18 @@ class LazyIndexUpdates implements IndexUpdates
     private void gatherUpdatesFromPropertyCommands( Collection<NodePropertyUpdate> updates,
                                                     Map<Pair<Long, Integer>, NodePropertyUpdate> propertyLookup )
     {
-        for ( PropertyCommand propertyCommand : propCommands )
+        for ( List<PropertyCommand> propertyCommands : propCommands )
         {
-            PropertyRecord after = propertyCommand.getAfter();
-            if ( !after.isNodeSet() )
-            {
+            // Let after state of first command here be representative of the whole group
+            PropertyRecord representative = propertyCommands.get( 0 ).getAfter();
+            if ( !representative.isNodeSet() )
+            {   // These changes wasn't for a node, skip them
                 continue;
             }
 
+            long nodeId = representative.getNodeId();
             long[] nodeLabelsBefore, nodeLabelsAfter;
-            NodeCommand nodeChanges = nodeCommands.get( after.getNodeId() );
+            NodeCommand nodeChanges = nodeCommands.get( nodeId );
             if ( nodeChanges != null )
             {
                 nodeLabelsBefore = parseLabelsField( nodeChanges.getBefore() ).get( nodeStore );
@@ -131,19 +135,20 @@ class LazyIndexUpdates implements IndexUpdates
                  * if this happens and we're in recovery mode that the node in question will be deleted
                  * in an upcoming transaction, so just skip this update.
                  */
-                NodeRecord nodeRecord = nodeStore.getRecord( after.getNodeId() );
+                NodeRecord nodeRecord = nodeStore.getRecord( nodeId );
                 nodeLabelsBefore = nodeLabelsAfter = parseLabelsField( nodeRecord ).get( nodeStore );
             }
 
-            for ( NodePropertyUpdate update :
-                    propertyStore.toLogicalUpdates( propertyCommand.getBefore(), nodeLabelsBefore, after,
-                                                    nodeLabelsAfter ) )
+            propertyStore.toLogicalUpdates( updates,
+                    Iterables.<PropertyRecordChange, PropertyCommand>cast( propertyCommands ),
+                    nodeLabelsBefore, nodeLabelsAfter );
+        }
+
+        for ( NodePropertyUpdate update : updates )
+        {
+            if ( update.getUpdateMode() == UpdateMode.CHANGED )
             {
-                updates.add( update );
-                if ( update.getUpdateMode() == UpdateMode.CHANGED )
-                {
-                    propertyLookup.put( Pair.of( update.getNodeId(), update.getPropertyKeyId() ), update );
-                }
+                propertyLookup.put( Pair.of( update.getNodeId(), update.getPropertyKeyId() ), update );
             }
         }
     }

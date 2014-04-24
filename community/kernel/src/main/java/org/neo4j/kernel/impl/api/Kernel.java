@@ -23,22 +23,26 @@ import javax.transaction.SystemException;
 import javax.transaction.Transaction;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.heuristics.StatisticsData;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.api.heuristics.HeuristicsData;
-import org.neo4j.kernel.impl.api.heuristics.HeuristicsService;
-import org.neo4j.kernel.impl.api.heuristics.HeuristicsServiceRepository;
+import org.neo4j.kernel.impl.api.statistics.StatisticsService;
+import org.neo4j.kernel.impl.api.statistics.StatisticsServiceRepository;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -113,6 +117,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final SchemaWriteGuard schemaWriteGuard;
     private final IndexingService indexService;
     private final NeoStore neoStore;
+    private final Provider<NeoStore> neoStoreProvider;
+    private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
     private final SchemaIndexProviderMap providerMap;
     private final LabelScanStore labelScanStore;
@@ -124,31 +130,40 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
     private final boolean readOnly;
     private final LegacyPropertyTrackers legacyPropertyTrackers;
-    private final HeuristicsService heuristicsService;
+    private final StatisticsService statisticsService;
     private final FileSystemAbstraction fs;
     private final Config config;
     private final JobScheduler scheduler;
 
     private boolean isShutdown = false;
+    private PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private LabelTokenHolder labelTokenHolder;
+    private RelationshipTypeTokenHolder relationshipTypeTokenHolder;
 
     public Kernel( AbstractTransactionManager transactionManager, PropertyKeyTokenHolder propertyKeyTokenHolder,
+                   LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
                    PersistenceManager persistenceManager, UpdateableSchemaState schemaState,
                    SchemaWriteGuard schemaWriteGuard,
-                   IndexingService indexService, NodeManager nodeManager, NeoStore neoStore,
-                   SchemaCache schemaCache, SchemaIndexProviderMap providerMap,
+                   IndexingService indexService, NodeManager nodeManager, Provider<NeoStore> neoStoreProvider,
+                   PersistenceCache persistenceCache, SchemaCache schemaCache, SchemaIndexProviderMap providerMap,
                    FileSystemAbstraction fs, Config config,
                    LabelScanStore labelScanStore, StoreReadLayer storeLayer, JobScheduler scheduler, boolean readOnly )
     {
         this.fs = fs;
         this.config = config;
         this.transactionManager = transactionManager;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.labelTokenHolder = labelTokenHolder;
+        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
         this.persistenceManager = persistenceManager;
         this.schemaState = schemaState;
         this.providerMap = providerMap;
         this.readOnly = readOnly;
         this.schemaWriteGuard = schemaWriteGuard;
         this.indexService = indexService;
-        this.neoStore = neoStore;
+        this.neoStore = neoStoreProvider.instance();
+        this.neoStoreProvider = neoStoreProvider;
+        this.persistenceCache = persistenceCache;
         this.schemaCache = schemaCache;
         this.labelScanStore = labelScanStore;
         this.nodeManager = nodeManager;
@@ -160,7 +175,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 nodeManager );
         this.storeLayer = storeLayer;
         this.statementOperations = buildStatementOperations();
-        this.heuristicsService = new HeuristicsServiceRepository( fs, config, storeLayer, scheduler ).loadHeuristics();
+        this.statisticsService = new StatisticsServiceRepository( fs, config, storeLayer, scheduler ).loadStatistics();
     }
 
     @Override
@@ -170,15 +185,15 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         {
             schemaCache.addSchemaRule( schemaRule );
         }
-        heuristicsService.start();
+        statisticsService.start();
     }
 
     @Override
     public void stop() throws Throwable
     {
         isShutdown = true;
-        new HeuristicsServiceRepository( fs, config, storeLayer, scheduler );
-        heuristicsService.stop();
+        new StatisticsServiceRepository( fs, config, storeLayer, scheduler );
+        statisticsService.stop();
     }
 
     @Override
@@ -203,9 +218,9 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     }
 
     @Override
-    public HeuristicsData heuristics()
+    public StatisticsData heuristics()
     {
-        return heuristicsService.heuristics();
+        return statisticsService.statistics();
     }
 
     // We temporarily need this until all transaction state has moved into the kernel

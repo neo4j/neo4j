@@ -19,6 +19,18 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.Functions.identity;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -26,10 +38,14 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
@@ -56,7 +72,6 @@ import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
@@ -130,6 +145,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.ReadOnlyTxManager;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.TransactionManagerProvider;
@@ -145,10 +161,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
-import org.neo4j.kernel.impl.util.AbstractPrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsManager;
 import org.neo4j.kernel.info.JvmChecker;
@@ -159,23 +173,10 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.lifecycle.LifecycleListener;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
+import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static java.lang.String.format;
-
-import static org.neo4j.helpers.Functions.identity;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.logbackOrDefaultToClassic;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -187,8 +188,23 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.logbackOrDefaultToC
 public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
+    public interface Dependencies
+    {
+        /**
+         * Allowed to be null. Null means that no external {@link Logging} was created, let the
+         * database create its own logging.
+         * @return
+         */
+        Logging logging();
 
-    private final Function<Config, Logging> loggingProvider;
+        Iterable<Class<?>> settingsClasses();
+
+        Iterable<KernelExtensionFactory<?>> kernelExtensions();
+
+        Iterable<CacheProvider> cacheProviders();
+
+        Iterable<TransactionInterceptorProvider> transactionInterceptorProviders();
+    }
 
     public static class Configuration
     {
@@ -204,8 +220,8 @@ public abstract class InternalAbstractGraphDatabase
 
         // Kept here to have it not be publicly documented.
         public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );
-        public static final Setting<Boolean> heuristics_enabled =
-                setting("heuristics_enabled", Settings.BOOLEAN, Settings.FALSE);
+        public static final Setting<Boolean> statistics_enabled =
+                setting("statistics_enabled", Settings.BOOLEAN, Settings.FALSE);
     }
 
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
@@ -216,7 +232,7 @@ public abstract class InternalAbstractGraphDatabase
     private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
     protected final KernelExtensions kernelExtensions;
 
-    protected final DependencyResolver dependencyResolver = new DependencyResolverImpl();;
+    protected final DependencyResolver dependencyResolver = new DependencyResolverImpl();
     protected final Config config;
 
     protected File storeDir;
@@ -232,6 +248,7 @@ public abstract class InternalAbstractGraphDatabase
     protected IndexManagerImpl indexManager;
     protected Schema schema;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
+    protected KernelHealth kernelHealth;
     protected RemoteTxHook txHook;
     protected FileSystemAbstraction fileSystem;
     protected XaDataSourceManager xaDataSourceManager;
@@ -268,38 +285,26 @@ public abstract class InternalAbstractGraphDatabase
     protected AvailabilityGuard availabilityGuard;
     protected long accessTimeout;
 
-    protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params,
-                                             Iterable<Class<?>> settingsClasses,
-                                             Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                             Iterable<CacheProvider> cacheProviders,
-                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+    protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
     {
-        this( new Config( appendStoreDir( storeDir, params ), settingsClasses ),
-                logbackOrDefaultToClassic(), kernelExtensions, cacheProviders, transactionInterceptorProviders );
-    }
+        params.put( Configuration.store_dir.name(), storeDir );
 
-    protected InternalAbstractGraphDatabase( Config config, Function<Config, Logging> loggingProvider,
-                                             Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                             Iterable<CacheProvider> cacheProviders,
-                                             Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
-    {
-        config.registerSettingsClasses( getSettingsClasses( kernelExtensions, cacheProviders ) );
+        // SPI - provided services
+        this.cacheProviders = mapCacheProviders( dependencies.cacheProviders() );
+        config = new Config( params, getSettingsClasses(
+                dependencies.settingsClasses(), dependencies.kernelExtensions(), dependencies.cacheProviders() ) );
+        this.logging = dependencies.logging();
 
-        this.config = config;
-        this.loggingProvider = loggingProvider;
-        this.cacheProviders = mapCacheProviders( cacheProviders );
-
-        this.kernelExtensions = new KernelExtensions( kernelExtensions, config, dependencyResolver, fail() );
-        this.transactionInterceptorProviders = new TransactionInterceptorProviders( transactionInterceptorProviders,
+        this.kernelExtensions = new KernelExtensions(
+                dependencies.kernelExtensions(),
+                config,
+                getDependencyResolver(),
+                fail() );
+        this.transactionInterceptorProviders = new TransactionInterceptorProviders(
+                dependencies.transactionInterceptorProviders(),
                 dependencyResolver );
         this.storeDir = config.get( Configuration.store_dir );
         accessTimeout = 1 * 1000; // TODO make configurable
-    }
-
-    private static Map<String, String> appendStoreDir( String storeDir, Map<String, String> params )
-    {
-        params.put( Configuration.store_dir.name(), storeDir );
-        return params;
     }
 
     private Map<String, CacheProvider> mapCacheProviders( Iterable<CacheProvider> cacheProviders )
@@ -413,8 +418,12 @@ public abstract class InternalAbstractGraphDatabase
 
         fileSystem = createFileSystemAbstraction();
 
-        // Create logger
-        this.logging = createLogging();
+        // If no logging was passed in from the outside then create logging and register
+        // with this life
+        if ( this.logging == null )
+        {
+            this.logging = createLogging();
+        }
 
         // Component monitoring
         this.monitors = createMonitors();
@@ -475,6 +484,8 @@ public abstract class InternalAbstractGraphDatabase
 
         kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
 
+        kernelHealth = new KernelHealth( kernelPanicEventGenerator, logging );
+
         xaDataSourceManager = life.add( createXaDataSourceManager() );
 
         txHook = createTxHook();
@@ -497,9 +508,9 @@ public abstract class InternalAbstractGraphDatabase
             String serviceName = config.get( GraphDatabaseSettings.tx_manager_impl );
             if ( GraphDatabaseSettings.tx_manager_impl.getDefaultValue().equals( serviceName ) )
             {
-                txManager = new TxManager( this.storeDir, xaDataSourceManager, kernelPanicEventGenerator,
+                txManager = new TxManager( this.storeDir, xaDataSourceManager,
                         logging.getMessagesLog( TxManager.class ), fileSystem, stateFactory,
-                        xidGlobalIdFactory, monitors );
+                        xidGlobalIdFactory, kernelHealth, monitors );
             }
             else
             {
@@ -568,7 +579,7 @@ public abstract class InternalAbstractGraphDatabase
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
         xaFactory = new XaFactory( config, txIdGenerator, txManager, fileSystem,
                 monitors, logging, recoveryVerifier, LogPruneStrategies.fromConfigValue(
-                fileSystem, keepLogicalLogsConfig ) );
+                fileSystem, keepLogicalLogsConfig ), kernelHealth );
 
         createNeoDataSource();
 
@@ -939,7 +950,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected Logging createLogging()
     {
-        return life.add( loggingProvider.apply( config ) );
+        return life.add( DefaultLogging.createDefaultLogging( config ) );
     }
 
     protected void createNeoDataSource()
@@ -1172,7 +1183,8 @@ public abstract class InternalAbstractGraphDatabase
         return config;
     }
 
-    private Iterable<Class<?>> getSettingsClasses( Iterable<KernelExtensionFactory<?>> kernelExtensions,
+    private Iterable<Class<?>> getSettingsClasses( Iterable<Class<?>> settingsClasses,
+                                                   Iterable<KernelExtensionFactory<?>> kernelExtensions,
                                                    Iterable<CacheProvider> cacheProviders )
     {
         List<Class<?>> totalSettingsClasses = new ArrayList<>();
@@ -1446,6 +1458,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( DependencyResolverImpl.this );
             }
+            else if ( KernelHealth.class.isAssignableFrom( type ) )
+            {
+                return (T) kernelHealth;
+            }
             return null;
         }
 
@@ -1625,7 +1641,7 @@ public abstract class InternalAbstractGraphDatabase
         }, input ) );
     }
 
-    private static class PropertyValueFilteringNodeIdIterator extends AbstractPrimitiveLongIterator
+    private static class PropertyValueFilteringNodeIdIterator extends PrimitiveLongBaseIterator
     {
         private final PrimitiveLongIterator nodesWithLabel;
         private final ReadOperations statement;
@@ -1639,11 +1655,10 @@ public abstract class InternalAbstractGraphDatabase
             this.statement = statement;
             this.propertyKeyId = propertyKeyId;
             this.value = value;
-            computeNext();
         }
 
         @Override
-        protected void computeNext()
+        protected boolean fetchNext()
         {
             for ( boolean hasNext = nodesWithLabel.hasNext(); hasNext; hasNext = nodesWithLabel.hasNext() )
             {
@@ -1652,8 +1667,7 @@ public abstract class InternalAbstractGraphDatabase
                 {
                     if ( statement.nodeGetProperty( nextValue, propertyKeyId ).valueEquals( value ) )
                     {
-                        next( nextValue );
-                        return;
+                        return next( nextValue );
                     }
                 }
                 catch ( EntityNotFoundException e )
@@ -1661,7 +1675,7 @@ public abstract class InternalAbstractGraphDatabase
                     // continue to the next node
                 }
             }
-            endReached();
+            return false;
         }
     }
 

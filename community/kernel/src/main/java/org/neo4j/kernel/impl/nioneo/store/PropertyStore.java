@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
+
 import java.io.File;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -34,10 +37,8 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyRecordChange;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
@@ -48,7 +49,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     public static abstract class Configuration extends AbstractStore.Configuration
     {
     }
-    
+
     public static final int DEFAULT_DATA_BLOCK_SIZE = 120;
     public static final int DEFAULT_PAYLOAD_SIZE = 32;
 
@@ -306,7 +307,9 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
                 }
             }
             for ( DynamicRecord stringRecord : block.getValueRecords() )
+            {
                 stringPropertyStore.ensureHeavy( stringRecord );
+            }
         }
         else if ( block.getType() == PropertyType.ARRAY )
         {
@@ -320,7 +323,9 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
                 }
             }
             for ( DynamicRecord arrayRecord : block.getValueRecords() )
+            {
                 arrayPropertyStore.ensureHeavy( arrayRecord );
+            }
         }
     }
 
@@ -616,7 +621,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     {
         return UTF8.decode( byteArray );
     }
-    
+
     public String getStringFor( PropertyBlock propertyBlock )
     {
         ensureHeavy( propertyBlock );
@@ -701,7 +706,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     {
         return super.toString() + "[blocksPerRecord:" + PropertyType.getPayloadSizeLongs() + "]";
     }
-    
+
     public Collection<PropertyRecord> getPropertyRecordChain( long firstRecordId )
     {
         long nextProp = firstRecordId;
@@ -714,11 +719,10 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         }
         return toReturn;
     }
-    
-    public Iterable<NodePropertyUpdate> toLogicalUpdates(
-            PropertyRecord before, long[] nodeLabelsBefore,
-            PropertyRecord after, long[] nodeLabelsAfter )
+
+    public void toLogicalUpdates( Collection<NodePropertyUpdate> target,
+            Iterable<PropertyRecordChange> changes, long[] nodeLabelsBefore, long[] nodeLabelsAfter )
     {
-        return physicalToLogicalConverter.apply( before, nodeLabelsBefore, after, nodeLabelsAfter );
+        physicalToLogicalConverter.apply( target, changes, nodeLabelsBefore, nodeLabelsAfter );
     }
 }

@@ -22,6 +22,7 @@ package org.neo4j.consistency.checking.full;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.consistency.checking.CheckerEngine;
 import org.neo4j.consistency.checking.RecordCheck;
 import org.neo4j.consistency.checking.index.IndexAccessors;
@@ -29,7 +30,6 @@ import org.neo4j.consistency.report.ConsistencyReport;
 import org.neo4j.consistency.store.DiffRecordAccess;
 import org.neo4j.consistency.store.RecordAccess;
 import org.neo4j.kernel.api.index.IndexReader;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;

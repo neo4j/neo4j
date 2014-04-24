@@ -379,7 +379,6 @@ class OwnerCheck implements CheckDecorator
     public RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> decorateRelationshipGroupChecker(
             RecordCheck<RelationshipGroupRecord, RelationshipGroupConsistencyReport> checker )
     {
-        // TODO implement owner checking for relationship groups?
         return checker;
     }
 

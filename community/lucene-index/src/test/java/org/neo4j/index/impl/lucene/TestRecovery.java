@@ -36,6 +36,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
@@ -48,6 +49,7 @@ import org.neo4j.test.ProcessStreamHandler;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
 
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
@@ -138,7 +140,7 @@ public class TestRecovery
                 System.getProperty( "java.class.path" ),
                 AddRelToIndex.class.getName(), getDbPath().getPath()
         } );
-        assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
+        assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
         // I would like to do this, but there's no exception propagated out from the constructor
         // if the recovery fails.
@@ -153,7 +155,7 @@ public class TestRecovery
         LuceneDataSource ds = new LuceneDataSource( config, new IndexStore( getDbPath(), fileSystem ), fileSystem,
                 new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( null, null ),
                         fileSystemAbstraction, new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ), null );
+                        LogPruneStrategies.NO_PRUNING, mock( KernelHealth.class ) ), null );
         ds.start();
         ds.stop();
     }
@@ -167,7 +169,7 @@ public class TestRecovery
                 "java", "-cp", System.getProperty( "java.class.path" ),
                 AddThenDeleteInAnotherTxAndQuit.class.getName(), getDbPath().getPath()
         } );
-        assertEquals( 0, new ProcessStreamHandler( process, true ).waitForResult() );
+        assertEquals( 0, new ProcessStreamHandler( process, false ).waitForResult() );
 
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( getDbPath().getPath() );
         Transaction transaction = db.beginTx();

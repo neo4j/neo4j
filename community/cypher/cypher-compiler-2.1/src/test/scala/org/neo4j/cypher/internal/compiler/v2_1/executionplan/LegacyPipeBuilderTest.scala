@@ -22,12 +22,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 import org.junit.Test
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Pipe, TraversalMatchPipe, DistinctPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.{ParsedQuery, Monitors, ast}
+import org.neo4j.cypher.internal.compiler.v2_1.ast
 import ast.convert.StatementConverters._
+import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_1.ParsedQuery
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 
 
 class LegacyPipeBuilderTest extends MockitoSugar {
@@ -48,6 +51,32 @@ class LegacyPipeBuilderTest extends MockitoSugar {
     val pipe = buildExecutionPipe("match (n:Foo)-->(x) return x")
 
     assert(pipe.exists(_.isInstanceOf[TraversalMatchPipe]), "Expected a DistinctPipe but didn't find any")
+  }
+
+  @Test def should_use_schema_index_with_load_csv() {
+
+    when(planContext.getOptLabelId("Person")).thenReturn(Some(1))
+    when(planContext.getOptPropertyKeyId("name")).thenReturn(Some(1))
+    when(planContext.getIndexRule("Person", "name")).thenReturn(Some(new IndexDescriptor(1, 1)))
+    when(planContext.getUniquenessConstraint("Person", "name")).thenReturn(None)
+
+    val pipe = buildExecutionPipe("LOAD CSV FROM 'file:///tmp/foo.csv' AS line MATCH (p:Person { name: line[0] }) RETURN p;")
+    assert(pipe.exists { pipe =>
+      pipe.isInstanceOf[NodeStartPipe] && pipe.asInstanceOf[NodeStartPipe].createSource.producerType == "SchemaIndex"
+    })
+  }
+
+  @Test def should_use_schema_index_with_load_csv_2() {
+
+    when(planContext.getOptLabelId("Person")).thenReturn(Some(1))
+    when(planContext.getOptPropertyKeyId("name")).thenReturn(Some(1))
+    when(planContext.getIndexRule("Person", "name")).thenReturn(Some(new IndexDescriptor(1, 1)))
+    when(planContext.getUniquenessConstraint("Person", "name")).thenReturn(None)
+
+    val pipe = buildExecutionPipe("LOAD CSV FROM 'file:///tmp/foo.csv' AS line MATCH (p:Person { name: \"Foo Bar Baz\" }) RETURN p;")
+    assert(pipe.exists { pipe =>
+      pipe.isInstanceOf[NodeStartPipe] && pipe.asInstanceOf[NodeStartPipe].createSource.producerType == "SchemaIndex"
+    })
   }
 
   private def buildExecutionPipe(q: String): Pipe = {

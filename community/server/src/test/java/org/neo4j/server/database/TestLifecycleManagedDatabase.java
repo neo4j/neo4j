@@ -21,28 +21,31 @@ package org.neo4j.server.database;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.Map;
 
 import org.apache.commons.io.FileUtils;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Functions;
+import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.StoreLockException;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.Mute;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.server.ServerTestUtils.createTempDir;
 import static org.neo4j.test.Mute.muteAll;
@@ -52,8 +55,10 @@ public class TestLifecycleManagedDatabase
     @Rule
     public Mute mute = muteAll();
 
+    private final Logging logging = new BufferingLogging();
+
     @Rule
-    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule();
+    public ImpermanentDatabaseRule dbRule = new ImpermanentDatabaseRule( logging );
 
     private File databaseDirectory;
     private Database theDatabase;
@@ -66,15 +71,15 @@ public class TestLifecycleManagedDatabase
         databaseDirectory = createTempDir();
 
         dbFactory = mock( LifecycleManagingDatabase.GraphFactory.class );
-        when(dbFactory.newGraphDatabase( any( Config.class ), any(Function.class), any( Iterable.class ),
-                any( Iterable.class ), any( Iterable.class ) )).thenReturn( dbRule.getGraphDatabaseAPI() );
+        when(dbFactory.newGraphDatabase( any( String.class ), any( Map.class ), any( Dependencies.class ) ))
+                .thenReturn( dbRule.getGraphDatabaseAPI() );
         theDatabase = newDatabase();
     }
 
     private LifecycleManagingDatabase newDatabase()
     {
         Config dbConfig = new Config(stringMap( GraphDatabaseSettings.store_dir.name(), databaseDirectory.getAbsolutePath() ));
-        return new LifecycleManagingDatabase( dbConfig, dbFactory, Functions.<Config, Logging>constant( new TestLogging() ) );
+        return new LifecycleManagingDatabase( dbConfig, dbFactory, logging );
     }
 
     @After
@@ -101,22 +106,18 @@ public class TestLifecycleManagedDatabase
     @Test
     public void shouldLogOnSuccessfulStartup() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender( LifecycleManagingDatabase.log );
-
         theDatabase.start();
 
-        assertThat( appender.toString(), containsString( "Successfully started database" ) );
+        assertThat( logging.toString(), containsString( "Successfully started database" ) );
     }
 
     @Test
     public void shouldShutdownCleanly() throws Throwable
     {
-        InMemoryAppender appender = new InMemoryAppender( LifecycleManagingDatabase.log );
-
         theDatabase.start();
         theDatabase.stop();
 
-        assertThat( appender.toString(), containsString( "Successfully stopped database" ) );
+        assertThat( logging.toString(), containsString( "Successfully stopped database" ) );
     }
 
     @Test

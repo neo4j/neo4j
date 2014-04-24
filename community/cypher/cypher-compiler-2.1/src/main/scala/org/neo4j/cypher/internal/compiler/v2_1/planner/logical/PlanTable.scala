@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
-
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SingleRow, IdName, LogicalPlan}
+import org.neo4j.cypher.InternalException
 
 case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
   def size = m.size
@@ -41,4 +41,17 @@ case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
   }
 
   def plans: Seq[LogicalPlan] = m.values.toSeq
+
+  def uniquePlan: LogicalPlan = {
+    val allPlans = plans
+
+    if (allPlans.size > 1)
+      throw new InternalException(s"Expected the final plan table to have 0 or 1 plan (got ${allPlans.size})")
+
+    allPlans.headOption.getOrElse(SingleRow())
+  }
+}
+
+object PlanTable {
+  val empty = PlanTable()
 }

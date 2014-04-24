@@ -39,7 +39,7 @@ public class TestTxLogMonitoring
     public void shouldCountBytesWritten() throws Exception
     {
         // Given
-        File directory = target.directory( "shouldCountBytesWritten", true );
+        File directory = target.cleanDirectory( "shouldCountBytesWritten" );
         File theLogFile = new File( directory, "theLog" );
         Monitors monitors = new Monitors();
 

@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;

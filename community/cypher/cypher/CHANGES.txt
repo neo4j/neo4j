@@ -11,6 +11,7 @@ o Renames the Cypher type Double to Float
 o Add the function split(...)
 o Reading a non-existent property from a map returns null rather than failing
 o MERGE will choose a direction when it has to create a relationship if you use an undirected relationship pattern
+o Solves problem where non deterministic predicates where run too early
 
 2.0.1
 -----
@@ -60,7 +61,7 @@ o Promote the experimental parser to the default
 o Added literal maps
 o Makes RETURN only queries valid
 o Labels on optional nodes no longer stop the whole MATCH
-  clause from returning results. 
+  clause from returning results.
 o Updated NOT precedence
 o Added collection slice and collection index
 o Added list comprehension documentation
@@ -79,7 +80,7 @@ o BREAKING CHANGE: Use "|" in favor of ":" in FOREACH, EXTRACT and REDUCE to avo
 ---------
 o Added startNode()/endNode()
 o Fixes #780 - Queries with literal collections fail against schema indexes
-o Make Cypher execution results closable 
+o Make Cypher execution results closable
 o Adds Cypher label scan hint
 o Removes alternative WITH syntax in Cypher
 o Fixes bug with UNION text output
@@ -172,7 +173,7 @@ o Fixes problems when updating a graph element with a map containing null values
 --------------------
 o Refactored the type system from the bottom up
 o Predicates can now be returned and used to set properties
-o Fixes #797: CREATE UNIQUE now makes sure used identifiers have the same properties even if 
+o Fixes #797: CREATE UNIQUE now makes sure used identifiers have the same properties even if
   they are re-used without the properties
 o Added the traversal matcher, which uses the new traversal framework abilities to do
   pattern matching. It should provide for nice performance benefits for a lot of queries.
@@ -294,7 +295,7 @@ o Added COALESCE
 o Added column aliasing with AS
 o Variable length relationships can now introduce a rel-iterable
 o BREAKING CHANGE: Changed the syntax for iterable predicated ALL/NONE/ANY/SINGLE to use WHERE instead of a colon
-o BREAKING CHANGE: ExecutionResult is now a read-once, forward only iterator. 
+o BREAKING CHANGE: ExecutionResult is now a read-once, forward only iterator.
 o Fixed problems with optional graph elements
 
 1.6.M01 (2011-11-24)

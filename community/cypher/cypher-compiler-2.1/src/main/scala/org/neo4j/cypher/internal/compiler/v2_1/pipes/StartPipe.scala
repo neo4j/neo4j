@@ -48,7 +48,7 @@ abstract class StartPipe[T <: PropertyContainer](source: Pipe,
   }
 }
 
-class NodeStartPipe(source: Pipe, name: String, createSource: EntityProducer[Node])(implicit pipeMonitor: PipeMonitor)
+class NodeStartPipe(source: Pipe, name: String, val createSource: EntityProducer[Node])(implicit pipeMonitor: PipeMonitor)
   extends StartPipe[Node](source, name, createSource, pipeMonitor) {
   def identifierType = CTNode
 }

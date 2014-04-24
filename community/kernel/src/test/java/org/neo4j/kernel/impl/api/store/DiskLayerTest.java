@@ -28,6 +28,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -49,8 +51,6 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.util.Arrays.asList;
@@ -70,6 +70,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 
 public class DiskLayerTest
 {
@@ -284,7 +285,7 @@ public class DiskLayerTest
                 resolver.resolveDependency( LabelTokenHolder.class ),
                 resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
                 new SchemaStorage( neoStore.getSchemaStore() ),
-                neoStore,
+                singletonProvider( neoStore ),
                 indexingService );
         this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
                 resolver.resolveDependency( LabelScanStore.class ), null,

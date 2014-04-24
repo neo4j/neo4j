@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 
-class LeafPlanningIT extends CypherFunSuite with LogicalPlanningTestSupport {
+class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should build plans for all nodes scans") {
     implicit val planContext = newMockedPlanContext

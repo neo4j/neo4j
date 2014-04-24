@@ -76,7 +76,8 @@ public class TestPullUpdates
     @Test
     public void makeSureUpdatePullerGetsGoingAfterMasterSwitch() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).directory( "makeSureUpdatePullerGetsGoingAfterMasterSwitch", true );
+        File root = TargetDirectory.forTest( getClass() ).cleanDirectory(
+                "makeSureUpdatePullerGetsGoingAfterMasterSwitch" );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root, MapUtil.stringMap(
                 HaSettings.pull_interval.name(), PULL_INTERVAL+"ms") );
         clusterManager.start();
@@ -104,7 +105,7 @@ public class TestPullUpdates
     @Test
     public void pullUpdatesShellAppPullsUpdates() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).directory( "pullUpdatesShellAppPullsUpdates", true );
+        File root = TargetDirectory.forTest( getClass() ).cleanDirectory( "pullUpdatesShellAppPullsUpdates" );
         Map<Integer, Map<String, String>> instanceConfig = new HashMap<Integer, Map<String, String>>();
         for (int i = 1; i <= 2; i++)
         {
@@ -154,7 +155,7 @@ public class TestPullUpdates
         GraphDatabaseService master = null;
         try
         {
-            File masterDir = TargetDirectory.forTest( getClass() ).directory( "master", true );
+            File masterDir = TargetDirectory.forTest( getClass() ).cleanDirectory( "master" );
             master = new HighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( masterDir.getAbsolutePath() )
                     .setConfig( ClusterSettings.server_id, "1" )
@@ -162,7 +163,7 @@ public class TestPullUpdates
                     .newGraphDatabase();
 
             // Copy the store, then shutdown, so update pulling later makes sense
-            File slaveDir = TargetDirectory.forTest( getClass() ).directory( "slave", true );
+            File slaveDir = TargetDirectory.forTest( getClass() ).cleanDirectory( "slave" );
             slave = new HighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
                     .setConfig( ClusterSettings.server_id, "2" )

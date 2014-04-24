@@ -19,6 +19,9 @@
  */
 package org.neo4j.helpers.collection;
 
+import static java.util.Arrays.asList;
+import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
+
 import java.lang.reflect.Array;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -34,15 +37,7 @@ import java.util.Set;
 import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.FunctionFromPrimitiveInt;
-import org.neo4j.helpers.FunctionFromPrimitiveLong;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
-
-import static java.util.Arrays.asList;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 
 /**
  * TODO: Combine this and {@link IteratorUtil} into one class
@@ -367,56 +362,6 @@ public final class Iterables
     public static <FROM, TO> Iterator<TO> flatMap( Function<? super FROM, ? extends Iterator<TO>> function, Iterator<FROM> from )
     {
         return new CombiningIterator<>( map(function, from) );
-    }
-
-    public static <T> Iterator<T> map( final FunctionFromPrimitiveLong<T> mapFunction,
-                                       final PrimitiveLongIterator source )
-    {
-        return new Iterator<T>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return source.hasNext();
-            }
-
-            @Override
-            public T next()
-            {
-                return mapFunction.apply( source.next() );
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
-            }
-        };
-    }
-
-    public static <T> Iterator<T> map( final FunctionFromPrimitiveInt<T> mapFunction,
-            final PrimitiveIntIterator source )
-    {
-        return new Iterator<T>()
-        {
-            @Override
-            public boolean hasNext()
-            {
-                return source.hasNext();
-            }
-
-            @Override
-            public T next()
-            {
-                return mapFunction.apply( source.next() );
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
-            }
-        };
     }
 
     @SafeVarargs

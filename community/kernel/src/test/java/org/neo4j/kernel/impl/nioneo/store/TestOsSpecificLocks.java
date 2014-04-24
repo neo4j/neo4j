@@ -51,7 +51,7 @@ public class TestOsSpecificLocks
     @Before
     public void doBefore()
     {
-        path = TargetDirectory.forTest( getClass() ).directory( name.getMethodName(), true );
+        path = TargetDirectory.forTest( getClass() ).cleanDirectory( name.getMethodName() );
     }
 
     @Test

@@ -98,7 +98,7 @@ public abstract class KernelIntegrationTest
     public void setup()
     {
         fs = new EphemeralFileSystemAbstraction();
-        startDb();
+        startDb("soft");
     }
 
     @After
@@ -108,15 +108,21 @@ public abstract class KernelIntegrationTest
         fs.shutdown();
     }
 
-    protected void startDb()
+    protected void startDb(String cacheType)
     {
         TestGraphDatabaseBuilder graphDatabaseFactory = (TestGraphDatabaseBuilder) new TestGraphDatabaseFactory().setFileSystem(fs).newImpermanentDatabaseBuilder();
 
         //noinspection deprecation
-        db = (GraphDatabaseAPI) graphDatabaseFactory.setConfig(GraphDatabaseSettings.cache_type,"none").newGraphDatabase();
+        db = (GraphDatabaseAPI) graphDatabaseFactory.setConfig(GraphDatabaseSettings.cache_type,cacheType).newGraphDatabase();
         statementContextProvider = db.getDependencyResolver().resolveDependency(
                 ThreadToStatementContextBridge.class );
         kernel = db.getDependencyResolver().resolveDependency( KernelAPI.class );
+    }
+
+    protected void dbWithNoCache()
+    {
+        stopDb();
+        startDb("none");
     }
 
     protected void stopDb()
@@ -131,7 +137,7 @@ public abstract class KernelIntegrationTest
     protected void restartDb()
     {
         stopDb();
-        startDb();
+        startDb("soft");
     }
 
     protected NeoStore neoStore()

@@ -75,7 +75,7 @@ abstract class Expression extends Typed with TypeSafe with AstNode[Expression] {
   }
 
 
-  def isDeterministic = ! exists {
+  val isDeterministic = ! exists {
     case RandFunction() => true
     case _              => false
   }

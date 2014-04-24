@@ -68,7 +68,8 @@ public class DatabaseRegistry implements Lifecycle
             throw new NoSuchDatabaseProviderException(db.provider());
         }
 
-        DatabaseRegistryEntry entry = new DatabaseRegistryEntry(providers.get( db.provider() ).newDatabase( db.config(), loggingProvider ));
+        DatabaseRegistryEntry entry = new DatabaseRegistryEntry(providers.get( db.provider() ).newDatabase(
+                db.config(), loggingProvider.apply( db.config() ) ) );
         DatabaseRegistryEntry prevEntry = databases.putIfAbsent( db.key(), entry );
 
         if(prevEntry == null)

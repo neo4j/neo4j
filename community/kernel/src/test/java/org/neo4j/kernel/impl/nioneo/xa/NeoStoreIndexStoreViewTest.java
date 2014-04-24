@@ -67,7 +67,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 public class NeoStoreIndexStoreViewTest
 {
     @Rule
-    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDirectory = TargetDirectory.testDirForTest( getClass() );
 
     Label label = DynamicLabel.label( "Person" );
 

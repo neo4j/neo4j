@@ -29,8 +29,8 @@ import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
-import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertThat;
+import static org.junit.matchers.JUnitMatchers.containsString;
 
 public class DiagnosticsLoggingTest
 {

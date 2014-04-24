@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.api.EntityType;
@@ -36,7 +37,6 @@ import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Primitive;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.kernel.impl.api.store.CacheUpdateListener.NO_UPDATES;
 

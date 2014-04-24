@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
+
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
@@ -73,6 +74,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.PropertyReceiver;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
@@ -377,11 +379,12 @@ public class TestXa
                 (Cache) mock( AutoLoadingCache.class ) );
         when( nodeManager.caches() ).thenReturn( caches );
 
+        KernelHealth kernelHealth = mock( KernelHealth.class );
         NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource( config, sf,
                                                                               StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
                         fileSystem, new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
+                        LogPruneStrategies.NO_PRUNING, kernelHealth ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
                         new TransactionInterceptorProviders(
                                 Collections.<TransactionInterceptorProvider>emptyList(), dependencyResolverForConfig( config ) ), null,
                                 new SingleLoggingService( DEV_NULL ),

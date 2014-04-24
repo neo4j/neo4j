@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
@@ -46,7 +47,6 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreIdIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static org.neo4j.kernel.api.index.NodePropertyUpdate.EMPTY_LONG_ARRAY;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;

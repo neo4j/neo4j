@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.index;
 
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
 import org.junit.After;
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
@@ -36,6 +30,12 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.*;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+
 public class AutoIndexConfigIT
 {
 
@@ -45,7 +45,7 @@ public class AutoIndexConfigIT
 
     public void startCluster( int size ) throws Throwable
     {
-        clusterManager = new ClusterManager( clusterOfSize( size ), dir.directory( "dbs", true ), MapUtil.stringMap() )
+        clusterManager = new ClusterManager( clusterOfSize( size ), dir.cleanDirectory( "dbs" ), MapUtil.stringMap() )
         {
             @Override
             protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
@@ -71,19 +71,18 @@ public class AutoIndexConfigIT
 
         // Given
         startCluster( 3 );
-        HighlyAvailableGraphDatabase originalMaster = cluster.getMaster();
+        HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
 
-        AutoIndexer<Node> originalAutoIndex = originalMaster.index().getNodeAutoIndexer();
+        AutoIndexer<Node> originalAutoIndex = slave.index().getNodeAutoIndexer();
         originalAutoIndex.setEnabled( true );
         originalAutoIndex.startAutoIndexingProperty( propertyToIndex );
 
         // When
-        ClusterManager.RepairKit originalMasterRepairKit = cluster.shutdown( originalMaster );
+        cluster.shutdown( cluster.getMaster() );
         cluster.await( masterAvailable() );
-        originalMasterRepairKit.repair(); // Bring the original master back as a slave
 
         // Then
-        AutoIndexer<Node> newAutoIndex = originalMaster.index().getNodeAutoIndexer();
+        AutoIndexer<Node> newAutoIndex = slave.index().getNodeAutoIndexer();
 
         assertThat(newAutoIndex.isEnabled(), is(true));
         assertThat( newAutoIndex.getAutoIndexedProperties(), hasItem( propertyToIndex ) );

@@ -135,25 +135,18 @@ public class ServerUtil
                                                                 FileSystemAbstraction fs,
                                                                 BackupMonitor backupMonitor )
     {
-        logger.info( "Initiating log rotation and store copy" );
         File baseDir = getBaseDir( storeDir );
         RequestContext context = RequestContext.anonymous( rotateLogs( dsManager, kernelPanicEventGenerator, logger ) );
-        logger.info( "Log rotation done" );
         backupMonitor.finishedRotatingLogicalLogs();
         ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
         for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
         {
-            logger.info( "Beginning file copy for store of datasource " + ds.getName() );
             copyStoreFiles( writer, fs, baseDir, temporaryBuffer, ds, backupMonitor );
             if ( includeLogicalLogs )
             {
-                logger.info( "Beginning logical log copy for datasource " + ds.getName() );
                 copyLogicalLogs( writer, fs, baseDir, temporaryBuffer, ds, backupMonitor );
-                logger.info( "Logical log copy for datasource " + ds.getName() + " done" );
             }
-            logger.info( "File copy for store of datasource " + ds.getName() + " done");
         }
-        logger.info( "Log rotation and store copy done" );
         return context;
     }
 

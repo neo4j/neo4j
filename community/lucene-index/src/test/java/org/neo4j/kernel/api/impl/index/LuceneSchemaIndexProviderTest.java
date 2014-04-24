@@ -31,7 +31,7 @@ public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTes
     protected LuceneSchemaIndexProvider createIndexProvider()
     {
         return new LuceneSchemaIndexProvider( new DirectoryFactory.InMemoryDirectoryFactory(),
-                new Config( stringMap( "store_dir", forTest( getClass() ).graphDbDir( true ).getAbsolutePath() ) )
+                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
         );
     }
 }

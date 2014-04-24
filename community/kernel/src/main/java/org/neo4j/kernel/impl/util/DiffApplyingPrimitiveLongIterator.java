@@ -22,46 +22,48 @@ package org.neo4j.kernel.impl.util;
 import java.util.Iterator;
 import java.util.Set;
 
-public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLongIterator
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+
+public final class DiffApplyingPrimitiveLongIterator extends PrimitiveLongBaseIterator
 {
     private enum Phase
     {
         FILTERED_SOURCE
         {
             @Override
-            void computeNext( DiffApplyingPrimitiveLongIterator self )
+            boolean fetchNext( DiffApplyingPrimitiveLongIterator self )
             {
-                self.computeNextFromSourceAndFilter();
+                return self.computeNextFromSourceAndFilter();
             }
         },
 
         ADDED_ELEMENTS
         {
             @Override
-            void computeNext( DiffApplyingPrimitiveLongIterator self )
+            boolean fetchNext( DiffApplyingPrimitiveLongIterator self )
             {
-                self.computeNextFromAddedElements();
+                return self.computeNextFromAddedElements();
             }
         },
 
         NO_ADDED_ELEMENTS
         {
             @Override
-            void computeNext( DiffApplyingPrimitiveLongIterator self )
+            boolean fetchNext( DiffApplyingPrimitiveLongIterator self )
             {
-                self.endReached();
+                return false;
             }
         };
 
-        abstract void computeNext( DiffApplyingPrimitiveLongIterator self );
+        abstract boolean fetchNext( DiffApplyingPrimitiveLongIterator self );
     }
 
     private final PrimitiveLongIterator source;
     private final Iterator<?> addedElementsIterator;
     private final Set<?> addedElements;
     private final Set<?> removedElements;
-
-    Phase phase;
+    private Phase phase;
 
     public DiffApplyingPrimitiveLongIterator( PrimitiveLongIterator source,
                                               Set<?> addedElements, Set<?> removedElements )
@@ -71,46 +73,35 @@ public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLo
         this.addedElementsIterator = addedElements.iterator();
         this.removedElements = removedElements;
         phase = Phase.FILTERED_SOURCE;
-
-        computeNext();
     }
 
     @Override
-    protected void computeNext()
+    protected boolean fetchNext()
     {
-        phase.computeNext( this );
+        return phase.fetchNext( this );
     }
 
-    private void computeNextFromSourceAndFilter()
+    private boolean computeNextFromSourceAndFilter()
     {
-        for ( boolean hasNext = source.hasNext(); hasNext; hasNext = source.hasNext() )
+        while ( source.hasNext() )
         {
             long value = source.next();
-            next( value );
             if ( !removedElements.contains( value ) && !addedElements.contains( value ) )
             {
-                return;
+                return next( value );
             }
         }
-
         transitionToAddedElements();
+        return phase.fetchNext( this );
     }
 
     private void transitionToAddedElements()
     {
         phase = !addedElementsIterator.hasNext() ? Phase.NO_ADDED_ELEMENTS : Phase.ADDED_ELEMENTS;
-        computeNext();
     }
 
-    private void computeNextFromAddedElements()
+    private boolean computeNextFromAddedElements()
     {
-        if ( addedElementsIterator.hasNext() )
-        {
-            next( (Long) addedElementsIterator.next() );
-        }
-        else
-        {
-            endReached();
-        }
+        return addedElementsIterator.hasNext() ? next( (Long) addedElementsIterator.next() ) : false;
     }
 }

@@ -31,11 +31,11 @@ object Metrics {
   type CostModel = LogicalPlan => Double
 
   // This metric estimates how many rows of data a logical plan produces
-  // (e.g. by asking the database for heuristics)
+  // (e.g. by asking the database for statistics)
   type CardinalityModel = LogicalPlan => Double
 
   // This metric estimates the selectivity of an expression
-  // (e.g. by algebraic analysis or using heuristics)
+  // (e.g. by algebraic analysis or using statistics)
   type SelectivityModel = Expression => Double
 }
 

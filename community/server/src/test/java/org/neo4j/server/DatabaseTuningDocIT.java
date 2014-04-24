@@ -25,9 +25,9 @@ import java.util.Map;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.server.configuration.PropertyFileConfigurator;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.helpers.CommunityServerBuilder;
-import org.neo4j.server.logging.InMemoryAppender;
+import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.server.ExclusiveServerTestBase;
 
 import static org.hamcrest.Matchers.containsString;
@@ -64,21 +64,21 @@ public class DatabaseTuningDocIT extends ExclusiveServerTestBase
         return paramValue != null && paramValue.toString().equals( value );
     }
 
-
     @Test
     public void shouldLogWarningAndContinueIfTuningFilePropertyDoesNotResolve() throws IOException
     {
-        InMemoryAppender appender = new InMemoryAppender( PropertyFileConfigurator.log );
-
+        Logging logging = new BufferingLogging();
         NeoServer server = CommunityServerBuilder.server()
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .withNonResolvableTuningFile()
+                .withLogging( logging )
                 .build();
         server.start();
 
-        assertThat( appender.toString(),
+        String logDump = logging.toString();
+        assertThat( logDump,
                 containsString( String.format( "The specified file for database performance tuning properties [" ) ) );
-        assertThat( appender.toString(), containsString( String.format( "] does not exist." ) ) );
+        assertThat( logDump, containsString( String.format( "] does not exist." ) ) );
 
         server.stop();
     }

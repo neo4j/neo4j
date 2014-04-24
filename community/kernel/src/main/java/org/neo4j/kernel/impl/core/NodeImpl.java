@@ -20,12 +20,15 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -39,7 +42,6 @@ import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
@@ -47,7 +49,6 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 import static java.lang.System.arraycopy;
 import static java.util.Arrays.binarySearch;
 
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
 import static org.neo4j.kernel.impl.cache.SizeOfs.sizeOfArray;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
@@ -168,7 +169,7 @@ public class NodeImpl extends ArrayBasedPrimitive
 
         if ( result.length == 0 )
         {
-            return emptyPrimitiveLongIterator();
+            return PrimitiveLongCollections.emptyIterator();
         }
         return new RelationshipIterator( result, this, direction, NO_RELATIONSHIP_TYPES,
                 nodeManager, hasMore, true );
@@ -206,7 +207,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
         if ( result.length == 0 )
         {
-            return emptyPrimitiveLongIterator();
+            return PrimitiveLongCollections.emptyIterator();
         }
         return new RelationshipIterator( result, this, direction, types, nodeManager, hasMore, false );
     }
@@ -291,7 +292,7 @@ public class NodeImpl extends ArrayBasedPrimitive
                 updateSize( nodeManager );
             }
         }
-        if ( rels != null )
+        if ( rels != null && rels.second().size() > 0 )
         {
             nodeManager.putAllInRelCache( rels.second() );
         }
@@ -351,15 +352,16 @@ public class NodeImpl extends ArrayBasedPrimitive
     {
         if ( !hasMoreRelationshipsToLoad( direction, types ) )
         {
-            return null;
+            return Triplet.of( null, Collections.<RelationshipImpl>emptyList(), relChainPosition );
         }
+
         Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>,RelationshipLoadingPosition> rels =
                 loadMoreRelationshipsFromNodeManager( nodeManager, direction, types );
 
         ArrayMap<Integer, RelIdArray> addMap = rels.first();
         if ( addMap.size() == 0 )
         {
-            return null;
+            return rels;
         }
         for ( Integer type : addMap.keySet() )
         {

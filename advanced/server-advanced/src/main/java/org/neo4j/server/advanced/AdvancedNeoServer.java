@@ -22,6 +22,7 @@ package org.neo4j.server.advanced;
 import java.util.Arrays;
 
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.CommunityNeoServer;
 import org.neo4j.server.advanced.modules.JMXManagementModule;
 import org.neo4j.server.configuration.Configurator;
@@ -30,23 +31,21 @@ import org.neo4j.server.modules.ServerModule;
 
 public class AdvancedNeoServer extends CommunityNeoServer
 {
-    public AdvancedNeoServer( Configurator configurator, Database.Factory dbFactory )
+    public AdvancedNeoServer( Configurator configurator, Database.Factory dbFactory, Logging logging )
     {
-        super(configurator, dbFactory);
+        super(configurator, dbFactory, logging);
     }
 
-	public AdvancedNeoServer( Configurator configurator )
+	public AdvancedNeoServer( Configurator configurator, Logging logging )
     {
-        super( configurator );
+        super( configurator, logging );
     }
 
     @Override
-	@SuppressWarnings("unchecked")
-	protected Iterable<ServerModule> createServerModules() 
-	{   
+	protected Iterable<ServerModule> createServerModules()
+	{
         return Iterables.mix(Arrays.asList(
-        		(ServerModule)new JMXManagementModule(this)), 
+        		(ServerModule)new JMXManagementModule(this)),
         		super.createServerModules());
 	}
-	
 }

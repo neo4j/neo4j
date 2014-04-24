@@ -37,19 +37,15 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerificationException;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInfo;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 
@@ -61,10 +57,7 @@ public class TestRecoveryVerification
 
         TestGraphDatabase( String dir, RecoveryVerifier recoveryVerifier )
         {
-            super( dir, stringMap(), Iterables.<Class<?>, Class<?>>iterable( (Class<?>) GraphDatabaseSettings.class )
-                    , Iterables.<KernelExtensionFactory<?>,
-                    KernelExtensionFactory>cast( Service.load( KernelExtensionFactory.class ) ),
-                    Service.load( CacheProvider.class ), Service.load( TransactionInterceptorProvider.class ) );
+            super( dir, stringMap(), new DefaultGraphDatabaseDependencies() );
             this.verifier = recoveryVerifier;
             run();
         }

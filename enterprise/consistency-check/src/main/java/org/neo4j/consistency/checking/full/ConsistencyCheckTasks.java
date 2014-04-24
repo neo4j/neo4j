@@ -44,6 +44,7 @@ import static org.neo4j.consistency.checking.full.MultiPassStore.ARRAYS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.NODES;
 import static org.neo4j.consistency.checking.full.MultiPassStore.PROPERTIES;
 import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIPS;
+import static org.neo4j.consistency.checking.full.MultiPassStore.RELATIONSHIP_GROUPS;
 import static org.neo4j.consistency.checking.full.MultiPassStore.STRINGS;
 
 public class ConsistencyCheckTasks
@@ -80,7 +81,7 @@ public class ConsistencyCheckTasks
 
         tasks.add( create( nativeStores.getArrayStore(), multiPass.processors( ARRAYS ) ) );
 
-        tasks.add( create( nativeStores.getRelationshipGroupStore(), multiPass.processors( RELATIONSHIPS ) ) );
+        tasks.add( create( nativeStores.getRelationshipGroupStore(), multiPass.processors( RELATIONSHIP_GROUPS ) ) );
 
         // The schema store is verified in multiple passes that share state since it fits into memory
         // and we care about the consistency of back references (cf. SemanticCheck)

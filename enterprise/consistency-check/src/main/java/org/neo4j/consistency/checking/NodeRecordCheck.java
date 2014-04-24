@@ -113,7 +113,10 @@ class NodeRecordCheck extends PrimitiveRecordCheck<NodeRecord, ConsistencyReport
                 }
                 else
                 {
-                    // TODO add more checks
+                    if ( group.getOwningNode() != record.getId() )
+                    {
+                        engine.report().relationshipGroupHasOtherOwner( group );
+                    }
                 }
             }
         }

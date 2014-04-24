@@ -26,10 +26,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveLongIterator;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.toPrimitiveIterator;
 
 class HashBasedIndex extends InMemoryIndexImplementation
 {
@@ -51,7 +51,7 @@ class HashBasedIndex extends InMemoryIndexImplementation
     PrimitiveLongIterator doLookup( Object propertyValue )
     {
         Set<Long> nodes = data.get( propertyValue );
-        return nodes == null ? emptyPrimitiveLongIterator() : toPrimitiveLongIterator( nodes.iterator() );
+        return nodes == null ? PrimitiveLongCollections.emptyIterator() : toPrimitiveIterator( nodes.iterator() );
     }
 
     @Override

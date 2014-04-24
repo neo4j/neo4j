@@ -50,7 +50,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 public class HardKillIT
 {
-    private static final File path = TargetDirectory.forTest( HardKillIT.class ).graphDbDir( true );
+    private static final File path = TargetDirectory.forTest( HardKillIT.class ).makeGraphDbDir();
 
     private ProcessStreamHandler processHandler;
 

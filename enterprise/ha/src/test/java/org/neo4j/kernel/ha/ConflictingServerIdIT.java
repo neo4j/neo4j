@@ -33,7 +33,7 @@ import org.neo4j.test.TargetDirectory;
 
 public class ConflictingServerIdIT
 {
-    private static final File path = TargetDirectory.forTest( ConflictingServerIdIT.class ).graphDbDir( true );
+    private static final File path = TargetDirectory.forTest( ConflictingServerIdIT.class ).makeGraphDbDir();
 
     @Test
     public void testConflictingIdDoesNotSilentlyFail() throws Exception

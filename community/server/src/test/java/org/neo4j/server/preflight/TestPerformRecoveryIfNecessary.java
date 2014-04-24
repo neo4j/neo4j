@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.preflight;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
@@ -32,11 +29,16 @@ import java.util.Properties;
 
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
 
 public class TestPerformRecoveryIfNecessary {
 
@@ -50,7 +52,7 @@ public class TestPerformRecoveryIfNecessary {
 	{
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		Configuration config = buildProperties();
-		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream));
+		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream), DevNullLoggingService.DEV_NULL);
 
 		assertThat("Recovery task runs successfully.", task.run(), is(true));
 		assertThat("No database should have been created.", new File(STORE_DIRECTORY).exists(), is(false));
@@ -65,7 +67,7 @@ public class TestPerformRecoveryIfNecessary {
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 		new GraphDatabaseFactory().newEmbeddedDatabase(STORE_DIRECTORY).shutdown();
 
-		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream));
+		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream), DevNullLoggingService.DEV_NULL);
 
 		assertThat("Recovery task should run successfully.", task.run(), is(true));
 		assertThat("Database should exist.", new File(STORE_DIRECTORY).exists(), is(true));
@@ -87,7 +89,7 @@ public class TestPerformRecoveryIfNecessary {
 				is(true));
 
 		// Run recovery
-		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream));
+		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream), DevNullLoggingService.DEV_NULL);
 		assertThat("Recovery task should run successfully.", task.run(), is(true));
 		assertThat("Database should exist.", new File(STORE_DIRECTORY).exists(), is(true));
 		assertThat("Recovery should print status message.", outputStream.toString(), is("Detected incorrectly shut down database, performing recovery.." + LINEBREAK));

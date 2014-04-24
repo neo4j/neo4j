@@ -64,9 +64,9 @@ public abstract class AbstractNeo4jTestCase
     {
         boolean value() default true;
     }
-    
+
     protected static final File NEO4J_BASE_DIR = new File( "target", "var" );
-    
+
     public static final @ClassRule TestRule START_GRAPHDB = new TestRule()
     {
         @Override
@@ -112,7 +112,7 @@ public abstract class AbstractNeo4jTestCase
                 throw new RuntimeException( e );
             }
         }
-        
+
         threadLocalGraphDb.set( (GraphDatabaseAPI) (requiresPersistentGraphDatabase ?
                 new TestGraphDatabaseFactory().newEmbeddedDatabase( getStorePath( "neo-test" ) ) :
                 new TestGraphDatabaseFactory().newImpermanentDatabase()) );
@@ -273,7 +273,7 @@ public abstract class AbstractNeo4jTestCase
     {
         return dynamicRecordsInUse( "arrayPropertyStore" );
     }
-    
+
     private long dynamicRecordsInUse( String fieldName )
     {
         try
@@ -287,7 +287,7 @@ public abstract class AbstractNeo4jTestCase
             throw new RuntimeException( e );
         }
     }
-    
+
     protected PropertyStore propertyStore()
     {
         XaDataSourceManager dsMgr = graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
@@ -296,7 +296,7 @@ public abstract class AbstractNeo4jTestCase
 
     public static File unzip( Class<?> testClass, String resource ) throws IOException
     {
-        File dir = TargetDirectory.forTest( testClass ).graphDbDir( true );
+        File dir = TargetDirectory.forTest( testClass ).makeGraphDbDir();
         try ( InputStream source = testClass.getResourceAsStream( resource ) )
         {
             if ( source == null )

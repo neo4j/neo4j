@@ -36,7 +36,7 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
   def apply(plan: LogicalPlan): Double = plan match {
     case _: SingleRow =>
-      cardinality(plan)
+      0
 
     case _: AllNodesScan =>
       cardinality(plan)
@@ -70,14 +70,32 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
     case cartesian: CartesianProduct =>
       cost(cartesian.left) + cardinality(cartesian.left) * cost(cartesian.right)
 
+    case applyOp: Apply =>
+      cost(applyOp.outer) + cardinality(applyOp.outer) * cost(applyOp.inner)
+
+    case applyOp: SemiApply =>
+      cost(applyOp.outer) + cardinality(applyOp.outer) * cost(applyOp.inner) * .001 // TODO: This is entirely made up
+
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)
+
+    case expand: OptionalExpand =>
+      cost(expand.left) + cardinality(expand) * expand.predicates.length * EXPRESSION_SELECTION_OVERHEAD_PER_ROW
+
+    case optional: Optional =>
+      cost(optional.inputPlan)
 
     case join: NodeHashJoin =>
       cost(join.left) +
       cost(join.right) +
       cardinality(join.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
       cardinality(join.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
+
+    case outerJoin: OuterHashJoin =>
+      cost(outerJoin.left) +
+      cost(outerJoin.right) +
+      cardinality(outerJoin.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
+      cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
   }
 
   private def cost(plan: LogicalPlan) = apply(plan)

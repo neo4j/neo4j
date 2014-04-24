@@ -506,7 +506,7 @@ public class TestLuceneBatchInsert
         }
     }
 
-    private final String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
+    private final String storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
     private BatchInserter inserter;
     private GraphDatabaseService db;
 

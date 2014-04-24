@@ -32,7 +32,7 @@ import org.neo4j.test.TargetDirectory;
 public class AsciiDocGeneratorTest
 {
     File directory = TargetDirectory.forTest( getClass() )
-            .directory( "testasciidocs", true );
+            .cleanDirectory( "testasciidocs" );
     String sectionName = "testsection";
     File sectionDirectory = new File( directory, sectionName );
 

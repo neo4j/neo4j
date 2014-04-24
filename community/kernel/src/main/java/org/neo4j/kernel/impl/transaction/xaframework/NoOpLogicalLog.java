@@ -46,7 +46,8 @@ public class NoOpLogicalLog extends XaLogicalLog
             {
                 return null;
             }
-        }, null, null, new Monitors(), logging, null, null, 10000l, null, null, Functions.<List<LogEntry>>identity() );
+        }, null, null, new Monitors(), logging, null, null, null, 10000l, null, null,
+                Functions.<List<LogEntry>>identity() );
 }
 
     @Override
@@ -62,7 +63,7 @@ public class NoOpLogicalLog extends XaLogicalLog
     }
 
     @Override
-    public synchronized int start( Xid xid, int masterId, int myId, long highestKnownCommittedTx ) throws XAException
+    public synchronized int start( Xid xid, int masterId, int myId, long highestKnownCommittedTx )
     {
         return 0;
     }

@@ -24,7 +24,7 @@ import commands.SortItem
 import symbols._
 import scala.math.signum
 
-class SortPipe(source: Pipe, sortDescription: List[SortItem])
+case class SortPipe(source: Pipe, sortDescription: List[SortItem])
               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with ExecutionContextComparer {
   def symbols = source.symbols
 

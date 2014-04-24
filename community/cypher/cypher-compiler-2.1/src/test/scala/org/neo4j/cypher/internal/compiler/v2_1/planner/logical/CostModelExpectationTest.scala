@@ -113,15 +113,15 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
           ),
           AllNodesScan("b")
         ),
-        "b", Direction.OUTGOING, Seq.empty, "c", "r1"
-      )( null )
+        "b", Direction.OUTGOING, Seq.empty, "c", "r1", SimplePatternLength
+      )( mockRel )
     )
 
     val cost2 = cost(
       Expand(
         AllNodesScan("a"),
-        "a", Direction.OUTGOING, Seq.empty, "d", "r2"
-      )( null )
+        "a", Direction.OUTGOING, Seq.empty, "d", "r2", SimplePatternLength
+      )( mockRel )
     )
 
     cost1 should be < cost2
@@ -130,7 +130,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   test("expand(select(all nodes scan)) < select(expand(all node scan))") {
     val statistics = newMockedStatistics
     when(statistics.nodesCardinality).thenReturn(1000)
-    when(statistics.degreeByLabelTypeAndDirection(RelTypeId(12), Direction.BOTH)).thenReturn(2.1)
+    when(statistics.degreeByRelationshipTypeAndDirection(RelTypeId(12), Direction.BOTH)).thenReturn(2.1)
     val cost = newMetricsFactory.newMetrics(statistics).cost
 
     val relTypeX: Seq[RelTypeName] = Seq(RelTypeName("x")(Some(RelTypeId(12))) _)
@@ -141,8 +141,8 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
           Seq(Equals(Property(Identifier("a") _, PropertyKeyName("name")() _) _, StringLiteral("Andres") _) _),
           AllNodesScan("a")
         ),
-        "a", Direction.BOTH, relTypeX, "start", "rel"
-      )( null )
+        "a", Direction.BOTH, relTypeX, "start", "rel", SimplePatternLength
+      )( mockRel )
     )
 
     val cost2 = cost(
@@ -150,8 +150,8 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
         Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_),
         Expand(
           AllNodesScan("start"),
-          "start", Direction.BOTH, relTypeX, "a", "rel"
-        )( null )
+          "start", Direction.BOTH, relTypeX, "a", "rel", SimplePatternLength
+        )( mockRel )
       )
     )
 

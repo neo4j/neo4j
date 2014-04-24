@@ -158,7 +158,7 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         thread.join( MILLISECONDS.convert( duration, unit ) );
         if ( thread.isAlive() )
         {
-            File dumpDirectory = targetDir.directory( "dump", true );
+            File dumpDirectory = targetDir.cleanDirectory( "dump" );
             dumpVmInfo( dumpDirectory );
             new DumpProcessInformation( new SystemOutLogging(), dumpDirectory ).doThreadDump(
                     stringContains( SubProcess.class.getSimpleName() ) );

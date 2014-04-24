@@ -60,15 +60,15 @@ public class TestClientThreadIsolation
     {
         final HighlyAvailableGraphDatabase master = (HighlyAvailableGraphDatabase) new
                 HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
-                        "master", true ).getAbsolutePath() ).
+                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).cleanDirectory(
+                        "master" ).getAbsolutePath() ).
                 setConfig( ClusterSettings.server_id, "1" ).
                 newGraphDatabase();
 
         final HighlyAvailableGraphDatabase slave1 = (HighlyAvailableGraphDatabase) new
                 HighlyAvailableGraphDatabaseFactory().
-                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).directory(
-                        "slave1", true ).getAbsolutePath() ).
+                newHighlyAvailableDatabaseBuilder( TargetDirectory.forTest( TestClientThreadIsolation.class ).cleanDirectory(
+                        "slave1" ).getAbsolutePath() ).
                 setConfig( ClusterSettings.cluster_server, "127.0.0.1:5002" ).
                 setConfig( ClusterSettings.initial_hosts, "127.0.0.1:5001" ).
                 setConfig( ClusterSettings.server_id, "2" ).

@@ -19,23 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
+
+import org.neo4j.cypher.internal.compiler.v2_1
+import v2_1._
+import v2_1.spi.{GraphStatistics, PlanContext}
+import v2_1.parser.{ParserMonitor, CypherParser}
+import v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SimplePatternLength, PatternRelationship, LogicalPlan, IdName}
+import v2_1.ast.Query
+import v2_1.planner.logical.Metrics._
+
+import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, LogicalPlan, IdName}
-import org.neo4j.cypher.internal.compiler.v2_1.Monitors
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
-import org.mockito.Mockito
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{CostModel, CardinalityModel, SelectivityModel}
+import org.neo4j.graphdb.Direction
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
-
-  import Mockito._
 
   val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
   val monitors = new Monitors(kernelMonitors)
@@ -43,8 +43,13 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
   val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
   val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
+  val mockRel = {
+    val a = IdName("a")
+    val b = IdName("b")
+    PatternRelationship(IdName("r"), (a,b), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+  }
 
-  class DummyMetricsFactory extends MetricsFactory {
+  class SpyableMetricsFactory extends MetricsFactory {
     def newSelectivityEstimator(statistics: GraphStatistics) =
       SimpleMetricsFactory.newSelectivityEstimator(statistics)
     def newCostModel(cardinality: CardinalityModel) =
@@ -54,14 +59,20 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   }
 
   def newMetricsFactory = SimpleMetricsFactory
-  def newMockedMetricsFactory = Mockito.spy(new DummyMetricsFactory)
+
+  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) = newMetricsFactory.newMetrics(stats)
+
+  def newMockedGraphStatistics = mock[GraphStatistics]
+
+  def newMockedMetricsFactory = spy(new SpyableMetricsFactory)
 
   def newMockedLogicalPlanContext(planContext: PlanContext,
                                   metrics: Metrics = self.mock[Metrics],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
-                                  queryGraph: QueryGraph = self.mock[QueryGraph]) =
+                                  queryGraph: QueryGraph = self.mock[QueryGraph],
+                                  strategy: PlanningStrategy = new GreedyPlanningStrategy()): LogicalPlanContext =
 
-    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph)
+    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
 
   implicit class RichLogicalPlan(plan: LogicalPlan) {
     def asTableEntry = plan.coveredIds -> plan
@@ -82,8 +93,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     val plan = mock[LogicalPlan]
     doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
     doReturn(ids).when(plan).coveredIds
-    doReturn(Seq.empty).when(plan).solvedPredicates
-    doReturn(patterns).when(plan).solvedPatterns
+    doReturn(QueryGraph(patternRelationships = patterns.toSet)).when(plan).solved
     plan
   }
 
@@ -95,7 +105,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, _) = astRewriter.rewrite(queryText, parsedStatement)
-    rewrittenStatement match {
+    planner.rewriteStatement(rewrittenStatement) match {
       case ast: Query =>
         val semanticTable = semanticChecker.check(queryText, rewrittenStatement)
         planner.produceLogicalPlan(ast, semanticTable)(planContext)
@@ -104,7 +114,9 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     }
   }
 
-  implicit def withPos[T](expr: InputPosition => T): T = expr(DummyPosition(0))
+  val pos = DummyPosition(0)
 
-  implicit def idName(name: String) = IdName(name)
+  implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
+
+  implicit def idName(name: String): IdName = IdName(name)
 }

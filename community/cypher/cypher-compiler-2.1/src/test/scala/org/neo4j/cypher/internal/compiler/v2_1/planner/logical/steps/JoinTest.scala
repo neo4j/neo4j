@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, Selections, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.InternalException
 
 class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private def createQueryGraph(rels: PatternRelationship*) = QueryGraph(Map.empty, Selections(), Set.empty, rels.toSet)
+  private def createQueryGraph(rels: PatternRelationship*) = QueryGraph(patternRelationships = rels.toSet)
   val aNode = IdName("a")
   val bNode = IdName("b")
   val cNode = IdName("c")

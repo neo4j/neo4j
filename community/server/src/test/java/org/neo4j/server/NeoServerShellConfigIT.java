@@ -25,7 +25,9 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.MapConfiguration;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.Settings;
+import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.ShellLobby;
@@ -38,7 +40,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 public class NeoServerShellConfigIT extends ExclusiveServerTestBase
 {
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     @Test
     public void shouldBeAbleToOverrideShellConfig()  throws Throwable
@@ -61,7 +63,7 @@ public class NeoServerShellConfigIT extends ExclusiveServerTestBase
                         ShellSettings.remote_shell_enabled.name(), Settings.TRUE,
                         ShellSettings.remote_shell_port.name(), "" + customPort );
             }
-        } );
+        }, DevNullLoggingService.DEV_NULL );
 
         // When
         server.start();
@@ -93,7 +95,7 @@ public class NeoServerShellConfigIT extends ExclusiveServerTestBase
             {
                 return stringMap();
             }
-        } );
+        }, DevNullLoggingService.DEV_NULL );
 
         // When
         server.start();

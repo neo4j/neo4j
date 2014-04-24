@@ -24,12 +24,22 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Logging service that is used for creating loggers with specific names.
+ *
+ * Individual loggers can end up in different targets potentially.
  */
 public interface Logging extends Lifecycle
 {
+    /**
+     * @param loggingClass the context for the return logger.
+     * @return a {@link StringLogger} that logs messages with the {@code loggingClass} as context.
+     */
     StringLogger getMessagesLog( Class loggingClass );
 
-    // TODO: In our primary implementations of this, console log seems to be the same thing as messages log.
-    // Consolidate these two methods into one getLogger() method instead.
+    /**
+     * 
+     * @param loggingClass
+     * @return a {@link ConsoleLogger} that logs message with the {@code loggingClass} as context.
+     * Messages logged with a {@link ConsoleLogger} will be logged to a console 
+     */
     ConsoleLogger getConsoleLog( Class loggingClass );
 }

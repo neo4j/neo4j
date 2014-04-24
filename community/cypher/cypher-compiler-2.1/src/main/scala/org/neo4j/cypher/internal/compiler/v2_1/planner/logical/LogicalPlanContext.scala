@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 case class LogicalPlanContext(planContext: PlanContext,
                               metrics: Metrics,
                               semanticTable: SemanticTable,
-                              queryGraph: QueryGraph) {
+                              queryGraph: QueryGraph,
+                              strategy: PlanningStrategy) {
 
   def statistics = planContext.statistics
   def cost = metrics.cost

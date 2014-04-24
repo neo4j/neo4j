@@ -28,7 +28,7 @@ iterator, the elseClause will get a chance to run.
 class IfElseIterator(input: Iterator[ExecutionContext],
                      ifClause: ExecutionContext => Iterator[ExecutionContext],
                      elseClause: ExecutionContext => Iterator[ExecutionContext],
-                     finallyClause: () => Unit)
+                     finallyClause: () => Unit = () => ())
   extends Iterator[ExecutionContext] {
   var resultIterator: Iterator[ExecutionContext] = Iterator.empty
 

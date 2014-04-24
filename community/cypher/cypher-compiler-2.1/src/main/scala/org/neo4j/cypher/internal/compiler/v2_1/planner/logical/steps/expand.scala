@@ -19,35 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, LogicalPlanContext, PlanTable}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, Identifier, Equals}
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable, LogicalPlanContext, CandidateGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, Selection, Expand, IdName}
 
-object expand {
+object expand extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
     val expandPlans = for {
       plan <- planTable.plans
       nodeId <- plan.coveredIds
       patternRel <- context.queryGraph.findRelationshipsEndingOn(nodeId)
-      if !plan.solvedPatterns.contains(patternRel) && patternRel.length.isSimple
-      dir = patternRel.directionRelativeTo(nodeId)
+      if !plan.solved.patternRelationships(patternRel)
     } yield {
+      val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)
+      val expandF = (otherSide: IdName) => Expand(plan, nodeId, dir, patternRel.types,
+                                                  otherSide, patternRel.name, patternRel.length)(patternRel)
+
       if (plan.coveredIds.contains(otherSide)) {
-        expandAndCheck(plan, nodeId, patternRel.types, dir, patternRel.name, otherSide.name, patternRel)
+        expandIntoAlreadyExistingNode(expandF, otherSide)
       }
       else
-        Expand(plan, nodeId, dir, patternRel.types, otherSide, patternRel.name)(patternRel)
+        expandF(otherSide)
     }
     CandidateList(expandPlans)
   }
@@ -62,17 +56,12 @@ object expand {
   is solved by something that looks like
   MATCH (a)-[r]->($TEMP) WHERE $TEMP = a
    */
-  private def expandAndCheck(source: LogicalPlan,
-                             fromNode: IdName,
-                             types: Seq[RelTypeName],
-                             dir: Direction,
-                             relName: IdName,
-                             otherSide: String,
-                             pattern:  PatternRelationship)(implicit context: LogicalPlanContext): LogicalPlan = {
-    val temp = IdName(otherSide + "$$$")
-    val expand = Expand(source, fromNode, dir, types, temp, relName)(pattern)
-    val left = Identifier(otherSide)(null)
+  private def expandIntoAlreadyExistingNode(f: IdName => Expand, otherSide: IdName)
+                                           (implicit context: LogicalPlanContext): LogicalPlan = {
+    val temp = IdName(otherSide.name + "$$$")
+    val expand = f(temp)
+    val left = Identifier(otherSide.name)(null)
     val right = Identifier(temp.name)(null)
-    Selection(Seq(Equals(left, right)(null)), expand)
+    Selection(Seq(Equals(left, right)(null)), expand, hideSelections = true)
   }
 }

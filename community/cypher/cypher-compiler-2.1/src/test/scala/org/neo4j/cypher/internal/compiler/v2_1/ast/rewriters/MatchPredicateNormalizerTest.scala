@@ -135,4 +135,20 @@ class MatchPredicateNormalizerTest extends CypherFunSuite {
 
     result should equal(expected)
   }
+
+  test("move single property from var length relationship to the where clause") {
+    val original = parser.parse("MATCH (n)-[r* {prop: 42}]->(b) RETURN n")
+    val expected = parser.parse("MATCH (n)-[r*]->(b) WHERE ALL(`  FRESHID9` in r where `  FRESHID9`.prop = 42) RETURN n")
+    val result = original.rewrite(topDown(PropertyPredicateNormalization))
+
+    result should equal(expected)
+  }
+
+  test("move multiple properties from var length relationship to the where clause") {
+    val original = parser.parse("MATCH (n)-[r* {prop: 42, p: 'aaa'}]->(b) RETURN n")
+    val expected = parser.parse("MATCH (n)-[r*]->(b) WHERE ALL(`  FRESHID9` in r where `  FRESHID9`.prop = 42 AND `  FRESHID9`.p = 'aaa') RETURN n")
+    val result = original.rewrite(topDown(PropertyPredicateNormalization))
+
+    result should equal(expected)
+  }
 }

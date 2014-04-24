@@ -30,11 +30,12 @@ import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
+import java.util.Arrays;
 import java.util.Map;
-
 import javax.transaction.Transaction;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -54,16 +55,16 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
+import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Factory;
-import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
+import org.neo4j.kernel.GraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
@@ -137,17 +138,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                                          Iterable<CacheProvider> cacheProviders,
                                          Iterable<TransactionInterceptorProvider> txInterceptorProviders )
     {
-        super( storeDir, params, SETTINGS_CLASSES, kernelExtensions, cacheProviders, txInterceptorProviders );
-        run();
+        this( storeDir, params, new GraphDatabaseDependencies( null,
+                Arrays.<Class<?>>asList( GraphDatabaseSettings.class, ClusterSettings.class, HaSettings.class ),
+                kernelExtensions, cacheProviders, txInterceptorProviders ) );
     }
 
-    public HighlyAvailableGraphDatabase( Config config, Function<Config, Logging> loggingProvider,
-                                         Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                         Iterable<CacheProvider> cacheProviders,
-                                         Iterable<TransactionInterceptorProvider> txInterceptorProviders )
+    public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
     {
-        super( config.registerSettingsClasses( SETTINGS_CLASSES ),
-               loggingProvider, kernelExtensions, cacheProviders, txInterceptorProviders );
+        super( storeDir, params, dependencies );
         run();
     }
 
@@ -203,9 +201,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected org.neo4j.graphdb.Transaction beginTx( ForceMode forceMode )
     {
-        // TODO first startup ever we don't have a proper db, so don't even serve read requests
-        // if this is a startup for where we have been a member of this cluster before we
-        // can server (possibly quite outdated) read requests.
         if (!availabilityGuard.isAvailable( stateSwitchTimeoutMillis ))
         {
             throw new TransactionFailureException( "Timeout waiting for database to allow new transactions. "
@@ -213,6 +208,17 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         }
 
         return super.beginTx( forceMode );
+    }
+
+    @Override
+    public IndexManager index()
+    {
+        if (!availabilityGuard.isAvailable( stateSwitchTimeoutMillis ))
+        {
+            throw new TransactionFailureException( "Timeout waiting for database to allow new transactions. "
+                    + availabilityGuard.describeWhoIsBlocking() );
+        }
+        return super.index();
     }
 
     @Override
@@ -423,7 +429,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging, requestContextFactory );
-        highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( clusterClient, masterDelegateInvocationHandler,
+        highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( clusterClient, clusterClient, masterDelegateInvocationHandler,
                 clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
                 config, logging, updateableSchemaState, kernelExtensions.listFactories(), monitors, requestContextFactory );
 

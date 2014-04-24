@@ -26,6 +26,7 @@ import org.apache.commons.io.filefilter.SuffixFileFilter;
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
+import java.nio.charset.StandardCharsets;
 
 /**
  * Parses AsciiDoc files with some special markup to produce Cypher tutorials.
@@ -124,12 +125,12 @@ public class Main
         try
         {
             String name = sourceFile.getName();
-            String input = FileUtils.readFileToString( sourceFile );
+            String input = FileUtils.readFileToString( sourceFile, StandardCharsets.UTF_8 );
             String output = CypherDoc.parse( input, sourceFile.getParentFile(), url );
 
             FileUtils.forceMkdir( destinationDir );
             File targetFile = FileUtils.getFile( destinationDir, name );
-            FileUtils.writeStringToFile( targetFile, output );
+            FileUtils.writeStringToFile( targetFile, output, StandardCharsets.UTF_8 );
         }
         catch ( TestFailureException failure )
         {

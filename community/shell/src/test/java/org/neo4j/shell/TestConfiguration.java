@@ -23,37 +23,37 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.impl.CollectingOutput;
-import org.neo4j.shell.impl.RemoteClient;
+import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.shell.ShellLobby.NO_INITIAL_SESSION;
-import static org.neo4j.shell.ShellLobby.remoteLocation;
 
 public class TestConfiguration
 {
-    private GraphDatabaseService db;
+    private GraphDatabaseAPI db;
+    private ShellServer server;
     private ShellClient client;
-    
+
     @Before
     public void before() throws Exception
     {
-        db = new TestGraphDatabaseFactory()
+        db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .newImpermanentDatabaseBuilder()
-                .setConfig( "enable_remote_shell", "true" )
                 .newGraphDatabase();
-        client = new RemoteClient( NO_INITIAL_SESSION, remoteLocation(), new CollectingOutput() );
+        server = new GraphDatabaseShellServer( db );
+        client = ShellLobby.newClient( server );
     }
 
     @After
     public void after() throws Exception
     {
         client.shutdown();
+        server.shutdown();
         db.shutdown();
     }
-    
+
     @Test
     public void deprecatedConfigName() throws Exception
     {

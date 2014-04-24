@@ -99,7 +99,7 @@ public class LuceneIndexIT
     private DirectoryFactory dirFactory;
 
     @Rule
-    public TargetDirectory.TestDirectory testDir = TargetDirectory.cleanTestDirForTest( getClass() );
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
 
     @Before
     public void before() throws Exception

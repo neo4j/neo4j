@@ -25,6 +25,8 @@ import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -44,21 +46,24 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.IteratorUtil.asPrimitiveIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveIntIterator;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class TxStateTransactionDataViewTest
 {
-    private ThreadToStatementContextBridge bridge = mock(ThreadToStatementContextBridge.class);
-    private Statement stmt = mock(Statement.class);
-    private ReadOperations ops = mock(ReadOperations.class);
+    private final ThreadToStatementContextBridge bridge = mock(ThreadToStatementContextBridge.class);
+    private final Statement stmt = mock(Statement.class);
+    private final ReadOperations ops = mock(ReadOperations.class);
     private final OldTxStateBridge oldTxState = mock( OldTxStateBridge.class );
-    private TxState state = new TxStateImpl( oldTxState, mock( PersistenceManager.class),
+    private final TxState state = new TxStateImpl( oldTxState, mock( PersistenceManager.class),
                                              mock( TxState.IdGeneration.class) );
 
 
@@ -90,8 +95,8 @@ public class TxStateTransactionDataViewTest
         state.nodeDoDelete( 2l );
         when(ops.nodeGetAllCommittedProperties( 1l )).thenReturn( IteratorUtil.<DefinedProperty>emptyIterator() );
         when(ops.nodeGetAllCommittedProperties( 2l )).thenReturn( asList( Property.stringProperty( 1, "p" ) ).iterator() );
-        when(ops.nodeGetCommittedLabels( 1l )).thenReturn( emptyPrimitiveIntIterator() );
-        when(ops.nodeGetCommittedLabels( 2l )).thenReturn( asPrimitiveIterator( 15 ) );
+        when(ops.nodeGetCommittedLabels( 1l )).thenReturn( PrimitiveIntCollections.emptyIterator() );
+        when(ops.nodeGetCommittedLabels( 2l )).thenReturn( PrimitiveIntCollections.iterator( 15 ) );
         when(ops.propertyKeyGetName( 1 )).thenReturn( "key" );
         when(ops.labelGetName( 15 )).thenReturn( "label" );
 
@@ -138,7 +143,7 @@ public class TxStateTransactionDataViewTest
         Node node = mock( Node.class );
         when(node.getId()).thenReturn( 1l );
         when(ops.nodeGetAllCommittedProperties( 1l )).thenReturn( IteratorUtil.<DefinedProperty>emptyIterator() );
-        when(ops.nodeGetCommittedLabels( 1l )).thenReturn( IteratorUtil.emptyPrimitiveIntIterator() );
+        when(ops.nodeGetCommittedLabels( 1l )).thenReturn( PrimitiveIntCollections.emptyIterator() );
 
         // When & Then
         assertThat( snapshot().isDeleted( node ), equalTo( true ) );
@@ -243,7 +248,7 @@ public class TxStateTransactionDataViewTest
         // Given
         state.nodeDoAddLabel( 2, 1l );
         when(ops.labelGetName( 2 )).thenReturn( "theLabel" );
-        when(ops.nodeGetCommittedLabels( 1l )).thenReturn( emptyPrimitiveIntIterator() );
+        when(ops.nodeGetCommittedLabels( 1l )).thenReturn( PrimitiveIntCollections.emptyIterator() );
 
         // When
         Iterable<LabelEntry> labelEntries = snapshot().assignedLabels();

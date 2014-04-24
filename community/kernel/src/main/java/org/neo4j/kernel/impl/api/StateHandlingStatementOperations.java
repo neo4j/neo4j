@@ -25,11 +25,14 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.PrimitiveLongPredicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -61,18 +64,13 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 import static java.util.Collections.emptyList;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveIntIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.filter;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
-import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
 public class StateHandlingStatementOperations implements
@@ -182,12 +180,12 @@ public class StateHandlingStatementOperations implements
         {
             if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
             {
-                return IteratorUtil.emptyPrimitiveIntIterator();
+                return PrimitiveIntCollections.emptyIterator();
             }
 
             if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
             {
-                return toPrimitiveIntIterator(
+                return PrimitiveIntCollections.toPrimitiveIterator(
                         state.txState().nodeStateLabelDiffSets( nodeId ).getAdded().iterator() );
             }
 
@@ -203,7 +201,7 @@ public class StateHandlingStatementOperations implements
     {
         if( state.hasTxStateWithChanges() && state.txState().nodeIsAddedInThisTx( nodeId ))
         {
-            return emptyPrimitiveIntIterator();
+            return PrimitiveIntCollections.emptyIterator();
         }
         return storeLayer.nodeGetLabels(nodeId);
     }
@@ -525,7 +523,7 @@ public class StateHandlingStatementOperations implements
     {
         if ( isNumberOrArray( value ) )
         {
-            return filter( exactMatch( state, index.getPropertyKeyId(), value ), committed );
+            return PrimitiveLongCollections.filter( committed, exactMatch( state, index.getPropertyKeyId(), value ) );
         }
         return committed;
     }
@@ -944,7 +942,7 @@ public class StateHandlingStatementOperations implements
             PrimitiveLongIterator stored;
             if( txState.nodeIsAddedInThisTx( nodeId ) )
             {
-                stored = emptyPrimitiveLongIterator();
+                stored = PrimitiveLongCollections.emptyIterator();
             }
             else
             {
@@ -964,7 +962,7 @@ public class StateHandlingStatementOperations implements
             PrimitiveLongIterator stored;
             if( txState.nodeIsAddedInThisTx( nodeId ) )
             {
-                stored = emptyPrimitiveLongIterator();
+                stored = PrimitiveLongCollections.emptyIterator();
             }
             else
             {
@@ -1033,7 +1031,7 @@ public class StateHandlingStatementOperations implements
             TxState tx = statement.txState();
             if(tx.nodeIsDeletedInThisTx( nodeId ))
             {
-                return IteratorUtil.emptyPrimitiveIntIterator();
+                return PrimitiveIntCollections.emptyIterator();
             }
 
             if(tx.nodeIsAddedInThisTx( nodeId ))
@@ -1062,7 +1060,7 @@ public class StateHandlingStatementOperations implements
                 }
             }
 
-            return IteratorUtil.toPrimitiveIntIterator( types.iterator() );
+            return PrimitiveIntCollections.toPrimitiveIterator( types.iterator() );
         }
         else
         {

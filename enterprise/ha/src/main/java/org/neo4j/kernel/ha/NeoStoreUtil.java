@@ -21,11 +21,12 @@ package org.neo4j.kernel.ha;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 import static java.lang.String.format;
@@ -39,7 +40,7 @@ public class NeoStoreUtil
     private final long storeVersion;
     private final long firstGraphProp;
     private File file;
-    
+
     public static void main( String[] args )
     {
         if ( args.length < 1 )
@@ -49,17 +50,21 @@ public class NeoStoreUtil
         }
         System.out.println( new NeoStoreUtil( new File( args[0] ) ) );
     }
-    
+
     public NeoStoreUtil( File storeDir )
     {
-        RandomAccessFile randomAccessFile = null;
+        this( storeDir, new DefaultFileSystemAbstraction() );
+    }
+
+    public NeoStoreUtil( File storeDir, FileSystemAbstraction fs )
+    {
+        StoreChannel channel = null;
         try
         {
-            randomAccessFile = new RandomAccessFile( file = neoStoreFile( storeDir ), "r" );
-            FileChannel fileChannel = randomAccessFile.getChannel();
+            channel = fs.open( neoStoreFile( storeDir ), "r" );
             int recordsToRead = 6;
             ByteBuffer buf = ByteBuffer.allocate( recordsToRead*NeoStore.RECORD_SIZE );
-            if ( fileChannel.read( buf ) != recordsToRead*NeoStore.RECORD_SIZE )
+            if ( channel.read( buf ) != recordsToRead*NeoStore.RECORD_SIZE )
             {
                 throw new RuntimeException( "Unable to read neo store header information" );
             }
@@ -77,11 +82,11 @@ public class NeoStoreUtil
         }
         finally
         {
-            if ( randomAccessFile != null )
+            if ( channel != null )
             {
                 try
                 {
-                    randomAccessFile.close();
+                    channel.close();
                 }
                 catch ( IOException e )
                 {
@@ -90,7 +95,7 @@ public class NeoStoreUtil
             }
         }
     }
-    
+
     private long nextRecord( ByteBuffer buf )
     {
         buf.get(); // in use byte
@@ -101,32 +106,32 @@ public class NeoStoreUtil
     {
         return creationTime;
     }
-    
+
     public long getStoreId()
     {
         return randomId;
     }
-    
+
     public long getLastCommittedTx()
     {
         return txId;
     }
-    
+
     public long getLogVersion()
     {
         return logVersion;
     }
-    
+
     public long getStoreVersion()
     {
         return storeVersion;
     }
-    
+
     public StoreId asStoreId()
     {
         return new StoreId( creationTime, randomId, storeVersion );
     }
-    
+
     @Override
     public String toString()
     {
@@ -150,7 +155,12 @@ public class NeoStoreUtil
 
     public static boolean storeExists( File storeDir )
     {
-        return neoStoreFile( storeDir ).exists();
+        return storeExists( storeDir, new DefaultFileSystemAbstraction() );
+    }
+
+    public static boolean storeExists( File storeDir, FileSystemAbstraction fs )
+    {
+        return fs.fileExists( neoStoreFile( storeDir ) );
     }
 
     private static File neoStoreFile( File storeDir )

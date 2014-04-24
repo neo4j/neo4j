@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8" standalone="no"?>
+<!DOCTYPE svg PUBLIC "-//W3C//DTD SVG 1.1//EN" "http://www.w3.org/Graphics/SVG/1.1/DTD/svg11.dtd">
+<svg xmlns="http://www.w3.org/2000/svg" version="1.1" width="10552" height="10352" id="Complete_graph_K7">
+<g style="fill:none;stroke:black;stroke-width:70" transform="translate(276, 300)">
+  <polyline points="5000,0 9875,6113 2831,9505 1091,1883 8909,1883 7169,9505 125,6113 5000,0 7169,9505 1091,1883 9875,6113 125,6113 8909,1883 2831,9505"/>
+  <polyline points="2831,9505 5000,0 8909,1883 9875,6113 7169,9505 2831,9505 125,6113 1091,1883 5000,0"/>  
+<g style="fill:blue;stroke:black;stroke-width:70">
+  <circle cx="2831" cy="9505" r="200"/>
+  <circle cx="5000" cy="0" r="200"/>
+  <circle cx="8909" cy="1883" r="200"/>
+  <circle cx="9875" cy="6113" r="200"/>
+  <circle cx="7169" cy="9505" r="200"/>
+  <circle cx="2831" cy="9505" r="200"/>
+  <circle cx="125" cy="6113" r="200"/>
+  <circle cx="1091" cy="1883" r="200"/>
+</g></g>
+</svg>

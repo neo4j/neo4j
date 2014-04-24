@@ -20,7 +20,6 @@
 package org.neo4j.server.database;
 
 import org.neo4j.cypher.javacompat.ExecutionEngine;
-import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -30,9 +29,9 @@ public interface Database extends Lifecycle
 {
     interface Factory
     {
-
-        Database newDatabase( Config config, Function<Config, Logging> loggingProvider );
+        Database newDatabase( Config config, Logging logging );
     }
+
     public String getLocation();
 
     public GraphDatabaseAPI getGraph();
@@ -40,4 +39,6 @@ public interface Database extends Lifecycle
     ExecutionEngine executionEngine();
 
     public abstract boolean isRunning();
+
+    public Logging getLogging();
 }

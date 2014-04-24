@@ -24,7 +24,7 @@ import org.neo4j.graphdb.Node
 
 class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matchers with NewPlannerTestSupport{
 
-  test("should_filter_relationships_with_properties") {
+  test("should filter relationships with properties") {
     // given
     relate(createNode(), createNode(), "id" -> 1)
     relate(createNode(), createNode(), "id" -> 2)
@@ -36,7 +36,7 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
     result.size should be(1)
   }
 
-  test("should_filter_var_length_relationships_with_properties") {
+  test("should filter var length relationships with properties") {
     // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
 
     def createPath(value: Any): Node = {

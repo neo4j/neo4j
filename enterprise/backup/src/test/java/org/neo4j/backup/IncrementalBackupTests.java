@@ -52,7 +52,7 @@ public class IncrementalBackupTests
     @Before
     public void before() throws Exception
     {
-        File base = TargetDirectory.forTest( getClass() ).directory( testName.getMethodName(), true );
+        File base = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
         serverPath = new File( base, "server" );
         backupPath = new File( base, "backup" );
     }

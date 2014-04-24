@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.HeuristicRollbackException;
 import javax.transaction.NotSupportedException;
@@ -39,11 +40,9 @@ import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
@@ -94,6 +93,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     }
 
     private ThreadLocalWithSize<TransactionImpl> txThreadMap;
+//    private ThreadLocalWithSize<TransactionImpl> txThreadMap = new ThreadLocalWithSize<>();
 
     private final File txLogDir;
     private File logSwitcherFileName = null;
@@ -104,10 +104,6 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private final Map<RecoveredBranchInfo, Boolean> branches = new HashMap<>();
     private volatile TxLog txLog = null;
-    private boolean tmOk = false;
-    private Throwable tmNotOkCause;
-
-    private final KernelPanicEventGenerator kpe;
 
     private final AtomicInteger startedTxCount = new AtomicInteger( 0 );
     private final AtomicInteger comittedTxCount = new AtomicInteger( 0 );
@@ -123,33 +119,34 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     private Throwable recoveryError;
     private final TransactionStateFactory stateFactory;
     private final Factory<byte[]> xidGlobalIdFactory;
+    private final KernelHealth kernelHealth;
     private final Monitors monitors;
 
     private final Monitor monitor;
 
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
-                      KernelPanicEventGenerator kpe,
                       StringLogger log,
                       FileSystemAbstraction fileSystem,
                       TransactionStateFactory stateFactory,
                       Factory<byte[]> xidGlobalIdFactory,
+                      KernelHealth kernelHealth,
                       Monitors monitors
     )
     {
-        this( txLogDir, xaDataSourceManager, kpe, log, fileSystem, stateFactory, new Monitor.Adapter(),
-              xidGlobalIdFactory, monitors
+        this( txLogDir, xaDataSourceManager, log, fileSystem, stateFactory, new Monitor.Adapter(),
+              xidGlobalIdFactory, kernelHealth, monitors
         );
     }
 
     public TxManager( File txLogDir,
                       XaDataSourceManager xaDataSourceManager,
-                      KernelPanicEventGenerator kpe,
                       StringLogger log,
                       FileSystemAbstraction fileSystem,
                       TransactionStateFactory stateFactory,
                       Monitor monitor,
                       Factory<byte[]> xidGlobalIdFactory,
+                      KernelHealth kernelHealth,
                       Monitors monitors
     )
     {
@@ -157,10 +154,10 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         this.xaDataSourceManager = xaDataSourceManager;
         this.fileSystem = fileSystem;
         this.log = log;
-        this.kpe = kpe;
         this.stateFactory = stateFactory;
         this.monitor = monitor;
         this.xidGlobalIdFactory = xidGlobalIdFactory;
+        this.kernelHealth = kernelHealth;
         this.monitors = monitors;
     }
 
@@ -301,15 +298,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     synchronized void setTmNotOk( Throwable cause )
     {
-        if ( !tmOk )
-        {
-            return;
-        }
-
-        tmOk = false;
-        tmNotOkCause = cause;
-        log.error( "setting TM not OK", cause );
-        kpe.generateEvent( ErrorState.TX_MANAGER_NOT_OK, tmNotOkCause );
+        kernelHealth.panic( cause );
     }
 
     @Override
@@ -343,17 +332,11 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
     private void assertTmOk() throws SystemException
     {
-        if ( !tmOk )
+        if ( !recovered )
         {
-            SystemException ex = new SystemException( "TM has encountered some problem, "
-                    + "please perform necessary action (tx recovery/restart)" );
-            if(tmNotOkCause != null)
-            {
-                ex = Exceptions.withCause( ex, tmNotOkCause );
-            }
-
-            throw ex;
+            throw new SystemException( "TxManager not recovered" );
         }
+        kernelHealth.assertHealthy( SystemException.class );
     }
 
     // called when a resource gets enlisted
@@ -415,6 +398,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         finally
         {
+            // Call after completion as a safety net
+            tx.doAfterCompletion();
             monitor.txCommitted( new XidImpl( tx.getGlobalId(), new byte[0] ) );
             txThreadMap.remove();
             if ( successful )
@@ -461,6 +446,15 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             try
             {
                tx.doCommit();
+            }
+            catch ( CommitNotificationFailedException e )
+            {
+                // Let this pass through. Catching this exception here will still have the exception
+                // propagate out to the user (wrapped in a TransactionFailureException), but will not
+                // set this transaction manager in "not OK" state.
+                // At the time of adding this, this approach was chosen over throwing an XAException
+                // with a specific error code since no error code seemed suitable.
+                log.warn( "Commit notification failed: " + e );
             }
             catch ( XAException e )
             {
@@ -525,15 +519,9 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
             catch ( Throwable e )
             {
                 setTmNotOk( e );
-                String commitError;
-                if ( commitFailureCause != null )
-                {
-                    commitError = "error in commit: " + commitFailureCause;
-                }
-                else
-                {
-                    commitError = "error code in commit: " + xaErrorCode;
-                }
+                String commitError = commitFailureCause != null ?
+                        "error in commit: " + commitFailureCause :
+                        "error code in commit: " + xaErrorCode;
                 String rollbackErrorCode = "Unknown error code";
                 if ( e instanceof XAException )
                 {
@@ -704,6 +692,8 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         }
         finally
         {
+            // Call after completion as a safety net
+            tx.doAfterCompletion();
             txThreadMap.remove();
             tx.finish( false );
         }
@@ -725,6 +715,13 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     @Override
     public Transaction getTransaction() throws SystemException
     {
+        // It's pretty important that we check the tmOk state here. This method is called from getForceMode
+        // which in turn is called from XaResourceManager.commit(Xid, boolean) and so on all the way up to
+        // TxManager.commit(Thread, TransactionImpl), wherein the monitor lock on TxManager is held!
+        // It's very important that we check the tmOk state, during commit, while holding the lock on the
+        // TxManager, as we could otherwise get into a situation where a transaction crashes the database
+        // during commit, while another makes it past the check and then procedes to rotate the log, making
+        // the crashed transaction unrecoverable.
         assertTmOk();
         return txThreadMap.get();
     }
@@ -874,7 +871,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
 
             getTxLog().truncate();
             recovered = true;
-            tmOk = true;
+            kernelHealth.healed();
         }
         catch ( Throwable t )
         {
@@ -955,6 +952,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
     {
         try
         {
+            // The call to getTransaction() is important. See the comment in getTransaction().
             return ((TransactionImpl)getTransaction()).getForceMode();
         }
         catch ( SystemException e )

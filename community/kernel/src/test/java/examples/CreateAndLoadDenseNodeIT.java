@@ -83,7 +83,7 @@ public class CreateAndLoadDenseNodeIT
         return count;
     }
 
-    private final File storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( false );
+    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
     private GraphDatabaseService db;
 
     @Before

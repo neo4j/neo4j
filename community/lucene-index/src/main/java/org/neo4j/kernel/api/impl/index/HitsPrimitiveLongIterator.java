@@ -21,10 +21,10 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.index.impl.lucene.Hits;
-import org.neo4j.kernel.impl.util.AbstractPrimitiveLongIterator;
 
-public class HitsPrimitiveLongIterator extends AbstractPrimitiveLongIterator
+public class HitsPrimitiveLongIterator extends PrimitiveLongBaseIterator
 {
     private final Hits hits;
     private final int size;
@@ -36,26 +36,22 @@ public class HitsPrimitiveLongIterator extends AbstractPrimitiveLongIterator
         this.hits = hits;
         this.documentStructure = documentStructure;
         size = hits.length();
-        computeNext();
     }
-    
+
     @Override
-    protected void computeNext()
+    protected boolean fetchNext()
     {
         if ( index < size )
         {
             try
             {
-                next( documentStructure.getNodeId( hits.doc( index++ ) ) );
+                return next( documentStructure.getNodeId( hits.doc( index++ ) ) );
             }
             catch ( IOException e )
             {
                 throw new RuntimeException( e );
             }
         }
-        else
-        {
-            endReached();
-        }
+        return false;
     }
 }

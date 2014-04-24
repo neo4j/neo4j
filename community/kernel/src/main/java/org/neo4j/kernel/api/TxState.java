@@ -22,6 +22,8 @@ package org.neo4j.kernel.api;
 import java.util.Iterator;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -30,8 +32,6 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.util.DiffSets;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 
 /**
  * Kernel transaction state, please see {@link org.neo4j.kernel.impl.api.state.TxStateImpl} for details.

@@ -63,7 +63,8 @@ public class TestHighPerformanceCacheRemoveSizeDiverge
         try
         {
         graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().
-                newEmbeddedDatabaseBuilder( forTest(TestHighPerformanceCacheRemoveSizeDiverge.class ).graphDbDir( true ).getAbsolutePath()).
+                newEmbeddedDatabaseBuilder( forTest(TestHighPerformanceCacheRemoveSizeDiverge.class ).makeGraphDbDir(
+                ).getAbsolutePath()).
                 setConfig( stringMap( GraphDatabaseSettings.cache_type.name(), HighPerformanceCacheProvider.NAME ) ).
                 newGraphDatabase();
         }

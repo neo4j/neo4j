@@ -22,63 +22,53 @@ package org.neo4j.server.advanced.helpers;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.Configurator;
-import org.neo4j.server.configuration.PropertyFileConfigurator;
-import org.neo4j.server.configuration.validation.DatabaseLocationMustBeSpecifiedRule;
-import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.preflight.PreFlightTasks;
-import org.neo4j.server.rest.paging.LeaseManager;
 import org.neo4j.server.rest.web.DatabaseActions;
 
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-import static org.neo4j.server.ServerTestUtils.createTempDir;
 import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
+import static org.neo4j.server.helpers.LoggingFactory.given;
 
 public class AdvancedServerBuilder extends CommunityServerBuilder
 {
+    public AdvancedServerBuilder( Logging logging )
+    {
+        super( given( logging ) );
+    }
+
+    public static AdvancedServerBuilder server( Logging logging )
+    {
+        return new AdvancedServerBuilder( logging );
+    }
+
     public static AdvancedServerBuilder server()
     {
-        return new AdvancedServerBuilder();
+        return new AdvancedServerBuilder( null );
     }
 
     @Override
     public AdvancedNeoServer build() throws IOException
     {
-        if ( dbDir == null )
-        {
-            this.dbDir = createTempDir().getAbsolutePath();
-        }
-        final File configFile = createPropertiesFiles();
+        return (AdvancedNeoServer) super.build();
+    }
 
-        if ( preflightTasks == null )
-        {
-            preflightTasks = new PreFlightTasks()
-            {
-                @Override
-                public boolean run()
-                {
-                    return true;
-                }
-            };
-        }
-
-        return new TestAdvancedNeoServer( new PropertyFileConfigurator( new Validator(
-                new DatabaseLocationMustBeSpecifiedRule() ), configFile ), configFile );
-
+    @Override
+    public AdvancedNeoServer build( File configFile, Configurator configurator, Logging logging )
+    {
+        return new TestAdvancedNeoServer( configurator, configFile, logging );
     }
 
     private class TestAdvancedNeoServer extends AdvancedNeoServer
     {
         private final File configFile;
 
-        public TestAdvancedNeoServer( PropertyFileConfigurator propertyFileConfigurator, File configFile )
+        public TestAdvancedNeoServer( Configurator propertyFileConfigurator, File configFile, Logging logging )
         {
-            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB )  );
+            super( propertyFileConfigurator, lifecycleManagingDatabase( persistent ? EMBEDDED : IN_MEMORY_DB ), logging );
             this.configFile = configFile;
         }
 
@@ -91,14 +81,7 @@ public class AdvancedServerBuilder extends CommunityServerBuilder
         @Override
         protected DatabaseActions createDatabaseActions()
         {
-            Clock clockToUse = (clock != null) ? clock : SYSTEM_CLOCK;
-
-            return new DatabaseActions(
-                    new LeaseManager( clockToUse ),
-                    ForceMode.forced,
-                    configurator.configuration().getBoolean(
-                            Configurator.SCRIPT_SANDBOXING_ENABLED_KEY,
-                            Configurator.DEFAULT_SCRIPT_SANDBOXING_ENABLED ), database.getGraph() );
+            return createDatabaseActionsObject( database, configurator );
         }
 
         @Override

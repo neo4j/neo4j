@@ -35,7 +35,7 @@ import org.neo4j.kernel.api.exceptions.schema.{AlreadyConstrainedException, Alre
 import org.neo4j.kernel.api.index.{IndexDescriptor, InternalIndexState}
 import org.neo4j.helpers.collection.IteratorUtil
 import org.neo4j.cypher.internal.compiler.v2_1.spi._
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator
+import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 

@@ -52,7 +52,7 @@ public class MultipleClusterTest
     @Test
     public void runTwoClusters() throws Throwable
     {
-        File root = TargetDirectory.forTest( getClass() ).directory( "cluster", true );
+        File root = TargetDirectory.forTest( getClass() ).cleanDirectory( "cluster" );
 
         ClusterManager clusterManager = new ClusterManager(
                 fromXml( getClass().getResource( "/twoclustertest.xml" ).toURI() ), root, MapUtil.stringMap() );

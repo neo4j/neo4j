@@ -27,6 +27,6 @@ trait GraphStatistics {
   def nodesWithLabelCardinality(labelId: LabelId): Double
   def nodesWithLabelSelectivity(labelId: LabelId): Double
   def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Double
-  def degreeByLabelTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Double
-  def degreeByLabelTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double
+  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Double
+  def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double
 }

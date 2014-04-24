@@ -28,21 +28,26 @@ import java.util.concurrent.TimeoutException;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadRule;
 
 import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.core.AllOf.allOf;
 import static org.junit.Assert.*;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.toJavaIterator;
 
 public class RelationshipIT extends KernelIntegrationTest
 {
@@ -193,6 +198,96 @@ public class RelationshipIT extends KernelIntegrationTest
             assertRels( statement.nodeGetRelationships( refNode, Direction.OUTGOING, relType2, relType1 ), theRel );
 
             commit();
+        }
+    }
+
+    @Test
+    public void askingForNonExistantReltypeOnDenseNodeShouldNotCorruptState() throws Exception
+    {
+        // Given a dense node with one type of rels
+        long[] rels = new long[200];
+        long refNode;
+        int relTypeTheNodeDoesUse, relTypeTheNodeDoesNotUse;
+        {
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+
+            relTypeTheNodeDoesUse = statement.relationshipTypeGetOrCreateForName( "Type1" );
+            relTypeTheNodeDoesNotUse = statement.relationshipTypeGetOrCreateForName( "Type2" );
+
+            refNode = statement.nodeCreate();
+            long otherNode = statement.nodeCreate();
+
+            for ( int i = 0; i < rels.length; i++ )
+            {
+                rels[i] = statement.relationshipCreate( relTypeTheNodeDoesUse, refNode, otherNode );
+            }
+            commit();
+        }
+
+        // Given the cache is empty
+        this.db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+
+        {
+            ReadOperations stmt = readOperationsInNewTransaction();
+
+            // When I've asked for rels that the node does not have
+            assertRels( stmt.nodeGetRelationships(refNode, Direction.INCOMING, relTypeTheNodeDoesNotUse) );
+
+            // Then the node should still load the real rels
+            assertRels( stmt.nodeGetRelationships(refNode, Direction.BOTH, relTypeTheNodeDoesUse), rels );
+        }
+    }
+
+    @Test
+    public void shouldHandleInterleavedSmallAndLargeRelGroupLoading() throws Exception
+    {
+        int grabSize = Integer.parseInt(GraphDatabaseSettings.relationship_grab_size.getDefaultValue());
+
+        // Given a dense node with one type of rels
+        long[] largeRelGroup = new long[grabSize + 1];
+        long[] smallRelGroup = new long[1];
+
+        long refNode;
+        int largeGroupType, smallGroupType;
+        {
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
+
+            largeGroupType = statement.relationshipTypeGetOrCreateForName( "Type1" );
+            smallGroupType = statement.relationshipTypeGetOrCreateForName( "Type2" );
+
+            refNode = statement.nodeCreate();
+            long otherNode = statement.nodeCreate();
+
+            for ( int i = 0; i < largeRelGroup.length; i++ )
+            {
+                largeRelGroup[i] = statement.relationshipCreate( largeGroupType, refNode, otherNode );
+            }
+            for ( int i = 0; i < smallRelGroup.length; i++ )
+            {
+                smallRelGroup[i] = statement.relationshipCreate( smallGroupType, refNode, otherNode );
+            }
+
+            commit();
+        }
+
+        // Given the cache is empty
+        this.db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+
+        {
+            ReadOperations stmt = readOperationsInNewTransaction();
+
+            // When I exhaust up to the grab size
+            PrimitiveLongIterator iter = stmt.nodeGetRelationships( refNode, Direction.BOTH, largeGroupType );
+            for ( int i = 0; i < grabSize - 1; i++ )
+            {
+                assertTrue(iter.hasNext());
+                iter.next();
+            }
+
+            // Then both the small rel group, the remaining rels in the iterator should work
+            assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, smallGroupType ) );
+            assertThat( count( toJavaIterator( iter ) ), equalTo(2) );
+            assertRels( stmt.nodeGetRelationships( refNode, Direction.BOTH, largeGroupType ), largeRelGroup );
         }
     }
 

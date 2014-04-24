@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
 import commands.expressions._
-import commands.expressions.Identifier.isNamed
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
 import data.SimpleVal
 import symbols._
 

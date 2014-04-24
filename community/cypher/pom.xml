@@ -2,7 +2,7 @@
          xsi:schemaLocation="http://maven.apache.org/POM/4.0.0
                       http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <modelVersion>4.0.0</modelVersion>
-  
+
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
@@ -41,6 +41,7 @@
     <module>cypher</module>
     <module>docs/cypher-docs</module>
     <module>docs/graphgist</module>
+    <module>docs/refcard-tests</module>
   </modules>
 
   <repositories>
@@ -76,6 +77,10 @@
           </execution>
         </executions>
         <configuration>
+        <args>
+            <arg>-Xmax-classfile-name</arg>
+            <arg>100</arg>
+        </args>
           <jvmArgs>
             <jvmArg>-Xms64m</jvmArg>
             <jvmArg>-Xmx1024m</jvmArg>

@@ -846,7 +846,7 @@ public class TestBatchInsert
     @Test
     public void messagesLogGetsClosed() throws Exception
     {
-        String storeDir = TargetDirectory.forTest( getClass() ).graphDbDir( true ).getAbsolutePath();
+        String storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
         BatchInserter inserter = BatchInserters.inserter( storeDir, new DefaultFileSystemAbstraction(),
                 stringMap() );
         inserter.shutdown();

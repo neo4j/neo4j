@@ -17,6 +17,22 @@ o Adds support for labels in transaction event handlers
 o Fixes an issue with tx log reading in severely damaged log files.
 o Fixes a JVM deadlock issue between committing and a reading thread
 o Can now handle more gracefully a larger set of failed index states
+o Logical logs are now kept, by default, for 7 days to make backup more likely to choose incremental.
+o Fix a cache poisoning issue where large properties would keep a reference to a closed
+  store after a HA role switch. Manifested as NullPointerException when reading very large
+  properties in rare cases.
+o Logical logs are now kept, by default, for 7 days to make backup more likely to choose incremental.
+o Fixes issue where store migration forgets about legacy indexes
+o Datasource specific transaction application now respects global TM state
+o Fixes an issue where indexes that have been dropped would fail recovery
+  if commands to activate them were run in recovery.
+o Fixes byte count monitoring
+o Fixes issue with proper update of indexes that came from improper
+  command execution order
+o Fixes memory leak in XaResourceManager that could lead recovered
+  transaction application to delay noticeably
+o Fixes null pointer exceptions coming from LazyProperties being
+  half loaded while a datasource restart happens
 
 2.0.1
 -----

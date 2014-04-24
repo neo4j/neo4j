@@ -41,6 +41,8 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -49,7 +51,6 @@ import org.neo4j.kernel.api.direct.NodeLabelRange;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider.FullStoreChangeStream;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.test.TargetDirectory;
@@ -70,7 +71,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyPrimitiveLongIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
@@ -416,7 +416,7 @@ public class LuceneLabelScanStoreTest
         assertTrue( "Unexpected nodes in scan store " + nodeSet, nodeSet.isEmpty() );
     }
 
-    private final File dir = TargetDirectory.forTest( getClass() ).directory( "lucene", true );
+    private final File dir = TargetDirectory.forTest( getClass() ).cleanDirectory( "lucene" );
     private final Random random = new Random();
     private DirectoryFactory directoryFactory = new DirectoryFactory.InMemoryDirectoryFactory();
     private LifeSupport life;
@@ -469,7 +469,7 @@ public class LuceneLabelScanStoreTest
             @Override
             public PrimitiveLongIterator labelIds()
             {
-                return emptyPrimitiveLongIterator();
+                return PrimitiveLongCollections.emptyIterator();
             }
         };
     }

@@ -13,11 +13,11 @@ CSV files can be stored on the database server and are then accessible using a +
 Alternatively, +LOAD CSV+ also supports accessing CSV files via +HTTPS+, +HTTP+, and +FTP+.
 
 Using the following Cypher queries, we'll create a node for each person, a node for each movie and a relationship between the two with a property denoting the role.
-We’re also keeping track of the country in which each movie was made. 
+We're also keeping track of the country in which each movie was made. 
 
 //console
 
-Let’s start with importing the persons:
+Let's start with importing the persons:
 
 [source,cypher]
 ----
@@ -47,7 +47,7 @@ We have this data in a separate file.
 We'll index the id property on Person and Movie nodes.
 The id property is a temporary property used to look up the appropriate nodes for a relationship when importing the third file.
 By indexing the id property, node lookup (e.g. by +MATCH+) will be much faster.
-Since we expect the ids to be unique in each set, we’ll create a unique constraint.
+Since we expect the ids to be unique in each set, we'll create a unique constraint.
 This protects us from invalid data since constraint creation will fail if there are multiple nodes with the same id property.
 Creating a unique constraint also creates a unique index (which is faster than a regular index).
 

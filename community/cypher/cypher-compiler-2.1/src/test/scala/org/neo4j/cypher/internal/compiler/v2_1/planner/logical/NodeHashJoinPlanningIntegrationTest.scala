@@ -23,28 +23,10 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, NotEquals}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.NotEquals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.mockito.Mockito._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.ast.NotEquals
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.ast.NotEquals
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
 class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -52,11 +34,11 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
     implicit val planContext = newMockedPlanContext
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan                    => 200
-      case Expand(_, IdName("b"), _, _, _, _) => 10000
-      case _: Expand                          => 10
-      case _: NodeHashJoin                    => 20
-      case _                                  => Double.MaxValue
+      case _: AllNodesScan                      => 200
+      case Expand(_, IdName("b"), _, _, _, _,_) => 10000
+      case _: Expand                            => 10
+      case _: NodeHashJoin                      => 20
+      case _                                    => Double.MaxValue
     })
     implicit val planner = newPlanner(factory)
 
@@ -65,8 +47,8 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         Selection(
           Seq(NotEquals(Identifier("r1")_,Identifier("r2")_)_),
           NodeHashJoin("b",
-            Expand( AllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1" )( null ),
-            Expand( AllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2" )( null )
+            Expand(AllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength)(mockRel),
+            Expand(AllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(mockRel)
           )
         ),
         expressions = Map("b" -> Identifier("b")_)

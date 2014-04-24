@@ -25,13 +25,15 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
-import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.VersionedHashMap;
+
+import static org.neo4j.collection.primitive.PrimitiveIntCollections.iterator;
 
 /**
  * Maintains relationships that have been added for a specific node.
@@ -305,14 +307,23 @@ public class RelationshipChangesForNode
         {
             types.addAll(loops.keySet());
         }
-        return IteratorUtil.toPrimitiveIntIterator( types.iterator() );
+        return PrimitiveIntCollections.toPrimitiveIterator( types.iterator() );
     }
 
     public void clear()
     {
-        if(outgoing != null) outgoing.clear();
-        if(incoming != null) incoming.clear();
-        if(loops != null) loops.clear();
+        if(outgoing != null)
+        {
+            outgoing.clear();
+        }
+        if(incoming != null)
+        {
+            incoming.clear();
+        }
+        if(loops != null)
+        {
+            loops.clear();
+        }
     }
 
     private Map<Integer /* Type */, Set<Long /* Id */>> outgoing()
@@ -369,7 +380,7 @@ public class RelationshipChangesForNode
             {
                 return new PrefetchingIterator<Set<Long>>()
                 {
-                    private PrimitiveIntIterator iterTypes = IteratorUtil.asPrimitiveIterator(types);
+                    private final PrimitiveIntIterator iterTypes = iterator( types );
 
                     @Override
                     protected Set<Long> fetchNextOrNull()

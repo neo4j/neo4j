@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
+
 import java.io.File;
 import java.util.List;
 
@@ -30,11 +32,10 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 
 /**
 * TODO
@@ -49,10 +50,11 @@ public class XaFactory
     private final Logging logging;
     private final RecoveryVerifier recoveryVerifier;
     private final LogPruneStrategy pruneStrategy;
+    private final KernelHealth kernelHealth;
 
     public XaFactory( Config config, TxIdGenerator txIdGenerator, AbstractTransactionManager txManager,
                       FileSystemAbstraction fileSystemAbstraction, Monitors monitors, Logging logging,
-                      RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy )
+                      RecoveryVerifier recoveryVerifier, LogPruneStrategy pruneStrategy, KernelHealth kernelHealth )
     {
         this.config = config;
         this.txIdGenerator = txIdGenerator;
@@ -62,6 +64,7 @@ public class XaFactory
         this.logging = logging;
         this.recoveryVerifier = recoveryVerifier;
         this.pruneStrategy = pruneStrategy;
+        this.kernelHealth = kernelHealth;
     }
 
     public XaContainer newXaContainer( final XaDataSource xaDataSource, File logicalLog,
@@ -102,7 +105,8 @@ public class XaFactory
                 interceptor = Functions.identity();
             }
             log = new XaLogicalLog( logicalLog, rm, commandReaderFactory, commandWriterFactory, tf, fileSystemAbstraction,
-                    monitors, logging, pruneStrategy, stateFactory, rotateAtSize, injectedTxValidator, interceptor, transactionTranslator );
+                    monitors, logging, pruneStrategy, stateFactory, kernelHealth, rotateAtSize, injectedTxValidator,
+                    interceptor, transactionTranslator );
         }
 
         // TODO These setters should be removed somehow
