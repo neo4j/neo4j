@@ -430,8 +430,12 @@ public class FileUtils
         }
         catch ( IOException e )
         {
-            if ( SystemUtils.isOsWindows() && mayBeWindowsMemoryMappedFileReleaseProblem( e ) && tries < WINDOWS_RETRY_COUNT )
+            if ( SystemUtils.isOsWindows() && mayBeWindowsMemoryMappedFileReleaseProblem( e ) )
             {
+                if ( tries >= WINDOWS_RETRY_COUNT )
+                {
+                    throw new MaybeWindowsMemoryMappedFileReleaseProblem(e);
+                }
                 waitAndThenTriggerGC();
                 deleteFileWithRetries( file, tries + 1 );
             }
@@ -445,5 +449,13 @@ public class FileUtils
     private static boolean mayBeWindowsMemoryMappedFileReleaseProblem( IOException e )
     {
         return e.getMessage().contains( "The process cannot access the file because it is being used by another process." );
+    }
+
+    public static class MaybeWindowsMemoryMappedFileReleaseProblem extends IOException
+    {
+        public MaybeWindowsMemoryMappedFileReleaseProblem( IOException e )
+        {
+            super(e);
+        }
     }
 }

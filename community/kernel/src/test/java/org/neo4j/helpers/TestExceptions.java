@@ -19,10 +19,11 @@
  */
 package org.neo4j.helpers;
 
+import org.junit.Test;
+
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
-import org.junit.Test;
 
 public class TestExceptions
 {
@@ -82,7 +83,7 @@ public class TestExceptions
         assertTrue( Exceptions.contains( cause, "words", NullPointerException.class ) );
         assertFalse( Exceptions.contains( cause, "not", NullPointerException.class ) );
     }
-    
+
     private static class LevelOneException extends Exception
     {
         public LevelOneException( String message )
