@@ -98,6 +98,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case SemiApply(outer, inner) =>
           SemiApplyPipe(buildPipe(outer), buildPipe(inner))
 
+        case apply@SelectOrSemiApply(outer, inner, predicate) =>
+          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), predicate.asCommandPredicate)
+
         case Sort(left, sortItems) =>
           SortPipe(buildPipe(left), sortItems.map(_.asCommandSortItem).toList)
 

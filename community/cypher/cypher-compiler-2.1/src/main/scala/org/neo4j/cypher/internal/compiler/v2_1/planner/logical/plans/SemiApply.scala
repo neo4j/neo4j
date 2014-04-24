@@ -27,7 +27,10 @@ case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(val exists: Exists)
 
   val solved = {
     val newSelections = Selections(outer.solved.selections.predicates + exists.predicate)
-
-    outer.solved.copy(subQueries = outer.solved.subQueries :+ exists, selections = newSelections)
+    outer.solved.copy(
+      subQueries = outer.solved.subQueries :+ exists,
+      selections = newSelections,
+      argumentIds = exists.queryGraph.argumentIds
+    )
   }
 }

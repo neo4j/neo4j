@@ -74,7 +74,10 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       cost(applyOp.outer) + cardinality(applyOp.outer) * cost(applyOp.inner)
 
     case applyOp: SemiApply =>
-      cost(applyOp.outer) + cardinality(applyOp.outer) * cost(applyOp.inner) * .001 // TODO: This is entirely made up
+      cost(applyOp.outer) + cardinality(applyOp.outer) * cost(applyOp.inner) * .001
+
+    case applyOp: SelectOrSemiApply =>
+      cost(applyOp.outer) + cardinality(applyOp.outer) * (cost(applyOp.inner) * .001 + EXPRESSION_SELECTION_OVERHEAD_PER_ROW)
 
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)

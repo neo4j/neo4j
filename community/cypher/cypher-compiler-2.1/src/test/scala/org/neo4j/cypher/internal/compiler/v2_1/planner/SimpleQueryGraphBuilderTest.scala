@@ -474,5 +474,99 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.sortItems should equal(Seq(sortItem))
   }
 
+  test("match a where a.prop = 42 OR (a)-->() return a") {
+    // Given
+    val qg = buildQueryGraph("match a where a.prop = 42 OR (a)-->() return a", normalize = true)
+
+    // Then inner pattern query graph
+    val relName = "  UNNAMED32"
+    val nodeName = "  UNNAMED36"
+    val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, Direction.OUTGOING) _,
+      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
+    ) _) _)
+    val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val exp2: Expression = Equals(
+      Property(Identifier("a")_, PropertyKeyName("prop")(None)_)_,
+      SignedIntegerLiteral("42")_
+    )_
+    val orPredicate = Predicate(Set(IdName("a")), Or(exp1, exp2)_)
+    val exists = HoldsOrExists(orPredicate, exp2, QueryGraph(
+        patternRelationships = Set(relationship),
+        patternNodes = Set("a", nodeName),
+        argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
+
+    val selections = Selections(Set(orPredicate))
+
+    qg.selections should equal(selections)
+    qg.patternNodes should equal(Set(IdName("a")))
+    qg.subQueries should equal(Seq(exists))
+  }
+
+  test("match a where (a)-->() OR a.prop = 42 return a") {
+    // Given
+    val qg = buildQueryGraph("match a where (a)-->() OR a.prop = 42 return a", normalize = true)
+
+    // Then inner pattern query graph
+    val relName = "  UNNAMED17"
+    val nodeName = "  UNNAMED21"
+    val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, Direction.OUTGOING) _,
+      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
+    ) _) _)
+    val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val exp2: Expression = Equals(
+      Property(Identifier("a") _, PropertyKeyName("prop")(None) _) _,
+      SignedIntegerLiteral("42") _
+    ) _
+    val orPredicate = Predicate(Set(IdName("a")), Or(exp1, exp2)_)
+    val exists = HoldsOrExists(orPredicate, exp2, QueryGraph(
+        patternRelationships = Set(relationship),
+        patternNodes = Set("a", nodeName),
+        argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
+
+    val selections = Selections(Set(orPredicate))
+
+    qg.selections should equal(selections)
+    qg.patternNodes should equal(Set(IdName("a")))
+    qg.subQueries should equal(Seq(exists))
+  }
+
+  test("match a where a.prop = 21 OR (a)-->() OR a.prop = 42 return a") {
+    // Given
+    val qg = buildQueryGraph("match a where a.prop = 21 OR (a)-->() OR a.prop = 42 return a", normalize = true)
+
+    // Then inner pattern query graph
+    val relName = "  UNNAMED32"
+    val nodeName = "  UNNAMED36"
+    val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
+      NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
+      RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, Direction.OUTGOING) _,
+      NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
+    ) _) _)
+    val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val exp2: Expression = Equals(
+      Property(Identifier("a") _, PropertyKeyName("prop")(None) _) _,
+      SignedIntegerLiteral("42") _
+    )_
+    val exp3: Expression = Equals(
+      Property(Identifier("a") _, PropertyKeyName("prop")(None) _) _,
+      SignedIntegerLiteral("21") _
+    )_
+    val orPredicate = Predicate(Set(IdName("a")), Or(exp1, Or(exp3, exp2)_)_)
+    val exists = HoldsOrExists(orPredicate, Or(exp3, exp2)_, QueryGraph(
+        patternRelationships = Set(relationship),
+        patternNodes = Set("a", nodeName),
+        argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
+
+    val selections = Selections(Set(orPredicate))
+
+    qg.selections should equal(selections)
+    qg.patternNodes should equal(Set(IdName("a")))
+    qg.subQueries should equal(Seq(exists))
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)(None)_
 }

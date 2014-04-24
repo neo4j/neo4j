@@ -27,7 +27,7 @@ class SemiApplyPipeTest extends CypherFunSuite {
 
   def newMonitor = mock[PipeMonitor]
 
-  test("should only let through") {
+  test("should only let through the one that matches") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 

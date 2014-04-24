@@ -21,9 +21,20 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, Exists}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SimplePatternLength, SemiApply, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.HoldsOrExists
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.Exists
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.HoldsOrExists
+import org.neo4j.cypher.internal.compiler.v2_1.planner.Predicate
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SemiApply
+import org.neo4j.cypher.internal.compiler.v2_1.planner.Exists
+import org.neo4j.helpers.ThisShouldNotHappenError
 
 case class selectPatternPredicates(simpleSelection: PlanTransformer) extends PlanTransformer {
   private object candidateListProducer extends CandidateGenerator[PlanTable] {
@@ -33,16 +44,34 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
              lhs <- planTable.plans if applicable(lhs, pattern))
         yield {
           val rhs = context.strategy.plan(context.copy(queryGraph = pattern.queryGraph))
-          SemiApply(lhs, rhs)(pattern)
+          pattern match {
+            case pattern: Exists =>
+              SemiApply(lhs, rhs)(pattern)
+            case pattern: HoldsOrExists =>
+              SelectOrSemiApply(lhs, rhs, pattern.predicate)(pattern)
+          }
         }
+
       CandidateList(applyCandidates)
     }
 
-    private def applicable(outerPlan: LogicalPlan, inner: Exists) = {
-      val providedIds = outerPlan.coveredIds
-      val hasDependencies = inner.queryGraph.argumentIds.forall(providedIds.contains)
-      val isSolved = outerPlan.solved.selections.contains(inner.predicate.exp)
-      hasDependencies && !isSolved
+    private def applicable(outerPlan: LogicalPlan, inner: SubQuery) = {
+      inner match {
+        case e: Exists => {
+          val providedIds = outerPlan.coveredIds
+          val hasDependencies = inner.queryGraph.argumentIds.forall(providedIds.contains)
+          val isSolved = outerPlan.solved.selections.contains(e.predicate.exp)
+          hasDependencies && !isSolved
+        }
+
+        case e: HoldsOrExists => {
+          val providedIds = outerPlan.coveredIds
+          val queryHasDependencies = inner.queryGraph.argumentIds.forall(providedIds.contains)
+          val predicateHasDependencies = e.orPredicate.hasDependenciesMet(providedIds)
+          val isSolved = outerPlan.solved.selections.contains(e.orPredicate.exp)
+          queryHasDependencies && predicateHasDependencies && !isSolved
+        }
+      }
     }
   }
 

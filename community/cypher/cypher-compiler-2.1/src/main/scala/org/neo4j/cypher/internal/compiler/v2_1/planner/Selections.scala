@@ -23,15 +23,18 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
-case class Predicate(dependencies: Set[IdName], exp:Expression)
+case class Predicate(dependencies: Set[IdName], exp:Expression) {
+  def hasDependenciesMet(symbols: Set[IdName]): Boolean =
+    (dependencies -- symbols).isEmpty
+}
 
 case class Selections(predicates: Set[Predicate] = Set.empty) {
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
-    case Predicate(deps, predicate) if (deps -- ids).isEmpty => predicate
+    case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
   }.toSeq
 
   def predicatesAndDependenciesGiven(ids: Set[IdName]): Set[(Set[IdName], Expression)] = predicates.collect {
-    case Predicate(deps, predicate) if (deps -- ids).isEmpty => (deps, predicate)
+    case p@Predicate(deps, predicate) if p.hasDependenciesMet(ids) => (deps, predicate)
   }
 
   def flatPredicates: Seq[Expression] =
