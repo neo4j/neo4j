@@ -143,7 +143,7 @@ public class PersistenceWindowPoolRaceTestIT
             {
                 while ( mailbox.get() == null )
                 {
-                    long id = random.nextLong() % maxId;
+                    long id = Math.abs(random.nextLong() % maxId);
                     PersistenceWindow window = pwp.acquire( id, OperationType.WRITE );
                     window.getOffsettedBuffer( id ).put( (byte) (0xFF & random.nextInt()) );
                     pwp.release( window );
