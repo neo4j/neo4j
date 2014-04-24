@@ -103,7 +103,7 @@ terms of the relevant Commercial Agreement.
         </dependency>
         <dependency>
           <groupId>org.neo4j.doc</groupId>
-          <artifactId>neo4j-cypherdoc</artifactId>
+          <artifactId>neo4j-graphgist</artifactId>
           <version>${project.version}</version>
         </dependency>
       </dependencies>
