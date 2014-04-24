@@ -21,14 +21,15 @@ package org.neo4j.kernel.ha;
 
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.com.ComException;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -44,13 +45,14 @@ public class UpdatePuller implements Lifecycle
     private final Config config;
     private final JobScheduler scheduler;
     private final StringLogger logger;
+    private final CappedOperation<Pair<String, ? extends Exception>> cappedLogger;
     private boolean pullUpdates = false;
     private ScheduledThreadPoolExecutor updatePuller;
 
     public UpdatePuller( HaXaDataSourceManager xaDataSourceManager, Master master,
                          RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
                          AvailabilityGuard availabilityGuard, LastUpdateTime lastUpdateTime, Config config,
-                         JobScheduler scheduler, StringLogger logger )
+                         JobScheduler scheduler, final StringLogger logger )
     {
         this.xaDataSourceManager = xaDataSourceManager;
         this.master = master;
@@ -61,6 +63,15 @@ public class UpdatePuller implements Lifecycle
         this.config = config;
         this.scheduler = scheduler;
         this.logger = logger;
+        this.cappedLogger = new CappedOperation<Pair<String, ? extends Exception>>(
+                CappedOperation.count( 10 ))
+        {
+            @Override
+            protected void triggered( Pair<String, ? extends Exception> event )
+            {
+                logger.warn( event.first(), event.other() );
+            }
+        };
     }
 
     public void pullUpdates()
@@ -82,8 +93,6 @@ public class UpdatePuller implements Lifecycle
             updatePuller = new ScheduledThreadPoolExecutor( 1 );
             updatePuller.scheduleWithFixedDelay( new Runnable()
             {
-                private final AtomicInteger comExceptionCounter = new AtomicInteger(0);
-
                 @Override
                 public void run()
                 {
@@ -97,14 +106,7 @@ public class UpdatePuller implements Lifecycle
                     }
                     catch ( ComException e )
                     {
-                        // Throttle these
-                        if( comExceptionCounter.getAndIncrement() % 10 == 0 )
-                        {
-                            logger.warn( "Pull updates failed due to network error, there have been " +
-                                    comExceptionCounter.get() + " of these exceptions since the previous log message " +
-                                    "on this topic.", e );
-                            comExceptionCounter.set( 1 );
-                        }
+                        cappedLogger.event( Pair.of( "Pull updates failed due to network error.", e ) );
                     }
                     catch ( Exception e )
                     {
