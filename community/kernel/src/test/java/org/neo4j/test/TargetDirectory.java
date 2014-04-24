@@ -62,7 +62,16 @@ public class TargetDirectory
                 @Override
                 public void evaluate() throws Throwable
                 {
-                    base.evaluate();
+                    boolean success = false;
+                    try
+                    {
+                        base.evaluate();
+                        success = true;
+                    }
+                    finally
+                    {
+                        complete( success );
+                    }
                 }
             };
         }
@@ -72,6 +81,30 @@ public class TargetDirectory
         {
             String subdirName = subdir == null ? "<uninitialized>" : subdir.toString();
             return format( "%s[%s]", getClass().getSimpleName(), subdirName );
+        }
+
+        private void complete( boolean success )
+        {
+            if ( success && subdir != null )
+            {
+                try
+                {
+                    recursiveDelete( subdir );
+                }
+                catch ( RuntimeException e )
+                {
+                    if ( e.getCause() != null &&
+                            e.getCause() instanceof FileUtils.MaybeWindowsMemoryMappedFileReleaseProblem )
+                    {
+                        System.err.println( "Failed to delete test directory, maybe due to Windows memory-mapped file problem" );
+                    }
+                    else
+                    {
+                        throw e;
+                    }
+                }
+            }
+            subdir = null;
         }
     }
 
