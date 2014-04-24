@@ -1,5 +1,25 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.1.0-M02
+------------
+Kernel
+o Widens recoverable failure scenarios for schema indexes
+o Fix for recovery of schema changes in the case of 2PC transactions
+o Compile on Java8. Fixes #2149
+o Reduce synchronization in createTranasction path
+o Made transaction service more resilient to user code leaking transactions.
+o Performance improvements for upgrade process.
+o Introduce new Locks API, and the Forseti lock manager
+
+HA
+o Clarify the error message for when releasing locks claim prior to a master-switch
+o Reduce network overhead of locking in HA
+o Fix of issue with state bookkeeping for reporting instance role
+
+Cluster
+o Throttles debug output of clustering code in messages.log
+o Fix issue with cluster bricking if specific message lost when master leaves
+
 2.1.0-M01
 ---------
 Cypher:
