@@ -24,11 +24,11 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.Random;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Rule;
@@ -137,13 +137,13 @@ public class PersistenceWindowPoolRaceTestIT
         @Override
         public void run()
         {
-            ThreadLocalRandom random = ThreadLocalRandom.current();
+            Random random = new Random();
 
             try
             {
                 while ( mailbox.get() == null )
                 {
-                    long id = random.nextLong( 0, maxId );
+                    long id = random.nextLong() % maxId;
                     PersistenceWindow window = pwp.acquire( id, OperationType.WRITE );
                     window.getOffsettedBuffer( id ).put( (byte) (0xFF & random.nextInt()) );
                     pwp.release( window );
