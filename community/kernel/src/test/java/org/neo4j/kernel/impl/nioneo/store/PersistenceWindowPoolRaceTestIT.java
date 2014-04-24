@@ -50,9 +50,7 @@ public class PersistenceWindowPoolRaceTestIT
     {
         ExecutorService executor = Executors.newCachedThreadPool();
 
-
         File file = new File( testDir.directory(), "test.file.db" );
-        file.deleteOnExit();
 
         int blockSize = 512;
         int maxId = 10000;
@@ -110,6 +108,7 @@ public class PersistenceWindowPoolRaceTestIT
         } while ( observedFailure == null && System.currentTimeMillis() < deadline );
         executor.shutdown();
         mailbox.compareAndSet( null, STOP_SIGNAL );
+        raf.close();
 
         if ( observedFailure != null )
         {
