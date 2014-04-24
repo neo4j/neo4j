@@ -40,9 +40,12 @@ public interface JobScheduler extends Lifecycle
         indexPopulation,
         masterTransactionPushing,
         serverTransactionTimeout,
+        pullUpdates,
     }
 
     void schedule( Group group, Runnable job );
 
     void scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit );
+
+    void scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit );
 }
