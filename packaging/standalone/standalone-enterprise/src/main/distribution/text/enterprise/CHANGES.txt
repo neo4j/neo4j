@@ -20,6 +20,26 @@ Cluster
 o Throttles debug output of clustering code in messages.log
 o Fix issue with cluster bricking if specific message lost when master leaves
 
+Cypher:
+o Add a new cost based planner
+o To the new planner, added:
+  - All nodes scan
+  - Cartesian product
+  - Apply
+  - Relationship by id
+  - Expand
+  - Node by id
+  - Node by label
+  - Node by index seek
+  - Hash join
+  - Optional
+  - Projection
+  - Selection
+  - SemiApply
+  - Sort
+  - Named paths
+o Fix problem where LOAD CSV stops indexes from being used
+
 2.1.0-M01
 ---------
 Cypher:

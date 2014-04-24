@@ -10,6 +10,26 @@ o Reduce synchronization in createTranasction path
 o Made transaction service more resilient to user code leaking transactions.
 o Performance improvements for upgrade process.
 
+Cypher:
+o Add a new cost based planner
+o To the new planner, added:
+  - All nodes scan
+  - Cartesian product
+  - Apply
+  - Relationship by id
+  - Expand
+  - Node by id
+  - Node by label
+  - Node by index seek
+  - Hash join
+  - Optional
+  - Projection
+  - Selection
+  - SemiApply
+  - Sort
+  - Named paths
+o Fix problem where LOAD CSV stops indexes from being used
+
 2.1.0-M01
 ---------
 Cypher:
