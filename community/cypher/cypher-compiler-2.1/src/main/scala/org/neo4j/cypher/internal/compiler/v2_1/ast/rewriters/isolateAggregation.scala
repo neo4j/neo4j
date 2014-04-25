@@ -59,7 +59,7 @@ case object isolateAggregation extends Rewriter {
           }(originalExpressions)
 
           val withReturnItems: Seq[ReturnItem] = expressionsToGoToWith.map {
-            case id:Identifier => UnaliasedReturnItem(id, id.name)(id.position)
+            case id:Identifier => AliasedReturnItem(id, id)(id.position)
             case e             => AliasedReturnItem(e, Identifier("  T$" + e.position.offset)(e.position))(e.position)
           }
           val pos = c.position

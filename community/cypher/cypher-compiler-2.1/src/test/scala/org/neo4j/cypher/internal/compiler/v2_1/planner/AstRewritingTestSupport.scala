@@ -17,28 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
+import org.neo4j.cypher.internal.commons.CypherTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, DummyPosition, parser}
+import org.neo4j.cypher.internal.compiler.v2_1.parser.ParserFixture
 
+trait AstRewritingTestSupport extends CypherTestSupport {
 
-object expandStar extends Rewriter {
+  val parser = ParserFixture.parser
 
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  val pos = DummyPosition(0)
 
-  private val instance: Rewriter = Rewriter.lift {
-    case x: ReturnAll if x.seenIdentifiers.nonEmpty =>
-
-      val identifiers = x.seenIdentifiers.get.filter(isNamed).toSeq.sorted
-
-      val returnItems: Seq[ReturnItem] = identifiers.map {
-        id =>
-          val ident = Identifier(id)(x.position)
-          AliasedReturnItem(ident, ident)(x.position)
-      }.toSeq
-
-      ListedReturnItems(returnItems)(x.position)
-  }
+  implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 }
