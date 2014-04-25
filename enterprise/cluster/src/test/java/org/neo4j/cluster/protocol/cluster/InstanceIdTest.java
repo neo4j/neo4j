@@ -32,7 +32,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeoutException;
 
 import org.junit.Test;
-import org.neo4j.cluster.ClusterAssertion;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.VerifyInstanceConfiguration;
 
@@ -94,12 +93,6 @@ public class InstanceIdTest
     public void substituteFailedNode() throws InterruptedException, ExecutionException, TimeoutException,
             URISyntaxException
     {
-        ClusterAssertion assertion = ClusterAssertion.basedOn( new int[]{1, 2, 3, 3} );
-        assertion = assertion.joins( 1, 2, 3);
-        assertion = assertion.elected( 1, "coordinator" );
-        assertion = assertion.failed( 3 );
-        assertion = assertion.joins( 4 );
-
         List<URI> correctMembers = new ArrayList<URI>();
         correctMembers.add( URI.create( "server1" ) );
         correctMembers.add( URI.create( "server2" ) );

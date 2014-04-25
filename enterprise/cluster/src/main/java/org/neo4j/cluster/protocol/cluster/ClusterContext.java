@@ -60,9 +60,15 @@ public interface ClusterContext
 
     void left( final InstanceId node );
 
+    @Deprecated
     void elected( final String roleName, final InstanceId instanceId );
 
+    void elected( String roleWon, InstanceId winner, InstanceId elector, long version );
+
+    @Deprecated
     void unelected( final String roleName, final InstanceId instanceId );
+
+    void unelected( String roleLost, InstanceId loser, InstanceId elector, long version );
 
     ClusterConfiguration getConfiguration();
 
@@ -99,4 +105,12 @@ public interface ClusterContext
     boolean isCurrentlyAlive( InstanceId joiningId );
 
     long getLastDeliveredInstanceId();
+
+    org.neo4j.cluster.InstanceId getLastElector();
+
+    void setLastElector( InstanceId lastElector );
+
+    long getLastElectorVersion();
+
+    void setLastElectorVersion( long lastElectorVersion );
 }
