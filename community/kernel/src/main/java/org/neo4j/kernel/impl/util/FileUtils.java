@@ -29,69 +29,50 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.charset.Charset;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.LinkedList;
-import java.util.List;
-import java.util.Stack;
-import java.util.regex.Pattern;
+import java.nio.file.Files;
+import java.nio.file.FileVisitResult;
+import java.nio.file.Path;
+import java.nio.file.SimpleFileVisitor;
+import java.nio.file.attribute.BasicFileAttributes;
 
 import org.neo4j.graphdb.NotFoundException;
 
 public class FileUtils
 {
-    private static int WINDOWS_RETRY_COUNT = 3;
+    private static int WINDOWS_RETRY_COUNT = 5;
 
     public static void deleteRecursively( File directory ) throws IOException
     {
-        Stack<File> stack = new Stack<>();
-        List<File> temp = new LinkedList<>();
-        stack.push( directory.getAbsoluteFile() );
-        while ( !stack.isEmpty() )
+        if ( ! directory.exists() )
         {
-            File top = stack.pop();
-            File[] files = top.listFiles();
-            if ( files != null )
-            {
-                for ( File child : files )
-                {
-                    if ( child.isFile() )
-                    {
-                        if ( !deleteFile( child ) )
-                        {
-                            throw new IOException( "Failed to delete " + child.getCanonicalPath() );
-                        }
-                    }
-                    else
-                    {
-                        temp.add( child );
-                    }
-                }
-            }
-            files = top.listFiles();
-            if ( files == null || files.length == 0 )
-            {
-                if ( !deleteFile( top ) )
-                {
-                    throw new IOException( "Failed to delete " + top.getCanonicalPath() );
-                }
-            }
-            else
-            {
-                stack.push( top );
-                for ( File f : temp )
-                {
-                    stack.push( f );
-                }
-            }
-            temp.clear();
+            return;
         }
+        Files.walkFileTree( directory.toPath(), new SimpleFileVisitor<Path>()
+        {
+            @Override
+            public FileVisitResult visitFile( Path file, BasicFileAttributes attrs ) throws IOException
+            {
+                deleteFileWithRetries( file, 0 );
+                return FileVisitResult.CONTINUE;
+            }
+
+            @Override
+            public FileVisitResult postVisitDirectory( Path dir, IOException e ) throws IOException
+            {
+                if ( e != null )
+                {
+                    throw e;
+                }
+                Files.delete( dir );
+                return FileVisitResult.CONTINUE;
+            }
+        } );
     }
 
     public static boolean deleteFile( File file )
@@ -108,35 +89,11 @@ public class FileUtils
             if ( !deleted )
             {
                 count++;
-                waitSome();
+                waitAndThenTriggerGC();
             }
         }
         while ( !deleted && count <= WINDOWS_RETRY_COUNT );
         return deleted;
-    }
-
-    public static File[] deleteFiles( File directory, String regexPattern )
-            throws IOException
-    {
-        Pattern pattern = Pattern.compile( regexPattern );
-        Collection<File> deletedFiles = new ArrayList<>();
-        File[] files = directory.listFiles();
-        if ( files == null )
-        {
-            throw new IllegalArgumentException( directory + " is not a directory" );
-        }
-        for ( File file : files )
-        {
-            if ( pattern.matcher( file.getName() ).find() )
-            {
-                if ( !file.delete() )
-                {
-                    throw new IOException( "Couldn't delete file '" + file.getAbsolutePath() + "'" );
-                }
-                deletedFiles.add( file );
-            }
-        }
-        return deletedFiles.toArray( new File[deletedFiles.size()] );
     }
 
     /**
@@ -169,7 +126,7 @@ public class FileUtils
 
         if ( toMove.isDirectory() )
         {
-            target.mkdirs();
+            Files.createDirectories( target.toPath() );
             copyRecursively( toMove, target );
             deleteRecursively( toMove );
         }
@@ -226,7 +183,7 @@ public class FileUtils
             if ( !renamed )
             {
                 count++;
-                waitSome();
+                waitAndThenTriggerGC();
             }
         }
         while ( !renamed && count <= WINDOWS_RETRY_COUNT );
@@ -268,7 +225,10 @@ public class FileUtils
         }
     }
 
-    private static void waitSome()
+    /*
+     * See http://bugs.java.com/bugdatabase/view_bug.do?bug_id=4715154.
+     */
+    private static void waitAndThenTriggerGC()
     {
         try
         {
@@ -343,7 +303,7 @@ public class FileUtils
             File toFile = new File( toDirectory, fromFile.getName() );
             if ( fromFile.isDirectory() )
             {
-                toFile.mkdir();
+                Files.createDirectories( toFile.toPath() );
                 copyRecursively( fromFile, toFile, filter );
             }
             else
@@ -357,7 +317,8 @@ public class FileUtils
     {
         if ( !target.exists() )
         {
-            target.getParentFile().mkdirs();
+            Files.createDirectories( target.getParentFile().toPath() );
+            //noinspection ResultOfMethodCallIgnored
             target.createNewFile();
         }
 
@@ -458,6 +419,43 @@ public class FileUtils
         finally
         {
             reader.close();
+        }
+    }
+
+    private static void deleteFileWithRetries( Path file, int tries ) throws IOException
+    {
+        try
+        {
+            Files.delete( file );
+        }
+        catch ( IOException e )
+        {
+            if ( SystemUtils.isOsWindows() && mayBeWindowsMemoryMappedFileReleaseProblem( e ) )
+            {
+                if ( tries >= WINDOWS_RETRY_COUNT )
+                {
+                    throw new MaybeWindowsMemoryMappedFileReleaseProblem(e);
+                }
+                waitAndThenTriggerGC();
+                deleteFileWithRetries( file, tries + 1 );
+            }
+            else
+            {
+                throw e;
+            }
+        }
+    }
+
+    private static boolean mayBeWindowsMemoryMappedFileReleaseProblem( IOException e )
+    {
+        return e.getMessage().contains( "The process cannot access the file because it is being used by another process." );
+    }
+
+    public static class MaybeWindowsMemoryMappedFileReleaseProblem extends IOException
+    {
+        public MaybeWindowsMemoryMappedFileReleaseProblem( IOException e )
+        {
+            super(e);
         }
     }
 }

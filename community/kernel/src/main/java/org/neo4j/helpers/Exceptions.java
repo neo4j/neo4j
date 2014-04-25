@@ -150,7 +150,7 @@ public class Exceptions
         }
         return root;
     }
-    
+
     public static String stringify( Throwable cause )
     {
         try
