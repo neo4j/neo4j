@@ -25,13 +25,13 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable}
 
 class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should introduce apply for unsolved optional match when all arguments are covered") {
     // MATCH (a) OPTIONAL MATCH (a)-[r]->(b)
 
-    val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val patternRel = newPatternRelationship("a", "b", "r")
     val optionalMatch = QueryGraph(
       patternNodes = Set("a", "b"),
       patternRelationships = Set(patternRel)
@@ -55,5 +55,21 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val innerPlan = Expand(SingleRow(Set("a")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
 
     applyOptional(planTable).bestPlan(context.cost) should equal(Some(Apply(inputPlan, Optional(Set("b", "r"), innerPlan))))
+  }
+
+  test("should not use apply when optional match is the at the start of the query") {
+    // optional match (a) return a
+
+    val optionalMatch = QueryGraph(
+      patternNodes = Set("a")
+    ).addCoveredIdsAsProjections()
+    val qg = QueryGraph.empty.withAddedOptionalMatch(optionalMatch)
+
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = qg
+    )
+
+    applyOptional(PlanTable()) should equal(CandidateList())
   }
 }

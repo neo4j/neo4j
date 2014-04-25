@@ -31,8 +31,8 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
   val HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW = 0.0005
   val EXPRESSION_PROJECTION_OVERHEAD_PER_ROW = 0.01
   val EXPRESSION_SELECTION_OVERHEAD_PER_ROW = EXPRESSION_PROJECTION_OVERHEAD_PER_ROW
-  val INDEX_OVERHEAD_COST_PER_ROW = 3
-  val LABEL_INDEX_OVERHEAD_COST_PER_ROW = 2
+  val INDEX_OVERHEAD_COST_PER_ROW = 3.0
+  val LABEL_INDEX_OVERHEAD_COST_PER_ROW = 2.0
 
   def apply(plan: LogicalPlan): Double = plan match {
     case _: SingleRow =>
@@ -61,23 +61,26 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
     case projection: Projection =>
       cost(projection.left) +
-      cardinality(projection.left) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * projection.numExpressions
+        cardinality(projection.left) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * projection.numExpressions
 
     case selection: Selection =>
       cost(selection.left) +
-      cardinality(selection.left) * EXPRESSION_SELECTION_OVERHEAD_PER_ROW * selection.numPredicates
+        cardinality(selection.left) * EXPRESSION_SELECTION_OVERHEAD_PER_ROW * selection.numPredicates
 
     case cartesian: CartesianProduct =>
       cost(cartesian.left) + cardinality(cartesian.left) * cost(cartesian.right)
 
     case applyOp: Apply =>
-      cost(applyOp.outer) + cardinality(applyOp.outer) * cost(applyOp.inner)
+      applyCost(outer = applyOp.outer, inner = applyOp.inner)
 
     case applyOp: SemiApply =>
-      cost(applyOp.outer) + cardinality(applyOp.outer) * cost(applyOp.inner) * .001
+      applyCost(outer = applyOp.outer, inner = applyOp.inner)
+
+    case applyOp: AntiSemiApply =>
+      applyCost(outer = applyOp.outer, inner = applyOp.inner)
 
     case applyOp: SelectOrSemiApply =>
-      cost(applyOp.outer) + cardinality(applyOp.outer) * (cost(applyOp.inner) * .001 + EXPRESSION_SELECTION_OVERHEAD_PER_ROW)
+      cost(applyOp.outer) + cardinality(applyOp.outer) * (cost(applyOp.inner) + EXPRESSION_SELECTION_OVERHEAD_PER_ROW)
 
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)
@@ -90,15 +93,19 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
     case join: NodeHashJoin =>
       cost(join.left) +
-      cost(join.right) +
-      cardinality(join.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
-      cardinality(join.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
+        cost(join.right) +
+        cardinality(join.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
+        cardinality(join.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
 
     case outerJoin: OuterHashJoin =>
       cost(outerJoin.left) +
-      cost(outerJoin.right) +
-      cardinality(outerJoin.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
-      cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
+        cost(outerJoin.right) +
+        cardinality(outerJoin.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
+        cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
+  }
+
+  private def applyCost(outer: LogicalPlan, inner: LogicalPlan): Double = {
+    cost(outer) + cardinality(outer) * cost(inner)
   }
 
   private def cost(plan: LogicalPlan) = apply(plan)

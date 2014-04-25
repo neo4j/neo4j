@@ -666,7 +666,7 @@ return p, leaf""")
     val c = createNode("B")
     relate(a, b)
 
-    val result = execute( """
+    val result = executeWithNewPlanner("""
 MATCH (a {name:'A'}), (other {name:'B'})
 WHERE NOT a-->other
 RETURN other""")

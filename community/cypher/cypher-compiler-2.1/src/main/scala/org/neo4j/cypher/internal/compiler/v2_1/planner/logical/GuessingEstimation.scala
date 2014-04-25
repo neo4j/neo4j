@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, HasLabels, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Not, RelTypeName, HasLabels, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
@@ -77,7 +77,10 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       cardinality(outer) * cardinality(inner)
 
     case semiApply @ SemiApply(outer, inner) =>
-      cardinality(outer) * predicateSelectivity(Seq(semiApply.exists.predicate.exp))
+      semiApplyCardinality(outer, semiApply.subQuery.predicate.exp)
+
+    case semiApply @ AntiSemiApply(outer, inner) =>
+      semiApplyCardinality(outer, semiApply.subQuery.predicate.exp)
 
     case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
       relIds.size
@@ -94,6 +97,9 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case SingleRow(_) =>
       1
   }
+
+  private def semiApplyCardinality(outer: LogicalPlan, exp: Expression) =
+    cardinality(outer) * predicateSelectivity(Seq(exp))
 
   def averagePathLength(length:PatternLength) = length match {
     case SimplePatternLength              => 1
@@ -128,6 +134,9 @@ class StatisticsBasedSelectivityModel(statistics: GraphStatistics) extends Metri
         statistics.nodesWithLabelSelectivity(label.id.get)
       else
         LABEL_NOT_FOUND_SELECTIVITY
+
+    case Not(inner) =>
+      1.0 - apply(inner)
 
     case _  =>
       PREDICATE_SELECTIVITY

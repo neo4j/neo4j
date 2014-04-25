@@ -19,18 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, Exists}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{NotExists, Exists, PredicateSubQuery, Selections}
 
-case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(val exists: Exists) extends LogicalPlan {
+case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(exists: Exists) extends AbstractSemiApply(outer, inner)(exists)
+case class AntiSemiApply(outer: LogicalPlan, inner: LogicalPlan)(notExists: NotExists) extends AbstractSemiApply(outer, inner)(notExists)
+
+abstract class AbstractSemiApply(outer: LogicalPlan, inner: LogicalPlan)(val subQuery: PredicateSubQuery) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
 
   val solved = {
-    val newSelections = Selections(outer.solved.selections.predicates + exists.predicate)
+    val newSelections = Selections(outer.solved.selections.predicates + subQuery.predicate)
     outer.solved.copy(
-      subQueries = outer.solved.subQueries :+ exists,
+      subQueries = outer.solved.subQueries :+ subQuery,
       selections = newSelections,
-      argumentIds = exists.queryGraph.argumentIds
+      argumentIds = subQuery.queryGraph.argumentIds
     )
   }
 }

@@ -26,13 +26,19 @@ import v2_1._
 import v2_1.spi.{GraphStatistics, PlanContext}
 import v2_1.parser.{ParserMonitor, CypherParser}
 import v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SimplePatternLength, PatternRelationship, LogicalPlan, IdName}
-import v2_1.ast.Query
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, Query}
 import v2_1.planner.logical.Metrics._
 
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.Planner
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>
@@ -43,10 +49,10 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
   val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
   val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
-  val mockRel = {
-    val a = IdName("a")
-    val b = IdName("b")
-    PatternRelationship(IdName("r"), (a,b), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+  val mockRel = newPatternRelationship("a", "b", "r")
+
+  def newPatternRelationship(start: IdName, end: IdName, rel: IdName, dir: Direction = Direction.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
+    PatternRelationship(rel, (start, end), dir, types, length)
   }
 
   class SpyableMetricsFactory extends MetricsFactory {

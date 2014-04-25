@@ -26,19 +26,33 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
 
   test("should filter relationships with properties") {
     // given
-    relate(createNode(), createNode(), "id" -> 1)
+    val node = createNode()
+    relate(node, createNode(), "id" -> 1)
     relate(createNode(), createNode(), "id" -> 2)
 
     // when
-    val result = executeWithNewPlanner("match (n) where (n)-[{id: 1}]->() return n").columnAs[Node]("n").toList
+    val result = executeScalarWithNewPlanner[Node]("match (n) where (n)-[{id: 1}]->() return n")
 
     // then
-    result.size should be(1)
+    result should equal(node)
+  }
+
+  test("should support negated pattern predicate") {
+    // given
+    val node = createNode()
+    relate(node, createNode(), "id" -> 1)
+    relate(createNode(), createNode(), "id" -> 2)
+
+    // when
+    val result = executeWithNewPlanner("match (n) where NOT (n)-[{id: 1}]->() return n").columnAs[Node]("n").toList
+
+    // then
+    result.size should be(3)
+    result should not contain(node)
   }
 
   test("should filter var length relationships with properties") {
     // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
-
 
     val start1 = createPath(12, 42)
     createPath(324234,666)

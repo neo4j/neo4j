@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 
-case class SemiApplyPipe(source: Pipe, inner: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.filter {
       (outerContext) =>
         val innerState = state.copy(initialContext = Some(outerContext))
         val innerResults = inner.createResults(innerState)
-        innerResults.nonEmpty
+        if (negated) innerResults.isEmpty else innerResults.nonEmpty
     }
   }
 

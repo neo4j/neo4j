@@ -136,6 +136,8 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
         throw new CantHandleQueryException
       case p@Predicate(_, Or(pattern: PatternExpression, expr: Expression)) if !expr.isInstanceOf[PatternExpression]  =>
         HoldsOrExists(p, expr, extractQueryGraph(pattern))
+      case p@Predicate(_, Not(exp: PatternExpression)) =>
+        NotExists(p, extractQueryGraph(exp))
       case p@Predicate(_, exp: PatternExpression) =>
         Exists(p, extractQueryGraph(exp))
     }.toSeq
