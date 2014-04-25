@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{HoldsOrExists, Predicate, Selections}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, Or}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Exists, Selections}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class SelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: HoldsOrExists) extends LogicalPlan {
+case class SelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: Exists) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
 
   val solved = {
-    val newSelections = Selections(outer.solved.selections.predicates + exists.orPredicate)
+    val newSelections = Selections(outer.solved.selections.predicates + exists.predicate)
     outer.solved.copy(subQueries = outer.solved.subQueries :+ exists, selections = newSelections)
   }
 }

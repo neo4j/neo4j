@@ -132,14 +132,14 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     }
 
     val subQueries: Seq[SubQuery] = predicatesWithCorrectDeps.collect {
-      case p@Predicate(_, Or(pattern: PatternExpression, Or(_: PatternExpression, _)))  =>
+      case p@Predicate(_, Or(_: PatternExpression, Or(_: PatternExpression, _)))  =>
         throw new CantHandleQueryException
-      case p@Predicate(_, Or(pattern: PatternExpression, expr: Expression)) if !expr.isInstanceOf[PatternExpression]  =>
-        HoldsOrExists(p, expr, extractQueryGraph(pattern))
-      case p@Predicate(_, Not(exp: PatternExpression)) =>
-        NotExists(p, extractQueryGraph(exp))
-      case p@Predicate(_, exp: PatternExpression) =>
-        Exists(p, extractQueryGraph(exp))
+      case p@Predicate(_, Or(patternExpr: PatternExpression, expr: Expression)) if !expr.isInstanceOf[PatternExpression]  =>
+        Exists(p, extractQueryGraph(patternExpr))
+      case p@Predicate(_, Not(patternExpr: PatternExpression)) =>
+        Exists(p, extractQueryGraph(patternExpr))
+      case p@Predicate(_, patternExpr: PatternExpression) =>
+        Exists(p, extractQueryGraph(patternExpr))
     }.toSeq
 
     (Selections(predicatesWithCorrectDeps), subQueries)

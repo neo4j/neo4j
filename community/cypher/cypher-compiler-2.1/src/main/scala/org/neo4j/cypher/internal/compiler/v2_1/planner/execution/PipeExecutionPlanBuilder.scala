@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Exists, NotExists, CantHandleQueryException}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_1.commands.True
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
@@ -77,10 +77,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           VarLengthExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name), min, max)
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
-          val predicate = predicates
-            .map(_.asCommandPredicate)
-            .reduceOption(_ ++ _)
-            .getOrElse(True())
+          val predicate = predicates.map(_.asCommandPredicate).reduceOption(_ ++ _).getOrElse(True())
           OptionalExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name), predicate)
 
         case NodeHashJoin(node, left, right) =>

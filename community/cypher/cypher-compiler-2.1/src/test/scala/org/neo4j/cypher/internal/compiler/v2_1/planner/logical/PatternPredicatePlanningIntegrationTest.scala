@@ -26,22 +26,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.True
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.GreaterThan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Predicate
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SelectOrSemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Exists
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
+  private val fakeExists = Exists(Predicate(Set.empty, True() _), QueryGraph.empty)
 
   test("should build plans containing semi apply for a single pattern predicate") {
     val factory = newMockedMetricsFactory
@@ -63,7 +51,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           SingleRow(Set("a")),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")()_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
         )( mockRel )
-      )( Exists( Predicate( Set.empty, True()_ ), QueryGraph.empty ) )
+      )( fakeExists )
     )
   }
 
@@ -87,7 +75,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           SingleRow(Set("a")),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")()_), "  UNNAMED31", "  UNNAMED23", SimplePatternLength
         )( mockRel )
-      )( NotExists( Predicate( Set.empty, True()_ ), QueryGraph.empty ) )
+      )( fakeExists )
     )
   }
 
@@ -112,12 +100,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             SingleRow(Set("a")),
             "a", Direction.OUTGOING, Seq(RelTypeName("X")()_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
           )( mockRel )
-        )( Exists( Predicate( Set.empty, True()_ ), QueryGraph.empty ) ),
+        )( fakeExists ),
         Expand(
           SingleRow(Set("a")),
           "a", Direction.OUTGOING, Seq(RelTypeName("Y")()_), "  UNNAMED44", "  UNNAMED36", SimplePatternLength
         )( mockRel )
-      )( Exists( Predicate( Set.empty, True()_ ), QueryGraph.empty ) )
+      )( fakeExists )
     )
   }
 
@@ -143,7 +131,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           "a", Direction.OUTGOING, Seq(RelTypeName("X")()_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
         )( mockRel ),
         GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")()_)_, SignedIntegerLiteral("4")_)_
-      )( HoldsOrExists( Predicate( Set.empty, True()_ ), True()_, QueryGraph.empty ) )
+      )( fakeExists )
     )
   }
 
@@ -172,7 +160,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Equals(Property(Identifier("a")_, PropertyKeyName("prop2")()_)_, SignedIntegerLiteral("9")_)_,
           GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")()_)_, SignedIntegerLiteral("4")_)_
         )_
-      )( HoldsOrExists( Predicate( Set.empty, True()_ ), True()_, QueryGraph.empty ) )
+      )( fakeExists )
     )
   }
 

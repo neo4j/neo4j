@@ -93,11 +93,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       addArgumentId(Seq(IdName("a"))).
       addCoveredIdsAsProjections()
 
-    val notExists = NotExists(predicate, patternQG)
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections,
-      subQueries = Seq(notExists)
+      subQueries = Seq(Exists(predicate, patternQG))
     )
 
     implicit val context = newMockedLogicalPlanContext(
@@ -113,7 +112,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(passThrough)(aPlan)
 
     // Then
-    result should equal(AntiSemiApply(aPlan, inner)(notExists))
+    result should equal(AntiSemiApply(aPlan, inner)(Exists(predicate, patternQG)))
   }
 
   test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
@@ -151,18 +150,17 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       Property(Identifier("a")_, PropertyKeyName("prop")(None)_)_,
       StringLiteral("42")_
     )_
-    val orPredicate = Predicate(Set(IdName("a")), Or(exp2, exp)_)
+    val orPredicate = Predicate(Set(IdName("a")), Or(exp, exp2)_)
     val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph().
       add(patternRel).
       addArgumentId(Seq(IdName("a"))).
       addCoveredIdsAsProjections()
 
-    val exists = HoldsOrExists(orPredicate, exp2, patternQG)
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections,
-      subQueries = Seq(exists)
+      subQueries = Seq(Exists(orPredicate, patternQG))
     )
 
     implicit val context = newMockedLogicalPlanContext(
@@ -178,6 +176,6 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(passThrough)(aPlan)
 
     // Then
-    result should equal(SelectOrSemiApply(aPlan, inner, exp2)(exists))
+    result should equal(SelectOrSemiApply(aPlan, inner, exp2)(Exists(orPredicate, patternQG)))
   }
 }
