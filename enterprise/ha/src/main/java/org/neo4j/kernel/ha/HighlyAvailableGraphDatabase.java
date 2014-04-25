@@ -26,6 +26,7 @@ import java.util.Arrays;
 import java.util.Map;
 import javax.transaction.Transaction;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -67,6 +68,8 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.SimpleHighAvailabilityMemberContext;
+import org.neo4j.kernel.ha.cluster.SwitchToMaster;
+import org.neo4j.kernel.ha.cluster.SwitchToSlave;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -111,7 +114,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private RequestContextFactory requestContextFactory;
     private Slaves slaves;
     private ClusterMembers members;
-    private DelegateInvocationHandler masterDelegateInvocationHandler;
+    private DelegateInvocationHandler<Master> masterDelegateInvocationHandler;
     private Master master;
     private HighAvailabilityMemberStateMachine memberStateMachine;
     private UpdatePuller updatePuller;
@@ -409,10 +412,17 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected IdGeneratorFactory createIdGeneratorFactory()
     {
-        idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging, requestContextFactory );
-        highAvailabilityModeSwitcher = new HighAvailabilityModeSwitcher( clusterClient, clusterClient, masterDelegateInvocationHandler,
-                clusterMemberAvailability, memberStateMachine, this, (HaIdGeneratorFactory) idGeneratorFactory,
-                config, logging, updateableSchemaState, kernelExtensions.listFactories(), monitors, requestContextFactory );
+        idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
+                requestContextFactory );
+        highAvailabilityModeSwitcher =
+                new HighAvailabilityModeSwitcher( new SwitchToSlave(logging.getConsoleLog( HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(), (HaIdGeneratorFactory) idGeneratorFactory,
+                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory, updateableSchemaState, monitors, kernelExtensions.listFactories() ),
+                        new SwitchToMaster( logging, msgLog, this,
+                        (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(), masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
+                        clusterClient, clusterMemberAvailability, logging.getMessagesLog( HighAvailabilityModeSwitcher.class ));
+
+        clusterClient.addBindingListener( highAvailabilityModeSwitcher );
+        memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );
 
         /*
          * We always need the mode switcher and we need it to restart on switchover.

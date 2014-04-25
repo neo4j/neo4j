@@ -27,7 +27,7 @@ import sun.misc.SignalHandler;
 
 public final class AdversarySignals
 {
-    private static AdversarySignals instance = new AdversarySignals();
+    private static final AdversarySignals instance = new AdversarySignals();
 
     private boolean installed;
     private List<Runnable> installedHandlers;

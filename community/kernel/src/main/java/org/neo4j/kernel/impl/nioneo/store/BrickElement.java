@@ -89,6 +89,7 @@ class BrickElement
     {
         try
         {
+            // Happy path if we have a valid window we can mark it and return it
             LockableWindow candidate = window;
             if ( candidate != null && candidate.markAsInUse() )
             {
@@ -101,16 +102,16 @@ class BrickElement
              * between checking for the window and a refreshBricks(). */
             lock();
             candidate = window;
+
+            // Option 1 we see a null window or a closed window then we return null and increment lock count on brick
+            // Option 2 we see a valid window and mark it as in use and return it leaving brick lock count unchanged
             if ( candidate != null && candidate.markAsInUse() )
             {
                 // This means the position is in a window and not in a row, so unlock.
                 unLock();
+                return candidate;
             }
-
-            /* If the if above does not execute, it happens because we are going to map a row over this. So the brick
-             * must remain locked until we are done with the row. That means that from now on refreshBricks() calls
-             * will block until the row we'll grab in the code after this method call is released. */
-            return candidate;
+            return null;
         }
         finally
         {
@@ -124,7 +125,8 @@ class BrickElement
     }
 
     /**
-     * Not synchronized on purpose. See {@link #allocateNewWindow(BrickElement)} for details.
+     * Not synchronized on purpose.
+     * See {@link PersistenceWindowPool#allocateNewWindow(BrickElement)} for details.
      */
     void unLock()
     {

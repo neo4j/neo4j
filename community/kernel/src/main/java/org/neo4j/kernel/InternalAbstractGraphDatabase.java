@@ -1297,6 +1297,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( storeFactory );
             }
+            else if ( SchemaWriteGuard.class.isAssignableFrom( type ) )
+            {
+                return type.cast( InternalAbstractGraphDatabase.this );
+            }
             else if ( StringLogger.class.isAssignableFrom( type ) && type.isInstance( msgLog ) )
             {
                 return type.cast( msgLog );
