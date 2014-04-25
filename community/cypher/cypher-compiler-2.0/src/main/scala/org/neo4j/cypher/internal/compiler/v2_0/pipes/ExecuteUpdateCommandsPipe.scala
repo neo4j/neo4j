@@ -82,12 +82,16 @@ trait NoLushEntityCreation {
   assertNothingIsCreatedWhenItShouldNot()
 
   private def extractEntities(action: UpdateAction): Seq[NamedExpectation] = action match {
-    case CreateNode(key, props, labels)              => Seq(NamedExpectation(key, props, labels))
-    case CreateRelationship(key, from, to, _, props) => Seq(NamedExpectation(key, props, Seq.empty)) ++
-      extractIfEntity(from) ++
-      extractIfEntity(to)
-    case CreateUniqueAction(links@_*)                => links.flatMap(l => Seq(l.start, l.end, l.rel))
-    case _                                           => Seq()
+    case CreateNode(key, props, labels) =>
+      Seq(NamedExpectation(key, props, labels))
+    case CreateRelationship(key, from, to, _, props) =>
+      Seq(NamedExpectation(key, props, Seq.empty)) ++ extractIfEntity(from) ++ extractIfEntity(to)
+    case CreateUniqueAction(links@_*) =>
+      links.flatMap(l => Seq(l.start, l.end, l.rel))
+    case MergePatternAction(_, _, _, Some(updates), _) =>
+      updates.flatMap(extractEntities(_))
+    case _ =>
+      Seq()
   }
 
   private def extractIfEntity(from: RelationshipEndpoint): Option[NamedExpectation] =

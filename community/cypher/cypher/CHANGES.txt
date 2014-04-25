@@ -1,5 +1,9 @@
-2.0.2-SNAPSHOT
+2.0.3-SNAPSHOT
 --------------
+o MERGE must fail when trying to create 2 nodes with same id but different labels (e.g., MERGE (a: Foo)-[r:KNOWS]->(a: Bar))
+
+2.0.2
+-----
 o Fixes #1897 - goes into never ending loop for some aggregate queries
 o Add the functions toInt(...) and toFloat(...)
 o Renames the Cypher type Double to Float
