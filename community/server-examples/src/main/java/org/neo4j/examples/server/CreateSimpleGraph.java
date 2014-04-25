@@ -20,8 +20,6 @@ package org.neo4j.examples.server;
 
 import java.net.URI;
 import java.net.URISyntaxException;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.ws.rs.core.MediaType;
 
@@ -57,25 +55,27 @@ public class CreateSimpleGraph
         findSingersInBands( firstNode );
         // END SNIPPET: queryForSingers
 
-        sendTransactionalCypherQuery("MATCH (n) return n.name as name");
+        sendTransactionalCypherQuery( "MATCH (n) WHERE has(n.name) RETURN n.name AS name" );
     }
 
     private static void sendTransactionalCypherQuery(String query) {
-        final String txUri = SERVER_ROOT_URI + "transaction/commit";
-        WebResource resource = Client.create()
-                .resource(txUri);
-
         // START SNIPPET: queryAllNodes
-        String payload = "{\"statements\" : [ {\"statement\" : \""+query+"\"} ]}";
-        ClientResponse response = resource.accept( MediaType.APPLICATION_JSON )
+        final String txUri = SERVER_ROOT_URI + "transaction/commit";
+        WebResource resource = Client.create().resource( txUri );
+
+        String payload = "{\"statements\" : [ {\"statement\" : \"" +query + "\"} ]}";
+        ClientResponse response = resource
+                .accept( MediaType.APPLICATION_JSON )
                 .type( MediaType.APPLICATION_JSON )
-                .entity(payload)
+                .entity( payload )
                 .post( ClientResponse.class );
+        
         System.out.println( String.format(
                 "POST [%s] to [%s], status code [%d], returned data: "
                         + System.getProperty( "line.separator" ) + "%s",
                 payload, txUri, response.getStatus(),
                 response.getEntity( String.class ) ) );
+        
         response.close();
         // END SNIPPET: queryAllNodes
     }

@@ -9,7 +9,7 @@ Still, when geting started it's useful to see some patterns that can be re-used.
 In this brief overview, we'll show you how to create and manipulate a simple graph through the REST API and also how to query it.
 
 For these examples, we've chosen the http://jersey.java.net/[Jersey] client components,
-which are easily http://jersey.java.net/nonav/documentation/latest/user-guide.html#chapter_deps[downloaded] via Maven.
+which are easily https://jersey.java.net/nonav/documentation/1.9/user-guide.html#chapter_deps[downloaded] via Maven.
 
 == Start the server ==
 
@@ -30,8 +30,11 @@ NOTE: If you get any other response than +200 OK+ (particularly +4xx+ or +5xx+ r
 
 == Sending Cypher ==
 
-Using the <<rest-api-transactional>>, we can send <<cypher-query-lang>> queries to the server, while being able to define the transactional boundaries.
-Let's try to use this to list all the nodes in the database.
+Using the REST API, we can send <<cypher-query-lang,Cypher>> queries to the server.
+This is the main way to use Neo4j.
+It allows control of the transactional boundaries as needed.
+
+Let's try to use this to list all the nodes in the database which have a +name+ property.
 
 [snippet,java]
 ----
@@ -41,12 +44,12 @@ tag=queryAllNodes
 classifier=sources
 ----
 
-For the sending and returning formats, see <<rest-api-transactional>>.
+For more details, see <<rest-api-transactional>>.
 
 == Fine-grained REST API calls
 
-For exploratory and special purposes, there is a fine grained REST API, see <<rest-api>>. The follwoing sections highlight
-some of the basic operations.
+For exploratory and special purposes, there is a fine grained REST API, see <<rest-api>>.
+The following sections highlight some of the basic operations.
 
 === Creating a node ===
 
