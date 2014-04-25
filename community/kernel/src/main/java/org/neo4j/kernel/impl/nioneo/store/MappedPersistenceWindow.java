@@ -52,8 +52,6 @@ class MappedPersistenceWindow extends LockableWindow
         {
             buffer = new Buffer( this, channel.map( mapMode,
                     position * recordSize, totalSize ) );
-//            buffer.setByteBuffer( channel.map( mapMode,
-//                position * recordSize, totalSize ) );
         }
         catch ( IOException e )
         {
@@ -133,15 +131,16 @@ class MappedPersistenceWindow extends LockableWindow
     @Override
     public Buffer getOffsettedBuffer( long id )
     {
-        int offset = (int) (id - buffer.position()) * recordSize;
+        int offset = (int) (id - position) * recordSize;
         try
         {
             buffer.setOffset( offset );
             return buffer;
         } catch(IllegalArgumentException e)
         {
-            throw new IllegalArgumentException( "Unable to set offset. id:" + id + ", position:" + buffer.position()
-                    + ", recordSize:" + recordSize, e );
+            throw new IllegalArgumentException(
+                    "Unable to set offset. id: " + id +
+                            ", position: " + position + ", recordSize: " + recordSize, e );
         }
     }
 }

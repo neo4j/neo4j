@@ -29,8 +29,8 @@ import java.io.FileReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
 import java.io.PrintStream;
+import java.io.PrintWriter;
 import java.io.RandomAccessFile;
 import java.io.Writer;
 import java.nio.channels.SeekableByteChannel;
@@ -40,9 +40,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.NotFoundException;
 
@@ -97,30 +94,6 @@ public class FileUtils
         }
         while ( !deleted && count <= WINDOWS_RETRY_COUNT );
         return deleted;
-    }
-
-    public static File[] deleteFiles( File directory, String regexPattern )
-            throws IOException
-    {
-        Pattern pattern = Pattern.compile( regexPattern );
-        Collection<File> deletedFiles = new ArrayList<>();
-        File[] files = directory.listFiles();
-        if ( files == null )
-        {
-            throw new IllegalArgumentException( directory + " is not a directory" );
-        }
-        for ( File file : files )
-        {
-            if ( pattern.matcher( file.getName() ).find() )
-            {
-                if ( !file.delete() )
-                {
-                    throw new IOException( "Couldn't delete file '" + file.getAbsolutePath() + "'" );
-                }
-                deletedFiles.add( file );
-            }
-        }
-        return deletedFiles.toArray( new File[deletedFiles.size()] );
     }
 
     /**

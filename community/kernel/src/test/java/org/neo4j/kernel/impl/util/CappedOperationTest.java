@@ -40,6 +40,8 @@ public class CappedOperationTest
         CappedOperation<String> operation = countingCappedOperations( triggerCount, count( 2 ) );
 
         // WHEN/THEN
+        assertEquals( 0, triggerCount.get() );
+
         operation.event( "test" );
         assertEquals( 1, triggerCount.get() );
         operation.event( "test" );
