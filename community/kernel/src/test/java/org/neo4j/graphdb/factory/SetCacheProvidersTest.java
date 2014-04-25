@@ -22,13 +22,15 @@ package org.neo4j.graphdb.factory;
 import java.util.ArrayList;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.SoftCacheProvider;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class SetCacheProvidersTest
 {

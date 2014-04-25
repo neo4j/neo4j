@@ -1,16 +1,3 @@
-#noscript {
-  font-weight: bold;
-  background-color: #55AA55;
-  font-weight: bold;
-  height: 25spx;
-  top: 0px;
-  width: 100%;
-  position: relative;
-  border-bottom: solid 5px black;
-  text-align: center;
-  color: white;
-}
-
 input {
   margin-bottom: 5px;
   margin-top: 2px;
