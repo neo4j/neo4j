@@ -374,11 +374,11 @@ public class PersistenceWindowPool implements WindowPool
                 {
                     brickSize = Integer.MAX_VALUE;
                 }
+                brickSize = (brickSize / blockSize) * blockSize;
                 if ( brickSize == 0 )
                 {
                     brickSize = blockSize;
                 }
-                brickSize = (brickSize / blockSize) * blockSize;
                 brickCount = (int) (fileSize / brickSize);
             }
             else
