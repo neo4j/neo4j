@@ -43,7 +43,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
   test("should build plans for simple cartesian product with a predicate on the elements") {
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: AllNodesScan     => 1000
       case _: NodeByLabelScan  => 100
       case _: Selection        => 500
@@ -58,7 +58,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     produceLogicalPlan("MATCH n, m WHERE n.prop = 12 AND m:Label RETURN n, m") should equal(
       CartesianProduct(
         Selection(
-          Seq(Equals(Property(Identifier("n")_, PropertyKeyName("prop")()_)_, SignedIntegerLiteral("12")_)_),
+          Seq(Equals(Property(Identifier("n")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("12")_)_),
           AllNodesScan("n")
         ),
         NodeByLabelScan("m", Left("Label"))()
@@ -78,7 +78,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       case CartesianProduct(left, right)               => f(left) * f(right)
       case _                                           => Double.MaxValue
     }
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn(f _)
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn(f _)
 
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(factory)
@@ -104,7 +104,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
     val labelIdC = Right(LabelId(10))
 
     val factory = newMockedMetricsFactory
-    when(factory.newSelectivityEstimator(any())).thenReturn((expression: Expression) => expression match {
+    when(factory.newSelectivityEstimator(any(), any())).thenReturn((expression: Expression) => expression match {
       case Equals(Property(Identifier(lhs), _), Property(Identifier(rhs), _)) =>
         (lhs, rhs) match {
           case ("a", "b") => /* 60 */ 0.5 // => 30
@@ -113,7 +113,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
         }
     })
 
-    when(factory.newCardinalityEstimator(any(), any())).thenAnswer(new Answer[CardinalityModel] {
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenAnswer(new Answer[CardinalityModel] {
       def answer(invocation: InvocationOnMock): CardinalityModel = {
         val selectivity = invocation.getArguments()(1).asInstanceOf[SelectivityModel]
         new CardinalityModel {
@@ -140,20 +140,20 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
       Selection(
         predicates = Seq(
           Equals(
-            Property(Identifier("a")_, PropertyKeyName("x")()_)_,
-            Property(Identifier("b")_, PropertyKeyName("x")()_)_
+            Property(Identifier("a")_, PropertyKeyName("x")_)_,
+            Property(Identifier("b")_, PropertyKeyName("x")_)_
           )_,
           Equals(
-            Property(Identifier("b")_, PropertyKeyName("x")()_)_,
-            Property(Identifier("c")_, PropertyKeyName("x")()_)_
+            Property(Identifier("b")_, PropertyKeyName("x")_)_,
+            Property(Identifier("c")_, PropertyKeyName("x")_)_
           )_
         ),
         left = CartesianProduct(
           NodeByLabelScan("b", labelIdB)(),
           Selection(
             predicates = Seq(Equals(
-              Property(Identifier("a")_, PropertyKeyName("x")()_)_,
-              Property(Identifier("c")_, PropertyKeyName("x")()_)_
+              Property(Identifier("a")_, PropertyKeyName("x")_)_,
+              Property(Identifier("c")_, PropertyKeyName("x")_)_
             )_),
             left = CartesianProduct(
               NodeByLabelScan("c", labelIdC)(),

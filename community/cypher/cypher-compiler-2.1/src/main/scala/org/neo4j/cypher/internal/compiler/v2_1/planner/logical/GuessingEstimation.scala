@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 
 object GuessingEstimation {
   val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
@@ -34,7 +35,8 @@ object GuessingEstimation {
 }
 
 class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
-                                       selectivity: Metrics.SelectivityModel) extends Metrics.CardinalityModel {
+                                       selectivity: Metrics.SelectivityModel)
+                                      (implicit semanticTable: SemanticTable) extends Metrics.CardinalityModel {
   import GuessingEstimation._
 
   def apply(plan: LogicalPlan): Double = plan match {
@@ -146,7 +148,8 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
   private def cardinality(plan: LogicalPlan) = apply(plan)
 }
 
-class StatisticsBasedSelectivityModel(statistics: GraphStatistics) extends Metrics.SelectivityModel {
+class StatisticsBasedSelectivityModel(statistics: GraphStatistics)
+                                     (implicit semanticTable: SemanticTable) extends Metrics.SelectivityModel {
 
   import GuessingEstimation._
 

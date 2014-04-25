@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, LabelName, Ident
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Predicate, LogicalPlanningTestSupport, QueryGraph, Selections}
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.labelScanLeafPlanner
+import scala.collection.mutable
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -35,21 +36,26 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     // given
     val idName = IdName("n")
     val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
-    val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")()_))_
+    val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
       projections = projections,
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: NodeByLabelScan => 1
       case _                  => Double.MaxValue
     })
+
+    val semanticTable = newMockedSemanticTable
+    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map.empty[String, LabelId])
+
     implicit val context = newMockedLogicalPlanContext(
+      semanticTable = semanticTable,
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
 
     // when
@@ -64,21 +70,26 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val idName = IdName("n")
     val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
     val labelId = LabelId(12)
-    val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")(Some(labelId))_))_
+    val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
       projections = projections,
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: NodeByLabelScan => 100
       case _                  => Double.MaxValue
     })
+
+    val semanticTable = newMockedSemanticTable
+    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> labelId))
+
     implicit val context = newMockedLogicalPlanContext(
+      semanticTable = semanticTable,
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(statistics)
+      metrics = factory.newMetrics(statistics, semanticTable)
     )
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)
 

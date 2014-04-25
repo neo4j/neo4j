@@ -19,10 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.{symbols, ExpressionTypeInfo, IdentityMap}
+import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Expression}
+import scala.collection.mutable
 
 case class SemanticTable(types: IdentityMap[Expression, ExpressionTypeInfo] = IdentityMap.empty) {
+  var resolvedLabelIds: mutable.Map[String, LabelId] = new mutable.HashMap[String, LabelId]
+  var resolvedPropertyKeyNames: mutable.Map[String, PropertyKeyId] = new mutable.HashMap[String, PropertyKeyId]
+  var resolvedRelTypeNames: mutable.Map[String, RelTypeId] = new mutable.HashMap[String, RelTypeId]
+
   def isRelationship(expr: Identifier) = types(expr).specified == symbols.CTRelationship.invariant
+
   def isNode(expr: Identifier) = types(expr).specified == symbols.CTNode.invariant
 }

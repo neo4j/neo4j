@@ -43,7 +43,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   ) _) _)
 
   val factory = newMockedMetricsFactory
-  when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+  when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
     case _ => 1000.0
   })
 
@@ -70,7 +70,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(newMockedStatistics)
+      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
 
@@ -102,7 +102,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(newMockedStatistics)
+      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")
@@ -133,7 +133,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(newMockedStatistics)
+      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
     val bPlan = newMockedLogicalPlan("b")
@@ -147,7 +147,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce select or semi apply for unsolved pattern predicates in disjunction with expressions") {
     // Given
     val equals = Equals(
-      Property(Identifier("a")_, PropertyKeyName("prop")(None)_)_,
+      Property(Identifier("a")_, PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Or(patternExp, equals)_)
@@ -166,7 +166,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(newMockedStatistics)
+      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")
@@ -182,7 +182,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   test("should introduce select or anti semi apply for unsolved negated pattern predicates in disjunction with an expression") {
     // Given
     val equals = Equals(
-      Property(Identifier("a")_, PropertyKeyName("prop")(None)_)_,
+      Property(Identifier("a")_, PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Or(Not(patternExp)_, equals)_)
@@ -201,7 +201,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(newMockedStatistics)
+      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
     val aPlan = newMockedLogicalPlan("a")

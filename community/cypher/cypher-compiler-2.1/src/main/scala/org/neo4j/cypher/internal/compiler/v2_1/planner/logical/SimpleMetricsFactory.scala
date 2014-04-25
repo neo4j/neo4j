@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{SelectivityModel, CardinalityModel, CostModel}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 
 object SimpleMetricsFactory extends MetricsFactory {
   def newCostModel(cardinality: CardinalityModel): CostModel =
     new SimpleCostModel(cardinality)
 
-  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel): CardinalityModel =
-    new StatisticsBackedCardinalityModel(statistics, selectivity)
+  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): CardinalityModel =
+    new StatisticsBackedCardinalityModel(statistics, selectivity)(semanticTable)
 
-  def newSelectivityEstimator(statistics: GraphStatistics): SelectivityModel =
-    new StatisticsBasedSelectivityModel(statistics)
+  def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable): SelectivityModel =
+    new StatisticsBasedSelectivityModel(statistics)(semanticTable)
 }

@@ -59,7 +59,7 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       addCoveredIdsAsProjections()
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case AllNodesScan(IdName("b")) => 1 // Make sure we start the inner plan using b
       case _                         => 1000.0
     })
@@ -67,7 +67,7 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = QueryGraph(patternNodes = Set(aNode)).withAddedOptionalMatch(optionalQg),
-      metrics = factory.newMetrics(newMockedStatistics)
+      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
     val left: LogicalPlan = newMockedLogicalPlanWithPatterns(Set(aNode))
     val planTable = PlanTable(Map(Set(aNode) -> left))

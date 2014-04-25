@@ -38,13 +38,13 @@ trait Literals extends Parser
     rule("an identifier") { EscapedSymbolicNameString ~~>> (ast.Identifier(_)) }
 
   def PropertyKeyName: Rule1[ast.PropertyKeyName] =
-    rule("a property key name") { SymbolicNameString ~~>> (ast.PropertyKeyName(_)() ) }.memoMismatches
+    rule("a property key name") { SymbolicNameString ~~>> (ast.PropertyKeyName(_) ) }.memoMismatches
 
   def LabelName: Rule1[ast.LabelName] =
-    rule("a label name") { SymbolicNameString ~~>> (ast.LabelName(_)() ) }.memoMismatches
+    rule("a label name") { SymbolicNameString ~~>> (ast.LabelName(_) ) }.memoMismatches
 
   def RelTypeName: Rule1[ast.RelTypeName] =
-    rule("a rel type name") { SymbolicNameString ~~>> (ast.RelTypeName(_)() ) }.memoMismatches
+    rule("a rel type name") { SymbolicNameString ~~>> (ast.RelTypeName(_) ) }.memoMismatches
 
   private def SymbolicNameString: Rule1[String] = UnescapedSymbolicNameString | EscapedSymbolicNameString
 

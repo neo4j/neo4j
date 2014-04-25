@@ -22,13 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.CachedFunction
 import Metrics._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 
 case class CachedMetricsFactory(metricsFactory: MetricsFactory) extends MetricsFactory {
-  def newSelectivityEstimator(statistics: GraphStatistics) =
-    CachedFunction.byIdentity(metricsFactory.newSelectivityEstimator(statistics))
+  def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable) =
+    CachedFunction.byIdentity(metricsFactory.newSelectivityEstimator(statistics, semanticTable))
 
-  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel) =
-    CachedFunction.byIdentity(metricsFactory.newCardinalityEstimator(statistics, selectivity))
+  def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable) =
+    CachedFunction.byIdentity(metricsFactory.newCardinalityEstimator(statistics, selectivity, semanticTable))
 
   def newCostModel(cardinality: CardinalityModel) =
     CachedFunction.byIdentity(metricsFactory.newCostModel(cardinality))
