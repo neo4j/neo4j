@@ -28,12 +28,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, Query}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{AstConstructionTestSupport, RelTypeName, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 
-trait LogicalPlanningTestSupport extends CypherTestSupport {
+trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport {
   self: CypherTestSuite with MockitoSugar =>
 
   val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
@@ -117,10 +117,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
         throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")
     }
   }
-
-  val pos = DummyPosition(0)
-
-  implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 
   implicit def idName(name: String): IdName = IdName(name)
 }

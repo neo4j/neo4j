@@ -122,7 +122,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
   def rewrite(f: Expression => Expression): PartiallySolvedQuery = {
     this.copy(
       returns = returns.map {
-        case Unsolved(ReturnItem(expression, name, renamed)) => Unsolved[ReturnColumn](ReturnItem(expression.rewrite(f), name, renamed))
+        case Unsolved( item @ ReturnItem(expression, name) ) => Unsolved[ReturnColumn](ReturnItem(expression.rewrite(f), name))
         case x => x
       },
       where = where.map {
@@ -157,7 +157,7 @@ case class PartiallySolvedQuery(returns: Seq[QueryToken[ReturnColumn]],
 
   def unsolvedExpressions = {
     val rExpressions = returns.flatMap {
-      case Unsolved(ReturnItem(expression, _, _)) => expression.filter( e=>true )
+      case Unsolved(ReturnItem(expression, _)) => expression.filter( e=>true )
       case _ => None
     }
 

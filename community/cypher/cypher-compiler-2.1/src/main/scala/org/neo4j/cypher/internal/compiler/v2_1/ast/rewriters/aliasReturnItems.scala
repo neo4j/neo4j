@@ -20,25 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{AliasedReturnItem, Identifier, UnaliasedReturnItem}
 
+object aliasReturnItems extends Rewriter {
 
-object expandStar extends Rewriter {
-
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
-
-  private val instance: Rewriter = Rewriter.lift {
-    case x: ReturnAll if x.seenIdentifiers.nonEmpty =>
-
-      val identifiers = x.seenIdentifiers.get.filter(isNamed).toSeq.sorted
-
-      val returnItems: Seq[ReturnItem] = identifiers.map {
-        id =>
-          val ident = Identifier(id)(x.position)
-          AliasedReturnItem(ident, ident)(x.position)
-      }.toSeq
-
-      ListedReturnItems(returnItems)(x.position)
+  private val instance = Rewriter.lift {
+    case item @ UnaliasedReturnItem(expr, string) =>
+      AliasedReturnItem(expr, Identifier(string)(expr.position))(item.position)
   }
+
+  def apply(input: AnyRef): Option[AnyRef] = instance.apply(input)
 }
