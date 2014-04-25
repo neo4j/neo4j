@@ -315,10 +315,10 @@ object StatementConverters {
     private def returnColumns = clause.returnItems match {
       case ast.ListedReturnItems(items) =>
         items.map {
-          case i: ast.UnaliasedReturnItem =>
-            commands.ReturnItem(i.expression.asCommandExpression, i.name, renamed = false)
-          case i: ast.AliasedReturnItem =>
-            commands.ReturnItem(i.expression.asCommandExpression, i.name, renamed = true)
+          case ast.AliasedReturnItem(expr, identifier) =>
+            commands.ReturnItem(expr.asCommandExpression, identifier.name)
+          case ast.UnaliasedReturnItem(expr, identifier) =>
+            commands.ReturnItem(expr.asCommandExpression, identifier)
         }
       case _: ast.ReturnAll =>
         Seq(commands.AllIdentifiers())
@@ -350,7 +350,7 @@ object StatementConverters {
 
     private def extractAggregationExpressions(items: Seq[commands.ReturnColumn]) = {
       val aggregationExpressions = items.collect {
-        case commands.ReturnItem(expression, _, _) => (expression.subExpressions :+ expression).collect {
+        case commands.ReturnItem(expression, _) => (expression.subExpressions :+ expression).collect {
           case agg: commandexpressions.AggregationExpression => agg
         }
       }.flatten

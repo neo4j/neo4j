@@ -20,25 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
+import org.neo4j.cypher.internal.compiler.v2_1.ast.NamedPatternPart
 
-
-object expandStar extends Rewriter {
-
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
-
-  private val instance: Rewriter = Rewriter.lift {
-    case x: ReturnAll if x.seenIdentifiers.nonEmpty =>
-
-      val identifiers = x.seenIdentifiers.get.filter(isNamed).toSeq.sorted
-
-      val returnItems: Seq[ReturnItem] = identifiers.map {
-        id =>
-          val ident = Identifier(id)(x.position)
-          AliasedReturnItem(ident, ident)(x.position)
-      }.toSeq
-
-      ListedReturnItems(returnItems)(x.position)
+object namedPatternPartRemover extends Rewriter {
+  val instance = Rewriter.lift {
+    case NamedPatternPart(_, part) => part
   }
+
+  def apply(v: AnyRef): Option[AnyRef] = instance.apply(v)
 }

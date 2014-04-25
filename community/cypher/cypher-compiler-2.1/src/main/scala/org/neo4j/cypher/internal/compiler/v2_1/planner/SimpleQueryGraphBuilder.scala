@@ -225,6 +225,35 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
           produceQueryGraphFromClauses(newQG, tl)
 
+        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl =>
+          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+
+          val tail0: QueryGraph = QueryGraph(
+            sortItems = produceSortItems(optOrderBy),
+            selections = selections,
+            subQueries = subQueries
+          )
+
+          val tail = produceQueryGraphFromClauses(tail0, tl)
+
+          qg ++ tail
+
+        case With(distinct, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
+          val projections = produceProjectionsMap(expressions)
+          val sortItems = produceSortItems(optOrderBy)
+
+          val tail0: QueryGraph = qg
+            .changeSortItems(sortItems)
+            .changeProjections(projections)
+            .copy(
+              limit = limit.map(_.expression),
+              skip = skip.map(_.expression)
+            )
+
+          val tail = produceQueryGraphFromClauses(tail0, tl)
+
+          qg.withTail(tail)
+
         case Seq() =>
           qg
 
@@ -232,9 +261,8 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           throw new CantHandleQueryException
       }
 
-  private def produceSortItems(optOrderBy: Option[OrderBy]) = {
+  private def produceSortItems(optOrderBy: Option[OrderBy]) =
     optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
-  }
 
   private def produceProjectionsMap(expressions: Seq[ReturnItem]) = {
     val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)

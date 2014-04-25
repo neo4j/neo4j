@@ -50,10 +50,13 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       patternRelationships = patternRelationships ++ other.patternRelationships,
       subQueries = subQueries ++ other.subQueries,
       argumentIds = argumentIds ++ other.argumentIds,
+      sortItems = other.sortItems,
       limit = either(limit, other.limit),
-      skip = either(skip, other.skip))
+      skip = either(skip, other.skip),
+      tail = either(tail, other.tail)
+    )
 
-  private def either[T](a: Option[T], b:Option[T]):Option[T] = (a, b) match {
+  private def either[T](a: Option[T], b:Option[T]): Option[T] = (a, b) match {
     case (None, s) => s
     case (s, None) => s
     case (None, None) => None
@@ -102,6 +105,11 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   def changeProjections(projections: Map[String, Expression]) = copy(projections = projections)
 
   def changeSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
+
+  def withTail(newTail: QueryGraph) = tail match {
+    case None    => copy(tail = Some(newTail))
+    case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
+  }
 
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
 
