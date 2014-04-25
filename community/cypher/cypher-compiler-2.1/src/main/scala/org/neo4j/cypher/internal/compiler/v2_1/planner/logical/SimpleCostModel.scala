@@ -80,7 +80,10 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       applyCost(outer = applyOp.outer, inner = applyOp.inner)
 
     case applyOp: SelectOrSemiApply =>
-      cost(applyOp.outer) + cardinality(applyOp.outer) * (cost(applyOp.inner) + EXPRESSION_SELECTION_OVERHEAD_PER_ROW)
+      selectOrSemiApplyCost(outer = applyOp.outer, inner = applyOp.inner)
+
+    case applyOp: SelectOrAntiSemiApply =>
+      selectOrSemiApplyCost(outer = applyOp.outer, inner = applyOp.inner)
 
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)
@@ -104,9 +107,11 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
         cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
   }
 
-  private def applyCost(outer: LogicalPlan, inner: LogicalPlan): Double = {
+  private def selectOrSemiApplyCost(outer: LogicalPlan, inner: LogicalPlan) =
+    cost(outer) + cardinality(outer) * (cost(inner) + EXPRESSION_SELECTION_OVERHEAD_PER_ROW)
+
+  private def applyCost(outer: LogicalPlan, inner: LogicalPlan) =
     cost(outer) + cardinality(outer) * cost(inner)
-  }
 
   private def cost(plan: LogicalPlan) = apply(plan)
 }

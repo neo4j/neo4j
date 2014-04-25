@@ -492,7 +492,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       SignedIntegerLiteral("42")_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Or(exp1, exp2)_)
-    val exists = HoldsOrExists(orPredicate, exp2, QueryGraph(
+    val exists = Exists(orPredicate, QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
         argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
@@ -522,7 +522,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       SignedIntegerLiteral("42") _
     ) _
     val orPredicate = Predicate(Set(IdName("a")), Or(exp1, exp2)_)
-    val exists = HoldsOrExists(orPredicate, exp2, QueryGraph(
+    val exists = Exists(orPredicate, QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
         argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
@@ -556,7 +556,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       SignedIntegerLiteral("21") _
     )_
     val orPredicate = Predicate(Set(IdName("a")), Or(exp1, Or(exp3, exp2)_)_)
-    val exists = HoldsOrExists(orPredicate, Or(exp3, exp2)_, QueryGraph(
+    val exists = Exists(orPredicate, QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
         argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())

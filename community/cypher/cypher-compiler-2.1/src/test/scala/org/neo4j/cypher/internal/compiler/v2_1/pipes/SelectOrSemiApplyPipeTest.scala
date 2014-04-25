@@ -25,29 +25,34 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.{Equals, Not, True}
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal}
 
-class SelectOrSemiApplyPipeTest extends CypherFunSuite {
-
-  def newMonitor = mock[PipeMonitor]
+class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 
   test("should only let through the one that matches when the expression is false") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
-    val rhs = new Pipe {
-      protected def internalCreateResults(state: QueryState) = {
-        val initalContext = state.initialContext.get
-        if (initalContext("a") == 1) Iterator(initalContext) else Iterator.empty
-      }
+    val rhs = pipeWithResults((state) => {
+      val initialContext = state.initialContext.get
+      if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+    })
 
-      def exists(pred: (Pipe) => Boolean) = ???
-      def executionPlanDescription = ???
-      def symbols: SymbolTable = ???
-      def monitor: PipeMonitor = newMonitor
-    }
-
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Not(True()))(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(List(Map("a" -> 1)))
+  }
+
+  test("should only let through the one that not matches when the expression is false and it is negated") {
+    val lhsData = List(Map("a" -> 1), Map("a" -> 2))
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+
+    val rhs = pipeWithResults((state) => {
+      val initialContext = state.initialContext.get
+      if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+    })
+
+    val result = SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = true)(newMonitor).createResults(QueryStateHelper.empty).toList
+
+    result should equal(List(Map("a" -> 2)))
   }
 
   test("should not let anything through if rhs is empty and expression is false") {
@@ -55,7 +60,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator.empty)
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Not(True()))(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(List.empty)
   }
@@ -65,25 +70,17 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator(Map("a" -> 1)))
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Not(True()))(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SelectOrSemiApplyPipe(lhs, rhs, Not(True()), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(lhsData)
   }
 
   test("if lhs is empty, rhs should not be touched regardless the given expression") {
-    val rhs =  new Pipe {
-      def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = fail("should not use this")
-
-      def exists(pred: (Pipe) => Boolean) = ???
-      def executionPlanDescription = ???
-      def symbols: SymbolTable = ???
-      def monitor: PipeMonitor = newMonitor
-    }
-
+    val rhs = pipeWithResults((_) => fail("should not use this"))
     val lhs = new FakePipe(Iterator.empty)
 
     // Should not throw
-    SelectOrSemiApplyPipe(lhs, rhs, True())(newMonitor).createResults(QueryStateHelper.empty).toList
+    SelectOrSemiApplyPipe(lhs, rhs, True(), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
   }
 
   test("should let pass the one satisfying the expression even if the rhs is empty") {
@@ -91,7 +88,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator.empty)
 
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)))(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(List(Map("a" -> 2)))
   }
@@ -100,19 +97,12 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2), Map("a" -> 3))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
-    val rhs = new Pipe {
-      protected def internalCreateResults(state: QueryState) = {
-        val initalContext = state.initialContext.get
-        if (initalContext("a") == 1) Iterator(initalContext) else Iterator.empty
-      }
+    val rhs = pipeWithResults((state: QueryState) => {
+        val initialContext = state.initialContext.get
+        if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+      })
 
-      def exists(pred: (Pipe) => Boolean) = ???
-      def executionPlanDescription = ???
-      def symbols: SymbolTable = ???
-      def monitor: PipeMonitor = newMonitor
-    }
-
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)))(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(List(Map("a" -> 1), Map("a" -> 2)))
   }
@@ -121,20 +111,12 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite {
     val lhsData = List(Map("a" -> 3), Map("a" -> 4))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 
-    val rhs = new Pipe {
-      protected def internalCreateResults(state: QueryState) = {
-        val initalContext = state.initialContext.get
-        if (initalContext("a") == 1) Iterator(initalContext) else Iterator.empty
-      }
+    val rhs = pipeWithResults((state: QueryState) => {
+        val initialContext = state.initialContext.get
+        if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+      })
 
-      def exists(pred: (Pipe) => Boolean) = ???
-      def executionPlanDescription = ???
-      def symbols: SymbolTable = ???
-      def monitor: PipeMonitor = newMonitor
-    }
-
-    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)))(newMonitor).createResults(QueryStateHelper.empty).toList
-
+    val result = SelectOrSemiApplyPipe(lhs, rhs, Equals(Identifier("a"), Literal(2)), negated = false)(newMonitor).createResults(QueryStateHelper.empty).toList
     result should equal(List.empty)
   }
 }

@@ -26,36 +26,26 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.True
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.GreaterThan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Predicate
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SelectOrSemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Exists
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
+  private val fakeExists = Exists(Predicate(Set.empty, True() _), QueryGraph.empty)
+
+  private implicit val planContext = newMockedPlanContext
+  when(planContext.getOptRelTypeId(any())).thenReturn(None)
+  when(planContext.getOptPropertyKeyId(any())).thenReturn(None)
+
+  private val factory = newMockedMetricsFactory
+  when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    case _: AllNodesScan => 2000000
+    case _: Expand => 10
+    case _: SingleRow => 1
+    case _ => Double.MaxValue
+  })
+
+  private implicit val planner = newPlanner(factory)
+
   test("should build plans containing semi apply for a single pattern predicate") {
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan => 2000000
-      case _: Expand => 10
-      case _: SingleRow => 1
-      case _ => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-    implicit val planContext = newMockedPlanContext
-
-    when(planContext.getOptRelTypeId("X")).thenReturn(None)
-
     produceLogicalPlan("MATCH (a) WHERE (a)-[:X]->() RETURN a") should equal(
       SemiApply(
         AllNodesScan("a"),
@@ -63,23 +53,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           SingleRow(Set("a")),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")()_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
         )( mockRel )
-      )( Exists( Predicate( Set.empty, True()_ ), QueryGraph.empty ) )
+      )( fakeExists )
     )
   }
 
-  test("should build plans containing semi apply for a single negated pattern predicate") {
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan => 2000000
-      case _: Expand => 10
-      case _: SingleRow => 1
-      case _ => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-    implicit val planContext = newMockedPlanContext
-
-    when(planContext.getOptRelTypeId("X")).thenReturn(None)
-
+  test("should build plans containing anti semi apply for a single negated pattern predicate") {
     produceLogicalPlan("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a") should equal(
       AntiSemiApply(
         AllNodesScan("a"),
@@ -87,23 +65,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           SingleRow(Set("a")),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")()_), "  UNNAMED31", "  UNNAMED23", SimplePatternLength
         )( mockRel )
-      )( NotExists( Predicate( Set.empty, True()_ ), QueryGraph.empty ) )
+      )( fakeExists )
     )
   }
 
   test("should build plans containing semi apply for two pattern predicates") {
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan => 2000000
-      case _: Expand => 10
-      case _: SingleRow => 1
-      case _ => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-    implicit val planContext = newMockedPlanContext
-
-    when(planContext.getOptRelTypeId(any())).thenReturn(None)
-
     produceLogicalPlan("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a") should equal(
       SemiApply(
         SemiApply(
@@ -112,29 +78,16 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             SingleRow(Set("a")),
             "a", Direction.OUTGOING, Seq(RelTypeName("X")()_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
           )( mockRel )
-        )( Exists( Predicate( Set.empty, True()_ ), QueryGraph.empty ) ),
+        )( fakeExists ),
         Expand(
           SingleRow(Set("a")),
           "a", Direction.OUTGOING, Seq(RelTypeName("Y")()_), "  UNNAMED44", "  UNNAMED36", SimplePatternLength
         )( mockRel )
-      )( Exists( Predicate( Set.empty, True()_ ), QueryGraph.empty ) )
+      )( fakeExists )
     )
   }
 
   test("should build plans containing select or semi apply for a pattern predicate and an expression") {
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan => 2000000
-      case _: Expand => 10
-      case _: SingleRow => 1
-      case _ => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-    implicit val planContext = newMockedPlanContext
-
-    when(planContext.getOptPropertyKeyId(any())).thenReturn(None)
-    when(planContext.getOptRelTypeId(any())).thenReturn(None)
-
     produceLogicalPlan("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a") should equal(
       SelectOrSemiApply(
         AllNodesScan("a"),
@@ -143,24 +96,11 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           "a", Direction.OUTGOING, Seq(RelTypeName("X")()_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
         )( mockRel ),
         GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")()_)_, SignedIntegerLiteral("4")_)_
-      )( HoldsOrExists( Predicate( Set.empty, True()_ ), True()_, QueryGraph.empty ) )
+      )( fakeExists )
     )
   }
 
   test("should build plans containing select or semi apply for a pattern predicate and multiple expressions") {
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan => 2000000
-      case _: Expand => 10
-      case _: SingleRow => 1
-      case _ => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-    implicit val planContext = newMockedPlanContext
-
-    when(planContext.getOptPropertyKeyId(any())).thenReturn(None)
-    when(planContext.getOptRelTypeId(any())).thenReturn(None)
-
     produceLogicalPlan("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a") should equal(
       SelectOrSemiApply(
         AllNodesScan("a"),
@@ -172,7 +112,20 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Equals(Property(Identifier("a")_, PropertyKeyName("prop2")()_)_, SignedIntegerLiteral("9")_)_,
           GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")()_)_, SignedIntegerLiteral("4")_)_
         )_
-      )( HoldsOrExists( Predicate( Set.empty, True()_ ), True()_, QueryGraph.empty ) )
+      )( fakeExists )
+    )
+  }
+
+  test("should build plans containing select or anti semi apply for a single negated pattern predicate") {
+    produceLogicalPlan("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a") should equal(
+      SelectOrAntiSemiApply(
+        AllNodesScan("a"),
+        Expand(
+          SingleRow(Set("a")),
+          "a", Direction.OUTGOING, Seq(RelTypeName("X")()_), "  UNNAMED45", "  UNNAMED37", SimplePatternLength
+        )( newPatternRelationship(start = "a", end = "  UNNAMED45", rel = "  UNNAMED37", types = Seq(RelTypeName("X")()_)) ),
+        Equals(Property(Identifier("a")_, PropertyKeyName("prop")()_)_, SignedIntegerLiteral("9")_)_
+      )( fakeExists )
     )
   }
 

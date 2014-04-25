@@ -21,24 +21,17 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 
-import org.neo4j.cypher.internal.compiler.v2_1
-import v2_1._
-import v2_1.spi.{GraphStatistics, PlanContext}
-import v2_1.parser.{ParserMonitor, CypherParser}
-import v2_1.planner.logical._
+
+import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{RelTypeName, Query}
-import v2_1.planner.logical.Metrics._
-
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Planner
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.Monitors
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 
 trait LogicalPlanningTestSupport extends CypherTestSupport {
   self: CypherTestSuite with MockitoSugar =>

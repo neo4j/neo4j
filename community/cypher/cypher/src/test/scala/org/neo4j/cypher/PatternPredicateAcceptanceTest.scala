@@ -93,12 +93,26 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
     assert(Seq(start1, start2, start3) == result)
   }
 
-  private def createPath(nodeValue: Any, relValue: Any): Node = {
-    val node0 = createLabeledNode(Map("p" -> nodeValue), "Start")
+  test("should handle or between one expression and a negated subquery") {
+    // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
+
+    val start1 = createPath(nodePropertyValue = 25, relPropertyValue = 444)
+    val start2 = createPath(nodePropertyValue = 12, relPropertyValue = 42)
+    createPath(nodePropertyValue = 25, relPropertyValue = 42)
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where n.p = 12 OR NOT (n)-[*2 {prop: 42}]->() return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start2) == result)
+  }
+
+  private def createPath(nodePropertyValue: Any, relPropertyValue: Any): Node = {
+    val node0 = createLabeledNode(Map("p" -> nodePropertyValue), "Start")
     val node1 = createNode()
 
-    relate(node0, node1, "prop" -> relValue)
-    relate(node1, createNode(), "prop" -> relValue)
+    relate(node0, node1, "prop" -> relPropertyValue)
+    relate(node1, createNode(), "prop" -> relPropertyValue)
 
     node0
   }

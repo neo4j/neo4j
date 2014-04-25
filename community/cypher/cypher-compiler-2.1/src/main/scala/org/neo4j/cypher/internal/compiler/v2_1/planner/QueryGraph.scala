@@ -21,20 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport
 
 trait SubQuery {
   def queryGraph: QueryGraph
 }
 
-trait PredicateSubQuery extends SubQuery {
-  def predicate: Predicate
-}
-
 case class OptionalMatch(queryGraph: QueryGraph) extends SubQuery
-case class Exists(predicate: Predicate, queryGraph: QueryGraph) extends PredicateSubQuery
-case class NotExists(predicate: Predicate, queryGraph: QueryGraph) extends PredicateSubQuery
-case class HoldsOrExists(orPredicate: Predicate, predicate: Expression, queryGraph: QueryGraph) extends SubQuery
+case class Exists(predicate: Predicate, queryGraph: QueryGraph) extends SubQuery
 
 // An abstract representation of the query graph being solved at the current step
 case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
@@ -127,11 +120,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     case OptionalMatch(qg) => qg
   }
 
-  def patternPredicates = subQueries.collect {
-    case e: Exists => e
-    case e: NotExists => e
-    case e: HoldsOrExists => e
-  }
+  def patternPredicates = subQueries.collect { case e: Exists => e }
 }
 
 object QueryGraph {
