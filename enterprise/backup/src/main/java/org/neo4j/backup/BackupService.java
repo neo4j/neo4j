@@ -96,14 +96,21 @@ class BackupService
     }
 
     private final FileSystemAbstraction fileSystem;
+    private final StringLogger logger;
 
     BackupService() {
-        this.fileSystem = new DefaultFileSystemAbstraction();
+        this( new DefaultFileSystemAbstraction(), StringLogger.SYSTEM );
     }
 
     BackupService( FileSystemAbstraction fileSystem )
     {
+        this( fileSystem, StringLogger.SYSTEM );
+    }
+
+    BackupService( FileSystemAbstraction fileSystem, StringLogger logger )
+    {
         this.fileSystem = fileSystem;
+        this.logger = logger;
     }
 
     BackupOutcome doFullBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
@@ -239,7 +246,6 @@ class BackupService
             bumpLogFile( targetDirectory, timestamp );
             if ( checkConsistency )
             {
-                StringLogger logger = StringLogger.SYSTEM;
                 try
                 {
                     consistent = new ConsistencyCheckService().runFullConsistencyCheck(
@@ -250,7 +256,7 @@ class BackupService
                 }
                 catch ( ConsistencyCheckIncompleteException e )
                 {
-                    e.printStackTrace( System.err );
+                    logger.error( "Consistency check incomplete", e );
                 }
                 finally
                 {
@@ -325,7 +331,7 @@ class BackupService
             try
             {
                 // Our existing backup is out of date.
-                System.out.println("Existing backup is too far out of date, a new full backup will be performed.");
+                logger.info( "Existing backup is too far out of date, a new full backup will be performed." );
 
                 File targetDirFile = new File( targetDirectory );
                 FileUtils.deleteRecursively( targetDirFile );
