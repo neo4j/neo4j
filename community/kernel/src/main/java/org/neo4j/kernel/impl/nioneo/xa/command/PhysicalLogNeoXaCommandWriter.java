@@ -140,6 +140,7 @@ public class PhysicalLogNeoXaCommandWriter implements XaCommandWriter
             buffer.putLong( record.getFirstOut() );
             buffer.putLong( record.getFirstIn() );
             buffer.putLong( record.getFirstLoop() );
+            buffer.putLong( record.getOwningNode() );
             return true;
         }
 

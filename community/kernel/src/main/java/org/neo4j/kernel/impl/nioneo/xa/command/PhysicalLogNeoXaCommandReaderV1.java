@@ -254,7 +254,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         @Override
         public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
         {
-            if ( !readAndFlip( byteChannel, scratch, 43 ) )
+            if ( !readAndFlip( byteChannel, scratch, 51 ) )
             {
                 return false;
             }
@@ -272,6 +272,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             record.setFirstOut( scratch.getLong() );
             record.setFirstIn( scratch.getLong() );
             record.setFirstLoop( scratch.getLong() );
+            record.setOwningNode( scratch.getLong() );
             command.init( record );
             return true;
         }
