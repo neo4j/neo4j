@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Exists, NotExists, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.True
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
@@ -96,7 +96,10 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           ApplyPipe(buildPipe(outer), buildPipe(inner))
 
         case SemiApply(outer, inner) =>
-          SemiApplyPipe(buildPipe(outer), buildPipe(inner))
+          SemiApplyPipe(buildPipe(outer), buildPipe(inner), false)
+
+        case AntiSemiApply(outer, inner) =>
+          SemiApplyPipe(buildPipe(outer), buildPipe(inner), true)
 
         case apply@SelectOrSemiApply(outer, inner, predicate) =>
           SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), predicate.asCommandPredicate)

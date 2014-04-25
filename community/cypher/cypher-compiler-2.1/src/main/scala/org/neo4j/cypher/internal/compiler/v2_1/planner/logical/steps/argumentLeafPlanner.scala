@@ -24,8 +24,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LeafPlanner, Can
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 object argumentLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
-    val givenNodeIds = context.queryGraph.argumentIds intersect context.queryGraph.patternNodes
-    CandidateList(givenNodeIds.map(argumentId => SingleRow(Set(argumentId))).toSeq)
+  def apply(qg: QueryGraph)(implicit ignored: LogicalPlanContext) = {
+    val givenNodeIds = qg.argumentIds intersect qg.patternNodes
+    if (givenNodeIds.isEmpty)
+      CandidateList()
+    else
+      CandidateList(Seq(SingleRow(givenNodeIds)))
   }
 }

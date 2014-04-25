@@ -45,10 +45,12 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
         yield {
           val rhs = context.strategy.plan(context.copy(queryGraph = pattern.queryGraph))
           pattern match {
-            case pattern: Exists =>
-              SemiApply(lhs, rhs)(pattern)
-            case pattern: HoldsOrExists =>
-              SelectOrSemiApply(lhs, rhs, pattern.predicate)(pattern)
+            case p: Exists =>
+              SemiApply(lhs, rhs)(p)
+            case p: NotExists =>
+              AntiSemiApply(lhs, rhs)(p)
+            case p: HoldsOrExists =>
+              SelectOrSemiApply(lhs, rhs, p.predicate)(p)
           }
         }
 
@@ -57,7 +59,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
 
     private def applicable(outerPlan: LogicalPlan, inner: SubQuery) = {
       inner match {
-        case e: Exists => {
+        case e: PredicateSubQuery => {
           val providedIds = outerPlan.coveredIds
           val hasDependencies = inner.queryGraph.argumentIds.forall(providedIds.contains)
           val isSolved = outerPlan.solved.selections.contains(e.predicate.exp)

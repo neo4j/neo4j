@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Optional
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateGenerator, CandidateList, LogicalPlanContext, PlanTable}
 
 object optional extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+  def apply(ignored: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
     val optionalCandidates =
       for (optionalQG <- context.queryGraph.optionalMatches if optionalQG.argumentIds.isEmpty)
       yield {

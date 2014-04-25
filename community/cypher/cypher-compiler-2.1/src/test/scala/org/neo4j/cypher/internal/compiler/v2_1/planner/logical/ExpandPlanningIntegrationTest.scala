@@ -46,10 +46,19 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("Should build plans containing expand for two unrelated relationship patterns") {
-    implicit val statistics = newMockedStatistics
-    implicit val planContext = newMockedPlanContext
-    implicit val planner = newPlanner(newMetricsFactory)
+    val factory: SpyableMetricsFactory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case AllNodesScan(IdName("a")) => 1000
+      case AllNodesScan(IdName("b")) => 2000
+      case AllNodesScan(IdName("c")) => 3000
+      case AllNodesScan(IdName("d")) => 4000
+      case _ : Expand                => 100.0
+      case _                         => Double.MaxValue
+    })
+    implicit val planner = newPlanner(factory)
 
+
+    implicit val planContext = newMockedPlanContext
     produceLogicalPlan("MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2") should equal(
       Projection(
         Selection(
@@ -58,11 +67,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Expand(
               AllNodesScan("a"),
               "a", Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength
-            )( mockRel ),
+            )( newPatternRelationship("a", "b", "r1") ),
             Expand(
               AllNodesScan("c"),
               "c", Direction.OUTGOING, Seq.empty, "d", "r2", SimplePatternLength
-            )( mockRel )
+            )( newPatternRelationship("c", "d", "r2") )
           )
         ),
         Map(
@@ -137,7 +146,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             AllNodesScan("a")
           ),
           "a", Direction.BOTH, Seq(RelTypeName("x")() _), "start", "rel", SimplePatternLength
-        )( mockRel ),
+        )( newPatternRelationship("start", "a", "rel", Direction.BOTH, Seq(RelTypeName("x")()_)) ),
         Map("a" -> Identifier("a") _)
       )
     )

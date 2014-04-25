@@ -67,6 +67,30 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     )
   }
 
+  test("should build plans containing semi apply for a single negated pattern predicate") {
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: AllNodesScan => 2000000
+      case _: Expand => 10
+      case _: SingleRow => 1
+      case _ => Double.MaxValue
+    })
+    implicit val planner = newPlanner(factory)
+    implicit val planContext = newMockedPlanContext
+
+    when(planContext.getOptRelTypeId("X")).thenReturn(None)
+
+    produceLogicalPlan("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a") should equal(
+      AntiSemiApply(
+        AllNodesScan("a"),
+        Expand(
+          SingleRow(Set("a")),
+          "a", Direction.OUTGOING, Seq(RelTypeName("X")()_), "  UNNAMED31", "  UNNAMED23", SimplePatternLength
+        )( mockRel )
+      )( NotExists( Predicate( Set.empty, True()_ ), QueryGraph.empty ) )
+    )
+  }
+
   test("should build plans containing semi apply for two pattern predicates") {
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {

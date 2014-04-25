@@ -33,8 +33,8 @@ class SemiApplyPipeTest extends CypherFunSuite {
 
     val rhs = new Pipe {
       protected def internalCreateResults(state: QueryState) = {
-        val initalContext = state.initialContext.get
-        if (initalContext("a") == 1) Iterator(initalContext) else Iterator.empty
+        val initialContext = state.initialContext.get
+        if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
       }
 
       def exists(pred: (Pipe) => Boolean) = ???
@@ -43,9 +43,30 @@ class SemiApplyPipeTest extends CypherFunSuite {
       def monitor: PipeMonitor = newMonitor
     }
 
-    val result = SemiApplyPipe(lhs, rhs)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SemiApplyPipe(lhs, rhs, false)(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(List(Map("a" -> 1)))
+  }
+
+  test("should only let through the one that not matches when negated") {
+    val lhsData = List(Map("a" -> 1), Map("a" -> 2))
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+
+    val rhs = new Pipe {
+      protected def internalCreateResults(state: QueryState) = {
+        val initialContext = state.initialContext.get
+        if (initialContext("a") == 1) Iterator(initialContext) else Iterator.empty
+      }
+
+      def exists(pred: (Pipe) => Boolean) = ???
+      def executionPlanDescription = ???
+      def symbols: SymbolTable = ???
+      def monitor: PipeMonitor = newMonitor
+    }
+
+    val result = SemiApplyPipe(lhs, rhs, true)(newMonitor).createResults(QueryStateHelper.empty).toList
+
+    result should equal(List(Map("a" -> 2)))
   }
 
   test("should not let anything through if rhs is empty") {
@@ -53,9 +74,19 @@ class SemiApplyPipeTest extends CypherFunSuite {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator.empty)
 
-    val result = SemiApplyPipe(lhs, rhs)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SemiApplyPipe(lhs, rhs, false)(newMonitor).createResults(QueryStateHelper.empty).toList
 
-    result should equal(List.empty)
+    result should be(empty)
+  }
+
+  test("should let everything through if rhs is empty and negated") {
+    val lhsData = List(Map("a" -> 1), Map("a" -> 2))
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val rhs = new FakePipe(Iterator.empty)
+
+    val result = SemiApplyPipe(lhs, rhs, true)(newMonitor).createResults(QueryStateHelper.empty).toList
+
+    result should equal(lhsData)
   }
 
   test("should let everything through if rhs is nonEmpty") {
@@ -63,12 +94,22 @@ class SemiApplyPipeTest extends CypherFunSuite {
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
     val rhs = new FakePipe(Iterator(Map("a" -> 1)))
 
-    val result = SemiApplyPipe(lhs, rhs)(newMonitor).createResults(QueryStateHelper.empty).toList
+    val result = SemiApplyPipe(lhs, rhs, false)(newMonitor).createResults(QueryStateHelper.empty).toList
 
     result should equal(lhsData)
   }
 
-  test("if lhs is empty, rhs should not be touched") {
+  test("should let nothing through if rhs is nonEmpty and negated") {
+    val lhsData = List(Map("a" -> 1), Map("a" -> 2))
+    val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
+    val rhs = new FakePipe(Iterator(Map("a" -> 1)))
+
+    val result = SemiApplyPipe(lhs, rhs, true)(newMonitor).createResults(QueryStateHelper.empty).toList
+
+    result should be(empty)
+  }
+
+  test("if lhs is empty, rhs should not be touched regardless if it is negated or not") {
     val rhs =  new Pipe {
       def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = fail("should not use this")
 
@@ -81,6 +122,6 @@ class SemiApplyPipeTest extends CypherFunSuite {
     val lhs = new FakePipe(Iterator.empty)
 
     // Should not throw
-    SemiApplyPipe(lhs, rhs)(newMonitor).createResults(QueryStateHelper.empty).toList
+    SemiApplyPipe(lhs, rhs, false)(newMonitor).createResults(QueryStateHelper.empty).toList
   }
 }

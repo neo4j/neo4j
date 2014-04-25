@@ -84,6 +84,38 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     result should equal(SemiApply(aPlan, inner)(exists))
   }
 
+  test("should introduce anti semi apply for unsolved exclusive negated pattern predicate") {
+    // Given
+    val predicate = Predicate(Set(IdName("a")), Not(exp)_)
+    val selections = Selections(Set(predicate))
+    val patternQG = QueryGraph().
+      add(patternRel).
+      addArgumentId(Seq(IdName("a"))).
+      addCoveredIdsAsProjections()
+
+    val notExists = NotExists(predicate, patternQG)
+    val qg = QueryGraph(
+      patternNodes = Set("a"),
+      selections = selections,
+      subQueries = Seq(notExists)
+    )
+
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = qg,
+      metrics = factory.newMetrics(newMockedStatistics)
+    )
+
+    val aPlan = newMockedLogicalPlan("a")
+    val inner: Expand = Expand(SingleRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength)(patternRel)
+
+    // When
+    val result = selectPatternPredicates(passThrough)(aPlan)
+
+    // Then
+    result should equal(AntiSemiApply(aPlan, inner)(notExists))
+  }
+
   test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
     // Given
     val predicate = Predicate(Set(IdName("a")), exp)
