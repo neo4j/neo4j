@@ -22,7 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Exists, Selections}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class SelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: Exists) extends LogicalPlan {
+case class SelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: Exists) extends AbstractSelectOrSemiApply(outer, inner, predicate, exists)
+case class SelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: Exists) extends AbstractSelectOrSemiApply(outer, inner, predicate, exists)
+
+abstract class AbstractSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression, exists: Exists) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
 

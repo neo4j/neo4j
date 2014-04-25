@@ -40,9 +40,11 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
           pattern match {
             case p: Exists =>
               p.predicate.exp match {
-                case Not(_) =>
+                case _: Not =>
                   AntiSemiApply(lhs, rhs)(p)
-                case Or(_,expression) =>
+                case Or(_:Not, expression) =>
+                  SelectOrAntiSemiApply(lhs, rhs, expression)(p)
+                case Or(_, expression) =>
                   SelectOrSemiApply(lhs, rhs, expression)(p)
                 case _ =>
                   SemiApply (lhs, rhs) (p)

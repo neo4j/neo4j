@@ -21,10 +21,10 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Exists, Selections}
 
-case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exists) extends AbstractSemiApply(outer, inner)(subQuery)
-case class AntiSemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exists) extends AbstractSemiApply(outer, inner)(subQuery)
+case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exists) extends AbstractSemiApply(outer, inner, subQuery)
+case class AntiSemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exists) extends AbstractSemiApply(outer, inner, subQuery)
 
-abstract class AbstractSemiApply(outer: LogicalPlan, inner: LogicalPlan)(val subQuery: Exists) extends LogicalPlan {
+abstract class AbstractSemiApply(outer: LogicalPlan, inner: LogicalPlan, val subQuery: Exists) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
 

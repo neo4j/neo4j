@@ -111,12 +111,18 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     val predicatesWithCorrectDeps = predicates.map {
       case Predicate(deps, e: PatternExpression) =>
         Predicate(deps.filter(x => isNamed(x.name)), e)
-      case Predicate(deps, or: Or) => {
-        val (patterns, operands) = or.treeFold((Vector.empty[PatternExpression], Vector.empty[Expression])) {
+      case Predicate(deps, or: Or) =>
+        val (patterns, operands) = or.treeFold((Vector.empty[Expression], Vector.empty[Expression])) {
+          case pattern@Not(_: PatternExpression) => {
+            case ((patterns, expressions), _) => (patterns :+ pattern, expressions)
+          }
+
           case pattern: PatternExpression => {
             case ((patterns, expressions), _) => (patterns :+ pattern, expressions)
           }
+
           case or: Or => (acc, children) => children(acc)
+
           case expr: Expression => {
             case ((patterns, expressions), children) => (patterns, expressions :+ expr)
           }
@@ -127,7 +133,6 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
         val newDeps = patternDeps ++ expressionDeps
         val orExpr = (patterns ++ operands).reduceRight(Or(_, _)(or.position))
         Predicate(newDeps, orExpr)
-      }
       case p => p
     }
 
@@ -135,6 +140,8 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
       case p@Predicate(_, Or(_: PatternExpression, Or(_: PatternExpression, _)))  =>
         throw new CantHandleQueryException
       case p@Predicate(_, Or(patternExpr: PatternExpression, expr: Expression)) if !expr.isInstanceOf[PatternExpression]  =>
+        Exists(p, extractQueryGraph(patternExpr))
+      case p@Predicate(_, Or(Not(patternExpr: PatternExpression), expr: Expression)) if !expr.isInstanceOf[PatternExpression]  =>
         Exists(p, extractQueryGraph(patternExpr))
       case p@Predicate(_, Not(patternExpr: PatternExpression)) =>
         Exists(p, extractQueryGraph(patternExpr))
