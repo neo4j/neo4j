@@ -28,6 +28,7 @@ import java.util.concurrent.ArrayBlockingQueue;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -70,6 +71,7 @@ public class RelationshipWriter extends Thread
             while(true)
             {
                 RelChainBuilder next = chainsToWrite.take();
+
                 if(next.nodeId() == -1)
                 {
                     // Signals that there are no more chains.
@@ -92,23 +94,31 @@ public class RelationshipWriter extends Thread
         }
     }
 
-    private void migrateNormalNode( NodeStore nodeStore, RelationshipStore relationshipStore,
-                                    RelChainBuilder relationships ) throws IOException
+    private void migrateNormalNode( NodeStore nodeStore,
+                                    final RelationshipStore relationshipStore,
+                                    final RelChainBuilder relationships ) throws IOException
     {
         /* Add node record
          * Add/update all relationship records */
         nodeStore.forceUpdateRecord( nodeReader.readNodeStore( relationships.nodeId() ) );
-        int i = 0;
-        for ( RelationshipRecord record : relationships )
-        {
-            if ( i == 0 )
+
+        relationships.accept( new Visitor<RelationshipRecord, RuntimeException>() {
+
+            private int i = 0;
+
+            @Override
+            public boolean visit( RelationshipRecord record ) throws RuntimeException
             {
-                setDegree( relationships.nodeId(), record, relationships.size() );
+                if ( i == 0 )
+                {
+                    setDegree( relationships.nodeId(), record, relationships.size() );
+                }
+                applyChangesToRecord( relationships.nodeId(), record, relationshipStore );
+                relationshipStore.forceUpdateRecord( record );
+                i++;
+                return false;
             }
-            applyChangesToRecord( relationships.nodeId(), record, relationshipStore );
-            relationshipStore.forceUpdateRecord( record );
-            i++;
-        }
+        });
     }
 
     private void migrateDenseNode( NodeStore nodeStore, RelationshipStore relationshipStore,
@@ -253,20 +263,25 @@ public class RelationshipWriter extends Thread
         }
     }
 
-    private Map<Integer, Relationships> splitUp( long nodeId, RelChainBuilder records )
+    private Map<Integer, Relationships> splitUp( final long nodeId, RelChainBuilder records )
     {
-        Map<Integer, Relationships> result = new HashMap<>();
-        for ( RelationshipRecord record : records )
+        final Map<Integer, Relationships> result = new HashMap<>();
+        records.accept( new Visitor<RelationshipRecord, RuntimeException>()
         {
-            Integer type = record.getType();
-            Relationships relationships = result.get( type );
-            if ( relationships == null )
+            @Override
+            public boolean visit( RelationshipRecord record ) throws RuntimeException
             {
-                relationships = new Relationships( nodeId );
-                result.put( type, relationships );
+                Integer type = record.getType();
+                Relationships relationships = result.get( type );
+                if ( relationships == null )
+                {
+                    relationships = new Relationships( nodeId );
+                    result.put( type, relationships );
+                }
+                relationships.add( record );
+                return false;
             }
-            relationships.add( record );
-        }
+        } );
         return result;
     }
 
