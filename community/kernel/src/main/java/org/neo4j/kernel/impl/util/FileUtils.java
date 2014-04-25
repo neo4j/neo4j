@@ -403,31 +403,6 @@ public class FileUtils
         throw storedIoe;
     }
 
-    private static void deleteFileWithRetries( Path file, int tries ) throws IOException
-    {
-        try
-        {
-            Files.delete( file );
-        }
-        catch ( IOException e )
-        {
-            if ( SystemUtils.isOsWindows() && mayBeWindowsMemoryMappedFileReleaseProblem( e ) && tries < WINDOWS_RETRY_COUNT )
-            {
-                waitAndThenTriggerGC();
-                deleteFileWithRetries( file, tries + 1 );
-            }
-            else
-            {
-                throw e;
-            }
-        }
-    }
-
-    private static boolean mayBeWindowsMemoryMappedFileReleaseProblem( IOException e )
-    {
-        return e.getMessage().contains( "The process cannot access the file because it is being used by another process." );
-    }
-
     /**
      * Move the contents of one directory into another directory. Allows moving the contents of a directory into a
      * sub-directory of itself.
@@ -495,6 +470,43 @@ public class FileUtils
         finally
         {
             reader.close();
+        }
+    }
+
+    private static void deleteFileWithRetries( Path file, int tries ) throws IOException
+    {
+        try
+        {
+            Files.delete( file );
+        }
+        catch ( IOException e )
+        {
+            if ( SystemUtils.isOsWindows() && mayBeWindowsMemoryMappedFileReleaseProblem( e ) )
+            {
+                if ( tries >= WINDOWS_RETRY_COUNT )
+                {
+                    throw new MaybeWindowsMemoryMappedFileReleaseProblem(e);
+                }
+                waitAndThenTriggerGC();
+                deleteFileWithRetries( file, tries + 1 );
+            }
+            else
+            {
+                throw e;
+            }
+        }
+    }
+
+    private static boolean mayBeWindowsMemoryMappedFileReleaseProblem( IOException e )
+    {
+        return e.getMessage().contains( "The process cannot access the file because it is being used by another process." );
+    }
+
+    public static class MaybeWindowsMemoryMappedFileReleaseProblem extends IOException
+    {
+        public MaybeWindowsMemoryMappedFileReleaseProblem( IOException e )
+        {
+            super(e);
         }
     }
 }
