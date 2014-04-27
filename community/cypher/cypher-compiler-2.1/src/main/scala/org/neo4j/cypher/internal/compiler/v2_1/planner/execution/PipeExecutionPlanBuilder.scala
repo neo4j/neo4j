@@ -20,14 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v2_1.commands.True
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{SortItem, True}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.OtherConverters._
+
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
 
@@ -37,7 +39,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
     def buildPipe(plan: LogicalPlan): Pipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
       plan match {
-        case Projection(left, expressions) =>
+        case Projection(left, expressions, _) =>
           ProjectionNewPipe(buildPipe(left), toLegacyExpressions(expressions))
 
         case SingleRow(_) =>
@@ -105,7 +107,16 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), predicate.asCommandPredicate, negated = true)
 
         case Sort(left, sortItems) =>
-          LegacySortPipe(buildPipe(left), sortItems.map(_.asCommandSortItem).toList)
+          SortPipe(buildPipe(left), sortItems)
+
+        case Skip(input, count) =>
+          SkipPipe(buildPipe(input), count.asCommandExpression)
+
+        case Limit(input, count) =>
+          LimitPipe(buildPipe(input), count.asCommandExpression)
+
+        case SortedLimit(input, exp, sortItems) =>
+          TopPipe(buildPipe(input), sortItems.map(_.asCommandSortItem).toList, exp.asCommandExpression)
 
         case _ =>
           throw new CantHandleQueryException

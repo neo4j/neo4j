@@ -92,7 +92,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     val plan = mock[LogicalPlan]
     doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
     doReturn(ids).when(plan).coveredIds
-    doReturn(QueryGraph(patternRelationships = patterns.toSet)).when(plan).solved
+    doReturn(QueryGraph(patternNodes = ids, patternRelationships = patterns.toSet)).when(plan).solved
     plan
   }
 

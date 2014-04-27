@@ -88,7 +88,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case UndirectedRelationshipByIdSeek(_, relIds, _, _) =>
       relIds.size * 2
 
-    case Projection(left, _) =>
+    case Projection(left, _, _) =>
       cardinality(left)
 
     case Optional(_, input) =>

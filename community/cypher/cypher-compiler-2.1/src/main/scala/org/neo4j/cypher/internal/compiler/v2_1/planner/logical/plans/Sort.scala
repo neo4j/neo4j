@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SortItem
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.SortDescription
 
-case class Sort(left: LogicalPlan, sortItems: Seq[SortItem]) extends LogicalPlan {
+case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription])(solvedSortItems: Seq[SortItem]) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
 
-  val solved = left.solved.changeSortItems(sortItems)
+  val solved = left.solved.changeSortItems(solvedSortItems)
 }
