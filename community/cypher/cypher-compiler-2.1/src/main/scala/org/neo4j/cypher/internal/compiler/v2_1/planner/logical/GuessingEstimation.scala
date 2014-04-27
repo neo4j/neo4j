@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Not, RelTypeName, HasLabels, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
@@ -96,9 +96,31 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
 
     case SingleRow(_) =>
       1
+
+    case Sort(input, _) =>
+      cardinality(input)
+
+    case Skip(input, skip: ast.NumberLiteral) =>
+      Math.max(0.0, cardinality(input) - skip.value.asInstanceOf[Number].doubleValue())
+
+    case Skip(input, _) =>
+      cardinality(input)
+
+    case Limit(input, limit: ast.NumberLiteral) =>
+      Math.min(cardinality(input), limit.value.asInstanceOf[Number].doubleValue())
+
+    case Limit(input, _) =>
+      cardinality(input)
+
+    case SortedLimit(input, limit: ast.NumberLiteral, _) =>
+      Math.min(cardinality(input), limit.value.asInstanceOf[Number].doubleValue())
+
+    case SortedLimit(input, _, _) =>
+      cardinality(input)
+
   }
 
-  private def semiApplyCardinality(outer: LogicalPlan, exp: Expression) =
+  private def semiApplyCardinality(outer: LogicalPlan, exp: ast.Expression) =
     cardinality(outer) * predicateSelectivity(Seq(exp))
 
   def averagePathLength(length:PatternLength) = length match {
@@ -107,13 +129,13 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case VarPatternLength(_, None)        => 42
   }
 
-  private def degreeByRelationshipTypesAndDirection(types: Seq[RelTypeName], dir: Direction) =
+  private def degreeByRelationshipTypesAndDirection(types: Seq[ast.RelTypeName], dir: Direction) =
     if (types.size <= 0)
       DEFAULT_EXPAND_RELATIONSHIP_DEGREE
     else
       types.foldLeft(0.0)((sum, t) => sum + degreeByRelationshipTypeAndDirection(t.id, dir)) / types.size
 
-  private def predicateSelectivity(predicates: Seq[Expression]): Double =
+  private def predicateSelectivity(predicates: Seq[ast.Expression]): Double =
     predicates.map(selectivity).foldLeft(1.0)(_ * _)
 
   private def degreeByRelationshipTypeAndDirection(optId: Option[RelTypeId], direction: Direction) = optId match {
@@ -128,14 +150,14 @@ class StatisticsBasedSelectivityModel(statistics: GraphStatistics) extends Metri
 
   import GuessingEstimation._
 
-  def apply(predicate: Expression): Double = predicate match {
-    case HasLabels(_, Seq(label)) =>
+  def apply(predicate: ast.Expression): Double = predicate match {
+    case ast.HasLabels(_, Seq(label)) =>
       if (label.id.isDefined)
         statistics.nodesWithLabelSelectivity(label.id.get)
       else
         LABEL_NOT_FOUND_SELECTIVITY
 
-    case Not(inner) =>
+    case ast.Not(inner) =>
       1.0 - apply(inner)
 
     case _  =>
