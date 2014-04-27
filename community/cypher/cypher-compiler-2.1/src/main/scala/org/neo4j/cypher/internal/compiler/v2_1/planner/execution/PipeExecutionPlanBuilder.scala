@@ -93,19 +93,19 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           ApplyPipe(buildPipe(outer), buildPipe(inner))
 
         case SemiApply(outer, inner) =>
-          SemiApplyPipe(buildPipe(outer), buildPipe(inner), false)
+          SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = false)
 
         case AntiSemiApply(outer, inner) =>
-          SemiApplyPipe(buildPipe(outer), buildPipe(inner), true)
+          SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = true)
 
         case apply@SelectOrSemiApply(outer, inner, predicate) =>
-          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), predicate.asCommandPredicate, false)
+          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), predicate.asCommandPredicate, negated = false)
 
         case apply@SelectOrAntiSemiApply(outer, inner, predicate) =>
-          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), predicate.asCommandPredicate, true)
+          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), predicate.asCommandPredicate, negated = true)
 
         case Sort(left, sortItems) =>
-          SortPipe(buildPipe(left), sortItems.map(_.asCommandSortItem).toList)
+          LegacySortPipe(buildPipe(left), sortItems.map(_.asCommandSortItem).toList)
 
         case _ =>
           throw new CantHandleQueryException

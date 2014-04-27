@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, SortPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, LegacySortPipe}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, CachedExpression, Expression}
 import org.neo4j.cypher.CypherTypeException
@@ -31,7 +31,7 @@ class SortBuilder extends PlanBuilder with SortingPreparations {
 
     val q = newPlan.query
     val sortItems = q.sort.map(_.token)
-    val resultPipe = new SortPipe(newPlan.pipe, sortItems.toList)
+    val resultPipe = new LegacySortPipe(newPlan.pipe, sortItems.toList)
 
     val resultQ = q.copy(sort = q.sort.map(_.solve))
 
