@@ -568,5 +568,31 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.subQueries should equal(Seq(exists))
   }
 
+  test("match n return n limit 10") {
+    // Given
+    val qg = buildQueryGraph("match n return n limit 10", normalize = true)
+
+    // Then inner pattern query graph
+    qg.selections should equal(Selections())
+    qg.patternNodes should equal(Set(IdName("n")))
+    qg.subQueries should be(empty)
+    qg.sortItems should equal(Seq.empty)
+    qg.limit should equal(Some(UnsignedIntegerLiteral("10")(pos)))
+    qg.skip should equal(None)
+  }
+
+  test("match n return n skip 10") {
+    // Given
+    val qg = buildQueryGraph("match n return n skip 10", normalize = true)
+
+    // Then inner pattern query graph
+    qg.selections should equal(Selections())
+    qg.patternNodes should equal(Set(IdName("n")))
+    qg.subQueries should be(empty)
+    qg.sortItems should equal(Seq.empty)
+    qg.limit should equal(None)
+    qg.skip should equal(Some(UnsignedIntegerLiteral("10")(pos)))
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)(None)_
 }
