@@ -52,7 +52,6 @@ class MealTestIgnored extends DocumentingTestBase {
   //bread--cereals //quantity=3
   //peter.weight = (potatoes.weight) + ( (meal.weight*composed_of.quantity) + ( (salt.weight*composed_of.quantity) + (flour.weight*composed_of.quantity) (cereal.weight*composed_of.quantity) ) )
 
-
   def section = "cookbook"
 
   @Test def weightedMeal() {
@@ -60,14 +59,18 @@ class MealTestIgnored extends DocumentingTestBase {
       title = "Longest Paths -- find the leaf ingredients",
       text = """From the root, find the paths to all the leaf ingredients in order to return the paths for the weight calculation""",
       queryText = "MATCH me-[:eats]->meal, " +
-                  "path=meal-[r:composed_of*0..]->ingredient " +
-                  "WHERE me.name='Peter' and not(ingredient --> ())" +
-                  "RETURN ingredient.name ",
-      optionalResultExplanation = "The activity stream for Jane is returned.",
-      assertions = (p) => assertEquals(List(Map("ingredient.name" -> "Potatoes"),
-        Map("ingredient.name" -> "Meat"),
-        Map("ingredient.name" -> "Salt"),
-        Map("ingredient.name" -> "Flour"),
-        Map("ingredient.name" -> "Cereals")), p.toList))
+        "path=meal-[r:composed_of*0..]->ingredient " +
+        "WHERE me.name='Peter' and not (ingredient) --> ()" +
+        "RETURN ingredient.name ",
+      optionalResultExplanation = "",
+      (p) => {
+        val result = p.toList
+        assertEquals(Set(Map("ingredient.name" -> "Potatoes"),
+          Map("ingredient.name" -> "Meat"),
+          Map("ingredient.name" -> "Salt"),
+          Map("ingredient.name" -> "Flour"),
+          Map("ingredient.name" -> "Cereals")), result.toSet)
+        assertEquals(result.size, 5)
+      })
   }
 }
