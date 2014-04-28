@@ -30,22 +30,35 @@ import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
+import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.store.StoreVersionMismatchHandler;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader.ReusableRelationship;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.util.DependencySatisfier;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
@@ -57,7 +70,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
  *
  * @see StoreUpgrader
  */
-public class StoreMigrator extends StoreMigrationParticipant.Adapter
+public class StoreMigrator implements StoreMigrationParticipant
 {
     // Developers: There is a benchmark, storemigrate-benchmark, that generates large stores and benchmarks
     // the upgrade process. Please utilize that when writing upgrade code to ensure the code is fast enough to
@@ -67,6 +80,10 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
     private final UpgradableDatabase upgradableDatabase;
     private final IdGeneratorFactory idGeneratorFactory;
     private final Config config;
+
+    // Dependency satisfaction
+    private NodeStore dependencyNodeStore;
+    private PropertyStore dependencyPropertyStore;
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
@@ -128,6 +145,47 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
                 true ); // allow overwrite target files
         StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
         LogFiles.move( fileSystem, storeDir, leftOversDir );
+    }
+
+    @Override
+    public void satisfyDependenciesDownstream( FileSystemAbstraction fileSystem, File storeDir,
+            File migrationDir, DependencySatisfier dependencySatisfier, boolean participatedInMigration )
+    {
+        // Schema cache (schema store not migrated, so grab the current one,
+        // but with some flexibility in version checking)
+        Config config = StoreFactory.readOnly( this.config );
+        StoreFactory legacyStoreFactory = new StoreFactory( StoreFactory.configForStoreDir( config, storeDir ),
+                idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL,
+                new DefaultTxHook(), StoreVersionMismatchHandler.ACCEPT );
+        SchemaStore schemaStore = legacyStoreFactory.newSchemaStore(
+                new File( storeDir, NeoStore.DEFAULT_NAME + StoreFactory.SCHEMA_STORE_NAME ) );
+        SchemaCache schemaCache = new SchemaCache( schemaStore );
+        schemaStore.close();
+        dependencySatisfier.satisfyDependency( SchemaCache.class, schemaCache );
+
+        // PropertyAccessor
+        StoreFactory storeFactory = new StoreFactory( StoreFactory.configForStoreDir( config, migrationDir ),
+                idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL,
+                new DefaultTxHook(), StoreVersionMismatchHandler.ACCEPT );
+        dependencyNodeStore = (participatedInMigration ? storeFactory : legacyStoreFactory).newNodeStore(
+                new File( participatedInMigration ? migrationDir : storeDir,
+                        NeoStore.DEFAULT_NAME + StoreFactory.NODE_STORE_NAME ) );
+        dependencyPropertyStore = legacyStoreFactory.newPropertyStore( new File( storeDir,
+                NeoStore.DEFAULT_NAME + StoreFactory.PROPERTY_STORE_NAME ) );
+        dependencySatisfier.satisfyDependency( PropertyAccessor.class,
+                new NeoStoreIndexStoreView( NO_LOCK_SERVICE, dependencyNodeStore, dependencyPropertyStore ) );
+    }
+
+    @Override
+    public void close()
+    {
+        for ( CommonAbstractStore store : new CommonAbstractStore[] { dependencyNodeStore, dependencyPropertyStore } )
+        {
+            if ( store != null )
+            {
+                store.close();
+            }
+        }
     }
 
     @Override

@@ -76,6 +76,8 @@ public abstract class SchemaIndexProviderApprovalTest
         BYTE_42( (byte) 42 ),
         DOUBLE_42( (double) 42 ),
         DOUBLE_42andAHalf( 42.5d ),
+        DOUBLE_BIG_ONE( 10000000000000000000.0D ),
+        DOUBLE_BIG_TWO( 9223372036854775807.0D ),
         SHORT_42( (short) 42 ),
         FLOAT_42( (float) 42 ),
         FLOAT_42andAHalf( 42.5f ),
@@ -170,7 +172,17 @@ public abstract class SchemaIndexProviderApprovalTest
 
         String errorMessage = currentValue.toString();
 
-        assertEquals( errorMessage, noIndexResult, indexResult );
+        assertEquals( errorMessage + " noIndex:" + withTypeInformation( noIndexResult ) + ", index:" + withTypeInformation( indexResult ), noIndexResult, indexResult );
+    }
+
+    private String withTypeInformation( Set<Object> set )
+    {
+        StringBuilder builder = new StringBuilder();
+        for ( Object item : set )
+        {
+            builder.append( item.toString() + "(" + item.getClass().getSimpleName() + "), " );
+        }
+        return builder.toString();
     }
 
     private static Map<TestValue, Set<Object>> runFindByLabelAndProperty( GraphDatabaseService db )

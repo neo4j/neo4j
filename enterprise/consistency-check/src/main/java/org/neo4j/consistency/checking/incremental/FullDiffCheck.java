@@ -56,7 +56,8 @@ public class FullDiffCheck extends DiffCheck
         LabelScanStore labelScanStore =
             new LuceneLabelScanStoreBuilder( storeDir, diffs.getRawNeoStore(), fileSystem, logger ).build();
 
-        SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
+        SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration,
+                fileSystem );
         DirectStoreAccess stores = new DirectStoreAccess( diffs, labelScanStore, indexes );
         return new FullCheck( tuningConfiguration, ProgressMonitorFactory.NONE ).execute( stores, logger );
     }

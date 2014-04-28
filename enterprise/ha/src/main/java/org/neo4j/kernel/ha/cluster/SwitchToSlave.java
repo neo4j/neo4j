@@ -49,6 +49,7 @@ import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -101,12 +102,13 @@ public class SwitchToSlave
 {
     // TODO solve this with lifecycle instance grouping or something
     @SuppressWarnings( "rawtypes" )
-    private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {
-            StoreLockerLifecycleAdapter.class,
-            XaDataSourceManager.class,
-            TransactionManager.class,
-            NodeManager.class,
-            IndexStore.class
+    private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {      //    ^     |
+            StoreLockerLifecycleAdapter.class,                                           //    |     |
+            KernelExtensions.class,                                                      //  stop    |
+            XaDataSourceManager.class,                                                   //    |     |
+            TransactionManager.class,                                                    //    |   start
+            NodeManager.class,                                                           //    |     |
+            IndexStore.class,                                                            //    |     v
     };
 
     private final Logging logging;
@@ -484,7 +486,7 @@ public class SwitchToSlave
                     resolver.resolveDependency( TransactionEventHandlers.class ),
                     monitors.newMonitor( IndexingService.Monitor.class ),
                     resolver.resolveDependency( FileSystemAbstraction.class ),
-                    resolver.resolveDependency( StoreUpgrader.class ));
+                    resolver.resolveDependency( StoreUpgrader.class ) );
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential

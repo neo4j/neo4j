@@ -24,15 +24,12 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.apache.lucene.index.IndexReader;
-import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
 import org.apache.lucene.store.Directory;
 
-class AllNodesCollector extends Collector
+class AllNodesCollector extends NodeIdCollector
 {
     static List<Long> getAllNodes( DirectoryFactory directoryFactory, File indexDir, Object propertyValue ) throws IOException
     {
@@ -41,7 +38,7 @@ class AllNodesCollector extends Collector
         IndexSearcher searcher = manager.acquire();
         try
         {
-            List<Long> nodes = new ArrayList<Long>();
+            List<Long> nodes = new ArrayList<>();
             LuceneDocumentStructure documentStructure = new LuceneDocumentStructure();
             searcher.search( documentStructure.newQuery( propertyValue ), new AllNodesCollector( documentStructure, nodes ) );
             return nodes;
@@ -55,35 +52,16 @@ class AllNodesCollector extends Collector
     }
 
     private final List<Long> nodeIds;
-    private final LuceneDocumentStructure documentLogic;
-    private IndexReader reader;
 
     AllNodesCollector( LuceneDocumentStructure documentLogic, List<Long> nodeIds )
     {
-        this.documentLogic = documentLogic;
+        super( documentLogic );
         this.nodeIds = nodeIds;
     }
 
     @Override
-    public void setScorer( Scorer scorer ) throws IOException
+    protected void collectNodeId( long nodeId )
     {
-    }
-
-    @Override
-    public void collect( int doc ) throws IOException
-    {
-        nodeIds.add( documentLogic.getNodeId( reader.document( doc ) ) );
-    }
-
-    @Override
-    public void setNextReader( IndexReader reader, int docBase ) throws IOException
-    {
-        this.reader = reader;
-    }
-
-    @Override
-    public boolean acceptsDocsOutOfOrder()
-    {
-        return true;
+        nodeIds.add( nodeId );
     }
 }

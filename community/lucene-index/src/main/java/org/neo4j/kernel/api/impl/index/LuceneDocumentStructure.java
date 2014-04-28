@@ -21,12 +21,10 @@ package org.neo4j.kernel.api.impl.index;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.FieldInfo.IndexOptions;
 import org.apache.lucene.index.Term;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TermQuery;
-import org.apache.lucene.util.NumericUtils;
 
 import org.neo4j.kernel.api.index.ArrayEncoder;
 
@@ -35,6 +33,12 @@ import static java.lang.String.format;
 import static org.apache.lucene.document.Field.Index.NOT_ANALYZED;
 import static org.apache.lucene.document.Field.Store.NO;
 import static org.apache.lucene.document.Field.Store.YES;
+import static org.apache.lucene.util.NumericUtils.doubleToPrefixCoded;
+import static org.apache.lucene.util.NumericUtils.longToPrefixCoded;
+
+import static org.neo4j.kernel.api.index.ArrayEncoder.asDoubleArray;
+import static org.neo4j.kernel.api.index.ArrayEncoder.asLongArray;
+import static org.neo4j.kernel.api.index.ArrayEncoder.isFloatingPointValueAndCanCoerceCleanlyIntoLong;
 
 public class LuceneDocumentStructure
 {
@@ -49,6 +53,65 @@ public class LuceneDocumentStructure
 
     enum ValueEncoding
     {
+        /**
+         * Indexing numbers is a little tricky because we do coercion between numeric types for the purpose of checking
+         * equality. All the integer types can coerce cleanly to long without loss, and all integer types except long
+         * can coerce cleanly to double without loss, and 32 bit floats can coerce to doubles without loss. However,
+         * long values cannot always be coerced to a double without loosing precision. This introduces a number of
+         * cases that we need to guard for.
+         *
+         * We solve this by always indexing the double representation for longs, so that when we query with a double
+         * value that that long value can be coerced into, we will find it. And likewise, we also index the long
+         * representation for any double value that can cleanly be coerced to a long value without loss of precision
+         * or information.
+         *
+         * So we have this decision table for indexing numbers:
+         *
+         *   Numeric Coercion : Indexed document
+         *    D -> L -> D     = (long=L, number=D)
+         *    D +> L          = (number=D)
+         *    L               = (long=L, number=D)
+         *
+         * And we have this table for constructing our queries:
+         *
+         *   Numeric Coercion : Query
+         *    D -> L -> D     = (long=L)
+         *    D +> L          = (number=D)
+         *    L               = (long=L)
+         *
+         * Where -> means precise coercion is possible, and +> means precise coercion is not possible.
+         *
+         * A similar thing is done for arrays, where we index both representations if any element of the array needs
+         * to be represented both as a long and as a double, according to the rules above.
+         */
+        Long
+        {
+            @Override
+            String key()
+            {
+                return "long";
+            }
+
+            @Override
+            boolean canEncode( Object value )
+            {
+                return value instanceof Long || isFloatingPointValueAndCanCoerceCleanlyIntoLong( value );
+            }
+
+            @Override
+            void encodeIntoDocument( Object value, Document document )
+            {
+                document.add( field( key(), longToPrefixCoded( ((Number)value).longValue() ) ) );
+                Number.encodeIntoDocument( value, document );
+            }
+
+            @Override
+            Query encodeQuery( Object value )
+            {
+                String encodedString = longToPrefixCoded( ((Number)value).longValue() );
+                return new TermQuery( new Term( key(), encodedString ) );
+            }
+        },
         Number
         {
             @Override
@@ -64,17 +127,55 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Fieldable encodeField( Object value )
+            void encodeIntoDocument( Object value, Document document )
             {
-                String encodedString = NumericUtils.doubleToPrefixCoded( ((Number)value).doubleValue() );
-                return field( key(), encodedString );
+                document.add( field( key(), doubleToPrefixCoded( ((Number)value).doubleValue() ) ) );
             }
 
             @Override
             Query encodeQuery( Object value )
             {
-                String encodedString = NumericUtils.doubleToPrefixCoded( ((Number)value).doubleValue() );
+                String encodedString = doubleToPrefixCoded( ((Number)value).doubleValue() );
                 return new TermQuery( new Term( key(), encodedString ) );
+            }
+        },
+        Long_Array
+        {
+            @Override
+            String key()
+            {
+                return "long_array";
+            }
+
+            @Override
+            boolean canEncode( Object value )
+            {
+                // true if any item in the array can be encoded by Long encoder
+                if ( value.getClass().isArray() )
+                {
+                    int length = java.lang.reflect.Array.getLength( value );
+                    for ( int i = 0; i < length; i++ )
+                    {
+                        if ( Long.canEncode( java.lang.reflect.Array.get( value, i ) ) )
+                        {
+                            return true;
+                        }
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            void encodeIntoDocument( Object value, Document document )
+            {
+                document.add( field( key(), ArrayEncoder.encode( asLongArray( value ) ) ) );
+                document.add( field( Array.key(), ArrayEncoder.encode( asDoubleArray( value ) ) ) );
+            }
+
+            @Override
+            Query encodeQuery( Object value )
+            {
+                return new TermQuery( new Term( key(), ArrayEncoder.encode( asLongArray( value ) ) ) );
             }
         },
         Array
@@ -92,9 +193,9 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Fieldable encodeField( Object value )
+            void encodeIntoDocument( Object value, Document document )
             {
-                return field( key(), ArrayEncoder.encode( value ) );
+                document.add( field( key(), ArrayEncoder.encode( value ) ) );
             }
 
             @Override
@@ -118,9 +219,9 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Fieldable encodeField( Object value )
+            void encodeIntoDocument( Object value, Document document )
             {
-                return field( key(), value.toString() );
+                document.add( field( key(), value.toString() ) );
             }
 
             @Override
@@ -145,9 +246,9 @@ public class LuceneDocumentStructure
             }
 
             @Override
-            Fieldable encodeField( Object value )
+            void encodeIntoDocument( Object value, Document document )
             {
-                return field( key(), value.toString() );
+                document.add( field( key(), value.toString() ) );
             }
 
             @Override
@@ -160,7 +261,7 @@ public class LuceneDocumentStructure
         abstract String key();
 
         abstract boolean canEncode( Object value );
-        abstract Fieldable encodeField( Object value );
+        abstract void encodeIntoDocument( Object value, Document document );
         abstract Query encodeQuery( Object value );
     }
 
@@ -172,7 +273,7 @@ public class LuceneDocumentStructure
         {
             if ( encoding.canEncode( value ) )
             {
-                document.add( encoding.encodeField( value ) );
+                encoding.encodeIntoDocument( value, document );
                 break;
             }
         }
@@ -199,7 +300,9 @@ public class LuceneDocumentStructure
         {
             if ( encoding.canEncode( value ) )
             {
-                return encoding.encodeQuery( value );
+                Query query = encoding.encodeQuery( value );
+                System.out.println( "Query for " + value + "::" + value.getClass().getSimpleName() + " = " + query );
+                return query;
             }
         }
         throw new IllegalArgumentException( format( "Unable to create newQuery for %s", value ) );

@@ -22,6 +22,7 @@ package org.neo4j.kernel.api.impl.index;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 
 import org.apache.lucene.document.Document;
@@ -30,7 +31,6 @@ import org.apache.lucene.index.Term;
 import org.apache.lucene.index.TermEnum;
 import org.apache.lucene.search.Collector;
 import org.apache.lucene.search.IndexSearcher;
-import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Scorer;
 import org.apache.lucene.search.SearcherFactory;
 import org.apache.lucene.search.SearcherManager;
@@ -95,7 +95,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
     {
         searcherManager.maybeRefresh();
         IndexSearcher searcher = searcherManager.acquire();
-        
+
         try
         {
             DuplicateCheckingCollector collector = duplicateCheckingCollector( accessor );
@@ -113,12 +113,7 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         }
         catch ( IOException e )
         {
-            Throwable cause = e.getCause();
-            if ( cause instanceof IndexEntryConflictException )
-            {
-                throw (IndexEntryConflictException) cause;
-            }
-            throw e;
+            throwIndexEntryConflictExceptionIfThatIsTheCause( e );
         }
         finally
         {
@@ -126,6 +121,21 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         }
     }
 
+    private void throwIndexEntryConflictExceptionIfThatIsTheCause( IOException e )
+            throws IndexEntryConflictException, IOException
+    {
+        Throwable cause = e.getCause();
+        if ( cause instanceof IndexEntryConflictException )
+        {
+            throw (IndexEntryConflictException) cause;
+        }
+        throw e;
+    }
+
+    /*
+     * Why do this duplicate checking on node property level, even though we could read the terms directly?
+     * Read on over at DuplicateCheckingCollector class level javadoc.
+     */
     private DuplicateCheckingCollector duplicateCheckingCollector( PropertyAccessor accessor )
     {
         return new DuplicateCheckingCollector( accessor, documentStructure, descriptor.getPropertyKeyId() );
@@ -171,18 +181,12 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                     for ( Object propertyValue : updatedPropertyValues )
                     {
                         collector.reset();
-                        Query query = documentStructure.newQuery( propertyValue );
-                        searcher.search( query, collector );
+                        searcher.search( documentStructure.newQuery( propertyValue ), collector );
                     }
                 }
                 catch ( IOException e )
                 {
-                    Throwable cause = e.getCause();
-                    if ( cause instanceof IndexEntryConflictException )
-                    {
-                        throw (IndexEntryConflictException) cause;
-                    }
-                    throw e;
+                    throwIndexEntryConflictExceptionIfThatIsTheCause( e );
                 }
                 finally
                 {
@@ -198,6 +202,24 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         };
     }
 
+    /**
+     * {@link Collector} able to detect duplicates, i.e. nodeId:propertyKey:propertyValue duplicates.
+     * It does so by reading a result set from a search and reading nodeId from lucene documents and
+     * property values from a {@link PropertyAccessor}. This collector is only invoked if duplicate values
+     * are suspected, i.e. if any term frequency is > 1.
+     *
+     * STORY
+     * This was introduced as a workaround for an issue where all numeric values were coerced into double,
+     * and at higher long values ranges of longs coerced to the same double value. So this collector
+     * went straight for the source of truth, i.e. the node properties themselves.
+     *   Before that the document values were decoded and compared directly, which was fine, but more
+     * sensitive to changes in how lucene was used. For example reading the document values would not work
+     * if there were a change where the original values weren't stored in the documents anymore.
+     *
+     * So, this collector doesn't absolutely need to be used, but it's a nice to have for being more
+     * resilient to changes later on. And it's not on any critical path, only invoked in a worst case scenario
+     * where a likelyhood of duplicates is observed after a full index population.
+     */
     private static class DuplicateCheckingCollector extends Collector
     {
         private final PropertyAccessor accessor;
@@ -205,7 +227,6 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
         private final int propertyKeyId;
         private final EntrySet actualValues;
         private IndexReader reader;
-        private int docBase;
 
         public DuplicateCheckingCollector(
                 PropertyAccessor accessor,
@@ -250,7 +271,8 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
             // We either have to find the first conflicting entry set element,
             // or append one for the property we just fetched:
             EntrySet current = actualValues;
-            scan:do {
+            scan:do
+            {
                 for ( int i = 0; i < EntrySet.INCREMENT; i++ )
                 {
                     Object value = current.value[i];
@@ -272,14 +294,14 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
                     }
                 }
                 current = current.next;
-            } while ( current != null );
+            }
+            while ( current != null );
         }
 
         @Override
         public void setNextReader( IndexReader reader, int docBase ) throws IOException
         {
             this.reader = reader;
-            this.docBase = docBase;
         }
 
         @Override
@@ -302,23 +324,22 @@ class DeferredConstraintVerificationUniqueLuceneIndexPopulator extends LuceneInd
      */
     private static class EntrySet
     {
-        static final int INCREMENT = 100;
+        private static final int INCREMENT = 100;
 
-        Object[] value = new Object[INCREMENT];
-        long[] nodeId = new long[INCREMENT];
-        EntrySet next;
+        private final Object[] value = new Object[INCREMENT];
+        private final long[] nodeId = new long[INCREMENT];
+        private EntrySet next;
 
         public void reset()
         {
             EntrySet current = this;
-            do {
-                for (int i = 0; i < INCREMENT; i++)
-                {
-                    current.value[i] = null;
-                    current.nodeId[i] = StatementConstants.NO_SUCH_NODE;
-                }
+            do
+            {
+                Arrays.fill( current.value, null );
+                Arrays.fill( current.nodeId, StatementConstants.NO_SUCH_NODE );
                 current = next;
-            } while ( current != null );
+            }
+            while ( current != null );
         }
     }
 }

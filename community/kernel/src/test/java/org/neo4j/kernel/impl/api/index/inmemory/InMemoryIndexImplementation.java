@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.impl.api.index.inmemory;
 
+import java.lang.reflect.Array;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.api.direct.BoundedIterable;
 import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.kernel.api.index.IndexReader;
+
+import static org.neo4j.kernel.api.index.ArrayEncoder.isFloatingPointValueAndCanCoerceCleanlyIntoLong;
 
 abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterable<Long>
 {
@@ -63,6 +66,11 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
 
     private static Object encode( Object propertyValue )
     {
+        if ( hasCoercionProblems( propertyValue ) )
+        {
+            return ((Number)propertyValue).longValue();
+        }
+
         if ( propertyValue instanceof Number )
         {
             return ((Number) propertyValue).doubleValue();
@@ -75,10 +83,32 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
 
         if ( propertyValue.getClass().isArray() )
         {
+            if ( anyElementHasCoercionProblems( propertyValue ) )
+            {
+                propertyValue = ArrayEncoder.asLongArray( propertyValue );
+            }
             return new ArrayKey( ArrayEncoder.encode( propertyValue ) );
         }
 
         return propertyValue;
+    }
+
+    private static boolean hasCoercionProblems( Object propertyValue )
+    {
+        return propertyValue instanceof Long || isFloatingPointValueAndCanCoerceCleanlyIntoLong( propertyValue );
+    }
+
+    private static boolean anyElementHasCoercionProblems( Object array )
+    {
+        int length = Array.getLength( array );
+        for ( int i = 0; i < length; i++ )
+        {
+            if ( hasCoercionProblems( Array.get( array, i ) ) )
+            {
+                return true;
+            }
+        }
+        return false;
     }
 
     private static class ArrayKey

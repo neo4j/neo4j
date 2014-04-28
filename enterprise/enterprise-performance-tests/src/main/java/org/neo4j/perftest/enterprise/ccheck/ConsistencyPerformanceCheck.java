@@ -143,7 +143,8 @@ public class ConsistencyPerformanceCheck
 
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
 
-        SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
+        SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration,
+                fileSystem );
         return new DirectStoreAccess( new StoreAccess( neoStore ),
                 new LuceneLabelScanStoreBuilder( storeDir, neoStore, fileSystem, logger ).build(), indexes );
     }

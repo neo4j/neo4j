@@ -29,10 +29,8 @@ import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -71,7 +69,6 @@ import static java.util.Collections.emptyList;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
@@ -502,9 +499,7 @@ public class StateHandlingStatementOperations implements
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
         PrimitiveLongResourceIterator committed = storeLayer.nodeGetUniqueFromIndexLookup( state, index, value );
-        PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        PrimitiveLongIterator exactMatchesResource = resourceIterator( exactMatches, committed );
-        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, exactMatchesResource );
+        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, committed );
         return single( changeFilteredMatches, NO_SUCH_NODE );
     }
 
@@ -513,50 +508,8 @@ public class StateHandlingStatementOperations implements
             throws IndexNotFoundKernelException
     {
         PrimitiveLongIterator committed = storeLayer.nodesGetFromIndexLookup( state, index, value );
-        PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, exactMatches );
+        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, committed );
         return changeFilteredMatches;
-    }
-
-    private PrimitiveLongIterator filterExactIndexMatches(
-            KernelStatement state,
-            IndexDescriptor index,
-            Object value,
-            PrimitiveLongIterator committed )
-    {
-        if ( isNumberOrArray( value ) )
-        {
-            return PrimitiveLongCollections.filter( committed, exactMatch( state, index.getPropertyKeyId(), value ) );
-        }
-        return committed;
-    }
-
-    private boolean isNumberOrArray( Object value )
-    {
-        return value instanceof Number || value.getClass().isArray();
-    }
-
-    private PrimitiveLongPredicate exactMatch(
-            final KernelStatement state,
-            final int propertyKeyId,
-            final Object value )
-    {
-        return new PrimitiveLongPredicate()
-        {
-            @Override
-            public boolean accept( long nodeId )
-            {
-                try
-                {
-                    return nodeGetProperty( state, nodeId, propertyKeyId ).valueEquals( value );
-                }
-                catch ( EntityNotFoundException e )
-                {
-                    throw new ThisShouldNotHappenError( "Chris", "An index claims a node by id " + nodeId +
-                            " has the value. However, it looks like that node does not exist.", e);
-                }
-            }
-        };
     }
 
     private PrimitiveLongIterator filterIndexStateChanges( KernelStatement state, IndexDescriptor index,

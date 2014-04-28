@@ -93,7 +93,7 @@ public abstract class GraphStoreFixture implements TestRule
     {
         Config config = new Config( singletonMap( GraphDatabaseSettings.store_dir.name(),
                 directory().getAbsolutePath() ) );
-        return new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, config );
+        return new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, config, new DefaultFileSystemAbstraction() );
     }
 
     public File directory()

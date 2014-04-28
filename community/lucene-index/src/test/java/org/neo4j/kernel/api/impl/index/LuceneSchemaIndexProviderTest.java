@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.index.IndexProviderCompatibilityTestSuite;
 import org.neo4j.kernel.configuration.Config;
 
@@ -31,7 +32,8 @@ public class LuceneSchemaIndexProviderTest extends IndexProviderCompatibilityTes
     protected LuceneSchemaIndexProvider createIndexProvider()
     {
         return new LuceneSchemaIndexProvider( new DirectoryFactory.InMemoryDirectoryFactory(),
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
+                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) ),
+                new DefaultFileSystemAbstraction()
         );
     }
 }

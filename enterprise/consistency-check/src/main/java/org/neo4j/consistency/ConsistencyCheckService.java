@@ -80,7 +80,8 @@ public class ConsistencyCheckService
 
                 labelScanStore =
                     new LuceneLabelScanStoreBuilder( storeDir, store.getRawNeoStore(), fileSystem, logger ).build();
-                SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
+                SchemaIndexProvider indexes = new LuceneSchemaIndexProvider(
+                        DirectoryFactory.PERSISTENT, tuningConfiguration, fileSystem );
                 DirectStoreAccess stores = new DirectStoreAccess( store, labelScanStore, indexes );
                 summary = new FullCheck( tuningConfiguration, progressFactory )
                         .execute( stores, StringLogger.tee( logger, report ) );
@@ -148,14 +149,14 @@ public class ConsistencyCheckService
     public enum Result
     {
         FAILURE( false ), SUCCESS( true );
-        
-        private boolean successful;
+
+        private final boolean successful;
 
         private Result( boolean successful )
         {
             this.successful = successful;
         }
-        
+
         public boolean isSuccessful()
         {
             return this.successful;
