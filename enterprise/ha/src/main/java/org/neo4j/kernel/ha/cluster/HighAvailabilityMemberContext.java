@@ -34,4 +34,6 @@ public interface HighAvailabilityMemberContext
     URI getAvailableHaMaster();
 
     void setAvailableHaMasterId( URI availableHaMasterId );
+
+    boolean isSlaveOnly();
 }

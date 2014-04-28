@@ -41,7 +41,7 @@ public enum HighAvailabilityMemberState
                                                                     InstanceId masterId )
                 {
                     assert context.getAvailableHaMaster() == null;
-                    if ( masterId.equals( context.getMyId() ) )
+                    if ( masterId.equals( context.getMyId() ) && !context.isSlaveOnly() )
                     {
                         return TO_MASTER;
                     }
@@ -334,6 +334,12 @@ public enum HighAvailabilityMemberState
 
     public abstract HighAvailabilityMemberState slaveIsAvailable( HighAvailabilityMemberContext context, InstanceId slaveId, URI slaveUri );
 
+    /**
+     * The purpose of this is that an instance cannot vote in an election while becoming a slave,
+     * as it is copying stores.
+     *
+     * @return whether the instance is eligible or not
+     */
     public abstract boolean isEligibleForElection();
 
     public abstract boolean isAccessAllowed();
