@@ -21,19 +21,23 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.commands.Predicate
 
-case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate, negated: Boolean)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.filter {
       (outerContext) =>
-        val innerState = state.copy(initialContext = Some(outerContext))
-        val innerResults = inner.createResults(innerState)
-        if (negated) innerResults.isEmpty else innerResults.nonEmpty
+        predicate.isTrue(outerContext)(state) || {
+          val innerState = state.copy(initialContext = Some(outerContext))
+          val innerResults = inner.createResults(innerState)
+          if (negated) innerResults.isEmpty else innerResults.nonEmpty
+        }
     }
   }
 
   def executionPlanDescription = source.executionPlanDescription.
-    andThen(this, "SemiApply", "inner" -> inner.executionPlanDescription)
+    andThen(this, "SelectOrSemiApply", "inner" -> inner.executionPlanDescription, "predicate" -> predicate.toString)
 
   def symbols: SymbolTable = source.symbols
 }

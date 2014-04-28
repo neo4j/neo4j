@@ -957,7 +957,6 @@ public abstract class InternalAbstractGraphDatabase
     {
         // Create DataSource
         Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory = new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
-
         {
             @Override
             public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
@@ -1309,6 +1308,10 @@ public abstract class InternalAbstractGraphDatabase
             else if( StoreFactory.class.isAssignableFrom( type ) && type.isInstance( storeFactory ) )
             {
                 return type.cast( storeFactory );
+            }
+            else if ( SchemaWriteGuard.class.isAssignableFrom( type ) )
+            {
+                return type.cast( InternalAbstractGraphDatabase.this );
             }
             else if ( StringLogger.class.isAssignableFrom( type ) && type.isInstance( msgLog ) )
             {

@@ -20,22 +20,26 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 import java.util.concurrent.ArrayBlockingQueue;
+import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+
+import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader.ReusableRelationship;
 
 /**
  * Migrates a neo4j database from one version to the next. Instantiated with a {@link LegacyStore}
@@ -105,7 +109,7 @@ public class StoreMigrator
 
         private void migrateNodesAndRelationships() throws IOException
         {
-            /* For each node
+             /* For each node
              *   load the full relationship chain into memory
              *   if ( more than THRESHOLD relationships )
              *      store in dense node way
@@ -122,7 +126,7 @@ public class StoreMigrator
             nodeStore.setHighId( nodeReader.getMaxId() );
             relationshipStore.setHighId( relReader.getMaxId() );
 
-            final ArrayBlockingQueue<RelChainBuilder> chainsToWrite = new ArrayBlockingQueue<>( 24 );
+            final ArrayBlockingQueue<RelChainBuilder> chainsToWrite = new ArrayBlockingQueue<>( 1024 );
             final AtomicReference<Throwable> writerException = new AtomicReference<>();
 
             Thread writerThread = new RelationshipWriter( chainsToWrite, neoStore.getDenseNodeThreshold(), nodeStore,
@@ -131,49 +135,103 @@ public class StoreMigrator
 
             try
             {
-
-                final Map<Long, RelChainBuilder> relChains = new HashMap<>();
-                relReader.accept( new LegacyRelationshipStoreReader.Visitor()
+                // Determined through testing to be a reasonable weigh-off between risk/benefit
+                final int maxSimultaneousNodes = (int) (120 * (Runtime.getRuntime().totalMemory() / (1024 * 1024)));
+                final AtomicBoolean morePassesRequired = new AtomicBoolean(false);
+                final AtomicLong firstRelationshipRequiringANewPass = new AtomicLong(0l);
+                final PrimitiveLongObjectMap<RelChainBuilder> relChains = Primitive.longObjectMap();
+                long numberOfPasses = 1;
+                do
                 {
-                    @Override
-                    public void visit( long id, RelationshipRecord record )
+                    percentComplete = 0;
+                    if(morePassesRequired.get())
                     {
-                        reportProgress( id );
-                        if ( record.inUse() )
+                        if(numberOfPasses == 1)
                         {
-                            appendToRelChain( record.getFirstNode(), record.getFirstPrevRel(),
-                                    record.getFirstNextRel(), record );
-                            appendToRelChain( record.getSecondNode(), record.getSecondPrevRel(),
-                                    record.getSecondNextRel(), record );
+                            System.out.println("\nNote: Was not able to do single-pass upgrade due to highly " +
+                                    "dispersed relationships across the store. Will need to perform multi-pass upgrade.\n" +
+                                    "Note: Dotted line shows progress for each pass, the X in the dotted line shows total progress.\n");
                         }
+                        else
+                        {
+                            System.out.println( " [MultiPass Upgrade] Finished pass #" + (numberOfPasses-1) );
+                        }
+                        numberOfPasses++;
                     }
 
-                    private void appendToRelChain( long nodeId, long prevRel, long nextRel, RelationshipRecord record )
+                    relReader.accept( firstRelationshipRequiringANewPass.get(),
+                            new Visitor<ReusableRelationship, RuntimeException>()
                     {
-                        RelChainBuilder chain = relChains.get( nodeId );
-                        if ( chain == null )
+                        private final boolean isMultiPass = morePassesRequired.getAndSet( false );
+
+                        @Override
+                        public boolean visit( ReusableRelationship rel )
                         {
-                            chain = new RelChainBuilder( nodeId );
-                            relChains.put( nodeId, chain );
+                            reportProgress( rel.id() );
+                            if ( rel.inUse() )
+                            {
+                                if(appendToRelChain( rel.getFirstNode(), rel.getFirstPrevRel(),
+                                        rel.getFirstNextRel(), rel ))
+                                {
+                                    return true;
+                                }
+
+                                if(appendToRelChain( rel.getSecondNode(), rel.getSecondPrevRel(),
+                                        rel.getSecondNextRel(), rel ))
+                                {
+                                    return true;
+                                }
+                            }
+                            return false;
                         }
 
-                        chain.append( record, prevRel, nextRel );
-
-                        if ( chain.isComplete() )
+                        private boolean appendToRelChain( long nodeId, long prevRel, long nextRel,
+                                                       ReusableRelationship rel )
                         {
-                            assertNoWriterException( writerException );
-                            try
+                            RelChainBuilder chain = relChains.get( nodeId );
+
+                            if ( chain == null )
                             {
-                                chainsToWrite.put( relChains.remove( nodeId ) );
+                                if ( morePassesRequired.get() || (isMultiPass && nodeStore.inUse( nodeId )) )
+                                {
+                                    // Handled in a previous pass, ignore.
+                                    return false;
+                                }
+
+                                if ( relChains.size() >= maxSimultaneousNodes )
+                                {
+                                    morePassesRequired.set( true );
+                                    firstRelationshipRequiringANewPass.set( rel.id() );
+                                    System.out.print( "X" );
+                                    return false;
+                                }
+
+                                chain = new RelChainBuilder( nodeId );
+                                relChains.put( nodeId, chain );
                             }
-                            catch ( InterruptedException e )
+
+                            chain.append( rel.createRecord(), prevRel, nextRel );
+
+                            if ( chain.isComplete() )
                             {
-                                Thread.interrupted();
-                                throw new RuntimeException( "Interrupted while reading relationships.", e );
+                                assertNoWriterException( writerException );
+                                try
+                                {
+                                    RelChainBuilder remove = relChains.remove( nodeId );
+                                    chainsToWrite.put( remove );
+                                }
+                                catch ( InterruptedException e )
+                                {
+                                    Thread.interrupted();
+                                    throw new RuntimeException( "Interrupted while reading relationships.", e );
+                                }
                             }
+
+                            return false;
                         }
-                    }
-                } );
+                    } );
+
+                } while(morePassesRequired.get());
 
                 try
                 {
@@ -219,10 +277,10 @@ public class StoreMigrator
 
         private void reportProgress( long id )
         {
-            int newPercent = totalEntities == 0 ? 100 : (int) ((id+1) * 100 / totalEntities);
-            if ( newPercent > percentComplete )
+            int newPercent = totalEntities == 0 ? 100 : (int) (id * 100 / (totalEntities));
+            while( newPercent > percentComplete )
             {
-                percentComplete = newPercent;
+                percentComplete++;
                 progressMonitor.percentComplete( percentComplete );
             }
         }

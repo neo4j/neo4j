@@ -53,12 +53,13 @@ public class RelChainBuilderTest
         RelChainBuilder chain = new RelChainBuilder( 1l );
 
         // When
+        chain.append( new RelationshipRecord( 2l ), 1l, 3l );
         chain.append( new RelationshipRecord( 4l ), 3l, Record.NO_NEXT_RELATIONSHIP.intValue() );
         chain.append( new RelationshipRecord( 3l ), 2l, 4l );
-        chain.append( new RelationshipRecord( 2l ), Record.NO_PREV_RELATIONSHIP.intValue(), 3l );
+        chain.append( new RelationshipRecord( 1l ), Record.NO_PREV_RELATIONSHIP.intValue(), 2l );
 
         // Then
         assertTrue( chain.isComplete() );
-        assertThat( chain.size(), equalTo(3));
+        assertThat( chain.size(), equalTo(4));
     }
 }

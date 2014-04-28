@@ -26,36 +26,94 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
 
   test("should filter relationships with properties") {
     // given
-    relate(createNode(), createNode(), "id" -> 1)
+    val node = createNode()
+    relate(node, createNode(), "id" -> 1)
     relate(createNode(), createNode(), "id" -> 2)
 
     // when
-    val result = executeWithNewPlanner("match (n) where (n)-[{id: 1}]->() return n").columnAs[Node]("n").toList
+    val result = executeScalarWithNewPlanner[Node]("match (n) where (n)-[{id: 1}]->() return n")
 
     // then
-    result.size should be(1)
+    result should equal(node)
+  }
+
+  test("should support negated pattern predicate") {
+    // given
+    val node = createNode()
+    relate(node, createNode(), "id" -> 1)
+    relate(createNode(), createNode(), "id" -> 2)
+
+    // when
+    val result = executeWithNewPlanner("match (n) where NOT (n)-[{id: 1}]->() return n").columnAs[Node]("n").toList
+
+    // then
+    result.size should be(3)
+    result should not contain(node)
   }
 
   test("should filter var length relationships with properties") {
     // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
 
-    def createPath(value: Any): Node = {
-      val node0 = createLabeledNode("Start")
-      val node1 = createNode()
-
-      relate(node0, node1, "prop" -> value)
-      relate(node1, createNode(), "prop" -> value)
-
-      node0
-    }
-
-    val start1 = createPath(42)
-    createPath(666)
+    val start1 = createPath(12, 42)
+    createPath(324234,666)
 
     // when
     val result = executeScalarWithNewPlanner[Node]("match (n:Start) where (n)-[*2 {prop: 42}]->() return n")
 
     // then
     assert(start1 == result)
+  }
+
+  test("should handle or between an expression and a subquery") {
+    // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
+
+    val start1 = createPath(33, 42)
+    val start2 = createPath(12, 666)
+    createPath(55555, 7777)
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where n.p = 12 OR (n)-[*2 {prop: 42}]->() return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start2) == result)
+  }
+
+  test("should handle or between 2 expressions and a subquery") {
+    // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
+
+    val start1 = createPath(33, 42)
+    val start2 = createPath(12, 666)
+    val start3 = createPath(25, 444)
+    createPath(55555, 7777)
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where n.p = 12 OR (n)-[*2 {prop: 42}]->() OR n.p = 25 return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start2, start3) == result)
+  }
+
+  test("should handle or between one expression and a negated subquery") {
+    // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
+
+    val start1 = createPath(nodePropertyValue = 25, relPropertyValue = 444)
+    val start2 = createPath(nodePropertyValue = 12, relPropertyValue = 42)
+    createPath(nodePropertyValue = 25, relPropertyValue = 42)
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where n.p = 12 OR NOT (n)-[*2 {prop: 42}]->() return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start2) == result)
+  }
+
+  private def createPath(nodePropertyValue: Any, relPropertyValue: Any): Node = {
+    val node0 = createLabeledNode(Map("p" -> nodePropertyValue), "Start")
+    val node1 = createNode()
+
+    relate(node0, node1, "prop" -> relPropertyValue)
+    relate(node1, createNode(), "prop" -> relPropertyValue)
+
+    node0
   }
 }

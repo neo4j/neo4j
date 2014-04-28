@@ -1,6 +1,9 @@
-2.1.0-SNAPSHOT
+2.1.0-M02
 --------------
-o Introduces a new default lock manager, Forseti, with significantly improved performance characteristics.
+o Clarify the error message for when releasing locks claim prior to a master-switch
+o Reduce network overhead of locking in HA
+o Fix of issue with state bookkeeping for reporting instance role
+
 
 2.0.2
 -----

@@ -25,8 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer,
 
 object verifyBestPlan extends PlanTransformer {
   def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
-    if (context.queryGraph != plan.solved)
-      throw new CantHandleQueryException
+    if (!context.queryGraph.equivalent(plan.solved))
+      throw new CantHandleQueryException()
     plan
   }
 }

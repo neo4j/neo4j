@@ -54,6 +54,30 @@ public class CreateSimpleGraph
         // START SNIPPET: queryForSingers
         findSingersInBands( firstNode );
         // END SNIPPET: queryForSingers
+
+        sendTransactionalCypherQuery( "MATCH (n) WHERE has(n.name) RETURN n.name AS name" );
+    }
+
+    private static void sendTransactionalCypherQuery(String query) {
+        // START SNIPPET: queryAllNodes
+        final String txUri = SERVER_ROOT_URI + "transaction/commit";
+        WebResource resource = Client.create().resource( txUri );
+
+        String payload = "{\"statements\" : [ {\"statement\" : \"" +query + "\"} ]}";
+        ClientResponse response = resource
+                .accept( MediaType.APPLICATION_JSON )
+                .type( MediaType.APPLICATION_JSON )
+                .entity( payload )
+                .post( ClientResponse.class );
+        
+        System.out.println( String.format(
+                "POST [%s] to [%s], status code [%d], returned data: "
+                        + System.getProperty( "line.separator" ) + "%s",
+                payload, txUri, response.getStatus(),
+                response.getEntity( String.class ) ) );
+        
+        response.close();
+        // END SNIPPET: queryAllNodes
     }
 
     private static void findSingersInBands( URI startNode )

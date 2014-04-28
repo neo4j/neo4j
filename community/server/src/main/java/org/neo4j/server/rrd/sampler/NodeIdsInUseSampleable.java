@@ -21,6 +21,7 @@ package org.neo4j.server.rrd.sampler;
 
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.server.rrd.UnableToSampleException;
 
 public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
 {
@@ -37,6 +38,13 @@ public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
 
     @Override public double getValue()
     {
-        return getNodeManager().getNumberOfIdsInUse( Node.class );
+        try
+        {
+            return getNodeManager().getNumberOfIdsInUse( Node.class );
+        }
+        catch ( Exception e )
+        {
+            throw new UnableToSampleException();
+        }
     }
 }

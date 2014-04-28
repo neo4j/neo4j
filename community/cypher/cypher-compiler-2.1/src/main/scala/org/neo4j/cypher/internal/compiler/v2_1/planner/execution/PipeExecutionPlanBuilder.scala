@@ -77,10 +77,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           VarLengthExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name), min, max)
 
         case OptionalExpand(left, IdName(fromName), dir, types, IdName(toName), IdName(relName), SimplePatternLength, predicates) =>
-          val predicate = predicates
-            .map(_.asCommandPredicate)
-            .reduceOption(_ ++ _)
-            .getOrElse(True())
+          val predicate = predicates.map(_.asCommandPredicate).reduceOption(_ ++ _).getOrElse(True())
           OptionalExpandPipe(buildPipe(left), fromName, relName, toName, dir, types.map(_.name), predicate)
 
         case NodeHashJoin(node, left, right) =>
@@ -96,7 +93,16 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           ApplyPipe(buildPipe(outer), buildPipe(inner))
 
         case SemiApply(outer, inner) =>
-          SemiApplyPipe(buildPipe(outer), buildPipe(inner))
+          SemiApplyPipe(buildPipe(outer), buildPipe(inner), false)
+
+        case AntiSemiApply(outer, inner) =>
+          SemiApplyPipe(buildPipe(outer), buildPipe(inner), true)
+
+        case apply@SelectOrSemiApply(outer, inner, predicate) =>
+          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), predicate.asCommandPredicate, false)
+
+        case apply@SelectOrAntiSemiApply(outer, inner, predicate) =>
+          SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), predicate.asCommandPredicate, true)
 
         case Sort(left, sortItems) =>
           SortPipe(buildPipe(left), sortItems.map(_.asCommandSortItem).toList)

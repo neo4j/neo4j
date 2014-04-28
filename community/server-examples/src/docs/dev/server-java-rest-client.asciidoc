@@ -9,7 +9,7 @@ Still, when geting started it's useful to see some patterns that can be re-used.
 In this brief overview, we'll show you how to create and manipulate a simple graph through the REST API and also how to query it.
 
 For these examples, we've chosen the http://jersey.java.net/[Jersey] client components,
-which are easily http://jersey.java.net/nonav/documentation/latest/user-guide.html#chapter_deps[downloaded] via Maven.
+which are easily https://jersey.java.net/nonav/documentation/1.9/user-guide.html#chapter_deps[downloaded] via Maven.
 
 == Start the server ==
 
@@ -24,11 +24,34 @@ classifier=sources
 ----
 
 If the status of the response is +200 OK+, then we know the server is running fine and we can continue.
-If the code fails to conenct to the server, then please have a look at <<operations>>. 
+If the code fails to connect to the server, then please have a look at <<operations>>.
 
 NOTE: If you get any other response than +200 OK+ (particularly +4xx+ or +5xx+ responses) then please check your configuration and look in the log files in the 'data/log' directory.
 
-== Creating a node ==
+== Sending Cypher ==
+
+Using the REST API, we can send <<cypher-query-lang,Cypher>> queries to the server.
+This is the main way to use Neo4j.
+It allows control of the transactional boundaries as needed.
+
+Let's try to use this to list all the nodes in the database which have a +name+ property.
+
+[snippet,java]
+----
+component=neo4j-server-examples
+source=org/neo4j/examples/server/CreateSimpleGraph.java
+tag=queryAllNodes
+classifier=sources
+----
+
+For more details, see <<rest-api-transactional>>.
+
+== Fine-grained REST API calls
+
+For exploratory and special purposes, there is a fine grained REST API, see <<rest-api>>.
+The following sections highlight some of the basic operations.
+
+=== Creating a node ===
 
 The REST API uses +POST+ to create nodes.
 Encapsulating that in Java is straightforward using the Jersey client:
@@ -46,7 +69,7 @@ The server will then have created a new node in the database and responded with 
 
 In our example, we call this functionality twice to create two nodes in our database.
 
-== Adding properties ==
+=== Adding properties ===
 
 Once we have nodes in our datatabase, we can use them to store useful data.
 In this case, we're going to store information about music in our database.
@@ -74,7 +97,7 @@ classifier=sources
 
 If everything goes well, we'll get a +204 No Content+ back indicating that the server processed the request but didn't echo back the property value.
 
-== Adding relationships ==
+=== Adding relationships ===
 
 Now that we have nodes to represent Joe Strummer and The Clash, we can relate them.
 The REST API supports this through a +POST+ of a relationship representation to the start node of the relationship. 
@@ -103,7 +126,7 @@ classifier=sources
 
 If all goes well, we receive a +201 Created+ status code and a +Location+ header which contains a URI of the newly created relation.
 
-== Add properties to a relationship ==
+=== Add properties to a relationship ===
 
 Like nodes, relationships can have properties.
 Since we're big fans of both Joe Strummer and the Clash, we'll add a rating to the relationship so that others can see he's a 5-star singer with the band.
@@ -129,7 +152,7 @@ classifier=sources
 Assuming all goes well, we'll get a +204 OK+ response back from the server (which we can check by calling
 +ClientResponse.getStatus()+) and we've now established a very small graph that we can query.
 
-== Querying graphs ==
+=== Querying graphs ===
 
 As with the embedded version of the database, the Neo4j server uses graph traversals to look for data in graphs.
 Currently the Neo4j server expects a JSON payload describing the traversal to be +POST+-ed at the starting node for the traversal (though this is _likely to change_ in time to a +GET+-based approach).

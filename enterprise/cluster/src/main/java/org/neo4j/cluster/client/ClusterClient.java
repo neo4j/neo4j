@@ -30,11 +30,12 @@ import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.TimeUnit;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
+
 import org.neo4j.cluster.BindingListener;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.ClusterMonitor;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.StateMachines;
@@ -350,11 +351,13 @@ public class ClusterClient extends LifecycleAdapter
             @Override
             public void channelOpened( URI to )
             {
+                logging.getMessagesLog( NetworkReceiver.class ).info( to + " connected to me at " + server.boundAt() );
             }
 
             @Override
             public void channelClosed( URI to )
             {
+                logging.getMessagesLog( NetworkReceiver.class ).info( to + " disconnected from me at " + server.boundAt() );
             }
         } );
 

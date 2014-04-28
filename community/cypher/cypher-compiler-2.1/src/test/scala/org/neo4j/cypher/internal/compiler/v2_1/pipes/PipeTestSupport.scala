@@ -19,21 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.commons.CypherTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.scalatest.mock.MockitoSugar
 
-case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.filter {
-      (outerContext) =>
-        val innerState = state.copy(initialContext = Some(outerContext))
-        val innerResults = inner.createResults(innerState)
-        if (negated) innerResults.isEmpty else innerResults.nonEmpty
-    }
+trait PipeTestSupport extends CypherTestSupport with MockitoSugar {
+
+  val newMonitor = mock[PipeMonitor]
+
+  def pipeWithResults(f: QueryState => Iterator[ExecutionContext]) = new Pipe {
+    protected def internalCreateResults(state: QueryState) = f(state)
+    def exists(pred: (Pipe) => Boolean) = ???
+    def executionPlanDescription = ???
+    def symbols: SymbolTable = ???
+    def monitor: PipeMonitor = newMonitor
   }
-
-  def executionPlanDescription = source.executionPlanDescription.
-    andThen(this, "SemiApply", "inner" -> inner.executionPlanDescription)
-
-  def symbols: SymbolTable = source.symbols
 }

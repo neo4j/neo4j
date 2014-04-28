@@ -20,20 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Exists, Selections}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exists) extends AbstractSemiApply(outer, inner, subQuery)
-case class AntiSemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exists) extends AbstractSemiApply(outer, inner, subQuery)
+case class SelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: Exists) extends AbstractSelectOrSemiApply(outer, inner, predicate, exists)
+case class SelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: Exists) extends AbstractSelectOrSemiApply(outer, inner, predicate, exists)
 
-abstract class AbstractSemiApply(outer: LogicalPlan, inner: LogicalPlan, val subQuery: Exists) extends LogicalPlan {
+abstract class AbstractSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression, exists: Exists) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
 
   val solved = {
-    val newSelections = Selections(outer.solved.selections.predicates + subQuery.predicate)
-    outer.solved.copy(
-      subQueries = outer.solved.subQueries :+ subQuery,
-      selections = newSelections,
-      argumentIds = subQuery.queryGraph.argumentIds
-    )
+    val newSelections = Selections(outer.solved.selections.predicates + exists.predicate)
+    outer.solved.copy(subQueries = outer.solved.subQueries :+ exists, selections = newSelections)
   }
 }

@@ -71,7 +71,13 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     @Override
     public void scheduleRecurring( Group group, final Runnable runnable, long period, TimeUnit timeUnit )
     {
-        ScheduledFuture<?> scheduled = scheduledExecutor.scheduleAtFixedRate( runnable, 0, period, timeUnit );
+        scheduleRecurring( group, runnable, 0, period, timeUnit );
+    }
+
+    @Override
+    public void scheduleRecurring( Group group, final Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
+    {
+        ScheduledFuture<?> scheduled = scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit );
         if(recurringJobs.putIfAbsent( runnable, scheduled ) != null)
         {
             scheduled.cancel( true );

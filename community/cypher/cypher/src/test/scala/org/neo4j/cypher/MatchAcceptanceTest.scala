@@ -208,6 +208,16 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     result.columnAs("r").toList should equal(List(r1, r2))
   }
 
+  test("should handle OR in the WHERE clause") {
+    val a = createNode(Map("p1" -> 12))
+    val b = createNode(Map("p2" -> 13))
+    createNode()
+
+    val result = executeWithNewPlanner("match (n) where n.p1 = 12 or n.p2 = 13 return n")
+
+    result.columnAs("n").toList should equal(List(a, b))
+  }
+
   test("should return a simple path") {
     createNodes("A", "B")
     val r = relate("A" -> "KNOWS" -> "B")
@@ -656,7 +666,7 @@ return p, leaf""")
     val c = createNode("B")
     relate(a, b)
 
-    val result = execute( """
+    val result = executeWithNewPlanner("""
 MATCH (a {name:'A'}), (other {name:'B'})
 WHERE NOT a-->other
 RETURN other""")

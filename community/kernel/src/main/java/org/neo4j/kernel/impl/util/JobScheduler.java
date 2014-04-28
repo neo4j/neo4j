@@ -40,6 +40,7 @@ public interface JobScheduler extends Lifecycle
         indexPopulation,
         masterTransactionPushing,
         serverTransactionTimeout,
+        pullUpdates,
 
         /**
          * Gathers approximated data about the underlying data store.
@@ -50,6 +51,8 @@ public interface JobScheduler extends Lifecycle
     void schedule( Group group, Runnable job );
 
     void scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit );
+
+    void scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit );
 
     void cancelRecurring( Group group, Runnable runnable );
 }

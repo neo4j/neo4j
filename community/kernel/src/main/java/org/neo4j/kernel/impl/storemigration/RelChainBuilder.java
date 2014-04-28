@@ -19,41 +19,23 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-
+import org.neo4j.collection.primitive.Primitive;
+import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
+import org.neo4j.collection.primitive.PrimitiveLongObjectVisitor;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 
 /**
  * Allows incrementally building up a relationship chain, and allows telling when the chain is complete.
  */
-public class RelChainBuilder implements Iterable<RelationshipRecord>
+public class RelChainBuilder
 {
-    static class ChainEntry
-    {
-        private final RelationshipRecord record;
-        private final boolean isLast;
-        private ChainEntry next;
-
-        ChainEntry( RelationshipRecord record, boolean isLast, ChainEntry next )
-        {
-            this.record = record;
-            this.isLast = isLast;
-            this.next = next;
-        }
-    }
-
     private final long nodeId;
 
-    /**
-     * Makes up a singly linked list of relationships, will only contain the parts that are complete starting from
-     * the first rel. */
-    private ChainEntry head = null;
+    private PrimitiveLongObjectMap<RelationshipRecord> records = Primitive.longObjectMap();
 
-    /** Fast lookup of relationships in the chain by id. */
-    private Map<Long, ChainEntry> chainIndex = new HashMap<>();
+    private int missing = 0;
 
     public RelChainBuilder( long nodeId )
     {
@@ -62,37 +44,35 @@ public class RelChainBuilder implements Iterable<RelationshipRecord>
 
     public void append( RelationshipRecord record, long prevRel, long nextRel )
     {
-        boolean isFirst = prevRel == Record.NO_PREV_RELATIONSHIP.intValue();
-        boolean isLast = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue();
-
-        ChainEntry entry = new ChainEntry( record, isLast, chainIndex.get( nextRel ) );
-        chainIndex.put( record.getId(), entry );
-
-        if(isFirst)
+        if( records.containsKey( prevRel ))
         {
-            head = entry;
+            missing--;
         }
-        else
+        else if( !(prevRel == Record.NO_PREV_RELATIONSHIP.intValue()) )
         {
-            ChainEntry prevInChain = chainIndex.get( prevRel );
-            if(prevInChain != null)
-            {
-                prevInChain.next = entry;
-
-            }
+            missing++;
         }
+
+        if( records.containsKey( nextRel ))
+        {
+            missing--;
+        }
+        else if( !(nextRel == Record.NO_NEXT_RELATIONSHIP.intValue()) )
+        {
+            missing++;
+        }
+
+        records.put( record.getId(), record );
     }
 
     public boolean isComplete()
     {
-        for(ChainEntry entry = head; entry != null; entry = entry.next)
-            if(entry.isLast) return true;
-        return false;
+        return missing == 0;
     }
 
     public int size()
     {
-        return chainIndex.size();
+        return records.size();
     }
 
     public long nodeId()
@@ -100,32 +80,24 @@ public class RelChainBuilder implements Iterable<RelationshipRecord>
         return nodeId;
     }
 
-    @Override
-    public Iterator<RelationshipRecord> iterator()
+    public String toString()
     {
-        return new Iterator<RelationshipRecord>()
+        return "RelChainBuilder{" +
+                "nodeId=" + nodeId +
+                ", records=" + records +
+                ", missing=" + missing +
+                '}';
+    }
+
+    public void accept( final Visitor<RelationshipRecord, RuntimeException> visitor )
+    {
+        records.visitEntries( new PrimitiveLongObjectVisitor<RelationshipRecord>()
         {
-            private ChainEntry next = head;
-
             @Override
-            public boolean hasNext()
+            public void visited( long key, RelationshipRecord relationshipRecord )
             {
-                return next != null;
+                visitor.visit( relationshipRecord );
             }
-
-            @Override
-            public RelationshipRecord next()
-            {
-                ChainEntry current = next;
-                next = current.next;
-                return current.record;
-            }
-
-            @Override
-            public void remove()
-            {
-
-            }
-        };
+        });
     }
 }

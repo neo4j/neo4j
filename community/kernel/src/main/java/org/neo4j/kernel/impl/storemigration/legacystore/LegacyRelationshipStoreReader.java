@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
@@ -32,9 +33,92 @@ import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class LegacyRelationshipStoreReader implements Closeable
 {
-    public interface Visitor
+    public static class ReusableRelationship
     {
-        void visit( long relId, RelationshipRecord record );
+        private long recordId;
+        private boolean inUse;
+        private long firstNode;
+        private long secondNode;
+        private int type;
+        private long firstPrevRel;
+        private long firstNextRel;
+        private long secondNextRel;
+        private long secondPrevRel;
+        private long nextProp;
+
+        private RelationshipRecord record;
+
+        public void reset(long id, boolean inUse, long firstNode, long secondNode, int type, long firstPrevRel,
+                          long firstNextRel, long secondNextRel, long secondPrevRel, long nextProp)
+        {
+            this.record = null;
+            this.recordId = id;
+            this.inUse = inUse;
+            this.firstNode = firstNode;
+            this.secondNode = secondNode;
+            this.type = type;
+            this.firstPrevRel = firstPrevRel;
+            this.firstNextRel = firstNextRel;
+            this.secondNextRel = secondNextRel;
+            this.secondPrevRel = secondPrevRel;
+            this.nextProp = nextProp;
+        }
+
+        public boolean inUse()
+        {
+            return inUse;
+        }
+
+        public long getFirstNode()
+        {
+            return firstNode;
+        }
+
+        public long getFirstNextRel()
+        {
+            return firstNextRel;
+        }
+
+        public long getSecondNode()
+        {
+            return secondNode;
+        }
+
+        public long getFirstPrevRel()
+        {
+            return firstPrevRel;
+        }
+
+        public long getSecondPrevRel()
+        {
+            return secondPrevRel;
+        }
+
+        public long getSecondNextRel()
+        {
+            return secondNextRel;
+        }
+
+        public long id()
+        {
+            return recordId;
+        }
+
+        public RelationshipRecord createRecord()
+        {
+            if( record == null)
+            {
+                record = new RelationshipRecord( recordId, firstNode, secondNode, type );
+                record.setInUse( inUse );
+                record.setFirstPrevRel( firstPrevRel );
+                record.setFirstNextRel( firstNextRel );
+                record.setSecondPrevRel( secondPrevRel );
+                record.setSecondNextRel( secondNextRel );
+                record.setNextProp( nextProp );
+
+            }
+            return record;
+        }
     }
 
     public static final String FROM_VERSION = "RelationshipStore " + LegacyStore.LEGACY_VERSION;
@@ -55,11 +139,17 @@ public class LegacyRelationshipStoreReader implements Closeable
         return maxId;
     }
 
-    public void accept( Visitor visitor ) throws IOException
+    /**
+     * @param approximateStartId the scan will start at the beginning of the page this id is located in.
+     */
+    public void accept( long approximateStartId, Visitor<ReusableRelationship, RuntimeException> visitor ) throws IOException
     {
         ByteBuffer buffer = ByteBuffer.allocateDirect( 4 * 1024 * RECORD_SIZE );
+        ReusableRelationship rel = new ReusableRelationship();
 
-        long position = 0, fileSize = fileChannel.size();
+        long position = (approximateStartId * RECORD_SIZE) - ( (approximateStartId * RECORD_SIZE) % buffer.capacity()),
+             fileSize = fileChannel.size();
+
         while(position < fileSize)
         {
             int recordOffset = 0;
@@ -71,19 +161,22 @@ public class LegacyRelationshipStoreReader implements Closeable
                 buffer.position(recordOffset);
                 long id = (position + recordOffset) / RECORD_SIZE;
 
-                visitor.visit( id, readRecord( buffer, id ) );
+                readRecord(buffer, id, rel);
+
+                if(visitor.visit( rel ))
+                {
+                    return;
+                }
 
                 recordOffset += RECORD_SIZE;
             }
 
-            position += buffer.capacity()   ;
+            position += buffer.capacity();
         }
     }
 
-    private RelationshipRecord readRecord( ByteBuffer buffer, long id )
+    private void readRecord( ByteBuffer buffer, long id, ReusableRelationship rel)
     {
-        RelationshipRecord record;
-
         long inUseByte = buffer.get();
 
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
@@ -104,38 +197,36 @@ public class LegacyRelationshipStoreReader implements Closeable
             long secondNodeMod = (typeInt & 0x70000000L) << 4;
             int type = (int) (typeInt & 0xFFFF);
 
-            record = new RelationshipRecord( id,
-                    LegacyStore.longFromIntAndMod( firstNode, firstNodeMod ),
-                    LegacyStore.longFromIntAndMod( secondNode, secondNodeMod ), type );
-            record.setInUse( inUse );
+            firstNode = LegacyStore.longFromIntAndMod( firstNode, firstNodeMod );
+            secondNode = LegacyStore.longFromIntAndMod( secondNode, secondNodeMod );
 
             long firstPrevRel = LegacyStore.getUnsignedInt( buffer );
             long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
-            record.setFirstPrevRel( LegacyStore.longFromIntAndMod( firstPrevRel, firstPrevRelMod ) );
+            firstPrevRel =  LegacyStore.longFromIntAndMod( firstPrevRel, firstPrevRelMod );
 
             long firstNextRel = LegacyStore.getUnsignedInt( buffer );
             long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
-            record.setFirstNextRel( LegacyStore.longFromIntAndMod( firstNextRel, firstNextRelMod ) );
+            firstNextRel = LegacyStore.longFromIntAndMod( firstNextRel, firstNextRelMod );
 
             long secondPrevRel = LegacyStore.getUnsignedInt( buffer );
             long secondPrevRelMod = (typeInt & 0x380000L) << 13;
-            record.setSecondPrevRel( LegacyStore.longFromIntAndMod( secondPrevRel, secondPrevRelMod ) );
+            secondPrevRel = LegacyStore.longFromIntAndMod( secondPrevRel, secondPrevRelMod );
 
             long secondNextRel = LegacyStore.getUnsignedInt( buffer );
             long secondNextRelMod = (typeInt & 0x70000L) << 16;
-            record.setSecondNextRel( LegacyStore.longFromIntAndMod( secondNextRel, secondNextRelMod ) );
+            secondNextRel = LegacyStore.longFromIntAndMod( secondNextRel, secondNextRelMod );
 
             long nextProp = LegacyStore.getUnsignedInt( buffer );
             long nextPropMod = (inUseByte & 0xF0L) << 28;
+            nextProp = LegacyStore.longFromIntAndMod( nextProp, nextPropMod );
 
-            record.setNextProp( LegacyStore.longFromIntAndMod( nextProp, nextPropMod ) );
+            rel.reset( id, true, firstNode, secondNode, type,
+                       firstPrevRel, firstNextRel, secondNextRel, secondPrevRel, nextProp );
         }
         else
         {
-            record = new RelationshipRecord( id, -1, -1, -1 );
-            record.setInUse( false );
+            rel.reset( id, false, -1, -1, -1, -1, -1, -1, -1, -1 );
         }
-        return record;
     }
 
     @Override
