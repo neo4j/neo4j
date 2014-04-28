@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 
 trait RewriteTest {
   self: CypherFunSuite =>
@@ -31,13 +32,18 @@ trait RewriteTest {
   val semantickChecker = new SemanticChecker(mock[SemanticCheckMonitor])
 
   protected def assertRewrite(originalQuery: String, expectedQuery: String) {
-    val original = parser.parse(originalQuery)
-    val expected = parser.parse(expectedQuery)
+    val original = parseForRewriting(originalQuery)
+    val expected = parseForRewriting(expectedQuery)
     semantickChecker.check(originalQuery, original)
 
-    val result = original.rewrite(bottomUp(rewriterUnderTest))
+    val result = rewrite(original)
     assert(result === expected, "\n" + originalQuery)
   }
+
+  protected def parseForRewriting(queryText: String) = parser.parse(queryText)
+
+  protected def rewrite(original: Statement): AnyRef =
+    original.rewrite(bottomUp(rewriterUnderTest))
 
   protected def assertIsNotRewritten(query: String) {
     val original = parser.parse(query)

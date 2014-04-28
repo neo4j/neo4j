@@ -36,7 +36,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       selections: Selections = Selections(),
                       projections: Map[String, Expression] = Map.empty,
                       sortItems: Seq[SortItem] = Seq.empty,
-                      subQueries: Seq[SubQuery] = Seq.empty) {
+                      subQueries: Seq[SubQuery] = Seq.empty,
+                      tail: Option[QueryGraph] = None) {
 
   def ++(other: QueryGraph): QueryGraph = QueryGraph(
       projections = projections ++ other.projections,

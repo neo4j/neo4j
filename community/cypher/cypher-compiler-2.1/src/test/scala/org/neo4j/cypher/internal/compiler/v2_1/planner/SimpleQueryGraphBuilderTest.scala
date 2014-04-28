@@ -18,7 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{inlineNamedPaths, namePatternPredicates, nameVarLengthRelationships}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{inlineProjections, namePatternPredicates, nameVarLengthRelationships}
 import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
@@ -44,7 +44,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
 
     val rewrittenAst: Statement = if (normalize) {
       val step1: Statement = astRewriter.rewrite(query, ast)._1
-      inlineNamedPaths(step1.rewrite(bottomUp(inSequence(nameVarLengthRelationships, namePatternPredicates))).asInstanceOf[Statement])
+      inlineProjections(step1.rewrite(bottomUp(inSequence(nameVarLengthRelationships, namePatternPredicates))).asInstanceOf[Statement])
     } else {
       ast
     }
@@ -470,8 +470,35 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.selections should equal(Selections())
     qg.patternNodes should equal(Set(IdName("n")))
     qg.subQueries should be(empty)
-    val sortItem: DescSortItem = DescSortItem(Property(Identifier("n")_, PropertyKeyName("prop2")(None)_)_)_
+    val sortItem: DescSortItem = DescSortItem(Property(Identifier("n") _, PropertyKeyName("prop2")(None) _) _) _
     qg.sortItems should equal(Seq(sortItem))
+  }
+
+  test("MATCH (a) WITH 1 as b RETURN b") {
+    val qg = buildQueryGraph("MATCH (a) WITH 1 as b RETURN b")
+    qg.patternNodes should equal(Set(IdName("a")))
+    qg.projections should equal(Map[String, Expression]("b" -> SignedIntegerLiteral("1")_))
+
+    val tail = qg.tail.get
+    tail.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
+  }
+
+  test("WITH 1 as b RETURN b") {
+    val qg = buildQueryGraph("WITH 1 as b RETURN b")
+    qg.projections should equal(Map[String, Expression]("b" -> SignedIntegerLiteral("1")_))
+
+    val tail = qg.tail.get
+    tail.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
+  }
+
+  test("MATCH (a) WITH a WHERE TRUE RETURN a") {
+    val qg = buildQueryGraph("MATCH (a) WITH a WHERE TRUE RETURN a")
+    qg.patternNodes should equal(Set(IdName("a")))
+    qg.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+
+    val tail = qg.tail.get
+    tail.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    tail.selections should equal(Selections(Set(Predicate(Set.empty, True()_))))
   }
 
   test("match a where a.prop = 42 OR (a)-->() return a") {
@@ -550,22 +577,29 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     val exp2: Expression = Equals(
       Property(Identifier("a") _, PropertyKeyName("prop")(None) _) _,
       SignedIntegerLiteral("42") _
-    )_
+    ) _
     val exp3: Expression = Equals(
       Property(Identifier("a") _, PropertyKeyName("prop")(None) _) _,
       SignedIntegerLiteral("21") _
-    )_
-    val orPredicate = Predicate(Set(IdName("a")), Or(exp1, Or(exp3, exp2)_)_)
+    ) _
+    val orPredicate = Predicate(Set(IdName("a")), Or(exp1, Or(exp3, exp2) _) _)
     val exists = Exists(orPredicate, QueryGraph(
-        patternRelationships = Set(relationship),
-        patternNodes = Set("a", nodeName),
-        argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
+      patternRelationships = Set(relationship),
+      patternNodes = Set("a", nodeName),
+      argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
 
     val selections = Selections(Set(orPredicate))
 
     qg.selections should equal(selections)
     qg.patternNodes should equal(Set(IdName("a")))
     qg.subQueries should equal(Seq(exists))
+  }
+
+  test("MATCH (a) WITH * RETURN a") {
+    val qg = buildQueryGraph("MATCH (a) WITH * RETURN a")
+    qg.patternNodes should equal(Set(IdName("a")))
+    qg.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    qg.tail should equal(None)
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)(None)_

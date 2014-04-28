@@ -20,6 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.bottomUp
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Statement
 
 class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
   val rewriterUnderTest = isolateAggregation
@@ -79,5 +81,9 @@ class IsolateAggregationTest extends CypherFunSuite with RewriteTest {
       "MATCH (a:Start)<-[:R]-(b) " +
       "WITH a.prop=42 as `  T$45`, collect(b.prop2) as `  T$54` " +
       "RETURN { foo:`  T$45`, bar:`  T$54`} as `{ foo:a.prop=42, bar:collect(b.prop2) }`")
+  }
+
+  override protected def parseForRewriting(queryText: String): Statement = {
+    super.parseForRewriting(queryText).typedRewrite[Statement](bottomUp(aliasReturnItems))
   }
 }
