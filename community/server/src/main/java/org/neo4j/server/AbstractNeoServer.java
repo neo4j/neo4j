@@ -230,16 +230,6 @@ public abstract class AbstractNeoServer implements NeoServer
                 .getString( DATABASE_LOCATION_PROPERTY_KEY, DEFAULT_DATABASE_LOCATION_PROPERTY_KEY ) );
 
         putIfAbsent( result, ShellSettings.remote_shell_enabled.name(), Settings.TRUE );
-        putIfAbsent( result, GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
-
-        try
-        {
-            result.put( UdcSettings.udc_source.name(), "server" );
-        }
-        catch ( NoClassDefFoundError e )
-        {
-            // UDC is not on classpath, ignore
-        }
 
         dbConfig.applyChanges( result );
     }
