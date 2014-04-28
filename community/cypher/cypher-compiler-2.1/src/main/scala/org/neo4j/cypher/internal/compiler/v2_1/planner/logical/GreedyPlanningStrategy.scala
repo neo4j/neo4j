@@ -44,7 +44,7 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)
     val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(afterExpandOrJoin)
     val afterCartesianProduct = iterateUntilConverged(findBestPlan(cartesianProduct))(afterOptionalApplies)
-    val bestPlan = projectUncovered(order(afterCartesianProduct.uniquePlan))
+    val bestPlan = projection(afterCartesianProduct.uniquePlan)
 
     verifyBestPlan(bestPlan)
   }

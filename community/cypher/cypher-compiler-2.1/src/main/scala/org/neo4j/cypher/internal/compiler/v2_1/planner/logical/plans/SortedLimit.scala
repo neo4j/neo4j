@@ -19,17 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{SortItem, Expression}
 
-case class Projection(left: LogicalPlan, expressions: Map[String, Expression], hideProjections: Boolean = false)
+case class SortedLimit(left: LogicalPlan, limit: Expression, sortItems: Seq[SortItem])(originalLimit: Expression)
   extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
 
-  def numExpressions = expressions.size
-
-  val solved = if (hideProjections)
-    left.solved
-  else
-    left.solved.changeProjections(expressions)
+  val solved = left.solved.copy(limit = Some(originalLimit), sortItems = sortItems)
 }

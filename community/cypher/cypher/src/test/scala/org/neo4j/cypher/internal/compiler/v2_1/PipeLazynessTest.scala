@@ -196,7 +196,7 @@ object PipeLazynessTest extends MockitoSugar {
 
   private def sortPipe = {
     val (iter, src) = emptyFakes
-    val pipe = new SortPipe(src, sortByX)
+    val pipe = new LegacySortPipe(src, sortByX)
     Seq(pipe, iter)
   }
 

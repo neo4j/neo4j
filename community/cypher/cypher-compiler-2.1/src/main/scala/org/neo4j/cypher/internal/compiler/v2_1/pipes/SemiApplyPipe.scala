@@ -32,8 +32,10 @@ case class SemiApplyPipe(source: Pipe, inner: Pipe, negated: Boolean)(implicit p
     }
   }
 
+  private def name = if (negated) "AntiSemiApply" else "SemiApply"
+
   def executionPlanDescription = source.executionPlanDescription.
-    andThen(this, "SemiApply", "inner" -> inner.executionPlanDescription)
+    andThen(this, name, "inner" -> inner.executionPlanDescription)
 
   def symbols: SymbolTable = source.symbols
 }

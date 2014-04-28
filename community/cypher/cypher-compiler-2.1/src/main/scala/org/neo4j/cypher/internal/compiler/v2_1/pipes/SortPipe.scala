@@ -19,36 +19,37 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.SortItem
-import symbols._
-import scala.math.signum
+import org.neo4j.cypher.internal.compiler.v2_1.{Comparer, ExecutionContext}
 
-case class SortPipe(source: Pipe, sortDescription: List[SortItem])
-              (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with ExecutionContextComparer {
+trait SortDescription {
+  def id: String
+}
+case class Ascending(id:String) extends SortDescription
+case class Descending(id:String) extends SortDescription
+
+case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])(implicit monitor: PipeMonitor)
+  extends PipeWithSource(source, monitor) with Comparer {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    input.toList.
+      sortWith((a, b) => compareBy(a, b, orderBy)(state)).iterator
+
+  def executionPlanDescription = source.executionPlanDescription.andThen(this, "Sort", "descr" -> orderBy)
+
   def symbols = source.symbols
 
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
-    input.toList.
-      sortWith((a, b) => compareBy(a, b, sortDescription)(state)).iterator
-
-  override def executionPlanDescription = source.executionPlanDescription.andThen(this, "Sort", "descr" -> sortDescription)
-
   override def isLazy = false
-}
 
-trait ExecutionContextComparer extends Comparer {
-  def compareBy(a: ExecutionContext, b: ExecutionContext, order: Seq[SortItem])(implicit qtx: QueryState): Boolean = order match {
+  private def compareBy(a: ExecutionContext, b: ExecutionContext, order: Seq[SortDescription])(implicit qtx: QueryState): Boolean = order match {
     case Nil => false
-    case head :: tail => {
-      val aVal = head(a)
-      val bVal = head(b)
-      signum(compare(aVal, bVal)) match {
-        case 1 => !head.ascending
-        case -1 => head.ascending
+    case sort :: tail =>
+      val column = sort.id
+      val aVal = a(column)
+      val bVal = b(column)
+
+      Math.signum(compare(aVal, bVal)) match {
+        case 1 => sort.isInstanceOf[Descending]
+        case -1 => sort.isInstanceOf[Ascending]
         case 0 => compareBy(a, b, tail)
       }
-    }
   }
-
 }

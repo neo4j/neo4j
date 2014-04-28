@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.PathImpl
 import scala.util.Random
 import org.neo4j.cypher.internal.commons.CustomMatchers
 
-class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers {
+class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers with NewPlannerTestSupport {
   test("should support multiple divisions in aggregate function") {
     createNode()
     val result = executeScalar[Number]("match (n) return count(n)/60/60 as count").intValue()
@@ -33,16 +33,16 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers {
   }
 
   test("should accept skip zero") {
-    val result = execute("start n=node(0) where 1 = 0 return n skip 0")
+    val result = executeWithNewPlanner("match n where 1 = 0 return n skip 0")
 
-    result shouldBe 'isEmpty
+    result shouldBe 'empty
   }
 
   test("should limit to two hits") {
     createNodes("A", "B", "C", "D", "E")
 
-    val result = execute(
-      s"start n=node(${nodeIds.mkString(",")}) return n limit 2"
+    val result = executeWithNewPlanner(
+      s"match n return n limit 2"
     )
 
     result should have size 2
@@ -51,8 +51,8 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers {
   test("should start the result from second row") {
     val nodes = createNodes("A", "B", "C", "D", "E")
 
-    val result = execute(
-      s"start n=node(${nodeIds.mkString(",")}) return n order by n.name ASC skip 2"
+    val result = executeWithNewPlanner(
+      s"match n return n order by n.name ASC skip 2"
     )
 
     result.columnAs[Node]("n").toList should equal(nodes.drop(2).toList)
@@ -61,8 +61,8 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers {
   test("should start the result from second row by param") {
     val nodes = createNodes("A", "B", "C", "D", "E")
 
-    val query = s"start n=node(${nodeIds.mkString(",")}) return n order by n.name ASC skip {skippa}"
-    val result = execute(query, "skippa" -> 2)
+    val query = s"match n return n order by n.name ASC skip {skippa}"
+    val result = executeWithNewPlanner(query, "skippa" -> 2)
 
     result.columnAs[Node]("n").toList should equal(nodes.drop(2).toList)
   }
@@ -98,7 +98,7 @@ class ReturnAcceptanceTest extends ExecutionEngineFunSuite with CustomMatchers {
   }
 
   test("should return collection size") {
-    val result = execute("return size([1,2,3]) as n")
+    val result = executeWithNewPlanner("return size([1,2,3]) as n")
     result.columnAs[Int]("n").toList should equal(List(3))
   }
 
@@ -187,12 +187,12 @@ return coalesce(a.title, a.name)""")
   }
 
   test("arithmetics precedence test") {
-    val result = execute("return 12/4*3-2*4")
+    val result = executeWithNewPlanner("return 12/4*3-2*4")
     result.toList should equal(List(Map("12/4*3-2*4" -> 1)))
   }
 
   test("arithmetics precedence with parenthesis test") {
-    val result = execute("return 12/4*(3-2*4)")
+    val result = executeWithNewPlanner("return 12/4*(3-2*4)")
     result.toList should equal(List(Map("12/4*(3-2*4)" -> -15)))
   }
 
@@ -288,14 +288,14 @@ return coalesce(a.title, a.name)""")
   }
 
   test("long or double") {
-    val result = execute("return 1, 1.5").toList.head
+    val result = executeWithNewPlanner("return 1, 1.5").toList.head
 
     result("1") should haveType[java.lang.Long]
     result("1.5") should haveType[java.lang.Double]
   }
 
   test("square function returns decimals") {
-    val result = execute("return sqrt(12.96)").toList
+    val result = executeWithNewPlanner("return sqrt(12.96)").toList
 
     result should equal(List(Map("sqrt(12.96)" -> 3.6)))
   }
@@ -337,7 +337,7 @@ return coalesce(a.title, a.name)""")
     relate(a, b)
     relate(b, c)
 
-    val result = execute("cypher 1.9 start a=node(0), c=node(2) return shortestPath(a-[*]->c)").columnAs[List[Path]]("shortestPath(a-[*]->c)").toList.head.head
+    val result = executeWithNewPlanner("cypher 1.9 start a=node(0), c=node(2) return shortestPath(a-[*]->c)").columnAs[List[Path]]("shortestPath(a-[*]->c)").toList.head.head
     result.endNode() should equal(c)
     result.startNode() should equal(a)
     result.length() should equal(2)
@@ -381,7 +381,7 @@ return coalesce(a.title, a.name)""")
   }
 
   test("literal_collection") {
-    val result = execute("return length([[],[]]+[[]]) as l").toList
+    val result = executeWithNewPlanner("return length([[],[]]+[[]]) as l").toList
     result should equal(List(Map("l" -> 3)))
   }
 
@@ -412,7 +412,7 @@ return coalesce(a.title, a.name)""")
   }
 
   test("substring with default length") {
-    val result = execute("return substring('0123456789', 1) as s")
+    val result = executeWithNewPlanner("return substring('0123456789', 1) as s")
 
     result.toList should equal(List(Map("s" -> "123456789")))
   }
@@ -466,7 +466,7 @@ return coalesce(a.title, a.name)""")
   }
 
   test("allow queries with only return") {
-    val result = execute("RETURN 'Andres'").toList
+    val result = executeWithNewPlanner("RETURN 'Andres'").toList
 
     result should equal(List(Map("'Andres'" -> "Andres")))
   }
@@ -480,18 +480,18 @@ return coalesce(a.title, a.name)""")
   }
 
   test("should propagate null through math funcs") {
-    val result = execute("return 1 + (2 - (3 * (4 / (5 ^ (6 % null))))) as A")
+    val result = executeWithNewPlanner("return 1 + (2 - (3 * (4 / (5 ^ (6 % null))))) as A")
     result.toList should equal(List(Map("A" -> null)))
   }
 
   test("should be able to index into nested literal lists") {
-    execute("RETURN [[1]][0][0]").toList
+    executeWithNewPlanner("RETURN [[1]][0][0]").toList
     // should not throw an exception
   }
 
   test("should be able to alias expressions") {
     createNode("id" -> 42)
-    val result = execute("match (a) return a.id as a, a.id")
+    val result = executeWithNewPlanner("match (a) return a.id as a, a.id")
     result.toList should equal(List(Map("a" -> 42, "a.id" -> 42)))
   }
 
