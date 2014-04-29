@@ -205,5 +205,4 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     case _ =>
       throw new CantHandleQueryException
   }
-
 }

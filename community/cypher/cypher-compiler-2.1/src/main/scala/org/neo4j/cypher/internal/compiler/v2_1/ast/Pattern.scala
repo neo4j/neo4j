@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.InternalException
 
 object Pattern {
   sealed trait SemanticContext
@@ -33,13 +34,54 @@ object Pattern {
     case object CreateUnique extends SemanticContext
     case object Expression extends SemanticContext
   }
+
+  object findDuplicateRelationships extends (Pattern => Set[Seq[Identifier]]) {
+    import Foldable._
+
+    def apply(pattern: Pattern): Set[Seq[Identifier]] = {
+      val (seen, duplicates) = pattern.fold((Set.empty[Identifier], Seq.empty[Identifier])) {
+        case RelationshipChain(_, RelationshipPattern(Some(rel), _, _, None, _, _), _) =>
+          (acc) =>
+            val (seen, duplicates) = acc
+
+            val newDuplicates = if (seen.contains(rel)) duplicates :+ rel else duplicates
+            val newSeen = seen + rel
+
+            (newSeen, newDuplicates)
+
+        case _ =>
+          identity
+      }
+
+      val m0: Map[String, Seq[Identifier]] = duplicates.groupBy(_.name)
+
+      val resultMap = seen.foldLeft(m0) {
+        case (m, ident @ Identifier(name)) if m.contains(name) => m.updated(name, Seq(ident) ++ m(name))
+        case (m, _)                                            => m
+      }
+
+      resultMap.values.toSet
+    }
+  }
 }
+
 import Pattern._
 
 case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     patternParts.foldSemanticCheck(_.declareIdentifiers(ctx)) then
-    patternParts.foldSemanticCheck(_.semanticCheck(ctx))
+    patternParts.foldSemanticCheck(_.semanticCheck(ctx)) then
+    ensureNoDuplicateRelationships(this, ctx)
+
+  private def ensureNoDuplicateRelationships(pattern: Pattern, ctx: SemanticContext): SemanticCheck = {
+    findDuplicateRelationships(pattern).foldLeft(SemanticCheckResult.success) {
+      (acc, duplicates) =>
+        val id = duplicates.head
+        val dups = duplicates.tail
+
+        acc then SemanticError(s"Cannot use the same relationship identifier '${id.name}' for multiple patterns", id.position, dups.map(_.position):_*)
+    }
+  }
 }
 
 case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode {
@@ -127,10 +169,10 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
       rel.length match {
         case Some(Some(Range(Some(_), _))) =>
           Some(SemanticError(s"$name(...) does not support a minimal length", position, element.position))
-        case _                             =>
+        case _ =>
           None
       }
-    case _                            =>
+    case _ =>
       None
   }
 }

@@ -48,11 +48,6 @@ trait PatternGraphBuilder {
       val relName = r.relName
       val leftNode: PatternNode = patternNodeMap.getOrElseUpdate(left.name, new PatternNode(left))
       val rightNode: PatternNode = patternNodeMap.getOrElseUpdate(right.name, new PatternNode(right))
-
-      if (patternRelMap.contains(relName)) {
-        throw new SyntaxException("Can't re-use pattern relationship '%s' with different start/end nodes.".format(relName))
-      }
-
       patternRelMap(relName) = leftNode.relateTo(relName, rightNode, r)
       true
     }
