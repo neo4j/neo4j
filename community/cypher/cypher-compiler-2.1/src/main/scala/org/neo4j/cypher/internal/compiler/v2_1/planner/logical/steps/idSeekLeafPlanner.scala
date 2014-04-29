@@ -19,42 +19,39 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LeafPlanner, CandidateList, LogicalPlanContext}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, DirectedRelationshipByIdSeek, UndirectedRelationshipByIdSeek}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.InputPosition.NONE
 
 object idSeekLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
     val predicates: Seq[Expression] = qg.selections.flatPredicates
 
-    CandidateList(
-      predicates.collect {
-        // MATCH (a)-[r]->b WHERE id(r) = value
-        // MATCH a WHERE id(a) = value
-        case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr)) =>
-          (predicate, idExpr, Seq(idValueExpr))
+    val candidatePlans = predicates.collect {
+      // MATCH (a)-[r]->b WHERE id(r) = value
+      // MATCH a WHERE id(a) = value
+      case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr)) =>
+        (predicate, idExpr, Seq(idValueExpr))
 
-        // MATCH (a)-[r]->b WHERE id(r) IN value
-        // MATCH a WHERE id(a) IN value
-        case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
-          if idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
-          (predicate, idExpr, idValueExprs)
-      }.collect {
-        case (predicate, Identifier(idName), idValues) =>
-          context.queryGraph.patternRelationships.find(_.name.name == idName) match {
-            case Some(relationship) =>
-              createRelationshipByIdSeek(relationship, idValues, predicate)
-            case None =>
-              NodeByIdSeek(IdName(idName), idValues)(Seq(predicate))
-          }
-      }
-    )
+      // MATCH (a)-[r]->b WHERE id(r) IN value
+      // MATCH a WHERE id(a) IN value
+      case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
+        if idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
+        (predicate, idExpr, idValueExprs)
+    }.collect {
+      case (predicate, Identifier(idName), idValues) =>
+        context.queryGraph.patternRelationships.find(_.name.name == idName) match {
+          case Some(relationship) =>
+            createRelationshipByIdSeek(relationship, idValues, predicate)
+          case None =>
+            NodeByIdSeek(IdName(idName), idValues)(Seq(predicate))
+        }
+    }
+
+    CandidateList(candidatePlans)
   }
 
   def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): LogicalPlan = {
@@ -75,15 +72,19 @@ object idSeekLeafPlanner extends LeafPlanner {
     if (types.isEmpty)
       plan
     else {
-      val id = Identifier(relName)(null)
-      val name = FunctionName("type")(null)
-      val invocation = FunctionInvocation(name, id)(null)
+      val id = Identifier(relName)(NONE)
+      val name = FunctionName("type")(NONE)
+      val invocation = FunctionInvocation(name, id)(NONE)
 
-      val predicates: Seq[Expression] = types.map {
-        relType => Equals(invocation, StringLiteral(relType.name)(null))(null)
+      val predicates = types.map {
+        relType => Equals(invocation, StringLiteral(relType.name)(NONE))(NONE)
+      }.toList
+
+      val predicate = predicates match {
+        case exp :: Nil => exp
+        case _ => Ors(predicates)(predicates.head.position)
       }
 
-      val predicate = predicates.reduce(Or(_, _)(null))
       Selection(Seq(predicate), plan, hideSelections = true)
     }
 }

@@ -18,12 +18,12 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{inlineProjections, namePatternPredicates, nameVarLengthRelationships}
-import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, inSequence, bottomUp}
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{inlineProjections, namePatternPredicates, nameVarLengthRelationships}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 
 class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -93,16 +93,16 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("match n where n:X OR n:Y return n") {
-    val qg = buildQueryGraph("match n where n:X OR n:Y return n")
+    val qg = buildQueryGraph("match n where n:X OR n:Y return n", normalize = true)
     qg.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
     qg.selections should equal(Selections(Set(
-      Predicate(Set(IdName("n")), Or(
-        HasLabels(nIdent, Seq(X))_,
-        HasLabels(nIdent, Seq(Y))_
-      )_
+      Predicate(Set(IdName("n")), Ors(List(
+        HasLabels(nIdent, Seq(X))(pos),
+        HasLabels(nIdent, Seq(Y))(pos)
+      ))_
     ))))
 
     qg.patternNodes should equal(Set(IdName("n")))
@@ -110,20 +110,19 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n") {
-    val qg = buildQueryGraph("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n")
+    val qg = buildQueryGraph("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n", normalize = true)
     qg.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
     qg.selections should equal(Selections(Set(
-      Predicate(Set(IdName("n")), Or(
-        HasLabels(nIdent, Seq(X))_,
-        And(
-          HasLabels(nIdent, Seq(A))_,
-          HasLabels(nIdent, Seq(B))_
-        )_
-      )_
-    ))))
+      Predicate(Set(IdName("n")), Ors(List(
+        HasLabels(nIdent, Seq(X))(pos),
+        Ands(List(
+          HasLabels(nIdent, Seq(A))(pos),
+          HasLabels(nIdent, Seq(B))(pos)
+        ))(pos)))_
+      ))))
 
     qg.patternNodes should equal(Set(IdName("n")))
     qg.coveredIds should equal(Set(IdName("n")))
@@ -163,7 +162,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("MATCH n WHERE n:A AND id(n) = 42 RETURN n") {
-    val qg = buildQueryGraph("MATCH n WHERE n:A AND id(n) = 42 RETURN n")
+    val qg = buildQueryGraph("MATCH n WHERE n:A AND id(n) = 42 RETURN n", normalize = true)
     qg.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
@@ -517,7 +516,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
       SignedIntegerLiteral("42")_
     )_
-    val orPredicate = Predicate(Set(IdName("a")), Or(exp1, exp2)_)
+    val orPredicate = Predicate(Set(IdName("a")), Ors(List(exp1, exp2))_)
     val exists = Exists(orPredicate, QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
@@ -547,7 +546,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       Property(Identifier("a") _, PropertyKeyName("prop")_)_,
       SignedIntegerLiteral("42") _
     ) _
-    val orPredicate = Predicate(Set(IdName("a")), Or(exp1, exp2)_)
+    val orPredicate = Predicate(Set(IdName("a")), Ors(List(exp1, exp2))_)
     val exists = Exists(orPredicate, QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
@@ -581,7 +580,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       Property(Identifier("a") _, PropertyKeyName("prop")_)_,
       SignedIntegerLiteral("21")_
     )_
-    val orPredicate = Predicate(Set(IdName("a")), Or(exp1, Or(exp3, exp2)_)_)
+    val orPredicate = Predicate(Set(IdName("a")), Ors(List(exp1, exp3, exp2))_)
     val exists = Exists(orPredicate, QueryGraph(
       patternRelationships = Set(relationship),
       patternNodes = Set("a", nodeName),

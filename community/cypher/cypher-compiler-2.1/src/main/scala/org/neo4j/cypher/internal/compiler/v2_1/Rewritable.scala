@@ -128,7 +128,7 @@ object bottomUp {
   import Foldable._
   import Rewritable._
 
-  class BottomUpRewriter(rewriter: Rewriter) extends Rewriter {
+  class BottomUpRewriter(val rewriter: Rewriter) extends Rewriter {
     def apply(that: AnyRef): Some[AnyRef] = {
       val rewrittenThat = that.dup(that.children.map(t => this.apply(t).get).toList)
       Some(rewrittenThat.rewrite(rewriter))
@@ -136,4 +136,18 @@ object bottomUp {
   }
 
   def apply(rewriter: Rewriter) = new BottomUpRewriter(rewriter)
+}
+
+case class repeat(rewriter: Rewriter) extends Rewriter {
+  import Rewritable._
+
+  def apply(that: AnyRef): Option[AnyRef] = {
+    rewriter.apply(that).map {
+      t =>
+        if (t == that)
+          t
+        else
+          t.rewrite(this)
+    }
+  }
 }

@@ -17,26 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-class InputPosition(val offset: Int, val line: Int, val column: Int) {
-  override def hashCode = 41 * offset
-  override def equals(that: Any): Boolean = that match {
-    case that: InputPosition =>
-      (that canEqual this) && offset == that.offset
-    case _ =>
-      false
-  }
-  def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Not, Equals, Expression, NotEquals}
+import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 
-  override def toString = "line " + line + ", column " + column
-}
+class NormalizeNotEqualsTest extends CypherFunSuite {
 
-object InputPosition {
-  implicit object InputPositionOrdering extends Ordering[InputPosition] {
-    def compare(p1: InputPosition, p2: InputPosition) =
-      p1.offset.compare(p2.offset)
+  val lhs = mock[Expression]
+  val rhs = mock[Expression]
+  val p = DummyPosition(0)
+
+  test("notEquals  iff  not(equals)") {
+    val notEquals = NotEquals(lhs, rhs)(p)
+    val output = normalizeNotEquals(notEquals).get
+    output should equal(Not(Equals(lhs, rhs)(p))(p))
   }
 
-  val NONE = null
+  test("should do nothing on other expressions") {
+    val output = normalizeNotEquals(lhs)
+    output should equal(None)
+  }
 }

@@ -19,24 +19,40 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-class InputPosition(val offset: Int, val line: Int, val column: Int) {
-  override def hashCode = 41 * offset
-  override def equals(that: Any): Boolean = that match {
-    case that: InputPosition =>
-      (that canEqual this) && offset == that.offset
-    case _ =>
-      false
-  }
-  def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-  override def toString = "line " + line + ", column " + column
-}
+class RepeatTest extends CypherFunSuite {
 
-object InputPosition {
-  implicit object InputPositionOrdering extends Ordering[InputPosition] {
-    def compare(p1: InputPosition, p2: InputPosition) =
-      p1.offset.compare(p2.offset)
+  var count = 0
+  val result = new Object
+  val mockedRewriter = new Rewriter {
+    def apply(v1: AnyRef): Option[AnyRef] = {
+      count += 1
+      Some(result)
+    }
   }
 
-  val NONE = null
+  test("should not repeat when the output is the same of the input") {
+    // given
+    count = 0
+
+    // when
+    val output = repeat(mockedRewriter)(result)
+
+    // then
+    output.get should equal(result)
+    count should equal(1)
+  }
+
+  test("should repeat once when the output is different from the input") {
+    // given
+    count = 0
+
+    // when
+    val output = repeat(mockedRewriter)(new Object)
+
+    // then
+    output.get should equal(result)
+    count should equal(2)
+  }
 }

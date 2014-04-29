@@ -17,26 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-class InputPosition(val offset: Int, val line: Int, val column: Int) {
-  override def hashCode = 41 * offset
-  override def equals(that: Any): Boolean = that match {
-    case that: InputPosition =>
-      (that canEqual this) && offset == that.offset
-    case _ =>
-      false
-  }
-  def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
 
-  override def toString = "line " + line + ", column " + column
-}
+class DistributeLawRewriterTest extends CypherFunSuite with PredicateTestSupport {
 
-object InputPosition {
-  implicit object InputPositionOrdering extends Ordering[InputPosition] {
-    def compare(p1: InputPosition, p2: InputPosition) =
-      p1.offset.compare(p2.offset)
+  val rewriter: Rewriter = distributeLawsRewriter
+
+  test("(P or (Q and R))  iff  (P or Q) and (P or R)") {
+    or(P, and(Q, R)) <=> and(or(P, Q), or(P, R))
   }
 
-  val NONE = null
+  test("((Q and R) or P)  iff  (Q or P) and (R or P)") {
+    or(and(Q, R), P) <=> and(or(Q, P), or(R, P))
+  }
+
+  test("((Q and R and S) or P)  iff  (Q or P) and (R or P) and (S or P)") {
+    or(and(Q, and(R, S)), P) <=> and(or(Q, P), and(or(R, P), or(S, P)))
+  }
 }

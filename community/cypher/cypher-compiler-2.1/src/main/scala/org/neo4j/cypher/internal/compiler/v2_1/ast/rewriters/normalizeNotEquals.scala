@@ -17,26 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-class InputPosition(val offset: Int, val line: Int, val column: Int) {
-  override def hashCode = 41 * offset
-  override def equals(that: Any): Boolean = that match {
-    case that: InputPosition =>
-      (that canEqual this) && offset == that.offset
-    case _ =>
-      false
+import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Not, Equals, NotEquals}
+
+object normalizeNotEquals extends Rewriter {
+  override def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+
+  private val instance: Rewriter = Rewriter.lift {
+    case p @ NotEquals(lhs, rhs) =>
+      Not(Equals(lhs, rhs)(p.position))(p.position)   // not(1 = 2)  <!===!>     1 != 2
   }
-  def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
-
-  override def toString = "line " + line + ", column " + column
-}
-
-object InputPosition {
-  implicit object InputPositionOrdering extends Ordering[InputPosition] {
-    def compare(p1: InputPosition, p2: InputPosition) =
-      p1.offset.compare(p2.offset)
-  }
-
-  val NONE = null
 }
