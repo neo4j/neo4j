@@ -175,6 +175,20 @@ case class With(
   }
 }
 
+case class Unwind(
+    unwindItem: AliasedReturnItem)(val position: InputPosition) extends Clause
+{
+  def name = "UNWIND"
+
+  override def semanticCheck = {
+    unwindItem.semanticCheck ifOkThen
+      {
+        val possibleInnerTypes: TypeGenerator = unwindItem.expression.types(_).unwrapCollections
+        unwindItem.identifier.declare(possibleInnerTypes)
+      }
+  }
+}
+
 case class Return(
     distinct: Boolean,
     returnItems: ReturnItems,

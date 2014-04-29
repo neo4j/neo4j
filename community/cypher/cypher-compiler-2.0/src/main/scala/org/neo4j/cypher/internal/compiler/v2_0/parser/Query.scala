@@ -37,6 +37,7 @@ trait Query extends Parser
   def Clause: Rule1[ast.Clause] = (
       Start
     | Match
+    | Unwind
     | Merge
     | Create
     | SetClause
