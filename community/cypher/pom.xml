@@ -58,7 +58,7 @@
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>3.1.6</version>
         <executions>
           <execution>
             <id>scala-compile</id>
@@ -77,6 +77,7 @@
           </execution>
         </executions>
         <configuration>
+        <scalaVersion>${scala.version}</scalaVersion>
         <args>
             <arg>-Xmax-classfile-name</arg>
             <arg>100</arg>
