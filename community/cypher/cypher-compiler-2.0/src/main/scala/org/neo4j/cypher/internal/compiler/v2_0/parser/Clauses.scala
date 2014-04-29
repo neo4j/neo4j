@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.parser
 
 import org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.parboiled.scala._
+import org.neo4j.cypher.internal.compiler.v2_0.ast.AliasedReturnItem
 
 trait Clauses extends Parser
   with StartPoints
@@ -87,6 +88,10 @@ trait Clauses extends Parser
     | group(keyword("WITH") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _))
   )
 
+  def Unwind: Rule1[ast.Unwind] = rule("UNWIND") (
+    group(keyword("UNWIND") ~~ AliasedReturnItem) ~~>> (ast.Unwind(_))
+  )
+
   def Return: Rule1[ast.Return] = rule("RETURN") (
       group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
     | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))
@@ -132,6 +137,10 @@ trait Clauses extends Parser
   private def ReturnItem: Rule1[ast.ReturnItem] = rule (
       group(Expression ~~ keyword("AS") ~~ Identifier) ~~>> (ast.AliasedReturnItem(_, _))
     | group(Expression ~> (s => s)) ~~>> (ast.UnaliasedReturnItem(_, _))
+  )
+
+  private def AliasedReturnItem: Rule1[ast.AliasedReturnItem] = rule (
+      group(Expression ~~ keyword("AS") ~~ Identifier) ~~>> (ast.AliasedReturnItem(_, _))
   )
 
   private def Order: Rule1[ast.OrderBy] = rule {
