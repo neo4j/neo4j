@@ -4,7 +4,7 @@ Processes JUnit XML files and reports skipped tests.
 
 A skipped test is a test marked as skipped in the JUnit XML, where the
 message does not start with 'not a test' (case insensitive), or a date
-in format 'yyyy-mm-dd', and that date is less than the specified
+in the format 'yyyy-mm-dd', and that date is less than the specified
 number of days (the '--days' command line argument) (default=30).
 
 Command line arguments:
