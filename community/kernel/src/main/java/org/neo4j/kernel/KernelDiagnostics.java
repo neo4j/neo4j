@@ -21,7 +21,11 @@ package org.neo4j.kernel;
 
 import java.io.File;
 import java.text.SimpleDateFormat;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Comparator;
 import java.util.Date;
+import java.util.List;
 import java.util.TimeZone;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -113,7 +117,19 @@ abstract class KernelDiagnostics implements DiagnosticsProvider
                 return 0;
             }
             long total = 0;
-            for ( File file : files )
+
+            // Sort by name
+            List<File> fileList = Arrays.asList( files );
+            Collections.sort( fileList, new Comparator<File>()
+            {
+                @Override
+                public int compare( File o1, File o2 )
+                {
+                    return o1.getName().compareTo( o2.getName() );
+                }
+            } );
+
+            for ( File file : fileList )
             {
                 long size;
                 String filename = file.getName();
