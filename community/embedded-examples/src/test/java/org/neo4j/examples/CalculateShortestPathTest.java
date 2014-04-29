@@ -18,15 +18,13 @@
  */
 package org.neo4j.examples;
 
-import java.io.IOException;
-
 import org.junit.Test;
 
-public class EmbeddedNeo4jWithIndexingDocTest
+public class CalculateShortestPathTest
 {
     @Test
-    public void justExecuteIt() throws IOException
+    public void testMain()
     {
-        EmbeddedNeo4jWithIndexing.main( null );
+        CalculateShortestPath.main( null );
     }
 }

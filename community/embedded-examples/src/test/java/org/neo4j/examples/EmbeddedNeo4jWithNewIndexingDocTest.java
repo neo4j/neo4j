@@ -18,12 +18,14 @@
  */
 package org.neo4j.examples;
 
+import java.io.IOException;
+
 import org.junit.Test;
 
 public class EmbeddedNeo4jWithNewIndexingDocTest
 {
     @Test
-    public void justExecuteIt()
+    public void justExecuteIt() throws IOException
     {
         EmbeddedNeo4jWithNewIndexing.main( null );
     }
