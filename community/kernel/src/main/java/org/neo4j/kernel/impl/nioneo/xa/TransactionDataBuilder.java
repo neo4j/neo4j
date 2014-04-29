@@ -24,11 +24,14 @@ import java.util.Collection;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 
 public class TransactionDataBuilder
 {
@@ -99,11 +102,60 @@ public class TransactionDataBuilder
         }
     }
 
+    public void create( LabelTokenRecord labelToken )
+    {
+        try
+        {
+            writer.create( labelToken );
+        }
+        catch ( IOException e )
+        {
+            throw ioError( e );
+        }
+    }
+
+    public void create( PropertyKeyTokenRecord token )
+    {
+        try
+        {
+            writer.create( token );
+        }
+        catch ( IOException e )
+        {
+            throw ioError( e );
+
+        }
+    }
+
     public void create( RelationshipGroupRecord group )
     {
         try
         {
             writer.create( group );
+        }
+        catch ( IOException e )
+        {
+            throw ioError( e );
+        }
+    }
+
+    public void update( Command.SchemaRuleCommand command )
+    {
+        try
+        {
+            writer.updateSchema( command.getRecordsBefore(), command.getRecordsAfter() );
+        }
+        catch ( IOException e )
+        {
+            throw ioError( e );
+        }
+    }
+
+    public void create( Command.RelationshipTypeTokenCommand command )
+    {
+        try
+        {
+            writer.add( command.getRecord() );
         }
         catch ( IOException e )
         {

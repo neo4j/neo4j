@@ -19,39 +19,50 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
+import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 import java.io.File;
 import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedList;
 import java.util.List;
+import java.util.Set;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IdSequence;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogEntryVerifyingOutput;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionDataBuilder;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.EphemeralFileSystemRule;
-
-import static org.junit.Assert.assertThat;
-
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class DenseNodeTransactionTranslatorTest
 {
@@ -88,7 +99,7 @@ public class DenseNodeTransactionTranslatorTest
         List<LogEntry> translated = translate( existingStore, transaction );
 
         // THEN there should have been no change
-        assertThat( translated, matchesLogEntriesIn( transaction) );
+        assertThat( translated, matchesLogEntriesIn( transaction ) );
     }
 
     private static Matcher<? super List<LogEntry>> matchesLogEntriesIn( final List<LogEntry> transaction )
@@ -260,10 +271,6 @@ public class DenseNodeTransactionTranslatorTest
                 {
                     return false;
                 }
-                if ( incoming.getVersion() != real.getVersion() )
-                {
-                    return false;
-                }
 
                 return true;
             }
@@ -368,6 +375,322 @@ public class DenseNodeTransactionTranslatorTest
             }
         } );
     }
+
+    @Test
+    public void shouldUpdateNodeWithAlteredProperty() throws Exception
+    {
+        // GIVEN the following store contents on slave (2.1 store format)
+        final Id nodeId = id();
+        NeoStore existingStore = existingStore( new ExistingContents()
+        {
+            @Override
+            public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
+            {
+                transaction.create( node( nodeId.get( neoStore.getNodeStore() ) )
+                        .asInUse()
+                        .asDense() );
+            }
+        } );
+
+        // WHEN this transaction that updates the node property is applied
+        List<LogEntry> translated = translate( existingStore, transaction( new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.update( node( nodeId.get() ).asInUse(),
+                        node( nodeId.get() )
+                                .asInUse()
+                                .withNextProperty( 12 )
+                );
+            }
+        } ) );
+
+        // THEN the translated version should update this node
+        assertTranslatedTransaction( translated, new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.update( node( nodeId.get() )
+                                .asInUse()
+                                .asDense(),
+                        node( nodeId.get() )
+                                .asInUse()
+                                .asDense()
+                                .withNextProperty( 12 )
+                );
+            }
+        } );
+    }
+
+    @Test
+    public void shouldCreateCreatedNode() throws Exception
+    {
+        // GIVEN the following store contents on slave (2.1 store format)
+        final Id nodeId = id();
+        NeoStore existingStore = existingStore( new ExistingContents()
+        {
+            @Override
+            public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
+            {
+                nodeId.get( neoStore.getNodeStore() );
+            }
+        } );
+
+        // WHEN this transaction that updates the node property is applied
+        List<LogEntry> translated = translate( existingStore, transaction( new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( node( nodeId.get() ) );
+            }
+        } ) );
+
+        // THEN the translated version should update this node
+        assertTranslatedTransaction( translated, new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( node( nodeId.get() ) );
+            }
+        } );
+    }
+
+    @Test
+    public void shouldCreateNodeWithPropertyAndLabelSet() throws Exception
+    {
+        // GIVEN the following store contents on slave (2.1 store format)
+        final Id nodeId = id();
+        NeoStore existingStore = existingStore( new ExistingContents()
+        {
+            @Override
+            public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
+            {
+                nodeId.get( neoStore.getNodeStore() );
+            }
+        } );
+
+        // WHEN this transaction that updates the node property is applied
+        List<LogEntry> translated = translate( existingStore, transaction( new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( node( nodeId.get() ).withNextProperty( 13 ).withLabelField( 42, Collections.<DynamicRecord>emptySet()) );
+            }
+        } ) );
+
+        // THEN the translated version should update this node
+        assertTranslatedTransaction( translated, new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( node( nodeId.get() ).withNextProperty( 13 ).withLabelField( 42, Collections
+                        .<DynamicRecord>emptySet() ) );
+            }
+        } );
+    }
+
+    @Test
+    public void shouldDeleteDeletedNode() throws Exception
+    {
+        // GIVEN the following store contents on slave (2.1 store format)
+        final Id nodeId = id();
+        NeoStore existingStore = existingStore( new ExistingContents()
+        {
+            @Override
+            public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
+            {
+                nodeId.get( neoStore.getNodeStore() );
+                transaction.create( node( nodeId.get() ).asInUse() );
+            }
+        } );
+
+        // WHEN this transaction that updates the node property is applied
+        List<LogEntry> translated = translate( existingStore, transaction( new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.delete( node( nodeId.get() ) );
+            }
+        } ) );
+
+        // THEN the translated version should update this node
+        assertTranslatedTransaction( translated, new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.delete( node( nodeId.get() ) );
+            }
+        } );
+    }
+
+    @Test
+    public void shouldPassThroughNonNodeAndRelationshipCommands() throws Exception
+    {
+        // GIVEN the following store contents on slave (2.1 store format)
+        final Id keyTokenId = id();
+        final Set<DynamicRecord> schemaBefore = new HashSet<DynamicRecord>();
+        final Set<DynamicRecord> schemaAfter = new HashSet<DynamicRecord>();
+        schemaBefore.add( new DynamicRecord( 10 ) );
+        schemaBefore.add( new DynamicRecord( 11 ) );
+
+        schemaAfter.add( new DynamicRecord( 10 ) );
+        schemaAfter.add( new DynamicRecord( 11 ) );
+        schemaAfter.add( new DynamicRecord( 13 ) );
+        NeoStore existingStore = existingStore( new ExistingContents()
+        {
+            @Override
+            public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
+            {
+                keyTokenId.get( neoStore.getLabelTokenStore() );
+            }
+        } );
+
+        // WHEN this transaction that updates the node property is applied
+        List<LogEntry> translated = translate( existingStore, transaction( new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( propertyKeyToken( (int) keyTokenId.get() ) );
+                transaction.update( neoStore() );
+                transaction.update( schemaRule( schemaBefore, schemaAfter, IndexRule.indexRule( 19, 14, 2,
+                        new SchemaIndexProvider.Descriptor( "lucene", "2.1" ) ) ) );
+                Command.RelationshipTypeTokenCommand typeCommand = new Command.RelationshipTypeTokenCommand();
+                typeCommand.init( new RelationshipTypeTokenRecord( 12 ) );
+                transaction.create( typeCommand );
+
+                transaction.create( new LabelTokenRecord( 12 ) );
+            }
+        } ) );
+
+        // THEN the translated version should update this node
+        assertTranslatedTransaction( translated, new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.create( propertyKeyToken( (int) keyTokenId.get() ) );
+                transaction.update( neoStore() );
+                transaction.update( schemaRule( schemaBefore, schemaAfter, IndexRule.indexRule( 19, 14, 2,
+                        new SchemaIndexProvider.Descriptor( "lucene", "2.1" ) ) ) );
+                Command.RelationshipTypeTokenCommand typeCommand = new Command.RelationshipTypeTokenCommand();
+                typeCommand.init( new RelationshipTypeTokenRecord( 12 ) );
+                transaction.create( typeCommand );
+
+                transaction.create( new LabelTokenRecord( 12 ) );
+            }
+        } );
+    }
+
+    @Test
+    public void shouldUpdateNodeWithAlteredLabel() throws Exception
+    {
+        // GIVEN the following store contents on slave (2.1 store format)
+        final Id nodeId = id();
+        NeoStore existingStore = existingStore( new ExistingContents()
+        {
+            @Override
+            public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
+            {
+                transaction.create( node( nodeId.get( neoStore.getNodeStore() ) )
+                        .asInUse()
+                        .asDense() );
+            }
+        } );
+
+        // WHEN this transaction that updates the node property is applied
+        List<LogEntry> translated = translate( existingStore, transaction( new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.update( node( nodeId.get() ).asInUse(),
+                        node( nodeId.get() )
+                                .asInUse()
+                                .withLabelField( 14, Collections.<DynamicRecord>emptySet() )
+                );
+            }
+        } ) );
+
+        // THEN the translated version should update this node
+        assertTranslatedTransaction( translated, new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.update( node( nodeId.get() ).asInUse().asDense(),
+                        node( nodeId.get() )
+                                .asInUse()
+                                .asDense()
+                                .withLabelField( 14, Collections.<DynamicRecord>emptySet() )
+                );
+            }
+        } );
+    }
+
+    @Test
+    public void shouldUpdateRelationshipWithAlteredProperty() throws Exception
+    {
+        // GIVEN the following store contents on slave (2.1 store format)
+        final Id startNodeId = id();
+        final Id endNodeId = id();
+        final Id relationshipId = id();
+        final Id typeId = id();
+        NeoStore existingStore = existingStore( new ExistingContents()
+        {
+            @Override
+            public void fill( NeoStore neoStore, TransactionDataBuilder transaction )
+            {
+                startNodeId.get( neoStore.getNodeStore() );
+                endNodeId.get( neoStore.getNodeStore() );
+                relationshipId.get( neoStore.getRelationshipStore() );
+                typeId.get( neoStore.getRelationshipTypeStore() );
+
+                transaction.create( node( startNodeId.get() ).asInUse().withNextRel( relationshipId.get() ) );
+                transaction.create( node( endNodeId.get() ).asInUse().withNextRel( relationshipId.get() ) );
+                transaction.create( relationship( relationshipId.get(), startNodeId.get(), endNodeId.get(),
+                        (int) typeId.get() )
+                    .asInUse() );
+            }
+        } );
+
+        // WHEN this transaction that updates the node property is applied
+        List<LogEntry> translated = translate( existingStore, transaction( new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.update(
+                        relationship( relationshipId.get(), startNodeId.get(), endNodeId.get(), (int) typeId.get() )
+                                .asInUse()
+                                .withNextProperty( 12 )
+                );
+            }
+        } ) );
+
+        // THEN the translated version should update this node
+        assertTranslatedTransaction( translated, new TransactionContents()
+        {
+            @Override
+            public void fill( TransactionDataBuilder transaction )
+            {
+                transaction.update(
+                        relationship( relationshipId.get(), startNodeId.get(), endNodeId.get(), (int) typeId.get() )
+                                .asInUse()
+                                .withNextProperty( 12 )
+                );
+            }
+        } );
+    }
+
     /*
      * The following four tests work with the following store layout on the master
      *
@@ -486,7 +809,8 @@ public class DenseNodeTransactionTranslatorTest
             @Override
             public void fill( TransactionDataBuilder transaction )
             {
-                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
+                transaction.create( node( target2.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue
+                        () ) );
                 transaction.create( node( target4.get() ).asInUse().withNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() ) );
                 transaction.create( relationship( rel1Id.get(),
                         denseNodeId.get(),
@@ -1082,14 +1406,9 @@ public class DenseNodeTransactionTranslatorTest
         } );
     }
 
-    // TODO should handle relationship that is not created or deleted, just has a property update
     // TODO should handle relationship creation where the node is dense and there are relationships of that type already
     // TODO should handle that both start and end nodes are dense
-    // TODO should handle that a relationship gets created or deleted, and a surrounding
-    //       relationship that will have its pointers updated, yet at the same time modified for
-    //       some other reason (added/remove property) should still have the property change coming through.
     // TODO should handle bigger transaction with multiple relationships created in it
-
     /* TODO For deletions. We need that because:
      *
      * Master (2.0):
@@ -1220,11 +1539,43 @@ public class DenseNodeTransactionTranslatorTest
             setNextRel( id );
             return this;
         }
+
+        public NodeRecordWithBenefits withNextProperty( long id )
+        {
+            setNextProp( id );
+            return this;
+        }
+
+        public NodeRecordWithBenefits withLabelField( long labels, Collection<DynamicRecord> labelRecords )
+        {
+            setLabelField( labels, labelRecords );
+            return this;
+        }
+
     }
 
     private static NodeRecordWithBenefits node( long id )
     {
         return new NodeRecordWithBenefits( id, false, -1, -1 );
+    }
+
+    private static Command.SchemaRuleCommand schemaRule( Collection<DynamicRecord> recordsBefore,
+                                                         Collection<DynamicRecord> recordsAfter,
+                                                         SchemaRule schema )
+    {
+        Command.SchemaRuleCommand schemaRuleCommand = new Command.SchemaRuleCommand();
+        schemaRuleCommand.init( recordsBefore, recordsAfter, schema, 100 );
+        return schemaRuleCommand;
+    }
+
+    private static PropertyKeyTokenRecordWithBenefits propertyKeyToken( int id )
+    {
+        return new PropertyKeyTokenRecordWithBenefits( id );
+    }
+
+    private static NeoStoreRecordWithBenefits neoStore()
+    {
+        return new NeoStoreRecordWithBenefits();
     }
 
     private static class RelationshipRecordWithBenefits extends RelationshipRecord
@@ -1351,5 +1702,17 @@ public class DenseNodeTransactionTranslatorTest
     private static RelationshipGroupRecordWithBenefits group( long id, int type )
     {
         return new RelationshipGroupRecordWithBenefits( id, type );
+    }
+
+    private static class PropertyKeyTokenRecordWithBenefits extends PropertyKeyTokenRecord
+    {
+        public PropertyKeyTokenRecordWithBenefits( int id )
+        {
+            super( id );
+        }
+    }
+
+    private static class NeoStoreRecordWithBenefits extends NeoStoreRecord
+    {
     }
 }

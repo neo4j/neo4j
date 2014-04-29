@@ -148,10 +148,29 @@ public class TransactionWriter
         write( command );
     }
 
+    public void update( LabelTokenRecord labelToken ) throws IOException
+    {
+        Command.LabelTokenCommand command = new Command.LabelTokenCommand();
+        command.init( labelToken );
+        write( command );
+    }
+
     public void create( NodeRecord node ) throws IOException
     {
         node.setCreated();
         update( new NodeRecord( node.getId(), false, NO_PREV_RELATIONSHIP.intValue(), NO_NEXT_PROPERTY.intValue() ), node );
+    }
+
+    public void create( LabelTokenRecord labelToken ) throws IOException
+    {
+        labelToken.setCreated();
+        update( labelToken );
+    }
+
+    public void create( PropertyKeyTokenRecord token ) throws IOException
+    {
+        token.setCreated();
+        update( token );
     }
 
     public void create( RelationshipGroupRecord group ) throws IOException
@@ -164,6 +183,12 @@ public class TransactionWriter
     {
         node.setInUse( true );
         add( before, node );
+    }
+
+    public void update( PropertyKeyTokenRecord token ) throws IOException
+    {
+        token.setInUse( true );
+        add( token );
     }
 
     public void delete( NodeRecord node ) throws IOException
@@ -561,34 +586,34 @@ public class TransactionWriter
         public void writeStart( Xid xid, int identifier, int masterId, int myId, long startTimestamp,
                 long latestCommittedTxWhenTxStarted ) throws IOException
         {
-            add( new LogEntry.Start( xid, identifier, masterId, myId, 16, startTimestamp,
+            add( new LogEntry.Start( xid, identifier, (byte) 0, masterId, myId, 16, startTimestamp,
                     latestCommittedTxWhenTxStarted ) );
         }
 
         @Override
         public void writeCommand( int identifier, XaCommand command ) throws IOException
         {
-            add( new LogEntry.Command( identifier, command ) );
+            add( new LogEntry.Command( identifier, (byte) 0, command ) );
         }
 
         @Override
         public void writePrepare( int identifier, long prepareTimestamp ) throws IOException
         {
-            add( new LogEntry.Prepare( identifier, prepareTimestamp ) );
+            add( new LogEntry.Prepare( identifier, (byte) 0, prepareTimestamp ) );
         }
 
         @Override
         public void writeCommit( int identifier, boolean twoPhase, long txId, long commitTimestamp ) throws IOException
         {
             add( twoPhase ?
-                    new LogEntry.TwoPhaseCommit( identifier, txId, commitTimestamp ) :
-                    new LogEntry.OnePhaseCommit( identifier, txId, commitTimestamp ) );
+                    new LogEntry.TwoPhaseCommit( identifier, (byte) 0, txId, commitTimestamp ) :
+                    new LogEntry.OnePhaseCommit( identifier, (byte) 0, txId, commitTimestamp ) );
         }
 
         @Override
         public void writeDone( int identifier ) throws IOException
         {
-            add( new LogEntry.Done( identifier ) );
+            add( new LogEntry.Done( identifier, (byte) 0 ) );
         }
 
         private void add( LogEntry entry )

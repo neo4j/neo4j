@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
+import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyDeleter;
@@ -92,7 +93,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         LogEntry done = null;
         for ( LogEntry logEntry : from )
         {
-//            assert logEntry.getVersion() != LogEntry.CURRENT_LOG_ENTRY_VERSION;
+            assert logEntry.getVersion() != LogEntry.CURRENT_LOG_ENTRY_VERSION;
 
             switch ( logEntry.getType() )
             {
@@ -112,7 +113,10 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
                 case LogEntry.COMMAND:
                     try
                     {
-                        handleCommand( (LogEntry.Command) logEntry, commands );
+                        if ( !handleCommand( (LogEntry.Command) logEntry ) )
+                        {
+                            commands.add( (LogEntry.Command) logEntry );
+                        }
                     }
                     catch ( IOException e )
                     {
@@ -183,7 +187,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
                     result.add( commandEntry );
                 }
             }
-            if ( command instanceof Command.NodeCommand )
+            else if ( command instanceof Command.NodeCommand )
             {
                 long id = ((Command.NodeCommand) command).getAfter().getId();
                 if ( recordChangeSet.getNodeRecords().getIfLoaded( id ) == null )
@@ -191,17 +195,17 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
                     result.add( commandEntry );
                 }
             }
-            if ( command instanceof Command.PropertyCommand )
+            else
             {
-
+                result.add( commandEntry );
             }
         }
     }
 
-    private void handleCommand( LogEntry.Command commandEntry, List<LogEntry.Command> commands ) throws IOException
+    private boolean handleCommand( LogEntry.Command commandEntry ) throws IOException
     {
         Command command = (Command) commandEntry.getXaCommand();
-        command.accept( commandVisitor );
+        return command.accept( commandVisitor );
     }
 
     private class TranslatingNeoCommandVisitor implements NeoCommandVisitor
@@ -209,7 +213,53 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         @Override
         public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
         {
-            return false;
+            NodeRecord after = command.getAfter();
+            NodeRecord before = neoStore.getNodeStore().loadLightNode( after.getId() );
+
+            if ( after.inUse() && ( before == null || !before.inUse() ) ) // before either is not in use or does not exist
+            {
+                translateNodeCreation( command );
+            }
+            else if ( !after.inUse() && before.inUse() )
+            {
+                translateNodeDeletion( command );
+            }
+            else
+            {
+                if ( after.getNextProp() != before.getNextProp() )
+                {
+                    translateNodePropertyChange( command );
+                }
+                if ( after.getLabelField() != before.getLabelField() )
+                {
+                    translateNodeLabelChange( command );
+                }
+            }
+            return true;
+        }
+
+        private void translateNodeDeletion( Command.NodeCommand command )
+        {
+            recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null ).forChangingData().setInUse( false );
+        }
+
+        private void translateNodeLabelChange( Command.NodeCommand command )
+        {
+            recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null )
+                    .forChangingData().setLabelField( command.getAfter().getLabelField(), command.getAfter().getDynamicLabelRecords() );
+        }
+
+        private void translateNodePropertyChange( Command.NodeCommand command )
+        {
+            recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null )
+                    .forChangingData().setNextProp( command.getAfter().getNextProp() );
+        }
+
+        private void translateNodeCreation( Command.NodeCommand command )
+        {
+            NodeRecord created = recordChangeSet.getNodeRecords().create( command.getKey(), null ).forChangingData();
+            created.copyFrom( command.getAfter() );
+            created.setNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
         }
 
         @Override
@@ -259,14 +309,13 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         }
 
         @Override
-        public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
+        public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command )
         {
             return false;
         }
 
         @Override
-        public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws
-                IOException
+        public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command )
         {
             return false;
         }
@@ -278,7 +327,7 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         }
 
         @Override
-        public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
+        public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command )
         {
             return false;
         }
@@ -290,19 +339,9 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         }
 
         @Override
-        public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException
+        public boolean visitNeoStoreCommand( Command.NeoStoreCommand command )
         {
             return false;
-        }
-
-        private void handleNodeCommand( Command.NodeCommand command )
-        {
-//        recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null ).forChangingData();
-        }
-
-        private void handleRelationshipCommand( Command.RelationshipCommand command )
-        {
-
         }
 
         private void translateRelationshipCreation( Command.RelationshipCommand command )
