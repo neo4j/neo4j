@@ -143,7 +143,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     case OptionalMatch(qg) => qg
   }
 
-  def patternPredicates = subQueries.collect { case e: Exists => e }
+  def patternPredicates: Seq[Exists] = subQueries.collect { case e: Exists => e }
 }
 
 object QueryGraph {
@@ -171,7 +171,7 @@ object SelectionPredicates {
           Predicate(Set(IdName(name)), predicate.copy(labels = Seq(label))(predicate.position))
         }
       // and
-      case _: And =>
+      case _: Ands =>
         (acc, children) => children(acc)
       // iterable expression should not depend on the identifier they introduce
       case predicate: IterablePredicateExpression =>

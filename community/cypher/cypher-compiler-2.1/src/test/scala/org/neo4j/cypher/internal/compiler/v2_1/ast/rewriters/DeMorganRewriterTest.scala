@@ -17,26 +17,35 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-class InputPosition(val offset: Int, val line: Int, val column: Int) {
-  override def hashCode = 41 * offset
-  override def equals(that: Any): Boolean = that match {
-    case that: InputPosition =>
-      (that canEqual this) && offset == that.offset
-    case _ =>
-      false
-  }
-  def canEqual(that: Any): Boolean = that.isInstanceOf[InputPosition]
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-  override def toString = "line " + line + ", column " + column
-}
+class DeMorganRewriterTest extends CypherFunSuite with PredicateTestSupport {
 
-object InputPosition {
-  implicit object InputPositionOrdering extends Ordering[InputPosition] {
-    def compare(p1: InputPosition, p2: InputPosition) =
-      p1.offset.compare(p2.offset)
+  val rewriter: Rewriter = deMorganRewriter
+
+  test("not (P and Q)  iff  (not P) or (not Q)") {
+    not(and(P, Q)) <=> or(not(P), not(Q))
   }
 
-  val NONE = null
+  test("not (P or Q)  iff  (not P) and (not Q)") {
+    not(or(P, Q)) <=> and(not(P), not(Q))
+  }
+
+  test("P xor Q  iff  (P or Q) and (not P or not Q)") {
+    xor(P, Q) <=> and(or(P, Q), or(not(P), not(Q)))
+  }
+
+  test("not (P xor Q)  iff  (not P and not Q) or (P and Q)") {
+    not(xor(P, Q)) <=>
+      or(
+        and(
+          not(P),
+          not(Q)),
+        and(
+          not(not(P)),
+          not(not(Q))))
+  }
 }

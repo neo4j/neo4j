@@ -108,10 +108,10 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           SingleRow(Set("a")),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED42", "  UNNAMED34", SimplePatternLength
         )( mockRel ),
-        Or(
+        Ors(List(
           Equals(Property(Identifier("a")_, PropertyKeyName("prop2")_)_, SignedIntegerLiteral("9")_)_,
           GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("4")_)_
-        )_
+        ))_
       )( fakeExists )
     )
   }
