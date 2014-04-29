@@ -32,9 +32,9 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
   val patternRel2 = PatternRelationship("r2", ("c", "a"), Direction.INCOMING, Seq.empty, SimplePatternLength)
   val patternRel3 = PatternRelationship("r3", ("b", "a"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
   val patternRel4 = PatternRelationship("r4", ("b", "x"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-  val r1Predicate: Equals = Equals(Property(Identifier("r1")_, PropertyKeyName("prop")(None)_)_, StringLiteral("foo")_)_
-  val bPredicate: Equals = Equals(Property(Identifier("b")_, PropertyKeyName("prop")(None)_)_, StringLiteral("foo")_)_
-  val aAndR1Predicate: Equals = Equals(Property(Identifier("a")_, PropertyKeyName("prop")(None)_)_, Property(Identifier("r1")_, PropertyKeyName("prop")(None)_)_)_
+  val r1Predicate: Equals = Equals(Property(Identifier("r1")_, PropertyKeyName("prop")_)_, StringLiteral("foo")_)_
+  val bPredicate: Equals = Equals(Property(Identifier("b")_, PropertyKeyName("prop")_)_, StringLiteral("foo")_)_
+  val aAndR1Predicate: Equals = Equals(Property(Identifier("a")_, PropertyKeyName("prop")_)_, Property(Identifier("r1")_, PropertyKeyName("prop")_)_)_
 
   test("should introduce optional expand for unsolved optional match when all arguments are covered and there's a single unsolved pattern relationship") {
     // MATCH (a) OPTIONAL MATCH (a)-[r]->(b)

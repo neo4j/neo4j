@@ -27,6 +27,7 @@ import org.mockito.Matchers._
 import org.mockito.Mockito._
 
 class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
+  implicit val semanticTable = newMockedSemanticTable
   implicit val planContext = newMockedPlanContext
   implicit val context = newMockedLogicalPlanContext(planContext)
 
@@ -94,7 +95,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(metrics: MetricsFactory) {
-    val costs = metrics.newMetrics(context.statistics).cost
+    val costs = metrics.newMetrics(context.statistics, semanticTable).cost
     CandidateList(candidates).bestPlan(costs) should equal(Some(winner))
     CandidateList(candidates.reverse).bestPlan(costs) should equal(Some(winner))
   }

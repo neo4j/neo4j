@@ -25,13 +25,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 object labelScanLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
+    implicit val semanticTable = context.semanticTable
     val labelPredicateMap = qg.selections.labelPredicates
 
     CandidateList(
       for (idName <- qg.patternNodes.toSeq;
            labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
            labelName <- labelPredicate.labels) yield
-        NodeByLabelScan(idName, labelName.toEither())(Seq(labelPredicate))
+        NodeByLabelScan(idName, labelName.either)(Seq(labelPredicate))
     )
   }
 }

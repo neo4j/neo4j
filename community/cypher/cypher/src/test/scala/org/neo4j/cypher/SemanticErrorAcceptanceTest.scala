@@ -60,7 +60,7 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
   test("cant re-use relationship identifier") {
     executeAndEnsureError(
       "start a=node(0) match a-[r]->b-[r]->a return r",
-      "Can't re-use pattern relationship 'r' with different start/end nodes."
+      "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 33)"
     )
   }
 

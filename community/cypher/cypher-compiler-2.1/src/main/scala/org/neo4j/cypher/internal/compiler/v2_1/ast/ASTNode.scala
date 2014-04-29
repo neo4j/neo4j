@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 trait ASTNode extends Product with Foldable with Rewritable {
   import Foldable._
   import Rewritable._
+
   def position: InputPosition
 
   def dup(children: Seq[AnyRef]): this.type =

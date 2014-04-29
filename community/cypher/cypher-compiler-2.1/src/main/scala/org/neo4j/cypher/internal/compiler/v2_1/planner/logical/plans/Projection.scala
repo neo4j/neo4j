@@ -21,11 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class Projection(left: LogicalPlan, expressions: Map[String, Expression]) extends LogicalPlan {
+case class Projection(left: LogicalPlan, expressions: Map[String, Expression], hideProjections: Boolean = false)
+  extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
 
   def numExpressions = expressions.size
 
-  val solved = left.solved.changeProjections(expressions)
+  val solved = if (hideProjections)
+    left.solved
+  else
+    left.solved.changeProjections(expressions)
 }

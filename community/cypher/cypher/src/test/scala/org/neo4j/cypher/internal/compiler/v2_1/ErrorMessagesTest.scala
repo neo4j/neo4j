@@ -360,6 +360,10 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
       "Property values can only be of primitive types or arrays thereof")
   }
 
+  test("should forbid using same introduced relationship twice in one MATCH pattern") {
+    expectError("match (a)-[r]->(b)-[r]-(c) return r", "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 21)")
+  }
+
   def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))

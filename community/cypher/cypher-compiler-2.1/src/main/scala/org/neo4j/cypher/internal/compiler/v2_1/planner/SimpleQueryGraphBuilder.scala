@@ -118,7 +118,8 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           }
 
           case pattern: PatternExpression => {
-            case ((patterns, expressions), _) => (patterns :+ pattern, expressions)
+            case ((patterns, expressions), _) =>
+              (patterns :+ pattern, expressions)
           }
 
           case or: Or => (acc, children) => children(acc)
@@ -157,15 +158,19 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
       clauses.foldLeft(QueryGraph.empty)(
         (qg, clause) =>
           clause match {
-            case Return(false, ListedReturnItems(expressions), optOrderBy, None, None) =>
+            case Return(false, ListedReturnItems(expressions), optOrderBy, skip, limit) =>
               val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
               if (projections.exists {
                 case (_,e) => e.asCommandExpression.containsAggregate
               }) throw new CantHandleQueryException
 
-              qg.changeSortItems(
-                optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
-              ).changeProjections(projections.toMap)
+              val order: Seq[SortItem] = optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
+
+              qg.copy(
+                sortItems = order,
+                projections = projections.toMap,
+                limit = limit.map(_.expression),
+                skip = skip.map(_.expression))
 
             case Match(optional@false, pattern: Pattern, Seq(), optWhere) =>
               if (qg.patternRelationships.nonEmpty || qg.patternNodes.nonEmpty)
@@ -201,5 +206,4 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     case _ =>
       throw new CantHandleQueryException
   }
-
 }

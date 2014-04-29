@@ -26,17 +26,19 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.graphdb.Direction
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
+import scala.collection.mutable
 
 class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("select(label scan) < select(all nodes scan)") {
+    val semanticTable = newMockedSemanticTable
     val statistics = newMockedStatistics
     when(statistics.nodesCardinality).thenReturn(1000)
-    val cost = newMetricsFactory.newMetrics(statistics).cost
+    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
 
     val cost1 = cost(
       Selection(
-        Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_),
+        Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
         NodeByLabelScan("a", Left("Label"))()
       )
     )
@@ -44,8 +46,8 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
     val cost2 = cost(
       Selection(
         Seq(
-          Equals(Property(Identifier("a")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_,
-          HasLabels(Identifier("a")_, Seq(LabelName("Label")()_))_
+          Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
+          HasLabels(Identifier("a")_, Seq(LabelName("Label")_))_
         ),
         AllNodesScan("a")
       )
@@ -55,9 +57,10 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("label scan < select(all nodes scan)") {
+    val semanticTable = newMockedSemanticTable
     val statistics = newMockedStatistics
     when(statistics.nodesCardinality).thenReturn(1000)
-    val cost = newMetricsFactory.newMetrics(statistics).cost
+    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
 
     val cost1 = cost(
       NodeByLabelScan("a", Left("Label"))()
@@ -66,8 +69,8 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
     val cost2 = cost(
       Selection(
         Seq(
-          Equals(Property(Identifier("b")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_,
-          Equals(Property(Identifier("b")_, PropertyKeyName("age")()_)_, SignedIntegerLiteral("12")_)_
+          Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
+          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedIntegerLiteral("12")_)_
         ),
         AllNodesScan("b")
       )
@@ -77,9 +80,10 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("all node scan < select(all nodes scan)") {
+    val semanticTable = newMockedSemanticTable
     val statistics = newMockedStatistics
     when(statistics.nodesCardinality).thenReturn(1000)
-    val cost = newMetricsFactory.newMetrics(statistics).cost
+    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
 
     val cost1 = cost(
       AllNodesScan("a")
@@ -88,8 +92,8 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
     val cost2 = cost(
       Selection(
         Seq(
-          Equals(Property(Identifier("b")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_,
-          Equals(Property(Identifier("b")_, PropertyKeyName("age")()_)_, SignedIntegerLiteral("12")_)_
+          Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
+          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedIntegerLiteral("12")_)_
         ),
         AllNodesScan("b")
       )
@@ -100,16 +104,17 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("expand(select(all nodes scan)) < expand(all node scan)") {
+    val semanticTable = newMockedSemanticTable
     val statistics = newMockedStatistics
     when(statistics.nodesCardinality).thenReturn(1000.0)
-    val cost = newMetricsFactory.newMetrics(statistics).cost
+    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
 
     val cost1 = cost(
       Expand(
         Selection(
           Seq(
-            Equals(Property(Identifier("b")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_,
-            Equals(Property(Identifier("b")_, PropertyKeyName("age")()_)_, SignedIntegerLiteral("12")_)_
+            Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
+            Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedIntegerLiteral("12")_)_
           ),
           AllNodesScan("b")
         ),
@@ -128,17 +133,20 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   }
 
   test("expand(select(all nodes scan)) < select(expand(all node scan))") {
+    val semanticTable = newMockedSemanticTable
+    when(semanticTable.resolvedRelTypeNames).thenReturn(mutable.Map("x" -> RelTypeId(12)))
+
     val statistics = newMockedStatistics
     when(statistics.nodesCardinality).thenReturn(1000)
     when(statistics.degreeByRelationshipTypeAndDirection(RelTypeId(12), Direction.BOTH)).thenReturn(2.1)
-    val cost = newMetricsFactory.newMetrics(statistics).cost
+    val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
 
-    val relTypeX: Seq[RelTypeName] = Seq(RelTypeName("x")(Some(RelTypeId(12))) _)
+    val relTypeX: Seq[RelTypeName] = Seq(RelTypeName("x")_)
 
     val cost1 = cost(
       Expand(
         Selection(
-          Seq(Equals(Property(Identifier("a") _, PropertyKeyName("name")() _) _, StringLiteral("Andres") _) _),
+          Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
           AllNodesScan("a")
         ),
         "a", Direction.BOTH, relTypeX, "start", "rel", SimplePatternLength
@@ -147,7 +155,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val cost2 = cost(
       Selection(
-        Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_),
+        Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
         Expand(
           AllNodesScan("start"),
           "start", Direction.BOTH, relTypeX, "a", "rel", SimplePatternLength

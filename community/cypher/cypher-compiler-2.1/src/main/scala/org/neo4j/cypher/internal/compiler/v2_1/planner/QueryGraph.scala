@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.InternalException
 
 trait SubQuery {
   def queryGraph: QueryGraph
@@ -36,15 +37,28 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       selections: Selections = Selections(),
                       projections: Map[String, Expression] = Map.empty,
                       sortItems: Seq[SortItem] = Seq.empty,
-                      subQueries: Seq[SubQuery] = Seq.empty) {
+                      subQueries: Seq[SubQuery] = Seq.empty,
+                      limit: Option[Expression] = None,
+                      skip: Option[Expression] = None) {
 
-  def ++(other: QueryGraph): QueryGraph = QueryGraph(
+  def ++(other: QueryGraph): QueryGraph =
+    QueryGraph(
       projections = projections ++ other.projections,
       selections = selections ++ other.selections,
       patternNodes = patternNodes ++ other.patternNodes,
       patternRelationships = patternRelationships ++ other.patternRelationships,
       subQueries = subQueries ++ other.subQueries,
-      argumentIds = argumentIds ++ other.argumentIds)
+      argumentIds = argumentIds ++ other.argumentIds,
+      limit = either(limit, other.limit),
+      skip = either(skip, other.skip))
+
+  private def either[T](a: Option[T], b:Option[T]):Option[T] = (a, b) match {
+    case (None, s) => s
+    case (s, None) => s
+    case (None, None) => None
+    case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
+  }
+
 
   def equivalent(other: QueryGraph) =
     patternRelationships == other.patternRelationships &&

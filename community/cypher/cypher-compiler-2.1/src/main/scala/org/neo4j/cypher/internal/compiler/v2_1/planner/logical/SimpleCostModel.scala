@@ -33,6 +33,7 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
   val EXPRESSION_SELECTION_OVERHEAD_PER_ROW = EXPRESSION_PROJECTION_OVERHEAD_PER_ROW
   val INDEX_OVERHEAD_COST_PER_ROW = 3.0
   val LABEL_INDEX_OVERHEAD_COST_PER_ROW = 2.0
+  val SORT_COST_PER_ROW = 0.01
 
   def apply(plan: LogicalPlan): Double = plan match {
     case _: SingleRow =>
@@ -105,6 +106,19 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
         cost(outerJoin.right) +
         cardinality(outerJoin.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
         cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
+
+    case s @ Sort(input, _) =>
+      cost(input) + cardinality(s) * SORT_COST_PER_ROW
+
+    case s @ Skip(input, _) =>
+      cost(input) + cardinality(s)
+
+    case l @ Limit(input, _) =>
+      cost(input) + cardinality(l)
+
+    case s @ SortedLimit(input, _, _) =>
+      cost(input) + cardinality(s) * SORT_COST_PER_ROW
+
   }
 
   private def selectOrSemiApplyCost(outer: LogicalPlan, inner: LogicalPlan) =

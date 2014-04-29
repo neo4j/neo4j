@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 abstract class IndexLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
+    implicit val semanticTable = context.semanticTable
     val predicates: Seq[Expression] = qg.selections.flatPredicates
     val labelPredicateMap = qg.selections.labelPredicates
 

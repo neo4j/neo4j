@@ -31,10 +31,10 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   val builder = new SimpleQueryGraphBuilder
 
   val nIdent: Identifier = Identifier("n")_
-  val A: LabelName = LabelName("A")() _
-  val B: LabelName = LabelName("B")() _
-  val X: LabelName = LabelName("X")() _
-  val Y: LabelName = LabelName("Y")() _
+  val A: LabelName = LabelName("A")_
+  val B: LabelName = LabelName("B")_
+  val X: LabelName = LabelName("X")_
+  val Y: LabelName = LabelName("Y")_
   val lit42: SignedIntegerLiteral = SignedIntegerLiteral("42")_
   val lit43: SignedIntegerLiteral = SignedIntegerLiteral("43")_
 
@@ -470,7 +470,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.selections should equal(Selections())
     qg.patternNodes should equal(Set(IdName("n")))
     qg.subQueries should be(empty)
-    val sortItem: DescSortItem = DescSortItem(Property(Identifier("n")_, PropertyKeyName("prop2")(None)_)_)_
+    val sortItem: DescSortItem = DescSortItem(Property(Identifier("n")_, PropertyKeyName("prop2")_)_)_
     qg.sortItems should equal(Seq(sortItem))
   }
 
@@ -488,7 +488,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ) _) _)
     val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val exp2: Expression = Equals(
-      Property(Identifier("a")_, PropertyKeyName("prop")(None)_)_,
+      Property(Identifier("a")_, PropertyKeyName("prop")_)_,
       SignedIntegerLiteral("42")_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Or(exp1, exp2)_)
@@ -518,7 +518,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ) _) _)
     val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val exp2: Expression = Equals(
-      Property(Identifier("a") _, PropertyKeyName("prop")(None) _) _,
+      Property(Identifier("a") _, PropertyKeyName("prop")_)_,
       SignedIntegerLiteral("42") _
     ) _
     val orPredicate = Predicate(Set(IdName("a")), Or(exp1, exp2)_)
@@ -548,12 +548,12 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ) _) _)
     val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val exp2: Expression = Equals(
-      Property(Identifier("a") _, PropertyKeyName("prop")(None) _) _,
-      SignedIntegerLiteral("42") _
+      Property(Identifier("a") _, PropertyKeyName("prop")_)_,
+      SignedIntegerLiteral("42")_
     )_
     val exp3: Expression = Equals(
-      Property(Identifier("a") _, PropertyKeyName("prop")(None) _) _,
-      SignedIntegerLiteral("21") _
+      Property(Identifier("a") _, PropertyKeyName("prop")_)_,
+      SignedIntegerLiteral("21")_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Or(exp1, Or(exp3, exp2)_)_)
     val exists = Exists(orPredicate, QueryGraph(
@@ -568,5 +568,31 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.subQueries should equal(Seq(exists))
   }
 
-  def relType(name: String): RelTypeName = RelTypeName(name)(None)_
+  test("match n return n limit 10") {
+    // Given
+    val qg = buildQueryGraph("match n return n limit 10", normalize = true)
+
+    // Then inner pattern query graph
+    qg.selections should equal(Selections())
+    qg.patternNodes should equal(Set(IdName("n")))
+    qg.subQueries should be(empty)
+    qg.sortItems should equal(Seq.empty)
+    qg.limit should equal(Some(UnsignedIntegerLiteral("10")(pos)))
+    qg.skip should equal(None)
+  }
+
+  test("match n return n skip 10") {
+    // Given
+    val qg = buildQueryGraph("match n return n skip 10", normalize = true)
+
+    // Then inner pattern query graph
+    qg.selections should equal(Selections())
+    qg.patternNodes should equal(Set(IdName("n")))
+    qg.subQueries should be(empty)
+    qg.sortItems should equal(Seq.empty)
+    qg.limit should equal(None)
+    qg.skip should equal(Some(UnsignedIntegerLiteral("10")(pos)))
+  }
+
+  def relType(name: String): RelTypeName = RelTypeName(name)_
 }

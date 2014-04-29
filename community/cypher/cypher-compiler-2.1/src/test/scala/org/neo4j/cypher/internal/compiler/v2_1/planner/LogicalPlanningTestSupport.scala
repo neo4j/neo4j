@@ -43,25 +43,29 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
   val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
   val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
   val mockRel = newPatternRelationship("a", "b", "r")
+  val tokenResolver = new SimpleTokenResolver()
 
   def newPatternRelationship(start: IdName, end: IdName, rel: IdName, dir: Direction = Direction.OUTGOING, types: Seq[RelTypeName] = Seq.empty, length: PatternLength = SimplePatternLength) = {
     PatternRelationship(rel, (start, end), dir, types, length)
   }
 
   class SpyableMetricsFactory extends MetricsFactory {
-    def newSelectivityEstimator(statistics: GraphStatistics) =
-      SimpleMetricsFactory.newSelectivityEstimator(statistics)
+    def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable) =
+      SimpleMetricsFactory.newSelectivityEstimator(statistics, semanticTable)
+    def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable) =
+      SimpleMetricsFactory.newCardinalityEstimator(statistics, selectivity, semanticTable)
     def newCostModel(cardinality: CardinalityModel) =
       SimpleMetricsFactory.newCostModel(cardinality)
-    def newCardinalityEstimator(statistics: GraphStatistics, selectivity: SelectivityModel) =
-      SimpleMetricsFactory.newCardinalityEstimator(statistics, selectivity)
   }
 
   def newMetricsFactory = SimpleMetricsFactory
 
-  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics) = newMetricsFactory.newMetrics(stats)
+  def newSimpleMetrics(stats: GraphStatistics = newMockedGraphStatistics, semanticTable: SemanticTable) =
+    newMetricsFactory.newMetrics(stats, semanticTable)
 
   def newMockedGraphStatistics = mock[GraphStatistics]
+
+  def newMockedSemanticTable = mock[SemanticTable]
 
   def newMockedMetricsFactory = spy(new SpyableMetricsFactory)
 
@@ -92,7 +96,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     val plan = mock[LogicalPlan]
     doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
     doReturn(ids).when(plan).coveredIds
-    doReturn(QueryGraph(patternRelationships = patterns.toSet)).when(plan).solved
+    doReturn(QueryGraph(patternNodes = ids, patternRelationships = patterns.toSet)).when(plan).solved
     plan
   }
 
@@ -107,6 +111,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport {
     planner.rewriteStatement(rewrittenStatement) match {
       case ast: Query =>
         val semanticTable = semanticChecker.check(queryText, rewrittenStatement)
+        tokenResolver.resolve(ast)(semanticTable, planContext)
         planner.produceLogicalPlan(ast, semanticTable)(planContext)
       case _ =>
         throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")

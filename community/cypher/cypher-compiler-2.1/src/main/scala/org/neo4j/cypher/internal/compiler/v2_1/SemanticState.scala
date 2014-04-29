@@ -55,8 +55,7 @@ object Scope {
   val empty = Scope(symbolTable = HashMap.empty, parent = None)
 }
 
-case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo]
-) {
+case class SemanticState(scope: Scope, typeTable: IdentityMap[ast.Expression, ExpressionTypeInfo]) {
   def newScope = copy(scope = scope.pushScope)
   def popScope = copy(scope = scope.popScope)
 

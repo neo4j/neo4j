@@ -113,14 +113,14 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def idNames(names: String*) = names.map(IdName(_)).toSet
 
   private def identHasLabel(name: String, labelName: String): HasLabels = {
-    val labelNameObj: LabelName = LabelName(labelName)() _
-    HasLabels(Identifier(name) _, Seq(labelNameObj)) _
+    val labelNameObj: LabelName = LabelName(labelName)_
+    HasLabels(Identifier(name)_, Seq(labelNameObj))_
   }
 
   private def compareBothSides(left: String, right: String): Equals = {
     val l: Identifier = Identifier(left)_
     val r: Identifier = Identifier(right)_
-    val propName1 = PropertyKeyName("prop1")(None)_
+    val propName1 = PropertyKeyName("prop1")_
     val leftProp = Property(l, propName1)_
     val rightProp = Property(r, propName1)_
     Equals(leftProp, rightProp)_

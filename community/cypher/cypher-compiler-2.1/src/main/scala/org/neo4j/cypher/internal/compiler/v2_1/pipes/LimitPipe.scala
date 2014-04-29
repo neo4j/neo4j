@@ -21,24 +21,28 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_1.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{NumericHelper, Expression}
 
-case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate, negated: Boolean)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.filter {
-      (outerContext) =>
-        predicate.isTrue(outerContext)(state) || {
-          val innerState = state.copy(initialContext = Some(outerContext))
-          val innerResults = inner.createResults(innerState)
-          if (negated) innerResults.isEmpty else innerResults.nonEmpty
-        }
-    }
+case class LimitPipe(source: Pipe, exp: Expression)(implicit pipeMonitor: PipeMonitor)
+  extends PipeWithSource(source, pipeMonitor) with NumericHelper {
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
+    if(input.isEmpty)
+      return Iterator.empty
+
+    implicit val s = state
+
+    val first: ExecutionContext = input.next()
+
+    val count = asInt(exp(first))
+
+    new HeadAndTail(first, input).take(count)
   }
 
-  private def name = if (negated) "SelectOrAntiSemiApply" else "SelectOrSemiApply"
 
-  def executionPlanDescription = source.executionPlanDescription.
-    andThen(this, name, "inner" -> inner.executionPlanDescription, "predicate" -> predicate.toString)
+  override def executionPlanDescription = source
+    .executionPlanDescription
+    .andThen(this, "Limit", "limit" -> exp)
+
 
   def symbols: SymbolTable = source.symbols
 }

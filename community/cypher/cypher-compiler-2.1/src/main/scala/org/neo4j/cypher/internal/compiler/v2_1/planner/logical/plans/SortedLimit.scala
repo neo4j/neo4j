@@ -17,13 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.ast
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{SortItem, Expression}
 
-trait SymbolicName {
-  self: ASTNode =>
+case class SortedLimit(left: LogicalPlan, limit: Expression, sortItems: Seq[SortItem])(originalLimit: Expression)
+  extends LogicalPlan {
+  val lhs = Some(left)
+  val rhs = None
 
-  def name: String
-  def position: InputPosition
+  val solved = left.solved.copy(limit = Some(originalLimit), sortItems = sortItems)
 }

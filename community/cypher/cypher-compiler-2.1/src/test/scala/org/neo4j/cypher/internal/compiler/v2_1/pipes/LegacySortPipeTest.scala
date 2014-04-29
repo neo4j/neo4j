@@ -19,40 +19,46 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.compiler.v2_1._
+import commands.SortItem
+import commands.expressions.{Add, Literal, RandFunction, Identifier}
+import symbols._
+import org.neo4j.cypher.PatternException
+import org.junit.Test
 import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.scalatest.junit.JUnitSuite
 import collection.mutable.{Map=>MutableMap}
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import scala.util.Random
+import org.scalatest.mock.MockitoSugar
 
-class SortPipeTest extends CypherFunSuite with MockitoSugar {
+class LegacySortPipeTest extends JUnitSuite with MockitoSugar {
 
   private implicit val monitor = mock[PipeMonitor]
 
-  test("empty input gives empty output") {
+  @Test def emptyInIsEmptyOut() {
     val source = new FakePipe(List(), "x" -> CTAny)
-    val sortPipe = new SortPipe(source, List(Ascending("x")))
+    val sortPipe = new LegacySortPipe(source, List(SortItem(Identifier("x"), true)))
 
     assertEquals(List(), sortPipe.createResults(QueryStateHelper.empty).toList)
   }
 
-  test("simple sorting is supported") {
+  @Test def simpleSortingIsSupported() {
     val list:Seq[MutableMap[String, Any]] = List(MutableMap("x" -> "B"), MutableMap("x" -> "A"))
     val source = new FakePipe(list, "x" -> CTString)
-    val sortPipe = new SortPipe(source, List(Ascending("x")))
+    val sortPipe = new LegacySortPipe(source, List(SortItem(Identifier("x"), true)))
 
     assertEquals(List(MutableMap("x" -> "A"), MutableMap("x" -> "B")), sortPipe.createResults(QueryStateHelper.empty).toList)
   }
 
-  test("sort by two columns") {
+  @Test def sortByTwoColumns() {
     val source = new FakePipe(List(
       MutableMap("x" -> "B", "y" -> 20),
       MutableMap("x" -> "A", "y" -> 100),
       MutableMap("x" -> "B", "y" -> 10)), "x" -> CTString, "y"->CTNumber)
 
-    val sortPipe = new SortPipe(source, List(
-      Ascending("x"),
-      Ascending("y")))
+    val sortPipe = new LegacySortPipe(source, List(
+      SortItem(Identifier("x"), true),
+      SortItem(Identifier("y"), true)))
 
     assertEquals(List(
       MutableMap("x" -> "A", "y" -> 100),
@@ -60,15 +66,15 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
       MutableMap("x" -> "B", "y" -> 20)), sortPipe.createResults(QueryStateHelper.empty).toList)
   }
 
-  test("sort by two columns with one descending") {
+  @Test def sortByTwoColumnsWithOneDescending() {
     val source = new FakePipe(List(
       MutableMap("x" -> "B", "y" -> 20),
       MutableMap("x" -> "A", "y" -> 100),
       MutableMap("x" -> "B", "y" -> 10)), "x" -> CTString, "y"->CTNumber)
 
-    val sortPipe = new SortPipe(source, List(
-      Ascending("x"),
-      Descending("y")))
+    val sortPipe = new LegacySortPipe(source, List(
+      SortItem(Identifier("x"), true),
+      SortItem(Identifier("y"), false)))
 
     assertEquals(List(
       MutableMap("x" -> "A", "y" -> 100),
@@ -76,18 +82,47 @@ class SortPipeTest extends CypherFunSuite with MockitoSugar {
       MutableMap("x" -> "B", "y" -> 10)), sortPipe.createResults(QueryStateHelper.empty).toList)
   }
 
-  test("should handle null values") {
+  @Test def shouldHandleSortingWithNullValues() {
     val list: Seq[MutableMap[String, Any]] = List(
       MutableMap("y" -> 1),
       MutableMap("y" -> null),
       MutableMap("y" -> 2))
     val source = new FakePipe(list, "y"->CTNumber)
 
-    val sortPipe = new SortPipe(source, List(Ascending("y")))
+    val sortPipe = new LegacySortPipe(source, List(SortItem(Identifier("y"), true)))
 
     assertEquals(List(
       MutableMap("y" -> 1),
       MutableMap("y" -> 2),
       MutableMap("y" -> null)), sortPipe.createResults(QueryStateHelper.empty).toList)
+  }
+
+  @Test def shouldHandleSortingWithComputedValues() {
+    val list:Seq[MutableMap[String, Any]] = List(
+      MutableMap("x" -> 3),
+      MutableMap("x" -> 1),
+      MutableMap("x" -> 2))
+
+    val source = new FakePipe(list, "x" -> CTNumber)
+
+    val sortPipe = new LegacySortPipe(source, List(SortItem(Add(Identifier("x"), Literal(1)), true)))
+
+    val actualResult = sortPipe.createResults(QueryStateHelper.empty).toList
+    val expectedResult =  List(
+      MutableMap("x" -> 1),
+      MutableMap("x" -> 2),
+      MutableMap("x" -> 3))
+    assertEquals(expectedResult, actualResult)
+  }
+
+  @Test(expected = classOf[PatternException]) def shouldNotAllowSortingWithRandomValues() {
+    val list:Seq[MutableMap[String, Any]] = Random.shuffle(
+      for (v <- 1 to 1000) yield MutableMap("x" -> (v: Any)))
+
+    val source = new FakePipe(list, "x" -> CTNumber)
+
+    val sortPipe = new LegacySortPipe(source, List(SortItem(Add(Add(Literal(1), RandFunction()), Literal(1)), true)))
+
+    sortPipe.createResults(QueryStateHelper.empty)
   }
 }
