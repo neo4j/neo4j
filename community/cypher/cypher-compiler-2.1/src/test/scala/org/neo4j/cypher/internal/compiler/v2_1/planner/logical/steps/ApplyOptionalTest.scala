@@ -39,7 +39,7 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: SingleRow => 1.0
       case _            => 1000.0
     })
@@ -47,7 +47,7 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
-      metrics = factory.newMetrics(newMockedStatistics)
+      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
     val inputPlan = SingleRow(Set("a"))

@@ -47,7 +47,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
 
   test("Should build plans containing expand for two unrelated relationship patterns") {
     val factory: SpyableMetricsFactory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case AllNodesScan(IdName("a")) => 1000
       case AllNodesScan(IdName("b")) => 2000
       case AllNodesScan(IdName("c")) => 3000
@@ -128,7 +128,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   test("Should build plans expanding from the cheaper side for single relationship pattern") {
     implicit val planContext = newMockedPlanContext
     val factory: SpyableMetricsFactory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: NodeIndexSeek => 10.0
       case _: AllNodesScan  => 100.04
       case _                => Double.MaxValue
@@ -142,11 +142,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       Projection(
         Expand(
           Selection(
-            Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")()_)_, StringLiteral("Andres")_)_),
+            Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
             AllNodesScan("a")
           ),
-          "a", Direction.BOTH, Seq(RelTypeName("x")() _), "start", "rel", SimplePatternLength
-        )( newPatternRelationship("start", "a", "rel", Direction.BOTH, Seq(RelTypeName("x")()_)) ),
+          "a", Direction.BOTH, Seq(RelTypeName("x")_), "start", "rel", SimplePatternLength
+        )( newPatternRelationship("start", "a", "rel", Direction.BOTH, Seq(RelTypeName("x")_)) ),
         Map("a" -> Identifier("a") _)
       )
     )

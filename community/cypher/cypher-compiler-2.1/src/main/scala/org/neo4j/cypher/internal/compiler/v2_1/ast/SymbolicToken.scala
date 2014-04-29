@@ -19,40 +19,44 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
+import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
+import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 
-sealed trait SymbolicToken[T <: NameId]  {
-  self: SymbolicName =>
+final case class LabelName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName
 
-  def id: Option[T]
+object LabelName {
+  implicit class LabelNameId(that: LabelName)(implicit semanticTable: SemanticTable) {
+    def id = semanticTable.resolvedLabelIds.get(that.name)
 
-  protected def updatedId(newId: T): T = id match {
-    case Some(oldId) => throw new IllegalStateException("Attempt to update already set id")
-    case None        => newId
+    def either = that.id match {
+      case Some(id) => Right(id)
+      case None => Left(that.name)
+    }
   }
 }
 
-final case class LabelName(name: String)(val id: Option[LabelId] = None)(val position: InputPosition)
-  extends ASTNode with SymbolicName with SymbolicToken[LabelId] {
+final case class PropertyKeyName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName
 
-  def withId(newId: LabelId) = copy()(id = Some(updatedId(newId)))(position)
+object PropertyKeyName {
+  implicit class PropertyKeyNameId(that: PropertyKeyName)(implicit semanticTable: SemanticTable) {
+    def id = semanticTable.resolvedPropertyKeyNames.get(that.name)
 
-  def toEither() = id match{
-    case Some(labelId) => Right(labelId)
-    case _             => Left(name)
+    def either = that.id match {
+      case Some(id) => Right(id)
+      case None => Left(that.name)
+    }
   }
 }
 
-final case class PropertyKeyName(name: String)(val id: Option[PropertyKeyId] = None)(val position: InputPosition)
-  extends ASTNode with SymbolicName with SymbolicToken[PropertyKeyId] {
+final case class RelTypeName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName
 
-  def withId(newId: PropertyKeyId) = copy()(id = Some(updatedId(newId)))(position)
-}
+object RelTypeName {
+  implicit class RelTypeNameId(that: RelTypeName)(implicit semanticTable: SemanticTable) {
+    def id = semanticTable.resolvedRelTypeNames.get(that.name)
 
-final case class RelTypeName(name: String)(val id: Option[RelTypeId] = None)(val position: InputPosition)
-  extends ASTNode with SymbolicName with SymbolicToken[RelTypeId] {
-
-  def withId(newId: RelTypeId) = copy()(id = Some(updatedId(newId)))(position)
+    def either = that.id match {
+      case Some(id) => Right(id)
+      case None => Left(that.name)
+    }
+  }
 }

@@ -33,7 +33,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
   test("should build plans containing joins") {
     implicit val planContext = newMockedPlanContext
     val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
       case _: AllNodesScan                      => 200
       case Expand(_, IdName("b"), _, _, _, _,_) => 10000
       case _: Expand                            => 10

@@ -118,7 +118,8 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           }
 
           case pattern: PatternExpression => {
-            case ((patterns, expressions), _) => (patterns :+ pattern, expressions)
+            case ((patterns, expressions), _) =>
+              (patterns :+ pattern, expressions)
           }
 
           case or: Or => (acc, children) => children(acc)

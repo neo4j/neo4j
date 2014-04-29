@@ -27,11 +27,3 @@ trait SymbolicName {
   def name: String
   def position: InputPosition
 }
-
-object SymbolicName {
-  def unapply(v: Any): Option[String] = v match {
-    case astNode: SymbolicName => Some(astNode.name)
-    case _                     => None
-  }
-}
-

@@ -21,21 +21,55 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.TokenContext
-import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
-import org.neo4j.cypher.internal.compiler.v2_1.bottomUp
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 
 class SimpleTokenResolver {
-  def resolve(ast: Query)(implicit tokenContext: TokenContext): Query = ast.rewrite(bottomUp( Rewriter.lift {
-    case token: PropertyKeyName if token.id.isEmpty => propertyKeyId(token.name).fold(token)(token.withId(_))
-    case token: LabelName if token.id.isEmpty       => labelId(token.name).fold(token)(token.withId(_))
-    case token: RelTypeName if token.id.isEmpty     => relTypeId(token.name).fold(token)(token.withId(_))
-  })).asInstanceOf[Query]
+  def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
+    val (propertyKeyNames, labelNames, relTypeNames) =
+      ast.treeFold((Set.empty[PropertyKeyName], Set.empty[LabelName], Set.empty[RelTypeName]))({
+        case token: PropertyKeyName => {
+          case ((propKeyNames, labelNames, relTypeNames), c) =>
+            (propKeyNames + token, labelNames, relTypeNames)
+        }
+        case token: LabelName => {
+          case ((propKeyNames, labelNames, relTypeNames), _) =>
+            (propKeyNames, labelNames + token, relTypeNames)
+        }
+        case token: RelTypeName => {
+          case ((propKeyNames, labelNames, relTypeNames), _) =>
+            (propKeyNames, labelNames, relTypeNames + token)
+        }
+      })
 
-  def propertyKeyId(name: String)(implicit tokenContext: TokenContext): Option[PropertyKeyId] = tokenContext.getOptPropertyKeyId(name).map(PropertyKeyId)
-  def labelId(name: String)(implicit tokenContext: TokenContext): Option[LabelId] = tokenContext.getOptLabelId(name).map(LabelId)
-  def relTypeId(name: String)(implicit tokenContext: TokenContext): Option[RelTypeId] = tokenContext.getOptRelTypeId(name).map(RelTypeId)
+    propertyKeyNames.foreach{ x => propertyKeyId(x.name) }
+    labelNames.foreach{ x => labelId(x.name) }
+    relTypeNames.foreach{ x => relTypeId(x.name) }
+  }
+
+  private def propertyKeyId(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
+    tokenContext.getOptPropertyKeyId(name).map(PropertyKeyId) match {
+      case Some(id) =>
+        semanticTable.resolvedPropertyKeyNames += name -> id
+      case None =>
+    }
+  }
+
+  private def labelId(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
+    tokenContext.getOptLabelId(name).map(LabelId) match {
+      case Some(id) =>
+        semanticTable.resolvedLabelIds += name -> id
+      case None =>
+    }
+  }
+
+  private def relTypeId(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
+    tokenContext.getOptRelTypeId(name).map(RelTypeId) match {
+      case Some(id) =>
+        semanticTable.resolvedRelTypeNames += name -> id
+      case None =>
+    }
+  }
 }
