@@ -42,6 +42,7 @@
   <properties>
     <version-package>cypher.internal.docs</version-package>
     <docs-plugin.skip>false</docs-plugin.skip>
+    <attach-docs-phase>verify</attach-docs-phase>
   </properties>
 
   <dependencies>

@@ -147,4 +147,10 @@ public class TraversalDocTest extends ImpermanentGraphJavaDocTestBase
             gen.get().addGithubSourceLink( "github", example.getClass(), "community/embedded-examples" );
         }
     }
+
+    @Test
+    public void runAll()
+    {
+        TraversalExample.main( null );
+    }
 }

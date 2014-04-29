@@ -48,10 +48,11 @@ create
       title = "Retrieve the ordered timeline of status updates of all my friends",
       text =
 """
-Implementation of newsfeed or timeline feature is a frequent requirement for social applications. The following exmaples are inspired by http://techfin.in/2012/10/newsfeed-feature-powered-by-neo4j-graph-database/[Newsfeed feature powered by Neo4j Graph Database].
+Implementation of newsfeed or timeline feature is a frequent requirement for social applications.
+The following exmaples are inspired by https://web.archive.org/web/20121102191919/http://techfin.in/2012/10/newsfeed-feature-powered-by-neo4j-graph-database/[Newsfeed feature powered by Neo4j Graph Database].
 The query asked here is:
-        
-Starting at `me`, retrieve the time-ordered status feed of the status updates of me and and all friends that are connected via a `CONFIRMED` `FRIEND` relationship to me.""",
+
+Starting at `me`, retrieve the time-ordered status feed of the status updates of me and and all friends that are connected via a `CONFIRMED FRIEND` relationship to me.""",
       queryText = """MATCH (me {name: 'Joe'})-[rels:FRIEND*0..1]-(myfriend)
 WHERE ALL(r in rels WHERE r.status = 'CONFIRMED')
 WITH myfriend
