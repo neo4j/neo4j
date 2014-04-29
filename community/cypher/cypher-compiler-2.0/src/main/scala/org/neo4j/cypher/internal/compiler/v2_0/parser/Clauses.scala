@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.parser
 
 import org.neo4j.cypher.internal.compiler.v2_0.ast
 import org.parboiled.scala._
+import org.neo4j.cypher.internal.compiler.v2_0.ast.AliasedReturnItem
 
 trait Clauses extends Parser
   with StartPoints
@@ -85,6 +86,10 @@ trait Clauses extends Parser
   def With: Rule1[ast.With] = rule("WITH") (
       group(keyword("WITH DISTINCT") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _))
     | group(keyword("WITH") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _))
+  )
+
+  def Unwind: Rule1[ast.Unwind] = rule("UNWIND") (
+    group(keyword("UNWIND") ~~ Expression ~~ keyword("AS") ~~ Identifier) ~~>> (ast.Unwind(_,_))
   )
 
   def Return: Rule1[ast.Return] = rule("RETURN") (
