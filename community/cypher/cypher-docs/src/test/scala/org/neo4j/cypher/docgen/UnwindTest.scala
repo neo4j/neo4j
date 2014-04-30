@@ -31,16 +31,16 @@ class UnwindTest extends DocumentingTestBase {
       title = "Unwind a collection",
       text = "We want to transform the literal collection into rows named `x` and return them.",
       queryText = """UNWIND [1,2,3] as x RETURN x""",
-      optionalResultExplanation = """Each value of the original collection is returned as an individual row""",
+      optionalResultExplanation = "Each value of the original collection is returned as an individual row.",
       assertions = (p) => assertEquals(List(1,2,3), p.columnAs[Int]("x").toList)
     )
   }
   @Test def distinct_collection() {
     testQuery(
       title = "Create a distinct collection",
-      text = "We want to transform a collection of duplicates into a set using `distinct`.",
+      text = "We want to transform a collection of duplicates into a set using `DISTINCT`.",
       queryText = """WITH [1,1,2,2] as coll UNWIND coll as x WITH DISTINCT x RETURN collect(x) as set""",
-      optionalResultExplanation = """Each value of the original collection is unwound and passed through distinct to create a unique set""",
+      optionalResultExplanation = "Each value of the original collection is unwound and passed through distinct to create a unique set.",
       assertions = (p) => assertEquals(List(List(1,2)), p.columnAs[Int]("set").toList)
     )
   }
@@ -55,7 +55,7 @@ class UnwindTest extends DocumentingTestBase {
            MERGE (y:Year {year:event.year})
            MERGE (y)<-[:IN]-(e:Event {id:event.id})
            RETURN e.id as x order by x""",
-      optionalResultExplanation = """Each value of the original collection is unwound and passed through distinct to create a unique set""",
+      optionalResultExplanation = "Each value of the original collection is unwound and passed through distinct to create a unique set.",
       assertions = (p) => assertEquals(List(1,2), p.columnAs[Int]("x").toList)
     )
   }

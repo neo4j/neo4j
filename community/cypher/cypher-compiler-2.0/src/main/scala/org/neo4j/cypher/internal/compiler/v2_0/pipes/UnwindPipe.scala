@@ -20,26 +20,22 @@
 package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_0.{ExecutionContext, PlanDescription}
-import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{Identifier, Expression}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Expression
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 
 
 class UnwindPipe(source: Pipe, collection: Expression, identifier: String) extends PipeWithSource(source) with CollectionSupport {
-  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
-    input.flatMap(context => {
-      val seq = makeTraversable(collection(context)(state))
-      seq.map( x => (context -= collection.toString).newWith((identifier,x)))
-    })
-  }
+  protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
+    input.flatMap {
+      context =>
+        val seq = makeTraversable(collection(context)(state))
+        seq.map(x => context.newWith((identifier, x)))
+    }
 
-  def executionPlanDescription: PlanDescription = {
+  def executionPlanDescription: PlanDescription =
     source.executionPlanDescription.andThen(this, "UNWIND")
-  }
 
-  def symbols: SymbolTable = {
-    SymbolTable( source.symbols.identifiers - collection.toString + (identifier -> collection.getType(source.symbols).legacyIteratedType))
-  }
+  def symbols = source.symbols.add(identifier, collection.getType(source.symbols).legacyIteratedType)
 
   override def readsFromDatabase = false
 }

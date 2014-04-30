@@ -19,12 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.junit.runner.RunWith
-import org.scalatest.junit.JUnitRunner
-import org.neo4j.graphdb.Node
 
-@RunWith(classOf[JUnitRunner])
-class UnwindTest extends ExecutionEngineFunSuite {
+class UnwindAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("unwind collection returns individual values") {
 
@@ -103,5 +99,16 @@ class UnwindTest extends ExecutionEngineFunSuite {
       "UNWIND [1,1,2,2,3,3,4,4,5,5] AS duplicate RETURN duplicate"
     )
     result.columnAs[Int]("duplicate").toList should equal (List(1,1,2,2,3,3,4,4,5,5))
+  }
+
+  test("unwind does not remove anything from the context") {
+    val result = execute(
+      "WITH [1,2,3] as collection UNWIND collection AS x RETURN *"
+    )
+    result.toList should equal (List(
+      Map("collection" -> List(1,2,3), "x" -> 1),
+      Map("collection" -> List(1,2,3), "x" -> 2),
+      Map("collection" -> List(1,2,3), "x" -> 3)
+    ))
   }
 }

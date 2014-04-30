@@ -20,21 +20,48 @@
 package org.neo4j.cypher.internal.compiler.v2_0.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_0._
-import commands.ReturnItem
-import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.{RangeFunction, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_0.commands.expressions.Identifier
 import symbols._
-import org.junit.Assert
-import org.junit.Test
-import org.scalatest.junit.JUnitSuite
-import collection.mutable.Map
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class UnwindPipeTest extends JUnitSuite {
-  @Test def shouldUnwindCollection() {
-    val source = new FakePipe(List(Map("x" -> List(1,2))), "x" -> CTCollection(CTInteger))
+class UnwindPipeTest extends CypherFunSuite {
 
-    val unwindPipe = new UnwindPipe(source, Identifier("x"),"y")
+  private def unwindWithInput(data: Traversable[Map[String, Any]]) = {
+    val source = new FakePipe(data, "x" -> CTCollection(CTInteger))
+    val unwindPipe = new UnwindPipe(source, Identifier("x"), "y")
+    unwindPipe.createResults(QueryStateHelper.empty).toList
+  }
 
-    Assert.assertEquals(Map("y" -> CTInteger), unwindPipe.symbols.identifiers)
-    Assert.assertEquals(List(Map("y" -> 1),Map("y"->2)), unwindPipe.createResults(QueryStateHelper.empty).toList)
+  test("symbols are correct") {
+    val source = new FakePipe(List.empty, "x" -> CTCollection(CTInteger), "something else" -> CTCollection(CTAny))
+    val unwindPipe = new UnwindPipe(source, Identifier("x"), "y")
+    unwindPipe.symbols.identifiers should equal(Map(
+      "y" -> CTInteger,
+      "something else" -> CTCollection(CTAny),
+      "x" -> CTCollection(CTInteger)))
+  }
+
+  test("should unwind collection of numbers") {
+    unwindWithInput(List(Map("x" -> List(1, 2)))) should equal(List(
+      Map("y" -> 1, "x" -> List(1, 2)),
+      Map("y" -> 2, "x" -> List(1, 2))))
+  }
+
+  test("should handle null") {
+    unwindWithInput(List(Map("x" -> null))) should equal(List())
+  }
+
+  test("should handle collection of collections") {
+
+    val listOfLists = List(
+      List(1, 2, 3),
+      List(4, 5, 6))
+
+    unwindWithInput(List(Map(
+      "x" -> listOfLists))) should equal(
+
+      List(
+        Map("y" -> List(1, 2, 3), "x" -> listOfLists),
+        Map("y" -> List(4, 5, 6), "x" -> listOfLists)))
   }
 }
