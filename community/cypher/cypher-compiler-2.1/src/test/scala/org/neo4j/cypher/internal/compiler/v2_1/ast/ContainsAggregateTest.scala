@@ -17,28 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
+class ContainsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
 
-object expandStar extends Rewriter {
+  test("finds nested aggregate expressions") {
+    val expr: Expression = Add(SignedIntegerLiteral("1")_, CountStar()_)_
 
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+    containsAggregate(expr) should equal(true)
+  }
 
-  private val instance: Rewriter = Rewriter.lift {
-    case x: ReturnAll if x.seenIdentifiers.nonEmpty =>
+  test("does not match non-aggregate expressions") {
+    val expr: Expression = Add(SignedIntegerLiteral("1")_, SignedIntegerLiteral("2")_)_
 
-      val identifiers = x.seenIdentifiers.get.filter(isNamed).toSeq.sorted
-
-      val returnItems: Seq[ReturnItem] = identifiers.map {
-        id =>
-          val ident = Identifier(id)(x.position)
-          AliasedReturnItem(ident, ident)(x.position)
-      }.toSeq
-
-      ListedReturnItems(returnItems)(x.position)
+    containsAggregate(expr) should equal(false)
   }
 }

@@ -61,7 +61,9 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
       inSequence(nameVarLengthRelationships, namePatternPredicates)
     )).asInstanceOf[Statement]
 
-    inlineNamedPaths(namedStatement)
+    val statementWithInlinedProjections = inlineProjections(namedStatement)
+
+    statementWithInlinedProjections
   }
 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): LogicalPlan = {

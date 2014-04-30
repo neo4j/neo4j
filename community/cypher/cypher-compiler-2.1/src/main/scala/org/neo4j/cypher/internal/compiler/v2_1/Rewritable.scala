@@ -85,7 +85,12 @@ object Rewritable {
 
   implicit class RewritableAny(val that: AnyRef) extends AnyVal {
     def rewrite(rewriter: Rewriter): AnyRef = rewriter.apply(that).getOrElse(that)
+    def typedRewrite[T](rewriter: Rewriter): T = rewriter.apply(that).getOrElse(that).asInstanceOf[T]
   }
+}
+
+case class TypedRewriter[T <: Rewritable](rewriter: Rewriter) extends (T => T) {
+  def apply(that: T) = rewriter.apply(that).getOrElse(that).asInstanceOf[T]
 }
 
 trait Rewritable {
