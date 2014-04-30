@@ -419,6 +419,46 @@ public class HighAvailabilityMemberStateMachineTest
         verify(guard, times(0)).deny( any( AvailabilityGuard.AvailabilityRequirement.class) );
     }
 
+    @Test
+    public void whenSlaveOnlyIsElectedStayInPending() throws Throwable
+    {
+        // Given
+        InstanceId me = new InstanceId( 1 );
+        HighAvailabilityMemberContext context = new SimpleHighAvailabilityMemberContext( me, true );
+        AvailabilityGuard guard = mock( AvailabilityGuard.class );
+        ClusterMembers members = mock( ClusterMembers.class );
+        ClusterMemberEvents events = mock( ClusterMemberEvents.class );
+
+        final Set<ClusterMemberListener> listener = new HashSet<ClusterMemberListener>();
+
+        doAnswer( new Answer()
+        {
+            @Override
+            public Object answer( InvocationOnMock invocation ) throws Throwable
+            {
+                listener.add( (ClusterMemberListener) invocation.getArguments()[0] );
+                return null;
+            }
+
+        } ).when( events ).addClusterMemberListener( Matchers.<ClusterMemberListener>any() );
+
+        Election election = mock( Election.class );
+        StringLogger logger = mock( StringLogger.class );
+        HighAvailabilityMemberStateMachine toTest =
+                new HighAvailabilityMemberStateMachine( context, guard, members, events, election, logger );
+
+        toTest.init();
+
+        ClusterMemberListener theListener = listener.iterator().next();
+
+        // When
+        theListener.coordinatorIsElected( me );
+
+        // Then
+        assertThat( toTest.getCurrentState(), equalTo( HighAvailabilityMemberState.PENDING ) );
+
+    }
+
     private static final class HAStateChangeListener implements HighAvailabilityMemberListener
     {
         boolean masterIsElected = false;
