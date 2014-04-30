@@ -67,7 +67,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     patternNodes == other.patternNodes &&
     selections == other.selections &&
     projections == other.projections &&
-    sortItems == other.sortItems
+    sortItems == other.sortItems &&
+    limit == other.limit &&
+    skip == other.skip
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = coveredIds intersect optionalMatch.coveredIds
