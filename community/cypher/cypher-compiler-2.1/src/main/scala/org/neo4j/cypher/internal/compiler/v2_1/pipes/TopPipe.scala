@@ -93,10 +93,11 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
           ctx =>
             val next = arrayEntry(ctx)
             if (lessThan.compare(next, result(last)) < 0) {
-              val idx = - search(next) - 1
-              if (idx >= 0 && idx < count) {
-                Array.copy(result, idx, result, idx + 1, count - idx - 1)
-                result(idx) = next
+              val idx = search(next)
+              val insertPosition = if (idx < 0 )  - idx - 1 else idx + 1
+              if (insertPosition >= 0 && insertPosition < count) {
+                Array.copy(result, insertPosition, result, insertPosition + 1, count - insertPosition - 1)
+                result(insertPosition) = next
               }
             }
         }
