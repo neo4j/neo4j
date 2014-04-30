@@ -544,7 +544,13 @@ public class TestApps extends AbstractShellTest
     }
 
     @Test
-    public void use_cypher_merge() throws Exception
+    public void startCypherQueryWithUnwind() throws Exception
+    {
+        executeCommand( "unwind [1,2,3] as x return x;", "| x |", "| 1 |");
+    }
+
+    @Test
+    public void useCypherMerge() throws Exception
     {
         executeCommand( "merge (n:Person {name:'Andres'});" );
 
