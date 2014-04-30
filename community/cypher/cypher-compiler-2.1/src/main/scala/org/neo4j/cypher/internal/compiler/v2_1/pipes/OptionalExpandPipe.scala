@@ -39,8 +39,8 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
         val fromNode = getFromNode(row)
         fromNode match {
           case n: Node =>
-            val relationships: Iterator[Relationship] = state.query.getRelationshipsFor(n, dir, types)
-            val contextWithRelationships: Iterator[ExecutionContext] = relationships.map {
+            val relationships = state.query.getRelationshipsFor(n, dir, types)
+            val contextWithRelationships = relationships.map {
               case r => row.newWith(Seq(relName -> r, to -> r.getOtherNode(n)))
             }.filter(ctx => predicate.isTrue(ctx))
 
@@ -50,7 +50,11 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
               Iterator(row ++ nulls)
             }
 
-          case value => throw new InternalException(s"Expected to find a node at $from but found $value instead")
+          case value if value == null =>
+            Iterator(row ++ nulls)
+
+          case value =>
+            throw new InternalException(s"Expected to find a node at $from but found $value instead")
         }
     }
   }

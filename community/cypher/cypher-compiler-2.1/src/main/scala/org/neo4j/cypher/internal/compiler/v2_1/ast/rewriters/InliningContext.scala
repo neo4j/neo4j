@@ -19,26 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
+import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
 
+case class InliningContext(projections: Map[Identifier, Expression] = Map.empty) {
 
-object expandStar extends Rewriter {
-
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
-
-  private val instance: Rewriter = Rewriter.lift {
-    case x: ReturnAll if x.seenIdentifiers.nonEmpty =>
-
-      val identifiers = x.seenIdentifiers.get.filter(isNamed).toSeq.sorted
-
-      val returnItems: Seq[ReturnItem] = identifiers.map {
-        id =>
-          val ident = Identifier(id)(x.position)
-          AliasedReturnItem(ident, ident)(x.position)
-      }.toSeq
-
-      ListedReturnItems(returnItems)(x.position)
+  def enterQueryPart(newProjections: Map[Identifier, Expression]): InliningContext = {
+    val inlineExpressions = TypedRewriter[Expression](identifierRewriter)
+    val inlinedProjections = newProjections.mapValues(inlineExpressions)
+    copy(projections = projections ++ inlinedProjections)
   }
+
+  def spoilIdentifier(identifier: Identifier): InliningContext =
+    copy(projections = projections - identifier)
+
+  def identifierRewriter = bottomUp(Rewriter.lift {
+    case identifier: Identifier => projections.getOrElse(identifier, identifier)
+  })
 }
+

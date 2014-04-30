@@ -19,46 +19,40 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_1.{topDown, bottomUp, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
-object inlineNamedPaths {
+object inliningContextCreator extends (ast.Statement => InliningContext) {
+  def apply(input: ast.Statement): InliningContext = {
+    input.treeFold(InliningContext()) {
+      case (With(false, ListedReturnItems(items), None, None, None, None)) =>
+        (context, children) => children(context.enterQueryPart(aliasedReturnItems(items)))
 
-  type InlinedPaths = Map[Identifier, PathExpression]
+      case Match(_, Pattern(parts), _, _) =>
+        (context, children) => children(context.enterQueryPart(namedPatternPartPathExpressions(parts)))
 
-  object InlinedPaths {
-    def empty = Map.empty[Identifier, PathExpression]
+      case NodePattern(Some(identifier), _, _, _) =>
+        (context, children) => children(context.spoilIdentifier(identifier))
+
+      case RelationshipPattern(Some(identifier), _, _, _, _, _) =>
+        (context, children) => children(context.spoilIdentifier(identifier))
+    }
   }
 
-  def apply(statement: Statement): Statement = {
-    val inlinedPaths = statement.treeFold(InlinedPaths.empty) {
-      case Match(_, Pattern(parts), _, _) => (m, children) =>
-        parts.foldLeft(m) {
-          case (acc, part @ NamedPatternPart(identifier, patternPart)) =>
-            acc + (identifier -> PathExpression(patternPartPathExpression(patternPart))(part.position))
-          case (acc, _) =>
-            acc
-        }
-    }
+  private def aliasedReturnItems(items: Seq[ReturnItem]): Map[Identifier, Expression] =
+    items.collect { case AliasedReturnItem(expr, ident) => ident -> expr }.toMap
 
-    val rewriter = Rewriter.lift {
-      case NamedPatternPart(identifier, part) if inlinedPaths.contains(identifier) => part
-      case identifier: Identifier if inlinedPaths.contains(identifier) => inlinedPaths(identifier)
-    }
-
-    statement.rewrite(topDown(rewriter)).asInstanceOf[Statement]
-  }
+  private def namedPatternPartPathExpressions(parts: Seq[PatternPart]): Map[Identifier, PathExpression] =
+    parts.collect {
+      case part @ NamedPatternPart(identifier, patternPart) =>
+        identifier -> PathExpression(patternPartPathExpression(patternPart))(part.position)
+    }.toMap
 
   private def patternPartPathExpression(patternPart: AnonymousPatternPart): PathStep = patternPart match {
-    case EveryPath(element) => patternElementPathExpression(element)
+    case EveryPath(element) => flip(element, NilPathStep)
     case _                  => throw new CantHandleQueryException
   }
-
-  // MATCH (a)-[r]->(b)-[r2]->(c)
-  private def patternElementPathExpression(patternElement: PatternElement): PathStep =
-    flip(patternElement, NilPathStep)
 
   private def flip(element: PatternElement, step: PathStep): PathStep  = {
     element match {
