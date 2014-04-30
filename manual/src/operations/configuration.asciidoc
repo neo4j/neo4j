@@ -1,4 +1,4 @@
-[[embedded-configuration]]
+[[configuration]]
 Configuration & Performance
 ===========================
 

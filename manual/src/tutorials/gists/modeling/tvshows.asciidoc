@@ -184,12 +184,12 @@ First let’s add another TV show that Josh Radnor appeared in:
 [source,cypher]
 ----
 CREATE (er:TVShow {name: "ER"})
-CREATE (er_s9:Season {name: "ER S7"})
-CREATE (er_s9_e17:Episode {name: "Peter's Progress"})
+CREATE (er_s7:Season {name: "ER S7"})
+CREATE (er_s7_e17:Episode {name: "Peter's Progress"})
 CREATE (tedMosby:Character {name: "The Advocate "})
-CREATE UNIQUE (er)-[:HAS_SEASON]->(er_s9)
-CREATE UNIQUE (er_s9)-[:HAS_EPISODE]->(er_s9_e17)
-WITH er_s9_e17
+CREATE UNIQUE (er)-[:HAS_SEASON]->(er_s7)
+CREATE UNIQUE (er_s7)-[:HAS_EPISODE]->(er_s7_e17)
+WITH er_s7_e17
 MATCH (actor:Actor), (episode:Episode)
 WHERE actor.name = "Josh Radnor" AND episode.name = "Peter's Progress"
 WITH actor, episode

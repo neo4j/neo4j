@@ -27,6 +27,7 @@ import java.util.Random;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
@@ -34,7 +35,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellServer;
 import org.neo4j.shell.ShellSettings;
@@ -44,7 +44,7 @@ public class Neo4jShell
 {
     private static final String DB_PATH = "neo4j-store";
     private static final String USERNAME_KEY = "username";
-    private static GraphDatabaseAPI graphDb;
+    private static GraphDatabaseService graphDb;
 
     private static enum RelTypes implements RelationshipType
     {
@@ -71,16 +71,17 @@ public class Neo4jShell
 
     private static void startLocalShell() throws Exception
     {
-        graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         createExampleGraph();
-        ShellServer shellServer = new GraphDatabaseShellServer( graphDb );
+        ShellServer shellServer = new GraphDatabaseShellServer( (org.neo4j.kernel.GraphDatabaseAPI) graphDb );
         ShellLobby.newClient( shellServer ).grabPrompt();
         shellServer.shutdown();
     }
 
     private static void startRemoteShellAndWait() throws Exception
     {
-        graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH ).
+        graphDb = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( DB_PATH )
+                .
                 setConfig( ShellSettings.remote_shell_enabled, Settings.TRUE ).
                 newGraphDatabase();
 

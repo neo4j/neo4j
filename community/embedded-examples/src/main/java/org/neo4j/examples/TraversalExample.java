@@ -20,12 +20,20 @@
 // START SNIPPET: _sampleDocumentation
 package org.neo4j.examples;
 
+import static java.lang.System.out;
+
+import java.io.File;
+
+import org.neo4j.cypher.javacompat.ExecutionEngine;
+import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.traversal.Evaluators;
 import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.graphdb.traversal.Uniqueness;
@@ -34,6 +42,17 @@ public class TraversalExample
 {
     private GraphDatabaseService db;
     private TraversalDescription friendsTraversal;
+
+    private static final String DB_PATH = "target/neo4j-traversal-example";
+
+    public static void main( String[] args )
+    {
+        deleteFileOrDirectory( new File( DB_PATH ) );
+        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
+        TraversalExample example = new TraversalExample( database );
+        Node joe = example.createData();
+        example.run( joe );
+    }
 
     public TraversalExample( GraphDatabaseService db )
     {
@@ -46,6 +65,42 @@ public class TraversalExample
         // END SNIPPET: basetraverser
     }
     
+    private Node createData()
+    {
+        ExecutionEngine engine = new ExecutionEngine( db );
+        String query = "CREATE (joe {name: 'Joe'}), (sara {name: 'Sara'}), "
+           + "(lisa {name: 'Lisa'}), (peter {name: 'PETER'}), (dirk {name: 'Dirk'}), "
+                       + "(lars {name: 'Lars'}), (ed {name: 'Ed'}),"
+           + "(joe)-[:KNOWS]->(sara), (lisa)-[:LIKES]->(joe), "
+           + "(peter)-[:KNOWS]->(sara), (dirk)-[:KNOWS]->(peter), "
+           + "(lars)-[:KNOWS]->(drk), (ed)-[:KNOWS]->(lars), " 
+           + "(lisa)-[:KNOWS]->(lars) " 
+           + "RETURN joe";
+        ExecutionResult result = engine.execute( query );
+        Object joe = result.columnAs( "joe" ).next();
+        if ( joe instanceof Node )
+        {
+            return (Node) joe;
+        }
+        else
+        {
+            throw new RuntimeException( "Joe isn't a node!" );
+        }
+    }
+
+    private void run( Node joe )
+    {
+        try (Transaction tx = db.beginTx())
+        {
+            out.println( knowsLikesTraverser( joe ) );
+            out.println( traverseBaseTraverser( joe ) );
+            out.println( depth3( joe ) );
+            out.println( depth4( joe ) );
+            out.println( nodes( joe ) );
+            out.println( relationships( joe ) );
+        }
+    }
+
     public String knowsLikesTraverser( Node node )
     {
         String output = "";
@@ -138,4 +193,19 @@ public class TraversalExample
         LIKES, KNOWS
     }
     // END SNIPPET: sourceRels
+
+    private static void deleteFileOrDirectory( File file )
+    {
+        if ( file.exists() )
+        {
+            if ( file.isDirectory() )
+            {
+                for ( File child : file.listFiles() )
+                {
+                    deleteFileOrDirectory( child );
+                }
+            }
+            file.delete();
+        }
+    }
 }
