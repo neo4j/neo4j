@@ -20,14 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.AstRewritingTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, AstRewritingTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.bottomUp
 
 class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport {
-  // TODO: multiple withes + shadowing
-  // TODO: local scope (extract, ...)
 
   test("should  inline: MATCH n WITH n AS m RETURN m => MATCH n RETURN n") {
     val result = projectionInlinedAst("MATCH n WITH n AS m RETURN m")
@@ -65,23 +63,37 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     result should equal(ast("WITH * WITH * RETURN 1+1 as `m`"))
   }
 
-  test("should inline same identifier across multiple WITH clauses, case #1: WITH 1 as n WITH n+1 AS n RETURN n => RETURN 1+1 as n") {
+  // FIXME: 2014-4-30 Davide: No inlining due to missing scope information for the identifiers
+  test("should not inline identifiers which are reused multiple times: WITH 1 as n WITH 2 AS n RETURN n") {
+    val result = projectionInlinedAst("WITH 1 as n WITH 2 AS n RETURN n")
+
+    result should equal(ast("WITH 1 as n WITH 2 AS n RETURN n as `n`"))
+  }
+
+  // FIXME: 2014-4-30 Davide: This is not yet supported by the inline rewriter due to missing scope information for the identifiers
+  ignore("should inline same identifier across multiple WITH clauses, case #1: WITH 1 as n WITH n+1 AS n RETURN n => RETURN 1+1 as n") {
     val result = projectionInlinedAst("WITH 1 as n WITH n+1 AS n RETURN n")
 
     result should equal(ast("WITH * WITH * RETURN 1+1 as `n`"))
   }
 
-  test("should inline same identifier across multiple WITH clauses, case #2: WITH 1 as n WITH n+2 AS m WITH n + m as n RETURN n => RETURN 1+1+2 as n") {
+  // FIXME: 2014-4-30 Davide: This is not yet supported by the inline rewriter due to missing scope information for the identifiers
+  ignore("should inline same identifier across multiple WITH clauses, case #2: WITH 1 as n WITH n+2 AS m WITH n + m as n RETURN n => RETURN 1+1+2 as n") {
     val result = projectionInlinedAst("WITH 1 as n WITH n+2 AS m WITH n + m as n RETURN n")
 
     result should equal(ast("WITH * WITH * WITH * RETURN 1+(1+2) as `n`"))
   }
 
-  // 2014-4-30 Davide: This is not yet supported by the inline rewriter due to missing scope information for the identifiers
+  // FIXME: 2014-4-30 Davide: This is not yet supported by the inline rewriter due to missing scope information for the identifiers
   ignore("should not inline identifiers which cannot be inlined when they are shadowed later on: WITH 1 as n MATCH (n) WITH 2 AS n RETURN n => WITH 1 as n MATCH (n) RETURN 2 as n") {
     val result = projectionInlinedAst("WITH 1 as n MATCH (n) WITH 2 AS n RETURN n")
 
     result should equal(ast("WITH 1 as n MATCH (n) WITH * RETURN 2 as `n`"))
+  }
+
+  // FIXME: 2014-4-30 Stefan: This is not yet supported by the inline rewriter
+  test("should refuse to inline queries containing update clauses by throwing CantHandleQueryException") {
+    evaluating { projectionInlinedAst("CREATE (n) RETURN n") } should produce[CantHandleQueryException]
   }
 
   test("MATCH p = (a) RETURN p" ) {

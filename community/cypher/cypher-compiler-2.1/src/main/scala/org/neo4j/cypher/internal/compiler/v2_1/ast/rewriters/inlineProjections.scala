@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
 object inlineProjections extends (Statement => Statement) {
 
@@ -63,6 +64,9 @@ object inlineProjections extends (Statement => Statement) {
         // calling inlineProjections
         val newPattern = removePatternPartNames(mPattern)
         m.copy(pattern = newPattern, hints = newHints, where = newOptWhere)(m.position)
+
+      case _: UpdateClause  =>
+        throw new CantHandleQueryException
 
       case clause: Clause =>
         inliner.narrowed(clause)

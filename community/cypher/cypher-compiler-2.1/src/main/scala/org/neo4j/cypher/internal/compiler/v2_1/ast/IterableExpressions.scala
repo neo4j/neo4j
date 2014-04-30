@@ -23,9 +23,8 @@ import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 
-trait FilteringExpression extends Expression {
+trait FilteringExpression extends ScopeIntroducingExpression {
   def name: String
-  def identifier: Identifier
   def expression: Expression
   def innerPredicate: Option[Expression]
   override def arguments = Seq(expression)
@@ -144,7 +143,7 @@ case class SingleIterablePredicate(identifier: Identifier, expression: Expressio
   val name = "single"
 }
 
-case class ReduceExpression(accumulator: Identifier, init: Expression, identifier: Identifier, collection: Expression, expression: Expression)(val position: InputPosition) extends Expression {
+case class ReduceExpression(accumulator: Identifier, init: Expression, identifier: Identifier, collection: Expression, expression: Expression)(val position: InputPosition) extends ScopeIntroducingExpression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
     init.semanticCheck(ctx) chain
     collection.semanticCheck(ctx) chain

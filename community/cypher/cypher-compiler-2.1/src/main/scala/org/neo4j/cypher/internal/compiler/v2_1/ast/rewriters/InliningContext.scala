@@ -21,20 +21,30 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
-case class InliningContext(projections: Map[Identifier, Expression] = Map.empty) {
+case class InliningContext(projections: Map[Identifier, Expression] = Map.empty, seenIdentifiers: Set[Identifier] = Set.empty) {
 
   def enterQueryPart(newProjections: Map[Identifier, Expression]): InliningContext = {
     val inlineExpressions = TypedRewriter[Expression](identifierRewriter)
-    val inlinedProjections = newProjections.mapValues(inlineExpressions)
-    copy(projections = projections ++ inlinedProjections)
+    val resultProjections = newProjections.foldLeft(projections) {
+      case (m, (k, v)) if seen(k) => m - k
+      case (m,( k, v))            => m + (k -> inlineExpressions(v))
+    }
+    copy(projections = resultProjections, seenIdentifiers = seenIdentifiers ++ newProjections.keySet)
   }
 
   def spoilIdentifier(identifier: Identifier): InliningContext =
-    copy(projections = projections - identifier)
+    copy(projections = projections - identifier, seenIdentifiers = seenIdentifiers + identifier)
 
   def identifierRewriter = bottomUp(Rewriter.lift {
-    case identifier: Identifier => projections.getOrElse(identifier, identifier)
+    case expr: ScopeIntroducingExpression if seen(expr.identifier) =>
+      throw new CantHandleQueryException
+
+    case identifier: Identifier =>
+      projections.getOrElse(identifier, identifier)
   })
+
+  private def seen(identifier: Identifier) = seenIdentifiers.contains(identifier)
 }
 
