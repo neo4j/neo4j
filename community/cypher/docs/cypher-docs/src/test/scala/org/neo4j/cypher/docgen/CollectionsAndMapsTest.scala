@@ -21,7 +21,6 @@ package org.neo4j.cypher.docgen
 
 import org.neo4j.cypher.ExecutionResult
 
-
 class CollectionsAndMapsTest extends ArticleTest {
   def assert(name: String, result: ExecutionResult) {}
 
@@ -45,8 +44,10 @@ RETURN [0,1,2,3,4,5,6,7,8,9] as collection###
 
 In our examples, we'll use the range function.
 It gives you a collection containing all numbers between given start and end numbers.
+Range is inclusive in both ends.
 
 To access individual elements in the collection, we use the square brackets again.
+This will extract from the start index and up to but not including the end index.
 
 ###
 RETURN range(0,10)[3]###
@@ -67,13 +68,18 @@ RETURN range(0,10)[-5..]###
 ###
 RETURN range(0,10)[..4]###
 
-Note: Out-of-bound slices are simply truncated, but out-of-bound single elements return null.
+NOTE: Out-of-bound slices are simply truncated, but out-of-bound single elements return +NULL+.
 
 ###
 RETURN range(0,10)[15]###
 
 ###
 RETURN range(0,10)[5..15]###
+
+You can get the length of a collection like this:
+
+###
+RETURN length(range(0,10)[0..3])###
 
 == List comprehension ==
 

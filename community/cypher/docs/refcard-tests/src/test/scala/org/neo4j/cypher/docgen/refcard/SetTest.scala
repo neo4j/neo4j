@@ -64,12 +64,21 @@ Update or create a property.
 ###assertion=map parameters=map
 CREATE (n)
 
-SET n={map}
+SET n = {map}
 
 RETURN n.property###
 
 Set all properties.
 This will remove any existing properties.
+
+###assertion=map parameters=map
+CREATE (n)
+
+SET n += {map}
+
+RETURN n.property###
+
+Add and update properties, while keeping existing ones.
 
 ###assertion=set-label
 CREATE (n)

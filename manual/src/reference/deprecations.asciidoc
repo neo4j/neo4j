@@ -1,7 +1,7 @@
 [[deprecations]]
 = Deprecations =
 
-This section outlines deprecations in Neo4j 2.0 or earlier in order to help you find a smoother transition path to future releases.
+This section outlines deprecations in Neo4j 2.1 or earlier in order to help you find a smoother transition path to future releases.
 
 Graph Matching::
 The graph-matching component will be removed in future releases.

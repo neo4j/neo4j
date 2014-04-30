@@ -38,3 +38,4 @@ String literals can contain these escape sequences.
 |===================
 
 include::../ql/syntax/index.asciidoc[]
+

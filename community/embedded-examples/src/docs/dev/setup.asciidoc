@@ -131,7 +131,8 @@ _Where the coordinates (+org.neo4j:neo4j+ in the example) are found in the editi
 [[tutorials-java-embedded-setup-startstop]]
 == Starting and stopping ==
 
-To create a new database or ópen an existing one you instantiate an +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html[EmbeddedGraphDatabase]+.
+To create a new database or ópen an existing one you instantiate a
++http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/GraphDatabaseService.html[GraphDatabaseService]+.
 
 [snippet,java]
 ----
@@ -142,7 +143,7 @@ tag=startDb
 ----
 
 [NOTE]
-The +EmbeddedGraphDatabase+ instance can be shared among multiple threads.
+The +GraphDatabaseService+ instance can be shared among multiple threads.
 Note however that you can't create multiple instances pointing to the same database.
 
 To stop the database, call the +shutdown()+ method:
@@ -188,7 +189,7 @@ classifier=test-sources
 tag=startDbWithMapConfig
 ----
 
-For configuration settings, see <<embedded-configuration>>.
+For configuration settings, see <<configuration>>.
 
 [[tutorials-java-embedded-setup-readonly]]
 === Starting an embedded read-only instance ===
