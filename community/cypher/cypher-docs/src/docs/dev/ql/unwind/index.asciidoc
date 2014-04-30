@@ -1,0 +1,16 @@
+[[query-unwind]]
+Unwind
+======
+With +UNWIND+, you can transform any collection back into individual rows. These collections can be parameters that were
+passed in, previously +COLLECT+ed result or other collection expressions.
+
+One common usage of unwind is to create distinct collections. Another is to create data from parameter collections
+that are provided to the query.
+
++UNWIND+ requires you to specify a new name for the inner values and will remove the original collection from the results.
+
+include::unwind-a-collection.asciidoc[]
+
+include::create-a-distinct-collection.asciidoc[]
+
+include::create-nodes-from-a-collection-parameter.asciidoc[]
