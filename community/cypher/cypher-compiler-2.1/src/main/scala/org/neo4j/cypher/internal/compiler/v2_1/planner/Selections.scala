@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
-case class Predicate(dependencies: Set[IdName], exp:Expression) {
+case class Predicate(dependencies: Set[IdName], exp: Expression) {
   def hasDependenciesMet(symbols: Set[IdName]): Boolean =
     (dependencies -- symbols).isEmpty
 }

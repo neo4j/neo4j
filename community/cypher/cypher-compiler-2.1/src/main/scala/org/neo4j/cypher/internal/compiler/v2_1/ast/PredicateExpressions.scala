@@ -29,10 +29,18 @@ case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
   )
 }
 
+case class Ands(exprs: List[Expression])(val position: InputPosition) extends Expression {
+  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
+}
+
 case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {
   val signatures = Vector(
     Signature(argumentTypes = Vector(CTBoolean, CTBoolean), outputType = CTBoolean)
   )
+}
+
+case class Ors(exprs: List[Expression])(val position: InputPosition) extends Expression {
+  override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
 }
 
 case class Xor(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression with InfixFunctionTyping {

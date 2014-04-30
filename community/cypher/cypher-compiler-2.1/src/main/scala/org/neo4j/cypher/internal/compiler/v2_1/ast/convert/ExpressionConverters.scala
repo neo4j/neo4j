@@ -40,6 +40,8 @@ object ExpressionConverters {
       case e: ast.Or => e.asCommandOr
       case e: ast.Xor => e.asCommandXor
       case e: ast.And => e.asCommandAnd
+      case e: ast.Ands => e.asCommandAnds
+      case e: ast.Ors => e.asCommandOrs
       case e: ast.Not => e.asCommandNot
       case e: ast.Equals => e.asCommandEquals
       case e: ast.NotEquals => e.asCommandNotEquals
@@ -164,6 +166,14 @@ object ExpressionConverters {
   implicit class NotConverter(val e: ast.Not) extends AnyVal {
     def asCommandNot =
       commands.Not(e.rhs.asCommandPredicate)
+  }
+
+   implicit class OrsConverter(val e: ast.Ors) extends AnyVal {
+    def asCommandOrs = commands.Ors(e.exprs.map(_.asCommandPredicate))
+  }
+
+  implicit class AndsConverter(val e: ast.Ands) extends AnyVal {
+    def asCommandAnds = commands.Ands(e.exprs.map(_.asCommandPredicate))
   }
 
   implicit class EqualsConverter(val e: ast.Equals) extends AnyVal {
