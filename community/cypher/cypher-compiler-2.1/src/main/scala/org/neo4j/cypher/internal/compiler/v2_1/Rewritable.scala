@@ -91,6 +91,8 @@ object Rewritable {
 
 case class TypedRewriter[T <: Rewritable](rewriter: Rewriter) extends (T => T) {
   def apply(that: T) = rewriter.apply(that).getOrElse(that).asInstanceOf[T]
+
+  def narrowed[S <: T] = TypedRewriter[S](rewriter)
 }
 
 trait Rewritable {

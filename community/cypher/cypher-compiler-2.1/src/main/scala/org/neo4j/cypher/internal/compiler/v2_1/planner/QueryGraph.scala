@@ -77,28 +77,26 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def introducedIds: Set[IdName] = coveredIds -- argumentIds
 
-  def addPatternNode(node: IdName) = copy(
-    patternNodes = patternNodes + node,
-    projections = projections + symbol(node.name)
+  def addPatternNodes(nodes: IdName*) = copy(
+    patternNodes = patternNodes ++ nodes,
+    projections = projections ++ nodes.map(symbol)
   )
 
-  def add(rel: PatternRelationship) =
-    addPatternNode(rel.nodes._1).
-      addPatternNode(rel.nodes._2).
-      copy(
-        patternRelationships = addPatternNode(rel.nodes._1).addPatternNode(rel.nodes._2).patternRelationships + rel,
-        projections = addPatternNode(rel.nodes._1).addPatternNode(rel.nodes._2).projections + symbol(rel.name.name))
+  def addPatternRel(rel: PatternRelationship) = {
+    val withAddedPatternNodes = addPatternNodes(rel.left, rel.right)
+    withAddedPatternNodes.copy(
+        patternRelationships = withAddedPatternNodes.patternRelationships + rel,
+        projections = withAddedPatternNodes.projections + symbol(rel.name)
+    )
+  }
+
+  private def symbol(id: IdName) = id.name -> Identifier(id.name)(null)
 
   def addArgumentId(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
 
-  private def symbol(name: String) = name -> Identifier(name)(null)
+  def withProjections(projections: Map[String, Expression]) = copy(projections = projections)
 
-  protected def addPreparedPredicates(predicates: Seq[Predicate]) =
-    copy(selections = selections.copy(predicates = selections.predicates ++ predicates))
-
-  def changeProjections(projections: Map[String, Expression]) = copy(projections = projections)
-
-  def changeSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
+  def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
 
   def withTail(newTail: QueryGraph) = tail match {
     case None    => copy(tail = Some(newTail))
@@ -122,26 +120,25 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       .flatMap(_.labels).toSeq
 
   def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] =
-    patternRelationships.filter {
-      r => r.nodes._1 == id || r.nodes._2 == id
-    }
+    patternRelationships.filter { r => r.left == id || r.right == id }
 
-  def add(predicates: Seq[Expression]): QueryGraph = addPreparedPredicates(predicates.flatMap(SelectionPredicates.extractPredicates))
+  def addPredicates(predicates: Seq[Expression]): QueryGraph = {
+    val newSelections = Selections(predicates.flatMap(SelectionPredicates.extractPredicates).toSet)
+    copy(selections = selections ++ newSelections)
+  }
 
   def addCoveredIdsAsProjections(): QueryGraph = {
     val coveredIdProjections = coveredIds.map(x => x.name -> Identifier(x.name)(null)).toMap
     copy(projections = projections ++ coveredIdProjections)
   }
 
-  def optionalMatches : Seq[QueryGraph] = subQueries.collect {
-    case OptionalMatch(qg) => qg
-  }
+  def optionalMatches : Seq[QueryGraph] = subQueries.collect { case OptionalMatch(qg) => qg }
 
   def patternPredicates: Seq[Exists] = subQueries.collect { case e: Exists => e }
 }
 
 object QueryGraph {
-  val empty: QueryGraph = QueryGraph()
+  val empty = QueryGraph()
 
   def coveredIdsForPatterns(patternNodeIds: Set[IdName], patternRels: Set[PatternRelationship]) = {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
@@ -157,23 +154,22 @@ object SelectionPredicates {
       (acc: Set[IdName], _) => acc + IdName(name)
   }
 
-  def extractPredicates(predicate: Expression): Set[Predicate] = {
-    predicate.treeFold(Set.empty[Predicate]) {
-      // n:Label
-      case predicate@HasLabels(identifier@Identifier(name), labels) =>
-        (acc, _) => acc ++ labels.map { label: LabelName =>
+  def extractPredicates(predicate: Expression): Set[Predicate] = predicate.treeFold(Set.empty[Predicate]) {
+    // n:Label
+    case predicate@HasLabels(identifier@Identifier(name), labels) =>
+      (acc, _) => acc ++ labels.map {
+        label: LabelName =>
           Predicate(Set(IdName(name)), predicate.copy(labels = Seq(label))(predicate.position))
-        }
-      // and
-      case _: Ands =>
-        (acc, children) => children(acc)
-      // iterable expression should not depend on the identifier they introduce
-      case predicate: IterablePredicateExpression =>
-        val innerDeps = predicate.innerPredicate.map(idNames(_)).getOrElse(Set.empty) - IdName(predicate.identifier.name)
-        (acc, _) => acc + Predicate(idNames(predicate.expression) ++ innerDeps, predicate)
-      // generic expression
-      case predicate: Expression =>
-        (acc, _) => acc + Predicate(idNames(predicate), predicate)
-    }
+      }
+    // and
+    case _: Ands =>
+      (acc, children) => children(acc)
+    // iterable expression should not depend on the identifier they introduce
+    case predicate: IterablePredicateExpression =>
+      val innerDeps = predicate.innerPredicate.map(idNames(_)).getOrElse(Set.empty) - IdName(predicate.identifier.name)
+      (acc, _) => acc + Predicate(idNames(predicate.expression) ++ innerDeps, predicate)
+    // generic expression
+    case predicate: Expression =>
+      (acc, _) => acc + Predicate(idNames(predicate), predicate)
   }.toSet
 }

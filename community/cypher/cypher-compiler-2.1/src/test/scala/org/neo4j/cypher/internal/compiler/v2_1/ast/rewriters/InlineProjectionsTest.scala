@@ -77,6 +77,13 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     result should equal(ast("WITH * WITH * WITH * RETURN 1+(1+2) as `n`"))
   }
 
+  // 2014-4-30 Davide: This is not yet supported by the inline rewriter due to missing scope information for the identifiers
+  ignore("should not inline identifiers which cannot be inlined when they are shadowed later on: WITH 1 as n MATCH (n) WITH 2 AS n RETURN n => WITH 1 as n MATCH (n) RETURN 2 as n") {
+    val result = projectionInlinedAst("WITH 1 as n MATCH (n) WITH 2 AS n RETURN n")
+
+    result should equal(ast("WITH 1 as n MATCH (n) WITH * RETURN 2 as `n`"))
+  }
+
   test("MATCH p = (a) RETURN p" ) {
     val returns = parseReturnedExpr("MATCH p = (a) RETURN p")
 

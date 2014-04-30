@@ -31,5 +31,5 @@ case class Projection(left: LogicalPlan, expressions: Map[String, Expression], h
   val solved = if (hideProjections)
     left.solved
   else
-    left.solved.changeProjections(expressions)
+    left.solved.withProjections(expressions)
 }

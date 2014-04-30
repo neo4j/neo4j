@@ -29,5 +29,5 @@ case class DirectedRelationshipByIdSeek(idName: IdName,
                                        (val pattern: PatternRelationship,
                                         val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
 
-  def solved = QueryGraph.empty.add(pattern)
+  def solved = QueryGraph.empty.addPatternRel(pattern)
 }

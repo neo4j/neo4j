@@ -27,15 +27,12 @@ object inlineProjections extends (Statement => Statement) {
   def apply(input: Statement): Statement = {
     val context = inliningContextCreator(input)
 
-    val removePatternPartNames = TypedRewriter[Match](bottomUp(namedPatternPartRemover))
-    val inlineExpressionsRewriter = context.identifierRewriter
-    val inlineExpressions = TypedRewriter[Expression](inlineExpressionsRewriter)
-    val inlineClause = TypedRewriter[Clause](inlineExpressionsRewriter)
-    val inlineOrderBy = TypedRewriter[OrderBy](inlineExpressionsRewriter)
-    val inlineReturnItems = inlineReturnItemsFactory(inlineExpressions)
+    val removePatternPartNames = TypedRewriter[Pattern](bottomUp(namedPatternPartRemover))
+    val inliner = TypedRewriter[ASTNode](context.identifierRewriter)
+    val inlineReturnItems = inlineReturnItemsFactory(inliner.narrowed(_))
 
     val inliningRewriter = Rewriter.lift {
-      case clause @ With(false, returnItems @ ListedReturnItems(items), orderBy, None, None, None) =>
+      case withClause @ With(false, returnItems @ ListedReturnItems(items), orderBy, None, None, None) =>
         val pos = returnItems.position
         val filteredItems = items.collect {
           case item@AliasedReturnItem(expr, ident) if !context.projections.contains(ident) || containsAggregate(expr) =>
@@ -46,23 +43,29 @@ object inlineProjections extends (Statement => Statement) {
           if (filteredItems.isEmpty) ReturnAll()(pos)
           else inlineReturnItems(returnItems.copy(items = filteredItems)(pos))
 
-        clause.copy(
+        withClause.copy(
           returnItems = newReturnItems,
-          orderBy = orderBy.map(inlineOrderBy)
-        )(clause.position)
+          orderBy = orderBy.map(inliner.narrowed(_))
+        )(withClause.position)
 
-      case clause @ Return(_, returnItems: ListedReturnItems, orderBy, _, _) =>
-        clause.copy(
+      case returnClause @ Return(_, returnItems: ListedReturnItems, orderBy, skip, limit) =>
+        returnClause.copy(
           returnItems = inlineReturnItems(returnItems),
-          orderBy = orderBy.map(inlineOrderBy)
-        )(clause.position)
+          orderBy = orderBy.map(inliner.narrowed(_)),
+          skip = skip.map(inliner.narrowed(_)),
+          limit = limit.map(inliner.narrowed(_))
+        )(returnClause.position)
 
-      case clause: Match =>
-        val withoutPatternNames = removePatternPartNames(clause)
-        inlineClause(withoutPatternNames)
+      case m @ Match(_, mPattern, mHints, mOptWhere) =>
+        val newOptWhere = mOptWhere.map(inliner.narrowed(_))
+        val newHints = mHints.map(inliner.narrowed(_))
+        // no need to inline in patterns since all expressions have been moved to WHERE prior to
+        // calling inlineProjections
+        val newPattern = removePatternPartNames(mPattern)
+        m.copy(pattern = newPattern, hints = newHints, where = newOptWhere)(m.position)
 
       case clause: Clause =>
-        inlineClause(clause)
+        inliner.narrowed(clause)
     }
 
     input.rewrite(topDown(inliningRewriter)).asInstanceOf[Statement]

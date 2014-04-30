@@ -35,5 +35,5 @@ case class Selection(predicates: Seq[Expression],
   val solved = if (hideSelections)
     left.solved
   else
-    left.solved.add(predicates)
+    left.solved.addPredicates(predicates)
 }

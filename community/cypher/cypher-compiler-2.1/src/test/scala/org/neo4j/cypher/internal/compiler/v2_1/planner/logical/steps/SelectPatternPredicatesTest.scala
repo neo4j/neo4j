@@ -56,7 +56,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val predicate = Predicate(Set(IdName("a")), patternExp)
     val selections = Selections(Set(predicate))
     val patternQG = QueryGraph().
-        add(patternRel).
+        addPatternRel(patternRel).
         addArgumentId(Seq(IdName("a"))).
         addCoveredIdsAsProjections()
 
@@ -89,7 +89,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val predicate = Predicate(Set(IdName("a")), Not(patternExp)_)
     val selections = Selections(Set(predicate))
     val patternQG = QueryGraph().
-      add(patternRel).
+      addPatternRel(patternRel).
       addArgumentId(Seq(IdName("a"))).
       addCoveredIdsAsProjections()
 
@@ -120,7 +120,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val predicate = Predicate(Set(IdName("a")), patternExp)
     val selections = Selections(Set(predicate))
     val patternQG = QueryGraph().
-        add(patternRel).
+        addPatternRel(patternRel).
         addArgumentId(Seq(IdName("a"))).
         addCoveredIdsAsProjections()
 
@@ -153,7 +153,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val orPredicate = Predicate(Set(IdName("a")), Ors(List(patternExp, equals))_)
     val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph().
-      add(patternRel).
+      addPatternRel(patternRel).
       addArgumentId(Seq(IdName("a"))).
       addCoveredIdsAsProjections()
 
@@ -188,7 +188,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val orPredicate = Predicate(Set(IdName("a")), Ors(List(Not(patternExp)(pos), equals))_)
     val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph().
-      add(patternRel).
+      addPatternRel(patternRel).
       addArgumentId(Seq(IdName("a"))).
       addCoveredIdsAsProjections()
 

@@ -45,7 +45,7 @@ object SimpleQueryGraphBuilder {
       val qg = QueryGraph(
         patternRelationships = relationships.toSet,
         patternNodes = patternNodes.toSet
-      ).add(predicates).addCoveredIdsAsProjections()
+      ).addPredicates(predicates).addCoveredIdsAsProjections()
       qg.copy(argumentIds = qg.coveredIds.filter(_.name.isNamed))
     }
   }
@@ -76,7 +76,7 @@ object SimpleQueryGraphBuilder {
       // ...->[r]->(b)
       case RelationshipChain(relChain: RelationshipChain, RelationshipPattern(Some(relId), _, relTypes, length, None, direction), NodePattern(Some(rightNodeId), Seq(), None, _)) =>
         val (idNames, rels) = destruct(relChain)
-        val leftNode = IdName(rels.last.nodes._2.name)
+        val leftNode = IdName(rels.last.right.name)
         val rightNode = IdName(rightNodeId.name)
         val resultRels = rels :+ PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, asPatternLength(length))
         (idNames :+ rightNode, resultRels)
@@ -173,8 +173,8 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val sortItems = produceSortItems(optOrderBy)
 
           val newQG = qg
-            .changeSortItems(sortItems)
-            .changeProjections(projections)
+            .withSortItems(sortItems)
+            .withProjections(projections)
             .copy(
               limit = limit.map(_.expression),
               skip = skip.map(_.expression)
@@ -224,8 +224,8 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val tail = produceQueryGraphFromClauses(tail0, tl)
 
           val newQG = qg
-            .changeSortItems(produceSortItems(optOrderBy))
-            .changeProjections(projections)
+            .withSortItems(produceSortItems(optOrderBy))
+            .withProjections(projections)
             .copy(tail = Some(tail))
 
           produceQueryGraphFromClauses(newQG, tl)
@@ -248,8 +248,8 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val sortItems = produceSortItems(optOrderBy)
 
           val tail0: QueryGraph = qg
-            .changeSortItems(sortItems)
-            .changeProjections(projections)
+            .withSortItems(sortItems)
+            .withProjections(projections)
             .copy(
               limit = limit.map(_.expression),
               skip = skip.map(_.expression)
