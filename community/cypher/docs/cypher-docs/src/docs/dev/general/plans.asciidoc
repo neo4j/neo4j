@@ -15,6 +15,8 @@ Each Cypher query gets optimized and transformed into an execution plan by the C
 To minimize the resources used for this, make sure to use parameters instead of literals when possible.
 This allows Cypher to re-use your queries instead of having to parse and build new execution plans.
 
+Read <<execution-plans>> for more.
+
 [NOTE]
 When Cypher is building execution plans, it looks at the schema to see if it can find useful indexes.
 These index decisions are only valid until the schema changes, so adding or removing indexes leads to the execution plan cache being flushed.
