@@ -1,5 +1,18 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.0.3
+-----
+Cypher:
+o MERGE must fail when trying to create 2 nodes with same id but different labels (e.g., MERGE (a: Foo)-[r:KNOWS]->(a: Bar))
+o Allow Cypher split() with empty separator
+o Ensure Cypher range() works with negative step values
+
+Kernel:
+o Fixes a deadlock issue in the page cache
+o Fix a transaction log issue where the log could be written to after
+  tx manager marked as NOT_OK.
+o Performance improvements for concurrent reads
+
 2.0.2
 -----
 Cypher:

@@ -1,6 +1,8 @@
-2.0.3-SNAPSHOT
---------------
+2.0.3
+-----
 o MERGE must fail when trying to create 2 nodes with same id but different labels (e.g., MERGE (a: Foo)-[r:KNOWS]->(a: Bar))
+o Allow Cypher split() with empty separator
+o Ensure Cypher range() works with negative step values
 
 2.0.2
 -----

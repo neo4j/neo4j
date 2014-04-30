@@ -1,3 +1,7 @@
+2.0.3
+-----
+o Fixes issue where an instance could revert into SLAVE mode while shutting down.
+
 2.0.2
 -----
 o Fixes issue where failed instances would not be able to rejoin the cluster after restart
