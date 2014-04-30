@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Map;
 import javax.transaction.Transaction;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -47,8 +46,8 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvid
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Clock;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.AvailabilityGuard;
@@ -88,8 +87,8 @@ import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
-import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
@@ -358,7 +357,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         } );
 
         HighAvailabilityMemberContext localMemberContext = new SimpleHighAvailabilityMemberContext( clusterClient
-                .getServerId() );
+                .getServerId(), config.get( HaSettings.slave_only ) );
         PaxosClusterMemberAvailability localClusterMemberAvailability = new PaxosClusterMemberAvailability(
                 clusterClient.getServerId(), clusterClient, clusterClient, logging, objectStreamFactory,
                 objectStreamFactory );

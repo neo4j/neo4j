@@ -19,16 +19,11 @@
  */
 package org.neo4j.ha;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-
-import static org.neo4j.test.ha.ClusterManager.fromXml;
-
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.cluster.InstanceId;
@@ -43,19 +38,21 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
+import static org.neo4j.test.ha.ClusterManager.fromXml;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class TestSlaveOnlyCluster
 {
-    public final @Rule TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TargetDirectory directory = TargetDirectory.forTest( getClass() );
 
     @Test
     public void testMasterElectionAfterMasterRecoversInSlaveOnlyCluster() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                directory.directory(), MapUtil.stringMap(),
+                directory.cleanDirectory( "masterrecovery" ), MapUtil.stringMap(),
                 MapUtil.<Integer, Map<String, String>>genericMap( 2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
                                                                   3, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
 
@@ -133,7 +130,7 @@ public class TestSlaveOnlyCluster
     public void testMasterElectionAfterSlaveOnlyInstancesStartFirst() throws Throwable
     {
         ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                directory.directory(), MapUtil.stringMap(),
+                directory.cleanDirectory( "slaveonly" ), MapUtil.stringMap(),
                 MapUtil.<Integer, Map<String, String>>genericMap( 1, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
                                        2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
 
