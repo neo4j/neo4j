@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -28,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
+
+import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 
 public class LogPruneStrategies
 {
@@ -45,7 +45,7 @@ public class LogPruneStrategies
         }
     };
     
-    private static interface Threshold
+    static interface Threshold
     {
         boolean reached( File file, long version, LogLoader source );
     }
@@ -201,14 +201,28 @@ public class LogPruneStrategies
                 @Override
                 public boolean reached( File file, long version, LogLoader source )
                 {
-                    // Here we know that the log version exists (checked in AbstractPruneStrategy#prune)
-                    long tx = source.getFirstCommittedTxId( version ).longValue();
-                    if ( highest == null )
+                    try
                     {
-                        highest = source.getLastCommittedTxId();
-                        return false;
+                        // Here we know that the log version exists (checked in AbstractPruneStrategy#prune)
+                        long tx = source.getFirstCommittedTxId( version );
+                        if ( highest == null )
+                        {
+                            highest = source.getLastCommittedTxId();
+                            return false;
+                        }
+                        return highest - tx >= maxTransactionCount;
                     }
-                    return highest.longValue()-tx >= maxTransactionCount;
+                    catch(RuntimeException e)
+                    {
+                        if(e.getCause() != null && e.getCause() instanceof IllegalLogFormatException)
+                        {
+                            return decidePruneForIllegalLogFormat( (IllegalLogFormatException) e.getCause() );
+                        }
+                        else
+                        {
+                            throw e;
+                        }
+                    }
                 }
             };
         }
@@ -245,6 +259,10 @@ public class LogPruneStrategies
                     {
                         return source.getFirstStartRecordTimestamp( version ) < lowerLimit;
                     }
+                    catch(IllegalLogFormatException e)
+                    {
+                        return decidePruneForIllegalLogFormat( e );
+                    }
                     catch ( IOException e )
                     {
                         throw new RuntimeException( e );
@@ -253,7 +271,19 @@ public class LogPruneStrategies
             };
         }
     }
-    
+
+    private static boolean decidePruneForIllegalLogFormat( IllegalLogFormatException e )
+    {
+        if(e.wasNewerLogVersion())
+        {
+            throw new RuntimeException( "Unable to read database logs, because it contains" +
+                    " logs from a newer version of Neo4j.", e );
+        }
+
+        // Hit an old version log, consider this out of date.
+        return true;
+    }
+
     /**
      * Parses a configuration value for log specifying log pruning. It has one of these forms:
      * <ul>
