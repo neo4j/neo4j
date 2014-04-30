@@ -110,7 +110,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     val predicatesWithCorrectDeps = predicates.map {
       case Predicate(deps, e: PatternExpression) =>
         Predicate(deps.filter(x => isNamed(x.name)), e)
-      case Predicate(deps, or: Or) =>
+      case Predicate(deps, or: Ors) =>
         val (patterns, operands) = or.treeFold((Vector.empty[Expression], Vector.empty[Expression])) {
           case pattern@Not(_: PatternExpression) => {
             case ((patterns, expressions), _) => (patterns :+ pattern, expressions)
@@ -121,7 +121,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
               (patterns :+ pattern, expressions)
           }
 
-          case or: Or => (acc, children) => children(acc)
+          case or: Ors => (acc, children) => children(acc)
 
           case expr: Expression => {
             case ((patterns, expressions), children) => (patterns, expressions :+ expr)
@@ -131,22 +131,27 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
         val expressionDeps = operands.foldLeft(Set.empty[IdName])(_ ++ SelectionPredicates.idNames(_))
         val patternDeps = patterns.foldLeft(Set.empty[IdName])(_ ++ SelectionPredicates.idNames(_)).filter(x => isNamed(x.name))
         val newDeps = patternDeps ++ expressionDeps
-        val orExpr = (patterns ++ operands).reduceRight(Or(_, _)(or.position))
+        val orExpr = Ors((patterns ++ operands).toList)(or.position)
         Predicate(newDeps, orExpr)
       case p => p
     }
 
     val subQueries: Seq[SubQuery] = predicatesWithCorrectDeps.collect {
-      case p@Predicate(_, Or(_: PatternExpression, Or(_: PatternExpression, _)))  =>
+      case p@Predicate(_, Ors((_:PatternExpression) :: (_:PatternExpression) :: tail )) =>
         throw new CantHandleQueryException
-      case p@Predicate(_, Or(patternExpr: PatternExpression, expr: Expression)) if !expr.isInstanceOf[PatternExpression]  =>
+
+      case p@Predicate(_, Ors((patternExpr:PatternExpression) :: tail)) if !tail.exists(_.isInstanceOf[PatternExpression])  =>
         Exists(p, extractQueryGraph(patternExpr))
-      case p@Predicate(_, Or(Not(patternExpr: PatternExpression), expr: Expression)) if !expr.isInstanceOf[PatternExpression]  =>
+
+      case p@Predicate(_, Ors((Not(patternExpr: PatternExpression)) :: tail)) if !tail.exists(_.isInstanceOf[PatternExpression])  =>
         Exists(p, extractQueryGraph(patternExpr))
+
       case p@Predicate(_, Not(patternExpr: PatternExpression)) =>
         Exists(p, extractQueryGraph(patternExpr))
+
       case p@Predicate(_, patternExpr: PatternExpression) =>
         Exists(p, extractQueryGraph(patternExpr))
+
     }.toSeq
 
     (Selections(predicatesWithCorrectDeps), subQueries)

@@ -38,7 +38,7 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     }
 
     def findBestPlan(planGenerator: CandidateGenerator[PlanTable]) =
-      (planTable: PlanTable) => pickBest(planGenerator(planTable).map(select)).map(planTable + _).getOrElse(planTable)
+      (planTable: PlanTable) => pickBest(planGenerator(planTable).map(select)).fold(planTable)(planTable + _)
 
     val leaves = generateLeafPlanTable()
     val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)

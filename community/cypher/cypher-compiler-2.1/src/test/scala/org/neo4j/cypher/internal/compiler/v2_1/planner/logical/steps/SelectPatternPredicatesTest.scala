@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, PlanTransformer, PlanTable, CandidateList}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, PlanTransformer}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 
@@ -150,7 +150,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
-    val orPredicate = Predicate(Set(IdName("a")), Or(patternExp, equals)_)
+    val orPredicate = Predicate(Set(IdName("a")), Ors(List(patternExp, equals))_)
     val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph().
       add(patternRel).
@@ -185,7 +185,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
-    val orPredicate = Predicate(Set(IdName("a")), Or(Not(patternExp)_, equals)_)
+    val orPredicate = Predicate(Set(IdName("a")), Ors(List(Not(patternExp)(pos), equals))_)
     val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph().
       add(patternRel).
