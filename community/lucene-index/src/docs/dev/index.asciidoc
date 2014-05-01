@@ -12,9 +12,9 @@ However, support for legacy indexes remains, because certain features, such as u
 [[indexing-introduction]]
 == Introduction ==
 
-Legacy Indexing operations are part of the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/package-summary.html[Neo4j index API].
+Legacy Indexing operations are part of the link:javadocs/org/neo4j/graphdb/index/package-summary.html[Neo4j index API].
 
-Each index is tied to a unique, user-specified name (for example "first_name" or "books") and can index either http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html[nodes] or http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Relationship.html[relationships].
+Each index is tied to a unique, user-specified name (for example "first_name" or "books") and can index either link:javadocs/org/neo4j/graphdb/Node.html[nodes] or link:javadocs/org/neo4j/graphdb/Relationship.html[relationships].
 
 The default index implementation is provided by the +neo4j-lucene-index+ component, which is included in the standard Neo4j download.
 It can also be downloaded separately from http://repo1.maven.org/maven2/org/neo4j/neo4j-lucene-index/ .
@@ -73,7 +73,7 @@ tag=delete
 ----
 
 Note that the actual deletion of the index is made during the commit of _the surrounding transaction_.
-Calls made to such an index instance after http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#delete%28%29[delete()] has been called are invalid inside that transaction as well as outside (if the transaction is successful), but will become valid again if the transaction is rolled back.
+Calls made to such an index instance after link:javadocs/org/neo4j/graphdb/index/Index.html#delete%28%29[delete()] has been called are invalid inside that transaction as well as outside (if the transaction is successful), but will become valid again if the transaction is rolled back.
 
 
 [[indexing-add]]
@@ -107,7 +107,7 @@ include::movie-and-actor-graph.asciidoc[]
 [[indexing-remove]]
 == Remove ==
 
-http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#remove%28T,%20java.lang.String,%20java.lang.Object%29[Removing] from an index is similar to adding, but can be done by supplying one of the following combinations of arguments:
+link:javadocs/org/neo4j/graphdb/index/Index.html#remove%28T,%20java.lang.String,%20java.lang.Object%29[Removing] from an index is similar to adding, but can be done by supplying one of the following combinations of arguments:
 
 * entity
 * entity, key
@@ -145,7 +145,7 @@ tag=update
 [[indexing-search]]
 == Search ==
 
-An index can be searched in two ways, http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#get%28java.lang.String,%20java.lang.Object%29[get] and http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#query%28java.lang.String,%20java.lang.Object%29[query].
+An index can be searched in two ways, link:javadocs/org/neo4j/graphdb/index/Index.html#get%28java.lang.String,%20java.lang.Object%29[get] and link:javadocs/org/neo4j/graphdb/index/Index.html#query%28java.lang.String,%20java.lang.Object%29[query].
 The +get+ method will return exact matches to the given key-value pair, whereas +query+ exposes querying capabilities directly from the backend used by the index.
 For example the {lucene-base-uri}/queryparsersyntax.html[Lucene query syntax] can be used directly with the default indexing backend.
 
@@ -161,7 +161,7 @@ source=examples/ImdbDocTest.java
 tag=getSingleNode
 ----
 
-http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html[IndexHits] is an +Iterable+ with some additional useful methods. For example http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#getSingle%28%29[getSingle()] returns the first and only item from the result iterator, or +null+ if there isn't any hit.
+link:javadocs/org/neo4j/graphdb/index/IndexHits.html[IndexHits] is an +Iterable+ with some additional useful methods. For example link:javadocs/org/neo4j/graphdb/index/IndexHits.html#getSingle%28%29[getSingle()] returns the first and only item from the result iterator, or +null+ if there isn't any hit.
 
 Here's how to get a single relationship by exact matching and retrieve its start and end nodes:
 
@@ -181,7 +181,7 @@ source=examples/ImdbDocTest.java
 tag=getRelationships
 ----
 
-IMPORTANT: In case you don't iterate through all the hits, http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#close%28%29[IndexHits.close()] must be called explicitly.
+IMPORTANT: In case you don't iterate through all the hits, link:javadocs/org/neo4j/graphdb/index/IndexHits.html#close%28%29[IndexHits.close()] must be called explicitly.
 
 [[indexing-search-query]]
 === Query ===
@@ -217,7 +217,7 @@ CAUTION: You can't have _any whitespace_ in the search term with this syntax.
 == Relationship indexes ==
 
 An index for relationships is just like an index for nodes, extended by providing support to constrain a search to relationships with a specific start and/or end nodes
-These extra methods reside in the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/RelationshipIndex.html[RelationshipIndex] interface which extends http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html[Index<Relationship>].
+These extra methods reside in the link:javadocs/org/neo4j/graphdb/index/RelationshipIndex.html[RelationshipIndex] interface which extends link:javadocs/org/neo4j/graphdb/index/Index.html[Index<Relationship>].
 
 Example of querying a relationship index:
 
@@ -243,7 +243,7 @@ A good example where this approach pays dividends is in time series data, where 
 [[indexing-scores]]
 == Scores ==
 
-The +IndexHits+ interface exposes http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/IndexHits.html#currentScore%28%29[scoring] so that the index can communicate scores for the hits.
+The +IndexHits+ interface exposes link:javadocs/org/neo4j/graphdb/index/IndexHits.html#currentScore%28%29[scoring] so that the index can communicate scores for the hits.
 Note that the result is not sorted by the score unless you explicitly specify that.
 See <<indexing-lucene-sort>> for how to sort by score.
 
@@ -305,7 +305,7 @@ The +provider+ configuration key is interpreted by Neo4j, but any other configur
 === Numeric ranges ===
 
 Lucene supports smart indexing of numbers, querying for ranges and sorting such results, and so does its backend for Neo4j.
-To mark a value so that it is indexed as a numeric value, we can make use of the http://components.neo4j.org/neo4j-lucene-index/{neo4j-version}/apidocs/org/neo4j/index/lucene/ValueContext.html[ValueContext] class, like this:
+To mark a value so that it is indexed as a numeric value, we can make use of the link:javadocs/org/neo4j/index/lucene/ValueContext.html[ValueContext] class, like this:
 
 [snippet,java]
 ----
@@ -341,7 +341,7 @@ tag=exclusiveRange
 [[indexing-lucene-sort]]
 === Sorting ===
 
-Lucene performs sorting very well, and that is also exposed in the index backend, through the http://components.neo4j.org/neo4j-lucene-index/{neo4j-version}/apidocs/org/neo4j/index/lucene/QueryContext.html[QueryContext] class:
+Lucene performs sorting very well, and that is also exposed in the index backend, through the link:javadocs/org/neo4j/index/lucene/QueryContext.html[QueryContext] class:
 
 
 [snippet,java]
@@ -402,7 +402,7 @@ CAUTION: Compound queries can't search across committed index entries and those 
 [[indexing-lucene-default-operator]]
 === Default operator ===
 
-The default operator (that is whether +AND+ or +OR+ is used in between different terms) in a query is +OR+. Changing that behavior is also done via the http://components.neo4j.org/neo4j-lucene-index/{neo4j-version}/apidocs/org/neo4j/index/lucene/QueryContext.html[QueryContext] class:
+The default operator (that is whether +AND+ or +OR+ is used in between different terms) in a query is +OR+. Changing that behavior is also done via the link:javadocs/org/neo4j/index/lucene/QueryContext.html[QueryContext] class:
 
 [snippet,java]
 ----
@@ -465,7 +465,7 @@ classifier=test-sources
 === Search ===
 The usefulness of the auto indexing functionality comes of course from the ability to actually query the index and retrieve results.
 To that end, you can acquire a +ReadableIndex+ object from the +AutoIndexer+ that exposes all the query and get methods of a full
-http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html[+Index+] with exactly the same functionality.
+link:javadocs/org/neo4j/graphdb/index/Index.html[+Index+] with exactly the same functionality.
 Continuing from the previous example, accessing the index is done like this:
 
 [snippet,java]

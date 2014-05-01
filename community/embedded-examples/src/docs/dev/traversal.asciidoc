@@ -10,7 +10,7 @@ For more examples of traversals, see <<data-modeling-examples>>.
 
 This is the first graph we want to traverse into:
 
-image::examples-matrix.png[title="Matrix node space view", scaledwidth="75%"]
+image::examples-matrix.png[title="Matrix node space view"]
 
 [TIP]
 The source code of this example is found here:
@@ -105,7 +105,7 @@ tag=walkOrderedPath
 ----
 
 Note that we set the uniqueness to 
-+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Uniqueness.html#NODE_PATH[Uniqueness.NODE_PATH]+ 
++link:javadocs/org/neo4j/graphdb/traversal/Uniqueness.html#NODE_PATH[Uniqueness.NODE_PATH]+ 
 as we want to be able to revisit the same node dureing the traversal, but not the same path.
 
 .Perform the traversal and print the result
@@ -132,7 +132,9 @@ source=org/neo4j/examples/orderedpath/OrderedPath.java
 tag=pathPrinter
 ----
 
+////
 For options regarding output of a +Path+, see the 
-http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html[Traversal] class.
+link:javadocs/org/neo4j/kernel/Traversal.html[Traversal] class.
+////
 
 
