@@ -26,7 +26,7 @@ sealed trait RemoveItem extends ASTNode with SemanticCheckable
 
 case class RemoveLabelItem(expression: Expression, labels: Seq[LabelName])(val position: InputPosition) extends RemoveItem {
   def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    expression.semanticCheck(Expression.SemanticContext.Simple) chain
     expression.expectType(CTNode.covariant)
 }
 

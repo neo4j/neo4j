@@ -28,8 +28,8 @@ case object Coalesce extends Function {
   def name = "coalesce"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkMinArgs(invocation, 1) then
-    invocation.arguments.expectType(CTAny.covariant) then
+    checkMinArgs(invocation, 1) chain
+    invocation.arguments.expectType(CTAny.covariant) chain
     invocation.specifyType(invocation.arguments.mergeUpTypes)
 
   def asCommandExpression(invocation: ast.FunctionInvocation) =

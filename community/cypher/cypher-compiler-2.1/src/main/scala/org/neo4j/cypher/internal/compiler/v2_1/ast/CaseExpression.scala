@@ -27,11 +27,11 @@ case class CaseExpression(expression: Option[Expression], alternatives: Seq[(Exp
   def semanticCheck(ctx: SemanticContext): SemanticCheck = {
     val possibleTypes: TypeGenerator = (alternatives.map(_._2) ++ default).mergeUpTypes
 
-    expression.semanticCheck(ctx) then
-    alternatives.flatMap { a => Seq(a._1, a._2) }.semanticCheck(ctx) then
-    default.semanticCheck(ctx) then
+    expression.semanticCheck(ctx) chain
+    alternatives.flatMap { a => Seq(a._1, a._2) }.semanticCheck(ctx) chain
+    default.semanticCheck(ctx) chain
     when (expression.isEmpty) {
       alternatives.map(_._1).expectType(CTBoolean.covariant)
-    } then this.specifyType(possibleTypes)
+    } chain this.specifyType(possibleTypes)
   }
 }

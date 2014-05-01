@@ -27,6 +27,6 @@ case class MapExpression(items: Seq[(PropertyKeyName, Expression)])(val position
   protected def possibleTypes = CTMap
 
   override def semanticCheck(ctx: SemanticContext) =
-    items.map(_._2).semanticCheck(ctx) then
+    items.map(_._2).semanticCheck(ctx) chain
       super.semanticCheck(ctx)
 }

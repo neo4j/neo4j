@@ -80,10 +80,10 @@ case class RegexMatch(lhs: Expression, rhs: Expression)(val position: InputPosit
 
 case class In(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: ast.Expression.SemanticContext): SemanticCheck =
-    lhs.semanticCheck(ctx) then
-    lhs.expectType(CTAny.covariant) then
-    rhs.semanticCheck(ctx) then
-    rhs.expectType(lhs.types(_).wrapInCollection) then
+    lhs.semanticCheck(ctx) chain
+    lhs.expectType(CTAny.covariant) chain
+    rhs.semanticCheck(ctx) chain
+    rhs.expectType(lhs.types(_).wrapInCollection) chain
     specifyType(CTBoolean)
 }
 

@@ -25,10 +25,10 @@ import symbols._
 
 case class Add(lhs: Expression, rhs: Expression)(val position: InputPosition) extends Expression {
   def semanticCheck(ctx: SemanticContext) =
-    lhs.semanticCheck(ctx) then
-    lhs.expectType(TypeSpec.all) then
-    rhs.semanticCheck(ctx) then
-    rhs.expectType(infixRhsTypes(lhs)) then
+    lhs.semanticCheck(ctx) chain
+    lhs.expectType(TypeSpec.all) chain
+    rhs.semanticCheck(ctx) chain
+    rhs.expectType(infixRhsTypes(lhs)) chain
     specifyType(infixOutputTypes(lhs, rhs))
 
   private def infixRhsTypes(lhs: ast.Expression): TypeGenerator = s => {

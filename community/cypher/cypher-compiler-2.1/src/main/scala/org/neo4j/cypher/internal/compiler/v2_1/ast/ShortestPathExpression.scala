@@ -28,7 +28,7 @@ case class ShortestPathExpression(pattern: ShortestPaths) extends Expression wit
   protected def possibleTypes = CTCollection(CTPath)
 
   override def semanticCheck(ctx: SemanticContext) =
-    pattern.declareIdentifiers(Pattern.SemanticContext.Expression) then
-    pattern.semanticCheck(Pattern.SemanticContext.Expression) then
+    pattern.declareIdentifiers(Pattern.SemanticContext.Expression) chain
+    pattern.semanticCheck(Pattern.SemanticContext.Expression) chain
     super.semanticCheck(ctx)
 }
