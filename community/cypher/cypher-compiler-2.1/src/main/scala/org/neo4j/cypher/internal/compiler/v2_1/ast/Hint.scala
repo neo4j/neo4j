@@ -25,9 +25,9 @@ import symbols._
 sealed trait Hint extends ASTNode with SemanticCheckable
 
 case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends Hint {
-  def semanticCheck = identifier.ensureDefined then identifier.expectType(CTNode.covariant)
+  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 }
 
 case class UsingScanHint(identifier: Identifier, label: LabelName)(val position: InputPosition) extends Hint {
-  def semanticCheck = identifier.ensureDefined then identifier.expectType(CTNode.covariant)
+  def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)
 }

@@ -77,11 +77,14 @@
           </execution>
         </executions>
         <configuration>
-        <scalaVersion>${scala.version}</scalaVersion>
-        <args>
-            <arg>-Xmax-classfile-name</arg>
-            <arg>100</arg>
-        </args>
+          <scalaVersion>${scala.version}</scalaVersion>
+          <args>
+              <arg>-Xmax-classfile-name</arg>
+              <arg>100</arg>
+              <!-- uncomment for make the build fail on warnings -->
+              <!--<arg>-Xfatal-warnings</arg>-->
+              <!--<arg>-deprecation</arg>-->
+          </args>
           <jvmArgs>
             <jvmArg>-Xms64m</jvmArg>
             <jvmArg>-Xmx1024m</jvmArg>

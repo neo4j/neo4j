@@ -69,8 +69,8 @@ import Pattern._
 
 case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) extends ASTNode {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    patternParts.foldSemanticCheck(_.declareIdentifiers(ctx)) then
-    patternParts.foldSemanticCheck(_.semanticCheck(ctx)) then
+    patternParts.foldSemanticCheck(_.declareIdentifiers(ctx)) chain
+    patternParts.foldSemanticCheck(_.semanticCheck(ctx)) chain
     ensureNoDuplicateRelationships(this, ctx)
 
   private def ensureNoDuplicateRelationships(pattern: Pattern, ctx: SemanticContext): SemanticCheck = {
@@ -79,14 +79,14 @@ case class Pattern(patternParts: Seq[PatternPart])(val position: InputPosition) 
         val id = duplicates.head
         val dups = duplicates.tail
 
-        acc then SemanticError(s"Cannot use the same relationship identifier '${id.name}' for multiple patterns", id.position, dups.map(_.position):_*)
+        acc chain SemanticError(s"Cannot use the same relationship identifier '${id.name}' for multiple patterns", id.position, dups.map(_.position):_*)
     }
   }
 }
 
 case class RelationshipsPattern(element: RelationshipChain)(val position: InputPosition) extends ASTNode {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    element.declareIdentifiers(ctx) then
+    element.declareIdentifiers(ctx) chain
     element.semanticCheck(ctx)
 }
 
@@ -97,7 +97,7 @@ sealed abstract class PatternPart extends ASTNode {
 }
 
 case class NamedPatternPart(identifier: Identifier, patternPart: AnonymousPatternPart)(val position: InputPosition) extends PatternPart {
-  def declareIdentifiers(ctx: SemanticContext) = patternPart.declareIdentifiers(ctx) then identifier.declare(CTPath)
+  def declareIdentifiers(ctx: SemanticContext) = patternPart.declareIdentifiers(ctx) chain identifier.declare(CTPath)
   def semanticCheck(ctx: SemanticContext) = patternPart.semanticCheck(ctx)
 }
 
@@ -111,7 +111,7 @@ case class EveryPath(element: PatternElement) extends AnonymousPatternPart {
     case (n: NodePattern, SemanticContext.Match) =>
       element.declareIdentifiers(ctx) // single node identifier is allowed to be already bound in MATCH
     case (n: NodePattern, _)                     =>
-      n.identifier.fold(SemanticCheckResult.success)(_.declare(CTNode)) then element.declareIdentifiers(ctx)
+      n.identifier.fold(SemanticCheckResult.success)(_.declare(CTNode)) chain element.declareIdentifiers(ctx)
     case _                                       =>
       element.declareIdentifiers(ctx)
   }
@@ -130,10 +130,10 @@ case class ShortestPaths(element: PatternElement, single: Boolean)(val position:
     element.declareIdentifiers(ctx)
 
   def semanticCheck(ctx: SemanticContext) =
-    checkContext(ctx) then
-    checkContainsSingle then
-    checkKnownEnds then
-    checkNoMinimalLength then
+    checkContext(ctx) chain
+    checkContainsSingle chain
+    checkKnownEnds chain
+    checkNoMinimalLength chain
     element.semanticCheck(ctx)
 
   private def checkContext(ctx: SemanticContext): SemanticCheck = ctx match {
@@ -185,13 +185,13 @@ sealed abstract class PatternElement extends ASTNode {
 
 case class RelationshipChain(element: PatternElement, relationship: RelationshipPattern, rightNode: NodePattern)(val position: InputPosition) extends PatternElement {
   def declareIdentifiers(ctx: SemanticContext): SemanticCheck =
-    element.declareIdentifiers(ctx) then
-    relationship.declareIdentifiers(ctx) then
+    element.declareIdentifiers(ctx) chain
+    relationship.declareIdentifiers(ctx) chain
     rightNode.declareIdentifiers(ctx)
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    element.semanticCheck(ctx) then
-    relationship.semanticCheck(ctx) then
+    element.semanticCheck(ctx) chain
+    relationship.semanticCheck(ctx) chain
     rightNode.semanticCheck(ctx)
 }
 
@@ -207,7 +207,7 @@ case class NodePattern(
       identifier =>
         ctx match {
           case SemanticContext.Expression =>
-            identifier.ensureDefined() then
+            identifier.ensureDefined() chain
             identifier.expectType(CTNode.covariant)
           case _                          =>
             identifier.implicitDeclaration(CTNode)
@@ -215,7 +215,7 @@ case class NodePattern(
     }
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    checkParens then
+    checkParens chain
     checkProperties(ctx)
 
   private def checkParens: SemanticCheck =
@@ -229,7 +229,7 @@ case class NodePattern(
     case (Some(e: Parameter), SemanticContext.Merge) =>
       SemanticError("Parameter maps cannot be used in MERGE patterns (use a literal map instead, eg. \"{id: {param}.id}\")", e.position)
     case _                                           =>
-      properties.semanticCheck(Expression.SemanticContext.Simple) then properties.expectType(CTMap.covariant)
+      properties.semanticCheck(Expression.SemanticContext.Simple) chain properties.expectType(CTMap.covariant)
   }
 }
 
@@ -249,17 +249,17 @@ case class RelationshipPattern(
 
         ctx match {
           case SemanticContext.Match      => identifier.implicitDeclaration(possibleType)
-          case SemanticContext.Expression => identifier.ensureDefined() then identifier.expectType(possibleType.covariant)
+          case SemanticContext.Expression => identifier.ensureDefined() chain identifier.expectType(possibleType.covariant)
           case _                          => identifier.declare(possibleType)
         }
     }
 
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    checkNoOptionalRelsForAnExpression(ctx) then
-    checkNoVarLengthWhenUpdating(ctx) then
-    checkNoLegacyOptionals(ctx) then
-    checkNoParamMapsWhenMatching(ctx) then
-    checkProperties(ctx) then
+    checkNoOptionalRelsForAnExpression(ctx) chain
+    checkNoVarLengthWhenUpdating(ctx) chain
+    checkNoLegacyOptionals(ctx) chain
+    checkNoParamMapsWhenMatching(ctx) chain
+    checkProperties(ctx) chain
     checkNotUndirectedWhenCreating(ctx)
 
   private def checkNotUndirectedWhenCreating(ctx: SemanticContext): SemanticCheck = {
@@ -302,7 +302,7 @@ case class RelationshipPattern(
   }
 
   private def checkProperties(ctx: SemanticContext): SemanticCheck =
-    properties.semanticCheck(Expression.SemanticContext.Simple) then properties.expectType(CTMap.covariant)
+    properties.semanticCheck(Expression.SemanticContext.Simple) chain properties.expectType(CTMap.covariant)
 
   def isSingleLength = length.fold(true)(_.fold(false)(_.isSingleLength))
 }

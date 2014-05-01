@@ -41,7 +41,7 @@ class ExpressionTest extends Assertions {
   @Test
   def shouldReturnSpecifiedAndConstrainedTypes() {
     val state = (
-      expression.specifyType(CTNode | CTInteger) then
+      expression.specifyType(CTNode | CTInteger) chain
       expression.expectType(CTNumber.covariant)
     )(SemanticState.clean).state
 
@@ -51,7 +51,7 @@ class ExpressionTest extends Assertions {
   @Test
   def shouldRaiseTypeErrorWhenMismatchBetweenSpecifiedTypeAndExpectedType() {
     val result = (
-      expression.specifyType(CTNode | CTInteger) then
+      expression.specifyType(CTNode | CTInteger) chain
       expression.expectType(CTString.covariant)
     )(SemanticState.clean)
 

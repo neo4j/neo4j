@@ -25,8 +25,8 @@ case class Query(periodicCommitHint: Option[PeriodicCommitHint], part: QueryPart
   extends Statement with SemanticChecking {
 
   override def semanticCheck =
-    part.semanticCheck then
-    periodicCommitHint.semanticCheck then
+    part.semanticCheck chain
+    periodicCommitHint.semanticCheck chain
     when(periodicCommitHint.nonEmpty && !part.containsUpdates) {
       SemanticError("Cannot use periodic commit in a non-updating query", periodicCommitHint.get.position)
     }
@@ -46,8 +46,8 @@ case class SingleQuery(clauses: Seq[Clause])(val position: InputPosition) extend
     }
 
   def semanticCheck: SemanticCheck =
-    checkOrder then
-    checkClauses then
+    checkOrder chain
+    checkClauses chain
     checkIndexHints
 
   private def checkIndexHints: SemanticCheck = s => {
@@ -121,8 +121,8 @@ sealed trait Union extends QueryPart {
   def containsUpdates:Boolean = part.containsUpdates || query.containsUpdates
 
   def semanticCheck: SemanticCheck =
-    checkUnionAggregation then
-    part.semanticCheck then
+    checkUnionAggregation chain
+    part.semanticCheck chain
     query.semanticCheck
 
   private def checkUnionAggregation: SemanticCheck = (part, this) match {

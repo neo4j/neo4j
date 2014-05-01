@@ -28,6 +28,6 @@ case class PatternExpression(pattern: RelationshipsPattern) extends Expression w
   protected def possibleTypes = CTCollection(CTPath)
 
   override def semanticCheck(ctx: SemanticContext) =
-    pattern.semanticCheck(Pattern.SemanticContext.Expression) then
+    pattern.semanticCheck(Pattern.SemanticContext.Expression) chain
     super.semanticCheck(ctx)
 }

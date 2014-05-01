@@ -37,8 +37,9 @@ object inlineProjections extends (Statement => Statement) {
     val inliningRewriter = Rewriter.lift {
       case clause @ With(false, returnItems @ ListedReturnItems(items), orderBy, None, None, None) =>
         val pos = returnItems.position
-        val filteredItems = items.filter {
-          case AliasedReturnItem(expr, identifier) => !context.projections.contains(identifier) || containsAggregate(expr)
+        val filteredItems = items.collect {
+          case item@AliasedReturnItem(expr, ident) if !context.projections.contains(ident) || containsAggregate(expr) =>
+            item
         }
 
         val newReturnItems =
@@ -70,11 +71,8 @@ object inlineProjections extends (Statement => Statement) {
   private def inlineReturnItemsFactory(inlineExpressions: Expression => Expression) =
     (returnItems: ListedReturnItems) =>
       returnItems.copy(
-        items = returnItems.items.map {
+        items = returnItems.items.collect {
           case item: AliasedReturnItem =>
-            item.copy( expression = inlineExpressions(item.expression))(item.position)
-
-          case item: UnaliasedReturnItem =>
             item.copy( expression = inlineExpressions(item.expression))(item.position)
         }
       )(returnItems.position)

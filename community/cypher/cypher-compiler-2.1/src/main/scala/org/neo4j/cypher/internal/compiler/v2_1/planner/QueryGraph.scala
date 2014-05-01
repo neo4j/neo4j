@@ -57,12 +57,10 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     )
 
   private def either[T](a: Option[T], b:Option[T]): Option[T] = (a, b) match {
-    case (None, s) => s
-    case (s, None) => s
-    case (None, None) => None
     case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
+    case (s@Some(_), None) => s
+    case (None, s) => s
   }
-
 
   def equivalent(other: QueryGraph) =
     patternRelationships == other.patternRelationships &&
@@ -75,10 +73,6 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     val argumentIds = coveredIds intersect optionalMatch.coveredIds
     copy(subQueries = subQueries :+ OptionalMatch(optionalMatch.addArgumentId(argumentIds.toSeq))).
       addCoveredIdsAsProjections()
-  }
-
-  def addPatternNodes(nodes: Traversable[IdName]): QueryGraph = nodes.foldLeft(QueryGraph.empty) {
-    case (qg, id) => qg.addPatternNode(id)
   }
 
   def introducedIds: Set[IdName] = coveredIds -- argumentIds
