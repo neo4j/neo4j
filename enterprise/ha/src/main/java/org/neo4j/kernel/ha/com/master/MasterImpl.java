@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
@@ -70,8 +72,6 @@ import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-
-import static java.lang.String.format;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -144,7 +144,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     private long generateEpoch()
     {
-        return (((long)config.get( ClusterSettings.server_id )) << 48) | System.currentTimeMillis();
+        return ( ( ( (long) config.get( ClusterSettings.server_id ).toIntegerIndex() ) ) << 48 ) | System.currentTimeMillis();
     }
 
     @Override
