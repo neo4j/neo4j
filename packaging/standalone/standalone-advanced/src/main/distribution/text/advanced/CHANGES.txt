@@ -45,8 +45,21 @@ o Relationship chains are now split by type and direction. Disk storage format c
 o Fixes an issue with tx log reading in damaged log files
 o Adds support for labels in transaction event handlers
 
-2.0.2 (Unreleased)
----------------------------
+2.0.3
+-----
+Cypher:
+o MERGE must fail when trying to create 2 nodes with same id but different labels (e.g., MERGE (a: Foo)-[r:KNOWS]->(a: Bar))
+o Allow Cypher split() with empty separator
+o Ensure Cypher range() works with negative step values
+
+Kernel:
+o Fixes a deadlock issue in the page cache
+o Fix a transaction log issue where the log could be written to after
+  tx manager marked as NOT_OK.
+o Performance improvements for concurrent reads
+
+2.0.2
+-----
 Cypher:
 o Fixes #1897 - goes into never ending loop for some aggregate queries
 o Add the functions toInt(...) and toFloat(...)
@@ -88,6 +101,9 @@ o Improve speed of creating label scan store in BatchInserter.
 o Fixes issue with batch inserter which could lead to record not in use exception
   when adding properties
 o Introduces monitoring for reads/writes to the logical log
+
+Cypher:
+o Fixes a concurrency problem in query parser
 
 Server:
 o Fixes issue with transactions leaking when there is an exception while rendering the response

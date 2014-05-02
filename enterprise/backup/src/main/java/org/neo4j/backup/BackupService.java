@@ -146,7 +146,7 @@ class BackupService
             });
 
             targetDb = startTemporaryDb( targetDirectory, VerificationLevel.NONE /* run full check instead */ );
-            new LogicalLogSeeder().ensureAtLeastOneLogicalLogPresent( sourceHostNameOrIp, sourcePort, targetDb );
+            new LogicalLogSeeder(logger).ensureAtLeastOneLogicalLogPresent( sourceHostNameOrIp, sourcePort, targetDb );
         }
         catch ( IOException e )
         {
@@ -243,7 +243,7 @@ class BackupService
                 return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(),
                                                       verification, config );
             }
-            catch ( IOException fullBackupFailure )
+            catch ( Exception fullBackupFailure )
             {
                 throw new RuntimeException( "Failed to perform incremental backup, fell back to full backup, " +
                         "but that failed as well: '" + fullBackupFailure.getMessage() + "'.", fullBackupFailure );
@@ -320,17 +320,17 @@ class BackupService
         }
         catch(RuntimeException e)
         {
-            if(e.getCause() instanceof NoSuchLogVersionException )
+            if(e.getCause() != null && e.getCause() instanceof NoSuchLogVersionException )
             {
                 throw new IncrementalBackupNotPossibleException("It's been too long since this backup was last updated, and it has " +
                         "fallen too far behind the database transaction stream for incremental backup to be possible. " +
                         "You need to perform a full backup at this point. You can modify this time interval by setting " +
                         "the '" + GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a " +
-                        "higher value.", e);
+                        "higher value.", e.getCause());
             }
             else
             {
-                throw e;
+                throw new RuntimeException("Failed to perform incremental backup.", e);
             }
         }
         finally
