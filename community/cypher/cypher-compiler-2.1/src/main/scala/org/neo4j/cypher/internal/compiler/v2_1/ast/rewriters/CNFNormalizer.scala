@@ -65,11 +65,11 @@ object flattenBooleanOperators extends Rewriter {
   }
 
   private val secondStep: Rewriter = Rewriter.lift {
-    case p@Ands(list) if list.exists(_.isInstanceOf[Ands]) => Ands(list.flatMap {
+    case p@Ands(list) => Ands(list.flatMap {
       case Ands(inner) => inner
       case x => Some(x)
     })(p.position)
-    case p@Ors(list) if list.exists(_.isInstanceOf[Ors]) => Ors(list.flatMap {
+    case p@Ors(list) => Ors(list.flatMap {
       case Ors(inner) => inner
       case x => Some(x)
     })(p.position)
