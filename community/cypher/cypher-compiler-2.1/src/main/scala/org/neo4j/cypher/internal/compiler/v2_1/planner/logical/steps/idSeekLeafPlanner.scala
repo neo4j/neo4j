@@ -48,7 +48,7 @@ object idSeekLeafPlanner extends LeafPlanner {
       case (predicate, Identifier(idName), idValues) =>
         context.queryGraph.patternRelationships.find(_.name.name == idName) match {
           case Some(relationship) =>
-            QueryPlan(createRelationshipByIdSeek(relationship, idValues, predicate))
+            createRelationshipByIdSeek(relationship, idValues, predicate)
           case None =>
             NodeByIdSeek.queryPlan(
               NodeByIdSeek(IdName(idName), idValues)(Seq(predicate))
@@ -59,21 +59,27 @@ object idSeekLeafPlanner extends LeafPlanner {
     CandidateList(candidatePlans)
   }
 
-  def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): LogicalPlan = {
+  def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): QueryPlan = {
     val (left, right) = relationship.nodes
     val name = relationship.name
     val plan = relationship.dir match {
       case Direction.BOTH =>
-        UndirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
+        UndirectedRelationshipByIdSeek.queryPlan(
+          UndirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
+        )
       case Direction.INCOMING =>
-        DirectedRelationshipByIdSeek(name, idValues, right, left)(relationship, Seq(predicate))
+        DirectedRelationshipByIdSeek.queryPlan(
+          DirectedRelationshipByIdSeek(name, idValues, right, left)(relationship, Seq(predicate))
+        )
       case Direction.OUTGOING =>
-        DirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
+        DirectedRelationshipByIdSeek.queryPlan(
+          DirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
+        )
     }
     filterIfNeeded(plan, name.name, relationship.types)
   }
 
-  private def filterIfNeeded(plan: LogicalPlan, relName: String, types: Seq[RelTypeName]): LogicalPlan =
+  private def filterIfNeeded(plan: QueryPlan, relName: String, types: Seq[RelTypeName]): QueryPlan =
     if (types.isEmpty)
       plan
     else {
@@ -90,6 +96,6 @@ object idSeekLeafPlanner extends LeafPlanner {
         case _ => Ors(predicates)(predicates.head.position)
       }
 
-      Selection(Seq(predicate), plan, hideSelections = true)
+      LogicalToQueryPlanConversion( Selection(Seq(predicate), plan.plan, hideSelections = true) )
     }
 }

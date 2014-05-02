@@ -35,6 +35,8 @@ object QueryPlan extends (LogicalPlan => QueryPlan) {
     case _: AllNodesScan => ???
     case _: NodeByLabelScan => ???
     case _: NodeByIdSeek => ???
+    case _: DirectedRelationshipByIdSeek => ???
+    case _: UndirectedRelationshipByIdSeek => ???
 
     case _ => QueryPlan(plan, plan.solved)
   }

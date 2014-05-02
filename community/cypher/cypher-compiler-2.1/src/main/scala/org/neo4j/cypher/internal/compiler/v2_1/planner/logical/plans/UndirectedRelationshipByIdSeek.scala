@@ -26,5 +26,16 @@ case class UndirectedRelationshipByIdSeek(idName: IdName, relIds: Seq[Expression
                                    (val pattern: PatternRelationship, val solvedPredicates: Seq[Expression] = Seq.empty)
   extends LogicalLeafPlan {
 
-  def solved = QueryGraph.empty.addPatternRel(pattern).addPredicates(solvedPredicates)
+  def solved = UndirectedRelationshipByIdSeek.queryPlan(this).solved
+  override def coveredIds = Set(idName, leftNode, rightNode)
+}
+
+object UndirectedRelationshipByIdSeek {
+  def queryPlan(plan: UndirectedRelationshipByIdSeek) =
+    QueryPlan(
+      plan,
+      QueryGraph
+        .empty
+        .addPatternRel(plan.pattern)
+    )
 }
