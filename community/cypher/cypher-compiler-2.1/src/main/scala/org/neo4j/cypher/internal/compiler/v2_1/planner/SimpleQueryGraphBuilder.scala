@@ -110,29 +110,14 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     val predicatesWithCorrectDeps = predicates.map {
       case Predicate(deps, e: PatternExpression) =>
         Predicate(deps.filter(x => isNamed(x.name)), e)
-      case Predicate(deps, or: Ors) =>
-        val (patterns, operands) = or.treeFold((Vector.empty[Expression], Vector.empty[Expression])) {
-          case pattern@Not(_: PatternExpression) => {
-            case ((patterns, expressions), _) => (patterns :+ pattern, expressions)
-          }
-
-          case pattern: PatternExpression => {
-            case ((patterns, expressions), _) =>
-              (patterns :+ pattern, expressions)
-          }
-
-          case or: Ors => (acc, children) => children(acc)
-
-          case expr: Expression => {
-            case ((patterns, expressions), children) => (patterns, expressions :+ expr)
+      case Predicate(deps, ors@Ors(exprs)) =>
+        val newDeps = exprs.foldLeft(Set.empty[IdName]) { (acc, exp) =>
+          exp match {
+            case exp: PatternExpression => acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
+            case exp                    => acc ++ SelectionPredicates.idNames(exp)
           }
         }
-
-        val expressionDeps = operands.foldLeft(Set.empty[IdName])(_ ++ SelectionPredicates.idNames(_))
-        val patternDeps = patterns.foldLeft(Set.empty[IdName])(_ ++ SelectionPredicates.idNames(_)).filter(x => isNamed(x.name))
-        val newDeps = patternDeps ++ expressionDeps
-        val orExpr = Ors((patterns ++ operands).toList)(or.position)
-        Predicate(newDeps, orExpr)
+        Predicate(newDeps, ors)
       case p => p
     }
 
