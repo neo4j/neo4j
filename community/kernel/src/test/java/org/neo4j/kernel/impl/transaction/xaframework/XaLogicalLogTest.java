@@ -19,30 +19,50 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.hamcrest.number.OrderingComparison.lessThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+
 import java.io.File;
 import java.io.IOException;
+import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
+import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
 import org.mockito.stubbing.Answer;
-
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
+import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -51,20 +71,7 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.number.OrderingComparison.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
-
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
 import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
 
 public class XaLogicalLogTest
 {
@@ -180,10 +187,10 @@ public class XaLogicalLogTest
         EphemeralFileSystemAbstraction fs = ephemeralFs.get();
         File dir = new File( "db" );
         fs.mkdir( dir );
-        fs.create( new File(dir, "log.v100") ).close();
-        fs.create( new File(dir, "log.v101") ).close();
+        fs.create( new File( dir, "log.v100" ) ).close();
+        fs.create( new File( dir, "log.v101" ) ).close();
 
-        StoreChannel active = fs.create( new File(dir, "log.1" ) );
+        StoreChannel active = fs.create( new File( dir, "log.1" ) );
         ByteBuffer buff = ByteBuffer.allocate( 128 );
         LogIoUtils.writeLogHeader( buff, lowAndIncorrectLogVersion, 0 );
         active.write( buff );
@@ -191,7 +198,7 @@ public class XaLogicalLogTest
         active.close();
 
         // When
-        XaLogicalLog log = new XaLogicalLog( new File(dir, "log" ),
+        XaLogicalLog log = new XaLogicalLog( new File( dir, "log" ),
                 mock( XaResourceManager.class ),
                 new FixedSizeXaCommandFactory(),
                 new VersionRespectingXaTransactionFactory(),
@@ -208,7 +215,165 @@ public class XaLogicalLogTest
 
         // Then
         assertThat( fs.fileExists( new File( dir, "log.v102" ) ), equalTo( true ) );
+    }
 
+    @Test
+    public void shouldNotPrepareAfterKernelPanicHasHappened() throws Exception
+    {
+        RandomAccessFile forCheckingSize = null;
+        try
+        {
+            File directory = TargetDirectory.forTest( getClass() )
+                    .cleanDirectory( "shouldNotPrepareAfterKernelPanicHasHappened" );
+            Logging mockLogging = mock( Logging.class );
+            when( mockLogging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+            KernelHealth health = new KernelHealth( mock( KernelPanicEventGenerator.class ), mockLogging );
+            // GIVEN
+            long maxSize = 1000;
+            File logFile = new File( directory, "log" );
+            forCheckingSize = new RandomAccessFile( logFile, "rw" );
+            XaLogicalLog log = new XaLogicalLog( logFile,
+                    mock( XaResourceManager.class ),
+                    new FixedSizeXaCommandFactory(),
+                    new VersionRespectingXaTransactionFactory(),
+                    new DefaultFileSystemAbstraction(),
+                    new Monitors(),
+                    new DevNullLoggingService(),
+                    NO_PRUNING,
+                    mock( TransactionStateFactory.class ), health, maxSize, ALLOW_ALL );
+            log.open();
+
+            // When
+            int identifier = log.start( new XidImpl( XidImpl.getNewGlobalId( DEFAULT_SEED, 1 ), NeoStoreXaDataSource.BRANCH_ID ), -1, -1, -1 );
+            log.writeStartEntry( identifier );
+            long sizeBeforePanic = forCheckingSize.getChannel().size();
+            health.panic( new MockException() );
+            try
+            {
+                log.prepare( identifier );
+                fail(); // it should not go through ok
+            }
+            catch( XAException e )
+            {
+                assertEquals( MockException.class, e.getCause().getClass() );
+            }
+
+            // Then
+            assertEquals( sizeBeforePanic, forCheckingSize.getChannel().size() );
+        }
+        finally
+        {
+            if ( forCheckingSize != null )
+            {
+                forCheckingSize.close();
+            }
+        }
+    }
+
+    @Test
+    public void shouldNotCommitOnePhaseAfterKernelPanicHasHappened() throws Exception
+    {
+        RandomAccessFile forCheckingSize = null;
+        try
+        {
+            File directory = TargetDirectory.forTest( getClass() ).
+                    cleanDirectory( "shouldNotPrepareAfterKernelPanicHasHappened" );
+            Logging mockLogging = mock( Logging.class );
+            when( mockLogging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+            KernelHealth health = new KernelHealth( mock( KernelPanicEventGenerator.class ), mockLogging );
+            // GIVEN
+            long maxSize = 1000;
+            File logFile = new File( directory, "log" );
+            forCheckingSize = new RandomAccessFile( logFile, "rw" );
+            XaLogicalLog log = new XaLogicalLog( logFile,
+                    mock( XaResourceManager.class ),
+                    new FixedSizeXaCommandFactory(),
+                    new VersionRespectingXaTransactionFactory(),
+                    new DefaultFileSystemAbstraction(),
+                    new Monitors(),
+                    new DevNullLoggingService(),
+                    NO_PRUNING,
+                    mock( TransactionStateFactory.class ), health, maxSize, ALLOW_ALL );
+            log.open();
+
+            // When
+            int identifier = log.start( new XidImpl( XidImpl.getNewGlobalId( DEFAULT_SEED, 1 ), NeoStoreXaDataSource.BRANCH_ID ), -1, -1, -1 );
+            log.writeStartEntry( identifier );
+            long sizeBeforePanic = forCheckingSize.getChannel().size();
+            health.panic( new MockException() );
+            try
+            {
+                log.commitOnePhase( identifier, 2, ForceMode.forced );
+                fail(); // it should not go through ok
+            }
+            catch( XAException e )
+            {
+                assertEquals( MockException.class, e.getCause().getClass() );
+            }
+
+            // Then
+            assertEquals( sizeBeforePanic, forCheckingSize.getChannel().size() );
+        }
+        finally
+        {
+            if ( forCheckingSize != null )
+            {
+                forCheckingSize.close();
+            }
+        }
+    }
+
+    @Test
+    public void shouldNotCommitTwoPhaseAfterKernelPanicHasHappened() throws Exception
+    {
+        RandomAccessFile forCheckingSize = null;
+        try
+        {
+            File directory = TargetDirectory.forTest( getClass() ).
+                    cleanDirectory( "shouldNotPrepareAfterKernelPanicHasHappened" );
+            Logging mockLogging = mock( Logging.class );
+            when( mockLogging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+            KernelHealth health = new KernelHealth( mock( KernelPanicEventGenerator.class ), mockLogging );
+            // GIVEN
+            long maxSize = 1000;
+            File logFile = new File( directory, "log" );
+            forCheckingSize = new RandomAccessFile( logFile, "rw" );
+            XaLogicalLog log = new XaLogicalLog( logFile,
+                    mock( XaResourceManager.class ),
+                    new FixedSizeXaCommandFactory(),
+                    new VersionRespectingXaTransactionFactory(),
+                    new DefaultFileSystemAbstraction(),
+                    new Monitors(),
+                    new DevNullLoggingService(),
+                    NO_PRUNING,
+                    mock( TransactionStateFactory.class ), health, maxSize, ALLOW_ALL );
+            log.open();
+
+            // When
+            int identifier = log.start( new XidImpl( XidImpl.getNewGlobalId( DEFAULT_SEED, 1 ), NeoStoreXaDataSource.BRANCH_ID ), -1, -1, -1);
+            log.writeStartEntry( identifier );
+            long sizeBeforePanic = forCheckingSize.getChannel().size();
+            health.panic( new MockException() );
+            try
+            {
+                log.commitTwoPhase( identifier, 2, ForceMode.forced );
+                fail(); // it should not go through ok
+            }
+            catch( XAException e )
+            {
+                assertEquals( MockException.class, e.getCause().getClass() );
+            }
+
+            // Then
+            assertEquals( sizeBeforePanic, forCheckingSize.getChannel().size() );
+        }
+        finally
+        {
+            if ( forCheckingSize != null )
+            {
+                forCheckingSize.close();
+            }
+        }
     }
 
     private static class FixedSizeXaCommand extends XaCommand
@@ -310,4 +475,7 @@ public class XaLogicalLogTest
 
     public final @Rule EphemeralFileSystemRule ephemeralFs = new EphemeralFileSystemRule();
     public final Xid xid = new XidImpl( "global".getBytes(), "resource".getBytes() );
+
+    private static class MockException extends RuntimeException
+    {}
 }

@@ -9,6 +9,10 @@ o Solves issue with join denied when restarting a failed instance before it time
 o Instances will now not form clusters on startup unless they managed to contact
   every other instance in initial_hosts setting.
 
+2.0.3
+-----
+o Fixes issue where an instance could revert into SLAVE mode while shutting down.
+
 2.0.2
 -----
 o Fixes issue where failed instances would not be able to rejoin the cluster after restart
