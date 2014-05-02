@@ -32,7 +32,9 @@ object labelScanLeafPlanner extends LeafPlanner {
       for (idName <- qg.patternNodes.toSeq;
            labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
            labelName <- labelPredicate.labels) yield
-        QueryPlan(NodeByLabelScan(idName, labelName.either)(Seq(labelPredicate)))
+        NodeByLabelScan.queryPlan(
+          NodeByLabelScan(idName, labelName.either)(Seq(labelPredicate))
+        )
     )
   }
 }

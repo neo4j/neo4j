@@ -31,7 +31,10 @@ case class QueryPlan(plan: LogicalPlan, solved: QueryGraph) {
 object QueryPlan extends (LogicalPlan => QueryPlan) {
   // TODO: Remove this gradually
   def apply(plan: LogicalPlan) = plan match {
+
     case _: AllNodesScan => ???
+    case _: NodeByLabelScan => ???
+
     case _ => QueryPlan(plan, plan.solved)
   }
 }
