@@ -17,14 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SortItem
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.SortDescription
-
-case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription])(solvedSortItems: Seq[SortItem]) extends LogicalPlan {
-  val lhs = Some(left)
-  val rhs = None
-
-  val solved = left.solved.withSortItems(solvedSortItems)
+trait ScopeIntroducingExpression extends Expression {
+  def identifier: Identifier
 }
