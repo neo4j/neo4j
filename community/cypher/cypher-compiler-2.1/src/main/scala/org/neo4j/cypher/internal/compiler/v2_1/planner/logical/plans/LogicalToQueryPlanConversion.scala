@@ -21,6 +21,12 @@ object LogicalToQueryPlanConversion {
     case logicalPlan: UndirectedRelationshipByIdSeek =>
       UndirectedRelationshipByIdSeek.queryPlan(logicalPlan)
 
+    case logicalPlan: NodeIndexUniqueSeek =>
+      NodeIndexUniqueSeek.queryPlan(logicalPlan)
+
+    case logicalPlan: NodeIndexSeek =>
+      NodeIndexSeek.queryPlan(logicalPlan)
+
     // non-leaf plans
 
     case _ =>

@@ -67,7 +67,9 @@ object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
   protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
                              (implicit context: LogicalPlanContext): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
-      QueryPlan( NodeIndexUniqueSeek(idName, labelId, propertyKeyId, valueExpr)(predicates) )
+      NodeIndexUniqueSeek.queryPlan(
+        NodeIndexUniqueSeek(idName, labelId, propertyKeyId, valueExpr)(predicates)
+      )
 
   protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanContext): Iterator[IndexDescriptor] =
     context.planContext.uniqueIndexesGetForLabel(labelId)
@@ -77,7 +79,9 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
   protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
                              (implicit context: LogicalPlanContext): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
-      QueryPlan( NodeIndexSeek(idName, labelId, propertyKeyId, valueExpr)(predicates) )
+      NodeIndexSeek.queryPlan(
+         NodeIndexSeek(idName, labelId, propertyKeyId, valueExpr)(predicates)
+      )
 
   protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanContext): Iterator[IndexDescriptor] =
     context.planContext.indexesGetForLabel(labelId)
