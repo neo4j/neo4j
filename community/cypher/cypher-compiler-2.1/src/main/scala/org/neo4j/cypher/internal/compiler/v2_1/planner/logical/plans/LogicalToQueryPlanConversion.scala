@@ -27,6 +27,9 @@ object LogicalToQueryPlanConversion {
     case logicalPlan: NodeIndexSeek =>
       NodeIndexSeek.queryPlan(logicalPlan)
 
+    case logicalPlan: SingleRow =>
+      SingleRow.queryPlan(logicalPlan)
+
     // non-leaf plans
 
     case _ =>

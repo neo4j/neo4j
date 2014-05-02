@@ -39,6 +39,7 @@ object QueryPlan extends (LogicalPlan => QueryPlan) {
     case _: UndirectedRelationshipByIdSeek => ???
     case _: NodeIndexUniqueSeek => ???
     case _: NodeIndexSeek => ???
+    case _: SingleRow => ???
 
     case _ => QueryPlan(plan, plan.solved)
   }

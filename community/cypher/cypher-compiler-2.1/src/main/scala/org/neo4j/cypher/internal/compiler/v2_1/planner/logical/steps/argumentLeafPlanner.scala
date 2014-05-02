@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, SingleRow}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LeafPlanner, CandidateList, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, LeafPlanner, CandidateList, LogicalPlanContext}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 object argumentLeafPlanner extends LeafPlanner {
@@ -29,6 +29,6 @@ object argumentLeafPlanner extends LeafPlanner {
     if (givenNodeIds.isEmpty)
       CandidateList()
     else
-      CandidateList(Seq(SingleRow(givenNodeIds)).map(QueryPlan))
+      Candidates(SingleRow.queryPlan(SingleRow(givenNodeIds)))
   }
 }
