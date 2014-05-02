@@ -41,7 +41,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     // when
-    val result = projection(startPlan)
+    val result = projection(startPlan).plan
 
     // then
     result should equal(Skip(startPlan, x))
@@ -54,7 +54,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     // when
-    val result = projection(startPlan)
+    val result = projection(startPlan).plan
 
     // then
     result should equal(Limit(startPlan, x))
@@ -68,7 +68,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     // when
-    val result = projection(startPlan)
+    val result = projection(startPlan).plan
 
     // then
     result should equal(Limit(Skip(startPlan, y), x))
@@ -81,7 +81,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     // when
-    val result = projection(startPlan)
+    val result = projection(startPlan).plan
 
     // then
     result should equal(Sort(startPlan, Seq(sortDescription))(Seq(identifierSortItem)))
@@ -97,7 +97,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     // when
-    val result = projection(startPlan)
+    val result = projection(startPlan).plan
 
     // then
     val expectedPlan: LogicalPlan = Sort(
@@ -122,7 +122,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     // when
-    val result = projection(startPlan)
+    val result = projection(startPlan).plan
 
     // then
     val expectedPlan: LogicalPlan = Sort(
@@ -145,7 +145,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     // when
-    val result = projection(startPlan)
+    val result = projection(startPlan).plan
 
     // then
     result should equal(SortedLimit(startPlan, x, Seq[ast.SortItem](identifierSortItem))(x))
@@ -160,7 +160,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     // when
-    val result = projection(startPlan)
+    val result = projection(startPlan).plan
 
     // then
     result should equal(Skip(SortedLimit(startPlan, ast.Add(x, y)(pos), Seq(identifierSortItem))(x), y))
@@ -175,7 +175,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     // when
-    val result = projection(startPlan)
+    val result = projection(startPlan).plan
 
     // then
     result should equal(Projection(startPlan, projections))
@@ -189,7 +189,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     // when
-    val result = projection(startPlan)
+    val result = projection(startPlan).plan
 
     // then
     result should equal(startPlan)

@@ -75,7 +75,7 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
     val context = LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
-    strategy.plan(context)
+    strategy.plan(context).plan
   }
 }
 

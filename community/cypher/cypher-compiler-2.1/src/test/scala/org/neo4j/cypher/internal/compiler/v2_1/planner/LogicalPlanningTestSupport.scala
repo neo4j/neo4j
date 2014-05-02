@@ -77,7 +77,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
     LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
 
-  implicit class RichLogicalPlan(plan: LogicalPlan) {
+  implicit class RichLogicalPlan(plan: QueryPlan) {
     def asTableEntry = plan.coveredIds -> plan
   }
 
@@ -119,4 +119,6 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   implicit def idName(name: String): IdName = IdName(name)
+
+  implicit def logicalToQueryPlan(logicalPlan: LogicalPlan) = QueryPlan(logicalPlan)
 }

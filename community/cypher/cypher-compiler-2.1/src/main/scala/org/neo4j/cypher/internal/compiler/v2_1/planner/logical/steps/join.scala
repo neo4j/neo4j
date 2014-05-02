@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, NodeHashJoin}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable, LogicalPlanContext, CandidateGenerator}
 
 object join extends CandidateGenerator[PlanTable] {
@@ -29,11 +29,11 @@ object join extends CandidateGenerator[PlanTable] {
       planB <- planTable.plans if planA != planB
     } yield {
       (planA.coveredIds & planB.coveredIds).toList match {
-        case id :: Nil => Some(NodeHashJoin(id, planA, planB))
+        case id :: Nil => Some(NodeHashJoin(id, planA.plan, planB.plan))
         case Nil => None
         case _ => None
       }
     }).flatten
-    CandidateList(joinPlans)
+    CandidateList(joinPlans.map(QueryPlan))
   }
 }

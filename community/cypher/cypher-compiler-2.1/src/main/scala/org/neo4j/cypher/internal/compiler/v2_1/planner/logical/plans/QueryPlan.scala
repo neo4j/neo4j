@@ -17,18 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, AllNodesScan}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LeafPlanner, CandidateList, LogicalPlanContext}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-object allNodesLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) =
-    CandidateList(
-      context.queryGraph.patternNodes.toSeq.map {
-        case idName =>
-          QueryPlan( AllNodesScan(idName) )
-      }
-    )
+case class QueryPlan(plan: LogicalPlan, solved: QueryGraph) {
+  def isCoveredBy(otherIds: Set[IdName]) = plan.isCoveredBy(otherIds)
+  def covers(other: QueryPlan): Boolean = plan.covers(other.plan)
+  def coveredIds: Set[IdName] = plan.coveredIds
+}
+
+object QueryPlan extends (LogicalPlan => QueryPlan) {
+  def apply(plan: LogicalPlan) = QueryPlan(plan, plan.solved)
 }

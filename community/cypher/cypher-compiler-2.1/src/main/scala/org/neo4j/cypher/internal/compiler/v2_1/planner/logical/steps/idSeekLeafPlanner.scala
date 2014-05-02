@@ -54,7 +54,7 @@ object idSeekLeafPlanner extends LeafPlanner {
         }
     }
 
-    CandidateList(candidatePlans)
+    CandidateList(candidatePlans.map(QueryPlan))
   }
 
   def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): LogicalPlan = {

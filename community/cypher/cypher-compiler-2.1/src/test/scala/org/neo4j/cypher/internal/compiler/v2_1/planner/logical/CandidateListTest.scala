@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan, IdName}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 
@@ -31,9 +31,9 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   implicit val planContext = newMockedPlanContext
   implicit val context = newMockedLogicalPlanContext(planContext)
 
-  val x = newMockedLogicalPlan("x")
-  val y = newMockedLogicalPlan("y")
-  val xAndY = newMockedLogicalPlan("x", "y")
+  val x = QueryPlan(newMockedLogicalPlan("x"))
+  val y = QueryPlan(newMockedLogicalPlan("y"))
+  val xAndY = QueryPlan(newMockedLogicalPlan("x", "y"))
 
   test("prune with no overlaps returns the same candidates") {
     val candidates = CandidateList(Seq(x, y))
@@ -94,7 +94,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
     assertTopPlan(winner = ab, ab, c)(factory)
   }
 
-  private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(metrics: MetricsFactory) {
+  private def assertTopPlan(winner: QueryPlan, candidates: QueryPlan*)(metrics: MetricsFactory) {
     val costs = metrics.newMetrics(context.statistics, semanticTable).cost
     CandidateList(candidates).bestPlan(costs) should equal(Some(winner))
     CandidateList(candidates.reverse).bestPlan(costs) should equal(Some(winner))

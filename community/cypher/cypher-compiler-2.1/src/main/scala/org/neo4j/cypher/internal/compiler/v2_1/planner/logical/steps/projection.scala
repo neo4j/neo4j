@@ -27,7 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Descending, Ascending, Sor
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.newIdName
 
 object projection extends PlanTransformer {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+  def apply(input: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
+    val plan = input.plan
     val queryGraph = context.queryGraph
 
     val sortSkipAndLimit = (queryGraph.sortItems.toList, queryGraph.skip, queryGraph.limit) match {
@@ -49,7 +50,7 @@ object projection extends PlanTransformer {
         addSkip(s, Sort(plan, sort.map(sortDescription))(sort))
     }
 
-    projectIfNeeded(sortSkipAndLimit, context.queryGraph)
+    QueryPlan(projectIfNeeded(sortSkipAndLimit, context.queryGraph))
   }
 
   private def ensureSortablePlan(sort: List[ast.SortItem], plan: LogicalPlan): LogicalPlan = {
