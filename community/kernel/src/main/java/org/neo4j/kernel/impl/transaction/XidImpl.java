@@ -129,13 +129,13 @@ public class XidImpl implements Xid
     @Override
     public byte[] getGlobalTransactionId()
     {
-        return globalId.clone();
+        return globalId;
     }
 
     @Override
     public byte[] getBranchQualifier()
     {
-        return branchId.clone();
+        return branchId;
     }
 
     @Override
@@ -147,13 +147,13 @@ public class XidImpl implements Xid
     @Override
     public boolean equals( Object o )
     {
-        if ( !(o instanceof Xid) )
+        if ( !(o instanceof XidImpl) )
         {
             return false;
         }
-        
-        return Arrays.equals( globalId, ((Xid) o).getGlobalTransactionId() ) &&
-               Arrays.equals( branchId, ((Xid) o).getBranchQualifier() );
+
+        return Arrays.equals( globalId, ((XidImpl) o).globalId ) &&
+               Arrays.equals( branchId, ((XidImpl) o).branchId );
     }
 
     private volatile int hashCode = 0;
