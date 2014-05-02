@@ -92,6 +92,9 @@ trait LogicalPlanningTestSupport
     context
   }
 
+  def newMockedQueryPlan(ids: String*)(implicit context: LogicalPlanContext) =
+    logicalToQueryPlan(newMockedLogicalPlan(ids: _*))
+
   def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan =
     newMockedLogicalPlanWithPatterns(ids.map(IdName).toSet)
 
@@ -124,4 +127,6 @@ trait LogicalPlanningTestSupport
   implicit def idName(name: String): IdName = IdName(name)
 
   implicit def logicalToQueryPlan(plan: LogicalPlan) = LogicalToQueryPlanConversion(plan)
+
+  implicit def queryPlanToGraph(queryPlan: QueryPlan) = queryPlan.solved
 }

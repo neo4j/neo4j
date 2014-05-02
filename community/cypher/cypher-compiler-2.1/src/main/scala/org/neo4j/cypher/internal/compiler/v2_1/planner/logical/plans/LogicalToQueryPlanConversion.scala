@@ -1,8 +1,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+
 // TODO: Eventually kill uses and move back to tests
 object LogicalToQueryPlanConversion {
-   def apply(plan: LogicalPlan) = plan match {
+   def apply(plan: LogicalPlan): QueryPlan = plan match {
 
     // leave plans
 
@@ -29,8 +31,6 @@ object LogicalToQueryPlanConversion {
 
     case logicalPlan: SingleRow =>
       SingleRow.queryPlan(logicalPlan)
-
-    // non-leaf plans
 
     case _ =>
       QueryPlan(plan)
