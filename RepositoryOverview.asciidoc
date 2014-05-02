@@ -31,8 +31,7 @@ community-build::
   It corresponds to the community version described http://www.neotechnology.com/price-list/[here].
   This component can be found in the `community` directory of the source repository.
 +
-If you are looking to fix a bug or add a feature to the community edition,
-this is the place to be.
+If you are looking to fix a bug or add a feature to the community edition, this is the place to be.
 
 advanced-build::
   This component adds extra functionality which is then included in the enterprise edition.
