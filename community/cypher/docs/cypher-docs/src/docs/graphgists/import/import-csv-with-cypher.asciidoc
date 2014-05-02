@@ -25,6 +25,11 @@ LOAD CSV WITH HEADERS FROM "persons.csv" AS csvLine
 CREATE (p:Person {id: toInt(csvLine.id), name: csvLine.name})
 ----
 
+////
+Nodes created: 5
+Properties set: 10
+////
+
 Now, let's import the movies.
 This time, we're also creating a relationship to the country in which the movie was made.
 If you are storing your data in a SQL database, this is the one-to-many relationship type. 
@@ -37,8 +42,14 @@ Using +MERGE+ avoids creating duplicate country nodes in the case where multiple
 LOAD CSV WITH HEADERS FROM "movies.csv" AS csvLine
 MERGE (country:Country {name: csvLine.country})
 CREATE (movie:Movie {id: toInt(csvLine.id), title: csvLine.title, year:toInt(csvLine.year)})
-CREATE (movie)-[:MADE_IN]->(c)
+CREATE (movie)-[:MADE_IN]->(country)
 ----
+
+////
+Nodes created: 4
+Relationships created: 3
+Properties set: 10
+////
 
 Lastly, we create the relationships between the persons and the movies.
 Since the relationship is a many to many relationship, one actor can participate in many movies, and one movie has many actors in it.
@@ -53,12 +64,12 @@ Creating a unique constraint also creates a unique index (which is faster than a
 
 [source,cypher]
 ----
-CREATE CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+CREATE CONSTRAINT ON (person:Person) ASSERT person.id IS UNIQUE
 ----
 
 [source,cypher]
 ----
-CREATE CONSTRAINT ON (m:Movie) ASSERT m.id IS UNIQUE
+CREATE CONSTRAINT ON (movie:Movie) ASSERT movie.id IS UNIQUE
 ----
 
 Now importing the relationships is a matter of finding the nodes and then creating relationships between them.
@@ -67,9 +78,14 @@ Now importing the relationships is a matter of finding the nodes and then creati
 ----
 USING PERIODIC COMMIT
 LOAD CSV WITH HEADERS FROM "roles.csv" AS csvLine
-MATCH (p:Person { id: toInt(csvLine.personId)}),(m:Movie { id: toInt(csvLine.movieId)})
-CREATE (p)-[:PLAYED { role: csvLine.role }]->(m)
+MATCH (person:Person { id: toInt(csvLine.personId)}),(movie:Movie { id: toInt(csvLine.movieId)})
+CREATE (person)-[:PLAYED { role: csvLine.role }]->(movie)
 ----
+
+////
+Relationships created: 7
+Properties set: 7
+////
 
 In the query above, we used +USING PERIODIC COMMIT+.
 This hint tells Neo4j that the query might build up inordinate amounts of transaction state, and so needs to be periodically committed.
@@ -78,16 +94,20 @@ Finally, as the +id+ property was only necessary to import the relationships, we
 
 [source,cypher]
 ----
-DROP CONSTRAINT ON (p:Person) ASSERT p.id IS UNIQUE
+DROP CONSTRAINT ON (person:Person) ASSERT person.id IS UNIQUE
 ----
 
 [source,cypher]
 ----
-DROP CONSTRAINT ON (m:Movie) ASSERT m.id IS UNIQUE
+DROP CONSTRAINT ON (movie:Movie) ASSERT movie.id IS UNIQUE
 ----
 
 [source,cypher]
 ----
-MATCH (m) WHERE m:Person OR m:Movie REMOVE m.id
+MATCH (n) WHERE n:Person OR n:Movie REMOVE n.id
 ----
+
+////
+Properties set: 8
+////
 
