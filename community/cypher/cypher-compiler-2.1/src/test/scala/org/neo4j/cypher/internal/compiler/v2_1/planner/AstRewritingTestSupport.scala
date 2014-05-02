@@ -22,12 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.commons.CypherTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, DummyPosition, parser}
 import org.neo4j.cypher.internal.compiler.v2_1.parser.ParserFixture
+import org.neo4j.cypher.internal.compiler.v2_1.ast.AstConstructionTestSupport
 
-trait AstRewritingTestSupport extends CypherTestSupport {
-
+trait AstRewritingTestSupport extends CypherTestSupport with AstConstructionTestSupport {
   val parser = ParserFixture.parser
-
-  val pos = DummyPosition(0)
-
-  implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
 }

@@ -26,4 +26,6 @@ trait AstConstructionTestSupport extends CypherTestSupport {
   protected val pos = DummyPosition(0)
 
   implicit def withPos[T](expr: InputPosition => T): T = expr(pos)
+
+  def ident(name: String) = Identifier(name)(pos)
 }

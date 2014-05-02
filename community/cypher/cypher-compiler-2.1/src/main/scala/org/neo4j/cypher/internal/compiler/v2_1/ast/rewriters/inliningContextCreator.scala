@@ -33,10 +33,12 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
         (context, children) => children(context.enterQueryPart(namedPatternPartPathExpressions(parts)))
 
       case NodePattern(Some(identifier), _, _, _) =>
-        (context, children) => children(context.spoilIdentifier(identifier))
+        (context, children) =>
+          if (context.alias(identifier).isEmpty) children(context.spoilIdentifier(identifier)) else children(context)
 
       case RelationshipPattern(Some(identifier), _, _, _, _, _) =>
-        (context, children) => children(context.spoilIdentifier(identifier))
+        (context, children) =>
+          if (context.alias(identifier).isEmpty) children(context.spoilIdentifier(identifier)) else children(context)
     }
   }
 

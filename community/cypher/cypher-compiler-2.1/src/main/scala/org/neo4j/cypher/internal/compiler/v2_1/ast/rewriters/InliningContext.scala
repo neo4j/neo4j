@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_1.bottomUp.BottomUpRewriter
 
 case class InliningContext(projections: Map[Identifier, Expression] = Map.empty, seenIdentifiers: Set[Identifier] = Set.empty) {
 
@@ -37,7 +38,7 @@ case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
   def spoilIdentifier(identifier: Identifier): InliningContext =
     copy(projections = projections - identifier, seenIdentifiers = seenIdentifiers + identifier)
 
-  def identifierRewriter = bottomUp(Rewriter.lift {
+  def identifierRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
     case expr: ScopeIntroducingExpression if seen(expr.identifier) =>
       throw new CantHandleQueryException
 
@@ -45,6 +46,24 @@ case class InliningContext(projections: Map[Identifier, Expression] = Map.empty,
       projections.getOrElse(identifier, identifier)
   })
 
-  private def seen(identifier: Identifier) = seenIdentifiers.contains(identifier)
+  def patternRewriter: BottomUpRewriter = bottomUp(Rewriter.lift {
+    case node @ NodePattern(Some(ident), _, _, _) =>
+      alias(ident) match {
+        case alias @ Some(_) => node.copy(identifier = alias)(node.position)
+        case _               => node
+      }
+    case rel @ RelationshipPattern(Some(ident), _, _, _, _, _) =>
+      alias(ident) match {
+        case alias @ Some(_) => rel.copy(identifier = alias)(rel.position)
+        case _               => rel
+      }
+  })
+
+  def seen(identifier: Identifier) = seenIdentifiers.contains(identifier)
+
+  def alias(identifier: Identifier): Option[Identifier] = projections.get(identifier) match {
+    case Some(other: Identifier) => Some(other)
+    case _                       => None
+  }
 }
 

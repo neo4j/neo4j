@@ -29,8 +29,9 @@ object inlineProjections extends (Statement => Statement) {
     val context = inliningContextCreator(input)
 
     val removePatternPartNames = TypedRewriter[Pattern](bottomUp(namedPatternPartRemover))
-    val inliner = TypedRewriter[ASTNode](context.identifierRewriter)
-    val inlineReturnItems = inlineReturnItemsFactory(inliner.narrowed(_))
+    val inlineIdentifiers = TypedRewriter[ASTNode](context.identifierRewriter)
+    val inlinePatterns = TypedRewriter[Pattern](context.patternRewriter)
+    val inlineReturnItems = inlineReturnItemsFactory(inlineIdentifiers.narrowed(_))
 
     val inliningRewriter = Rewriter.lift {
       case withClause @ With(false, returnItems @ ListedReturnItems(items), orderBy, None, None, None) =>
@@ -46,30 +47,30 @@ object inlineProjections extends (Statement => Statement) {
 
         withClause.copy(
           returnItems = newReturnItems,
-          orderBy = orderBy.map(inliner.narrowed(_))
+          orderBy = orderBy.map(inlineIdentifiers.narrowed(_))
         )(withClause.position)
 
       case returnClause @ Return(_, returnItems: ListedReturnItems, orderBy, skip, limit) =>
         returnClause.copy(
           returnItems = inlineReturnItems(returnItems),
-          orderBy = orderBy.map(inliner.narrowed(_)),
-          skip = skip.map(inliner.narrowed(_)),
-          limit = limit.map(inliner.narrowed(_))
+          orderBy = orderBy.map(inlineIdentifiers.narrowed(_)),
+          skip = skip.map(inlineIdentifiers.narrowed(_)),
+          limit = limit.map(inlineIdentifiers.narrowed(_))
         )(returnClause.position)
 
       case m @ Match(_, mPattern, mHints, mOptWhere) =>
-        val newOptWhere = mOptWhere.map(inliner.narrowed(_))
-        val newHints = mHints.map(inliner.narrowed(_))
-        // no need to inline in patterns since all expressions have been moved to WHERE prior to
+        val newOptWhere = mOptWhere.map(inlineIdentifiers.narrowed(_))
+        val newHints = mHints.map(inlineIdentifiers.narrowed(_))
+        // no need to inline expressions in patterns since all expressions have been moved to WHERE prior to
         // calling inlineProjections
-        val newPattern = removePatternPartNames(mPattern)
+        val newPattern = inlinePatterns(removePatternPartNames(mPattern))
         m.copy(pattern = newPattern, hints = newHints, where = newOptWhere)(m.position)
 
       case _: UpdateClause  =>
         throw new CantHandleQueryException
 
       case clause: Clause =>
-        inliner.narrowed(clause)
+        inlineIdentifiers.narrowed(clause)
     }
 
     input.rewrite(topDown(inliningRewriter)).asInstanceOf[Statement]
