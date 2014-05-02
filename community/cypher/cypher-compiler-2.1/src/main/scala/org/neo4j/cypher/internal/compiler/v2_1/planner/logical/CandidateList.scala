@@ -50,3 +50,7 @@ case class CandidateList(plans: Seq[QueryPlan] = Seq.empty) {
 
   def logicalPlans = plans.map(_.plan)
 }
+
+object Candidates {
+  def apply(plans: QueryPlan*): CandidateList = CandidateList(plans)
+}

@@ -24,5 +24,16 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class NodeByIdSeek(idName: IdName, nodeIds: Seq[Expression])
                        (val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
-  val solved = QueryGraph.empty.addPatternNodes(idName).addPredicates(solvedPredicates)
+  val solved = NodeByIdSeek.queryPlan(this).solved
+}
+
+object NodeByIdSeek {
+  def queryPlan(plan: NodeByIdSeek) =
+    QueryPlan(
+      plan,
+      QueryGraph
+        .empty
+        .addPatternNodes(plan.idName)
+        .addPredicates(plan.solvedPredicates)
+    )
 }

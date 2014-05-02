@@ -9,6 +9,9 @@ object LogicalToQueryPlanConversion {
     case logicalPlan: NodeByLabelScan =>
       NodeByLabelScan.queryPlan(logicalPlan)
 
+    case logicalPlan: NodeByIdSeek =>
+      NodeByIdSeek.queryPlan(logicalPlan)
+
     case _ =>
       QueryPlan(plan)
   }

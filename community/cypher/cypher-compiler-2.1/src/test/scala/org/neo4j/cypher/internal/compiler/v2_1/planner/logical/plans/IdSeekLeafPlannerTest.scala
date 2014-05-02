@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, CandidateList}
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
@@ -59,10 +60,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(qg).logicalPlans
+    val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("42")_))()))
+    resultPlans should equal(Candidates(
+      NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("42")_))(Seq(expr))
+    ))
   }
 
   test("simple node by id seek with a collection of node ids") {
@@ -93,12 +96,14 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(qg).logicalPlans
+    val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(NodeByIdSeek(IdName("n"), Seq(
-      SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
-    ))()))
+    resultPlans should equal(Candidates(
+      NodeByIdSeek(IdName("n"), Seq(
+        SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
+      ))(Seq(expr))
+    ))
   }
 
   test("simple directed relationship by id seek with a rel id expression") {

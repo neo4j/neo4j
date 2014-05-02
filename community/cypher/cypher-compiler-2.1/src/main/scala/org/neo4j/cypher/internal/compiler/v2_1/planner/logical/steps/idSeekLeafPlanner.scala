@@ -48,13 +48,15 @@ object idSeekLeafPlanner extends LeafPlanner {
       case (predicate, Identifier(idName), idValues) =>
         context.queryGraph.patternRelationships.find(_.name.name == idName) match {
           case Some(relationship) =>
-            createRelationshipByIdSeek(relationship, idValues, predicate)
+            QueryPlan(createRelationshipByIdSeek(relationship, idValues, predicate))
           case None =>
-            NodeByIdSeek(IdName(idName), idValues)(Seq(predicate))
+            NodeByIdSeek.queryPlan(
+              NodeByIdSeek(IdName(idName), idValues)(Seq(predicate))
+            )
         }
     }
 
-    CandidateList(candidatePlans.map(QueryPlan))
+    CandidateList(candidatePlans)
   }
 
   def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): LogicalPlan = {

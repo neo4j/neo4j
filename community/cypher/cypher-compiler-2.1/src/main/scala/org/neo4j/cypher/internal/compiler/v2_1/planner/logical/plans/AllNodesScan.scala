@@ -27,6 +27,12 @@ case class AllNodesScan(idName: IdName) extends LogicalLeafPlan {
 }
 
 object AllNodesScan {
-  def queryPlan(plan: AllNodesScan) = QueryPlan( plan, QueryGraph.empty.addPatternNodes(plan.idName) )
+  def queryPlan(plan: AllNodesScan) =
+    QueryPlan(
+      plan,
+      QueryGraph
+        .empty
+        .addPatternNodes(plan.idName)
+    )
 }
 

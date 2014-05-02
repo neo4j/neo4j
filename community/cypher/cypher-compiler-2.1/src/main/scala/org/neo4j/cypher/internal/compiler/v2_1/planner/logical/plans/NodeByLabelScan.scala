@@ -30,8 +30,12 @@ case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId])
 }
 
 object NodeByLabelScan {
-  def queryPlan(plan: NodeByLabelScan) = QueryPlan(
-    plan,
-    QueryGraph.empty.addPatternNodes(plan.idName).addPredicates(plan.solvedPredicates)
-  )
+  def queryPlan(plan: NodeByLabelScan) =
+    QueryPlan(
+      plan,
+      QueryGraph
+        .empty
+        .addPatternNodes(plan.idName)
+        .addPredicates(plan.solvedPredicates)
+    )
 }
