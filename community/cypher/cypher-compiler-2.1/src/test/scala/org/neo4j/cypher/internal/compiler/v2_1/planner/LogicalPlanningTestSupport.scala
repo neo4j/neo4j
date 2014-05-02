@@ -93,7 +93,18 @@ trait LogicalPlanningTestSupport
   }
 
   def newMockedQueryPlan(ids: String*)(implicit context: LogicalPlanContext) =
-    logicalToQueryPlan(newMockedLogicalPlan(ids: _*))
+    QueryPlan(
+      newMockedLogicalPlan(ids: _*),
+      QueryGraph
+        .empty
+        .addPatternNodes(ids.map(IdName).toSeq: _*)
+        .withProjections(ids.map( (id) => id -> ident(id) ).toMap)
+    )
+
+  def newMockedQueryPlan(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
+    val mockedPlan = newMockedLogicalPlan( qg.coveredIds.map(_.name).toSeq: _* )
+    QueryPlan( mockedPlan, qg )
+  }
 
   def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan =
     newMockedLogicalPlanWithPatterns(ids.map(IdName).toSet)
@@ -126,7 +137,6 @@ trait LogicalPlanningTestSupport
 
   implicit def idName(name: String): IdName = IdName(name)
 
-  implicit def logicalToQueryPlan(plan: LogicalPlan) = LogicalToQueryPlanConversion(plan)
-
-  implicit def queryPlanToGraph(queryPlan: QueryPlan) = queryPlan.solved
+  // TODO: This should go away together with LogicalPlan.solved
+  implicit def logicalToQueryPlan(plan: LogicalPlan): QueryPlan = QueryPlan(plan)
 }

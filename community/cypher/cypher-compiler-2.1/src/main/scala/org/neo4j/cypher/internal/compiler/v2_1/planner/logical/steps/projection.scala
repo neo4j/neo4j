@@ -50,7 +50,7 @@ object projection extends PlanTransformer {
         addSkip(s, Sort(plan, sort.map(sortDescription))(sort))
     }
 
-    LogicalToQueryPlanConversion(projectIfNeeded(sortSkipAndLimit, context.queryGraph))
+    QueryPlan(projectIfNeeded(sortSkipAndLimit, context.queryGraph))
   }
 
   private def ensureSortablePlan(sort: List[ast.SortItem], plan: LogicalPlan): LogicalPlan = {

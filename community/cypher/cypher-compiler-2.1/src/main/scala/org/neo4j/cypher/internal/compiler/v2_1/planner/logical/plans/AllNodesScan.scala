@@ -22,17 +22,17 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class AllNodesScan(idName: IdName) extends LogicalLeafPlan {
-  def solved = AllNodesScan.queryPlan(this).solved
+  def solved = AllNodesScanPlan(idName).solved
   override def coveredIds = Set(idName)
 }
 
-object AllNodesScan {
-  def queryPlan(plan: AllNodesScan) =
+object AllNodesScanPlan {
+  def apply(idName: IdName) =
     QueryPlan(
-      plan,
+      AllNodesScan(idName),
       QueryGraph
         .empty
-        .addPatternNodes(plan.idName)
+        .addPatternNodes(idName)
     )
 }
 

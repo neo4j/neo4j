@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.{CypherTestSupport, CypherFunSuite}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.allNodesLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, CandidateList}
 
 class AllNodesLeafPlannerTest
   extends CypherFunSuite
@@ -43,6 +43,6 @@ class AllNodesLeafPlannerTest
     val resultPlans = allNodesLeafPlanner(context.queryGraph)
 
     // then
-    resultPlans should equal(CandidateList(Seq(AllNodesScan(IdName("n")))))
+    resultPlans should equal(Candidates(AllNodesScanPlan(IdName("n"))))
   }
 }

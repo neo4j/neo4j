@@ -25,17 +25,17 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class NodeIndexSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
                         (val solvedPredicates: Seq[Expression]= Seq.empty) extends LogicalLeafPlan {
-  def solved = NodeIndexSeek.queryPlan(this).solved
+  def solved = NodeIndexSeekPlan(idName, label, propertyKeyId, valueExpr, solvedPredicates).solved
   override def coveredIds = Set(idName)
 }
 
-object NodeIndexSeek {
-  def queryPlan(plan: NodeIndexSeek) =
+object NodeIndexSeekPlan {
+  def apply(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression, solvedPredicates: Seq[Expression] = Seq.empty) =
     QueryPlan(
-      plan,
+      NodeIndexSeek(idName, label, propertyKeyId, valueExpr)(solvedPredicates),
       QueryGraph
         .empty
-        .addPatternNodes(plan.idName)
-        .addPredicates(plan.solvedPredicates)
+        .addPatternNodes(idName)
+        .addPredicates(solvedPredicates)
     )
 }

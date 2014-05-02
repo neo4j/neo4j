@@ -43,7 +43,7 @@ class ExpandTest
       planContext = newMockedPlanContext,
       queryGraph = createQueryGraph()
     )
-    val plan = PlanTable(Map(Set(aNode) -> AllNodesScan(aNode)))
+    val plan = PlanTable(Map(Set(aNode) -> AllNodesScanPlan(aNode)))
 
     expand(plan) should equal(CandidateList())
   }

@@ -23,22 +23,28 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class DirectedRelationshipByIdSeek(idName: IdName,
-                                        relId: Seq[Expression],
+                                        relIds: Seq[Expression],
                                         startNode: IdName,
                                         endNode: IdName)
                                        (val pattern: PatternRelationship,
                                         val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
 
-  def solved = DirectedRelationshipByIdSeek.queryPlan(this).solved
+  def solved = DirectedRelationshipByIdSeekPlan(idName, relIds, startNode, endNode, pattern, solvedPredicates).solved
+
   override def coveredIds = Set(idName, startNode, endNode)
 }
 
-object DirectedRelationshipByIdSeek {
-  def queryPlan(plan: DirectedRelationshipByIdSeek) =
+object DirectedRelationshipByIdSeekPlan {
+  def apply(idName: IdName,
+            relIds: Seq[Expression],
+            startNode: IdName,
+            endNode: IdName,
+            pattern: PatternRelationship,
+            solvedPredicates: Seq[Expression] = Seq.empty) =
     QueryPlan(
-      plan,
+      DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode)(pattern, solvedPredicates),
       QueryGraph
         .empty
-        .addPatternRel(plan.pattern)
+        .addPatternRel(pattern)
     )
 }

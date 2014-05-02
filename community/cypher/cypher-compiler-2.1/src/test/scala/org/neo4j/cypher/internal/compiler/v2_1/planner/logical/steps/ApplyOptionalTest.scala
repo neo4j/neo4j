@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, CandidateList, PlanTable}
 
 class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should introduce apply for unsolved optional match when all arguments are covered") {
@@ -50,11 +50,11 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
-    val inputPlan = SingleRow(Set("a"))
+    val inputPlan = SingleRowPlan(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = Expand(SingleRow(Set("a")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
 
-    applyOptional(planTable).bestPlan(context.cost).map(_.plan) should equal(Some(Apply(inputPlan, Optional(Set("b", "r"), innerPlan))))
+    applyOptional(planTable).bestPlan(context.cost).map(_.plan) should equal(Some(Apply(inputPlan.plan, Optional(Set("b", "r"), innerPlan))))
   }
 
   test("should not use apply when optional match is the at the start of the query") {
@@ -70,6 +70,6 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
       queryGraph = qg
     )
 
-    applyOptional(PlanTable()).map(_.plan) should equal(CandidateList())
+    applyOptional(PlanTable()) should equal(Candidates())
   }
 }

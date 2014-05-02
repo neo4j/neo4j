@@ -79,7 +79,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val resultPlans = indexSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(NodeIndexSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)(Seq(equals, hasLabels))))
+    resultPlans should equal(Candidates(NodeIndexSeekPlan(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
   }
 
   test("index seek when there is an index on the property") {
@@ -126,6 +126,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val resultPlans = uniqueIndexSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(NodeIndexUniqueSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)(Seq(equals, hasLabels))))
+    resultPlans should equal(Candidates(NodeIndexUniqueSeekPlan(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
   }
 }

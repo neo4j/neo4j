@@ -39,10 +39,10 @@ case class Selection(predicates: Seq[Expression],
 
 object SelectionPlan {
   def apply(predicates: Seq[Expression], left: QueryPlan) =
-    QueryPlan( Selection( predicates, left.plan, hideSelections = false), left.solved )
+    QueryPlan( Selection( predicates, left.plan, hideSelections = false), left.solved.addPredicates(predicates) )
 }
 
 object HiddenSelectionPlan {
   def apply(predicates: Seq[Expression], left: QueryPlan) =
-    QueryPlan( Selection( predicates, left.plan, hideSelections = true),  left.solved.addPredicates(predicates) )
+    QueryPlan( Selection( predicates, left.plan, hideSelections = true), left.solved )
 }

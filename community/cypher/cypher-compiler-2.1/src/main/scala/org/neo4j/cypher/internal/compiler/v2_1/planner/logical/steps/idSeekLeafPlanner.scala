@@ -50,9 +50,7 @@ object idSeekLeafPlanner extends LeafPlanner {
           case Some(relationship) =>
             createRelationshipByIdSeek(relationship, idValues, predicate)
           case None =>
-            NodeByIdSeek.queryPlan(
-              NodeByIdSeek(IdName(idName), idValues)(Seq(predicate))
-            )
+            NodeByIdSeekPlan(IdName(idName), idValues, Seq(predicate))
         }
     }
 
@@ -64,17 +62,13 @@ object idSeekLeafPlanner extends LeafPlanner {
     val name = relationship.name
     val plan = relationship.dir match {
       case Direction.BOTH =>
-        UndirectedRelationshipByIdSeek.queryPlan(
-          UndirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
-        )
+        UndirectedRelationshipByIdSeekPlan(name, idValues, left, right, relationship, Seq(predicate))
+
       case Direction.INCOMING =>
-        DirectedRelationshipByIdSeek.queryPlan(
-          DirectedRelationshipByIdSeek(name, idValues, right, left)(relationship, Seq(predicate))
-        )
+        DirectedRelationshipByIdSeekPlan(name, idValues, right, left, relationship, Seq(predicate))
+
       case Direction.OUTGOING =>
-        DirectedRelationshipByIdSeek.queryPlan(
-          DirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
-        )
+        DirectedRelationshipByIdSeekPlan(name, idValues, left, right, relationship, Seq(predicate))
     }
     filterIfNeeded(plan, name.name, relationship.types)
   }
@@ -96,6 +90,6 @@ object idSeekLeafPlanner extends LeafPlanner {
         case _ => Ors(predicates)(predicates.head.position)
       }
 
-      LogicalToQueryPlanConversion( Selection(Seq(predicate), plan.plan, hideSelections = true) )
+      HiddenSelectionPlan(Seq(predicate), plan)
     }
 }

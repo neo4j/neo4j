@@ -20,27 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.allNodesLeafPlanner
 
-case class QueryPlan(plan: LogicalPlan, solved: QueryGraph) {
+case class QueryPlan(plan: LogicalPlan, solved: QueryGraph = QueryGraph.empty) {
   def isCoveredBy(otherIds: Set[IdName]) = plan.isCoveredBy(otherIds)
   def covers(other: QueryPlan): Boolean = plan.covers(other.plan)
   def coveredIds: Set[IdName] = plan.coveredIds
 }
 
 object QueryPlan extends (LogicalPlan => QueryPlan) {
-  // TODO: Remove this gradually
+  // TODO: This should go away together with LogicalPlan.solved
   def apply(plan: LogicalPlan) = plan match {
-
-    case _: AllNodesScan => ???
-    case _: NodeByLabelScan => ???
-    case _: NodeByIdSeek => ???
-    case _: DirectedRelationshipByIdSeek => ???
-    case _: UndirectedRelationshipByIdSeek => ???
-    case _: NodeIndexUniqueSeek => ???
-    case _: NodeIndexSeek => ???
-    case _: SingleRow => ???
-
     case _ => QueryPlan(plan, plan.solved)
   }
 }

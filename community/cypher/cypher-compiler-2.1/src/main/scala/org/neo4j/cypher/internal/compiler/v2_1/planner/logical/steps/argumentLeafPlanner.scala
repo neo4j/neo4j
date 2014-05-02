@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, SingleRow}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SingleRowPlan, QueryPlan, SingleRow}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, LeafPlanner, CandidateList, LogicalPlanContext}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
@@ -27,8 +27,8 @@ object argumentLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit ignored: LogicalPlanContext) = {
     val givenNodeIds = qg.argumentIds intersect qg.patternNodes
     if (givenNodeIds.isEmpty)
-      CandidateList()
+      Candidates()
     else
-      Candidates(SingleRow.queryPlan(SingleRow(givenNodeIds)))
+      Candidates(SingleRowPlan(givenNodeIds))
   }
 }

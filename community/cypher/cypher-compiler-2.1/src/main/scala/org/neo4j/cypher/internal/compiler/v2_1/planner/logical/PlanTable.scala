@@ -51,7 +51,7 @@ case class PlanTable(m: Map[Set[IdName], QueryPlan] = Map.empty) {
     if (allPlans.size > 1)
       throw new InternalException(s"Expected the final plan table to have 0 or 1 plan (got ${allPlans.size})")
 
-    allPlans.headOption.getOrElse(SingleRow.queryPlan(SingleRow()))
+    allPlans.headOption.getOrElse(SingleRowPlan())
   }
 }
 
