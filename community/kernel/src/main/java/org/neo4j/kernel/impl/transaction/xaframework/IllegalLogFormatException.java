@@ -23,10 +23,21 @@ import java.io.IOException;
 
 public class IllegalLogFormatException extends IOException
 {
+    private final long expected;
+    private final long was;
+
     public IllegalLogFormatException( long expected, long was )
     {
         super( "Invalid log format version found, expected " + expected + " but was " + was +
                 ". To be able to upgrade from an older log format version there must have " +
                 "been a clean shutdown of the database" );
+        this.expected = expected;
+        this.was = was;
+    }
+
+    /** Check if the log we read was from a newer version of Neo4j. */
+    public boolean wasNewerLogVersion()
+    {
+        return expected < was;
     }
 }
