@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.allNodesLeafPlanner
 
 case class QueryPlan(plan: LogicalPlan, solved: QueryGraph) {
   def isCoveredBy(otherIds: Set[IdName]) = plan.isCoveredBy(otherIds)
@@ -28,5 +29,9 @@ case class QueryPlan(plan: LogicalPlan, solved: QueryGraph) {
 }
 
 object QueryPlan extends (LogicalPlan => QueryPlan) {
-  def apply(plan: LogicalPlan) = QueryPlan(plan, plan.solved)
+  // TODO: Remove this gradually
+  def apply(plan: LogicalPlan) = plan match {
+    case _: AllNodesScan => ???
+    case _ => QueryPlan(plan, plan.solved)
+  }
 }

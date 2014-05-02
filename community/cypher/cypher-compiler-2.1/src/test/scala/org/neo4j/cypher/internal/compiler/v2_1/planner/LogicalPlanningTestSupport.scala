@@ -33,7 +33,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 
-trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport {
+trait LogicalPlanningTestSupport
+  extends CypherTestSupport
+  with AstConstructionTestSupport {
+
   self: CypherTestSuite with MockitoSugar =>
 
   val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
@@ -120,5 +123,5 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
   implicit def idName(name: String): IdName = IdName(name)
 
-  implicit def logicalToQueryPlan(logicalPlan: LogicalPlan) = QueryPlan(logicalPlan)
+  implicit def logicalToQueryPlan(plan: LogicalPlan) = LogicalToQueryPlanConversion(plan)
 }

@@ -19,14 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.commons.{CypherTestSupport, CypherFunSuite}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
 
-class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
+class AllNodesLeafPlannerTest
+  extends CypherFunSuite
+  with LogicalPlanningTestSupport {
 
   test("simple all nodes scan") {
     // given
