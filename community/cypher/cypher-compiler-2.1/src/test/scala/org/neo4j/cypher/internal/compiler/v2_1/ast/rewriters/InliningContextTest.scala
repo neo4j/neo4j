@@ -21,14 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
+import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
 
 class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val identN: Identifier = Identifier("n")_
-  val identM: Identifier = Identifier("m")_
-  val identA: Identifier = Identifier("a")_
+  val identN = ident("n")
+  val identM = ident("m")
+  val identA = ident("a")
   val astNull: Null = Null()_
 
   val mapN = Map(identN -> astNull)
@@ -83,5 +84,21 @@ class InliningContextTest extends CypherFunSuite with AstConstructionTestSupport
     }
 
     evaluating { ctx.identifierRewriter(expr) } should produce[CantHandleQueryException]
+  }
+
+  test("should inline aliases into node patterns") {
+    val ctx = InliningContext(mapAtoN)
+
+    val expr: NodePattern = NodePattern(Some(identA), Seq(), None, naked = false)_
+
+    expr.typedRewrite[NodePattern](ctx.patternRewriter).identifier should equal(Some(identN))
+  }
+
+  test("should inline aliases into relationship patterns") {
+    val ctx = InliningContext(mapAtoN)
+
+    val expr: RelationshipPattern = RelationshipPattern(Some(identA), optional = false, Seq(), None, None, Direction.OUTGOING)_
+
+    expr.typedRewrite[RelationshipPattern](ctx.patternRewriter).identifier should equal(Some(identN))
   }
 }

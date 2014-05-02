@@ -63,6 +63,18 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     result should equal(ast("WITH * WITH * RETURN 1+1 as `m`"))
   }
 
+  test("should inline node patterns: MATCH (a) WITH a as b MATCH (b) RETURN b => MATCH (a) WITH * MATCH (a) RETURN a as `b`") {
+    val result = projectionInlinedAst("MATCH (a) WITH a as b MATCH (b) RETURN b")
+
+    result should equal(ast("MATCH (a) WITH * MATCH (a) RETURN a as `b`"))
+  }
+
+  test("should inline relationship patterns: MATCH ()-[a]->() WITH a as b MATCH ()-[b]->() RETURN b => MATCH ()-[a]->() WITH * MATCH ()-[a]->() RETURN a as `b`") {
+    val result = projectionInlinedAst("MATCH ()-[a]->() WITH a as b MATCH ()-[b]->() RETURN b")
+
+    result should equal(ast("MATCH ()-[a]->() WITH * MATCH ()-[a]->() RETURN a as `b`"))
+  }
+
   // FIXME: 2014-4-30 Davide: No inlining due to missing scope information for the identifiers
   test("should not inline identifiers which are reused multiple times: WITH 1 as n WITH 2 AS n RETURN n") {
     val result = projectionInlinedAst("WITH 1 as n WITH 2 AS n RETURN n")
