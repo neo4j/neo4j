@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.functions
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
@@ -33,13 +34,15 @@ object idSeekLeafPlanner extends LeafPlanner {
     val candidatePlans = predicates.collect {
       // MATCH (a)-[r]->b WHERE id(r) = value
       // MATCH a WHERE id(a) = value
-      case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr)) =>
+      case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr))
+      if func.function == Some(functions.Id) =>
         (predicate, idExpr, Seq(idValueExpr))
 
       // MATCH (a)-[r]->b WHERE id(r) IN value
       // MATCH a WHERE id(a) IN value
-      case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
-        if idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
+      case predicate@In(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
+        if func.function == Some(functions.Id) &&
+           idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
         (predicate, idExpr, idValueExprs)
     }.collect {
       case (predicate, Identifier(idName), idValues) =>
