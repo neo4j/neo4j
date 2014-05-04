@@ -25,25 +25,19 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 object orExpressionReordering extends Rewriter {
   override def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
 
-  private val instance: Rewriter= Rewriter.lift {
-    case ors: Ors => {
-      val (patterns, expressions) = ors.treeFold((Vector.empty[Expression], Vector.empty[Expression])) {
-        case pattern@Not(_: PatternExpression) => {
-          case ((patterns, expressions), _) => (patterns :+ pattern, expressions)
-        }
-        case pattern: PatternExpression => {
-          case ((patterns, expressions), _) =>
+  private val instance: Rewriter = Rewriter.lift {
+    case ors@Ors(exprs) => {
+      val (patterns, expressions) = exprs.foldLeft((List.empty[Expression], List.empty[Expression])) {
+        (acc, e) => (acc, e) match {
+          case ((patterns, expressions), pattern@Not(_: PatternExpression)) =>
             (patterns :+ pattern, expressions)
-        }
-        case or: Ors =>
-          (acc, children) => children(acc)
-        case expr: Expression => {
-          case ((patterns, expressions), _) =>
+          case ((patterns, expressions), pattern: PatternExpression) =>
+            (patterns :+ pattern, expressions)
+          case ((patterns, expressions), expr) =>
             (patterns, expressions :+ expr)
         }
       }
-
-      Ors((patterns ++ expressions).toList)(ors.position)
+      Ors(patterns ++ expressions)(ors.position)
     }
   }
 }
