@@ -42,7 +42,7 @@ As an Open Source Project, the Neo4j User community extends its warmest thanks t
 |Luanne Misquitta |https://github.com/luanne[luanne]
 |Jim Radford |https://github.com/radford[radford]
 |Axel Morgner |https://github.com/amorgner[amorgner]
-|Taylor Buley |https://github.com/editor[editor]
+|Taylor Buley |https://github.com/buley[buley]
 |Alex Smirnov |https://github.com/alexsmirnov[alexsmirnov]
 |Johannes Mockenhaupt |https://github.com/jotomo[jotomo]
 |Pablo Pareja Tobes |https://github.com/pablopareja[pablopareja]

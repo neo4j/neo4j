@@ -30,6 +30,12 @@ body.console-is-expanded #header {
   padding: 6px 0 5px 10px;
 }
 
+#logo img {
+  width: 130px;
+  height: 60px;
+  margin-right: 10px;
+}
+
 #sidebar-wrapper {
   position: fixed;
   top: 100px;
@@ -39,8 +45,7 @@ body.console-is-expanded #header {
   overflow: auto;
 }
 
-body.toc-is-hidden #sidebar-wrapper,
-body.console-is-expanded #sidebar-wrapper {
+body.toc-is-hidden #sidebar-wrapper,body.console-is-expanded #sidebar-wrapper {
   display: none;
 }
 
@@ -76,8 +81,7 @@ body.console-is-expanded #sidebar-wrapper {
   overflow-x: hidden;
 }
 
-body.toc-is-hidden #content,
-body.console-is-expanded #content {
+body.toc-is-hidden #content,body.console-is-expanded #content {
   left: 0;
 }
 

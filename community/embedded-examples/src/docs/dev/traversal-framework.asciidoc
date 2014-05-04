@@ -3,7 +3,7 @@ The Traversal Framework
 =======================
 
 
-The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/package-summary.html[Neo4j Traversal API] is a callback based, lazily executed way of specifying desired movements through a graph in Java.
+The link:javadocs/org/neo4j/graphdb/traversal/package-summary.html[Neo4j Traversal API] is a callback based, lazily executed way of specifying desired movements through a graph in Java.
 Some traversal examples are collected under <<tutorials-java-embedded-traversal>>. 
 
 You can also use <<cypher-query-lang, The Cypher Query Language>> as a powerful declarative way to query the graph.
@@ -75,7 +75,7 @@ There are also a set of interfaces for advanced use, when explicit control over 
 
 === TraversalDescription ===
 
-The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[+TraversalDescription+] is the main interface used for defining and initializing traversals.
+The link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html[+TraversalDescription+] is the main interface used for defining and initializing traversals.
 It is not meant to be implemented by users of the traversal framework, but rather to be provided by the implementation of the traversal framework as a way for the user to describe traversals.
 +TraversalDescription+ instances are immutable and its methods returns a new +TraversalDescription+ that is modified compared to the object the method was invoked on with the arguments of the method.
 
@@ -84,12 +84,12 @@ It is not meant to be implemented by users of the traversal framework, but rathe
 Adds a relationship type to the list of relationship types to traverse.
 By default that list is empty and it means that it will traverse _all relationships_, irregardless of type.
 If one or more relationships are added to this list _only the added_ types will be traversed.
-There are two methods, one http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#relationships[including direction] and another one http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#relationships[excluding direction], where the latter traverses relationships in http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Direction.html#BOTH[both directions].
+There are two methods, one link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html#relationships[including direction] and another one link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html#relationships[excluding direction], where the latter traverses relationships in link:javadocs/org/neo4j/graphdb/Direction.html#BOTH[both directions].
 
 
 === Evaluator ===
 
-http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Evaluator.html[+Evaluator+]s are used for deciding, at each position (represented as a +Path+): should the traversal continue, and/or should the node be included in the result.
+link:javadocs/org/neo4j/graphdb/traversal/Evaluator.html[+Evaluator+]s are used for deciding, at each position (represented as a +Path+): should the traversal continue, and/or should the node be included in the result.
 Given a +Path+, it asks for one of four actions for that branch of the traversal:
 
 * +Evaluation.INCLUDE_AND_CONTINUE+: Include this node in the result and continue the traversal
@@ -101,14 +101,14 @@ More than one evaluator can be added. Note that evaluators will be called for al
 
 === Traverser ===
 
-The http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html[+Traverser+] object is the result of invoking http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#traverse(org.neo4j.graphdb.Node)[+traverse()+] of a TraversalDescription object.
+The link:javadocs/org/neo4j/graphdb/traversal/Traverser.html[+Traverser+] object is the result of invoking link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html#traverse(org.neo4j.graphdb.Node)[+traverse()+] of a TraversalDescription object.
 It represents a traversal positioned in the graph, and a specification of the format of the result.
 The actual traversal is performed lazily each time the +next()+-method of the iterator of the +Traverser+ is invoked.
 
 === Uniqueness ===
 
-Sets the rules for how positions can be revisited during a traversal as stated in http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Uniqueness.html[+Uniqueness+].
-Default if not set is http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Uniqueness.html#NODE_GLOBAL[+NODE_GLOBAL+].
+Sets the rules for how positions can be revisited during a traversal as stated in link:javadocs/org/neo4j/graphdb/traversal/Uniqueness.html[+Uniqueness+].
+Default if not set is link:javadocs/org/neo4j/graphdb/traversal/Uniqueness.html#NODE_GLOBAL[+NODE_GLOBAL+].
 
 A Uniqueness can be supplied to the TraversalDescription to dictate under what circumstances a traversal may revisit the same position in the graph. The various uniqueness levels that can be used in Neo4j are:
 
@@ -124,11 +124,11 @@ A Uniqueness can be supplied to the TraversalDescription to dictate under what c
 ==== Depth First / Breadth First ====
 
 These are convenience methods for setting preorder http://en.wikipedia.org/wiki/Depth-first_search[depth-first]/ http://en.wikipedia.org/wiki/Breadth-first_search[breadth-first] +BranchSelector+|+ordering+ policies.
-The same result can be achieved by calling the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#order[+order+] method with ordering policies from http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/BranchOrderingPolicies.html[+BranchOrderingPolicies+], or to write your own +BranchSelector+/+BranchOrderingPolicy+ and pass in.
+The same result can be achieved by calling the link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html#order[+order+] method with ordering policies from link:javadocs/org/neo4j/graphdb/traversal/BranchOrderingPolicies.html[+BranchOrderingPolicies+], or to write your own +BranchSelector+/+BranchOrderingPolicy+ and pass in.
 
 === Order -- How to move through branches? ===
 
-A more generic version of depthFirst/breadthFirst methods in that it allows an arbitrary http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/BranchOrderingPolicy.html[+BranchOrderingPolicy+] to be injected into the description.
+A more generic version of depthFirst/breadthFirst methods in that it allows an arbitrary link:javadocs/org/neo4j/graphdb/traversal/BranchOrderingPolicy.html[+BranchOrderingPolicy+] to be injected into the description.
 
 
 === BranchSelector ===
@@ -152,9 +152,9 @@ The Neo4j Graph Algorithms package contains for example a +BestFirst+ order +Bra
 
 ==== BranchOrderingPolicy ====
 
-A factory for creating ++BranchSelector++s to decide in what order branches are returned (where a branch's position is represented as a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[+Path+] from the start node to the current node).
-Common policies are http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#depthFirst()[+depth-first+] and http://components.neo4j.org/neo4j-kernel/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#breadthFirst()[+breadth-first+] and that's why there are convenience methods for those.
-For example, calling http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html#depthFirst()[+TraversalDescription#depthFirst()+] is equivalent to:
+A factory for creating ++BranchSelector++s to decide in what order branches are returned (where a branch's position is represented as a link:javadocs/org/neo4j/graphdb/Path.html[+Path+] from the start node to the current node).
+Common policies are link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html#depthFirst()[+depth-first+] and link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html#breadthFirst()[+breadth-first+] and that's why there are convenience methods for those.
+For example, calling link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html#depthFirst()[+TraversalDescription#depthFirst()+] is equivalent to:
 
 [source,java]
 ----
@@ -163,11 +163,11 @@ description.order( BranchOrderingPolicies.PREORDER_DEPTH_FIRST );
 
 ==== TraversalBranch ====
 
-An object used by the BranchSelector to get more branches from a certain branch. In essence these are a composite of a Path and a RelationshipExpander that can be used to get new http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalBranch.html[+TraversalBranch+]es from the current one.
+An object used by the BranchSelector to get more branches from a certain branch. In essence these are a composite of a Path and a RelationshipExpander that can be used to get new link:javadocs/org/neo4j/graphdb/traversal/TraversalBranch.html[+TraversalBranch+]es from the current one.
 
 === Path ===
 
-A http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[+Path+] is a general interface that is part of the Neo4j API.
+A link:javadocs/org/neo4j/graphdb/Path.html[+Path+] is a general interface that is part of the Neo4j API.
 In the traversal API of Neo4j the use of Paths are twofold.
 Traversers can return their results in the form of the Paths of the visited positions in the graph that are marked for being returned.
 Path objects are also used in the evaluation of positions in the graph, for determining if the traversal should continue from a certain point or not, and whether a certain position should be included in the result set or not.
@@ -179,8 +179,6 @@ The traversal framework use ++PathExpander++s (replacing +RelationshipExpander+)
 === Expander ===
 
 A more generic version of relationships where a +RelationshipExpander+ is injected, defining all relationships to be traversed for any given node.
-By default (and when using relationships) a http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Traversal.html#emptyExpander[default expander] is used, where any particular order of relationships isn't guaranteed.
-There's another implementation which guarantees that relationships are traversed in http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/OrderedByTypeExpander.html[order of relationship type], where types are iterated in the order they were added.
 
 The +Expander+ interface is an extension of the +RelationshipExpander+ interface that makes it possible to build customized versions of an +Expander+.
 The implementation of +TraversalDescription+ uses this to provide methods for defining which relationship types to traverse, this is the usual way a user of the API would define a +RelationshipExpander+ -- by building it internally in the +TraversalDescription+.

@@ -28,12 +28,10 @@ input {
 
 span.contentsTab {
   padding-left: 20px;
-  background: url("images/toc-icon.png") no-repeat 0 center;
 }
 
 span.searchTab {
   padding-left: 20px;
-  background: url("images/search-icon.png") no-repeat 0 center;
 }
 
 /* Overide jquery treeview's defaults for ul. */
@@ -193,7 +191,8 @@ body,.ui-widget {
 }
 
 pre,code {
-  font: 14px 'Ubuntu Mono', Menlo, Consolas, Inconsolata, monospace;
+  font-family: 'Ubuntu Mono', Menlo, Consolas, Inconsolata, monospace;
+  font-size: 14px;
 }
 
 pre {
@@ -258,7 +257,7 @@ div.admonitionblock td.content b {
   display: block;
 }
 
-#content div.sidebar, #content div.titlepage div.abstract {
+#content div.sidebar,#content div.titlepage div.abstract {
   float: right;
   margin: 0 0 16px 16px;
   padding: 4px;
@@ -272,7 +271,7 @@ hr {
   border-top: 0 none;
 }
 
-dl.variablelist > dd {
+dl.variablelist>dd {
   margin-bottom: 0.75em;
 }
 
@@ -389,7 +388,19 @@ div.query-outer-wrapper {
   left: 0;
 }
 
-a.ulink:after {
+#content h3,#content h4,#content h5,#content h6 {
+  cursor: pointer;
+}
+
+#content h3:hover::after,#content h4:hover::after,#content h5:hover::after,#content h6:hover::after
+  {
+  color: #428BCA;
+  font-family: FontAwesome;
+  font-size: .75em;
+  content: "\00a0\f0c1";
+}
+
+a.ulink[href^="http"]:after {
   display: inline-block;
   font-family: FontAwesome;
   content: "\00a0\f08e";
