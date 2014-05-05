@@ -118,6 +118,10 @@ case class LoadCSV(withHeaders: Boolean, fileUrl: URL, identifier: String) exten
   with ReadOnlyStartItem {
   def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> (if (withHeaders) CTMap else CTCollection(CTAny)))
 }
+case class Unwind(expression: Expression, identifier: String) extends StartItem(identifier, Map.empty)
+  with ReadOnlyStartItem {
+  def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> CTAny)
+}
 
 //We need to wrap the inner classes to be able to have two different rewrite methods
 abstract class UpdatingStartItem(val updateAction: UpdateAction, name: String) extends StartItem(name, Map.empty) {

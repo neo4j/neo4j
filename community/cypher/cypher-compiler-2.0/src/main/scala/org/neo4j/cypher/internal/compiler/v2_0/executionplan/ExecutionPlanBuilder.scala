@@ -208,8 +208,9 @@ The Neo4j Team""")
       new NamedPathBuilder,
       new LoadCSVBuilder,
       new StartPointBuilder,
-      new MatchBuilder, 
-      new ShortestPathBuilder 
+      new MatchBuilder,
+      new UnwindBuilder,
+      new ShortestPathBuilder
     )
   }
 
