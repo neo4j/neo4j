@@ -41,12 +41,8 @@ import org.neo4j.test.ha.ClusterManager;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertThat;
 
-<<<<<<< HEAD
-=======
 import static org.neo4j.test.ha.ClusterManager.fromXml;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
->>>>>>> e0d0b9f... Fixes so that slave-only instances not only try not to win elections, but actively don't switch to master in the case they are coordinators (e.g. because the instance created the cluster)
 public class TestSlaveOnlyCluster
 {
     public final TargetDirectory directory = TargetDirectory.forTest( getClass() );
@@ -54,10 +50,13 @@ public class TestSlaveOnlyCluster
     @Test
     public void testMasterElectionAfterMasterRecoversInSlaveOnlyCluster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" )
+                .toURI() ),
                 directory.cleanDirectory( "masterrecovery" ), MapUtil.stringMap(),
-                MapUtil.<Integer, Map<String, String>>genericMap( 2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
-                                                                  3, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
+                MapUtil.<Integer, Map<String, String>>genericMap( 2, MapUtil.stringMap( HaSettings.slave_only.name(),
+                                "true" ),
+                        3, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ) )
+        );
 
 
         try
@@ -82,13 +81,16 @@ public class TestSlaveOnlyCluster
                 }
             };
 
-            for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : clusterManager.getDefaultCluster().getAllMembers() )
+            for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : clusterManager.getDefaultCluster()
+                    .getAllMembers() )
             {
-                if (!highlyAvailableGraphDatabase.isMaster())
+                if ( !highlyAvailableGraphDatabase.isMaster() )
                 {
-                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class ).addHeartbeatListener( masterDownListener );
+                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class )
+                            .addHeartbeatListener( masterDownListener );
 
-                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class ).addClusterListener( new ClusterListener.Adapter()
+                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class )
+                            .addClusterListener( new ClusterListener.Adapter()
                     {
                         @Override
                         public void elected( String role, InstanceId electedMember, URI availableAtUri )
@@ -108,7 +110,7 @@ public class TestSlaveOnlyCluster
 
             electedLatch.await();
 
-            HighlyAvailableGraphDatabase slaveDatabase = clusterManager.getDefaultCluster().getAnySlave(  );
+            HighlyAvailableGraphDatabase slaveDatabase = clusterManager.getDefaultCluster().getAnySlave();
             long nodeId;
             try ( Transaction tx = slaveDatabase.beginTx() )
             {
@@ -132,10 +134,13 @@ public class TestSlaveOnlyCluster
     @Test
     public void testMasterElectionAfterSlaveOnlyInstancesStartFirst() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" )
+                .toURI() ),
                 directory.cleanDirectory( "slaveonly" ), MapUtil.stringMap(),
-                MapUtil.<Integer, Map<String, String>>genericMap( 1, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
-                                       2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
+                MapUtil.<Integer, Map<String, String>>genericMap( 1, MapUtil.stringMap( HaSettings.slave_only.name(),
+                                "true" ),
+                        2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ) )
+        );
 
         try
         {
