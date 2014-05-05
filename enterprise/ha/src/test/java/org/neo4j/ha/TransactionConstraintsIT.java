@@ -19,6 +19,17 @@
  */
 package org.neo4j.ha;
 
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+
 import java.util.concurrent.Callable;
 import java.util.concurrent.Future;
 
@@ -26,7 +37,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
@@ -44,19 +55,6 @@ import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
-
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
@@ -393,7 +391,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
     }
     
     @Override
-    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, int serverId )
+    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
     {
         super.configureClusterMember( builder, clusterName, serverId );
         builder.setConfig( HaSettings.tx_push_factor, "0" );

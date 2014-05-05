@@ -251,8 +251,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
         XaDataSourceManager toReturn = new HaXaDataSourceManager( logging.getMessagesLog( HaXaDataSourceManager.class
         ) );
-        requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ), toReturn,
-                dependencyResolver );
+        requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ).toIntegerIndex(),
+                toReturn, dependencyResolver );
         return toReturn;
     }
 
@@ -300,8 +300,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 {
                     if ( member.getRoleUri().getScheme().equals( "ha" ) )
                     {
-                        if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ) ==
-                                config.get( ClusterSettings.server_id ) )
+                        if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ).equals(
+                                config.get( ClusterSettings.server_id ) ) )
                         {
                             msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not " +
                                     "join this cluster",
@@ -348,14 +348,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( localClusterMemberAvailability );
 
         members = new ClusterMembers( clusterClient, clusterClient, clusterEvents,
-                new InstanceId( config.get( ClusterSettings.server_id ) ) );
+                config.get( ClusterSettings.server_id ) );
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members,
                 clusterEvents,
                 clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
 
         HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging
-                .getConsoleLog( HighAvailabilityConsoleLogger.class ), new InstanceId( config.get( ClusterSettings
-                .server_id ) ) );
+                .getConsoleLog( HighAvailabilityConsoleLogger.class ), config.get( ClusterSettings
+                .server_id ) );
         availabilityGuard.addListener( highAvailabilityConsoleLogger );
         clusterEvents.addClusterMemberListener( highAvailabilityConsoleLogger );
         clusterClient.addClusterListener( highAvailabilityConsoleLogger );
@@ -511,7 +511,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected Factory<byte[]> createXidGlobalIdFactory()
     {
-        final int serverId = config.get( ClusterSettings.server_id );
+        final int serverId = config.get( ClusterSettings.server_id ).toIntegerIndex();
         return new Factory<byte[]>()
         {
             @Override
