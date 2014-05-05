@@ -19,20 +19,12 @@
  */
 package org.neo4j.ha;
 
-import java.util.concurrent.Callable;
-import java.util.concurrent.Future;
-
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Lock;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.NotInTransactionException;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.cluster.InstanceId;
+import org.neo4j.graphdb.*;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.HaSettings;
@@ -43,6 +35,9 @@ import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
+
+import java.util.concurrent.Callable;
+import java.util.concurrent.Future;
 
 import static java.lang.System.currentTimeMillis;
 import static java.util.concurrent.TimeUnit.MINUTES;
@@ -120,7 +115,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         // before the db has recovered from its KERNEL_PANIC
         awaitFullyOperational( db );
     }
-    
+
     @Test
     public void slave_should_not_be_able_to_produce_an_invalid_transaction() throws Exception
     {
@@ -164,7 +159,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             assertFinishGetsTransactionFailure( tx );
         }
     }
-    
+
     @Test
     public void write_operation_on_slave_has_to_be_performed_within_a_transaction() throws Exception
     {
@@ -182,7 +177,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             // THEN
         }
     }
-    
+
     @Test
     public void write_operation_on_master_has_to_be_performed_within_a_transaction() throws Exception
     {
@@ -200,7 +195,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             // THEN
         }
     }
-    
+
     @Test
     public void slave_should_not_be_able_to_modify_node_deleted_on_master() throws Exception
     {
@@ -235,13 +230,13 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
         deadlockDetectionBetween( slave1, cluster.getAnySlave( slave1 ) );
     }
-    
+
     @Test
     public void deadlock_detection_involving_slave_and_master() throws Exception
     {
         deadlockDetectionBetween( cluster.getAnySlave(), cluster.getMaster() );
     }
-    
+
     private void deadlockDetectionBetween( HighlyAvailableGraphDatabase slave1, final HighlyAvailableGraphDatabase slave2 ) throws Exception
     {
         // GIVEN
@@ -310,11 +305,11 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         try
         {
             Lock lock = slaveTx.acquireWriteLock( slave.getNodeById( node.getId() ) );
-    
+
             // WHEN
             // -- the lock is manually released (tx still running)
             lock.release();
-    
+
             // THEN
             // -- that entity should be able to be locked from another member
             Transaction masterTx = masterWorker.execute( new BeginTx() );
@@ -333,7 +328,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             masterWorker.close();
         }
     }
-    
+
     private void takeTheLeadInAnEventualMasterSwitch( GraphDatabaseService db )
     {
         createNode( db );
@@ -354,7 +349,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             tx.finish();
         }
     }
-    
+
     private Node createMiniTree( GraphDatabaseService db )
     {
         Transaction tx = db.beginTx();
@@ -371,7 +366,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             tx.finish();
         }
     }
-    
+
     private void deleteNode( HighlyAvailableGraphDatabase db, long id )
     {
         Transaction tx = db.beginTx();
@@ -385,9 +380,9 @@ public class TransactionConstraintsIT extends AbstractClusterTest
             tx.finish();
         }
     }
-    
+
     @Override
-    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, int serverId )
+    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
     {
         super.configureClusterMember( builder, clusterName, serverId );
         builder.setConfig( HaSettings.tx_push_factor, "0" );
@@ -405,7 +400,7 @@ public class TransactionConstraintsIT extends AbstractClusterTest
         {   // Good
         }
     }
-    
+
     private static class AcquireReadLockOnReferenceNode implements WorkerCommand<HighlyAvailableGraphDatabase, Lock>
     {
         private final Transaction tx;

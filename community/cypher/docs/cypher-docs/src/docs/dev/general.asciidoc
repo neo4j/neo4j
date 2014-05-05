@@ -23,6 +23,10 @@ include::ql/with/index.asciidoc[]
 
 :leveloffset: 2
 
+include::ql/unwind/index.asciidoc[]
+
+:leveloffset: 2
+
 include::ql/union/index.asciidoc[]
 
 :leveloffset: 2
