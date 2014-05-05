@@ -32,10 +32,12 @@ public class SimpleHighAvailabilityMemberContext implements HighAvailabilityMemb
     private InstanceId electedMasterId;
     private URI availableHaMasterId;
     private final InstanceId myId;
+    private boolean slaveOnly;
 
-    public SimpleHighAvailabilityMemberContext( InstanceId myId )
+    public SimpleHighAvailabilityMemberContext( InstanceId myId, boolean slaveOnly )
     {
         this.myId = myId;
+        this.slaveOnly = slaveOnly;
     }
 
     @Override
@@ -66,5 +68,11 @@ public class SimpleHighAvailabilityMemberContext implements HighAvailabilityMemb
     public void setAvailableHaMasterId( URI availableHaMasterId )
     {
         this.availableHaMasterId = availableHaMasterId;
+    }
+
+    @Override
+    public boolean isSlaveOnly()
+    {
+        return slaveOnly;
     }
 }
