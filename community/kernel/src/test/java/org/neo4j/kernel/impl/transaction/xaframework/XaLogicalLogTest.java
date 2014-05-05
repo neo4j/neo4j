@@ -172,19 +172,21 @@ public class XaLogicalLogTest
     @Test
     public void shouldNotPrepareAfterKernelPanicHasHappened() throws Exception
     {
+        // GIVEN
+        File directory = TargetDirectory.forTest( getClass() ).
+                directory( "shouldNotPrepareAfterKernelPanicHasHappened", true );
+        Logging mockLogging = mock( Logging.class );
+        when( mockLogging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+        KernelHealth health = new KernelHealth( mock( KernelPanicEventGenerator.class ), mockLogging );
+        long maxSize = 1000;
+        File logFile = new File( directory, "log" );
+
         RandomAccessFile forCheckingSize = null;
+        XaLogicalLog log = null;
         try
         {
-            File directory = TargetDirectory.forTest( getClass() ).
-                    directory( "shouldNotPrepareAfterKernelPanicHasHappened", true );
-            Logging mockLogging = mock( Logging.class );
-            when( mockLogging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
-            KernelHealth health = new KernelHealth( mock( KernelPanicEventGenerator.class ), mockLogging );
-            // GIVEN
-            long maxSize = 1000;
-            File logFile = new File( directory, "log" );
             forCheckingSize = new RandomAccessFile( logFile, "rw" );
-            XaLogicalLog log = new XaLogicalLog( logFile,
+            log = new XaLogicalLog( logFile,
                     mock( XaResourceManager.class ),
                     new FixedSizeXaCommandFactory(),
                     new VersionRespectingXaTransactionFactory(),
@@ -215,6 +217,10 @@ public class XaLogicalLogTest
         }
         finally
         {
+            if ( log != null )
+            {
+                log.close();
+            }
             if ( forCheckingSize != null )
             {
                 forCheckingSize.close();
@@ -225,19 +231,21 @@ public class XaLogicalLogTest
     @Test
     public void shouldNotCommitOnePhaseAfterKernelPanicHasHappened() throws Exception
     {
+        // GIVEN
+        File directory = TargetDirectory.forTest( getClass() ).
+                directory( "shouldNotPrepareAfterKernelPanicHasHappened", true );
+        Logging mockLogging = mock( Logging.class );
+        when( mockLogging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+        KernelHealth health = new KernelHealth( mock( KernelPanicEventGenerator.class ), mockLogging );
+        long maxSize = 1000;
+        File logFile = new File( directory, "log" );
+
         RandomAccessFile forCheckingSize = null;
+        XaLogicalLog log = null;
         try
         {
-            File directory = TargetDirectory.forTest( getClass() ).
-                    directory( "shouldNotPrepareAfterKernelPanicHasHappened", true );
-            Logging mockLogging = mock( Logging.class );
-            when( mockLogging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
-            KernelHealth health = new KernelHealth( mock( KernelPanicEventGenerator.class ), mockLogging );
-            // GIVEN
-            long maxSize = 1000;
-            File logFile = new File( directory, "log" );
             forCheckingSize = new RandomAccessFile( logFile, "rw" );
-            XaLogicalLog log = new XaLogicalLog( logFile,
+            log = new XaLogicalLog( logFile,
                     mock( XaResourceManager.class ),
                     new FixedSizeXaCommandFactory(),
                     new VersionRespectingXaTransactionFactory(),
@@ -268,6 +276,10 @@ public class XaLogicalLogTest
         }
         finally
         {
+            if ( log != null )
+            {
+                log.close();
+            }
             if ( forCheckingSize != null )
             {
                 forCheckingSize.close();
@@ -278,19 +290,21 @@ public class XaLogicalLogTest
     @Test
     public void shouldNotCommitTwoPhaseAfterKernelPanicHasHappened() throws Exception
     {
+        // GIVEN
+        File directory = TargetDirectory.forTest( getClass() ).
+                directory( "shouldNotPrepareAfterKernelPanicHasHappened", true );
+        Logging mockLogging = mock( Logging.class );
+        when( mockLogging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+        KernelHealth health = new KernelHealth( mock( KernelPanicEventGenerator.class ), mockLogging );
+        long maxSize = 1000;
+        File logFile = new File( directory, "log" );
+
         RandomAccessFile forCheckingSize = null;
+        XaLogicalLog log = null;
         try
         {
-            File directory = TargetDirectory.forTest( getClass() ).
-                    directory( "shouldNotPrepareAfterKernelPanicHasHappened", true );
-            Logging mockLogging = mock( Logging.class );
-            when( mockLogging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
-            KernelHealth health = new KernelHealth( mock( KernelPanicEventGenerator.class ), mockLogging );
-            // GIVEN
-            long maxSize = 1000;
-            File logFile = new File( directory, "log" );
             forCheckingSize = new RandomAccessFile( logFile, "rw" );
-            XaLogicalLog log = new XaLogicalLog( logFile,
+            log = new XaLogicalLog( logFile,
                     mock( XaResourceManager.class ),
                     new FixedSizeXaCommandFactory(),
                     new VersionRespectingXaTransactionFactory(),
@@ -321,6 +335,10 @@ public class XaLogicalLogTest
         }
         finally
         {
+            if ( log != null )
+            {
+                log.close();
+            }
             if ( forCheckingSize != null )
             {
                 forCheckingSize.close();
