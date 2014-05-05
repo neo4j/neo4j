@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.cluster.ClusterSettings.INSTANCE_ID;
-import static org.neo4j.helpers.Functions.withDefaults;
-import static org.neo4j.helpers.NamedThreadFactory.named;
-import static org.neo4j.helpers.Uris.parameter;
-
 import java.net.URI;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
@@ -41,6 +36,11 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
+import static org.neo4j.helpers.Functions.withDefaults;
+import static org.neo4j.helpers.NamedThreadFactory.named;
+import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Uris.parameter;
+
 /**
  * Performs the internal switches from pending to slave/master, by listening for
  * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member.ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
@@ -56,10 +56,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private volatile URI masterHaURI;
     private volatile URI slaveHaURI;
 
-    public static InstanceId getServerId( URI haUri )
+    public static int getServerId( URI haUri )
     {
         // Get serverId parameter, default to -1 if it is missing, and parse to integer
-        return INSTANCE_ID.apply( withDefaults(
+        return INTEGER.apply( withDefaults(
                 Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haUri ));
     }
 
@@ -248,7 +248,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     msgLog.logMessage( "Failed to switch to master", e );
 
                     // Since this master switch failed, elect someone else
-                    election.demote( getServerId( me ) );
+                    election.demote( new InstanceId(getServerId( me )) );
 
                     return;
                 }

@@ -35,7 +35,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.MapUtil;
@@ -61,9 +60,9 @@ public class BackupHaIT
                 Settings.TRUE ) )
         {
             @Override
-            protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
+            protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
             {
-                builder.setConfig( OnlineBackupSettings.online_backup_server, (":"+(4444 + serverId.toIntegerIndex()) ));
+                builder.setConfig( OnlineBackupSettings.online_backup_server, (":"+(4444 + serverId) ));
             }
         };
         clusterManager.start();

@@ -139,10 +139,8 @@ The Neo4j Team""")
       new TraversalMatcherBuilder,
       new FilterBuilder,
       new NamedPathBuilder,
-      new LoadCSVBuilder,
       new StartPointBuilder,
       new MatchBuilder,
-      new UnwindBuilder,
       new ShortestPathBuilder
     )
   }

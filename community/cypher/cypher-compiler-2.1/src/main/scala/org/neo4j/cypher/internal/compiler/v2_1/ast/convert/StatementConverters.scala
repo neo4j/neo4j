@@ -79,7 +79,6 @@ object StatementConverters {
             case c: ast.LoadCSV      => c.addToQueryBuilder(b)
             case c: ast.Start        => c.addToQueryBuilder(b)
             case c: ast.Match        => c.addToQueryBuilder(b)
-            case c: ast.Unwind       => c.addToQueryBuilder(b)
             case c: ast.Merge        => c.addToQueryBuilder(b)
             case c: ast.Create       => c.addToQueryBuilder(b)
             case c: ast.CreateUnique => c.addToQueryBuilder(b)
@@ -137,13 +136,6 @@ object StatementConverters {
         inner.identifier.name,
         inner.fieldTerminator.map(_.value)
       )
-      builder.startItems(items: _*)
-    }
-  }
-
-  implicit class UnwindConverter(inner: ast.Unwind) {
-    def addToQueryBuilder(builder: commands.QueryBuilder) = {
-      val items: Seq[StartItem] = builder.startItems :+ commands.Unwind(inner.expression.asCommandExpression,inner.identifier.name)
       builder.startItems(items: _*)
     }
   }

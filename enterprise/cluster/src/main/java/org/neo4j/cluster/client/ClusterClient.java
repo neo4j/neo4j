@@ -88,7 +88,7 @@ public class ClusterClient extends LifecycleAdapter
 
     public interface Configuration
     {
-        InstanceId getServerId();
+        int getServerId();
 
         HostnamePort getAddress();
 
@@ -133,7 +133,7 @@ public class ClusterClient extends LifecycleAdapter
         return new Configuration()
         {
             @Override
-            public InstanceId getServerId()
+            public int getServerId()
             {
                 return config.get( ClusterSettings.server_id );
             }
@@ -329,7 +329,7 @@ public class ClusterClient extends LifecycleAdapter
             }
         } );
 
-        server = protocolServerFactory.newProtocolServer( config.getServerId(), timeoutStrategy,
+        server = protocolServerFactory.newProtocolServer( new InstanceId( config.getServerId() ), timeoutStrategy,
                 receiver, sender,
                 acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor, objectInputStreamFactory, objectOutputStreamFactory );
 

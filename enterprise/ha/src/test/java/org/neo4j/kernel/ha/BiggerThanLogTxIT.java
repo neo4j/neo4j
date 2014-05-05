@@ -19,13 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-
 import org.junit.Test;
-import org.neo4j.cluster.InstanceId;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -33,6 +28,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 
 public class BiggerThanLogTxIT extends AbstractClusterTest
 {
@@ -79,7 +80,7 @@ public class BiggerThanLogTxIT extends AbstractClusterTest
     }
 
     @Override
-    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
+    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, int serverId )
     {
         builder.setConfig( GraphDatabaseSettings.logical_log_rotation_threshold, ROTATION_THRESHOLD );
     }

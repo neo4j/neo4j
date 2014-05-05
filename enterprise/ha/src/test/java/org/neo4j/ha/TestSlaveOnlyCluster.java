@@ -144,13 +144,8 @@ public class TestSlaveOnlyCluster
             ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
             cluster.await( masterAvailable( cluster.getMemberByServerId( 1 ), cluster.getMemberByServerId( 2 ) ) );
 
-<<<<<<< HEAD
             HighlyAvailableGraphDatabase master = cluster.getMaster();
             assertThat( cluster.getServerId( master ), CoreMatchers.equalTo( 3 ) );
-=======
-            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
-            assertThat( clusterManager.getDefaultCluster().getServerId( master ).toIntegerIndex(), CoreMatchers.equalTo( 3 ) );
->>>>>>> origin/2.0-maint
         }
         finally
         {
