@@ -3,7 +3,7 @@
 
 It is necessary to always open a transaction when accessing the database.
 Inside a long running transaction it is good practice to ensure that any 
-++http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/ResourceIterator.html[ResourceIterator]++s 
+++link:javadocs/org/neo4j/graphdb/ResourceIterator.html[ResourceIterator]++s 
 obtained inside the transaction are closed as early as possible.
 This is either achieved by just exhausting the iterator or by explicitly calling its close method.
 

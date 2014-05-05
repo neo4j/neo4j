@@ -26,7 +26,6 @@ import java.util.Arrays;
 import java.util.Map;
 import javax.transaction.Transaction;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.jboss.netty.logging.InternalLoggerFactory;
 
 import org.neo4j.cluster.ClusterSettings;

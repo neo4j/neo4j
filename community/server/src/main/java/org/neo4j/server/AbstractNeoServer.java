@@ -22,7 +22,6 @@ package org.neo4j.server;
 import org.apache.commons.configuration.Configuration;
 import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.cypher.javacompat.internal.ServerExecutionEngine;
-import org.neo4j.ext.udc.UdcSettings;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Clock;
