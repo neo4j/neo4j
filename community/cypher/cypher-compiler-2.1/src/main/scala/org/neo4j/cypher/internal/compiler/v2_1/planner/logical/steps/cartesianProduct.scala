@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, CartesianProduct}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{CartesianProductPlan, QueryPlan, CartesianProduct}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, LogicalPlanContext, PlanTable, CandidateGenerator}
 
 object cartesianProduct extends CandidateGenerator[PlanTable] {
@@ -30,8 +30,8 @@ object cartesianProduct extends CandidateGenerator[PlanTable] {
         for {
           planA <- plans
           planB <- plans if planA.plan != planB.plan
-        } yield CartesianProduct(planA.plan, planB.plan)
-      CandidateList(cartesianProducts.toList.map(QueryPlan))
+        } yield CartesianProductPlan(planA, planB)
+      CandidateList(cartesianProducts)
     } else {
       CandidateList()
     }

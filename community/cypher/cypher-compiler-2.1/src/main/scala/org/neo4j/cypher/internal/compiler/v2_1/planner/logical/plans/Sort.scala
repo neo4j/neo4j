@@ -25,6 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.SortDescription
 case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription])(solvedSortItems: Seq[SortItem]) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
+}
 
-  val solved = left.solved.withSortItems(solvedSortItems)
+object SortPlan {
+  def apply(left: QueryPlan, sortItems: Seq[SortDescription], solvedSortItems: Seq[SortItem]) =
+    QueryPlan( Sort(left.plan, sortItems)(solvedSortItems), left.solved.withSortItems(solvedSortItems) )
 }

@@ -25,6 +25,12 @@ case class SortedLimit(left: LogicalPlan, limit: Expression, sortItems: Seq[Sort
   extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
+}
 
-  val solved = left.solved.copy(limit = Some(originalLimit), sortItems = sortItems)
+object SortedLimitPlan {
+  def apply(left: QueryPlan, limit: Expression, sortItems: Seq[SortItem], originalLimit: Expression) =
+    QueryPlan(
+      SortedLimit(left.plan, limit, sortItems)(originalLimit),
+      left.solved.copy(limit = Some(originalLimit), sortItems = sortItems)
+    )
 }

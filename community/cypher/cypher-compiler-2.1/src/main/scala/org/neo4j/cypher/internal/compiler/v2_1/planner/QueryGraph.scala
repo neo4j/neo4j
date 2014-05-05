@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Visitable, Visitor, PatternRelationship, IdName}
 import org.neo4j.cypher.InternalException
 
 trait SubQuery {
@@ -40,7 +40,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       subQueries: Seq[SubQuery] = Seq.empty,
                       limit: Option[Expression] = None,
                       skip: Option[Expression] = None,
-                      tail: Option[QueryGraph] = None) {
+                      tail: Option[QueryGraph] = None) extends Visitable[QueryGraph] {
 
   def ++(other: QueryGraph): QueryGraph =
     QueryGraph(
@@ -61,6 +61,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     case (s@Some(_), None) => s
     case (None, s) => s
   }
+
+  def accept[R](visitor: Visitor[QueryGraph, R]): R = visitor.visit(this)
 
   def equivalent(other: QueryGraph) =
     patternRelationships == other.patternRelationships &&
@@ -91,6 +93,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
         projections = withAddedPatternNodes.projections + symbol(rel.name)
     )
   }
+
+  def addPatternRels(rels: Seq[PatternRelationship]) =
+    rels.foldLeft(this)( (qg, rel) => qg.addPatternRel(rel) )
 
   private def symbol(id: IdName) = id.name -> Identifier(id.name)(null)
 

@@ -93,8 +93,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
           predicates = Seq(Equals(Identifier("a") _, Identifier("a$$$") _) _),
           left = Expand(
             AllNodesScan("a"),
-            "a", Direction.OUTGOING, Seq.empty, "a$$$", "r", SimplePatternLength)(mockRel),
-          hideSelections = true
+            "a", Direction.OUTGOING, Seq.empty, "a$$$", "r", SimplePatternLength)(mockRel)
         ),
         Map("r" -> Identifier("r") _)
       )
@@ -115,7 +114,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Expand(
               Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength)(mockRel),
               "a", Direction.OUTGOING, Seq.empty, "b$$$", "r2", SimplePatternLength)(mockRel)
-            , hideSelections = true)
+          )
         ),
         Map(
           "r1" -> Identifier("r1") _,

@@ -69,7 +69,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       val degree = degreeByRelationshipTypesAndDirection(types, dir)
       cardinality(left) * math.pow(degree, averagePathLength(length)) * predicateSelectivity(predicates)
 
-    case Selection(predicates, left, _) =>
+    case Selection(predicates, left) =>
       cardinality(left) * predicateSelectivity(predicates)
 
     case CartesianProduct(left, right) =>
@@ -90,7 +90,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case UndirectedRelationshipByIdSeek(_, relIds, _, _) =>
       relIds.size * 2
 
-    case Projection(left, _, _) =>
+    case Projection(left, _) =>
       cardinality(left)
 
     case Optional(_, input) =>

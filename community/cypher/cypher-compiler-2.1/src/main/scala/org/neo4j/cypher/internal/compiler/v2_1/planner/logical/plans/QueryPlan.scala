@@ -21,15 +21,17 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-case class QueryPlan(plan: LogicalPlan, solved: QueryGraph = QueryGraph.empty) {
-  def isCoveredBy(otherIds: Set[IdName]) = plan.isCoveredBy(otherIds)
-  def covers(other: QueryPlan): Boolean = plan.covers(other.plan)
-  def coveredIds: Set[IdName] = plan.coveredIds
+case class QueryPlan(plan: LogicalPlan, solved: QueryGraph = QueryGraph.empty) extends Visitable[QueryPlan] {
+
+  def isCoveredBy(otherIds: Set[IdName]) = (solved.coveredIds -- otherIds).isEmpty
+  def covers(other: QueryPlan): Boolean = other.isCoveredBy(solved.coveredIds)
+  def coveredIds: Set[IdName] = solved.coveredIds
+
+  def accept[R](visitor: Visitor[QueryPlan, R]): R = visitor.visit(this)
+
+  override def toString = "\n" + new QueryPlanTreeStringVisitor().visit(this)
 }
 
-object QueryPlan extends (LogicalPlan => QueryPlan) {
-  // TODO: This should go away together with LogicalPlan.solved
-  def apply(plan: LogicalPlan) = plan match {
-    case _ => QueryPlan(plan, plan.solved)
-  }
-}
+
+
+

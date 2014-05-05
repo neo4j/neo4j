@@ -28,6 +28,7 @@ import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 
 class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
   test("should introduce apply for unsolved exclusive optional match") {
     // OPTIONAL MATCH (a)-[r]->(b)
 
@@ -51,9 +52,9 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val planTable = PlanTable(Map())
-    val innerPlan = Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
+    val innerPlan = ExpandPlan(AllNodesScanPlan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength, patternRel)
 
     val optional2 = optional(planTable)
-    optional2.bestPlan(context.cost).map(_.plan) should equal(Some(Optional(Set("a", "b", "r"), innerPlan)))
+    optional2.bestPlan(context.cost) should equal(Some(OptionalPlan(Set("a", "b", "r"), innerPlan)))
   }
 }

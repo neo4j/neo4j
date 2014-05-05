@@ -121,7 +121,7 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
             case _: AllNodesScan                             => 1000
             case NodeByLabelScan(_, Right(LabelId(labelId))) => labelId
             case CartesianProduct(left, right)               => apply(left) * apply(right)
-            case Selection(predicates, left, _)              => predicates.foldLeft(1.0)(_ * selectivity(_)) * apply(left)
+            case Selection(predicates, left)                 => predicates.foldLeft(1.0)(_ * selectivity(_)) * apply(left)
             case _                                           => Double.MaxValue
           }
         }

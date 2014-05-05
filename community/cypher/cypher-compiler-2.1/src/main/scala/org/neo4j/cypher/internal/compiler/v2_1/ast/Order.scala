@@ -32,3 +32,4 @@ sealed trait SortItem extends ASTNode with SemanticCheckable {
 
 case class AscSortItem(expression: Expression)(val position: InputPosition) extends SortItem
 case class DescSortItem(expression: Expression)(val position: InputPosition) extends SortItem
+
