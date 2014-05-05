@@ -21,7 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-
 case class SingleRow(override val coveredIds: Set[IdName] = Set.empty) extends LogicalLeafPlan {
-  val solved = QueryGraph(argumentIds = coveredIds)
+  def solved = SingleRowPlan(coveredIds).solved
+}
+
+object SingleRowPlan {
+  def apply(coveredIds: Set[IdName] = Set.empty) =
+    QueryPlan(
+      SingleRow(coveredIds),
+      QueryGraph(argumentIds = coveredIds)
+    )
 }

@@ -21,14 +21,14 @@ WARNING: Always perform batch insertion in a _single thread_ (or use synchroniza
 [[batchinsert-examples]]
 == Batch Inserter Examples ==
 
-Creating a batch inserter is similar to how you normally create data in the database, but in this case the low-level http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/unsafe/batchinsert/BatchInserter.html[+BatchInserter+] interface is used.
+Creating a batch inserter is similar to how you normally create data in the database, but in this case the low-level link:javadocs/org/neo4j/unsafe/batchinsert/BatchInserter.html[+BatchInserter+] interface is used.
 As we have already pointed out, you can't have multiple threads using the batch inserter concurrently without external synchronization.
 
 [TIP]
 The source code of the examples is found here:
 https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/kernel/src/test/java/examples/BatchInsertDocTest.java[BatchInsertDocTest.java]
 
-To get hold of a +BatchInseter+, use http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/unsafe/batchinsert/BatchInserters.html[+BatchInserters+] and then go from there:
+To get hold of a +BatchInseter+, use link:javadocs/org/neo4j/unsafe/batchinsert/BatchInserters.html[+BatchInserters+] and then go from there:
 
 [snippet,java]
 ----

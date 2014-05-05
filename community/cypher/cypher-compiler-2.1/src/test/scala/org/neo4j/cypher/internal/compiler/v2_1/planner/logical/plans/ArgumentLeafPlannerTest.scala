@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.argumentLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, CandidateList}
 
 class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -56,8 +56,8 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
       patternNodes = Set("a", "b", "d")
     )
 
-    argumentLeafPlanner(qg) should equal(CandidateList(Seq(
-      SingleRow(Set("a", "b")))
+    argumentLeafPlanner(qg) should equal(Candidates(
+      SingleRowPlan(Set("a", "b"))
     ))
   }
 }

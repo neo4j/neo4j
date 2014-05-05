@@ -26,7 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, P
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Equals}
 
-class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class ExpandTest
+  extends CypherFunSuite
+  with LogicalPlanningTestSupport {
 
   private def createQueryGraph(rels: PatternRelationship*) = QueryGraph(patternRelationships = rels.toSet)
   val aNode = IdName("a")
@@ -36,12 +38,12 @@ class ExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val rVarRel = PatternRelationship(rName, (aNode, bNode), Direction.OUTGOING, Seq.empty, VarPatternLength.unlimited)
   val rSelfRel = PatternRelationship(rName, (aNode, aNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
-  test("do not expand when no pattern relationships exist in querygraph") {
+  test("do not expand when no pattern relationships exist in query graph") {
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = createQueryGraph()
     )
-    val plan = PlanTable(Map(Set(aNode) -> AllNodesScan(aNode)))
+    val plan = PlanTable(Map(Set(aNode) -> AllNodesScanPlan(aNode)))
 
     expand(plan) should equal(CandidateList())
   }

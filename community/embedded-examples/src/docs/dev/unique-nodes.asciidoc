@@ -33,11 +33,11 @@ tag=getOrCreateWithCypher
 [IMPORTANT]
 While this is a working solution, please consider using the preferred  <<tutorials-java-embedded-unique-get-or-create>> instead.
 
-By using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
+By using link:javadocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
 entity uniqueness can be guaranteed using an index.
 
 Here the index acts as the lock and will only lock the smallest part needed to guarantee uniqueness across threads and transactions.
-To get the more high-level +get-or-create+ functionality make use of http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/UniqueFactory.html[+UniqueFactory+] as seen in the example below.
+To get the more high-level +get-or-create+ functionality make use of link:javadocs/org/neo4j/graphdb/index/UniqueFactory.html[+UniqueFactory+] as seen in the example below.
 
 .Create a factory for unique nodes at application start
 [snippet,java]

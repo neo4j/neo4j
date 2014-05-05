@@ -21,7 +21,18 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-
 case class AllNodesScan(idName: IdName) extends LogicalLeafPlan {
-  val solved = QueryGraph.empty.addPatternNodes(idName)
+  def solved = AllNodesScanPlan(idName).solved
+  override def coveredIds = Set(idName)
 }
+
+object AllNodesScanPlan {
+  def apply(idName: IdName) =
+    QueryPlan(
+      AllNodesScan(idName),
+      QueryGraph
+        .empty
+        .addPatternNodes(idName)
+    )
+}
+

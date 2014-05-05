@@ -32,8 +32,17 @@ case class Selection(predicates: Seq[Expression],
 
   def numPredicates = predicates.size
 
-  val solved = if (hideSelections)
-    left.solved
-  else
-    left.solved.addPredicates(predicates)
+  def solved = if (hideSelections) left.solved else left.solved.addPredicates(predicates)
+
+  override def coveredIds = left.coveredIds
+}
+
+object SelectionPlan {
+  def apply(predicates: Seq[Expression], left: QueryPlan) =
+    QueryPlan( Selection( predicates, left.plan, hideSelections = false), left.solved.addPredicates(predicates) )
+}
+
+object HiddenSelectionPlan {
+  def apply(predicates: Seq[Expression], left: QueryPlan) =
+    QueryPlan( Selection( predicates, left.plan, hideSelections = true), left.solved )
 }

@@ -30,23 +30,23 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
     def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
       val applyCandidates =
         for (pattern <- context.queryGraph.patternPredicates;
-             lhs <- planTable.plans if applicable(lhs, pattern))
+             lhs <- planTable.plans if applicable(lhs.plan, pattern))
         yield {
           val rhs = context.strategy.plan(context.copy(queryGraph = pattern.queryGraph))
           val exp: Expression = pattern.predicate.exp
           exp match {
             case _: Not =>
-              AntiSemiApply(lhs, rhs)(pattern)
+              AntiSemiApply(lhs.plan, rhs.plan)(pattern)
             case Ors((_: Not) :: tail) if doesNotContainPatterns(tail) =>
-              SelectOrAntiSemiApply(lhs, rhs, onePredicate(tail))(pattern)
+              SelectOrAntiSemiApply(lhs.plan, rhs.plan, onePredicate(tail))(pattern)
             case Ors(_ :: tail) if doesNotContainPatterns(tail) =>
-              SelectOrSemiApply(lhs, rhs, onePredicate(tail))(pattern)
+              SelectOrSemiApply(lhs.plan, rhs.plan, onePredicate(tail))(pattern)
             case _ =>
-              SemiApply(lhs, rhs)(pattern)
+              SemiApply(lhs.plan, rhs.plan)(pattern)
           }
         }
 
-      CandidateList(applyCandidates)
+      CandidateList(applyCandidates.map(QueryPlan))
     }
 
     private def doesNotContainPatterns(e: Seq[Expression]) = !e.exists(_.exists {
@@ -70,10 +70,10 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
     }
   }
 
-  def apply(input: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+  def apply(input: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
     val plan = simpleSelection(input)
 
-    def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
+    def findBestPlanForPatternPredicates(plan: QueryPlan): QueryPlan = {
       val secretPlanTable = PlanTable(Map(plan.coveredIds -> plan))
       val result: CandidateList = candidateListProducer(secretPlanTable)
       result.bestPlan(context.cost).getOrElse(plan)
