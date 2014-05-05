@@ -25,5 +25,13 @@ case class Skip(left: LogicalPlan, count: Expression) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
 
-  val solved = left.solved.copy(skip = Some(count))
+  def solved = left.solved.copy(skip = Some(count))
+}
+
+object SkipPlan {
+  def apply(left: QueryPlan, count: Expression) =
+    QueryPlan(
+      Skip(left.plan, count),
+      left.solved.copy(skip = Some(count))
+    )
 }

@@ -26,5 +26,10 @@ case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription])(solvedSortIt
   val lhs = Some(left)
   val rhs = None
 
-  val solved = left.solved.withSortItems(solvedSortItems)
+  def solved = left.solved.withSortItems(solvedSortItems)
+}
+
+object SortPlan {
+  def apply(left: QueryPlan, sortItems: Seq[SortDescription], solvedSortItems: Seq[SortItem]) =
+    QueryPlan( Sort(left.plan, sortItems)(solvedSortItems), left.solved.withSortItems(solvedSortItems) )
 }

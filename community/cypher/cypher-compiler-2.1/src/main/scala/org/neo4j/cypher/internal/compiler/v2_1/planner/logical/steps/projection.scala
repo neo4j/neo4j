@@ -27,8 +27,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Descending, Ascending, Sor
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.newIdName
 
 object projection extends PlanTransformer {
-  def apply(input: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
-    val plan = input.plan
+
+  def apply(plan: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
     val queryGraph = context.queryGraph
 
     val sortSkipAndLimit = (queryGraph.sortItems.toList, queryGraph.skip, queryGraph.limit) match {
@@ -36,24 +36,24 @@ object projection extends PlanTransformer {
         addLimit(l, addSkip(s, plan))
 
       case (sort, None, Some(l)) =>
-        SortedLimit(plan, l, sort)(l)
+        SortedLimitPlan(plan, l, sort, l)
 
       case (sort, Some(s), Some(l)) =>
-        Skip(SortedLimit(plan, ast.Add(l, s)(null), sort)(l), s)
+        SkipPlan(SortedLimitPlan(plan, ast.Add(l, s)(null), sort, l), s)
 
       case (sort, s, None) if sort.exists(notIdentifier) =>
         val newPlan = ensureSortablePlan(sort, plan)
         val orderBy = sort.map(sortDescription)
-        addSkip(s, Sort(newPlan, orderBy)(sort))
+        addSkip(s, SortPlan(newPlan, orderBy, sort))
 
       case (sort, s, None) =>
-        addSkip(s, Sort(plan, sort.map(sortDescription))(sort))
+        addSkip(s, SortPlan(plan, sort.map(sortDescription), sort))
     }
 
-    QueryPlan(projectIfNeeded(sortSkipAndLimit, context.queryGraph))
+    projectIfNeeded(sortSkipAndLimit, context.queryGraph)
   }
 
-  private def ensureSortablePlan(sort: List[ast.SortItem], plan: LogicalPlan): LogicalPlan = {
+  private def ensureSortablePlan(sort: List[ast.SortItem], plan: QueryPlan): QueryPlan = {
     val expressionsToProject = sort.collect {
       case sortItem if notIdentifier(sortItem) => sortItem.expression
     }
@@ -70,7 +70,8 @@ object projection extends PlanTransformer {
       }
 
       val totalProjections = projections ++ keepExistingIdentifiers
-      Projection(plan, totalProjections, hideProjections = true)
+
+      HiddenProjectionPlan(plan, totalProjections)
     }
   }
 
@@ -83,7 +84,7 @@ object projection extends PlanTransformer {
     case sortItem@ast.DescSortItem(exp) => Descending(newIdName(exp.position.offset))
   }
 
-  private def projectIfNeeded(plan: LogicalPlan, qg: QueryGraph) = {
+  private def projectIfNeeded(plan: QueryPlan, qg: QueryGraph): QueryPlan = {
     val ids = plan.coveredIds
     val projectAllCoveredIds = ids.map {
       case IdName(id) => id -> ast.Identifier(id)(null)
@@ -92,13 +93,15 @@ object projection extends PlanTransformer {
     if (qg.projections == projectAllCoveredIds)
       plan
     else
-      Projection(plan, qg.projections)
-
+      QueryPlan(
+        Projection(plan.plan, qg.projections),
+        plan.solved.withProjections(qg.projections)
+      )
   }
 
-  private def addSkip(s: Option[ast.Expression], plan: LogicalPlan) =
-    s.map(x => Skip(plan, x)).getOrElse(plan)
+  private def addSkip(s: Option[ast.Expression], plan: QueryPlan): QueryPlan =
+    s.map(x => SkipPlan(plan, x)).getOrElse(plan)
 
-  private def addLimit(s: Option[ast.Expression], plan: LogicalPlan) =
-    s.map(x => Limit(plan, x)).getOrElse(plan)
+  private def addLimit(s: Option[ast.Expression], plan: QueryPlan): QueryPlan =
+    s.map(x => LimitPlan(plan, x)).getOrElse(plan)
 }

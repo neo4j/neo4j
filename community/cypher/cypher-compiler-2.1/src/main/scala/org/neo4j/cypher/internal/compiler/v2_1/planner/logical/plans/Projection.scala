@@ -33,3 +33,13 @@ case class Projection(left: LogicalPlan, expressions: Map[String, Expression], h
   else
     left.solved.withProjections(expressions)
 }
+
+object ProjectionPlan {
+  def apply(left: QueryPlan, expressions: Map[String, Expression]) =
+    QueryPlan( Projection(left.plan, expressions, hideProjections = false), left.solved.withProjections(expressions))
+}
+
+object HiddenProjectionPlan {
+  def apply(left: QueryPlan, expressions: Map[String, Expression]) =
+    QueryPlan( Projection(left.plan, expressions, hideProjections = true), left.solved )
+}
