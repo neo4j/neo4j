@@ -30,3 +30,13 @@ case class Optional(nullableIds: Set[IdName], inputPlan: LogicalPlan) extends Lo
       withAddedOptionalMatch(inputPlan.solved).
       withProjections(inputPlan.solved.projections)
 }
+
+object OptionalPlan {
+  def apply(nullableIds: Set[IdName], inputPlan: QueryPlan) =
+    QueryPlan(
+      Optional(nullableIds, inputPlan.plan),
+      QueryGraph().
+        withAddedOptionalMatch(inputPlan.solved).
+        withProjections(inputPlan.solved.projections)
+    )
+}
