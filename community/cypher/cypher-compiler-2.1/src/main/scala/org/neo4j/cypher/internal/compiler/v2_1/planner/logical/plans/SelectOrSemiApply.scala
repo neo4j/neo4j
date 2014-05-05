@@ -28,11 +28,6 @@ case class SelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, predica
 abstract class AbstractSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression, exists: Exists) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
-
-  val solved = {
-    val newSelections = Selections(outer.solved.selections.predicates + exists.predicate)
-    outer.solved.copy(subQueries = outer.solved.subQueries :+ exists, selections = newSelections)
-  }
 }
 
 object AbstractSelectOrSemiApply {

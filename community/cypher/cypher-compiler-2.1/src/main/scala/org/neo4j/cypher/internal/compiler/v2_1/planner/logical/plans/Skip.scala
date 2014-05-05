@@ -24,8 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 case class Skip(left: LogicalPlan, count: Expression) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
-
-  def solved = left.solved.copy(skip = Some(count))
 }
 
 object SkipPlan {

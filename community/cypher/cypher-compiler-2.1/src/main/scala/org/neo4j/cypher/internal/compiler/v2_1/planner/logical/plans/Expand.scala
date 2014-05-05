@@ -32,8 +32,6 @@ case class Expand(left: LogicalPlan,
                  (pattern: PatternRelationship) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
-
-  val solved = left.solved.addPatternRel(pattern)
 }
 
 object ExpandPlan {

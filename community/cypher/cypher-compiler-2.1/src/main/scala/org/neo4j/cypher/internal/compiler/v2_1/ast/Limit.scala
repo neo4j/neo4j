@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 
 case class Limit(expression: Expression)(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def semanticCheck =

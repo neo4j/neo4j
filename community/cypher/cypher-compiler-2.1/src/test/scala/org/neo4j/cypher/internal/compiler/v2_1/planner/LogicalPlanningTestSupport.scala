@@ -124,7 +124,6 @@ trait LogicalPlanningTestSupport
   def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): LogicalPlan = {
     val plan = mock[LogicalPlan]
     doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
-    doReturn(QueryGraph(patternNodes = ids, patternRelationships = patterns.toSet)).when(plan).solved
     plan
   }
 
@@ -148,7 +147,4 @@ trait LogicalPlanningTestSupport
   }
 
   implicit def idName(name: String): IdName = IdName(name)
-
-  // TODO: This should go away together with LogicalPlan.solved
-  implicit def logicalToQueryPlan(plan: LogicalPlan): QueryPlan = QueryPlan(plan)
 }

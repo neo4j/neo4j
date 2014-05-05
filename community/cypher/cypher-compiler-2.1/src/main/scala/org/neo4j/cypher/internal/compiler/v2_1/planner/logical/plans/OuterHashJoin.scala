@@ -25,8 +25,6 @@ case class OuterHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan, nu
 
   val lhs = Some(left)
   val rhs = Some(right)
-
-  val solved = left.solved.withAddedOptionalMatch(right.solved)
 }
 
 object OuterHashJoinPlan {

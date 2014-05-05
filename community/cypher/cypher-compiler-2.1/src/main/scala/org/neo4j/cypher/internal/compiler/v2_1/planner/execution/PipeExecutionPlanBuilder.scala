@@ -39,7 +39,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
     def buildPipe(plan: LogicalPlan): Pipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
       plan match {
-        case Projection(left, expressions, _) =>
+        case Projection(left, expressions) =>
           ProjectionNewPipe(buildPipe(left), toLegacyExpressions(expressions))
 
         case SingleRow(_) =>
@@ -66,7 +66,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case NodeIndexUniqueSeek(IdName(id), labelId, propertyKeyId, valueExpr) =>
           NodeUniqueIndexSeekPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)
 
-        case Selection(predicates, left, _) =>
+        case Selection(predicates, left) =>
           FilterPipe(buildPipe(left), predicates.map(_.asCommandPredicate).reduce(_ ++ _))
 
         case CartesianProduct(left, right) =>

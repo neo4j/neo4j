@@ -36,9 +36,6 @@ abstract class LogicalPlan extends Product with Visitable[LogicalPlan] {
   def accept[R](visitor: Visitor[LogicalPlan, R]): R = visitor.visit(this)
 
   override def toString = "\n" + new LogicalPlanTreeStringVisitor().visit(this)
-
-  // TODO: This should go away
-  def solved: QueryGraph
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan {

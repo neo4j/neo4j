@@ -81,7 +81,7 @@ class ExpandTest
       planContext = newMockedPlanContext,
       queryGraph = createQueryGraph(rRel)
     )
-    val aAndB = newMockedLogicalPlanWithPatterns(Set("a", "b"), Seq(rRel))
+    val aAndB = newMockedQueryPlanWithPatterns(Set("a", "b"), Seq(rRel))
     val plan = PlanTable(Map(Set(aNode, bNode) -> aAndB))
 
     expand(plan) should equal(Candidates())
