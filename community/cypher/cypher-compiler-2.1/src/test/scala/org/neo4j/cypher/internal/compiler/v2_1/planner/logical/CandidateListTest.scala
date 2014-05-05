@@ -86,8 +86,8 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val factory = newMockedMetricsFactory
     when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
-      case `ab` => 50
-      case `c`  => 50
+      case p if p eq ab.plan => 50
+      case c if c eq c.plan  => 50
       case _    => Double.MaxValue
     })
 
