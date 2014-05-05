@@ -24,9 +24,17 @@ import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
-import java.util.*;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Comparator;
+import java.util.EnumSet;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.List;
+import java.util.Map;
+import java.util.SortedSet;
+import java.util.TreeSet;
 import java.util.concurrent.BlockingQueue;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
@@ -45,9 +53,9 @@ import org.eclipse.jetty.server.session.HashSessionManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -66,29 +74,32 @@ public class Jetty9WebServer implements WebServer
     private Collection<InjectableProvider<?>> defaultInjectables;
 
     private static class FilterDefinition
-	{
-		private final Filter filter;
-		private final String pathSpec;
+    {
+        private final Filter filter;
+        private final String pathSpec;
 
-		public FilterDefinition(Filter filter, String pathSpec)
-		{
-			this.filter = filter;
-			this.pathSpec = pathSpec;
-		}
+        public FilterDefinition( Filter filter, String pathSpec )
+        {
+            this.filter = filter;
+            this.pathSpec = pathSpec;
+        }
 
-		public boolean matches(Filter filter, String pathSpec)
-		{
-			return filter == this.filter && pathSpec.equals(this.pathSpec);
-		}
+        public boolean matches( Filter filter, String pathSpec )
+        {
+            return filter == this.filter && pathSpec.equals( this.pathSpec );
+        }
 
-		public Filter getFilter() {
-			return filter;
-		}
+        public Filter getFilter()
+        {
+            return filter;
+        }
 
-		public String getPathSpec() {
-			return pathSpec;
-		}
-	}
+        public String getPathSpec()
+        {
+            return pathSpec;
+        }
+    }
+
     private static final int MAX_THREADPOOL_SIZE = 640;
     private static final int DEFAULT_HTTPS_PORT = 7473;
     public static final int DEFAULT_PORT = 80;
@@ -101,13 +112,13 @@ public class Jetty9WebServer implements WebServer
     private String jettyAddr = DEFAULT_ADDRESS;
 
     private final HashMap<String, String> staticContent = new HashMap<>();
-    private final Map<String,JaxRsServletHolderFactory> jaxRSPackages =
+    private final Map<String, JaxRsServletHolderFactory> jaxRSPackages =
             new HashMap<>();
-    private final Map<String,JaxRsServletHolderFactory> jaxRSClasses =
+    private final Map<String, JaxRsServletHolderFactory> jaxRSClasses =
             new HashMap<>();
     private final List<FilterDefinition> filters = new ArrayList<>();
 
-    private int jettyMaxThreads = Math.min(tenThreadsPerProcessor(), MAX_THREADPOOL_SIZE);
+    private int jettyMaxThreads = Math.min( tenThreadsPerProcessor(), MAX_THREADPOOL_SIZE );
     private boolean httpsEnabled = false;
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
@@ -132,7 +143,7 @@ public class Jetty9WebServer implements WebServer
     {
         if ( jetty == null )
         {
-            QueuedThreadPool pool = createQueuedThreadPool(jettyMaxThreads);
+            QueuedThreadPool pool = createQueuedThreadPool( jettyMaxThreads );
 
             jetty = new Server( pool );
 
@@ -143,7 +154,8 @@ public class Jetty9WebServer implements WebServer
                 if ( httpsCertificateInformation != null )
                 {
                     jetty.addConnector(
-                        sslSocketFactory.createConnector( jetty, httpsCertificateInformation, jettyAddr, jettyHttpsPort, jettyMaxThreads ) );
+                            sslSocketFactory.createConnector( jetty, httpsCertificateInformation, jettyAddr,
+                                    jettyHttpsPort, jettyMaxThreads ) );
                 }
                 else
                 {
@@ -172,9 +184,9 @@ public class Jetty9WebServer implements WebServer
         // see: http://wiki.eclipse.org/Jetty/Howto/High_Load
         int minThreads = Math.max( 2, jettyMaxThreads / 10 );
         int maxCapacity = jettyMaxThreads * 1000 * 60; // threads * 1000 req/s * 60 s
-        BlockingQueue<Runnable> queue =  new BlockingArrayQueue<>( minThreads, minThreads, maxCapacity );
+        BlockingQueue<Runnable> queue = new BlockingArrayQueue<>( minThreads, minThreads, maxCapacity );
         int maxThreads = Math.max( jettyMaxThreads, minThreads );
-        return new QueuedThreadPool( maxThreads, minThreads , 60000, queue );
+        return new QueuedThreadPool( maxThreads, minThreads, 60000, queue );
     }
 
     @Override
@@ -289,19 +301,19 @@ public class Jetty9WebServer implements WebServer
     }
 
     @Override
-    public void addFilter(Filter filter, String pathSpec)
+    public void addFilter( Filter filter, String pathSpec )
     {
         filters.add( new FilterDefinition( filter, pathSpec ) );
     }
 
     @Override
-    public void removeFilter(Filter filter, String pathSpec)
+    public void removeFilter( Filter filter, String pathSpec )
     {
         Iterator<FilterDefinition> iter = filters.iterator();
-        while(iter.hasNext())
+        while ( iter.hasNext() )
         {
             FilterDefinition current = iter.next();
-            if(current.matches(filter, pathSpec))
+            if ( current.matches( filter, pathSpec ) )
             {
                 iter.remove();
             }
@@ -322,7 +334,7 @@ public class Jetty9WebServer implements WebServer
 
     @Override
     public void invokeDirectly( String targetPath, HttpServletRequest request, HttpServletResponse response )
-        throws IOException, ServletException
+            throws IOException, ServletException
     {
         jetty.handle( targetPath, (Request) request, request, response );
     }
@@ -371,7 +383,7 @@ public class Jetty9WebServer implements WebServer
     private int tenThreadsPerProcessor()
     {
         return 10 * Runtime.getRuntime()
-            .availableProcessors();
+                .availableProcessors();
     }
 
     private void loadAllMounts()
@@ -400,7 +412,7 @@ public class Jetty9WebServer implements WebServer
             if ( countSet( isStatic, isJaxrsPackage, isJaxrsClass ) > 1 )
             {
                 throw new RuntimeException(
-                    format( "content-key '%s' is mapped more than once", contentKey ) );
+                        format( "content-key '%s' is mapped more than once", contentKey ) );
             }
             else if ( isStatic )
             {
@@ -420,7 +432,7 @@ public class Jetty9WebServer implements WebServer
             }
         }
 
-        if( requestLoggingConfiguration != null )
+        if ( requestLoggingConfiguration != null )
         {
             loadRequestLogging();
         }
@@ -440,14 +452,18 @@ public class Jetty9WebServer implements WebServer
         return count;
     }
 
-    private void loadRequestLogging() {
+    private void loadRequestLogging()
+    {
         final RequestLogImpl requestLog = new RequestLogImpl();
         requestLog.setFileName( requestLoggingConfiguration.getAbsolutePath() );
 
+        // This makes the request log handler decorate whatever other handlers are already set up
         final RequestLogHandler requestLogHandler = new RequestLogHandler();
         requestLogHandler.setRequestLog( requestLog );
-        handlers.addHandler( requestLogHandler );
-	}
+        requestLogHandler.setServer( jetty );
+        requestLogHandler.setHandler( jetty.getHandler() );
+        jetty.setHandler( requestLogHandler );
+    }
 
     private String trimTrailingSlashToKeepJettyHappy( String mountPoint )
     {
@@ -480,7 +496,7 @@ public class Jetty9WebServer implements WebServer
         catch ( URISyntaxException e )
         {
             log.debug( format( "Unable to translate [%s] to a relative URI in ensureRelativeUri(String mountPoint)",
-                mountPoint ) );
+                    mountPoint ) );
             return mountPoint;
         }
     }
@@ -491,14 +507,14 @@ public class Jetty9WebServer implements WebServer
         console.log( "Mounting static content at [%s] from [%s]", mountPoint, contentLocation );
         try
         {
-        	SessionHandler sessionHandler = new SessionHandler( sm );
-        	sessionHandler.setServer( getJetty() );
+            SessionHandler sessionHandler = new SessionHandler( sm );
+            sessionHandler.setServer( getJetty() );
             final WebAppContext staticContext = new WebAppContext();
             staticContext.setServer( getJetty() );
             staticContext.setContextPath( mountPoint );
-			staticContext.setSessionHandler( sessionHandler );
+            staticContext.setSessionHandler( sessionHandler );
             URL resourceLoc = getClass().getClassLoader()
-                .getResource( contentLocation );
+                    .getResource( contentLocation );
             if ( resourceLoc != null )
             {
                 log.debug( format( "Found [%s]", resourceLoc ) );
@@ -507,15 +523,16 @@ public class Jetty9WebServer implements WebServer
                 staticContext.setBaseResource( resource );
                 log.debug( format( "Mounting static content from [%s] at [%s]", url, mountPoint ) );
 
-                addFiltersTo(staticContext);
+                addFiltersTo( staticContext );
 
                 handlers.addHandler( staticContext );
             }
             else
             {
                 console.log(
-                    "No static content available for Neo Server at port [%d], management console may not be available.",
-                    jettyHttpPort );
+                        "No static content available for Neo Server at port [%d], " +
+                                "management console may not be available.",
+                        jettyHttpPort );
             }
         }
         catch ( Exception e )
@@ -537,7 +554,7 @@ public class Jetty9WebServer implements WebServer
     }
 
     private void loadJAXRSResource( SessionManager sm, String mountPoint,
-            JaxRsServletHolderFactory jaxRsServletHolderFactory )
+                                    JaxRsServletHolderFactory jaxRsServletHolderFactory )
     {
         SessionHandler sessionHandler = new SessionHandler( sm );
         sessionHandler.setServer( getJetty() );
@@ -548,17 +565,19 @@ public class Jetty9WebServer implements WebServer
         jerseyContext.setContextPath( mountPoint );
         jerseyContext.setSessionHandler( sessionHandler );
         jerseyContext.addServlet( jaxRsServletHolderFactory.create( defaultInjectables, wadlEnabled ), "/*" );
-        addFiltersTo(jerseyContext);
-        handlers.addHandler(jerseyContext);
+        addFiltersTo( jerseyContext );
+        handlers.addHandler( jerseyContext );
     }
 
-    private void addFiltersTo(ServletContextHandler context) {
-    	for(FilterDefinition filterDef : filters)
-    	{
+    private void addFiltersTo( ServletContextHandler context )
+    {
+        for ( FilterDefinition filterDef : filters )
+        {
             context.addFilter( new FilterHolder(
-            		filterDef.getFilter() ),
-            		filterDef.getPathSpec(), EnumSet.allOf(DispatcherType.class) );
-    	}
-	}
+                            filterDef.getFilter() ),
+                    filterDef.getPathSpec(), EnumSet.allOf( DispatcherType.class )
+            );
+        }
+    }
 
 }
