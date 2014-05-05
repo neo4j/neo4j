@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, CandidateList, PlanTable}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Equals}
 
@@ -45,7 +45,7 @@ class ExpandTest
     )
     val plan = PlanTable(Map(Set(aNode) -> AllNodesScanPlan(aNode)))
 
-    expand(plan) should equal(CandidateList())
+    expand(plan) should equal(Candidates())
   }
 
   test("finds single pattern relationship when start point is picked") {
@@ -56,8 +56,9 @@ class ExpandTest
     val planA = newMockedLogicalPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
-    expand(plan) should equal(CandidateList(Seq(
-      Expand(left = planA, from = aNode, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength)(rRel))))
+    expand(plan) should equal(Candidates(
+      ExpandPlan(left = planA, from = aNode, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength, rRel))
+    )
   }
 
   test("finds expansion going both sides") {
@@ -70,8 +71,8 @@ class ExpandTest
     val plan = PlanTable(Map(Set(aNode) -> planA, Set(bNode) -> planB))
 
     expand(plan) should equal(CandidateList(Seq(
-      Expand(left = planA, from = aNode, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength)(rRel),
-      Expand(left = planB, from = bNode, Direction.INCOMING, types = Seq.empty, to = aNode, rName, SimplePatternLength)(rRel)
+      ExpandPlan(left = planA, from = aNode, Direction.OUTGOING, types = Seq.empty, to = bNode, rName, SimplePatternLength, rRel),
+      ExpandPlan(left = planB, from = bNode, Direction.INCOMING, types = Seq.empty, to = aNode, rName, SimplePatternLength, rRel)
     )))
   }
 
@@ -83,7 +84,7 @@ class ExpandTest
     val aAndB = newMockedLogicalPlanWithPatterns(Set("a", "b"), Seq(rRel))
     val plan = PlanTable(Map(Set(aNode, bNode) -> aAndB))
 
-    expand(plan) should equal(CandidateList())
+    expand(plan) should equal(Candidates())
   }
 
   test("self referencing pattern is handled correctly") {
@@ -95,10 +96,9 @@ class ExpandTest
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     expand(plan) should equal(CandidateList(Seq(
-      Selection(Seq(Equals(Identifier(aNode.name) _, Identifier(aNode.name + "$$$") _) _),
-        Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty,
-          to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength)(rSelfRel),
-        hideSelections = true
+      HiddenSelectionPlan(Seq(Equals(Identifier(aNode.name) _, Identifier(aNode.name + "$$$") _) _),
+        ExpandPlan(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty,
+                   to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength, rSelfRel)
       ))))
   }
 
@@ -110,18 +110,16 @@ class ExpandTest
     val aAndB = newMockedLogicalPlan("a", "b")
     val plan = PlanTable(Map(Set(aNode) -> aAndB))
 
-    expand(plan) should equal(CandidateList(Seq(
-      Selection(Seq(Equals(Identifier(bNode.name)_, Identifier(bNode.name + "$$$")_)_),
-        Expand(left = aAndB, from = aNode, dir = Direction.OUTGOING, types = Seq.empty,
-          to = IdName(bNode.name + "$$$"), relName = rName, SimplePatternLength)(mockRel),
-        hideSelections = true
+    expand(plan) should equal(Candidates(
+      HiddenSelectionPlan(Seq(Equals(Identifier(bNode.name)_, Identifier(bNode.name + "$$$")_)_),
+        ExpandPlan(left = aAndB, from = aNode, dir = Direction.OUTGOING, types = Seq.empty,
+          to = IdName(bNode.name + "$$$"), relName = rName, SimplePatternLength, mockRel)
       ),
-      Selection(
+      HiddenSelectionPlan(
         predicates = Seq(Equals(Identifier(aNode.name) _, Identifier(aNode.name + "$$$") _) _),
-        left = Expand(left = aAndB, from = bNode, dir = Direction.INCOMING, types = Seq.empty,
-          to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength)(mockRel),
-        hideSelections = true
-      ))))
+        left = ExpandPlan(left = aAndB, from = bNode, dir = Direction.INCOMING, types = Seq.empty,
+          to = IdName(aNode.name + "$$$"), relName = rName, SimplePatternLength, mockRel)
+      )))
   }
 
   test("unlimited variable length relationship") {
@@ -132,8 +130,8 @@ class ExpandTest
     val planA = newMockedLogicalPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
-    expand(plan) should equal(CandidateList(Seq(
-      Expand(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName, rVarRel.length)(rVarRel)
-    )))
+    expand(plan) should equal(Candidates(
+      ExpandPlan(left = planA, from = aNode, dir = Direction.OUTGOING, types = Seq.empty, to = bNode, relName = rName, rVarRel.length, rVarRel)
+    ))
   }
 }

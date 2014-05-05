@@ -34,5 +34,21 @@ case class OptionalExpand(left: LogicalPlan,
   val lhs = Some(left)
   def rhs = None
 
-  val solved = left.solved.withAddedOptionalMatch(solvedQueryGraph)
+  def solved = left.solved.withAddedOptionalMatch(solvedQueryGraph)
+}
+
+object OptionalExpandPlan {
+  def apply(left: QueryPlan,
+            from: IdName,
+            dir: Direction,
+            types: Seq[RelTypeName],
+            to: IdName,
+            relName: IdName,
+            length: PatternLength,
+            predicates: Seq[Expression],
+            solvedQueryGraph: QueryGraph = QueryGraph.empty) =
+  QueryPlan(
+    OptionalExpand(left.plan, from, dir, types, to, relName, length, predicates)(solvedQueryGraph),
+    left.solved.withAddedOptionalMatch(solvedQueryGraph)
+  )
 }

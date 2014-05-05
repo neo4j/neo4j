@@ -41,8 +41,8 @@ object expand extends CandidateGenerator[PlanTable] {
     } yield {
       val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)
-      val expandF = (otherSide: IdName) => Expand(plan.plan, nodeId, dir, patternRel.types,
-                                                  otherSide, patternRel.name, patternRel.length)(patternRel)
+      val expandF = (otherSide: IdName) => ExpandPlan(plan, nodeId, dir, patternRel.types,
+                                                      otherSide, patternRel.name, patternRel.length, patternRel)
 
       if (plan.coveredIds.contains(otherSide)) {
         expandIntoAlreadyExistingNode(expandF, otherSide)
@@ -50,7 +50,7 @@ object expand extends CandidateGenerator[PlanTable] {
       else
         expandF(otherSide)
     }
-    CandidateList(expandPlans.map(QueryPlan))
+    CandidateList(expandPlans)
   }
 
   /*
@@ -63,12 +63,12 @@ object expand extends CandidateGenerator[PlanTable] {
   is solved by something that looks like
   MATCH (a)-[r]->($TEMP) WHERE $TEMP = a
    */
-  private def expandIntoAlreadyExistingNode(f: IdName => Expand, otherSide: IdName)
-                                           (implicit context: LogicalPlanContext): LogicalPlan = {
+  private def expandIntoAlreadyExistingNode(f: IdName => QueryPlan, otherSide: IdName)
+                                           (implicit context: LogicalPlanContext): QueryPlan = {
     val temp = IdName(otherSide.name + "$$$")
     val expand = f(temp)
     val left = Identifier(otherSide.name)(null)
     val right = Identifier(temp.name)(null)
-    Selection(Seq(Equals(left, right)(null)), expand, hideSelections = true)
+    HiddenSelectionPlan(Seq(Equals(left, right)(null)), expand)
   }
 }
