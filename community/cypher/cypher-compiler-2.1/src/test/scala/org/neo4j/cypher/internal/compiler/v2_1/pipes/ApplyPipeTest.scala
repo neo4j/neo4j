@@ -35,7 +35,7 @@ class ApplyPipeTest extends CypherFunSuite {
       protected def internalCreateResults(state: QueryState) = Iterator(state.initialContext.get)
 
       def exists(pred: (Pipe) => Boolean) = ???
-      def executionPlanDescription = ???
+      def planDescription = ???
       def symbols: SymbolTable = ???
       def monitor: PipeMonitor = newMonitor
     }
@@ -55,7 +55,7 @@ class ApplyPipeTest extends CypherFunSuite {
         Iterator(ExecutionContext.empty += rhsData)
 
       def exists(pred: (Pipe) => Boolean) = ???
-      def executionPlanDescription = ???
+      def planDescription = ???
       def symbols: SymbolTable = ???
       def monitor: PipeMonitor = newMonitor
     }
@@ -74,7 +74,7 @@ class ApplyPipeTest extends CypherFunSuite {
         Iterator(state.initialContext.get += "b" -> null)
 
       def exists(pred: (Pipe) => Boolean) = ???
-      def executionPlanDescription = ???
+      def planDescription = ???
       def symbols: SymbolTable = ???
       def monitor: PipeMonitor = newMonitor
     }

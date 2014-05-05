@@ -159,7 +159,7 @@ class ExecutionWorkflowBuilder(initialQueryContext: QueryContext) {
     new ClosingIterator(results, taskCloser, exceptionDecorator)
 
   def buildDescriptor(pipe: Pipe, isProfileReady: => Boolean) =
-    () => pipeDecorator.decorate(pipe.executionPlanDescription, isProfileReady)
+    () => pipeDecorator.decorate(pipe.planDescription, isProfileReady)
 
   def runWithQueryState[T](graph: GraphDatabaseService, queryId: AnyRef, params: Map[String, Any])(f: QueryState => T) = {
     taskCloser.addTask(queryContext.close)

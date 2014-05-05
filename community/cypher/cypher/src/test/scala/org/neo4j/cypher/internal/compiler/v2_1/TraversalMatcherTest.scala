@@ -69,7 +69,7 @@ class TraversalMatcherTest extends GraphDatabaseJUnitSuite {
     assert(result.head.lastRelationship() === r2)
   }
 
-  private def createStartPointIterator(x: Node*) = EntityProducer[Node]("Produce") {
+  private def createStartPointIterator(x: Node*) = EntityProducer[Node]("Produce", mock[Argument]) {
     (_: ExecutionContext, _: QueryState) => x.iterator
   }
 

@@ -19,11 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.{NoChildren, PlanDescriptionImpl, symbols, ExecutionContext}
 import symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.graphdb.Relationship
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
+
 
 case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expression], toNode: String, fromNode: String)
                                            (implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
@@ -41,7 +43,15 @@ case class DirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expres
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def executionPlanDescription = new PlanDescriptionImpl(this, "DirectedRelationshipByIdSeekPipe", Seq.empty, Seq("ident" -> ident))
+  def planDescription = new PlanDescriptionImpl(
+    pipe = this,
+    name = "DirectedRelationshipByIdSeekPipe",
+    children = NoChildren,
+    arguments = Seq(
+      Arguments.IntroducedIdentifier(ident),
+      Arguments.IntroducedIdentifier(toNode),
+      Arguments.IntroducedIdentifier(fromNode)) ++ relIdExpr.map(e => Arguments.LegacyExpression(e))
+  )
 
   def symbols = new SymbolTable(Map(ident -> CTRelationship, toNode -> CTNode, fromNode -> CTNode))
 

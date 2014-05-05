@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, PlanDescription, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.{SingleChild, PlanDescriptionImpl, PlanDescription, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.data.SimpleVal
 
 case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
 
@@ -31,12 +30,12 @@ case class OptionalPipe(nullableIdentifiers: Set[String], source: Pipe)(implicit
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     if (input.isEmpty) Iterator(notFoundExecutionContext) else input
 
-  def executionPlanDescription: PlanDescription =
+  def planDescription: PlanDescription =
     new PlanDescriptionImpl(
       this,
       "Optional",
-      Seq(source.executionPlanDescription),
-      args = Seq("nullableIdentifiers" -> SimpleVal.fromSeq(nullableIdentifiers.toSeq))
+      SingleChild(source.planDescription),
+      Seq.empty
     )
 
   def symbols: SymbolTable = source.symbols

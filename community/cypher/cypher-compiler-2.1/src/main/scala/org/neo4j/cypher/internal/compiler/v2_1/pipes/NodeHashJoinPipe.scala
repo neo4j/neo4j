@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, ExecutionContext, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_1.{TwoChildren, PlanDescriptionImpl, ExecutionContext, PlanDescription}
 import scala.collection.mutable
 import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{KeyNames, IntroducedIdentifier}
 
 case class NodeHashJoinPipe(node: String, source: Pipe, inner: Pipe)
                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -42,12 +43,12 @@ case class NodeHashJoinPipe(node: String, source: Pipe, inner: Pipe)
     }
   }
 
-  def executionPlanDescription: PlanDescription =
+  def planDescription: PlanDescription =
     new PlanDescriptionImpl(
-      this,
-      "NodeHashJoin",
-      Seq(source.executionPlanDescription, inner.executionPlanDescription),
-      args = Seq("node" -> node)
+      pipe = this,
+      name = "NodeHashJoin",
+      children = TwoChildren(source.planDescription, inner.planDescription),
+      arguments = Seq(KeyNames(Seq(node)))
     )
 
   def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers).add(node, CTNode)

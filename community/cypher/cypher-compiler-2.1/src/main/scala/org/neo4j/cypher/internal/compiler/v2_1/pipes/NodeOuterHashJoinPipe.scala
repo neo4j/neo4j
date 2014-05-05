@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.compiler.v2_1
-import v2_1.{PlanDescriptionImpl, PlanDescription, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.{TwoChildren, PlanDescriptionImpl, PlanDescription, ExecutionContext}
 import v2_1.symbols._
 import scala.collection.mutable
 
@@ -68,12 +68,11 @@ case class NodeOuterHashJoinPipe(node: String, source: Pipe, inner: Pipe, nullab
   private def addNulls(in:ExecutionContext): ExecutionContext = in.newWith(nullColumns)
 
 
-  def executionPlanDescription: PlanDescription =
-    new PlanDescriptionImpl(
-      this,
+  def planDescription: PlanDescription =
+    new PlanDescriptionImpl(this,
       "NodeOuterHashJoin",
-      Seq(source.executionPlanDescription, inner.executionPlanDescription),
-      args = Seq("node" -> node)
+      TwoChildren(source.planDescription, inner.planDescription),
+      Seq.empty
     )
 
   def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers).add(node, CTNode)

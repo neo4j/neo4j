@@ -25,6 +25,7 @@ import java.net.URL
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.cypher.LoadExternalResourceException
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 
 sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
@@ -77,9 +78,8 @@ class LoadCSVPipe(source: Pipe,
     })
   }
 
-  def executionPlanDescription: PlanDescription = {
-    source.executionPlanDescription.andThen(this, "LoadCSV")
-  }
+  def planDescription: PlanDescription =
+    source.planDescription.andThen(this, "LoadCSV", IntroducedIdentifier(identifier))
 
   def symbols: SymbolTable = format match {
     case HasHeaders => source.symbols.add(identifier, MapType.instance)

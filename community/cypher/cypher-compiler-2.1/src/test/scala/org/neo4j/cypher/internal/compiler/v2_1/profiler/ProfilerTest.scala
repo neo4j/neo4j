@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.junit.Test
 import org.scalatest.mock.MockitoSugar
 import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{Rows, DbHits}
 
 class ProfilerTest extends Assertions with MockitoSugar {
 
@@ -42,10 +43,10 @@ class ProfilerTest extends Assertions with MockitoSugar {
 
     //WHEN
     materialize(pipe.createResults(queryState))
-    val decoratedResult = profiler.decorate(pipe.executionPlanDescription, true)
+    val decoratedResult = profiler.decorate(pipe.planDescription, true)
 
     //THEN
-    assertRecorded(decoratedResult, "foo", rows = 10, dbAccess = 20)
+    assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 20)
   }
 
   @Test
@@ -61,12 +62,12 @@ class ProfilerTest extends Assertions with MockitoSugar {
 
     //WHEN
     materialize(pipe3.createResults(queryState))
-    val decoratedResult = profiler.decorate(pipe3.executionPlanDescription, true)
+    val decoratedResult = profiler.decorate(pipe3.planDescription, true)
 
     //THEN
-    assertRecorded(decoratedResult, "foo", rows = 10, dbAccess = 25)
-    assertRecorded(decoratedResult, "bar", rows = 20, dbAccess = 40)
-    assertRecorded(decoratedResult, "baz", rows = 1, dbAccess = 2)
+    assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 25)
+    assertRecorded(decoratedResult, "bar", expectedRows = 20, expectedDbHits = 40)
+    assertRecorded(decoratedResult, "baz", expectedRows = 1, expectedDbHits = 2)
   }
 
   @Test
@@ -82,13 +83,17 @@ class ProfilerTest extends Assertions with MockitoSugar {
     materialize(pipes.createResults(queryState))
   }
 
-  private def assertRecorded(result: PlanDescription, name: String, rows: Int, dbAccess: Int) {
-    val pipeArgs = result.find(name).get.args.toMap
-    val recordedHits = pipeArgs("_db_hits")
-    val recordedRows = pipeArgs("_rows")
+  private def assertRecorded(result: PlanDescription, name: String, expectedRows: Int, expectedDbHits: Int) {
+    val pipeArgs: Seq[Argument] = result.find(name).flatMap(_.arguments)
 
-    assert(recordedHits.v === dbAccess)
-    assert(recordedRows.v === rows)
+    pipeArgs.foreach {
+      case DbHits(count) => assert(count === expectedDbHits)
+      case _ =>
+    }
+
+    pipeArgs.collectFirst {
+      case Rows(seenRows) => assert(seenRows === expectedRows)
+    }
   }
 
   private def materialize(iterator: Iterator[_]) {
@@ -98,7 +103,7 @@ class ProfilerTest extends Assertions with MockitoSugar {
 
 class ProfilerPipe(source: Pipe, name: String, rows: Int, dbAccess: Int)
                   (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  def executionPlanDescription: PlanDescription = source.executionPlanDescription.andThen(this, name)
+  def planDescription: PlanDescription = source.planDescription.andThen(this, name)
 
   protected def internalCreateResults(input:Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.size

@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.profiler
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import data.PrimVal
 import pipes.{NullPipe, QueryState, Pipe, PipeDecorator}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{DelegatingOperations, Operations, QueryContext, DelegatingQueryContext}
 import org.neo4j.cypher.ProfilerStatisticsNotReadyException
 import org.neo4j.graphdb.{PropertyContainer, Direction, Relationship, Node}
 import collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
 
 class Profiler extends PipeDecorator {
 
@@ -55,20 +55,19 @@ class Profiler extends PipeDecorator {
     case _ => f
   }
 
-  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = plan.mapArgs {
+  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = plan map {
     p: PlanDescription =>
       val iteratorStats: ProfilingIterator = iterStats(p.pipe)
-
-      if ( ! isProfileReady )
+      if (!isProfileReady)
         throw new ProfilerStatisticsNotReadyException()
 
-      val newArgs = p.args :+ "_rows" -> PrimVal(iteratorStats.count)
+      val planWithRows = p.
+        addArgument(Arguments.Rows(iteratorStats.count))
 
       contextStats.get(p.pipe) match {
-        case Some(stats) => newArgs :+ "_db_hits" -> PrimVal(stats.count)
-        case None        => newArgs
+        case Some(stats) => planWithRows.addArgument(Arguments.DbHits(stats.count))
+        case None => planWithRows
       }
-
   }
 }
 
