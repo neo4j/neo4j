@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.com.ComException;
@@ -47,7 +46,6 @@ public class UpdatePuller implements Lifecycle
     private final StringLogger logger;
     private final CappedOperation<Pair<String, ? extends Exception>> cappedLogger;
     private boolean pullUpdates = false;
-    private ScheduledThreadPoolExecutor updatePuller;
 
     public UpdatePuller( HaXaDataSourceManager xaDataSourceManager, Master master,
                          RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
@@ -88,10 +86,9 @@ public class UpdatePuller implements Lifecycle
     public void init() throws Throwable
     {
         long pullInterval = config.get( HaSettings.pull_interval );
-        if ( pullInterval > 0 && updatePuller == null )
+        if ( pullInterval > 0 )
         {
-            updatePuller = new ScheduledThreadPoolExecutor( 1 );
-            updatePuller.scheduleWithFixedDelay( new Runnable()
+            scheduler.scheduleRecurring( JobScheduler.Group.pullUpdates, new Runnable()
             {
                 @Override
                 public void run()
@@ -133,22 +130,5 @@ public class UpdatePuller implements Lifecycle
     @Override
     public void shutdown() throws Throwable
     {
-        if ( updatePuller != null )
-        {
-            try
-            {
-                /*
-                * Be gentle, interrupting running threads could leave the
-                * file channels in a bad shape.
-                */
-                this.updatePuller.shutdown();
-                this.updatePuller.awaitTermination( 5, TimeUnit.SECONDS );
-            }
-            catch ( InterruptedException e )
-            {
-                logger.logMessage(
-                        "Got exception while waiting for update puller termination", e, true );
-            }
-        }
     }
 }
