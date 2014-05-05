@@ -37,7 +37,7 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
     val outerJoinPlans: Seq[QueryPlan] = for {
       optionalQG <- context.queryGraph.optionalMatches
       lhs <- planTable.plans
-      patternRel <- findSinglePatternRelationship(lhs.plan, optionalQG)
+      patternRel <- findSinglePatternRelationship(lhs, optionalQG)
       argumentId = optionalQG.argumentIds.head
       otherSide = patternRel.otherSide( argumentId )
       if optionalQG.selections.predicatesGiven(lhs.coveredIds + otherSide + patternRel.name) == optionalQG.selections.flatPredicates
@@ -49,7 +49,7 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
     CandidateList(outerJoinPlans)
   }
 
-  private def findSinglePatternRelationship(outerPlan: LogicalPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
+  private def findSinglePatternRelationship(outerPlan: QueryPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
     val singleArgument = optionalQG.argumentIds.size == 1
     val coveredByLHS = singleArgument && outerPlan.coveredIds.contains(optionalQG.argumentIds.head)
     val isSolved = (optionalQG.coveredIds -- outerPlan.coveredIds).isEmpty

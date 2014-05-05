@@ -74,14 +74,14 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     )
 
 
-    val aPlan = newMockedLogicalPlan("a")
-    val inner: Expand = Expand(SingleRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength)(patternRel)
+    val aPlan = newMockedQueryPlan("a")
+    val inner = ExpandPlan(SingleRowPlan(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan).plan
+    val result = selectPatternPredicates(passThrough)(aPlan)
 
     // Then
-    result should equal(SemiApply(aPlan, inner)(exists))
+    result should equal(SemiApplyPlan(aPlan, inner, exists))
   }
 
   test("should introduce anti semi apply for unsolved exclusive negated pattern predicate") {
@@ -105,14 +105,14 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedLogicalPlan("a")
-    val inner: Expand = Expand(SingleRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength)(patternRel)
+    val aPlan = newMockedQueryPlan("a")
+    val inner = ExpandPlan(SingleRowPlan(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan).plan
+    val result = selectPatternPredicates(passThrough)(aPlan)
 
     // Then
-    result should equal(AntiSemiApply(aPlan, inner)(Exists(predicate, patternQG)))
+    result should equal(AntiSemiApplyPlan(aPlan, inner, Exists(predicate, patternQG)))
   }
 
   test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
@@ -136,9 +136,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
-    val bPlan = newMockedLogicalPlan("b")
+    val bPlan = newMockedQueryPlan("b")
     // When
-    val result = selectPatternPredicates(passThrough)(bPlan).plan
+    val result = selectPatternPredicates(passThrough)(bPlan)
 
     // Then
     result should equal(bPlan)
@@ -169,14 +169,14 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedLogicalPlan("a")
-    val inner: Expand = Expand(SingleRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength)(patternRel)
+    val aPlan = newMockedQueryPlan("a")
+    val inner = ExpandPlan(SingleRowPlan(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan).plan
+    val result = selectPatternPredicates(passThrough)(aPlan)
 
     // Then
-    result should equal(SelectOrSemiApply(aPlan, inner, equals)(Exists(orPredicate, patternQG)))
+    result should equal(SelectOrSemiApplyPlan(aPlan, inner, equals, Exists(orPredicate, patternQG)))
   }
 
   test("should introduce select or anti semi apply for unsolved negated pattern predicates in disjunction with an expression") {
@@ -204,13 +204,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
-    val aPlan = newMockedLogicalPlan("a")
-    val inner: Expand = Expand(SingleRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength)(patternRel)
+    val aPlan = newMockedQueryPlan("a")
+    val inner = ExpandPlan(SingleRowPlan(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan).plan
+    val result = selectPatternPredicates(passThrough)(aPlan)
 
     // Then
-    result should equal(SelectOrAntiSemiApply(aPlan, inner, equals)(Exists(orPredicate, patternQG)))
+    result should equal(SelectOrAntiSemiApplyPlan(aPlan, inner, equals, Exists(orPredicate, patternQG)))
   }
 }

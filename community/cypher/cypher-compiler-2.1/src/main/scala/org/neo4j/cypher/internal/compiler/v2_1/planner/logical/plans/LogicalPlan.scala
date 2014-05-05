@@ -33,11 +33,6 @@ abstract class LogicalPlan extends Product with Visitable[LogicalPlan] {
   def lhs: Option[LogicalPlan]
   def rhs: Option[LogicalPlan]
 
-  def coveredIds: Set[IdName] = solved.coveredIds
-
-  final def isCoveredBy(otherIds: Set[IdName]) = (coveredIds -- otherIds).isEmpty
-  final def covers(other: LogicalPlan): Boolean = other.isCoveredBy(coveredIds)
-
   def accept[R](visitor: Visitor[LogicalPlan, R]): R = visitor.visit(this)
 
   override def toString = "\n" + new LogicalPlanTreeStringVisitor().visit(this)

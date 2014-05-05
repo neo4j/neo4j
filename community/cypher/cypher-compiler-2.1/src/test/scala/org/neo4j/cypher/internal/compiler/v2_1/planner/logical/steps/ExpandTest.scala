@@ -53,7 +53,7 @@ class ExpandTest
       planContext = newMockedPlanContext,
       queryGraph = createQueryGraph(rRel)
     )
-    val planA = newMockedLogicalPlan("a")
+    val planA = newMockedQueryPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     expand(plan) should equal(Candidates(
@@ -66,8 +66,8 @@ class ExpandTest
       planContext = newMockedPlanContext,
       queryGraph = createQueryGraph(rRel)
     )
-    val planA = newMockedLogicalPlan("a")
-    val planB = newMockedLogicalPlan("b")
+    val planA = newMockedQueryPlan("a")
+    val planB = newMockedQueryPlan("b")
     val plan = PlanTable(Map(Set(aNode) -> planA, Set(bNode) -> planB))
 
     expand(plan) should equal(CandidateList(Seq(
@@ -92,7 +92,7 @@ class ExpandTest
       planContext = newMockedPlanContext,
       queryGraph = createQueryGraph(rSelfRel)
     )
-    val planA = newMockedLogicalPlan("a")
+    val planA = newMockedQueryPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     expand(plan) should equal(CandidateList(Seq(
@@ -107,7 +107,7 @@ class ExpandTest
       planContext = newMockedPlanContext,
       queryGraph = createQueryGraph(rRel)
     )
-    val aAndB = newMockedLogicalPlan("a", "b")
+    val aAndB = newMockedQueryPlan("a", "b")
     val plan = PlanTable(Map(Set(aNode) -> aAndB))
 
     expand(plan) should equal(Candidates(
@@ -127,7 +127,7 @@ class ExpandTest
       planContext = newMockedPlanContext,
       queryGraph = createQueryGraph(rVarRel)
     )
-    val planA = newMockedLogicalPlan("a")
+    val planA = newMockedQueryPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
 
     expand(plan) should equal(Candidates(

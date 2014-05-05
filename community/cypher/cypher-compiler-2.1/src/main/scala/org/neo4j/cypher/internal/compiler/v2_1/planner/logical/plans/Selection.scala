@@ -33,8 +33,6 @@ case class Selection(predicates: Seq[Expression],
   def numPredicates = predicates.size
 
   def solved = if (hideSelections) left.solved else left.solved.addPredicates(predicates)
-
-  override def coveredIds = left.coveredIds
 }
 
 object SelectionPlan {
