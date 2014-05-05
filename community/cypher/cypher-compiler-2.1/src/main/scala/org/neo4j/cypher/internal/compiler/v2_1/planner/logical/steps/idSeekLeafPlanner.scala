@@ -50,28 +50,30 @@ object idSeekLeafPlanner extends LeafPlanner {
           case Some(relationship) =>
             createRelationshipByIdSeek(relationship, idValues, predicate)
           case None =>
-            NodeByIdSeek(IdName(idName), idValues)(Seq(predicate))
+            NodeByIdSeekPlan(IdName(idName), idValues, Seq(predicate))
         }
     }
 
     CandidateList(candidatePlans)
   }
 
-  def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): LogicalPlan = {
+  def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): QueryPlan = {
     val (left, right) = relationship.nodes
     val name = relationship.name
     val plan = relationship.dir match {
       case Direction.BOTH =>
-        UndirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
+        UndirectedRelationshipByIdSeekPlan(name, idValues, left, right, relationship, Seq(predicate))
+
       case Direction.INCOMING =>
-        DirectedRelationshipByIdSeek(name, idValues, right, left)(relationship, Seq(predicate))
+        DirectedRelationshipByIdSeekPlan(name, idValues, right, left, relationship, Seq(predicate))
+
       case Direction.OUTGOING =>
-        DirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
+        DirectedRelationshipByIdSeekPlan(name, idValues, left, right, relationship, Seq(predicate))
     }
     filterIfNeeded(plan, name.name, relationship.types)
   }
 
-  private def filterIfNeeded(plan: LogicalPlan, relName: String, types: Seq[RelTypeName]): LogicalPlan =
+  private def filterIfNeeded(plan: QueryPlan, relName: String, types: Seq[RelTypeName]): QueryPlan =
     if (types.isEmpty)
       plan
     else {
@@ -88,6 +90,6 @@ object idSeekLeafPlanner extends LeafPlanner {
         case _ => Ors(predicates)(predicates.head.position)
       }
 
-      Selection(Seq(predicate), plan, hideSelections = true)
+      HiddenSelectionPlan(Seq(predicate), plan)
     }
 }

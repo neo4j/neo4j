@@ -38,12 +38,12 @@
 */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, Selection}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SelectionPlan, QueryPlan, Selection}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Expression}
 
 object selectCovered extends PlanTransformer {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+  def apply(plan: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
     val qg = context.queryGraph
     val coveredIds = plan.coveredIds
 
@@ -54,7 +54,7 @@ object selectCovered extends PlanTransformer {
     if (predicates.isEmpty)
       plan
     else {
-      Selection(predicates, plan)
+      SelectionPlan(predicates, plan)
     }
   }
 

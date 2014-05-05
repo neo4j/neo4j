@@ -28,6 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, CandidateList}
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
@@ -59,10 +60,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(qg).plans
+    val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("42")_))()))
+    resultPlans should equal(Candidates(
+      NodeByIdSeekPlan(IdName("n"), Seq(SignedIntegerLiteral("42")_), Seq(expr))
+    ))
   }
 
   test("simple node by id seek with a collection of node ids") {
@@ -93,12 +96,14 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(qg).plans
+    val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(NodeByIdSeek(IdName("n"), Seq(
-      SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
-    ))()))
+    resultPlans should equal(Candidates(
+      NodeByIdSeekPlan(IdName("n"), Seq(
+        SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
+      ), Seq(expr))
+    ))
   }
 
   test("simple directed relationship by id seek with a rel id expression") {
@@ -133,10 +138,10 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(qg).plans
+    val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(mockRel)))
+    resultPlans should equal(Candidates(DirectedRelationshipByIdSeekPlan(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))))
   }
 
   test("simple undirected relationship by id seek with a rel id expression") {
@@ -172,10 +177,10 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(qg).plans
+    val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(mockRel)))
+    resultPlans should equal(Candidates(UndirectedRelationshipByIdSeekPlan(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))))
   }
 
   test("simple directed relationship by id seek with a collection of relationship ids") {
@@ -212,12 +217,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(qg).plans
+    val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(DirectedRelationshipByIdSeek(IdName("r"), Seq(
+    resultPlans should equal(Candidates(DirectedRelationshipByIdSeekPlan(IdName("r"), Seq(
       SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
-    ), from, end)(mockRel)))
+    ), from, end, patternRel, Seq(expr))))
   }
 
   test("simple undirected relationship by id seek with a collection of relationship ids") {
@@ -254,12 +259,12 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(qg).plans
+    val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(UndirectedRelationshipByIdSeek(IdName("r"), Seq(
+    resultPlans should equal(Candidates(UndirectedRelationshipByIdSeekPlan(IdName("r"), Seq(
       SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
-    ), from, end)(mockRel)))
+    ), from, end, patternRel, Seq(expr))))
   }
 
   test("simple undirected typed relationship by id seek with a rel id expression") {
@@ -302,14 +307,13 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(qg).plans
+    val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(
-      Selection(
+    resultPlans should equal(Candidates(
+      HiddenSelectionPlan(
         Seq(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_),
-        UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(patternRel),
-        hideSelections = true
+        UndirectedRelationshipByIdSeekPlan(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
       )
     ))
   }
@@ -355,19 +359,18 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
 
     // when
-    val resultPlans = idSeekLeafPlanner(qg).plans
+    val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(
-      Selection(
+    resultPlans should equal(Candidates(
+      HiddenSelectionPlan(
         Seq(
           Ors(List(
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)(pos),
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)(pos)
           ))_
         ),
-        UndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end)(mockRel),
-        hideSelections = true)
-    ))
+        UndirectedRelationshipByIdSeekPlan(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
+    )))
   }
 }

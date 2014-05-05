@@ -19,17 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SingleRow, IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 
-case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
+case class PlanTable(m: Map[Set[IdName], QueryPlan] = Map.empty) {
   def size = m.size
 
   def isEmpty = m.isEmpty
 
   def -(ids: Set[IdName]) = copy(m = m - ids)
 
-  def +(newPlan: LogicalPlan): PlanTable = {
+  def +(newPlan: QueryPlan): PlanTable = {
     if (m.keys.exists(newPlan.isCoveredBy)) {
       this
     } else {
@@ -40,15 +43,15 @@ case class PlanTable(m: Map[Set[IdName], LogicalPlan] = Map.empty) {
     }
   }
 
-  def plans: Seq[LogicalPlan] = m.values.toSeq
+  def plans: Seq[QueryPlan] = m.values.toSeq
 
-  def uniquePlan: LogicalPlan = {
+  def uniquePlan: QueryPlan = {
     val allPlans = plans
 
     if (allPlans.size > 1)
       throw new InternalException(s"Expected the final plan table to have 0 or 1 plan (got ${allPlans.size})")
 
-    allPlans.headOption.getOrElse(SingleRow())
+    allPlans.headOption.getOrElse(SingleRowPlan())
   }
 }
 

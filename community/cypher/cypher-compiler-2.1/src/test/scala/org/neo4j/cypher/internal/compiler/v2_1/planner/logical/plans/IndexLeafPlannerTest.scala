@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{indexSeekL
 import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -75,10 +76,10 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     when(context.planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator())
 
     // when
-    val resultPlans = indexSeekLeafPlanner(qg).plans
+    val resultPlans = indexSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(NodeIndexSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)()))
+    resultPlans should equal(Candidates(NodeIndexSeekPlan(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
   }
 
   test("index seek when there is an index on the property") {
@@ -122,9 +123,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     })
 
     // when
-    val resultPlans = uniqueIndexSeekLeafPlanner(qg).plans
+    val resultPlans = uniqueIndexSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(NodeIndexUniqueSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_)()))
+    resultPlans should equal(Candidates(NodeIndexUniqueSeekPlan(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
   }
 }

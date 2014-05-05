@@ -33,7 +33,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
 
-trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionTestSupport {
+trait LogicalPlanningTestSupport
+  extends CypherTestSupport
+  with AstConstructionTestSupport {
+
   self: CypherTestSuite with MockitoSugar =>
 
   val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
@@ -77,7 +80,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
 
     LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
 
-  implicit class RichLogicalPlan(plan: LogicalPlan) {
+  implicit class RichLogicalPlan(plan: QueryPlan) {
     def asTableEntry = plan.coveredIds -> plan
   }
 
@@ -87,6 +90,20 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
     val context = mock[PlanContext]
     doReturn(statistics).when(context).statistics
     context
+  }
+
+  def newMockedQueryPlan(ids: String*)(implicit context: LogicalPlanContext) =
+    QueryPlan(
+      newMockedLogicalPlan(ids: _*),
+      QueryGraph
+        .empty
+        .addPatternNodes(ids.map(IdName).toSeq: _*)
+        .withProjections(ids.map( (id) => id -> ident(id) ).toMap)
+    )
+
+  def newMockedQueryPlan(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
+    val mockedPlan = newMockedLogicalPlan( qg.coveredIds.map(_.name).toSeq: _* )
+    QueryPlan( mockedPlan, qg )
   }
 
   def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan =
@@ -119,4 +136,7 @@ trait LogicalPlanningTestSupport extends CypherTestSupport with AstConstructionT
   }
 
   implicit def idName(name: String): IdName = IdName(name)
+
+  // TODO: This should go away together with LogicalPlan.solved
+  implicit def logicalToQueryPlan(plan: LogicalPlan): QueryPlan = QueryPlan(plan)
 }

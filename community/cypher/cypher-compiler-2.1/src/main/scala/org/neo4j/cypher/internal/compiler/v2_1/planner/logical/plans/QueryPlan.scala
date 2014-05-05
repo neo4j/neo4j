@@ -19,21 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-case class NodeByIdSeek(idName: IdName, nodeIds: Seq[Expression])
-                       (val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
-  def solved = NodeByIdSeekPlan(idName, nodeIds, solvedPredicates).solved
+case class QueryPlan(plan: LogicalPlan, solved: QueryGraph = QueryGraph.empty) {
+  def isCoveredBy(otherIds: Set[IdName]) = plan.isCoveredBy(otherIds)
+  def covers(other: QueryPlan): Boolean = plan.covers(other.plan)
+  def coveredIds: Set[IdName] = plan.coveredIds
 }
 
-object NodeByIdSeekPlan {
-  def apply(idName: IdName, nodeIds: Seq[Expression], solvedPredicates: Seq[Expression] = Seq.empty) =
-    QueryPlan(
-      NodeByIdSeek(idName, nodeIds)(solvedPredicates),
-      QueryGraph
-        .empty
-        .addPatternNodes(idName)
-        .addPredicates(solvedPredicates)
-    )
+object QueryPlan extends (LogicalPlan => QueryPlan) {
+  // TODO: This should go away together with LogicalPlan.solved
+  def apply(plan: LogicalPlan) = plan match {
+    case _ => QueryPlan(plan, plan.solved)
+  }
 }
