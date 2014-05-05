@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.election.ElectionCredentials;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
@@ -32,11 +33,11 @@ import org.neo4j.kernel.impl.core.LastTxIdGetter;
 public class DefaultElectionCredentialsProvider
     implements ElectionCredentialsProvider
 {
-    private final int serverId;
+    private final InstanceId serverId;
     private final LastTxIdGetter lastTxIdGetter;
     private final HighAvailabilityMemberInfoProvider masterInfo;
 
-    public DefaultElectionCredentialsProvider( int serverId, LastTxIdGetter lastTxIdGetter,
+    public DefaultElectionCredentialsProvider( InstanceId serverId, LastTxIdGetter lastTxIdGetter,
                                                HighAvailabilityMemberInfoProvider masterInfo )
     {
         this.serverId = serverId;
@@ -49,7 +50,8 @@ public class DefaultElectionCredentialsProvider
     {
         if ( masterInfo.getHighAvailabilityMemberState().isEligibleForElection() )
         {
-            return new DefaultElectionCredentials( serverId, lastTxIdGetter.getLastTxId(), isMasterOrToMaster() );
+            return new DefaultElectionCredentials( serverId.toIntegerIndex(), lastTxIdGetter.getLastTxId(),
+                    isMasterOrToMaster() );
         }
         return new NotElectableElectionCredentials();
     }

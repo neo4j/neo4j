@@ -40,6 +40,7 @@ import java.util.concurrent.TimeUnit;
 import javax.transaction.xa.XAException;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -63,7 +64,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
     {
         int getTxPushFactor();
 
-        int getServerId();
+        InstanceId getServerId();
 
         SlavePriority getReplicationStrategy();
     }
@@ -79,7 +80,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
             }
 
             @Override
-            public int getServerId()
+            public InstanceId getServerId()
             {
                 return config.get( ClusterSettings.server_id );
             }
@@ -113,7 +114,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
             }
 
             @Override
-            public int getServerId()
+            public InstanceId getServerId()
             {
                 return config.get( ClusterSettings.server_id );
             }
@@ -477,13 +478,13 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
     @Override
     public int getCurrentMasterId()
     {
-        return config.getServerId();
+        return config.getServerId().toIntegerIndex();
     }
 
     @Override
     public int getMyId()
     {
-        return config.getServerId();
+        return config.getServerId().toIntegerIndex();
     }
 
     private static class PullUpdateFuture

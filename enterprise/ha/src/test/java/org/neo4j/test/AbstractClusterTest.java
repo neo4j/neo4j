@@ -19,24 +19,24 @@
  */
 package org.neo4j.test;
 
+import static org.neo4j.cluster.ClusterSettings.default_timeout;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+
 import java.io.File;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
-
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterManager.Provider;
-
-import static org.neo4j.cluster.ClusterSettings.default_timeout;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public abstract class AbstractClusterTest
 {
@@ -64,14 +64,14 @@ public abstract class AbstractClusterTest
         clusterManager = life.add( new ClusterManager( provider, dir, stringMap( default_timeout.name(), "1s" ) )
         {
             @Override
-            protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
+            protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
             {
                 super.config( builder, clusterName, serverId );
                 configureClusterMember( builder, clusterName, serverId );
             }
             
             @Override
-            protected void insertInitialData( GraphDatabaseService db, String name, int serverId )
+            protected void insertInitialData( GraphDatabaseService db, String name, InstanceId serverId )
             {
                 super.insertInitialData( db, name, serverId );
                 insertClusterMemberInitialData( db, name, serverId );
@@ -82,11 +82,11 @@ public abstract class AbstractClusterTest
         cluster.await( masterAvailable() );
     }
 
-    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, int serverId )
+    protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
     {
     }
 
-    protected void insertClusterMemberInitialData( GraphDatabaseService db, String name, int serverId )
+    protected void insertClusterMemberInitialData( GraphDatabaseService db, String name, InstanceId serverId )
     {
     }
     

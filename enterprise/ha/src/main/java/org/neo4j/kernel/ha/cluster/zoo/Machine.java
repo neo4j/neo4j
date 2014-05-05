@@ -21,11 +21,12 @@ package org.neo4j.kernel.ha.cluster.zoo;
 
 import java.net.URI;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.helpers.Pair;
 
 public class Machine
 {
-    private final int machineId;
+    private final InstanceId machineId;
     private final int sequenceId;
     private final long lastCommittedTxId;
     private final Pair<String, Integer> server;
@@ -33,7 +34,7 @@ public class Machine
 
     private final int masterForCommittedTxId;
 
-    public Machine( int machineId, int sequenceId, long lastCommittedTxId,
+    public Machine( InstanceId machineId, int sequenceId, long lastCommittedTxId,
                     int masterForCommittedTxId, String server, int backupPort )
     {
         this.machineId = machineId;
@@ -44,7 +45,7 @@ public class Machine
         this.backupPort = backupPort;
     }
 
-    public int getMachineId()
+    public InstanceId getMachineId()
     {
         return machineId;
     }
@@ -56,7 +57,7 @@ public class Machine
 
     public boolean wasCommittingMaster()
     {
-        return masterForCommittedTxId == machineId;
+        return masterForCommittedTxId == machineId.toIntegerIndex();
     }
 
     public int getMasterForCommittedTxId()
@@ -101,7 +102,7 @@ public class Machine
     @Override
     public int hashCode()
     {
-        return machineId*19;
+        return machineId.hashCode()*19;
     }
 
     public static Pair<String, Integer> splitIpAndPort( String server )

@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.ha.cluster.zoo;
 
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.RequestContext;
 
 public class ZooKeeperMachine extends Machine
 {
-    public static final ZooKeeperMachine NO_MACHINE = new ZooKeeperMachine( -1,
+    public static final ZooKeeperMachine NO_MACHINE = new ZooKeeperMachine( new InstanceId (-1 ),
             -1, 1, RequestContext.EMPTY.machineId(), null, -1, "" );
 
     private final String zkPath;
 
-    public ZooKeeperMachine( int machineId, int sequenceId,
+    public ZooKeeperMachine( InstanceId machineId, int sequenceId,
                              long lastCommittedTxId, int masterForCommittedTxId, String server,
                              int backupPort, String zkPath )
     {
