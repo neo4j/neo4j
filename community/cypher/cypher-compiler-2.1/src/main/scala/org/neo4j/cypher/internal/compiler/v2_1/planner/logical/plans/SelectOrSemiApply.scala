@@ -34,3 +34,26 @@ abstract class AbstractSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan,
     outer.solved.copy(subQueries = outer.solved.subQueries :+ exists, selections = newSelections)
   }
 }
+
+object AbstractSelectOrSemiApply {
+  def solved(outer: QueryPlan, exists: Exists) = {
+    val newSelections = Selections(outer.solved.selections.predicates + exists.predicate)
+    outer.solved.copy(subQueries = outer.solved.subQueries :+ exists, selections = newSelections)
+  }
+}
+
+object SelectOrSemiApplyPlan {
+  def apply(outer: QueryPlan, inner: QueryPlan, predicate: Expression, exists: Exists) =
+    QueryPlan(
+      SelectOrSemiApply(outer.plan, inner.plan, predicate)(exists),
+      AbstractSelectOrSemiApply.solved(outer, exists)
+    )
+}
+
+object SelectOrAntiSemiApplyPlan {
+  def apply(outer: QueryPlan, inner: QueryPlan, predicate: Expression, exists: Exists) =
+    QueryPlan(
+      SelectOrAntiSemiApply(outer.plan, inner.plan, predicate)(exists),
+      AbstractSelectOrSemiApply.solved(outer, exists)
+    )
+}

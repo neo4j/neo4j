@@ -28,3 +28,11 @@ case class OuterHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan, nu
 
   val solved = left.solved.withAddedOptionalMatch(right.solved)
 }
+
+object OuterHashJoinPlan {
+  def apply(node: IdName, left: QueryPlan, right: QueryPlan, nullableIds: Set[IdName]) =
+    QueryPlan(
+      OuterHashJoin(node, left.plan, right.plan, nullableIds),
+      left.solved.withAddedOptionalMatch(right.solved)
+    )
+}

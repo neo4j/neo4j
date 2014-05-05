@@ -25,3 +25,8 @@ case class Apply(outer: LogicalPlan, inner: LogicalPlan) extends LogicalPlan {
 
   def solved = outer.solved ++ inner.solved
 }
+
+object ApplyPlan {
+  def apply(outer: QueryPlan, inner: QueryPlan) =
+    QueryPlan( Apply(outer.plan, inner.plan), outer.solved ++ inner.solved )
+}

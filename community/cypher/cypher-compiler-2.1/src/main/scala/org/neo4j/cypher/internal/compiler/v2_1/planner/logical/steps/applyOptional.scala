@@ -34,7 +34,7 @@ object applyOptional extends CandidateGenerator[PlanTable] {
            lhs <- planTable.plans if applicable(lhs, optionalQG))
       yield {
         val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG))
-        QueryPlan( Apply(lhs.plan, Optional(optionalQG.introducedIds, rhs.plan)) )
+        ApplyPlan(lhs, OptionalPlan(optionalQG.introducedIds, rhs))
       }
 
     CandidateList(applyCandidates)
