@@ -142,7 +142,7 @@ public class TestSlaveOnlyCluster
             clusterManager.getDefaultCluster().await( ClusterManager.allSeesAllAsAvailable() );
 
             HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
-            assertThat( clusterManager.getDefaultCluster().getServerId( master ), CoreMatchers.equalTo( 3 ) );
+            assertThat( clusterManager.getDefaultCluster().getServerId( master ).toIntegerIndex(), CoreMatchers.equalTo( 3 ) );
         }
         finally
         {
