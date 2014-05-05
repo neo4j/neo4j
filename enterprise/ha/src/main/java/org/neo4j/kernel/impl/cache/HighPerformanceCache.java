@@ -365,7 +365,10 @@ public class HighPerformanceCache<E extends EntityWithSizeObject> implements Cac
     @Override
     public void printStatistics()
     {
-        logStatistics( logger );
+        if ( logger.isDebugEnabled() )
+        {
+            logStatistics( logger );
+        }
 //        printAccurateStatistics();
     }
 

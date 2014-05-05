@@ -63,12 +63,12 @@ org.neo4j.server.webserver.https.port=443
 
 == Server Authorization Rules ==
 
-Administrators may require more fine-grained security policies in addition to IP-level restrictions on the Web server.  Neo4j server supports 
-administrators in allowing or disallowing access the specific aspects of the database based on credentials that users or applications provide.
+Administrators may require more fine-grained security policies in addition to IP-level restrictions on the Web server.
+Neo4j server supports administrators in allowing or disallowing access the specific aspects of the database based on credentials that users or applications provide.
 
-To facilitate domain-specific authorization policies in Neo4j Server, +http://components.neo4j.org/neo4j-server/{neo4j-version}/apidocs/org/neo4j/server/rest/security/SecurityRule.html[SecurityRules]+ can be implemented and
-registered with the server. This makes scenarios like user and role based security and
-authentication against external lookup services possible.
+To facilitate domain-specific authorization policies in Neo4j Server, security rules can be implemented and registered with the server.
+This makes scenarios like user and role based security and authentication against external lookup services possible.
+See +org.neo4j.server.rest.security.SecurityRule+ in the javadocs downloadable from http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j.app%22%20AND%20a%3A%22neo4j-server%22[Maven Central (org.neo4j.app:neo4j-server)].
 
 include::enforcing-server-authorization-rules.asciidoc[]
 

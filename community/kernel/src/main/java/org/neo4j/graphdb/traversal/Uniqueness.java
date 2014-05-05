@@ -20,9 +20,7 @@
 package org.neo4j.graphdb.traversal;
 
 /**
- * A catalogue of convenient uniqueness factories.
- *
- * Copied from kernel package so that we can hide kernel from the public API.
+ * A catalog of convenient uniqueness factories.
  */
 public enum Uniqueness implements UniquenessFactory
 {

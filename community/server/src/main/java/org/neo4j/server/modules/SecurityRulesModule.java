@@ -23,6 +23,7 @@ import java.util.ArrayList;
 
 import org.apache.commons.configuration.Configuration;
 
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
@@ -49,14 +50,17 @@ public class SecurityRulesModule implements ServerModule
     public void start()
     {
         Iterable<SecurityRule> securityRules = getSecurityRules();
-        mountedFilter = new SecurityFilter( securityRules );
-
-        webServer.addFilter( mountedFilter, "/*" );
-
-        for ( SecurityRule rule : securityRules )
+        if ( Iterables.count( securityRules ) > 0 )
         {
-            log.log( "Security rule [%s] installed on server",
-                    rule.getClass().getCanonicalName() );
+            mountedFilter = new SecurityFilter( securityRules );
+
+            webServer.addFilter( mountedFilter, "/*" );
+
+            for ( SecurityRule rule : securityRules )
+            {
+                log.log( "Security rule [%s] installed on server",
+                        rule.getClass().getCanonicalName() );
+            }
         }
     }
 
