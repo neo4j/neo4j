@@ -68,12 +68,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-<<<<<<< HEAD
-import static java.lang.String.format;
-=======
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
->>>>>>> origin/2.0-maint
-
 /**
  * This is the real master code that executes on a master. The actual
  * communication over network happens in {@link org.neo4j.kernel.ha.com.slave.MasterClient} and

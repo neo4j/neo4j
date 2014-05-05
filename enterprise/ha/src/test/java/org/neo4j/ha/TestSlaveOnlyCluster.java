@@ -20,8 +20,9 @@
 package org.neo4j.ha;
 
 import static org.hamcrest.CoreMatchers.equalTo;
-
+import static org.junit.Assert.assertThat;
 import static org.neo4j.test.ha.ClusterManager.fromXml;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 import java.net.URI;
 import java.util.Map;
@@ -30,7 +31,6 @@ import java.util.concurrent.CountDownLatch;
 import org.hamcrest.CoreMatchers;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
@@ -42,10 +42,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
-
-import static org.junit.Assert.assertThat;
-
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class TestSlaveOnlyCluster
 {
@@ -142,15 +138,11 @@ public class TestSlaveOnlyCluster
             clusterManager.start();
 
             ClusterManager.ManagedCluster cluster = clusterManager.getDefaultCluster();
-            cluster.await( masterAvailable( cluster.getMemberByServerId( 1 ), cluster.getMemberByServerId( 2 ) ) );
+            cluster.await( masterAvailable( cluster.getMemberByServerId( new InstanceId( 1 ) ),
+                    cluster.getMemberByServerId( new InstanceId( 2 ) ) ) );
 
-<<<<<<< HEAD
             HighlyAvailableGraphDatabase master = cluster.getMaster();
-            assertThat( cluster.getServerId( master ), CoreMatchers.equalTo( 3 ) );
-=======
-            HighlyAvailableGraphDatabase master = clusterManager.getDefaultCluster().getMaster();
-            assertThat( clusterManager.getDefaultCluster().getServerId( master ).toIntegerIndex(), CoreMatchers.equalTo( 3 ) );
->>>>>>> origin/2.0-maint
+            assertThat( cluster.getServerId( master ).toIntegerIndex(), CoreMatchers.equalTo( 3 ) );
         }
         finally
         {

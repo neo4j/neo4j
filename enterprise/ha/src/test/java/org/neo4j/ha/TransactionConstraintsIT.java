@@ -24,7 +24,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 import static java.util.concurrent.TimeUnit.SECONDS;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
@@ -37,10 +36,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-<<<<<<< HEAD
-=======
 import org.neo4j.cluster.InstanceId;
->>>>>>> origin/2.0-maint
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
@@ -59,16 +55,6 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
 
-<<<<<<< HEAD
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.*;
-import static org.neo4j.qa.tooling.DumpProcessInformationRule.localVm;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
-=======
->>>>>>> origin/2.0-maint
 public class TransactionConstraintsIT extends AbstractClusterTest
 {
     @Before
