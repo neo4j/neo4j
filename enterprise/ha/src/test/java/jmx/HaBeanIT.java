@@ -37,6 +37,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -75,10 +76,10 @@ public class HaBeanIT
         clusterManager = new ClusterManager( clusterOfSize( size ), dir.cleanDirectory( testName.getMethodName() ), MapUtil.stringMap() )
         {
             @Override
-            protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
+            protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
             {
-                builder.setConfig( "jmx.port", "" + ( 9912 + serverId ) );
-                builder.setConfig( HaSettings.ha_server, ":" + ( 1136 + serverId ) );
+                builder.setConfig( "jmx.port", "" + ( 9912 + serverId.toIntegerIndex() ) );
+                builder.setConfig( HaSettings.ha_server, ":" + ( 1136 + serverId.toIntegerIndex() ) );
                 builder.setConfig( GraphDatabaseSettings.forced_kernel_id, testName.getMethodName() + serverId );
 
             }
