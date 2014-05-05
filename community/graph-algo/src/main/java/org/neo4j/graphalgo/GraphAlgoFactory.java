@@ -46,7 +46,7 @@ public abstract class GraphAlgoFactory
      * Returns an algorithm which can find all available paths between two
      * nodes. These returned paths can contain loops (i.e. a node can occur
      * more than once in any returned path).
-     * @see AllPaths
+     *
      * @param expander the {@link RelationshipExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param maxDepth the max {@link Path#length()} returned paths are
@@ -62,7 +62,7 @@ public abstract class GraphAlgoFactory
      * Returns an algorithm which can find all available paths between two
      * nodes. These returned paths can contain loops (i.e. a node can occur
      * more than once in any returned path).
-     * @see AllPaths
+     *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param maxDepth the max {@link Path#length()} returned paths are
@@ -78,7 +78,7 @@ public abstract class GraphAlgoFactory
      * Returns an algorithm which can find all simple paths between two
      * nodes. These returned paths cannot contain loops (i.e. a node cannot
      * occur more than once in any returned path).
-     * @see AllSimplePaths
+     *
      * @param expander the {@link RelationshipExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param maxDepth the max {@link Path#length()} returned paths are
@@ -95,7 +95,7 @@ public abstract class GraphAlgoFactory
      * Returns an algorithm which can find all simple paths between two
      * nodes. These returned paths cannot contain loops (i.e. a node cannot
      * occur more than once in any returned path).
-     * @see AllSimplePaths
+     *
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param maxDepth the max {@link Path#length()} returned paths are
@@ -113,8 +113,7 @@ public abstract class GraphAlgoFactory
      * with as short {@link Path#length()} as possible) between two nodes. These
      * returned paths cannot contain loops (i.e. a node cannot occur more than
      * once in any returned path).
-     * 
-     * @see ShortestPath
+     *
      * @param expander the {@link RelationshipExpander} to use for expanding
      *            {@link Relationship}s for each {@link Node}.
      * @param maxDepth the max {@link Path#length()} returned paths are allowed
@@ -132,7 +131,6 @@ public abstract class GraphAlgoFactory
      * returned paths cannot contain loops (i.e. a node cannot occur more than
      * once in any returned path).
      * 
-     * @see ShortestPath
      * @param expander the {@link PathExpander} to use for expanding
      *            {@link Relationship}s for each {@link Path}.
      * @param maxDepth the max {@link Path#length()} returned paths are allowed
@@ -150,7 +148,6 @@ public abstract class GraphAlgoFactory
      * returned paths cannot contain loops (i.e. a node cannot occur more than
      * once in any returned path).
      * 
-     * @see ShortestPath
      * @param expander the {@link RelationshipExpander} to use for expanding
      *            {@link Relationship}s for each {@link Node}.
      * @param maxDepth the max {@link Path#length()} returned paths are allowed
@@ -170,7 +167,6 @@ public abstract class GraphAlgoFactory
      * returned paths cannot contain loops (i.e. a node cannot occur more than
      * once in any returned path).
      * 
-     * @see ShortestPath
      * @param expander the {@link PathExpander} to use for expanding
      *            {@link Relationship}s for each {@link Path}.
      * @param maxDepth the max {@link Path#length()} returned paths are allowed
@@ -189,7 +185,6 @@ public abstract class GraphAlgoFactory
      * between two nodes. These returned paths cannot contain loops (i.e. a node
      * could not occur more than once in any returned path).
      * 
-     * @see ShortestPath
      * @param expander the {@link RelationshipExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param length the {@link Path#length()} returned paths will have, if any
@@ -206,7 +201,6 @@ public abstract class GraphAlgoFactory
      * between two nodes. These returned paths cannot contain loops (i.e. a node
      * could not occur more than once in any returned path).
      * 
-     * @see ShortestPath
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param length the {@link Path#length()} returned paths will have, if any
@@ -219,7 +213,7 @@ public abstract class GraphAlgoFactory
     }
     
     /**
-     * Returns an {@link PathFinder} which uses the A* algorithm to find the
+     * Returns a {@link PathFinder} which uses the A* algorithm to find the
      * cheapest path between two nodes. The definition of "cheap" is the lowest
      * possible cost to get from the start node to the end node, where the cost
      * is returned from {@code lengthEvaluator} and {@code estimateEvaluator}.
@@ -229,7 +223,6 @@ public abstract class GraphAlgoFactory
      * See http://en.wikipedia.org/wiki/A*_search_algorithm for more
      * information.
      * 
-     * @see AStar
      * @param expander the {@link RelationshipExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param lengthEvaluator evaluator that can return the cost represented
@@ -257,7 +250,6 @@ public abstract class GraphAlgoFactory
      * See http://en.wikipedia.org/wiki/A*_search_algorithm for more
      * information.
      * 
-     * @see AStar
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param lengthEvaluator evaluator that can return the cost represented
@@ -275,7 +267,7 @@ public abstract class GraphAlgoFactory
     }
     
     /**
-     * Returns an {@link PathFinder} which uses the Dijkstra algorithm to find
+     * Returns a {@link PathFinder} which uses the Dijkstra algorithm to find
      * the cheapest path between two nodes. The definition of "cheap" is the
      * lowest possible cost to get from the start node to the end node, where
      * the cost is returned from {@code costEvaluator}. These returned paths
@@ -285,7 +277,6 @@ public abstract class GraphAlgoFactory
      * See http://en.wikipedia.org/wiki/Dijkstra%27s_algorithm for more
      * information.
      * 
-     * @see Dijkstra
      * @param expander the {@link RelationshipExpander} to use for expanding
      * {@link Relationship}s for each {@link Node}.
      * @param costEvaluator evaluator that can return the cost represented
@@ -300,7 +291,7 @@ public abstract class GraphAlgoFactory
     }
     
     /**
-     * Returns an {@link PathFinder} which uses the Dijkstra algorithm to find
+     * Returns a {@link PathFinder} which uses the Dijkstra algorithm to find
      * the cheapest path between two nodes. The definition of "cheap" is the
      * lowest possible cost to get from the start node to the end node, where
      * the cost is returned from {@code costEvaluator}. These returned paths
@@ -310,7 +301,6 @@ public abstract class GraphAlgoFactory
      * See http://en.wikipedia.org/wiki/Dijkstra%27s_algorithm for more
      * information.
      * 
-     * @see Dijkstra
      * @param expander the {@link PathExpander} to use for expanding
      * {@link Relationship}s for each {@link Path}.
      * @param costEvaluator evaluator that can return the cost represented
