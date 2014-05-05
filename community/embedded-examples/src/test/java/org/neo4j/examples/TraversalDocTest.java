@@ -34,9 +34,9 @@ public class TraversalDocTest extends ImpermanentGraphJavaDocTestBase
 {
     /**
      * A
-     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[traversal description] is built using a
+     * link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html[traversal description] is built using a
      * fluent interface and such a description can then spawn
-     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html[traversers].
+     * link:javadocs/org/neo4j/graphdb/traversal/Traverser.html[traversers].
      * 
      * @@graph
      * 
@@ -52,7 +52,7 @@ public class TraversalDocTest extends ImpermanentGraphJavaDocTestBase
      * 
      * @@knowslikesoutput
      * 
-     * Since http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/TraversalDescription.html[+TraversalDescription+]s
+     * Since link:javadocs/org/neo4j/graphdb/traversal/TraversalDescription.html[+TraversalDescription+]s
      * are immutable it is also useful to create template descriptions which holds common
      * settings shared by different traversals. For example, let's start with this traverser:
      * 
@@ -80,13 +80,13 @@ public class TraversalDocTest extends ImpermanentGraphJavaDocTestBase
      * @@output4
      * 
      * For various useful evaluators, see the
-     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Evaluators.html[Evaluators] Java API
+     * link:javadocs/org/neo4j/graphdb/traversal/Evaluators.html[Evaluators] Java API
      * or simply implement the
-     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Evaluator.html[Evaluator] interface yourself.
+     * link:javadocs/org/neo4j/graphdb/traversal/Evaluator.html[Evaluator] interface yourself.
      * 
-     * If you're not interested in the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[+Path+]s,
-     * but the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Node.html[+Node+]s
-     * you can transform the traverser into an iterable of http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html#nodes()[nodes]
+     * If you're not interested in the link:javadocs/org/neo4j/graphdb/Path.html[+Path+]s,
+     * but the link:javadocs/org/neo4j/graphdb/Node.html[+Node+]s
+     * you can transform the traverser into an iterable of link:javadocs/org/neo4j/graphdb/traversal/Traverser.html#nodes()[nodes]
      * like this:
      * 
      * @@nodes
@@ -95,7 +95,7 @@ public class TraversalDocTest extends ImpermanentGraphJavaDocTestBase
      * 
      * @@nodeoutput
      * 
-     * http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/traversal/Traverser.html#relationships()[Relationships]
+     * link:javadocs/org/neo4j/graphdb/traversal/Traverser.html#relationships()[Relationships]
      * are fine as well, here's how to get them:
      * 
      * @@relationships

@@ -103,6 +103,12 @@ terms of the relevant Commercial Agreement.
         </dependency>
         <dependency>
           <groupId>org.neo4j.doc</groupId>
+          <artifactId>neo4j-javadocs</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.doc</groupId>
           <artifactId>neo4j-graphgist</artifactId>
           <version>${project.version}</version>
         </dependency>

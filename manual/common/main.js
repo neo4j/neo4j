@@ -41,6 +41,30 @@ $( document ).ready( function()
     } );
   }
   addBootstrapStyling();
+  
+  $( 'h3, h4, h5, h6', $content ).click(function()
+  {
+    var $heading = $( this );
+    var $section = $heading.parents( 'section' ).first();
+    if ( !$section.length )
+    {
+      return;
+    }
+    var id = $section.attr( 'id' );
+    if ( id )
+    {
+      var ident = '#' + id;
+      if ( window.history && window.history.pushState )
+      {
+        window.history.pushState( null, $heading.text(), ident );
+        $content.scrollTo( $section, { 'duration': 300 } );
+      }
+      else
+      {
+        window.location.assign( ident );
+      }
+    }
+  });
 } );
 
 function addBootstrapStyling()
