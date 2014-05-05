@@ -27,3 +27,11 @@ case class NodeHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan) ext
 
   val solved = left.solved ++ right.solved
 }
+
+object NodeHashJoinPlan {
+  def apply(node: IdName, left: QueryPlan, right: QueryPlan) =
+    QueryPlan(
+      NodeHashJoin(node, left.plan, right.plan),
+      left.solved ++ right.solved
+    )
+}

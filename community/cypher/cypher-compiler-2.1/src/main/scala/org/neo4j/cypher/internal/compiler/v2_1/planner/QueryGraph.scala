@@ -92,6 +92,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     )
   }
 
+  def addPatternRels(rels: Seq[PatternRelationship]) =
+    rels.foldLeft(this)( (qg, rel) => qg.addPatternRel(rel) )
+
   private def symbol(id: IdName) = id.name -> Identifier(id.name)(null)
 
   def addArgumentId(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
