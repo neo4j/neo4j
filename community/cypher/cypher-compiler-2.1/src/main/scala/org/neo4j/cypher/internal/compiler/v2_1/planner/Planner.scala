@@ -70,6 +70,9 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val queryGraph = queryGraphBuilder.produce(ast)
 
+    if (queryGraph.groupingKey.nonEmpty)
+      throw new CantHandleQueryException
+
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
     val context = LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
     strategy.plan(context).plan

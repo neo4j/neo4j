@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SimplePatternLength, PatternRelationship, IdName}
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{SignedIntegerLiteral, CountStar, AstConstructionTestSupport}
 
-class QueryGraphTest extends CypherFunSuite {
+class QueryGraphTest extends CypherFunSuite with AstConstructionTestSupport {
   test("returns no pattern relationships when the query graph doesn't contain any") {
     val rels: Set[PatternRelationship] = Set.empty
     val qg = QueryGraph(patternRelationships = rels)
@@ -49,5 +50,35 @@ class QueryGraphTest extends CypherFunSuite {
     qg.findRelationshipsEndingOn(IdName("a")) should equal(Set(r))
     qg.findRelationshipsEndingOn(IdName("b")) should equal(Set(r, r2))
     qg.findRelationshipsEndingOn(IdName("c")) should equal(Set(r2))
+  }
+
+  test("should be able to compute a single grouping key from projections") {
+    val qg = QueryGraph(
+      projections = Map("n" -> ident("n")),
+      aggregatingProjections = Map("c" -> CountStar()_)
+    )
+
+    qg.groupingKey should equal(Some(Set("n")))
+  }
+
+  test("should be able to compute a grouping key containing constants from projections") {
+    val qg = QueryGraph(
+      projections = Map("n" -> ident("n"), "p" -> SignedIntegerLiteral("3")_),
+      aggregatingProjections = Map("c" -> CountStar()_)
+    )
+
+    qg.groupingKey should equal(Some(Set("n", "p")))
+  }
+
+  test("should be able to compute a single grouping key from projections when there are constants involved") {
+    val qg = QueryGraph(aggregatingProjections = Map("c" -> CountStar()_))
+
+    qg.groupingKey should equal(Some(Set.empty))
+  }
+
+  test("should return no grouping key when there are no aggregations") {
+    val qg = QueryGraph(projections = Map("n" -> ident("n")))
+
+    qg.groupingKey should equal(None)
   }
 }

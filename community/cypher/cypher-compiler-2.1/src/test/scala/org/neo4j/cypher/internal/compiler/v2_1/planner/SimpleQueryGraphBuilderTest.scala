@@ -633,5 +633,21 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ))
   }
 
+  test("match (a) return count(*)") {
+    val qg = buildQueryGraph("match (a) return count(*)", normalize = true)
+    qg.patternNodes should equal(Set[IdName]("a"))
+    qg.projections should be(empty)
+    qg.aggregatingProjections should equal(Map[String, Expression]("count(*)" -> CountStar()_))
+    qg.groupingKey should equal(Some(Set.empty))
+  }
+
+  test("match (a)-->(b) return a, count(b)") {
+    val qg = buildQueryGraph("match (a)-->(b) return a, count(b)", normalize = true)
+    qg.patternNodes should equal(Set[IdName]("a", "b"))
+    qg.projections should equal(Map[String, Expression]("a" -> ident("a")))
+    qg.aggregatingProjections should equal(Map[String, Expression]("count(b)" -> FunctionInvocation(FunctionName("count")_, ident("b"))_))
+    qg.groupingKey should equal(Some(Set("a")))
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }
