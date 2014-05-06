@@ -46,11 +46,6 @@ public abstract class LockableWindow implements PersistenceWindow
         this.fileChannel = fileChannel;
     }
 
-    boolean encapsulates( long position )
-    {
-        return position() <= position && position < position() + size();
-    }
-
     StoreChannel getFileChannel()
     {
         return fileChannel;

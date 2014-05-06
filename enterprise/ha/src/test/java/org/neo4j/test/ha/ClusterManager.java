@@ -19,6 +19,11 @@
  */
 package org.neo4j.test.ha;
 
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
 import java.io.File;
 import java.lang.reflect.Field;
 import java.net.URI;
@@ -37,17 +42,15 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import ch.qos.logback.classic.LoggerContext;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
-import org.w3c.dom.Document;
-
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.client.Clusters;
 import org.neo4j.cluster.client.ClustersXMLSerializer;
@@ -78,13 +81,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
-
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-
-import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.IteratorUtil.count;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+import org.w3c.dom.Document;
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -254,7 +253,8 @@ public class ClusterManager
     {
         private final Clusters.Cluster spec;
         private final String name;
-        private final Map<Integer, HighlyAvailableGraphDatabaseProxy> members = new ConcurrentHashMap<Integer, HighlyAvailableGraphDatabaseProxy>();
+        private final Map<InstanceId, HighlyAvailableGraphDatabaseProxy> members =
+                new ConcurrentHashMap<InstanceId, HighlyAvailableGraphDatabaseProxy>();
         private final List<ClusterMembers> arbiters = new ArrayList<ClusterMembers>( );
 
         ManagedCluster( Clusters.Cluster spec ) throws URISyntaxException
@@ -263,7 +263,7 @@ public class ClusterManager
             this.name = spec.getName();
             for ( int i = 0; i < spec.getMembers().size(); i++ )
             {
-                startMember( i + 1 );
+                startMember( new InstanceId( i + 1 ) );
             }
             for ( HighlyAvailableGraphDatabaseProxy member : members.values() )
             {
@@ -355,7 +355,7 @@ public class ClusterManager
          * @throws IllegalStateException if that db isn't started or no such
          *                               db exists in the cluster.
          */
-        public HighlyAvailableGraphDatabase getMemberByServerId( int serverId )
+        public HighlyAvailableGraphDatabase getMemberByServerId( InstanceId serverId )
         {
             HighlyAvailableGraphDatabase db = members.get( serverId ).get();
             if ( db == null )
@@ -376,7 +376,7 @@ public class ClusterManager
         public RepairKit shutdown( HighlyAvailableGraphDatabase db )
         {
             assertMember( db );
-            int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
+            InstanceId serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
             members.remove( serverId );
             life.remove( db );
             db.shutdown();
@@ -427,14 +427,13 @@ public class ClusterManager
             stoppedServices.add(statemachineExecutor);
             stoppedServices.add( receiver );
 
-            int serverId = db.getDependencyResolver().resolveDependency( Config.class ).get( ClusterSettings.server_id );
             //db.shutdown();
             return new StartNetworkAgainKit( db, stoppedServices );
         }
 
-        private void startMember( int serverId ) throws URISyntaxException
+        private void startMember( InstanceId serverId ) throws URISyntaxException
         {
-            Clusters.Member member = spec.getMembers().get( serverId-1 );
+            Clusters.Member member = spec.getMembers().get( serverId.toIntegerIndex() - 1 );
             StringBuilder initialHosts = new StringBuilder( spec.getMembers().get( 0 ).getHost() );
             for (int i = 1; i < spec.getMembers().size(); i++)
             {
@@ -456,9 +455,9 @@ public class ClusterManager
                                 setConfig( HaSettings.ha_server, ":" + haPort ).
                                 setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                                 setConfig( commonConfig );
-                if ( instanceConfig.containsKey( serverId ) )
+                if ( instanceConfig.containsKey( serverId.toIntegerIndex() ) )
                 {
-                   graphDatabaseBuilder.setConfig( instanceConfig.get( serverId ) );
+                   graphDatabaseBuilder.setConfig( instanceConfig.get( serverId.toIntegerIndex() ) );
                 }
 
                 config( graphDatabaseBuilder, name, serverId );
@@ -563,7 +562,7 @@ public class ClusterManager
             return spec.getMembers().size();
         }
 
-        public int getServerId( HighlyAvailableGraphDatabase member )
+        public InstanceId getServerId( HighlyAvailableGraphDatabase member )
         {
             assertMember( member );
             return member.getConfig().get( ClusterSettings.server_id );
@@ -959,11 +958,11 @@ public class ClusterManager
         return getCluster( "neo4j.ha" );
     }
 
-    protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
+    protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
     {
     }
 
-    protected void insertInitialData( GraphDatabaseService db, String name, int serverId )
+    protected void insertInitialData( GraphDatabaseService db, String name, InstanceId serverId )
     {
     }
 
@@ -996,10 +995,10 @@ public class ClusterManager
 
     private class StartDatabaseAgainKit implements RepairKit
     {
-        private final int serverId;
+        private final InstanceId serverId;
         private final ManagedCluster cluster;
 
-        public StartDatabaseAgainKit( ManagedCluster cluster, int serverId )
+        public StartDatabaseAgainKit( ManagedCluster cluster, InstanceId serverId )
         {
             this.cluster = cluster;
             this.serverId = serverId;

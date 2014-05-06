@@ -96,14 +96,21 @@ class BackupService
     }
 
     private final FileSystemAbstraction fileSystem;
+    private final StringLogger logger;
 
     BackupService() {
-        this.fileSystem = new DefaultFileSystemAbstraction();
+        this( new DefaultFileSystemAbstraction(), StringLogger.SYSTEM );
     }
 
     BackupService( FileSystemAbstraction fileSystem )
     {
+        this( fileSystem, StringLogger.SYSTEM );
+    }
+
+    BackupService( FileSystemAbstraction fileSystem, StringLogger logger )
+    {
         this.fileSystem = fileSystem;
+        this.logger = logger;
     }
 
     BackupOutcome doFullBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
@@ -239,7 +246,6 @@ class BackupService
             bumpLogFile( targetDirectory, timestamp );
             if ( checkConsistency )
             {
-                StringLogger logger = StringLogger.SYSTEM;
                 try
                 {
                     consistent = new ConsistencyCheckService().runFullConsistencyCheck(
@@ -250,7 +256,7 @@ class BackupService
                 }
                 catch ( ConsistencyCheckIncompleteException e )
                 {
-                    e.printStackTrace( System.err );
+                    logger.error( "Consistency check incomplete", e );
                 }
                 finally
                 {
@@ -324,16 +330,14 @@ class BackupService
         {
             try
             {
-                // Our existing backup is out of date. Archive the old backup for safekeeping and do full backup.
+                // Our existing backup is out of date.
+                logger.info( "Existing backup is too far out of date, a new full backup will be performed." );
+
                 File targetDirFile = new File( targetDirectory );
-                File oldBackupFile = new File( targetDirectory, "backup.old" );
+                FileUtils.deleteRecursively( targetDirFile );
 
-                prepareForFullBackup( targetDirFile, oldBackupFile );
-
-                BackupOutcome outcome = doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(),
+                return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(),
                                                       verification, config );
-
-                return outcome;
             }
             catch ( IOException fullBackupFailure )
             {
@@ -341,33 +345,6 @@ class BackupService
                         "but that failed as well: '" + fullBackupFailure.getMessage() + "'.", fullBackupFailure );
             }
         }
-    }
-
-    private void prepareForFullBackup( File targetDirFile, File oldBackupFile ) throws IOException
-    {
-        if(oldBackupFile.exists())
-        {
-            FileUtils.deleteRecursively( oldBackupFile );
-        }
-
-        if( targetDirFile.getUsableSpace() < FileUtils.directorySize( targetDirFile ) )
-        {
-            throw new RuntimeException( "Failed to run incremental backup because the existing backup is too " +
-                    "old. Fell back to full backup, but there is not enough disk space available. " +
-                    "You can mitigate this by removing the existing backup in '" +
-                    targetDirFile.getAbsolutePath() + "' and running the backup again." );
-        }
-
-        FileUtils.moveDirectoryContents( targetDirFile, oldBackupFile );
-    }
-
-    private void replaceOldBackupWithNew( File oldBackup, File newBackup ) throws IOException
-    {
-        if(oldBackup.exists())
-        {
-            FileUtils.deleteRecursively( oldBackup );
-        }
-        FileUtils.moveFile( newBackup, oldBackup );
     }
 
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb )

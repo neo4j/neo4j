@@ -24,7 +24,6 @@ import static org.neo4j.graphdb.factory.GraphDatabaseSetting.TRUE;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
-import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.MANDATORY;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.illegalValueMessage;
@@ -36,6 +35,7 @@ import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.Description;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.HostnamePort;
 
 /**
@@ -43,8 +43,30 @@ import org.neo4j.helpers.HostnamePort;
  */
 public class ClusterSettings
 {
+    public static final Function<String, InstanceId> INSTANCE_ID = new Function<String, InstanceId>()
+    {
+        @Override
+        public InstanceId apply( String value )
+        {
+            try
+            {
+                return new InstanceId( Integer.parseInt( value ) );
+            }
+            catch ( NumberFormatException e )
+            {
+                throw new IllegalArgumentException( "not a valid integer value" );
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "an instance id";
+        }
+    };
+
     @Description( "Id for a cluster instance. Must be unique within the cluster." )
-    public static final Setting<Integer> server_id = setting( "ha.server_id", INTEGER, MANDATORY );
+    public static final Setting<InstanceId> server_id = setting( "ha.server_id", INSTANCE_ID, MANDATORY );
 
     @Description( "The name of a cluster." )
     public static final Setting<String> cluster_name = setting( "ha.cluster_name", STRING, "neo4j.ha",

@@ -57,7 +57,7 @@ public class ZooKeeperHighAvailabilityEvents
         this.config = config;
         this.switchover = switchover;
         this.life = new LifeSupport();
-        this.instanceId = new InstanceId( config.get( ClusterSettings.server_id ) );
+        this.instanceId = config.get( ClusterSettings.server_id );
     }
 
     @Override
@@ -88,7 +88,7 @@ public class ZooKeeperHighAvailabilityEvents
             @Override
             public void notify( ClusterMemberListener listener )
             {
-                listener.coordinatorIsElected( new InstanceId( client.getCachedMaster().getMachineId() ) );
+                listener.coordinatorIsElected( client.getCachedMaster().getMachineId() );
             }
         } );
         Listeners.notifyListeners( haListeners, new Listeners.Notification<ClusterMemberListener>()
@@ -97,7 +97,7 @@ public class ZooKeeperHighAvailabilityEvents
             public void notify( ClusterMemberListener listener )
             {
                 listener.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER,
-                        new InstanceId( client.getCachedMaster().getMachineId() ),
+                        client.getCachedMaster().getMachineId(),
                         URI.create( "ha://" + client.getCachedMaster().getServerAsString() ));
             }
         } );
@@ -124,7 +124,7 @@ public class ZooKeeperHighAvailabilityEvents
             public void notify( ClusterMemberListener listener )
             {
                 logger.getMessagesLog( getClass() ).logMessage( "got member is available for me: "+ client.getClusterServer() );
-                listener.memberIsAvailable( role, new InstanceId( client.getMyMachineId() ), roleUri );
+                listener.memberIsAvailable( role, client.getMyMachineId(), roleUri );
             }
         } );
     }
@@ -195,7 +195,7 @@ public class ZooKeeperHighAvailabilityEvents
                 @Override
                 public void notify( ClusterMemberListener listener )
                 {
-                    listener.coordinatorIsElected( new InstanceId( client.getCachedMaster().getMachineId() ) );
+                    listener.coordinatorIsElected( client.getCachedMaster().getMachineId() );
                 }
             } );
         }
@@ -210,7 +210,7 @@ public class ZooKeeperHighAvailabilityEvents
                 public void notify( ClusterMemberListener listener )
                 {
                     listener.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER,
-                            new InstanceId( client.getCachedMaster().getMachineId() ),
+                            client.getCachedMaster().getMachineId(),
                                     URI.create( "ha://" + client.getCachedMaster().getServerAsString() ) );
                 }
             } );

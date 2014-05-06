@@ -133,7 +133,7 @@ public class NetworkedServerFactory
         } );
 
         final ProtocolServer protocolServer = protocolServerFactory.newProtocolServer(
-                new InstanceId( config.get( ClusterSettings.server_id ) ), timeoutStrategy, receiver, sender,
+                config.get( ClusterSettings.server_id ), timeoutStrategy, receiver, sender,
                 acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor, objectInputStreamFactory,
                 objectOutputStreamFactory );
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()

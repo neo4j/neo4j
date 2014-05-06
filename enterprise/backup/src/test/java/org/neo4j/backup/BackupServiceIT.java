@@ -48,12 +48,10 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.storemigration.StoreFiles;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -278,84 +276,6 @@ public class BackupServiceIT
     }
 
     @Test
-    public void shouldNotOverwriteExistingBackupWithFullIfStoreIdsDontMatch() throws Exception
-    {
-        // Given
-        Map<String, String> config = defaultBackupPortHostParams();
-        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
-        GraphDatabaseAPI db = createDb( storeDir, config );
-        BackupService backupService = new BackupService( fileSystem );
-
-        createAndIndexNode( db, 1 );
-
-        // A full backup
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
-
-        // And then a completely different database runs on that port
-        db.shutdown();
-        FileUtils.deleteRecursively( storeDir );
-        db = createDb( storeDir, config );
-
-        // when
-        try
-        {
-            backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                                                               new Config(defaultBackupPortHostParams()));
-            fail("Should have thrown exception.");
-        }
-
-        // Then
-        catch(MismatchingStoreIdException e)
-        {
-            // good
-        }
-
-        assertTrue( backupDir.exists() );
-
-        db.shutdown();
-    }
-
-    @Test
-    public void shouldNotFallbackToFullBackupIfThereIsNoDiskSpaceForIt() throws Exception
-    {
-        // Given
-        Map<String, String> config = defaultBackupPortHostParams();
-        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
-        GraphDatabaseAPI db = createDb( storeDir, config );
-        BackupService backupService = new BackupService( fileSystem );
-
-        createAndIndexNode( db, 1 );
-
-        // A full backup
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
-
-        // And then a completely different database runs on that port
-        db.shutdown();
-        FileUtils.deleteRecursively( storeDir );
-        db = createDb( storeDir, config );
-
-        // when
-        try
-        {
-            backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                    new Config(defaultBackupPortHostParams()));
-            fail("Should have thrown exception.");
-        }
-
-        // Then
-        catch(MismatchingStoreIdException e)
-        {
-            // good
-        }
-
-        assertTrue( backupDir.exists() );
-
-        db.shutdown();
-    }
-
-    @Test
     public void shouldDoFullBackupOnIncrementalFallbackToFullIfNoBackupFolderExists() throws Exception
     {
         // Given
@@ -535,12 +455,6 @@ public class BackupServiceIT
         // then
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
         assertTrue( backupOutcome.isConsistent() );
-    }
-
-    private void logMeThis( String val )
-    {
-        String prefix = padRight( System.currentTimeMillis() + ":" + Thread.currentThread().getName(), 40);
-        System.out.println( prefix + " => " + val );
     }
 
     public static String padRight(String s, int n) {

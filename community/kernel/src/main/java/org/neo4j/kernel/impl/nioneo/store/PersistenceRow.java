@@ -87,10 +87,10 @@ public class PersistenceRow extends LockableWindow
     @Override
     public Buffer getOffsettedBuffer( long id )
     {
-        if ( id != buffer.position() )
+        if ( id != position )
         {
             throw new InvalidRecordException( "Id[" + id + 
-                "] not equal to buffer position[" + buffer.position() + "]" );
+                "] not equal to buffer position[" + position + "]" );
         }
         return buffer;
     }

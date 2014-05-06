@@ -33,8 +33,6 @@ import java.nio.ByteBuffer;
  */
 public class Buffer
 {
-//    private static Logger logger = Logger.getLogger( Buffer.class.getName() );
-
     private final ByteBuffer buf;
     private final PersistenceWindow persistenceWindow;
 
@@ -46,21 +44,6 @@ public class Buffer
             throw new IllegalArgumentException( "null buf" );
         }
         this.buf = buf;
-    }
-
-//    void setByteBuffer( ByteBuffer byteBuffer )
-//    {
-//        this.buf = byteBuffer;
-//    }
-
-    /**
-     * Returns the position of the persistence window tied to this buffer.
-     *
-     * @return The persistence window's position
-     */
-    public long position()
-    {
-        return persistenceWindow.position();
     }
 
     /**
@@ -94,10 +77,8 @@ public class Buffer
         }
         catch ( java.lang.IllegalArgumentException e )
         {
-//            logger.severe( "Illegal buffer position: Pos=" + position()
-//                + " off=" + offset + " capacity=" + buf.capacity() );
             throw new IllegalArgumentException( "Illegal offset " + offset +
-                    " for window position:" + position() + ", buffer:" + buf, e );
+                    " for buffer:" + buf, e );
         }
         return this;
     }

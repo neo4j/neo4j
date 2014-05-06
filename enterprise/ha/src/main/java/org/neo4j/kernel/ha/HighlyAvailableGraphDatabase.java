@@ -26,13 +26,13 @@ import java.util.Arrays;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Map;
-
 import javax.transaction.Transaction;
 
+import ch.qos.logback.classic.LoggerContext;
 import org.jboss.netty.logging.InternalLoggerFactory;
 
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.com.BindingNotifier;
 import org.neo4j.cluster.logging.NettyLoggerFactory;
@@ -69,6 +69,8 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.cluster.SimpleHighAvailabilityMemberContext;
+import org.neo4j.kernel.ha.cluster.SwitchToMaster;
+import org.neo4j.kernel.ha.cluster.SwitchToSlave;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.cluster.zoo.ZooKeeperHighAvailabilityEvents;
@@ -104,8 +106,6 @@ import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.tooling.Clock;
 
-import ch.qos.logback.classic.LoggerContext;
-
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
 import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
@@ -118,7 +118,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private RequestContextFactory requestContextFactory;
     private Slaves slaves;
     private ClusterMembers members;
-    private DelegateInvocationHandler masterDelegateInvocationHandler;
+    private DelegateInvocationHandler<Master> masterDelegateInvocationHandler;
     private LoggerContext loggerContext;
     private Master master;
     private HighAvailabilityMemberStateMachine memberStateMachine;
@@ -277,8 +277,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
         XaDataSourceManager toReturn = new HaXaDataSourceManager( logging.getMessagesLog( HaXaDataSourceManager.class
         ) );
-        requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ), toReturn,
-                dependencyResolver );
+        requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ).toIntegerIndex(),
+                toReturn, dependencyResolver );
         return toReturn;
     }
 
@@ -331,8 +331,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 {
                     if ( member.getRoleUri().getScheme().equals( "ha" ) )
                     {
-                        if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ) ==
-                                config.get( ClusterSettings.server_id ) )
+                        if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ).equals(
+                                config.get( ClusterSettings.server_id ) ) )
                         {
                             msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not " +
                                     "join this cluster",
@@ -414,14 +414,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         }
 
         members = new ClusterMembers( clusterClient, clusterClient, clusterEvents,
-                new InstanceId( config.get( ClusterSettings.server_id ) ) );
+                config.get( ClusterSettings.server_id ) );
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members,
                 clusterEvents,
                 clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
 
         HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging
-                .getConsoleLog( HighAvailabilityConsoleLogger.class ), new InstanceId( config.get( ClusterSettings
-                .server_id ) ) );
+                .getConsoleLog( HighAvailabilityConsoleLogger.class ), config.get( ClusterSettings
+                .server_id ) );
         availabilityGuard.addListener( highAvailabilityConsoleLogger );
         clusterEvents.addClusterMemberListener( highAvailabilityConsoleLogger );
         clusterClient.addClusterListener( highAvailabilityConsoleLogger );
@@ -487,10 +487,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
         highAvailabilityModeSwitcher =
-                new HighAvailabilityModeSwitcher( clusterClient, clusterClient, masterDelegateInvocationHandler,
-                        clusterMemberAvailability, memberStateMachine, this,
-                        (HaIdGeneratorFactory) idGeneratorFactory, config,
-                        logging, requestContextFactory );
+                new HighAvailabilityModeSwitcher( new SwitchToSlave(logging.getConsoleLog( HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(), (HaIdGeneratorFactory) idGeneratorFactory,
+                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory),
+                        new SwitchToMaster( logging, msgLog, this,
+                        (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(), masterDelegateInvocationHandler, clusterMemberAvailability ),
+                        clusterClient, clusterMemberAvailability, logging.getMessagesLog( HighAvailabilityModeSwitcher.class ));
+
+        clusterClient.addBindingListener( highAvailabilityModeSwitcher );
+        memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );
 
         /*
          * We always need the mode switcher and we need it to restart on switchover. So:
@@ -560,7 +564,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected Factory<byte[]> createXidGlobalIdFactory()
     {
-        final int serverId = config.get( ClusterSettings.server_id );
+        final int serverId = config.get( ClusterSettings.server_id ).toIntegerIndex();
         return new Factory<byte[]>()
         {
             @Override

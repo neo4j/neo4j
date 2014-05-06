@@ -69,6 +69,7 @@ import org.apache.zookeeper.ZooDefs;
 import org.apache.zookeeper.ZooKeeper;
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.NetworkReceiver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
@@ -102,7 +103,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
     protected static final String COMPATIBILITY_CHILD_19 = "compatibility-1.9";
 
     private ZooKeeper zooKeeper;
-    private int machineId;
+    private InstanceId machineId;
     private String sequenceNr;
 
     private long committedTx;
@@ -134,7 +135,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
     protected static final int STOP_FLUSHING = -6;
 
     private List<HostnamePort> servers;
-    private final Map<Integer, Machine> haServersCache = new ConcurrentHashMap<Integer, Machine>();
+    private final Map<InstanceId, Machine> haServersCache = new ConcurrentHashMap<InstanceId, Machine>();
     protected volatile Machine cachedMaster = NO_MACHINE;
 
     protected final StringLogger msgLog;
@@ -283,7 +284,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         return storeId;
     }
 
-    protected int getMyMachineId()
+    protected InstanceId getMyMachineId()
     {
         return this.machineId;
     }
@@ -397,7 +398,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         }
     }
 
-    protected void setDataChangeWatcher( String child, int currentMasterId )
+    protected void setDataChangeWatcher( String child, InstanceId currentMasterId )
     {
         setDataChangeWatcher( child, currentMasterId, true );
     }
@@ -412,7 +413,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
      * @param skipOnSame      If true, then if the existing value is the same as currentMasterId nothing
      *                        will be written.
      */
-    protected void setDataChangeWatcher( String child, int currentMasterId, boolean skipOnSame )
+    protected void setDataChangeWatcher( String child, InstanceId currentMasterId, boolean skipOnSame )
     {
         try
         {
@@ -425,7 +426,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
                 data = zooKeeper.getData( path, true, null );
                 exists = true;
 
-                if ( skipOnSame && ByteBuffer.wrap( data ).getInt() == currentMasterId )
+                if ( skipOnSame && ByteBuffer.wrap( data ).getInt() == currentMasterId.toIntegerIndex() )
                 {
                     msgLog.logMessage( child + " not set, is already " + currentMasterId );
                     return;
@@ -443,14 +444,14 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
             try
             {
                 data = new byte[4];
-                ByteBuffer.wrap( data ).putInt( currentMasterId );
+                ByteBuffer.wrap( data ).putInt( currentMasterId.toIntegerIndex() );
                 if ( !exists )
                 {
                     zooKeeper.create( path, data, ZooDefs.Ids.OPEN_ACL_UNSAFE,
                             CreateMode.PERSISTENT );
                     msgLog.logMessage( child + " created with " + currentMasterId );
                 }
-                else if ( currentMasterId != -1 )
+                else if ( currentMasterId.toIntegerIndex() != -1 )
                 {
                     zooKeeper.setData( path, data, -1 );
                     msgLog.logMessage( child + " set to " + currentMasterId );
@@ -568,12 +569,12 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
             List<String> children = zooKeeper.getChildren( root, false );
             for ( String child : children )
             {
-                Pair<Integer, Integer> parsedChild = parseChild( child );
+                Pair<InstanceId, Integer> parsedChild = parseChild( child );
                 if ( parsedChild == null )
                 {
                     continue;
                 }
-                if ( parsedChild.first() == machineId )
+                if ( parsedChild.first().equals( machineId ) )
                 {
                     zooKeeper.delete( root + "/" + child, -1 );
                 }
@@ -953,7 +954,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         return "/" + storeId.getCreationTime() + "_" + storeId.getRandomId();
     }
 
-    protected Pair<Integer, Integer> parseChild( String child )
+    protected Pair<InstanceId, Integer> parseChild( String child )
     {
         int index = child.indexOf( '_' );
         if ( index == -1 )
@@ -962,7 +963,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         }
         int id = Integer.parseInt( child.substring( 0, index ) );
         int seq = Integer.parseInt( child.substring( index + 1 ) );
-        return Pair.of( id, seq );
+        return Pair.of( new InstanceId( id ), seq );
     }
 
     protected Pair<Long, Integer> readDataRepresentingInstance( String path )
@@ -1137,8 +1138,8 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
                                         listener.newMasterRequired();
                                     }
                                 } );
-                                if ( getCurrentMasterNotify() == getMyMachineId() &&
-                                        previousMaster == getMyMachineId() )
+                                if ( getCurrentMasterNotify() == getMyMachineId().toIntegerIndex() &&
+                                        previousMaster == getMyMachineId().toIntegerIndex() )
                                 {
                                     /*
                                      * Apparently no one claimed the role of master while i was away.
@@ -1249,7 +1250,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
                          * it really is master
                          */
 
-                        if ( updatedData == machineId && !electionHappening )
+                        if ( updatedData == machineId.toIntegerIndex() && !electionHappening )
                         {
                             try
                             {
@@ -1274,7 +1275,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
                         // This event is for all the others after the master got the
                         // MASTER_NOTIFY_CHILD which then shouts out to the others to
                         // become slaves if they don't already are.
-                        if ( updatedData != machineId && !electionHappening )
+                        if ( updatedData != machineId.toIntegerIndex() && !electionHappening )
                         {
                             try
                             {
@@ -1413,14 +1414,14 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         }
     }
 
-    protected Map<Integer, ZooKeeperMachine> getAllMachines( boolean wait )
+    protected Map<InstanceId, ZooKeeperMachine> getAllMachines( boolean wait )
     {
         return getAllMachines( wait, WaitMode.SESSION );
     }
 
-    protected Map<Integer, ZooKeeperMachine> getAllMachines( boolean wait, WaitMode mode )
+    protected Map<InstanceId, ZooKeeperMachine> getAllMachines( boolean wait, WaitMode mode )
     {
-        Map<Integer, ZooKeeperMachine> result = null;
+        Map<InstanceId, ZooKeeperMachine> result = null;
         while ( result == null )
         {
             result = getAllMachinesInner( wait, mode );
@@ -1428,7 +1429,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         return result;
     }
 
-    protected Map<Integer, ZooKeeperMachine> getAllMachinesInner( boolean wait, WaitMode mode )
+    protected Map<InstanceId, ZooKeeperMachine> getAllMachinesInner( boolean wait, WaitMode mode )
     {
         if ( wait )
         {
@@ -1452,20 +1453,20 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
                 // ok, means we are not initialized yet
             }
 
-            writeFlush( getMyMachineId() );
+            writeFlush( getMyMachineId().toIntegerIndex() );
 
             long endTime = System.currentTimeMillis() + sessionTimeout;
             OUTER:
             do
             {
                 Thread.sleep( 100 );
-                Map<Integer, ZooKeeperMachine> result = new HashMap<Integer, ZooKeeperMachine>();
+                Map<InstanceId, ZooKeeperMachine> result = new HashMap<InstanceId, ZooKeeperMachine>();
 
                 String root = getRoot();
                 List<String> children = getZooKeeper( true ).getChildren( root, false );
                 for ( String child : children )
                 {
-                    Pair<Integer, Integer> parsedChild = parseChild( child );
+                    Pair<InstanceId, Integer> parsedChild = parseChild( child );
                     if ( parsedChild == null )
                     {   // This was some kind of other ZK node, just ignore
                         continue;
@@ -1473,12 +1474,12 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
 
                     try
                     {
-                        int id = parsedChild.first();
+                        InstanceId id = parsedChild.first();
                         int seq = parsedChild.other();
                         Pair<Long, Integer> instanceData = readDataRepresentingInstance( root + "/" + child );
                         long lastCommittedTxId = instanceData.first();
                         int masterId = instanceData.other();
-                        if ( id == getMyMachineId() && mySequenceNumber == -1 )
+                        if ( id.equals( getMyMachineId() ) && mySequenceNumber == -1 )
                         {   // I'm not initialized yet
                             continue;
                         }
@@ -1524,9 +1525,9 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         }
     }
 
-    protected Machine getHaServer( int machineId, boolean wait )
+    protected Machine getHaServer( InstanceId machineId, boolean wait )
     {
-        if ( machineId == this.machineId )
+        if ( machineId.equals( this.machineId ) )
         {
             return asMachine;
         }
@@ -1567,7 +1568,8 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
                 {
                     continue;
                 }
-                haServersCache.put( id, readHaServer( id, false ) );
+                InstanceId currentInstanceId = new InstanceId( id );
+                haServersCache.put( currentInstanceId, readHaServer( currentInstanceId, false ) );
                 visitedChildren.add( id );
             }
             haServersCache.keySet().retainAll( visitedChildren );
@@ -1589,7 +1591,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
         return haServersCache.size();
     }
 
-    protected Machine readHaServer( int machineId, boolean wait )
+    protected Machine readHaServer( InstanceId machineId, boolean wait )
     {
         if ( wait )
         {
@@ -1762,7 +1764,7 @@ public class ZooClient implements Lifecycle, CompatibilityMonitor
             if ( !created )
             {
                 int current = ByteBuffer.wrap( getZooKeeper( true ).getData( path, false, null ) ).getInt();
-                if ( current != STOP_FLUSHING && toWrite == STOP_FLUSHING && current != getMyMachineId() )
+                if ( current != STOP_FLUSHING && toWrite == STOP_FLUSHING && current != getMyMachineId().toIntegerIndex() )
                 {
                     /*
                      *  Someone changed it from what we wrote, we can't just not reset, because that machine

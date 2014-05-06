@@ -33,6 +33,7 @@ import java.io.FileFilter;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -135,10 +136,10 @@ public class TestStoreCopy extends AbstractClusterTest
     }
 
     @Override
-    protected void insertClusterMemberInitialData( GraphDatabaseService db, String name, int serverId )
+    protected void insertClusterMemberInitialData( GraphDatabaseService db, String name, InstanceId serverId )
     {
         // The first instance will create the indexed node and assign the nodeId variable.
-        if ( serverId == 1 )
+        if ( serverId.toIntegerIndex() == 1 )
             nodeId = createIndexedNode( db, KEY, VALUE );
     }
 
