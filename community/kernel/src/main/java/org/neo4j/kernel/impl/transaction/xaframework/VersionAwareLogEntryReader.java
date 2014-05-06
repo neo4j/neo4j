@@ -38,6 +38,9 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableByteCh
     private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_LOG_VERSION) & 0xFF;
     static final int LOG_HEADER_SIZE = 16;
 
+    private ByteBuffer byteBuffer;
+    private final XaCommandReaderFactory commandReaderFactory;
+
     public VersionAwareLogEntryReader( ByteBuffer byteBuffer, XaCommandReaderFactory commandReaderFactory )
     {
         this.byteBuffer = byteBuffer;
@@ -253,7 +256,4 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableByteCh
         }
         throw new ReadPastEndException();
     }
-
-    private ByteBuffer byteBuffer;
-    private final XaCommandReaderFactory commandReaderFactory;
 }

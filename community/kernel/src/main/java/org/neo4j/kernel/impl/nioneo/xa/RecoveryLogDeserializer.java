@@ -56,7 +56,6 @@ public class RecoveryLogDeserializer implements LogReader<StoreChannel>
         @Override
         public boolean next( Consumer<LogEntry, IOException> consumer ) throws IOException
         {
-            // TODO SETUP LOG ENTRY READER
             long position = channel.position();
 
             LogEntry entry = logEntryReader.readLogEntry( channel );
