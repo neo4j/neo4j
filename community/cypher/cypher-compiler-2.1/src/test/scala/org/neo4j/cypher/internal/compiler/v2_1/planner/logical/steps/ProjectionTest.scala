@@ -108,12 +108,15 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.solved.sortItems should equal(Seq(expressionSortItem))
 
     result.plan should equal(
-      Sort(
-        left = Projection(
-          left = startPlan.plan,
-          expressions = Map("  FRESHID0" -> exp, "n" -> ast.Identifier("n")_)
+      Projection(
+        Sort(
+          left = Projection(
+            left = startPlan.plan,
+            expressions = Map("  FRESHID0" -> exp, "n" -> ast.Identifier("n")_)
+          ),
+          sortItems = Seq(Ascending("  FRESHID0"))
         ),
-        sortItems = Seq(Ascending("  FRESHID0"))
+        expressions = Map("n" -> ast.Identifier("n")_)
       )
     )
   }
@@ -134,12 +137,15 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.solved.sortItems should equal(Seq(expressionSortItem, identifierSortItem))
 
     result.plan should equal(
-      Sort(
-        left = Projection(
-          left = startPlan.plan,
-          expressions = Map("  FRESHID0" -> exp, "n" -> ast.Identifier("n")_)
+      Projection(
+        Sort(
+          left = Projection(
+            left = startPlan.plan,
+            expressions = Map("  FRESHID0" -> exp, "n" -> ast.Identifier("n")_)
+          ),
+          sortItems = Seq(Ascending("  FRESHID0"), Ascending("n"))
         ),
-        sortItems = Seq(Ascending("  FRESHID0"), Ascending("n"))
+        expressions = Map("n" -> ast.Identifier("n")_)
       )
     )
   }

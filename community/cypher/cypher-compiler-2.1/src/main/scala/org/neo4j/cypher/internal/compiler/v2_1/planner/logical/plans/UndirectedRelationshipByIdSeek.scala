@@ -26,7 +26,7 @@ case class UndirectedRelationshipByIdSeek(idName: IdName, relIds: Seq[Expression
                                    (val pattern: PatternRelationship, val solvedPredicates: Seq[Expression] = Seq.empty)
   extends LogicalLeafPlan {
 
-  def solved = UndirectedRelationshipByIdSeekPlan(idName, relIds, leftNode, rightNode, pattern, solvedPredicates).solved
+  def availableSymbols = Set(idName, leftNode, rightNode)
 }
 
 object UndirectedRelationshipByIdSeekPlan {

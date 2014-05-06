@@ -48,8 +48,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       Projection(
         OuterHashJoin("b",
           Expand(NodeByLabelScan("a", Left("X"))(), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength)(mockRel),
-          Expand(NodeByLabelScan("c", Left("Y"))(), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(mockRel),
-          Set(IdName("r2"), IdName("c"))
+          Expand(NodeByLabelScan("c", Left("Y"))(), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(mockRel)
         ),
         expressions = Map("b" -> Identifier("b") _)
       )

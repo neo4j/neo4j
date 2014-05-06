@@ -24,4 +24,5 @@ import org.neo4j.cypher.internal.compiler.v2_1.pipes.SortDescription
 case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription]) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
+  def availableSymbols = left.availableSymbols
 }

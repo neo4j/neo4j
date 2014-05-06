@@ -32,7 +32,7 @@ object outerJoin extends CandidateGenerator[PlanTable] {
     } yield {
       val innerLogicalPlanContext = context.copy(queryGraph = optionalQG.copy(argumentIds = Set.empty))
       val rhs = context.strategy.plan(innerLogicalPlanContext)
-      OuterHashJoinPlan(optionalQG.argumentIds.head, lhs, rhs, optionalQG.introducedIds)
+      OuterHashJoinPlan(optionalQG.argumentIds.head, lhs, rhs)
     }
 
     CandidateList(outerJoinPlans)

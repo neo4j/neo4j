@@ -54,7 +54,7 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = Expand(SingleRow(Set("a")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
 
-    applyOptional(planTable).bestPlan(context.cost).map(_.plan) should equal(Some(Apply(inputPlan.plan, Optional(Set("b", "r"), innerPlan))))
+    applyOptional(planTable).bestPlan(context.cost).map(_.plan) should equal(Some(Apply(inputPlan.plan, Optional(innerPlan))))
   }
 
   test("should not use apply when optional match is the at the start of the query") {

@@ -21,11 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-case class QueryPlan(plan: LogicalPlan, solved: QueryGraph = QueryGraph.empty) extends Visitable[QueryPlan] {
+case class QueryPlan(plan: LogicalPlan, solved: QueryGraph) extends Visitable[QueryPlan] {
 
-  def isCoveredBy(otherIds: Set[IdName]) = (solved.coveredIds -- otherIds).isEmpty
-  def covers(other: QueryPlan): Boolean = other.isCoveredBy(solved.coveredIds)
-  def coveredIds: Set[IdName] = solved.coveredIds
+  def coveredIds: Set[IdName] = plan.availableSymbols
 
   def accept[R](visitor: Visitor[QueryPlan, R]): R = visitor.visit(this)
 

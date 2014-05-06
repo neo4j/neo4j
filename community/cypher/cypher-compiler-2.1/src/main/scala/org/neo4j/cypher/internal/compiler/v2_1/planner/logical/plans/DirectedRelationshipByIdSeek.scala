@@ -30,6 +30,8 @@ case class DirectedRelationshipByIdSeek(idName: IdName,
                                         val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
 
   def solved = DirectedRelationshipByIdSeekPlan(idName, relIds, startNode, endNode, pattern, solvedPredicates).solved
+
+  def availableSymbols: Set[IdName] = Set(idName, startNode, endNode)
 }
 
 object DirectedRelationshipByIdSeekPlan {

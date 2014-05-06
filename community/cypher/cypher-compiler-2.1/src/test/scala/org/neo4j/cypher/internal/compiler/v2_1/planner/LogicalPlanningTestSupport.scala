@@ -106,27 +106,25 @@ trait LogicalPlanningTestSupport
     QueryPlan( mockedPlan, qg )
   }
 
-  def newMockedQueryPlan(ids: String*)(implicit context: LogicalPlanContext): QueryPlan = {
-    val idNames: Seq[IdName] = ids.map(IdName)
-    val plan = newMockedLogicalPlanWithPatterns(idNames.toSet)
-    val qg = QueryGraph.empty.addPatternNodes(idNames: _*)
+  def newMockedQueryPlan(idNames: Set[IdName])(implicit context: LogicalPlanContext): QueryPlan = {
+    val plan = newMockedLogicalPlan(idNames)
+    val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*)
     QueryPlan( plan, qg )
   }
 
-  def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan =
-    newMockedLogicalPlanWithPatterns(ids.map(IdName).toSet)
+  def newMockedQueryPlan(ids: String*)(implicit context: LogicalPlanContext): QueryPlan = {
+    newMockedQueryPlan( ids.map(IdName).toSet )
+  }
+
+  def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan = FakePlan(ids.map(IdName).toSet)
+
+  def newMockedLogicalPlan(ids: Set[IdName])(implicit context: LogicalPlanContext): LogicalPlan = FakePlan(ids)
 
   def newMockedQueryPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): QueryPlan = {
-    val plan = newMockedLogicalPlanWithPatterns(ids, patterns)
+    val plan = newMockedLogicalPlan(ids)
     val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRels(patterns)
     QueryPlan( plan, qg )
   }
-  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): LogicalPlan = {
-    val plan = mock[LogicalPlan]
-    doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
-    plan
-  }
-
 
   def newPlanner(metricsFactory: MetricsFactory): Planner =
     new Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor]())
@@ -147,4 +145,9 @@ trait LogicalPlanningTestSupport
   }
 
   implicit def idName(name: String): IdName = IdName(name)
+}
+
+case class FakePlan(availableSymbols: Set[IdName]) extends LogicalPlan{
+  def rhs = None
+  def lhs = None
 }

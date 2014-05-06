@@ -33,11 +33,11 @@ case class PlanTable(m: Map[Set[IdName], QueryPlan] = Map.empty) {
   def -(ids: Set[IdName]) = copy(m = m - ids)
 
   def +(newPlan: QueryPlan): PlanTable = {
-    if (m.keys.exists(newPlan.isCoveredBy)) {
+    if (m.keys.exists(newPlan.plan.isCoveredBy)) {
       this
     } else {
       val newMap = m.filter {
-        case (_, existingPlan) => !newPlan.covers(existingPlan)
+        case (_, existingPlan) => !newPlan.plan.covers(existingPlan.plan)
       }
       PlanTable(newMap + (newPlan.coveredIds -> newPlan))
     }

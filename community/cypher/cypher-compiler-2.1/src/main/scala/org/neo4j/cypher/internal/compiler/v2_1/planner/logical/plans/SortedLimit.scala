@@ -25,4 +25,5 @@ case class SortedLimit(left: LogicalPlan, limit: Expression, sortItems: Seq[Sort
   extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
+  def availableSymbols = left.availableSymbols
 }
