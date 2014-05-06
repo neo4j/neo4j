@@ -28,12 +28,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 public class PositionCacheLogHandler extends LogHandler.Filter
 {
-    private LogBuffer writeBuffer;
     private LogEntry.Start startEntry;
 
     public interface SPI
     {
-        public int getLogVersion();
+        public long getLogVersion();
     }
 
     private final LogExtractor.LogPositionCache positionCache;

@@ -21,15 +21,20 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.never;
+import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 
+import java.util.List;
+
 import javax.transaction.xa.Xid;
 
 import org.junit.Test;
+import org.mockito.Matchers;
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 
 public class LogEntryConsumerTest
@@ -40,7 +45,7 @@ public class LogEntryConsumerTest
         // GIVEN
         LogEntryConsumer consumer = new LogEntryConsumer( mock(Function.class) );
         LogHandler handler = mock( LogHandler.class );
-        consumer.setHandler( handler );
+        consumer.bind( 0, handler );
 
         // WHEN
         LogEntry.Start start = new LogEntry.Start( mock( Xid.class ), 1, 2, 3, 4, 5, 6 );
@@ -92,76 +97,14 @@ public class LogEntryConsumerTest
     }
 
     @Test
-    public void ensureOldVersionEntriesAreIntercepted() throws Exception
-    {
-        // GIVEN
-        LogEntryConsumer consumer = new LogEntryConsumer( mock( Function.class ) );
-        LogHandler handler = mock( LogHandler.class );
-        consumer.setHandler( handler );
-
-        // WHEN
-        LogEntry.Start start = new LogEntry.Start( mock( Xid.class ), 1, (byte) (LogEntry.CURRENT_LOG_VERSION + 1), 2, 3, 4, 5, 6 );
-        consumer.accept( start );
-
-        // THEN
-        verify( handler, never() ).startEntry( start );
-        verifyNoMoreInteractions( handler );
-
-        // WHEN
-        LogEntry.Command command = new LogEntry.Command( 1, (byte) (LogEntry.CURRENT_LOG_VERSION + 1),null );
-        consumer.accept( command );
-
-        // THEN
-        verify( handler, never() ).commandEntry( command );
-        verifyNoMoreInteractions( handler );
-
-        // WHEN
-        LogEntry.OnePhaseCommit onePC = new LogEntry.OnePhaseCommit( 1, (byte) (LogEntry.CURRENT_LOG_VERSION + 1), 2, 3 );
-        consumer.accept( onePC );
-
-        // THEN
-        verify( handler, never() ).onePhaseCommitEntry( onePC );
-        verifyNoMoreInteractions( handler );
-
-        // WHEN
-        LogEntry.TwoPhaseCommit twoPC = new LogEntry.TwoPhaseCommit( 1, (byte) (LogEntry.CURRENT_LOG_VERSION + 1), 2, 3 );
-        consumer.accept( twoPC );
-
-        // THEN
-        verify( handler, never() ).twoPhaseCommitEntry( twoPC );
-        verifyNoMoreInteractions( handler );
-
-        // WHEN
-        LogEntry.Prepare prepare = new LogEntry.Prepare( 1, (byte) (LogEntry.CURRENT_LOG_VERSION + 1), 2 );
-        consumer.accept( prepare );
-
-        // THEN
-        verify( handler, never() ).prepareEntry( prepare );
-        verifyNoMoreInteractions( handler );
-
-        // WHEN
-        LogEntry.Done done = new LogEntry.Done( 1, (byte) (LogEntry.CURRENT_LOG_VERSION + 1) );
-        consumer.accept( done );
-
-        // THEN
-        verify( handler, times( 1 ) ).startEntry( start );
-        verify( handler, times( 1 ) ).commandEntry( command );
-        verify( handler, times( 1 ) ).onePhaseCommitEntry( onePC );
-        verify( handler, times( 1 ) ).twoPhaseCommitEntry( twoPC );
-        verify( handler, times( 1 ) ).prepareEntry( prepare );
-        verify( handler, times( 1 ) ).doneEntry( done );
-
-        verifyNoMoreInteractions( handler );
-    }
-
-    @Test
     public void ensureOldVersionEntriesAreTranslated() throws Exception
     {
         // GIVEN
-        Function translator = mock( Function.class );
+        Function translator = Functions.identity();
+
         LogEntryConsumer consumer = new LogEntryConsumer( translator );
         LogHandler handler = mock( LogHandler.class );
-        consumer.setHandler( handler );
+        consumer.bind( 0, handler );
 
         // WHEN
         LogEntry.Start start = new LogEntry.Start( mock( Xid.class ), 1, (byte) (LogEntry.CURRENT_LOG_VERSION + 1), 2, 3, 4, 5, 6 );
@@ -176,14 +119,18 @@ public class LogEntryConsumerTest
         consumer.accept( prepare );
 
         // THEN
-        verifyZeroInteractions( translator, handler );
+        verifyZeroInteractions( handler );
 
         // WHEN
         LogEntry.Done done = new LogEntry.Done( 1, (byte) (LogEntry.CURRENT_LOG_VERSION + 1) );
         consumer.accept( done );
 
         // THEN
-
+        verify( handler, times(1) ).startEntry( start );
+        verify( handler, times(1) ).commandEntry( command );
+        verify( handler, times(1) ).onePhaseCommitEntry( onePC );
+        verify( handler, times(1) ).twoPhaseCommitEntry( twoPC );
+        verify( handler, times(1) ).prepareEntry( prepare );
+        verify( handler, times(1) ).doneEntry( done );
     }
-
 }

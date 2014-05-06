@@ -128,5 +128,8 @@ public class MasterLogWriter extends LogHandler.Filter
         }
         spi.commitTransactionWithoutTxId( startEntry );
         super.endLog( success );
+
+        this.startEntry = null;
+        this.writeBuffer = null;
     }
 }

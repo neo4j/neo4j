@@ -53,6 +53,7 @@ import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogWriter;
 import org.neo4j.kernel.impl.nioneo.xa.command.MasterLogWriter;
+import org.neo4j.kernel.impl.nioneo.xa.command.PositionCacheLogHandler;
 import org.neo4j.kernel.impl.nioneo.xa.command.SlaveLogWriter;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
@@ -92,6 +93,8 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class XaLogicalLog implements LogLoader
 {
+    private final LogFilter masterHandler;
+    private final LogFilter slaveHandler;
     private StoreChannel fileChannel = null;
     private final ByteBuffer sharedBuffer;
     private LogBuffer writeBuffer = null;
@@ -174,6 +177,28 @@ public class XaLogicalLog implements LogLoader
         logWriterSPI = new SomethingOrOtherSPI();
 
         logEntryWriter.setCommandWriter( commandWriterFactory.newInstance() );
+
+        LogApplier applier = new LogApplier();
+
+        PositionCacheLogHandler.SPI positionCacheSPI = new PositionCacheLogHandler.SPI()
+        {
+            @Override
+            public long getLogVersion()
+            {
+                return XaLogicalLog.this.logVersion;
+            }
+        };
+
+        masterHandler = new LogFilter( interceptor,
+                new MasterLogWriter(
+                    new PositionCacheLogHandler( applier, positionCache, positionCacheSPI ),
+                    logWriterSPI, injectedTxValidator, logEntryWriter ) );
+
+        slaveHandler = new LogFilter( interceptor,
+                new ForgetUnsuccessfulReceivedTransaction(
+                new SlaveLogWriter(
+                    new PositionCacheLogHandler( applier, positionCache, positionCacheSPI ),
+                    logWriterSPI, logEntryWriter ) ) );
     }
 
     synchronized void open() throws IOException
@@ -1035,19 +1060,14 @@ public class XaLogicalLog implements LogLoader
 
         LogReader<ReadableByteChannel> reader =
                 new LogDeserializer( sharedBuffer, commandReaderFactory );
-        LogFilter handler = new LogFilter( interceptor,
-                new MasterLogWriter(
-                        new LogApplier(), logWriterSPI,
-                        injectedTxValidator, logEntryWriter ) );
+
 
         LogEntryConsumer consumer = new LogEntryConsumer( transactionTranslator );
 
-        consumer.setXidIdentifier( getNextIdentifier() );
-
-        consumer.setHandler( handler );
+        consumer.bind( getNextIdentifier(), masterHandler );
 
         boolean success = true;
-        handler.startLog();
+        masterHandler.startLog();
         try ( Cursor<LogEntry, IOException> cursor = reader.cursor( byteChannel ) )
         {
             while( cursor.next( consumer ) );
@@ -1060,7 +1080,7 @@ public class XaLogicalLog implements LogLoader
         }
         finally
         {
-            handler.endLog( success );
+            masterHandler.endLog( success );
             scanIsComplete = true;
         }
         logRecoveryMessage( "Applied external tx and generated tx id=" + nextTxId );
@@ -1075,16 +1095,13 @@ public class XaLogicalLog implements LogLoader
         scanIsComplete = false;
 
         LogEntryConsumer consumer = new LogEntryConsumer( transactionTranslator );
-        consumer.setXidIdentifier( getNextIdentifier() );
-        LogHandler handler = new LogFilter( interceptor, new ForgetUnsuccessfulReceivedTransaction(
-                new SlaveLogWriter( new LogApplier(), logWriterSPI, logEntryWriter ) ) );
-        consumer.setHandler( handler );
+        consumer.bind( getNextIdentifier(), slaveHandler );
 
         LogReader<ReadableByteChannel> logDeserializer =
                 new SlaveLogDeserializer( sharedBuffer, commandReaderFactory );
         boolean success = false;
 
-        handler.startLog();
+        slaveHandler.startLog();
         try ( Cursor<LogEntry, IOException> cursor = logDeserializer.cursor( byteChannel ) )
         {
             while( cursor.next( consumer ) );
@@ -1099,7 +1116,7 @@ public class XaLogicalLog implements LogLoader
         {
             try
             {
-                handler.endLog( success );
+                slaveHandler.endLog( success );
             }
             catch( Exception e )
             {

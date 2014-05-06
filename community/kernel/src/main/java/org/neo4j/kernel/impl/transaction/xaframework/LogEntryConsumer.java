@@ -68,7 +68,7 @@ class LogEntryConsumer implements Consumer<LogEntry, IOException>
 
             if ( (logEntry.getType() == LogEntry.TX_1P_COMMIT || logEntry.getType() == LogEntry.TX_2P_COMMIT)  )
             {
-                // translate()
+                entries = translator.apply( entries );
             }
             if ( logEntry.getType() == LogEntry.DONE )
             {
@@ -87,13 +87,9 @@ class LogEntryConsumer implements Consumer<LogEntry, IOException>
         return true;
     }
 
-    public void setXidIdentifier( int xidIdentifier )
+    public void bind( int xidIdentifier, LogHandler handler )
     {
         this.xidIdentifier = xidIdentifier;
-    }
-
-    public void setHandler( LogHandler handler )
-    {
         this.handler = handler;
     }
 }
