@@ -25,14 +25,14 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 public class SlaveLogDeserializer implements LogReader<ReadableByteChannel>
 {
-    private final VersionAwareLogEntryReader logEntryReader;
+    private final LogEntryReader logEntryReader;
 
     public SlaveLogDeserializer( ByteBuffer scratch, XaCommandReaderFactory readerFactory )
     {

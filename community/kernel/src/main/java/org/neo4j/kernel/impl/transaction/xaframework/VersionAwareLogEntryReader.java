@@ -33,6 +33,14 @@ import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
+/**
+ * Version aware implementation of LogEntryReader
+ * Starting with Neo4j version 2.1, log entries are prefixed with a version. This allows for Neo4j instances of
+ * different versions to exchange transaction data, either directly or via logical logs. This implementation of
+ * LogEntryReader makes use of the version information to deserialize command entries that hold commands created
+ * with previous versions of Neo4j. Support for this comes from the required {@link XaCommandReaderFactory} which can
+ * provide deserializers for Commands given the version.
+ */
 public class VersionAwareLogEntryReader implements LogEntryReader<ReadableByteChannel>
 {
     private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_LOG_VERSION) & 0xFF;

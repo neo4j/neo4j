@@ -35,6 +35,7 @@ public interface XaCommandReaderFactory
         {
             switch ( logEntryVersion )
             {
+                // These are not thread safe, so if they are to be cached it has to be done in an object pool
                 case 0:
                     return new PhysicalLogNeoXaCommandReaderV0( scratch );
                 case -1:

@@ -26,13 +26,14 @@ import java.nio.ByteBuffer;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 
 public class RecoveryLogDeserializer implements LogReader<StoreChannel>
 {
-    private final VersionAwareLogEntryReader logEntryReader;
+    private final LogEntryReader logEntryReader;
 
     public RecoveryLogDeserializer( ByteBuffer scratch, XaCommandReaderFactory commandReaderFactory )
     {
