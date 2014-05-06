@@ -6,7 +6,7 @@ Linux Performance Guide
 
 The key to achieve good performance on reads and writes is to have lots of RAM since disks are so slow. This guide will focus on achieving good write performance on a Linux kernel based operating system.
 
-If you have not already read the information available in <<embedded-configuration>>, do that now to get some basic knowledge on memory mapping and store files with Neo4j.
+If you have not already read the information available in <<configuration>>, do that now to get some basic knowledge on memory mapping and store files with Neo4j.
 
 This section will guide you through how to set up a file system benchmark and use it to configure your system in a better way.
 

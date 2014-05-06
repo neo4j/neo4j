@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.traversal;
 
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.Comparator;
 
 import org.neo4j.graphdb.Direction;
@@ -102,16 +103,21 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
         this.initialState = initialState;
         this.statementFactory = statementFactory;
     }
-    
+
     public Traverser traverse( Node startNode )
     {
-        return traverse( new Node[]{startNode} );
+        return traverse( Collections.singletonList( startNode ) );
     }
 
     public Traverser traverse( Node... startNodes )
     {
-        final Iterable<Node> iterableStartNodes = Arrays.asList( startNodes );
-        return new DefaultTraverser( new Factory<TraverserIterator>(){
+        return traverse( Arrays.asList( startNodes ) );
+    }
+
+    public Traverser traverse( final Iterable<Node> iterableStartNodes )
+    {
+        return new DefaultTraverser( new Factory<TraverserIterator>()
+        {
             @Override
             public TraverserIterator newInstance()
             {
@@ -123,7 +129,7 @@ public final class MonoDirectionalTraversalDescription implements TraversalDescr
                         iterableStartNodes, initialState );
                 return sorting != null ? new SortingTraverserIterator( statement, sorting, iterator ) : iterator;
             }
-        });
+        } );
     }
 
     /* (non-Javadoc)

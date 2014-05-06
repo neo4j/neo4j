@@ -159,7 +159,7 @@ class MatchTest extends DocumentingTestBase {
       title = "Multiple relationships",
       text = "Relationships can be expressed by using multiple statements in the form of `()--()`, or they can be strung together, " +
         "like this:",
-      queryText = """match (charlie {name:'Charlie Sheen'})-[:ACTED_IN]->(movie)<-[:DIRECTED]->(director) return charlie,movie,director""",
+      queryText = """match (charlie {name:'Charlie Sheen'})-[:ACTED_IN]->(movie)<-[:DIRECTED]-(director) return charlie,movie,director""",
       optionalResultExplanation = """Returns the three nodes in the path.""",
       assertions = (p) => assertEquals(List(Map("charlie" -> node("Charlie"), "movie" -> node("WallStreet"), "director" -> node("Oliver"))), p.toList)
     )

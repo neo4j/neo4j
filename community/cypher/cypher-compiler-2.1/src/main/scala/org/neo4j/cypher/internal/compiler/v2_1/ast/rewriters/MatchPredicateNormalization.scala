@@ -29,7 +29,7 @@ class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends 
   private val instance: Rewriter = Rewriter.lift {
 
    case m@Match(_, pattern, _, where) =>
-      val predicates = pattern.fold(Vector.empty[Expression]) {
+     val predicates = pattern.fold(Vector.empty[Expression]) {
         case pattern: AnyRef if normalizer.extract.isDefinedAt(pattern) => acc => acc ++ normalizer.extract(pattern)
         case _                                                          => identity
       }
@@ -37,11 +37,23 @@ class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends 
       if (predicates.isEmpty)
         m
       else {
-        val rewrittenPredicates = predicates ++ where.map(_.expression)
-        val rewrittenPredicate = rewrittenPredicates reduceLeftOption { (lhs, rhs) => And(lhs, rhs)(m.position) }
+        val rewrittenPredicates: List[Expression] = (predicates ++ where.map(_.expression)).toList
+
+        val predOpt: Option[Expression] = rewrittenPredicates match {
+          case Nil => None
+          case exp :: Nil => Some(exp)
+          case list => Some(list.reduce(And(_, _)(m.position)))
+        }
+
+        val newWhere: Option[Where] = predOpt.map {
+          exp =>
+            val pos: InputPosition = where.fold(m.position)(_.position)
+            Where(exp)(pos)
+        }
+
         m.copy(
           pattern = pattern.rewrite(topDown(Rewriter.lift(normalizer.replace))).asInstanceOf[Pattern],
-          where = rewrittenPredicate.map(Where(_)(where.map(_.position).getOrElse(m.position)))
+          where = newWhere
         )(m.position)
       }
   }

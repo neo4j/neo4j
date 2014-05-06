@@ -28,5 +28,5 @@ case class Optional(nullableIds: Set[IdName], inputPlan: LogicalPlan) extends Lo
   val solved: QueryGraph =
     QueryGraph().
       withAddedOptionalMatch(inputPlan.solved).
-      changeProjections(inputPlan.solved.projections)
+      withProjections(inputPlan.solved.projections)
 }

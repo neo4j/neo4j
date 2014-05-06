@@ -32,7 +32,7 @@
 
   <xsl:template name="webhelpheader.logo">
     <a href="index.html" id="logo">
-      <img src='common/images/welcome-logo.png' alt="" />
+      <img src='common/images/logo-neo4j.svg' alt="" />
     </a>
   </xsl:template>
 

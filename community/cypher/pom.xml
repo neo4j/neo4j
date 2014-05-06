@@ -58,7 +58,7 @@
       <plugin>
         <groupId>net.alchim31.maven</groupId>
         <artifactId>scala-maven-plugin</artifactId>
-        <version>3.1.0</version>
+        <version>3.1.6</version>
         <executions>
           <execution>
             <id>scala-compile</id>
@@ -77,10 +77,14 @@
           </execution>
         </executions>
         <configuration>
-        <args>
-            <arg>-Xmax-classfile-name</arg>
-            <arg>100</arg>
-        </args>
+          <scalaVersion>${scala.version}</scalaVersion>
+          <args>
+              <arg>-Xmax-classfile-name</arg>
+              <arg>100</arg>
+              <!-- uncomment for make the build fail on warnings -->
+              <!--<arg>-Xfatal-warnings</arg>-->
+              <!--<arg>-deprecation</arg>-->
+          </args>
           <jvmArgs>
             <jvmArg>-Xms64m</jvmArg>
             <jvmArg>-Xmx1024m</jvmArg>

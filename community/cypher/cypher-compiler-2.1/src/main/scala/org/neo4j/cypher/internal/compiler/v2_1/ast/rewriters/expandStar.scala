@@ -34,7 +34,9 @@ object expandStar extends Rewriter {
       val identifiers = x.seenIdentifiers.get.filter(isNamed).toSeq.sorted
 
       val returnItems: Seq[ReturnItem] = identifiers.map {
-        id => UnaliasedReturnItem(Identifier(id)(x.position), id)(x.position)
+        id =>
+          val ident = Identifier(id)(x.position)
+          AliasedReturnItem(ident, ident)(x.position)
       }.toSeq
 
       ListedReturnItems(returnItems)(x.position)

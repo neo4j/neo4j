@@ -54,6 +54,6 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val innerPlan = Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
 
     val optional2 = optional(planTable)
-    optional2.bestPlan(context.cost) should equal(Some(Optional(Set("a", "b", "r"), innerPlan)))
+    optional2.bestPlan(context.cost).map(_.plan) should equal(Some(Optional(Set("a", "b", "r"), innerPlan)))
   }
 }

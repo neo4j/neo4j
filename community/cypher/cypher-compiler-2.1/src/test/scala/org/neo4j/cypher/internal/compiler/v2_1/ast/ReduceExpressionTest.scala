@@ -35,7 +35,7 @@ class ReduceExpressionTest extends Assertions {
       override def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === CTString.invariant)
         assert(s.symbolTypes("y") === CTInteger.invariant)
-        (this.specifyType(CTString) then error)(s)
+        (this.specifyType(CTString) chain error)(s)
       }
     }
 
@@ -62,7 +62,7 @@ class ReduceExpressionTest extends Assertions {
       override def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === (CTString | CTFloat))
         assert(s.symbolTypes("y") === collectionType.innerType.invariant)
-        (this.specifyType(CTFloat) then SemanticCheckResult.success)(s)
+        (this.specifyType(CTFloat) chain SemanticCheckResult.success)(s)
       }
     }
 
@@ -88,7 +88,7 @@ class ReduceExpressionTest extends Assertions {
       override def semanticCheck(ctx: SemanticContext) = s => {
         assert(s.symbolTypes("x") === accumulatorType)
         assert(s.symbolTypes("y") === collectionType.innerType.invariant)
-        (this.specifyType(CTNode) then SemanticCheckResult.success)(s)
+        (this.specifyType(CTNode) chain SemanticCheckResult.success)(s)
       }
     }
 

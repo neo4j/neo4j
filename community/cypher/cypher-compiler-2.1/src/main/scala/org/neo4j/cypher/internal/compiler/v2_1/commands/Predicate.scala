@@ -58,6 +58,44 @@ object And {
   }
 }
 
+case class Ands(predicates: List[Predicate]) extends Predicate {
+
+  assert(predicates.nonEmpty, "Expected predicates to never be empty")
+
+  def symbolTableDependencies: Set[String] = predicates.flatMap(_.symbolTableDependencies).toSet
+
+  def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
+
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
+    var result: Option[Option[Boolean]] = None
+    val iter = predicates.iterator
+    while (iter.nonEmpty) {
+      val p = iter.next()
+      val r = p.isMatch(m)
+
+      if(r.nonEmpty && !r.get)
+        return r
+
+      if(result.isEmpty)
+        result = Some(r)
+      else {
+        val stored = result.get
+        if (stored.nonEmpty && stored.get && r.isEmpty)
+          result = Some(None)
+      }
+    }
+
+    result.get
+  }
+
+  def arguments: Seq[Expression] = predicates
+
+  def rewrite(f: (Expression) => Expression): Expression = f(Ands(predicates.map(_.rewriteAsPredicate(f))))
+
+  override def atoms: Seq[Predicate] = predicates
+}
+
+
 class And(val a: Predicate, val b: Predicate) extends Predicate {
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = (a.isMatch(m), b.isMatch(m)) match {
     case (None, None)        => None
@@ -84,6 +122,43 @@ class And(val a: Predicate, val b: Predicate) extends Predicate {
   }
 
   def symbolTableDependencies = a.symbolTableDependencies ++ b.symbolTableDependencies
+}
+
+case class Ors(predicates: List[Predicate]) extends Predicate {
+
+  assert(predicates.nonEmpty, "Expected predicates to never be empty")
+
+  def symbolTableDependencies: Set[String] = predicates.flatMap(_.symbolTableDependencies).toSet
+
+  def containsIsNull: Boolean = predicates.exists(_.containsIsNull)
+
+  def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = {
+
+    var result: Option[Option[Boolean]] = None
+
+    val iter = predicates.iterator
+    while (iter.nonEmpty) {
+      val p = iter.next()
+      val r = p.isMatch(m)
+
+      if(r.nonEmpty && r.get)
+        return r
+
+      if(result.isEmpty)
+        result = Some(r)
+      else {
+        val stored = result.get
+        if (stored.nonEmpty && !stored.get && r.isEmpty)
+          result = Some(None)
+      }
+    }
+
+    result.get
+  }
+
+  def arguments: Seq[Expression] = predicates
+
+  def rewrite(f: (Expression) => Expression): Expression = f(Ors(predicates.map(_.rewriteAsPredicate(f))))
 }
 
 case class Or(a: Predicate, b: Predicate) extends Predicate {

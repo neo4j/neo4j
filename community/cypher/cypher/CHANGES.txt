@@ -19,11 +19,16 @@ o To the new planner, added:
   - Named paths
 o Fix problem where LOAD CSV stops indexes from being used
 
-
 2.1.0-M01
 ---------
 o Add LOAD CSV
 o Add USING PERIODIC COMMIT
+
+2.0.3
+-----
+o MERGE must fail when trying to create 2 nodes with same id but different labels (e.g., MERGE (a: Foo)-[r:KNOWS]->(a: Bar))
+o Allow Cypher split() with empty separator
+o Ensure Cypher range() works with negative step values
 
 2.0.2
 -----

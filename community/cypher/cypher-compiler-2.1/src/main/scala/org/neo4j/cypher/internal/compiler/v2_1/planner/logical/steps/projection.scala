@@ -19,17 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTransformer
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Descending, Ascending, SortDescription}
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.newIdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{SortItem, Expression}
 
 object projection extends PlanTransformer {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+  def apply(input: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
+    val plan = input.plan
     val queryGraph = context.queryGraph
 
     val sortSkipAndLimit = (queryGraph.sortItems.toList, queryGraph.skip, queryGraph.limit) match {
@@ -43,37 +42,36 @@ object projection extends PlanTransformer {
         Skip(SortedLimit(plan, ast.Add(l, s)(null), sort)(l), s)
 
       case (sort, s, None) if sort.exists(notIdentifier) =>
-        val projectedPlan = projectBeforeSorting(sort, plan)
-        addSkip(s, projectedPlan)
+        val newPlan = ensureSortablePlan(sort, plan)
+        val orderBy = sort.map(sortDescription)
+        addSkip(s, Sort(newPlan, orderBy)(sort))
 
       case (sort, s, None) =>
         addSkip(s, Sort(plan, sort.map(sortDescription))(sort))
     }
 
-    projectIfNeeded(sortSkipAndLimit, context.queryGraph)
+    QueryPlan(projectIfNeeded(sortSkipAndLimit, context.queryGraph))
   }
 
-  private def projectBeforeSorting(sort: List[SortItem], plan: LogicalPlan): LogicalPlan = {
+  private def ensureSortablePlan(sort: List[ast.SortItem], plan: LogicalPlan): LogicalPlan = {
     val expressionsToProject = sort.collect {
       case sortItem if notIdentifier(sortItem) => sortItem.expression
     }
 
-    val projections: Map[String, Expression] = expressionsToProject.map {
-      e => newIdName(e.position.offset) -> e
-    }.toMap
-    val keepExistingIdentifiers = plan.coveredIds.map {
-      x => x.name -> ast.Identifier(x.name)(null)
+    if (expressionsToProject.isEmpty)
+      plan
+    else {
+      val projections: Map[String, ast.Expression] = expressionsToProject.map {
+        e => newIdName(e.position.offset) -> e
+      }.toMap
+
+      val keepExistingIdentifiers = plan.coveredIds.map {
+        x => x.name -> ast.Identifier(x.name)(null)
+      }
+
+      val totalProjections = projections ++ keepExistingIdentifiers
+      Projection(plan, totalProjections, hideProjections = true)
     }
-
-    val totalProjections = projections ++ keepExistingIdentifiers
-
-    val orderBy = sort.collect {
-      case sortItem@ast.AscSortItem(exp) if notIdentifier(sortItem) => Ascending(newIdName(exp.position.offset))
-      case sortItem@ast.DescSortItem(exp) if notIdentifier(sortItem) => Descending(newIdName(exp.position.offset))
-      case s => sortDescription(s)
-    }
-
-    Sort(Projection(plan, totalProjections, hideProjections = true), orderBy)(sort)
   }
 
   private def notIdentifier(s: ast.SortItem) = !s.expression.isInstanceOf[ast.Identifier]
@@ -81,6 +79,8 @@ object projection extends PlanTransformer {
   private def sortDescription(in: ast.SortItem): SortDescription = in match {
     case ast.AscSortItem(ast.Identifier(key)) => Ascending(key)
     case ast.DescSortItem(ast.Identifier(key)) => Descending(key)
+    case sortItem@ast.AscSortItem(exp) => Ascending(newIdName(exp.position.offset))
+    case sortItem@ast.DescSortItem(exp) => Descending(newIdName(exp.position.offset))
   }
 
   private def projectIfNeeded(plan: LogicalPlan, qg: QueryGraph) = {

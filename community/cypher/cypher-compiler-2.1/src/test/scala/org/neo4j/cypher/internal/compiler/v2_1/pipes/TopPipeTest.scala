@@ -74,6 +74,26 @@ class TopPipeTest extends Assertions with MockitoSugar {
     assert(result === List(0, 1, 2, 3, 4))
   }
 
+  @Test def sortDuplicateValuesCorrectly() {
+    val in = ((0 until 5).toSeq ++ (0 until 5).toSeq).map(i => Map("a" -> i)).reverse
+    val input = new FakePipe(in, "a" -> CTInteger)
+
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(5))
+    val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+
+    assert(result === List(4, 4, 3, 3, 2))
+  }
+
+  @Test def sortDuplicateValuesCorrectlyForSmallList() {
+    val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
+    val input = new FakePipe(in, "a" -> CTInteger)
+
+    val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(2))
+    val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
+
+    assert(result === List(1,1))
+  }
+
   @Test def emptyInputIsNotAProblem() {
     val input = new FakePipe(Iterator.empty, "a" -> CTInteger)
 

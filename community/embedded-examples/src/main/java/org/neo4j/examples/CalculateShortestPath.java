@@ -36,7 +36,7 @@ import org.neo4j.graphdb.traversal.Paths;
 
 public class CalculateShortestPath
 {
-    private static final String DB_PATH = "neo4j-shortest-path";
+    private static final String DB_PATH = "target/neo4j-shortest-path";
     private static final String NAME_KEY = "name";
     private static RelationshipType KNOWS = DynamicRelationshipType.withName( "KNOWS" );
 
@@ -47,10 +47,10 @@ public class CalculateShortestPath
     {
         deleteFileOrDirectory( new File( DB_PATH ) );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
-        indexService = graphDb.index().forNodes( "nodes" );
         registerShutdownHook();
         try ( Transaction tx = graphDb.beginTx() )
         {
+            indexService = graphDb.index().forNodes( "nodes" );
             /*
              *  (Neo) --> (Trinity)
              *     \       ^
@@ -67,16 +67,19 @@ public class CalculateShortestPath
             tx.success();
         }
 
-        // So let's find the shortest path between Neo and Agent Smith
-        Node neo = getOrCreateNode( "Neo" );
-        Node agentSmith = getOrCreateNode( "Agent Smith" );
-        // START SNIPPET: shortestPathUsage
-        PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
-                PathExpanders.forTypeAndDirection( KNOWS, Direction.BOTH ), 4 );
-        Path foundPath = finder.findSinglePath( neo, agentSmith );
-        System.out.println( "Path from Neo to Agent Smith: "
-                            + Paths.simplePathToString( foundPath, NAME_KEY ) );
-        // END SNIPPET: shortestPathUsage
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            // So let's find the shortest path between Neo and Agent Smith
+            Node neo = getOrCreateNode( "Neo" );
+            Node agentSmith = getOrCreateNode( "Agent Smith" );
+            // START SNIPPET: shortestPathUsage
+            PathFinder<Path> finder = GraphAlgoFactory.shortestPath(
+                    PathExpanders.forTypeAndDirection( KNOWS, Direction.BOTH ), 4 );
+            Path foundPath = finder.findSinglePath( neo, agentSmith );
+            System.out.println( "Path from Neo to Agent Smith: "
+                                + Paths.simplePathToString( foundPath, NAME_KEY ) );
+            // END SNIPPET: shortestPathUsage
+        }
 
         System.out.println( "Shutting down database ..." );
         graphDb.shutdown();

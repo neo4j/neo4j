@@ -78,8 +78,8 @@ will remove all other properties on the receiving graph element.""".stripMargin,
     testQuery(
       title = "Adding properties from maps",
       text =
-        """When setting properties from a map (literal, paremeter, or graph element), you can use the `+=` form of SET
-          |to only add properties, and not remove any of the older properties on the graph element.
+        """When setting properties from a map (literal, paremeter, or graph element), you can use the `+=` form of `SET`
+          |to only add properties, and not remove any of the existing properties on the graph element.
         """.stripMargin,
       queryText = "match (peter {name: 'Peter'}) SET peter += { hungry: true, position: 'Entrepreneur' }",
       optionalResultExplanation = "",

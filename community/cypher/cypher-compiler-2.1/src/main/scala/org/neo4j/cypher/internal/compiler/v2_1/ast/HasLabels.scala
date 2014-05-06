@@ -27,7 +27,7 @@ case class HasLabels(expression: Expression, labels: Seq[LabelName])(val positio
   protected def possibleTypes = CTBoolean
 
   override def semanticCheck(ctx: SemanticContext) =
-    expression.semanticCheck(ctx) then
-    expression.expectType(CTNode.covariant) then
+    expression.semanticCheck(ctx) chain
+    expression.expectType(CTNode.covariant) chain
     super.semanticCheck(ctx)
 }

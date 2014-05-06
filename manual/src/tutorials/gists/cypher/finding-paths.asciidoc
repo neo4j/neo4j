@@ -100,7 +100,7 @@ LIMIT 10;
 
 //table
 
-Bur that's a lot of data, we just want to look at the names and titles of the nodes of the path.
+But that's a lot of data, we just want to look at the names and titles of the nodes of the path.
 
 [source,cypher]
 ----

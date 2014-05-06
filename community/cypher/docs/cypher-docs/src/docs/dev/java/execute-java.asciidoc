@@ -3,7 +3,7 @@
 
 [TIP]
 The full source code of the example:
-https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/cypher/cypher-docs/src/test/java/org/neo4j/cypher/example/JavaQuery.java[JavaQuery.java]
+https://github.com/neo4j/neo4j/blob/{neo4j-git-tag}/community/cypher/docs/cypher-docs/src/test/java/org/neo4j/cypher/example/JavaQuery.java[JavaQuery.java]
 
 In Java, you can use the <<cypher-query-lang,Cypher query language>> as per the example below.
 First, let's add some data.
@@ -81,7 +81,7 @@ CAUTION: +dumpToString()+, +columnAs()+ and +iterator()+ cannot be called more t
 CAUTION: When using an ExecutionResult, you'll need to exhaust it by using any of the iterating methods (+columnAs()+ and +iterator()+) on it. Failing to do so will not properly clean up resources used by the ExecutionResult, leading to unwanted behavior, such as leaking transactions.
 
 For more information on the Java interface to Cypher, see the 
-http://components.neo4j.org/neo4j-cypher/{neo4j-version}/apidocs/index.html[Java API].
+link:javadocs/index.html[Java API].
 
 For more information and examples for Cypher, see <<cypher-query-lang>> and <<data-modeling-examples>>.
 

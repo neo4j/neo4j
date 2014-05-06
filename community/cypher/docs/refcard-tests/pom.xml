@@ -172,6 +172,40 @@
       </plugin>
     </plugins>
   </build>
+  
+  <profiles>
+    <profile>
+      <id>neo-docs-build</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <property>
+          <name>docsBuild</name>
+        </property>
+      </activation>
+      <properties>
+        <attach-java-sources-phase>none</attach-java-sources-phase>
+        <attach-java-test-sources-phase>none</attach-java-test-sources-phase>
+        <integration-test-phase>none</integration-test-phase>
+      </properties>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <configuration>
+                <includes>
+                  <include>**/Test*.java</include>
+                  <include>**/*Test.java</include>
+                  <include>**/*Tests.java</include>
+                  <include>**/*TestCase.java</include>
+                </includes>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
 
   <repositories>
     <repository>

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, PlanTransformer, PlanTable, CandidateList}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, PlanTransformer}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 
@@ -48,7 +48,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   })
 
   val passThrough = new PlanTransformer {
-    def apply(input: LogicalPlan)(implicit context: LogicalPlanContext) = input
+    def apply(input: QueryPlan)(implicit context: LogicalPlanContext) = input
   }
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
@@ -56,7 +56,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val predicate = Predicate(Set(IdName("a")), patternExp)
     val selections = Selections(Set(predicate))
     val patternQG = QueryGraph().
-        add(patternRel).
+        addPatternRel(patternRel).
         addArgumentId(Seq(IdName("a"))).
         addCoveredIdsAsProjections()
 
@@ -78,7 +78,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner: Expand = Expand(SingleRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength)(patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan).plan
 
     // Then
     result should equal(SemiApply(aPlan, inner)(exists))
@@ -89,7 +89,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val predicate = Predicate(Set(IdName("a")), Not(patternExp)_)
     val selections = Selections(Set(predicate))
     val patternQG = QueryGraph().
-      add(patternRel).
+      addPatternRel(patternRel).
       addArgumentId(Seq(IdName("a"))).
       addCoveredIdsAsProjections()
 
@@ -109,7 +109,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner: Expand = Expand(SingleRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength)(patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan).plan
 
     // Then
     result should equal(AntiSemiApply(aPlan, inner)(Exists(predicate, patternQG)))
@@ -120,7 +120,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val predicate = Predicate(Set(IdName("a")), patternExp)
     val selections = Selections(Set(predicate))
     val patternQG = QueryGraph().
-        add(patternRel).
+        addPatternRel(patternRel).
         addArgumentId(Seq(IdName("a"))).
         addCoveredIdsAsProjections()
 
@@ -138,7 +138,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     val bPlan = newMockedLogicalPlan("b")
     // When
-    val result = selectPatternPredicates(passThrough)(bPlan)
+    val result = selectPatternPredicates(passThrough)(bPlan).plan
 
     // Then
     result should equal(bPlan)
@@ -150,10 +150,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
-    val orPredicate = Predicate(Set(IdName("a")), Or(patternExp, equals)_)
+    val orPredicate = Predicate(Set(IdName("a")), Ors(List(patternExp, equals))_)
     val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph().
-      add(patternRel).
+      addPatternRel(patternRel).
       addArgumentId(Seq(IdName("a"))).
       addCoveredIdsAsProjections()
 
@@ -173,7 +173,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner: Expand = Expand(SingleRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength)(patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan).plan
 
     // Then
     result should equal(SelectOrSemiApply(aPlan, inner, equals)(Exists(orPredicate, patternQG)))
@@ -185,10 +185,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
-    val orPredicate = Predicate(Set(IdName("a")), Or(Not(patternExp)_, equals)_)
+    val orPredicate = Predicate(Set(IdName("a")), Ors(List(Not(patternExp)(pos), equals))_)
     val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph().
-      add(patternRel).
+      addPatternRel(patternRel).
       addArgumentId(Seq(IdName("a"))).
       addCoveredIdsAsProjections()
 
@@ -208,7 +208,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner: Expand = Expand(SingleRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength)(patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan).plan
 
     // Then
     result should equal(SelectOrAntiSemiApply(aPlan, inner, equals)(Exists(orPredicate, patternQG)))

@@ -88,7 +88,7 @@ class CypherParserTest extends CypherFunSuite {
       "start s = NODE(1) return s as somethingElse",
       Query.
         start(NodeById("s", 1)).
-        returns(ReturnItem(Identifier("s"), "somethingElse", true)))
+        returns(ReturnItem(Identifier("s"), "somethingElse")))
   }
 
   test("sourceIsAnIndex") {
@@ -614,7 +614,7 @@ class CypherParserTest extends CypherFunSuite {
         matches(RelatedTo("c", "n", "r", Seq("KNOWS"), Direction.BOTH)).
         orderBy(SortItem(Identifier("cnt"), true)).
         aggregation(Count(Identifier("c"))).
-        returns(ReturnItem(Identifier("n"), "n"), ReturnItem(Count(Identifier("c")), "cnt", true)))
+        returns(ReturnItem(Identifier("n"), "n"), ReturnItem(Count(Identifier("c")), "cnt")))
   }
 
   test("shouldHandleTwoSortColumns") {
@@ -745,7 +745,7 @@ class CypherParserTest extends CypherFunSuite {
       "return LENGTH('foo') = 10 as n",
       Query.
         matches().
-        returns(ReturnItem(Equals(LengthFunction(Literal("foo")), Literal(10.0)), "n", true)))
+        returns(ReturnItem(Equals(LengthFunction(Literal("foo")), Literal(10.0)), "n")))
   }
 
   test("collectionSize") {
@@ -753,7 +753,7 @@ class CypherParserTest extends CypherFunSuite {
       "return SIZE([1, 2]) = 10 as n",
       Query.
         matches().
-        returns(ReturnItem(Equals(LengthFunction(Collection(Literal(1), Literal(2))), Literal(10.0)), "n", true)))
+        returns(ReturnItem(Equals(LengthFunction(Collection(Literal(1), Literal(2))), Literal(10.0)), "n")))
   }
 
   test("relationshipTypeOut") {
@@ -1209,7 +1209,7 @@ class CypherParserTest extends CypherFunSuite {
         start(NodeById("a", 0), NodeById("b", 1)).
         returns(ReturnItem(ShortestPathExpression(
         ShortestPath("  UNNAMED34", SingleNode("a"), SingleNode("b"), Seq("KNOWS"), Direction.OUTGOING, Some(3), single = true, relIterator = None)),
-        "path", true)))
+        "path")))
   }
 
   test("testForNull") {
@@ -2583,7 +2583,7 @@ class CypherParserTest extends CypherFunSuite {
     val q = Query.
       matches(SingleNode("n")).
       limit(1).
-      returns(ReturnItem(Identifier("n"), "n"))
+      returns(ReturnItem(Identifier("n"), "(n)"))
 
     expectQuery(
       "MATCH (n) RETURN (n) LIMIT 1 UNION MATCH (n) RETURN (n) LIMIT 1 UNION MATCH (n) RETURN (n) LIMIT 1",
@@ -2614,7 +2614,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("Person"))), SingleNode("  UNNAMED20"), "  UNNAMED16", Seq(), Direction.OUTGOING, Map.empty)).
         where(Equals(Property(Identifier("n"), PropertyKey("name")), Literal("Andres"))).
         using(SchemaIndex("n", "Person", "name", AnyIndex, None)).
-        returns(ReturnItem(Identifier("n"), "n", renamed = false))
+        returns(ReturnItem(Identifier("n"), "n"))
     )
   }
 
@@ -2726,7 +2726,7 @@ class CypherParserTest extends CypherFunSuite {
       Query.
         matches(SingleNode("a")).
         returns(
-        ReturnItem(Identifier("a"), "Escaped alias", renamed = true))
+        ReturnItem(Identifier("a"), "Escaped alias"))
     )
   }
 
@@ -2775,7 +2775,7 @@ class CypherParserTest extends CypherFunSuite {
         returns(
         ReturnItem(SimpleCase(Property(Identifier("a"), PropertyKey("prop")), Seq(
           (Literal(1), Literal("hello"))
-        ), Some(Literal("goodbye"))), "result", true))
+        ), Some(Literal("goodbye"))), "result"))
     )
   }
 
@@ -2787,7 +2787,7 @@ class CypherParserTest extends CypherFunSuite {
         returns(
         ReturnItem(GenericCase(Seq(
           (Equals(Property(Identifier("a"), PropertyKey("prop")), Literal(1)), Literal("hello"))
-        ), Some(Literal("goodbye"))), "result", true))
+        ), Some(Literal("goodbye"))), "result"))
     )
   }
 
@@ -2800,7 +2800,7 @@ class CypherParserTest extends CypherFunSuite {
           ReturnItem(GenericCase(
             Seq((NonEmpty(PathExpression(Seq(RelatedTo(SingleNode("a"), SingleNode("  UNNAMED42"), "  UNNAMED30", Seq("LOVES"), Direction.OUTGOING, Map.empty)))), Literal(1))),
             Some(Literal(0))
-          ), "result", true)
+          ), "result")
         )
     )
   }
@@ -2860,7 +2860,7 @@ class CypherParserTest extends CypherFunSuite {
             Map("name"->Literal("Alice"), "address"->LiteralMap(
               Map("city"->Literal("London"), "residential"->True())
             ))
-          ), "person", true)
+          ), "person")
         )
     )
   }
@@ -2982,7 +2982,7 @@ class CypherParserTest extends CypherFunSuite {
       "return [] + 1 AS result",
       Query.
         matches().
-        returns(ReturnItem(Add(Collection(), Literal(1)), "result", true)))
+        returns(ReturnItem(Add(Collection(), Literal(1)), "result")))
   }
 
   test("should handle load and return as map") {
@@ -3059,7 +3059,8 @@ class CypherParserTest extends CypherFunSuite {
   }
 
   private def expectQuery(query: String, expectedQuery: AbstractQuery) {
-    val abstractQuery = parser.parse(query).asQuery
+    val parsedQuery = parser.parse(query)
+    val abstractQuery = parsedQuery.asQuery
     try {
       assertThat(query, abstractQuery, equalTo(expectedQuery))
     } catch {

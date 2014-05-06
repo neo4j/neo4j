@@ -39,9 +39,9 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
       val newMap = MutableMaps.create(ctx.size)
 
       returnItems.foreach {
-        case ReturnItem(Identifier(oldName), newName, _) if isNamed(newName) => newMap.put(newName, ctx(oldName))
-        case ReturnItem(CachedExpression(oldName, _), newName, _)            => newMap.put(newName, ctx(oldName))
-        case ReturnItem(_, name, _)                                          => newMap.put(name, ctx(name))
+        case ReturnItem(Identifier(oldName), newName) if isNamed(newName) => newMap.put(newName, ctx(oldName))
+        case ReturnItem(CachedExpression(oldName, _), newName)            => newMap.put(newName, ctx(oldName))
+        case ReturnItem(_, name)                                          => newMap.put(name, ctx(name))
       }
 
       ctx.newFrom( newMap )

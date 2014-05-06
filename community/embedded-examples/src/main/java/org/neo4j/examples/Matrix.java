@@ -34,8 +34,6 @@ import org.neo4j.graphdb.Traverser;
 import org.neo4j.graphdb.Traverser.Order;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-
 public class Matrix
 {
     public enum RelTypes implements RelationshipType
@@ -58,9 +56,9 @@ public class Matrix
         matrix.shutdown();
     }
 
-    public void setUp() throws IOException
+    public void setUp()
     {
-        deleteRecursively( new File( MATRIX_DB ) );
+        deleteFileOrDirectory( new File( MATRIX_DB ) );
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( MATRIX_DB );
         registerShutdownHook();
         createNodespace();
@@ -218,5 +216,20 @@ public class Matrix
                 graphDb.shutdown();
             }
         } );
+    }
+
+    private static void deleteFileOrDirectory( File file )
+    {
+        if ( file.exists() )
+        {
+            if ( file.isDirectory() )
+            {
+                for ( File child : file.listFiles() )
+                {
+                    deleteFileOrDirectory( child );
+                }
+            }
+            file.delete();
+        }
     }
 }

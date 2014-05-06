@@ -3,6 +3,13 @@
 Cypher supports +CASE+ expressions, which is a generic conditional expression, similar to if/else statements in other languages.
 Two variants of +CASE+ exist -- the simple form and the generic form.
 
+:leveloffset: 1
+
 include::simple-case.asciidoc[]
+
+:leveloffset: 1
+
 include::generic-case.asciidoc[]
+
+:leveloffset: 0
 

@@ -18,6 +18,8 @@
  */
 package org.neo4j.examples;
 
+import java.io.File;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -33,6 +35,7 @@ public class EmbeddedNeo4jWithIndexing
 
     public static void main( final String[] args )
     {
+        deleteFileOrDirectory( new File( DB_PATH ) );
         // START SNIPPET: startDb
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         registerShutdownHook();
@@ -104,5 +107,20 @@ public class EmbeddedNeo4jWithIndexing
                 shutdown();
             }
         } );
+    }
+
+    private static void deleteFileOrDirectory( File file )
+    {
+        if ( file.exists() )
+        {
+            if ( file.isDirectory() )
+            {
+                for ( File child : file.listFiles() )
+                {
+                    deleteFileOrDirectory( child );
+                }
+            }
+            file.delete();
+        }
     }
 }

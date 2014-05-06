@@ -26,5 +26,5 @@ case class Sort(left: LogicalPlan, sortItems: Seq[SortDescription])(solvedSortIt
   val lhs = Some(left)
   val rhs = None
 
-  val solved = left.solved.changeSortItems(solvedSortItems)
+  val solved = left.solved.withSortItems(solvedSortItems)
 }

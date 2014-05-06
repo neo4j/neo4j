@@ -137,7 +137,7 @@ Mandatory Transactions::
 Transactions are now mandatory for read operations as well.
 
 The Reference Node::
-See the Cypher section above as well as the JavaDoc on http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/class-use/Label.html[Label].
+See the Cypher section above as well as the JavaDoc on link:javadocs/org/neo4j/graphdb/class-use/Label.html[Label].
 
 === Other significant changes ===
 

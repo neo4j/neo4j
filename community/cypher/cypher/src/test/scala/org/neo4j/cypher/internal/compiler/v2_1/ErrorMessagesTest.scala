@@ -202,6 +202,13 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
+  test("merge 2 nodes with same identifier but different labels") {
+    expectError(
+      "MERGE (a: Foo)-[r:KNOWS]->(a: Bar)",
+      "Can't create `a` with properties or labels here. It already exists in this context"
+    )
+  }
+
   test("type of identifier is wrong") {
     expectError(
       "start n=node(0) with [n] as users MATCH users-->messages RETURN messages",

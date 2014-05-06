@@ -38,16 +38,14 @@ case class AllIdentifiers() extends ReturnColumn {
   def name = "*"
 }
 
-case class ReturnItem(expression: Expression, name: String, renamed: Boolean = false)
+case class ReturnItem(expression: Expression, name: String)
   extends ReturnColumn {
   def expressions(symbols: SymbolTable) = Map(name -> expression)
 
-  override def toString = if(renamed)
+  override def toString =
     s"${expression.toString} AS ${name}"
-  else
-    name
 
-  def rename(newName: String) = ReturnItem(expression, newName, renamed = true)
+  def rename(newName: String) = ReturnItem(expression, newName)
 
   def map(f: Expression => Expression): ReturnItem = copy(expression = f(expression))
 }

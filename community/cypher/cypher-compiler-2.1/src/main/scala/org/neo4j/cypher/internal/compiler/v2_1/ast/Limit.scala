@@ -24,6 +24,6 @@ import symbols._
 
 case class Limit(expression: Expression)(val position: InputPosition) extends ASTNode with SemanticCheckable {
   def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    expression.semanticCheck(Expression.SemanticContext.Simple) chain
     expression.expectType(CTInteger.covariant)
 }

@@ -60,7 +60,7 @@ WHEN value THEN result
 END""",
 
       arguments = List(
-        "expr" -> "A valid expression.",
+        "test" -> "A valid expression.",
         "value" -> "An expression whose result will be compared to the +test+ expression.",
         "result" -> "This is the result expression used if the value expression matches the +test+ expression.",
         "default" -> "The expression to use if no match is found."

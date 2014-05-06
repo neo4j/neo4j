@@ -99,7 +99,7 @@ trait FunctionTyping { self: Expression =>
   def signatures: Seq[Signature]
 
   def semanticCheck(ctx: ast.Expression.SemanticContext): SemanticCheck =
-    arguments.semanticCheck(ctx) then
+    arguments.semanticCheck(ctx) chain
     checkTypes
 
   def checkTypes: SemanticCheck = s => {

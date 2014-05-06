@@ -18,6 +18,7 @@
  */
 package org.neo4j.examples;
 
+import java.io.File;
 import java.util.ArrayList;
 import java.util.concurrent.TimeUnit;
 
@@ -38,6 +39,7 @@ public class EmbeddedNeo4jWithNewIndexing
     public static void main( final String[] args )
     {
         System.out.println( "Starting database ..." );
+        deleteFileOrDirectory( new File( DB_PATH ) );
 
         // START SNIPPET: startDb
         GraphDatabaseService graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
@@ -184,4 +186,18 @@ public class EmbeddedNeo4jWithNewIndexing
         // END SNIPPET: shutdownDb
     }
 
+    private static void deleteFileOrDirectory( File file )
+    {
+        if ( file.exists() )
+        {
+            if ( file.isDirectory() )
+            {
+                for ( File child : file.listFiles() )
+                {
+                    deleteFileOrDirectory( child );
+                }
+            }
+            file.delete();
+        }
+    }
 }

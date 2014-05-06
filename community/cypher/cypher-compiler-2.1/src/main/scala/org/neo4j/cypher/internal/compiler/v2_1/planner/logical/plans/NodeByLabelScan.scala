@@ -25,5 +25,18 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId])
                           (val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
-  val solved = QueryGraph.empty.addPatternNode(idName).add(solvedPredicates)
+  def solved = NodeByLabelScanPlan(idName, label, solvedPredicates).solved
+  override def coveredIds = Set(idName)
 }
+
+object NodeByLabelScanPlan {
+  def apply(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression] = Seq.empty) =
+    QueryPlan(
+      NodeByLabelScan(idName, label)(solvedPredicates),
+      QueryGraph
+        .empty
+        .addPatternNodes(idName)
+        .addPredicates(solvedPredicates)
+    )
+}
+

@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.Assertions
 import org.junit.Test
 import org.neo4j.graphdb.{Path, Relationship}
 
@@ -484,4 +483,9 @@ class MergeRelationshipAcceptanceTest
     assert(Set(r1, r2) === result)
   }
 
+  @Test def should_reject_merging_nodes_having_the_same_id_but_different_labels() {
+    intercept[SyntaxException]{
+      execute("merge (a: Foo)-[r:KNOWS]->(a: Bar)")
+    }
+  }
 }

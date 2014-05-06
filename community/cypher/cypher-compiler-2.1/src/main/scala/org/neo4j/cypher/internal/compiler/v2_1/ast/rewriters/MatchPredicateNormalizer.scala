@@ -26,7 +26,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.RelationshipPattern
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.MapExpression
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
-import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport
 import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
 import org.neo4j.helpers.ThisShouldNotHappenError
@@ -80,7 +79,7 @@ object PropertyPredicateNormalizer extends MatchPredicateNormalizer {
   private def conjunct(exprs: Seq[Expression]): Expression = exprs match {
     case Nil           => throw new ThisShouldNotHappenError("Davide", "There should be at least one predicate to be rewritten")
     case expr +: Nil   => expr
-    case expr +: exprs => And(expr, conjunct(exprs))(expr.position)
+    case expr +: tail  => And(expr, conjunct(tail))(expr.position)
   }
 }
 

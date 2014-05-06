@@ -38,13 +38,15 @@ TIP: Follow the links in the table for details on dependency configuration with 
 [options="header"]
 |=======================
 |Edition     |Dependency      |Description  |License
-|Community   |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j%22[org.neo4j:neo4j] |a high performance, fully ACID transactional graph database |GPLv3
-|Enterprise  |http://search.maven.org/#search\|gav\|1\|g%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-enterprise%22[org.neo4j:neo4j-enterprise] |adding advanced monitoring, online backup and High Availability clustering |AGPLv3
+|Community   |http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j%22%20AND%20a%3A%22neo4j%22[org.neo4j:neo4j] |a high performance, fully ACID transactional graph database |GPLv3
+|Enterprise  |http://search.maven.org/#search%7Cgav%7C1%7Cg%3A%22org.neo4j%22%20AND%20a%3A%22neo4j-enterprise%22[org.neo4j:neo4j-enterprise] |adding advanced monitoring, online backup and High Availability clustering |AGPLv3
 |=======================
 
 NOTE: The listed dependencies do not contain the implementation, but pulls it in transitively.
 
 For more information regarding licensing, see the http://www.neo4j.org/learn/licensing[Licensing Guide].
+
+Javadocs can be downloaded packaged in jar files from Maven Central or read at link:javadocs/[javadocs].
 
 == Add Neo4j as a dependency ==
 
@@ -131,7 +133,7 @@ _Where the coordinates (+org.neo4j:neo4j+ in the example) are found in the editi
 [[tutorials-java-embedded-setup-startstop]]
 == Starting and stopping ==
 
-To create a new database or ópen an existing one you instantiate an +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html[EmbeddedGraphDatabase]+.
+To create a new database or ópen an existing one you instantiate a +link:javadocs/org/neo4j/graphdb/GraphDatabaseService.html[GraphDatabaseService]+.
 
 [snippet,java]
 ----
@@ -142,7 +144,7 @@ tag=startDb
 ----
 
 [NOTE]
-The +EmbeddedGraphDatabase+ instance can be shared among multiple threads.
+The +GraphDatabaseService+ instance can be shared among multiple threads.
 Note however that you can't create multiple instances pointing to the same database.
 
 To stop the database, call the +shutdown()+ method:
@@ -188,7 +190,7 @@ classifier=test-sources
 tag=startDbWithMapConfig
 ----
 
-For configuration settings, see <<embedded-configuration>>.
+For configuration settings, see <<configuration>>.
 
 [[tutorials-java-embedded-setup-readonly]]
 === Starting an embedded read-only instance ===

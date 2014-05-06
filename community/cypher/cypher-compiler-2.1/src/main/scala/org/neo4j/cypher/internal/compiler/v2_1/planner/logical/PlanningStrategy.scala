@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 
 trait PlanningStrategy {
-  def plan(implicit context: LogicalPlanContext): LogicalPlan
+  def plan(implicit context: LogicalPlanContext): QueryPlan
 }

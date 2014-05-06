@@ -19,71 +19,77 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LeafPlanner, CandidateList, LogicalPlanContext}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, DirectedRelationshipByIdSeek, UndirectedRelationshipByIdSeek}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.functions
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.InputPosition.NONE
 
 object idSeekLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
     val predicates: Seq[Expression] = qg.selections.flatPredicates
 
-    CandidateList(
-      predicates.collect {
-        // MATCH (a)-[r]->b WHERE id(r) = value
-        // MATCH a WHERE id(a) = value
-        case predicate@Equals(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr)) =>
-          (predicate, idExpr, Seq(idValueExpr))
+    val candidatePlans = predicates.collect {
+      // MATCH (a)-[r]->b WHERE id(r) = value
+      // MATCH a WHERE id(a) = value
+      case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr))
+      if func.function == Some(functions.Id) =>
+        (predicate, idExpr, Seq(idValueExpr))
 
-        // MATCH (a)-[r]->b WHERE id(r) IN value
-        // MATCH a WHERE id(a) IN value
-        case predicate@In(FunctionInvocation(FunctionName("id"), _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
-          if idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
-          (predicate, idExpr, idValueExprs)
-      }.collect {
-        case (predicate, Identifier(idName), idValues) =>
-          context.queryGraph.patternRelationships.find(_.name.name == idName) match {
-            case Some(relationship) =>
-              createRelationshipByIdSeek(relationship, idValues, predicate)
-            case None =>
-              NodeByIdSeek(IdName(idName), idValues)(Seq(predicate))
-          }
-      }
-    )
+      // MATCH (a)-[r]->b WHERE id(r) IN value
+      // MATCH a WHERE id(a) IN value
+      case predicate@In(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
+        if func.function == Some(functions.Id) &&
+           idValueExprs.forall(ConstantExpression.unapply(_).isDefined) =>
+        (predicate, idExpr, idValueExprs)
+    }.collect {
+      case (predicate, Identifier(idName), idValues) =>
+        context.queryGraph.patternRelationships.find(_.name.name == idName) match {
+          case Some(relationship) =>
+            createRelationshipByIdSeek(relationship, idValues, predicate)
+          case None =>
+            NodeByIdSeekPlan(IdName(idName), idValues, Seq(predicate))
+        }
+    }
+
+    CandidateList(candidatePlans)
   }
 
-  def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): LogicalPlan = {
+  def createRelationshipByIdSeek(relationship: PatternRelationship, idValues: Seq[Expression], predicate: Expression): QueryPlan = {
     val (left, right) = relationship.nodes
     val name = relationship.name
     val plan = relationship.dir match {
       case Direction.BOTH =>
-        UndirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
+        UndirectedRelationshipByIdSeekPlan(name, idValues, left, right, relationship, Seq(predicate))
+
       case Direction.INCOMING =>
-        DirectedRelationshipByIdSeek(name, idValues, right, left)(relationship, Seq(predicate))
+        DirectedRelationshipByIdSeekPlan(name, idValues, right, left, relationship, Seq(predicate))
+
       case Direction.OUTGOING =>
-        DirectedRelationshipByIdSeek(name, idValues, left, right)(relationship, Seq(predicate))
+        DirectedRelationshipByIdSeekPlan(name, idValues, left, right, relationship, Seq(predicate))
     }
     filterIfNeeded(plan, name.name, relationship.types)
   }
 
-  private def filterIfNeeded(plan: LogicalPlan, relName: String, types: Seq[RelTypeName]): LogicalPlan =
+  private def filterIfNeeded(plan: QueryPlan, relName: String, types: Seq[RelTypeName]): QueryPlan =
     if (types.isEmpty)
       plan
     else {
-      val id = Identifier(relName)(null)
-      val name = FunctionName("type")(null)
-      val invocation = FunctionInvocation(name, id)(null)
+      val id = Identifier(relName)(NONE)
+      val name = FunctionName("type")(NONE)
+      val invocation = FunctionInvocation(name, id)(NONE)
 
-      val predicates: Seq[Expression] = types.map {
-        relType => Equals(invocation, StringLiteral(relType.name)(null))(null)
+      val predicates = types.map {
+        relType => Equals(invocation, StringLiteral(relType.name)(NONE))(NONE)
+      }.toList
+
+      val predicate = predicates match {
+        case exp :: Nil => exp
+        case _ => Ors(predicates)(predicates.head.position)
       }
 
-      val predicate = predicates.reduce(Or(_, _)(null))
-      Selection(Seq(predicate), plan, hideSelections = true)
+      HiddenSelectionPlan(Seq(predicate), plan)
     }
 }

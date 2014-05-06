@@ -103,7 +103,7 @@ abstract class Function extends SemanticChecking {
   def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     when(invocation.distinct) {
       SemanticError(s"Invalid use of DISTINCT with function '$name'", invocation.position)
-    } then invocation.arguments.semanticCheck(ctx) then semanticCheck(ctx, invocation)
+    } chain invocation.arguments.semanticCheck(ctx) chain semanticCheck(ctx, invocation)
 
   protected def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck
 
@@ -134,7 +134,7 @@ trait SimpleTypedFunction { self: Function =>
   private lazy val signatureLengths = signatures.map(_.argumentTypes.length)
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkMinArgs(invocation, signatureLengths.min) then checkMaxArgs(invocation, signatureLengths.max) then
+    checkMinArgs(invocation, signatureLengths.min) chain checkMaxArgs(invocation, signatureLengths.max) chain
     checkTypes(invocation)
 
   private def checkTypes(invocation: ast.FunctionInvocation): SemanticCheck = s => {
@@ -172,5 +172,5 @@ abstract class AggregatingFunction extends Function {
   override def semanticCheckHook(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
     when(ctx == ast.Expression.SemanticContext.Simple) {
       SemanticError(s"Invalid use of aggregating function $name(...) in this context", invocation.position)
-    } then invocation.arguments.semanticCheck(ctx) then semanticCheck(ctx, invocation)
+    } chain invocation.arguments.semanticCheck(ctx) chain semanticCheck(ctx, invocation)
 }

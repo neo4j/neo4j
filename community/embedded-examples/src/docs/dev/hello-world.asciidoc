@@ -82,7 +82,7 @@ tag=transaction
 ----
 
 For more information on transactions, see <<transactions>> and
-http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Transaction.html[Java API for Transaction].
+link:javadocs/org/neo4j/graphdb/Transaction.html[Java API for Transaction].
 
 NOTE: For brevity, we do not spell out wrapping of operations in a transaction throughout the manual.
 
@@ -90,7 +90,7 @@ NOTE: For brevity, we do not spell out wrapping of operations in a transaction t
 
 Now, let's create a few nodes.
 The API is very intuitive.
-Feel free to have a look at the JavaDocs at http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/.
+Feel free to have a look at the JavaDocs at link:javadocs/.
 They're included in the distribution, as well.
 Here's how to create a small graph consisting of two nodes, connected with one relationship and some properties: 
 

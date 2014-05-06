@@ -2,9 +2,11 @@
 Working with NULL
 =================
 
+== Introduction to NULL in Cypher ==
+
 In Cypher, +NULL+ is used to represent missing or undefined values.
 Conceptually, +NULL+ means ``a missing unknown value'' and it is treated somewhat differently from other values.
-E.g. getting a property from a node that does not have said property produces +NULL+.
+For example getting a property from a node that does not have said property produces +NULL+.
 Most expressions that take +NULL+ as input will produce +NULL+.
 This includes boolean expressions that are used as predicates in the +WHERE+ clause.
 In this case, anything that is not +TRUE+ is interpreted as being false.
@@ -13,7 +15,9 @@ In this case, anything that is not +TRUE+ is interpreted as being false.
 Not knowing two values does not imply that they are the same value.
 So the expression +NULL+ = +NULL+ yields +NULL+ and not +TRUE+.
 
-The logical operators (i.e. +AND+, +OR+, +XOR+, +IN+) treat +NULL+ as the ``unknown'' value of three-valued logic.
+== Logical operations with NULL ==
+
+The logical operators (+AND+, +OR+, +XOR+, +IN+, +NOT+) treat +NULL+ as the ``unknown'' value of three-valued logic.
 Here is the truth table for +AND+, +OR+ and +XOR+.
 
 [options="header", cols="^,^,^,^,^", width="80%"]
@@ -29,6 +33,8 @@ Here is the truth table for +AND+, +OR+ and +XOR+.
 |+NULL+ | +NULL+ | +NULL+ | +NULL+ | +NULL+
 |+NULL+ | +TRUE+ | +NULL+ | +TRUE+ | +NULL+
 |====
+
+== The IN operator and NULL ==
 
 The +IN+ operator follows similar logic.
 If Cypher knows that something exists in a collection, the result will be +TRUE+.

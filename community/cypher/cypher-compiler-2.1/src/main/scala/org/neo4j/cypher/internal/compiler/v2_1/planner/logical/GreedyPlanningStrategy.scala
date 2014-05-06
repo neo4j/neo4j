@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
 
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 
 class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
-  def plan(implicit context: LogicalPlanContext): LogicalPlan = {
+  def plan(implicit context: LogicalPlanContext): QueryPlan = {
 
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
@@ -33,14 +33,15 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     def generateLeafPlanTable() = {
       val leafPlanCandidateLists = config.leafPlanners.candidateLists(context.queryGraph)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select))
-      val bestLeafPlans: Iterable[LogicalPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
+      val bestLeafPlans: Iterable[QueryPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
       bestLeafPlans.foldLeft(PlanTable.empty)(_ + _)
     }
 
     def findBestPlan(planGenerator: CandidateGenerator[PlanTable]) =
-      (planTable: PlanTable) => pickBest(planGenerator(planTable).map(select)).map(planTable + _).getOrElse(planTable)
+      (planTable: PlanTable) => pickBest(planGenerator(planTable).map(select)).fold(planTable)(planTable + _)
 
     val leaves = generateLeafPlanTable()
+
     val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)
     val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(afterExpandOrJoin)
     val afterCartesianProduct = iterateUntilConverged(findBestPlan(cartesianProduct))(afterOptionalApplies)
