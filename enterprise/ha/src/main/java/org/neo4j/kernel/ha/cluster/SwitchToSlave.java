@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -32,7 +29,6 @@ import java.util.List;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.ClusterSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -95,6 +91,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 public class SwitchToSlave
 {
@@ -254,7 +253,7 @@ public class SwitchToSlave
         MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), haCommunicationLife );
 
         Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
-                new RequestContextFactory( getServerId( masterUri ).toIntegerIndex(), xaDataSourceManager,
+                new RequestContextFactory( getServerId( masterUri ), xaDataSourceManager,
                         resolver ), xaDataSourceManager );
 
         SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging,
@@ -307,7 +306,7 @@ public class SwitchToSlave
     {
         String hostString = ServerUtil.getHostString( server.getSocketAddress() );
         int port = server.getSocketAddress().getPort();
-        InstanceId serverId = config.get( ClusterSettings.server_id );
+        Integer serverId = config.get( ClusterSettings.server_id );
         String host = hostString.contains( HighAvailabilityModeSwitcher.INADDR_ANY ) ? me.getHost() : hostString;
         return URI.create( "ha://" + host + ":" + port + "?serverId=" + serverId );
     }
@@ -334,7 +333,7 @@ public class SwitchToSlave
                 public Response<?> copyStore( StoreWriter writer )
                 {
                     return copyMaster.copyStore( new RequestContext( 0,
-                            config.get( ClusterSettings.server_id ).toIntegerIndex(), 0, new RequestContext.Tx[0], 0, 0 ), writer );
+                            config.get( ClusterSettings.server_id ), 0, new RequestContext.Tx[0], 0, 0 ), writer );
                 }
 
                 @Override

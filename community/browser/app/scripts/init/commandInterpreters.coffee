@@ -196,9 +196,9 @@ angular.module('neo4jApp')
     # Cypher handler
     FrameProvider.interpreters.push
       type: 'cypher'
-      matches: ['cypher', 'start', 'match', 'create', 'drop',
+      matches: ['cypher', 'start', 'match', 'create', 'drop', 
         'return', 'set', 'remove', 'delete', 'merge', 'optional',
-        'where', 'foreach', 'with', 'load', 'using', 'unwind'
+        'where', 'foreach', 'with', 'load', 'using'
       ]
       templateUrl: 'views/frame-cypher.html'
       exec: ['Cypher', 'GraphModel', (Cypher, GraphModel) ->

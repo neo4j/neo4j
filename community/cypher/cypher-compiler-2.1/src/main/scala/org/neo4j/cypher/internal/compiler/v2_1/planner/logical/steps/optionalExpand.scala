@@ -34,22 +34,22 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
 
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
 
-    val outerJoinPlans: Seq[OptionalExpand] = for {
+    val outerJoinPlans: Seq[QueryPlan] = for {
       optionalQG <- context.queryGraph.optionalMatches
       lhs <- planTable.plans
-      patternRel <- findSinglePatternRelationship(lhs.plan, optionalQG)
+      patternRel <- findSinglePatternRelationship(lhs, optionalQG)
       argumentId = optionalQG.argumentIds.head
       otherSide = patternRel.otherSide( argumentId )
       if optionalQG.selections.predicatesGiven(lhs.coveredIds + otherSide + patternRel.name) == optionalQG.selections.flatPredicates
     } yield {
       val dir = patternRel.directionRelativeTo(argumentId)
-      OptionalExpand(lhs.plan, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length, optionalQG.selections.flatPredicates)(optionalQG)
+      OptionalExpandPlan(lhs, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length, optionalQG.selections.flatPredicates, optionalQG)
     }
 
-    CandidateList(outerJoinPlans.map(QueryPlan))
+    CandidateList(outerJoinPlans)
   }
 
-  private def findSinglePatternRelationship(outerPlan: LogicalPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
+  private def findSinglePatternRelationship(outerPlan: QueryPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
     val singleArgument = optionalQG.argumentIds.size == 1
     val coveredByLHS = singleArgument && outerPlan.coveredIds.contains(optionalQG.argumentIds.head)
     val isSolved = (optionalQG.coveredIds -- outerPlan.coveredIds).isEmpty

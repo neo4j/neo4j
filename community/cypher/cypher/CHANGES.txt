@@ -24,10 +24,6 @@ o Fix problem where LOAD CSV stops indexes from being used
 o Add LOAD CSV
 o Add USING PERIODIC COMMIT
 
-2.0.4
------
-o Adds UNWIND
-
 2.0.3
 -----
 o MERGE must fail when trying to create 2 nodes with same id but different labels (e.g., MERGE (a: Foo)-[r:KNOWS]->(a: Bar))
@@ -362,3 +358,4 @@ o Added new aggregate function - COLLECT
 o Added paths
 o Changed r.TYPE to type(r)
 o Variable length path supported
+

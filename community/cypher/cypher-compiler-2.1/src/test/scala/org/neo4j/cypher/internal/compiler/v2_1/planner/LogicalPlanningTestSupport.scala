@@ -92,7 +92,7 @@ trait LogicalPlanningTestSupport
     context
   }
 
-  def newMockedQueryPlan(ids: String*)(implicit context: LogicalPlanContext) =
+  def newMockedQueryPlanWithProjections(ids: String*)(implicit context: LogicalPlanContext) =
     QueryPlan(
       newMockedLogicalPlan(ids: _*),
       QueryGraph
@@ -106,16 +106,27 @@ trait LogicalPlanningTestSupport
     QueryPlan( mockedPlan, qg )
   }
 
+  def newMockedQueryPlan(ids: String*)(implicit context: LogicalPlanContext): QueryPlan = {
+    val idNames: Seq[IdName] = ids.map(IdName)
+    val plan = newMockedLogicalPlanWithPatterns(idNames.toSet)
+    val qg = QueryGraph.empty.addPatternNodes(idNames: _*)
+    QueryPlan( plan, qg )
+  }
+
   def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan =
     newMockedLogicalPlanWithPatterns(ids.map(IdName).toSet)
 
+  def newMockedQueryPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): QueryPlan = {
+    val plan = newMockedLogicalPlanWithPatterns(ids, patterns)
+    val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRels(patterns)
+    QueryPlan( plan, qg )
+  }
   def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): LogicalPlan = {
     val plan = mock[LogicalPlan]
     doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
-    doReturn(ids).when(plan).coveredIds
-    doReturn(QueryGraph(patternNodes = ids, patternRelationships = patterns.toSet)).when(plan).solved
     plan
   }
+
 
   def newPlanner(metricsFactory: MetricsFactory): Planner =
     new Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor]())
@@ -136,7 +147,4 @@ trait LogicalPlanningTestSupport
   }
 
   implicit def idName(name: String): IdName = IdName(name)
-
-  // TODO: This should go away together with LogicalPlan.solved
-  implicit def logicalToQueryPlan(plan: LogicalPlan): QueryPlan = QueryPlan(plan)
 }

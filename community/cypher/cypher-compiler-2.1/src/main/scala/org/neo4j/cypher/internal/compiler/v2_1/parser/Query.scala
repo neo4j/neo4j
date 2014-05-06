@@ -51,7 +51,6 @@ trait Query extends Parser
       LoadCSV
     | Start
     | Match
-    | Unwind
     | Merge
     | Create
     | SetClause

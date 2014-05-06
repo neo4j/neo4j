@@ -27,7 +27,6 @@ case class UndirectedRelationshipByIdSeek(idName: IdName, relIds: Seq[Expression
   extends LogicalLeafPlan {
 
   def solved = UndirectedRelationshipByIdSeekPlan(idName, relIds, leftNode, rightNode, pattern, solvedPredicates).solved
-  override def coveredIds = Set(idName, leftNode, rightNode)
 }
 
 object UndirectedRelationshipByIdSeekPlan {

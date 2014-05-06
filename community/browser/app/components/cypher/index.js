@@ -12,7 +12,7 @@ CodeMirror.defineMode("cypher", function (config) {
         "rtrim", "trim", "collect", "distinct", "split", "toInt", "toFloat"]);
     var preds = wordRegexp(["all", "any", "none", "single", "not", "in", "has", "and", "or"]);
     var keywords = wordRegexp(["start", "load", "csv", "merge", "using", "on create", "on match", "match", "index on", "drop", "where", "with", "limit", "skip", "order", "by",
-        "return", "create", "delete", "set", "unique", "unwind"]);
+        "return", "create", "delete", "set", "unique"]);
     var operatorChars = /[*+\-<>=&|~]/;
 
     function tokenBase(stream, state) {

@@ -21,9 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 
 case class NodeHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
-
   val lhs = Some(left)
   val rhs = Some(right)
+}
 
-  val solved = left.solved ++ right.solved
+object NodeHashJoinPlan {
+  def apply(node: IdName, left: QueryPlan, right: QueryPlan) =
+    QueryPlan(
+      NodeHashJoin(node, left.plan, right.plan),
+      left.solved ++ right.solved
+    )
 }

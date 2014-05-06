@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
 case class Selection(predicates: Seq[Expression],
-                     left: LogicalPlan,
-                     hideSelections: Boolean = false) extends LogicalPlan {
+                     left: LogicalPlan) extends LogicalPlan {
   assert(predicates.nonEmpty, "A selection plan should never be created without predicates")
 
   val lhs = Some(left)
@@ -31,18 +30,14 @@ case class Selection(predicates: Seq[Expression],
   def rhs = None
 
   def numPredicates = predicates.size
-
-  def solved = if (hideSelections) left.solved else left.solved.addPredicates(predicates)
-
-  override def coveredIds = left.coveredIds
 }
 
 object SelectionPlan {
   def apply(predicates: Seq[Expression], left: QueryPlan) =
-    QueryPlan( Selection( predicates, left.plan, hideSelections = false), left.solved.addPredicates(predicates) )
+    QueryPlan( Selection( predicates, left.plan), left.solved.addPredicates(predicates) )
 }
 
 object HiddenSelectionPlan {
   def apply(predicates: Seq[Expression], left: QueryPlan) =
-    QueryPlan( Selection( predicates, left.plan, hideSelections = true), left.solved )
+    QueryPlan( Selection( predicates, left.plan), left.solved )
 }

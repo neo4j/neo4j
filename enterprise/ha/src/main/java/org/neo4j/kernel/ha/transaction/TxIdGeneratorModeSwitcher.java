@@ -75,8 +75,7 @@ public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerato
     @Override
     protected TxIdGenerator getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveTxIdGenerator( config.get( ClusterSettings.server_id ).toIntegerIndex(), master.cement(),
-                HighAvailabilityModeSwitcher.getServerId( serverHaUri ).toIntegerIndex(), requestContextFactory, xaDsm,
-                tm );
+        return new SlaveTxIdGenerator( config.get( ClusterSettings.server_id ), master.cement(),
+                HighAvailabilityModeSwitcher.getServerId( serverHaUri ), requestContextFactory, xaDsm, tm);
     }
 }

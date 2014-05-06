@@ -30,23 +30,23 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
     def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
       val applyCandidates =
         for (pattern <- context.queryGraph.patternPredicates;
-             lhs <- planTable.plans if applicable(lhs.plan, pattern))
+             lhs <- planTable.plans if applicable(lhs, pattern))
         yield {
           val rhs = context.strategy.plan(context.copy(queryGraph = pattern.queryGraph))
           val exp: Expression = pattern.predicate.exp
           exp match {
             case _: Not =>
-              AntiSemiApply(lhs.plan, rhs.plan)(pattern)
+              AntiSemiApplyPlan(lhs, rhs, pattern)
             case Ors((_: Not) :: tail) if doesNotContainPatterns(tail) =>
-              SelectOrAntiSemiApply(lhs.plan, rhs.plan, onePredicate(tail))(pattern)
+              SelectOrAntiSemiApplyPlan(lhs, rhs, onePredicate(tail), pattern)
             case Ors(_ :: tail) if doesNotContainPatterns(tail) =>
-              SelectOrSemiApply(lhs.plan, rhs.plan, onePredicate(tail))(pattern)
+              SelectOrSemiApplyPlan(lhs, rhs, onePredicate(tail), pattern)
             case _ =>
-              SemiApply(lhs.plan, rhs.plan)(pattern)
+              SemiApplyPlan(lhs, rhs, pattern)
           }
         }
 
-      CandidateList(applyCandidates.map(QueryPlan))
+      CandidateList(applyCandidates)
     }
 
     private def doesNotContainPatterns(e: Seq[Expression]) = !e.exists(_.exists {
@@ -58,14 +58,13 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
       case predicates => Ors(predicates)(predicates.head.position)
     }
 
-    private def applicable(outerPlan: LogicalPlan, inner: SubQuery) = {
+    private def applicable(outerPlan: QueryPlan, inner: SubQuery) = {
       inner match {
-        case e: Exists => {
+        case e: Exists =>
           val providedIds = outerPlan.coveredIds
           val hasDependencies = inner.queryGraph.argumentIds.forall(providedIds.contains)
           val isSolved = outerPlan.solved.selections.contains(e.predicate.exp)
           hasDependencies && !isSolved
-        }
       }
     }
   }

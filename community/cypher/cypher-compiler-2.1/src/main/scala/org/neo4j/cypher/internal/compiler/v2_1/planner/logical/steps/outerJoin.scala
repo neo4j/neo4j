@@ -20,25 +20,25 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan, OuterHashJoin}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{OuterHashJoinPlan, QueryPlan, LogicalPlan, OuterHashJoin}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 object outerJoin extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
 
-    val outerJoinPlans: Seq[OuterHashJoin] = for {
+    val outerJoinPlans = for {
       optionalQG <- context.queryGraph.optionalMatches
-      lhs <- planTable.plans if applicable(lhs.plan, optionalQG)
+      lhs <- planTable.plans if applicable(lhs, optionalQG)
     } yield {
       val innerLogicalPlanContext = context.copy(queryGraph = optionalQG.copy(argumentIds = Set.empty))
       val rhs = context.strategy.plan(innerLogicalPlanContext)
-      OuterHashJoin(optionalQG.argumentIds.head, lhs.plan, rhs.plan, optionalQG.introducedIds)
+      OuterHashJoinPlan(optionalQG.argumentIds.head, lhs, rhs, optionalQG.introducedIds)
     }
 
-    CandidateList(outerJoinPlans.map(QueryPlan))
+    CandidateList(outerJoinPlans)
   }
 
-  private def applicable(outerPlan: LogicalPlan, optionalQG: QueryGraph) = {
+  private def applicable(outerPlan: QueryPlan, optionalQG: QueryGraph) = {
     val singleArgument = optionalQG.argumentIds.size == 1
     val coveredByLHS = singleArgument && outerPlan.coveredIds(optionalQG.argumentIds.head)
     val isSolved = (optionalQG.coveredIds -- outerPlan.coveredIds).isEmpty

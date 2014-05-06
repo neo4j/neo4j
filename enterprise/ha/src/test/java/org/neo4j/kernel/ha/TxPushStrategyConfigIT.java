@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
-
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -38,7 +30,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -47,6 +38,14 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
+
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 public class TxPushStrategyConfigIT
 {
@@ -88,13 +87,13 @@ public class TxPushStrategyConfigIT
     {
         startCluster( 4, 2, "fixed" );
 
-        createTransactionOn( new InstanceId( FIRST_SLAVE ) );
+        createTransactionOn( FIRST_SLAVE );
         assertLastTransactions( lastTx( MASTER, 2 ), lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 1 ), lastTx( THIRD_SLAVE, 2 ) );
 
-        createTransactionOn( new InstanceId( SECOND_SLAVE ) );
+        createTransactionOn( SECOND_SLAVE );
         assertLastTransactions( lastTx( MASTER, 3 ), lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 3 ), lastTx( THIRD_SLAVE, 3 ) );
 
-        createTransactionOn( new InstanceId( THIRD_SLAVE ) );
+        createTransactionOn( THIRD_SLAVE );
         assertLastTransactions( lastTx( MASTER, 4 ), lastTx( FIRST_SLAVE, 2 ), lastTx( SECOND_SLAVE, 4 ), lastTx( THIRD_SLAVE, 4 ) );
     }
 
@@ -143,7 +142,7 @@ public class TxPushStrategyConfigIT
     private static int SECOND_SLAVE = 3;
     private static int THIRD_SLAVE = 4;
     private static int FOURTH_SLAVE = 5;
-    private InstanceId[] machineIds;
+    private int[] machineIds;
 
     @Before
     public void before() throws Exception
@@ -163,7 +162,7 @@ public class TxPushStrategyConfigIT
                 name.getMethodName() ), stringMap() )
         {
             @Override
-            protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
+            protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
             {
                 builder.setConfig( HaSettings.tx_push_factor, "" + pushFactor );
                 builder.setConfig( HaSettings.tx_push_strategy, pushStrategy );
@@ -178,7 +177,7 @@ public class TxPushStrategyConfigIT
 
     private void mapMachineIds()
     {
-        machineIds = new InstanceId[cluster.size()];
+        machineIds = new int[cluster.size()];
         machineIds[0] = cluster.getServerId( cluster.getMaster() );
         List<HighlyAvailableGraphDatabase> slaves = new ArrayList<HighlyAvailableGraphDatabase>();
         for ( HighlyAvailableGraphDatabase hadb : cluster.getAllMembers() )
@@ -193,7 +192,7 @@ public class TxPushStrategyConfigIT
             @Override
             public int compare( HighlyAvailableGraphDatabase o1, HighlyAvailableGraphDatabase o2 )
             {
-                return cluster.getServerId( o1 ) .compareTo(  cluster.getServerId( o2 ) );
+                return cluster.getServerId( o1 ) - cluster.getServerId( o2 );
             }
         } );
         Iterator<HighlyAvailableGraphDatabase> iter = slaves.iterator();
@@ -222,16 +221,16 @@ public class TxPushStrategyConfigIT
 
     private LastTxMapping lastTx( int serverIndex, long txId )
     {
-        InstanceId serverId = machineIds[serverIndex - 1];
+        int serverId = machineIds[serverIndex - 1];
         return new LastTxMapping( serverId, txId );
     }
 
     private static class LastTxMapping
     {
-        private final InstanceId serverId;
+        private final int serverId;
         private final long txId;
 
-        public LastTxMapping( InstanceId serverId, long txId )
+        public LastTxMapping( int serverId, long txId )
         {
             this.serverId = serverId;
             this.txId = txId;
@@ -254,8 +253,9 @@ public class TxPushStrategyConfigIT
         createTransaction( cluster.getMaster() );
     }
 
-    private void createTransactionOn( InstanceId serverId )
+    private void createTransactionOn( int serverIndex )
     {
+        int serverId = machineIds[serverIndex-1];
         createTransaction( cluster.getMemberByServerId( serverId ) );
     }
 

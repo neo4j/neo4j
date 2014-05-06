@@ -27,8 +27,10 @@ case class AntiSemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exist
 abstract class AbstractSemiApply(outer: LogicalPlan, inner: LogicalPlan, val subQuery: Exists) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
+}
 
-  val solved = {
+object AbstractSemiApply {
+  def solved(outer: QueryPlan, inner: QueryPlan, subQuery: Exists) = {
     val newSelections = Selections(outer.solved.selections.predicates + subQuery.predicate)
     outer.solved.copy(
       subQueries = outer.solved.subQueries :+ subQuery,
@@ -36,4 +38,20 @@ abstract class AbstractSemiApply(outer: LogicalPlan, inner: LogicalPlan, val sub
       argumentIds = subQuery.queryGraph.argumentIds
     )
   }
+}
+
+object SemiApplyPlan {
+  def apply(outer: QueryPlan, inner: QueryPlan, subQuery: Exists) =
+    QueryPlan(
+      SemiApply(outer.plan, inner.plan)(subQuery),
+      AbstractSemiApply.solved(outer, inner, subQuery)
+    )
+}
+
+object AntiSemiApplyPlan {
+  def apply(outer: QueryPlan, inner: QueryPlan, subQuery: Exists) =
+    QueryPlan(
+      AntiSemiApply(outer.plan, inner.plan)(subQuery),
+      AbstractSemiApply.solved(outer, inner, subQuery)
+    )
 }

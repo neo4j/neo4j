@@ -24,9 +24,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 case class Optional(nullableIds: Set[IdName], inputPlan: LogicalPlan) extends LogicalPlan {
   val lhs = Some(inputPlan)
   val rhs = None
+}
 
-  val solved: QueryGraph =
-    QueryGraph().
-      withAddedOptionalMatch(inputPlan.solved).
-      withProjections(inputPlan.solved.projections)
+object OptionalPlan {
+  def apply(nullableIds: Set[IdName], inputPlan: QueryPlan) =
+    QueryPlan(
+      Optional(nullableIds, inputPlan.plan),
+      QueryGraph().
+        withAddedOptionalMatch(inputPlan.solved).
+        withProjections(inputPlan.solved.projections)
+    )
 }

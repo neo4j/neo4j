@@ -99,7 +99,8 @@ class ClusterInstance
                 new ClusterConfiguration( configuration.getName(), logging.getMessagesLog( ClusterConfiguration.class ),
                         configuration.getMemberURIs() ),
                 executor, logging, objStreamFactory, objStreamFactory, acceptorInstances, timeouts,
-                new DefaultElectionCredentialsProvider( id, new StateVerifierLastTxIdGetter(), new MemberInfoProvider() ));
+                new DefaultElectionCredentialsProvider( id.toIntegerIndex(), new StateVerifierLastTxIdGetter(),
+                        new MemberInfoProvider() ));
         context.getClusterContext().setBoundAt( uri );
 
         SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(),context.getLearnerContext());
@@ -273,7 +274,8 @@ class ClusterInstance
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
         MultiPaxosContext snapshotCtx = ctx.snapshot( logging, timeoutsSnapshot, executor, snapshotAcceptorInstances,
                 objectStreamFactory, objectStreamFactory,
-                new DefaultElectionCredentialsProvider( server.getServerId(), new StateVerifierLastTxIdGetter(),
+                new DefaultElectionCredentialsProvider( server.getServerId().toIntegerIndex(),
+                        new StateVerifierLastTxIdGetter(),
                         new MemberInfoProvider() ) );
 
 

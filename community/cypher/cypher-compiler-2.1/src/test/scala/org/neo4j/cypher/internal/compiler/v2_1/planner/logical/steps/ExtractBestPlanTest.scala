@@ -34,7 +34,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
         selections = Selections(Set(Predicate(Set.empty[IdName], null))),
         patternNodes = Set(IdName("a"), IdName("b")))
     )
-    val plan = newMockedLogicalPlan("b")
+    val plan = newMockedQueryPlan("b")
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))
 
     evaluating {
@@ -48,7 +48,7 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       planContext= newMockedPlanContext,
       queryGraph = QueryGraph(patternNodes = Set(IdName("a"), IdName("b")), patternRelationships = Set(patternRel))
     )
-    val plan = newMockedLogicalPlan("b")
+    val plan = newMockedQueryPlan("b")
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))
 
     evaluating {

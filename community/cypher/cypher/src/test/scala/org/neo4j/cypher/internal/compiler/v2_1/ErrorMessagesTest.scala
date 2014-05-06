@@ -114,7 +114,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     expectSyntaxError(
       "start p=node(2) match p[:likes]->dude return dude.name",
       "Invalid input '[': expected an identifier character, whitespace, '=', node labels, a property map, " +
-        "a relationship pattern, ',', USING, WHERE, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, " +
+        "a relationship pattern, ',', USING, WHERE, LOAD CSV, START, MATCH, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, " +
         "RETURN, UNION, ';' or end of input (line 1, column 24)",
       23
     )

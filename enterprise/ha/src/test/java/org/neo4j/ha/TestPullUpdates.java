@@ -19,13 +19,6 @@
  */
 package org.neo4j.ha;
 
-import static java.lang.System.currentTimeMillis;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
@@ -34,8 +27,9 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Test;
-import org.neo4j.cluster.ClusterSettings;
+
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -54,6 +48,15 @@ import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static java.lang.System.currentTimeMillis;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 public class TestPullUpdates
 {
@@ -152,9 +155,7 @@ public class TestPullUpdates
         GraphDatabaseService master = null;
         try
         {
-            File testRootDir = TargetDirectory.forTest( getClass() ).
-                    cleanDirectory( "shouldPullUpdatesOnStartupNoMatterWhat" );
-            File masterDir = new File( testRootDir, "master" );
+            File masterDir = TargetDirectory.forTest( getClass() ).cleanDirectory( "master" );
             master = new HighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( masterDir.getAbsolutePath() )
                     .setConfig( ClusterSettings.server_id, "1" )
@@ -162,7 +163,7 @@ public class TestPullUpdates
                     .newGraphDatabase();
 
             // Copy the store, then shutdown, so update pulling later makes sense
-            File slaveDir = new File( testRootDir, "slave" );
+            File slaveDir = TargetDirectory.forTest( getClass() ).cleanDirectory( "slave" );
             slave = new HighlyAvailableGraphDatabaseFactory().
                     newHighlyAvailableDatabaseBuilder( slaveDir.getAbsolutePath() )
                     .setConfig( ClusterSettings.server_id, "2" )
