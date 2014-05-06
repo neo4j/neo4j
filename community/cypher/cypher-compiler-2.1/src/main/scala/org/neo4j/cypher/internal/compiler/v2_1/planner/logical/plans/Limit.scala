@@ -24,9 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 case class Limit(left: LogicalPlan, count: Expression) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
-}
 
-object LimitPlan {
-  def apply(left: QueryPlan, count: Expression) =
-    QueryPlan( Limit(left.plan, count), left.solved.copy(limit = Some(count)) )
+  def availableSymbols = left.availableSymbols
 }

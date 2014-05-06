@@ -29,7 +29,7 @@ object optional extends CandidateGenerator[PlanTable] {
       yield {
         val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG))
 
-        OptionalPlan(optionalQG.introducedIds, rhs)
+        OptionalPlan(rhs)
       }
 
     CandidateList(optionalCandidates)

@@ -32,6 +32,8 @@ case class Expand(left: LogicalPlan,
                  (pattern: PatternRelationship) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
+
+  def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
 }
 
 object ExpandPlan {

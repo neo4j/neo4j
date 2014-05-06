@@ -49,5 +49,5 @@ case class ExpandPipe(source: Pipe, from: String, relName: String, to: String, d
     source.executionPlanDescription.
       andThen(this, "Expand", "from" -> from, "to" -> to, "relName" -> relName)
 
-  def symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
+  val symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
 }

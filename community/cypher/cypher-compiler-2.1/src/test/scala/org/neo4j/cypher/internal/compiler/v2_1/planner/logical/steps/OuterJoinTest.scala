@@ -47,7 +47,7 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       planContext = newMockedPlanContext,
       queryGraph = QueryGraph(patternNodes = Set(aNode, bNode), patternRelationships = Set(r1Rel))
     )
-    val left = newMockedQueryPlanWithPatterns(Set(aNode, bNode))
+    val left = newMockedQueryPlan(Set(aNode, bNode))
     val planTable = PlanTable(Map(Set(aNode, bNode) -> left))
 
     outerJoin(planTable) should equal(CandidateList(Seq.empty))
@@ -75,8 +75,7 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val expectedPlan = OuterHashJoinPlan(aNode,
       left,
       ExpandPlan(
-        AllNodesScanPlan(bNode), bNode, Direction.INCOMING, Seq.empty, aNode, r1Name, SimplePatternLength, r1Rel),
-      Set(bNode, r1Name)
+        AllNodesScanPlan(bNode), bNode, Direction.INCOMING, Seq.empty, aNode, r1Name, SimplePatternLength, r1Rel)
     )
 
     outerJoin(planTable) should equal(CandidateList(Seq(expectedPlan)))

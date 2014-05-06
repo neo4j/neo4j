@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class NodeIndexUniqueSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
                               (val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
-  def solved = NodeIndexUniqueSeekPlan(idName, label, propertyKeyId, valueExpr, solvedPredicates).solved
+  def availableSymbols = Set(idName)
 }
 
 object NodeIndexUniqueSeekPlan {

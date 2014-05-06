@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class SingleRow(coveredIds: Set[IdName] = Set.empty) extends LogicalLeafPlan {
-  def solved = SingleRowPlan(coveredIds).solved
+  def availableSymbols = coveredIds
 }
 
 object SingleRowPlan {

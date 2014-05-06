@@ -28,6 +28,8 @@ case class SelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, predica
 abstract class AbstractSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression, exists: Exists) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
+
+  def availableSymbols = outer.availableSymbols
 }
 
 object AbstractSelectOrSemiApply {

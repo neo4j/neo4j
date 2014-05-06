@@ -33,6 +33,7 @@ case class OptionalExpand(left: LogicalPlan,
                   predicates: Seq[Expression])(solvedQueryGraph: QueryGraph) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
+  val availableSymbols = left.availableSymbols + to + relName
 }
 
 object OptionalExpandPlan {

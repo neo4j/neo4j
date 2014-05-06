@@ -79,8 +79,6 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       addCoveredIdsAsProjections()
   }
 
-  def introducedIds: Set[IdName] = coveredIds -- argumentIds
-
   def addPatternNodes(nodes: IdName*) = copy(
     patternNodes = patternNodes ++ nodes,
     projections = projections ++ nodes.map(symbol)

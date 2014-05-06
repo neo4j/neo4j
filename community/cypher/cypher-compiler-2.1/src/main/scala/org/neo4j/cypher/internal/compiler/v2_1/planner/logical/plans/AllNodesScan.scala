@@ -23,6 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class AllNodesScan(idName: IdName) extends LogicalLeafPlan {
   def solved = AllNodesScanPlan(idName).solved
+
+  def availableSymbols = Set(idName)
 }
 
 object AllNodesScanPlan {

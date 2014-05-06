@@ -51,8 +51,8 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
 
   private def findSinglePatternRelationship(outerPlan: QueryPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
     val singleArgument = optionalQG.argumentIds.size == 1
-    val coveredByLHS = singleArgument && outerPlan.coveredIds.contains(optionalQG.argumentIds.head)
-    val isSolved = (optionalQG.coveredIds -- outerPlan.coveredIds).isEmpty
+    val coveredByLHS = outerPlan.plan.covers(optionalQG.argumentIds)
+    val isSolved = outerPlan.solved.optionalMatches.contains(optionalQG)
     val hasOnlyOnePatternRelationship = optionalQG.patternRelationships.size == 1
     if (singleArgument && coveredByLHS && !isSolved && hasOnlyOnePatternRelationship) {
       optionalQG.patternRelationships.headOption

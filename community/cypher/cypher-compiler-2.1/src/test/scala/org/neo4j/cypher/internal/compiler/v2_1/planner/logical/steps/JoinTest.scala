@@ -44,8 +44,8 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       planContext = newMockedPlanContext,
       queryGraph = createQueryGraph(r1Rel, r2Rel)
     )
-    val left = newMockedQueryPlanWithPatterns(Set(aNode, bNode))
-    val right = newMockedQueryPlanWithPatterns(Set(bNode, cNode))
+    val left = newMockedQueryPlan(Set(aNode, bNode))
+    val right = newMockedQueryPlan(Set(bNode, cNode))
     val planTable = PlanTable(Map(
       Set(aNode, bNode) -> left,
       Set(bNode, cNode) -> right

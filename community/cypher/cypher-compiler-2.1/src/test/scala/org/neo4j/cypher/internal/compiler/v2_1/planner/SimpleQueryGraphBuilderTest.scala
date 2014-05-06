@@ -74,7 +74,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ))
 
     qg.patternNodes should equal(Set(IdName("n")))
-    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE n:A:B RETURN n") {
@@ -89,7 +88,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ))))
 
     qg.patternNodes should equal(Set(IdName("n")))
-    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("match n where n:X OR n:Y return n") {
@@ -106,7 +104,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ))))
 
     qg.patternNodes should equal(Set(IdName("n")))
-    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n") {
@@ -125,7 +122,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       ))))
 
     qg.patternNodes should equal(Set(IdName("n")))
-    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE id(n) = 42 RETURN n") {
@@ -142,7 +138,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ))))
 
     qg.patternNodes should equal(Set(IdName("n")))
-    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE id(n) IN [42, 43] RETURN n") {
@@ -176,7 +171,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ))))
 
     qg.patternNodes should equal(Set(IdName("n")))
-    qg.coveredIds should equal(Set(IdName("n")))
   }
 
   test("match p = (a) return p") {
@@ -187,7 +181,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.projections should equal(Map[String, Expression](
       "p" -> PathExpression(NodePathStep(Identifier("a")_, NilPathStep))_
     ))
-    qg.coveredIds should equal(Set[IdName]("a"))
   }
 
   test("match p = (a)-[r]->(b) return a,r") {
@@ -201,7 +194,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set[IdName]("a", "r", "b"))
   }
 
   test("match (a)-[r]->(b)-[r2]->(c) return a,r,b") {
@@ -216,7 +208,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "r" -> Identifier("r")_,
       "b" -> Identifier("b")_
     ))
-    qg.coveredIds should equal(Set("a", "r", "b", "r2", "c").map(IdName))
   }
 
   test("match (a)-[r]->(b)-[r2]->(a) return a,r") {
@@ -230,7 +221,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set("a", "r", "b", "r2").map(IdName))
   }
 
   test("match (a)<-[r]-(b)-[r2]-(c) return a,r") {
@@ -244,7 +234,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set("a", "r", "b", "r2", "c").map(IdName))
   }
 
   test("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r") {
@@ -258,7 +247,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set("a", "r", "b", "r2", "c").map(IdName))
   }
 
   test("match (a), (n)-[r:Type]-(c) where b:A return a,r") {
@@ -273,7 +261,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set("a", "r", "n", "c").map(IdName))
   }
 
   test("match (a)-[r:Type|Foo]-(b) return a,r") {
@@ -286,7 +273,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set("a", "r", "b").map(IdName))
   }
 
   test("match (a)-[r:Type*]-(b) return a,r") {
@@ -299,7 +285,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set("a", "r", "b").map(IdName))
   }
 
   test("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c") {
@@ -314,7 +299,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "b" -> Identifier("b")_,
       "c" -> Identifier("c")_
     ))
-    qg.coveredIds should equal(Set("a", "r1", "b", "r2", "c").map(IdName))
   }
 
   test("match (a)-[r:Type*3..]-(b) return a,r") {
@@ -327,7 +311,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set("a", "r", "b").map(IdName))
   }
 
   test("match (a)-[r:Type*5]-(b) return a,r") {
@@ -340,7 +323,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set("a", "r", "b").map(IdName))
   }
 
   test("match (a)<-[r*]-(b)-[r2*]-(c) return a,r") {
@@ -354,7 +336,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
-    qg.coveredIds should equal(Set("a", "r", "b", "r2", "c").map(IdName))
   }
 
   test("optional match (a) return a") {
@@ -367,15 +348,13 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ))
 
     qg.optionalMatches.size should equal(1)
-    qg.coveredIds should equal(Set("a").map(IdName))
     qg.argumentIds should equal(Set())
 
     val optMatchQG = qg.optionalMatches.head
     optMatchQG.patternRelationships should equal(Set())
     optMatchQG.patternNodes should equal(Set(IdName("a")))
     optMatchQG.selections should equal(Selections(Set.empty))
-    optMatchQG.optionalMatches.isEmpty should be(true)
-    optMatchQG.coveredIds should equal(Set("a").map(IdName))
+    optMatchQG.optionalMatches should be(empty)
     optMatchQG.argumentIds should equal(Set())
   }
 
@@ -391,7 +370,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ))
 
     qg.optionalMatches.size should equal(1)
-    qg.coveredIds should equal(Set("a", "r", "b").map(IdName))
     qg.argumentIds should equal(Set())
 
 
@@ -401,8 +379,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ))
     optMatchQG.patternNodes should equal(Set(IdName("a"), IdName("b")))
     optMatchQG.selections should equal(Selections(Set.empty))
-    optMatchQG.optionalMatches.isEmpty should be(true)
-    optMatchQG.coveredIds should equal(Set("a", "r", "b").map(IdName))
+    optMatchQG.optionalMatches should be (empty)
     optMatchQG.argumentIds should equal(Set())
   }
 
@@ -417,7 +394,6 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       "r" -> Identifier("r")_
     ))
     qg.optionalMatches.size should equal(1)
-    qg.coveredIds should equal(Set("a", "r", "b").map(IdName))
     qg.argumentIds should equal(Set())
 
     val optMatchQG = qg.optionalMatches.head
@@ -426,8 +402,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     ))
     optMatchQG.selections should equal(Selections(Set.empty))
-    optMatchQG.optionalMatches.isEmpty should be(true)
-    optMatchQG.coveredIds should equal(Set("a", "r", "b").map(IdName))
+    optMatchQG.optionalMatches should be(empty)
     optMatchQG.argumentIds should equal(Set(IdName("a")))
     optMatchQG.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,

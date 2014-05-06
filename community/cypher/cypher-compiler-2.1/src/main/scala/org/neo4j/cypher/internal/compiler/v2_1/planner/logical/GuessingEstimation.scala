@@ -93,7 +93,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case Projection(left, _) =>
       cardinality(left)
 
-    case Optional(_, input) =>
+    case Optional(input) =>
       cardinality(input)
 
     case SingleRow(_) =>

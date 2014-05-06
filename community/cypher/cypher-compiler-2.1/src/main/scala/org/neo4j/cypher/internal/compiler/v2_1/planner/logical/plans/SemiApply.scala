@@ -27,6 +27,8 @@ case class AntiSemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exist
 abstract class AbstractSemiApply(outer: LogicalPlan, inner: LogicalPlan, val subQuery: Exists) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
+
+  def availableSymbols = outer.availableSymbols
 }
 
 object AbstractSemiApply {
