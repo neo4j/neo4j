@@ -25,6 +25,14 @@ LOAD CSV WITH HEADERS FROM "persons.csv" AS csvLine
 CREATE (p:Person {id: toInt(csvLine.id), name: csvLine.name})
 ----
 
+The CSV file we're using looks like this:
+
+.persons.csv
+[source]
+----
+include::../../graphgists/import/persons.csv[]
+----
+
 ////
 Nodes created: 5
 Properties set: 10
@@ -44,6 +52,13 @@ MERGE (country:Country {name: csvLine.country})
 CREATE (movie:Movie {id: toInt(csvLine.id), title: csvLine.title, year:toInt(csvLine.year)})
 CREATE (movie)-[:MADE_IN]->(country)
 ----
+
+.movies.csv
+[source]
+----
+include::../../graphgists/import/movies.csv[]
+----
+
 
 ////
 Nodes created: 4
@@ -82,9 +97,15 @@ MATCH (person:Person { id: toInt(csvLine.personId)}),(movie:Movie { id: toInt(cs
 CREATE (person)-[:PLAYED { role: csvLine.role }]->(movie)
 ----
 
+.roles.csv
+[source]
+----
+include::../../graphgists/import/roles.csv[]
+----
+
 ////
-Relationships created: 7
-Properties set: 7
+Relationships created: 6
+Properties set: 6
 ////
 
 In the query above, we used +USING PERIODIC COMMIT+.
