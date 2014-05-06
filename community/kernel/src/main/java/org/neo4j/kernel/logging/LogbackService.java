@@ -25,6 +25,9 @@ import java.net.URL;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
+import org.slf4j.Logger;
+import org.slf4j.Marker;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -33,8 +36,6 @@ import org.neo4j.kernel.configuration.RestartOnChange;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.slf4j.Logger;
-import org.slf4j.Marker;
 
 /**
  * Logging service that uses Logback as backend.
@@ -153,10 +154,12 @@ public class LogbackService
             extends StringLogger
     {
         private final Logger logger;
+        private final boolean debugEnabled;
 
         public Slf4jToStringLoggerAdapter( Logger logger )
         {
             this.logger = logger;
+            debugEnabled = logger.isDebugEnabled();
         }
 
         @Override
@@ -182,7 +185,7 @@ public class LogbackService
         @Override
         public void logMessage( String msg, boolean flush )
         {
-            if ( logger.isDebugEnabled() )
+            if ( isDebugEnabled() )
             {
                 logger.debug( msg );
             }
@@ -207,7 +210,10 @@ public class LogbackService
         @Override
         public void debug( String msg )
         {
-            logger.debug( msg );
+            if ( isDebugEnabled() )
+            {
+                logger.debug( msg );
+            }
         }
 
         @Override
@@ -219,7 +225,7 @@ public class LogbackService
         @Override
         public boolean isDebugEnabled()
         {
-            return logger.isDebugEnabled();
+            return debugEnabled;
         }
 
         @Override

@@ -372,7 +372,8 @@ public class GCResistantCache<E extends EntityWithSizeObject> implements Cache<E
 
     private void logStatistics( StringLogger log )
     {
-        log.debug( this.toString() );
+        if (log.isDebugEnabled())
+            log.debug( this.toString() );
     }
 
     @Override
