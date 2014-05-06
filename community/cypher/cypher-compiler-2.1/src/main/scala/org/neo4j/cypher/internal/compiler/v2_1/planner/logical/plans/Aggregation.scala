@@ -17,29 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.helpers
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-object NameSupport {
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-  val FRESHID = namePrefix("FRESHID")
-  val AGGREGATION = namePrefix("AGGREGATION")
-  val UNNAMED = namePrefix("UNNAMED")
+case class Aggregation(left: LogicalPlan,
+                       groupingExpressions: Map[String, Expression],
+                       aggregationExpression: Map[String, Expression]) extends LogicalPlan {
 
-  implicit class NameString(name: String) {
-    def isNamed = !unnamed
-    def unnamed = NameSupport.notNamed(name)
-  }
+  val lhs = Some(left)
+  def rhs = None
 
-  def newIdName(n: Int): String = produceName(FRESHID, n)
-
-  def aggregationName(n: Int): String = produceName(AGGREGATION, n)
-
-  def unamedEntity(n: Int): String = produceName(UNNAMED, n)
-
-  def isNamed(x: String) = !notNamed(x)
-
-  def notNamed(x: String) = x.startsWith(UNNAMED)
-
-  private def produceName(prefix: String, n: Int) = s"$prefix$n"
-  private def namePrefix(prefix: String) = s"  $prefix"
+  val availableSymbols = left.availableSymbols ++ groupingExpressions.keySet.map(IdName)
 }
