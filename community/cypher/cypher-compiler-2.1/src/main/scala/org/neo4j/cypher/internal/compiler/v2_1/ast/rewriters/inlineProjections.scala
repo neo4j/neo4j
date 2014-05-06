@@ -34,10 +34,10 @@ object inlineProjections extends (Statement => Statement) {
     val inlineReturnItems = inlineReturnItemsFactory(inlineIdentifiers.narrowed(_))
 
     val inliningRewriter = Rewriter.lift {
-      case withClause @ With(false, returnItems @ ListedReturnItems(items), orderBy, None, None, None) =>
+      case withClause @ With(false, returnItems @ ListedReturnItems(items), orderBy, None, None, where) =>
         val pos = returnItems.position
         val filteredItems = items.collect {
-          case item@AliasedReturnItem(expr, ident) if !context.projections.contains(ident) || containsAggregate(expr) =>
+          case item@AliasedReturnItem(expr, ident) if (expr != ident && !context.projections.contains(ident)) || containsAggregate(expr) =>
             item
         }
 
@@ -47,7 +47,8 @@ object inlineProjections extends (Statement => Statement) {
 
         withClause.copy(
           returnItems = newReturnItems,
-          orderBy = orderBy.map(inlineIdentifiers.narrowed(_))
+          orderBy = orderBy.map(inlineIdentifiers.narrowed(_)),
+          where = where
         )(withClause.position)
 
       case returnClause @ Return(_, returnItems: ListedReturnItems, orderBy, skip, limit) =>

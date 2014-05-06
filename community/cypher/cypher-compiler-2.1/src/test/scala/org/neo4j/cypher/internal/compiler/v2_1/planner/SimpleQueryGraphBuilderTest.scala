@@ -465,13 +465,13 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("MATCH (a) WITH a WHERE TRUE RETURN a") {
-    val qg = buildQueryGraph("MATCH (a) WITH a WHERE TRUE RETURN a")
+    val qg = buildQueryGraph("MATCH (a) WITH a WHERE TRUE RETURN a", normalize = true)
+    qg.tail should be(empty)
     qg.patternNodes should equal(Set(IdName("a")))
     qg.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
-
-    val tail = qg.tail.get
-    tail.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
-    tail.selections should equal(Selections(Set(Predicate(Set.empty, True()_))))
+    qg.selections.predicates should equal(
+      Set(Predicate(Set.empty, True()_))
+    )
   }
 
   test("match a where a.prop = 42 OR (a)-->() return a") {
@@ -610,6 +610,27 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     evaluating(buildQueryGraph("match (a) where (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
     evaluating(buildQueryGraph("match (a) where not (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
     evaluating(buildQueryGraph("match (a) where (a)-->() OR id(a) = 12 OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+  }
+
+  ignore("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {
+    val qg = buildQueryGraph("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
+    qg.tail should not be empty
+    qg.selections.predicates should equal(Set(
+      Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_)
+    ))
+    qg.patternNodes should equal(Set(IdName("a")))
+    qg.projections should equal(Map[String, Expression]("a" -> Property(Identifier("a")_, PropertyKeyName("prop")_)_))
+    qg.limit should equal(Some(UnsignedIntegerLiteral("1")(null)))
+
+    val tailQg = qg.tail.get
+    tailQg.patternNodes should equal(Set(IdName("b")))
+    tailQg.patternRelationships should be(empty)
+    tailQg.selections.predicates should equal(Set(
+      Predicate(
+        Set(IdName("b"), IdName("a")),
+        Equals(Property(Identifier("a")_, PropertyKeyName("prop")_)_, FunctionInvocation(FunctionName("id")_, Identifier("b")_)_)_
+      )
+    ))
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_

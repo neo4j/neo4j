@@ -201,41 +201,22 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
           produceQueryGraphFromClauses(newQG, tl)
 
-        case With(false, ListedReturnItems(expressions), optOrderBy, None, None, optWhere) :: tl =>
-          val projections = produceProjectionsMap(expressions)
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-          val tail0: QueryGraph = QueryGraph(
-            selections = selections,
-            subQueriesLookupTable = subQueries.toMap
-          )
-
-          val tail = produceQueryGraphFromClauses(tail0, tl)
-
-          val newQG = qg
-            .withSortItems(produceSortItems(optOrderBy))
-            .withProjections(projections)
-            .copy(tail = Some(tail))
-
-          produceQueryGraphFromClauses(newQG, tl)
-
         case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
-          val tail0: QueryGraph = QueryGraph(
+          val newQG: QueryGraph = QueryGraph(
             sortItems = produceSortItems(optOrderBy),
             selections = selections,
             subQueriesLookupTable = subQueries.toMap
           )
 
-          val tail = produceQueryGraphFromClauses(tail0, tl)
+          produceQueryGraphFromClauses(qg ++ newQG, tl)
 
-          qg ++ tail
-
-        case With(distinct, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
+        case With(false, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
           val projections = produceProjectionsMap(expressions)
           val sortItems = produceSortItems(optOrderBy)
 
-          val tail0: QueryGraph = qg
+          val newQG: QueryGraph = qg
             .withSortItems(sortItems)
             .withProjections(projections)
             .copy(
@@ -243,9 +224,13 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
               skip = skip.map(_.expression)
             )
 
-          val tail = produceQueryGraphFromClauses(tail0, tl)
+          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
-          qg.withTail(tail)
+          val tail = produceQueryGraphFromClauses(QueryGraph(
+            selections = selections,
+            subQueriesLookupTable = subQueries.toMap
+          ), tl)
+          newQG.withTail(tail)
 
         case Seq() =>
           qg
