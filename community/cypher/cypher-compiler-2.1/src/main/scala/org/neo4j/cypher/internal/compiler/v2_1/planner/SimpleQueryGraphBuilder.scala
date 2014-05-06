@@ -114,7 +114,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
         val newDeps = exprs.foldLeft(Set.empty[IdName]) { (acc, exp) =>
           exp match {
             case exp: PatternExpression => acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
-            case exp                    => acc ++ SelectionPredicates.idNames(exp)
+            case _                      => acc ++ SelectionPredicates.idNames(exp)
           }
         }
         Predicate(newDeps, ors)
@@ -168,9 +168,6 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           produceQueryGraphFromClauses(newQG, tl)
 
         case Match(optional@false, pattern: Pattern, Seq(), optWhere) :: tl =>
-          if (qg.patternRelationships.nonEmpty || qg.patternNodes.nonEmpty)
-            throw new CantHandleQueryException
-
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
           val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)

@@ -404,7 +404,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = execute("MATCH (a {name:'A'}),(c {name:'C'}) match a-->b return a,b,c").toList
+    val result = executeWithNewPlanner("MATCH (a {name:'A'}),(c {name:'C'}) match a-->b return a,b,c").toList
 
     result should equal (List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))))
   }
@@ -460,7 +460,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(b, x1, "REL", "BX1")
     relate(b, x2, "REL", "BX2")
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 MATCH (a {name:'A'}), (b {name:'B'})
 MATCH a-[rA]->x<-[rB]->b
 return x""")
@@ -484,7 +484,7 @@ return x""")
     relate(c, x1, "REL", "CX1")
     relate(c, x2, "REL", "CX2")
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 MATCH (a {name:'A'}), (b {name:'B'}), (c {name:'C'})
 match a-[rA]->x, b-[rB]->x, c-[rC]->x
 return x""")
@@ -523,7 +523,7 @@ return x""")
     relate(c, g)
     relate(c, j)
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 MATCH (a {name:'a'}), (b {name:'b'}), (c {name:'c'})
 match a-->x, b-->x, c-->x
 return x""")
@@ -1031,7 +1031,7 @@ RETURN a.name""")
     relate(a, c)
 
     // when asked for a cartesian product of the same match twice
-    val result = execute("match a-->b match c-->d return a,b,c,d")
+    val result = executeWithNewPlanner("match a-->b match c-->d return a,b,c,d")
 
     // then we should find 2 x 2 = 4 result matches
 

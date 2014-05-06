@@ -101,11 +101,6 @@ trait LogicalPlanningTestSupport
         .withProjections(ids.map( (id) => id -> ident(id) ).toMap)
     )
 
-  def newMockedQueryPlan(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
-    val mockedPlan = newMockedLogicalPlan( qg.coveredIds.map(_.name).toSeq: _* )
-    QueryPlan( mockedPlan, qg )
-  }
-
   def newMockedQueryPlan(idNames: Set[IdName])(implicit context: LogicalPlanContext): QueryPlan = {
     val plan = newMockedLogicalPlan(idNames)
     val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*)

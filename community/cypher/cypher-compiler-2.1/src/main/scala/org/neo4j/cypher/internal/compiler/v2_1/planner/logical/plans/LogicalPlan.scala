@@ -38,8 +38,10 @@ abstract class LogicalPlan extends Product with Visitable[LogicalPlan] {
   override def toString = "\n" + new LogicalPlanTreeStringVisitor().visit(this)
 
   def availableSymbols: Set[IdName]
-  def isCoveredBy(otherIds: Set[IdName]) = (availableSymbols -- otherIds).isEmpty
-  def covers(other: LogicalPlan): Boolean = other.isCoveredBy(availableSymbols)
+  def isCoveredBy(otherIds: Set[IdName]): Boolean = (availableSymbols -- otherIds).isEmpty
+  def isCoveredBy(other: LogicalPlan): Boolean = isCoveredBy(other.availableSymbols)
+  def covers(otherIds: Set[IdName]): Boolean = (otherIds -- availableSymbols).isEmpty
+  def covers(other: LogicalPlan): Boolean = covers(other.availableSymbols)
 }
 
 abstract class LogicalLeafPlan extends LogicalPlan {
