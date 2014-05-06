@@ -124,6 +124,12 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     val subQueries = predicates.collect {
       case Predicate(_, Ors((_:PatternExpression) :: (_:PatternExpression) :: _ )) =>
         throw new CantHandleQueryException
+      case Predicate(_, Ors(Not(_:PatternExpression) :: (_:PatternExpression) :: _ )) =>
+        throw new CantHandleQueryException
+      case Predicate(_, Ors((_:PatternExpression) :: Not(_:PatternExpression) :: _ )) =>
+        throw new CantHandleQueryException
+      case Predicate(_, Ors(Not(_:PatternExpression) :: Not(_:PatternExpression) :: _ )) =>
+        throw new CantHandleQueryException
 
       case Predicate(_, Ors((patternExpr:PatternExpression) :: tail)) if !tail.exists(_.isInstanceOf[PatternExpression])  =>
         (patternExpr, extractQueryGraph(patternExpr))

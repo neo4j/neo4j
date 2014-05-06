@@ -604,5 +604,13 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.tail should equal(None)
   }
 
+  test("should fail with one or more pattern expression in or") {
+    evaluating(buildQueryGraph("match (a) where (a)-->() OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildQueryGraph("match (a) where not (a)-->() OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildQueryGraph("match (a) where (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildQueryGraph("match (a) where not (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildQueryGraph("match (a) where (a)-->() OR id(a) = 12 OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }
