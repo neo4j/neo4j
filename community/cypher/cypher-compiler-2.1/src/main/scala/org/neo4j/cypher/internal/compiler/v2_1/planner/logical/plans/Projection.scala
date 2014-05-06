@@ -27,13 +27,3 @@ case class Projection(left: LogicalPlan, expressions: Map[String, Expression]) e
 
   def numExpressions = expressions.size
 }
-
-object ProjectionPlan {
-  def apply(left: QueryPlan, expressions: Map[String, Expression]) =
-    QueryPlan( Projection(left.plan, expressions), left.solved.withProjections(expressions))
-}
-
-object HiddenProjectionPlan {
-  def apply(left: QueryPlan, expressions: Map[String, Expression]) =
-    QueryPlan( Projection(left.plan, expressions), left.solved )
-}
