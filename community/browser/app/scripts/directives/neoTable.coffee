@@ -69,7 +69,7 @@ angular.module('neo4jApp.directives')
             html += "<th>#{col}</th>"
           html += "</tr></thead>"
           html += "<tbody>"
-          for row in result.rows()
+          for row in rows
             html += "<tr>"
             for cell in row
               html += '<td>' + cell2html(cell) + '</td>'
