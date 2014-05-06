@@ -26,6 +26,13 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
+/**
+ * A log handler that updates the transaction position cache.
+ * As a transaction is deserialized and applied locally, it is wise for performance reason to keep in
+ * a small cache the location of the most recent ones. This handler does exactly that - as transaction are
+ * deserialized, it updates the cache passed in with the position of the start entry for the transaction.
+ * Generally only one instance of this class will be necessary during runtime.
+ */
 public class PositionCacheLogHandler extends LogHandler.Filter
 {
     private LogEntry.Start startEntry;
