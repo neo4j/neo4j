@@ -20,6 +20,7 @@
 package org.neo4j.shell.impl;
 
 import java.net.MalformedURLException;
+import java.net.UnknownHostException;
 import java.rmi.Naming;
 import java.rmi.NotBoundException;
 import java.rmi.Remote;
@@ -173,12 +174,19 @@ public class RmiLocation
 		try
 		{
 			Naming.list( toShortUrl() );
-			return LocateRegistry.getRegistry( getPort() );
+			return LocateRegistry.getRegistry( getHost(), getPort() );
 		}
 		catch ( RemoteException e )
 		{
-			return LocateRegistry.createRegistry( getPort() );
-		}
+            try
+            {
+                return LocateRegistry.createRegistry( getPort(), null, new HostBoundSocketFactory( host ) );
+            }
+            catch ( UnknownHostException hostException )
+            {
+                throw new RemoteException( "Unable to bind to '"+host+"', unknown hostname.", hostException );
+            }
+        }
 		catch ( java.net.MalformedURLException e )
 		{
 			throw new RemoteException( "Malformed URL", e );
