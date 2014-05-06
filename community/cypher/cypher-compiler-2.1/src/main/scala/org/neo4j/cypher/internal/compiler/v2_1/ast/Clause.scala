@@ -232,6 +232,17 @@ case class With(
   }
 }
 
+case class Unwind(expression: Expression, identifier: Identifier)(val position: InputPosition) extends Clause {
+  def name = "UNWIND"
+
+  override def semanticCheck =
+    expression.semanticCheck(Expression.SemanticContext.Results) chain
+      expression.expectType(CTCollection(CTAny).covariant) ifOkChain {
+      val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
+      identifier.declare(possibleInnerTypes)
+    }
+}
+
 case class Return(
     distinct: Boolean,
     returnItems: ReturnItems,

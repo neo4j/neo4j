@@ -19,8 +19,15 @@
  */
 package org.neo4j.kernel.index;
 
+import static org.hamcrest.CoreMatchers.hasItem;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+
 import org.junit.After;
 import org.junit.Test;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.index.AutoIndexer;
@@ -29,12 +36,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
-
-import static org.hamcrest.CoreMatchers.hasItem;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.*;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class AutoIndexConfigIT
 {
@@ -48,10 +49,10 @@ public class AutoIndexConfigIT
         clusterManager = new ClusterManager( clusterOfSize( size ), dir.cleanDirectory( "dbs" ), MapUtil.stringMap() )
         {
             @Override
-            protected void config( GraphDatabaseBuilder builder, String clusterName, int serverId )
+            protected void config( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
             {
-                builder.setConfig( "jmx.port", "" + (9912+serverId) );
-                builder.setConfig( HaSettings.ha_server, ":" + (1136+serverId) );
+                builder.setConfig( "jmx.port", "" + (9912+serverId.toIntegerIndex()) );
+                builder.setConfig( HaSettings.ha_server, ":" + (1136+serverId.toIntegerIndex()) );
             }
         };
         clusterManager.start();
