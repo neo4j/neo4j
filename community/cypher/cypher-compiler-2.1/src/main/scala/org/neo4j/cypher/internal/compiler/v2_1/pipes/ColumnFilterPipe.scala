@@ -48,6 +48,8 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
     })
   }
 
-  def planDescription = source.planDescription.andThen(this, "ColumnFilter", Arguments.ColumnsLeft(returnItemNames.toList))
+  def planDescription =
+    new PlanDescriptionImpl(this, "ColumnFilter", SingleChild(source.planDescription), Seq(Arguments.ColumnsLeft(returnItemNames.toList)))
+
   def dependencies = Seq()
 }

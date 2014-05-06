@@ -55,19 +55,21 @@ class Profiler extends PipeDecorator {
     case _ => f
   }
 
-  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = plan map {
-    p: PlanDescription =>
-      val iteratorStats: ProfilingIterator = iterStats(p.pipe)
-      if (!isProfileReady)
-        throw new ProfilerStatisticsNotReadyException()
+  def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = {
+    plan map {
+      p: PlanDescription =>
+        val iteratorStats: ProfilingIterator = iterStats(p.pipe)
 
-      val planWithRows = p.
-        addArgument(Arguments.Rows(iteratorStats.count))
+        if (!isProfileReady)
+          throw new ProfilerStatisticsNotReadyException()
 
-      contextStats.get(p.pipe) match {
-        case Some(stats) => planWithRows.addArgument(Arguments.DbHits(stats.count))
-        case None => planWithRows
-      }
+        val planWithRows = p.addArgument(Arguments.Rows(iteratorStats.count))
+
+        contextStats.get(p.pipe) match {
+          case Some(stats) => planWithRows.addArgument(Arguments.DbHits(stats.count))
+          case None        => planWithRows
+        }
+    }
   }
 }
 
@@ -81,66 +83,30 @@ trait Counter {
   }
 }
 
+final class ProfilingQueryContext(val inner: QueryContext, val p: Pipe) extends DelegatingQueryContext(inner) with Counter {
 
-class ProfilingQueryContext(val inner: QueryContext, val p: Pipe) extends DelegatingQueryContext(inner) with Counter {
+  self =>
+
+  override protected def singleDbHit[A](value: A): A = {
+    increment()
+    value
+  }
+
+  override protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = {
+    increment()
+    value.map {
+      (v) =>
+        increment()
+        v
+    }
+  }
 
   class ProfilerOperations[T <: PropertyContainer](inner: Operations[T]) extends DelegatingOperations[T](inner) {
-    override def delete(obj: T) {
-      increment()
-      inner.delete(obj)
-    }
-
-    override def getById(id: Long): T = {
-      increment()
-      inner.getById(id)
-    }
-
-    override def getProperty(id: Long, propertyKeyId: Int): Any = {
-      increment()
-      inner.getProperty(id, propertyKeyId)
-    }
-
-    override def hasProperty(id: Long, propertyKeyId: Int): Boolean = {
-      increment()
-      inner.hasProperty(id, propertyKeyId)
-    }
-
-    override def setProperty(id: Long, propertyKeyId: Int, value: Any) {
-      increment()
-      inner.setProperty(id, propertyKeyId, value)
-    }
-
-    override def indexGet(name: String, key: String, value: Any): Iterator[T] = countItems(inner.indexGet(name, key, value))
-
-    override def indexQuery(name: String, query: Any): Iterator[T] = countItems(inner.indexQuery(name, query))
-
-    override def all: Iterator[T] = countItems(inner.all)
-
-    private def countItems(in: Iterator[T]): Iterator[T] = in.map {
-      t =>
-        increment()
-        t
-    }
+    override protected def singleDbHit[A](value: A): A = self.singleDbHit(value)
+    override protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = self.manyDbHits(value)
   }
-
-  override def createNode(): Node = {
-    increment()
-    inner.createNode()
-  }
-
-  override def createRelationship(start: Node, end: Node, relType: String): Relationship = {
-    increment()
-    inner.createRelationship(start, end, relType)
-  }
-
-  override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] =
-    inner.getRelationshipsFor(node, dir, types).map { (rel: Relationship) =>
-      increment()
-      rel
-    }
 
   override def nodeOps: Operations[Node] = new ProfilerOperations(inner.nodeOps)
-
   override def relationshipOps: Operations[Relationship] = new ProfilerOperations(inner.relationshipOps)
 }
 

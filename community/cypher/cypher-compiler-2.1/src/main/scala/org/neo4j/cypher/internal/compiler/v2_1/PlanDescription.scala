@@ -86,7 +86,7 @@ case object NoChildren extends Children {
 
 case class SingleChild(child: PlanDescription) extends Children {
   protected def children = Seq(child)
-  def map(f: PlanDescription => PlanDescription) = SingleChild(f(child))
+  def map(f: PlanDescription => PlanDescription) = SingleChild(child.map(f))
 
   def toSeq: Seq[PlanDescription] = child.toSeq
 }
@@ -96,7 +96,7 @@ case class TwoChildren(lhs: PlanDescription, rhs: PlanDescription) extends Child
 
   def toSeq: Seq[PlanDescription] = lhs.toSeq ++ rhs.toSeq
 
-  def map(f: PlanDescription => PlanDescription) = TwoChildren(lhs = f(lhs), rhs = f(rhs))
+  def map(f: PlanDescription => PlanDescription) = TwoChildren(lhs = lhs.map(f), rhs = rhs.map(f))
 }
 
 case class PlanDescriptionImpl(pipe: Pipe,
@@ -126,11 +126,7 @@ case class PlanDescriptionImpl(pipe: Pipe,
       def getRows: Long = arguments.collectFirst { case Rows(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
     }
 
-    override def toString = {
-      val treeString = renderAsTree(self)
-      val details = renderDetails(self)
-      treeString + "\n\n" + details
-    }
+    override def toString = self.toString
   }
 
   def addArgument(argument: Argument): PlanDescription = copy(arguments = arguments :+ argument)
@@ -138,30 +134,39 @@ case class PlanDescriptionImpl(pipe: Pipe,
   def map(f: PlanDescription => PlanDescription): PlanDescription = f(copy(children = children.map(f)))
 
   def toSeq: Seq[PlanDescription] = this +: children.toSeq
+
+  override def toString = {
+    val treeString = renderAsTree(this)
+    val details = renderDetails(this)
+    "%s%n%n%s".format(treeString, details)
+  }
+
 }
 
 case class NullPlanDescription(pipe:Pipe) extends PlanDescription {
   override def andThen(pipe: Pipe, name: String, arguments: Argument*) = new PlanDescriptionImpl(pipe, name, NoChildren, arguments)
 
-  def args = ???
+  def args = Seq.empty
 
   def asJava = ???
 
-  def children = ???
+  def children = NoChildren
 
-  def find(name: String) = ???
+  def find(searchedName: String) = if (searchedName == name) Seq(this) else Seq.empty
 
-  def name = ???
+  def name = "Null"
 
   def render(builder: StringBuilder) {}
 
   def render(builder: StringBuilder, separator: String, levelSuffix: String) {}
 
-  def addArgument(arg: Argument): PlanDescription = ???
+  def addArgument(arg: Argument): PlanDescription =
+    throw new UnsupportedOperationException("Cannot add arguments to NullPipe")
 
-  def map(f: (PlanDescription) => PlanDescription): PlanDescription = ???
+  // We do not map over this since we don't have profiler statistics for it
+  def map(f: (PlanDescription) => PlanDescription): PlanDescription = this
 
-  def arguments: Seq[Argument] = ???
+  def arguments: Seq[Argument] = Seq.empty
 
   def toSeq: Seq[PlanDescription] = Seq(this)
 }

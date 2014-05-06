@@ -115,7 +115,6 @@ class RenderAsTreeTests extends CypherFunSuite {
     val intermediate1 = PlanDescriptionImpl(pipe, "INTERMEDIATE", TwoChildren(leaf1, leaf2), Seq.empty)
     val intermediate2 = PlanDescriptionImpl(pipe, "INTERMEDIATE", TwoChildren(leaf3, leaf4), Seq.empty)
     val plan = PlanDescriptionImpl(pipe, "ROOT", TwoChildren(intermediate1, intermediate2), Seq.empty)
-    println(renderAsTree(plan))
     renderAsTree(plan) should equal(
       """ROOT
         |  |

@@ -36,7 +36,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expr
       ctx =>
         val r = ctx(ident) match {
           case r: Relationship => r
-          case x => throw new InternalException(s"Expected a relationship, got ${x}")
+          case x => throw new InternalException(s"Expected a relationship, got $x")
         }
 
         val s = r.getStartNode
@@ -51,7 +51,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expr
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def planDescription = new PlanDescriptionImpl(this, "DirectedRelationshipByIdSeekPipe", NoChildren, Seq(
+  def planDescription = new PlanDescriptionImpl(this, "UndirectedRelationshipByIdSeek", NoChildren, Seq(
     IntroducedIdentifier(ident),
     IntroducedIdentifier(toNode),
     IntroducedIdentifier(fromNode)

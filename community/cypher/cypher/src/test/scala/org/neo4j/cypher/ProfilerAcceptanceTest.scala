@@ -19,14 +19,50 @@
  */
 package org.neo4j.cypher
 
-import javacompat.ProfilerStatistics
-import java.lang.{Iterable => JIterable}
 import org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.helpers.TxCounts
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.StringHelper.RichString
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{DbHits, Rows}
+import org.neo4j.cypher.internal.compiler.v2_1.Argument
 
 class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFileTestSupport {
+
+  test("match n where n-[:FOO]->() return *") {
+    //GIVEN
+    relate( createNode(), createNode(), "FOO")
+
+    //WHEN
+    val result: ExecutionResult = profile("cypher 2.1.experimental match n where n-[:FOO]->() return *")
+
+    //THEN
+    assertRows(1)(result)("SemiApply")
+    assertDbHits(0)(result)("SemiApply")
+
+    assertRows(2)(result)("AllNodesScan")
+    assertDbHits(3)(result)("AllNodesScan")
+
+    assertRows(0)(result)("Expand")
+    assertDbHits(1)(result)("Expand")
+  }
+
+  test("match n where not n-[:FOO]->() return *") {
+    //GIVEN
+    relate( createNode(), createNode(), "FOO")
+
+    //WHEN
+    val result: ExecutionResult = profile("cypher 2.1.experimental match n where not n-[:FOO]->() return *")
+
+    //THEN
+    assertRows(1)(result)("AntiSemiApply")
+    assertDbHits(0)(result)("AntiSemiApply")
+
+    assertRows(2)(result)("AllNodesScan")
+    assertDbHits(3)(result)("AllNodesScan")
+
+    assertRows(0)(result)("Expand")
+    assertDbHits(1)(result)("Expand")
+  }
 
   test("unfinished profiler complains") {
     //GIVEN
@@ -41,7 +77,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("tracks number of rows") {
     //GIVEN
     createNode("foo" -> "bar")
-    val result: ExecutionResult = engine.profile("START n = node(0) RETURN n")
+    val result: ExecutionResult = profile("START n = node(0) RETURN n")
 
     //WHEN THEN
     assertRows(1)(result)("NodeById")
@@ -51,68 +87,55 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   test("tracks number of graph accesses") {
     //GIVEN
     createNode("foo" -> "bar")
-    val result: ExecutionResult = engine.profile("START n = node(0) RETURN n.foo")
+    val result: ExecutionResult = profile("START n = node(0) RETURN n.foo")
 
     //WHEN THEN
-    assertDbHits(1)(result)("ColumnFilter", "Extract", "NodeById")
+    assertRows(1)(result)("ColumnFilter", "Extract", "NodeById")
+    assertDbHits(0)(result)("ColumnFilter")
+    assertDbHits(2)(result)("Extract")
+    assertDbHits(1)(result)("NodeById")
   }
 
 
   test("no problem measuring creation") {
     //GIVEN
-    val result: ExecutionResult = engine.profile("CREATE n")
+    val result: ExecutionResult = profile("CREATE n")
 
     //WHEN THEN
     assertDbHits(0)(result)("EmptyResult")
   }
 
-
   test("tracks graph global queries") {
     createNode()
 
     //GIVEN
-    val result: ExecutionResult = engine.profile("START n=node(*) RETURN n.foo")
+    val result: ExecutionResult = profile("START n=node(*) RETURN n.foo")
 
     //WHEN THEN
-    assertDbHits(1)(result)("ColumnFilter", "Extract", "AllNodes")
+    assertRows(1)(result)("ColumnFilter")
+    assertDbHits(0)(result)("ColumnFilter")
+
+    assertRows(1)(result)("Extract")
+    assertDbHits(1)(result)("Extract")
+
+    assertRows(1)(result)("AllNodes")
+    assertDbHits(2)(result)("AllNodes")
   }
 
 
   test("tracks optional matches") {
     //GIVEN
     createNode()
-    val result: ExecutionResult = engine.profile("start n=node(*) optional match (n)-->(x) return x")
+    val result: ExecutionResult = profile("start n=node(*) optional match (n)-->(x) return x")
 
     //WHEN THEN
     assertDbHits(0)(result)("ColumnFilter", "NullableMatch")
     assertDbHits(0)(result)("ColumnFilter", "NullableMatch", "SimplePatternMatcher")
   }
 
-  ignore("tracks merge node producers") {
-//    //GIVEN
-//    val result: ExecutionResult = engine.profile("merge (n:Person {id: 1})")
-//
-//    //WHEN THEN
-//    val planDescription = result.executionPlanDescription().asInstanceOf[v2_1.PlanDescription]
-//
-//    val commands = planDescription.cd("UpdateGraph").arguments("commands").asInstanceOf[SeqVal]
-//    assert( 1 === commands.v.size )
-//    val command = commands.v.seq.head.asInstanceOf[MapVal]
-//
-//    val producers = command.v("producers").asInstanceOf[SeqVal]
-//    assert( 1 === producers.v.size )
-//    val producer = producers.v.head.asInstanceOf[MapVal]
-//
-//    assert( Map(
-//        "label" -> SimpleVal.fromStr("Person"),
-//        "producer" -> SimpleVal.fromStr("NodeByLabel"),
-//        "identifiers" -> SimpleVal.fromSeq("n")
-//      ) === producer.v )
-  }
-
   test("allows optional match to start a query") {
     //GIVEN
-    val result: ExecutionResult = engine.profile("cypher 2.1.experimental optional match (n) return n")
+    val result: ExecutionResult = profile("cypher 2.1.experimental optional match (n) return n")
 
     //WHEN THEN
     assertRows(1)(result)("Optional")
@@ -180,22 +203,41 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
   }
 
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {
-    assert(expectedRows === parentCd(result, names).getProfilerStatistics.getRows)
+    getPlanDescriptions(result, names).foreach {
+      plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
+    }
   }
 
-  private def assertDbHits(expectedHits: Int)(result: ExecutionResult)(names: String*) {
-    val statistics: ProfilerStatistics = parentCd(result, names).getProfilerStatistics
-    assert(expectedHits === statistics.getDbHits)
+  private def assertDbHits(expectedRows: Int)(result: ExecutionResult)(names: String*) {
+    getPlanDescriptions(result, names).foreach {
+      plan => assert(expectedRows === getArgument[DbHits](plan).value, s" wrong db hits for plan: ${plan.name}")
+    }
   }
 
-  private def parentCd(result: ExecutionResult, names: Seq[String]) = {
+  override def profile(q: String, params: (String, Any)*): ExecutionResult = {
+    val result = super.profile(q, params: _*)
+    val planDescription: v2_1.PlanDescription = result.executionPlanDescription().asInstanceOf[v2_1.PlanDescription]
+    planDescription.toSeq.foreach {
+      p =>
+        if (!p.arguments.exists(_.isInstanceOf[DbHits])) fail("Found plan that was not profiled with DbHits: " + p.name)
+        if (!p.arguments.exists(_.isInstanceOf[Rows])) fail("Found plan that was not profiled with Rows: " + p.name)
+    }
+    result
+  }
+
+  private def getArgument[A <: Argument](plan: v2_1.PlanDescription)(implicit manifest: Manifest[A]): Argument = plan.arguments.collectFirst {
+    case x: A => x
+  }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString} but only found ${plan.arguments}"))
+
+  private def getPlanDescriptions(result: ExecutionResult, names: Seq[String]): Seq[v2_1.PlanDescription] = {
     result.toList
-    val description = result.executionPlanDescription().asJava
+    val description = result.executionPlanDescription().asInstanceOf[v2_1.PlanDescription]
     if (names.isEmpty)
-      description
+      description.toSeq
     else {
-      assert(names.head === description.getName)
-      description.cd(names.tail: _*)
+      names.flatMap {
+        name => description.find(name)
+      }
     }
   }
 }

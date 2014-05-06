@@ -49,7 +49,7 @@ case class NodeByLabelScanPipe(ident: String, label: Either[String, LabelId])(im
     case Right(id) => id.id.toString
   }
 
-  def planDescription = new PlanDescriptionImpl(this, "NodeByIdSeek", NoChildren, Seq(IntroducedIdentifier(ident), LabelName(labelName)))
+  def planDescription = new PlanDescriptionImpl(this, "NodeByLabelScan", NoChildren, Seq(IntroducedIdentifier(ident), LabelName(labelName)))
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 
