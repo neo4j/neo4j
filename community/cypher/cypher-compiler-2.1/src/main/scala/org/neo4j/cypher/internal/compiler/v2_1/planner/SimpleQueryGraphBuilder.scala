@@ -102,7 +102,7 @@ object SimpleQueryGraphBuilder {
 class SimpleQueryGraphBuilder extends QueryGraphBuilder {
   import SimpleQueryGraphBuilder.PatternDestructuring._
 
-  private def getSelectionsAndSubQueries(optWhere: Option[Where]): (Selections, Seq[SubQuery]) = {
+  private def getSelectionsAndSubQueries(optWhere: Option[Where]): (Selections, Seq[(PatternExpression, QueryGraph)]) = {
     import SimpleQueryGraphBuilder.SubQueryExtraction.extractQueryGraph
 
     val predicates: Set[Predicate] = optWhere.map(SelectionPredicates.fromWhere).getOrElse(Set.empty)
@@ -121,25 +121,25 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
       case p => p
     }
 
-    val subQueries: Seq[SubQuery] = predicatesWithCorrectDeps.collect {
-      case p@Predicate(_, Ors((_:PatternExpression) :: (_:PatternExpression) :: tail )) =>
+    val subQueries = predicates.collect {
+      case Predicate(_, Ors((_:PatternExpression) :: (_:PatternExpression) :: _ )) =>
         throw new CantHandleQueryException
 
-      case p@Predicate(_, Ors((patternExpr:PatternExpression) :: tail)) if !tail.exists(_.isInstanceOf[PatternExpression])  =>
-        Exists(p, extractQueryGraph(patternExpr))
+      case Predicate(_, Ors((patternExpr:PatternExpression) :: tail)) if !tail.exists(_.isInstanceOf[PatternExpression])  =>
+        (patternExpr, extractQueryGraph(patternExpr))
 
-      case p@Predicate(_, Ors((Not(patternExpr: PatternExpression)) :: tail)) if !tail.exists(_.isInstanceOf[PatternExpression])  =>
-        Exists(p, extractQueryGraph(patternExpr))
+      case Predicate(_, Ors((Not(patternExpr: PatternExpression)) :: tail)) if !tail.exists(_.isInstanceOf[PatternExpression])  =>
+        (patternExpr, extractQueryGraph(patternExpr))
 
-      case p@Predicate(_, Not(patternExpr: PatternExpression)) =>
-        Exists(p, extractQueryGraph(patternExpr))
+      case Predicate(_, Not(patternExpr: PatternExpression)) =>
+        (patternExpr, extractQueryGraph(patternExpr))
 
-      case p@Predicate(_, patternExpr: PatternExpression) =>
-        Exists(p, extractQueryGraph(patternExpr))
+      case Predicate(_, patternExpr: PatternExpression) =>
+        (patternExpr, extractQueryGraph(patternExpr))
 
     }.toSeq
 
-    (Selections(predicatesWithCorrectDeps), subQueries)
+    (Selections(predicates), subQueries)
   }
 
   override def produce(ast: Query): QueryGraph = ast match {
@@ -175,7 +175,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
             selections = selections,
             patternNodes = nodeIds.toSet,
             patternRelationships = rels.toSet,
-            subQueries = subQueries)
+            subQueriesLookupTable = subQueries.toMap)
 
           val newQG = qg ++ matchClause
 
@@ -187,7 +187,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val optionalMatch = QueryGraph(
             selections = selections,
             patternNodes = nodeIds.toSet,
-            subQueries = subQueries,
+            subQueriesLookupTable = subQueries.toMap,
             patternRelationships = rels.toSet).addCoveredIdsAsProjections()
 
 
@@ -200,7 +200,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
           val tail0: QueryGraph = QueryGraph(
             selections = selections,
-            subQueries = subQueries
+            subQueriesLookupTable = subQueries.toMap
           )
 
           val tail = produceQueryGraphFromClauses(tail0, tl)
@@ -218,7 +218,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val tail0: QueryGraph = QueryGraph(
             sortItems = produceSortItems(optOrderBy),
             selections = selections,
-            subQueries = subQueries
+            subQueriesLookupTable = subQueries.toMap
           )
 
           val tail = produceQueryGraphFromClauses(tail0, tl)

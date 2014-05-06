@@ -121,6 +121,12 @@ trait LogicalPlanningTestSupport
     QueryPlan( plan, qg )
   }
 
+  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): LogicalPlan = {
+    val plan = mock[LogicalPlan]
+    doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
+    plan
+  }
+
   def newPlanner(metricsFactory: MetricsFactory): Planner =
     new Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor]())
 

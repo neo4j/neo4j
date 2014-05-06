@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Exists, Selections}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class SelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: Exists) extends AbstractSelectOrSemiApply(outer, inner, predicate, exists)
-case class SelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: Exists) extends AbstractSelectOrSemiApply(outer, inner, predicate, exists)
+case class SelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression)(predicate: Expression) extends AbstractSelectOrSemiApply(outer, inner, expr, predicate)
+case class SelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression)(predicate: Expression) extends AbstractSelectOrSemiApply(outer, inner, expr, predicate)
 
-abstract class AbstractSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression, exists: Exists) extends LogicalPlan {
+abstract class AbstractSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression, predicate: Expression) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
 
@@ -33,24 +32,22 @@ abstract class AbstractSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan,
 }
 
 object AbstractSelectOrSemiApply {
-  def solved(outer: QueryPlan, exists: Exists) = {
-    val newSelections = Selections(outer.solved.selections.predicates + exists.predicate)
-    outer.solved.copy(subQueries = outer.solved.subQueries :+ exists, selections = newSelections)
-  }
+  def solved(outer: QueryPlan, solved: Expression) =
+    outer.solved.copy(selections = outer.solved.selections ++ solved)
 }
 
 object SelectOrSemiApplyPlan {
-  def apply(outer: QueryPlan, inner: QueryPlan, predicate: Expression, exists: Exists) =
+  def apply(outer: QueryPlan, inner: QueryPlan, expr: Expression, predicate: Expression, solved: Expression) =
     QueryPlan(
-      SelectOrSemiApply(outer.plan, inner.plan, predicate)(exists),
-      AbstractSelectOrSemiApply.solved(outer, exists)
+      SelectOrSemiApply(outer.plan, inner.plan, expr)(predicate),
+      AbstractSelectOrSemiApply.solved(outer, solved)
     )
 }
 
 object SelectOrAntiSemiApplyPlan {
-  def apply(outer: QueryPlan, inner: QueryPlan, predicate: Expression, exists: Exists) =
+  def apply(outer: QueryPlan, inner: QueryPlan, expr: Expression, predicate: Expression, solved: Expression) =
     QueryPlan(
-      SelectOrAntiSemiApply(outer.plan, inner.plan, predicate)(exists),
-      AbstractSelectOrSemiApply.solved(outer, exists)
+      SelectOrAntiSemiApply(outer.plan, inner.plan, expr)(predicate),
+      AbstractSelectOrSemiApply.solved(outer, solved)
     )
 }
