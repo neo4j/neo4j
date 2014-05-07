@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
-
 import java.io.File;
 import java.util.List;
 
@@ -36,6 +34,8 @@ import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.logical_log_rotation_threshold;
 
 /**
 * TODO
@@ -95,6 +95,10 @@ public class XaFactory
         }
         else
         {
+            // Note: The interceptor and the transactionTranslator serve very similar purposes. Both take input
+            // log entries and act on those as part of the commit path. The only distinction is that interceptors
+            // can reject transactions, while the translator translates transactions from old formats to a new format.
+            // They should probably be consolidated into one thing.
             Function<List<LogEntry>, List<LogEntry>> interceptor = null;
             if ( providers.shouldInterceptDeserialized() && providers.hasAnyInterceptorConfigured() )
             {
