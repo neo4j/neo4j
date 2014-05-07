@@ -1186,7 +1186,7 @@ RETURN a.name""")
     // Given empty db
 
     // when
-    val result = execute("optional match (a) with a match (a)-->(b) return b")
+    val result = executeWithNewPlanner("optional match (a) with a match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
     result shouldBe empty
@@ -1196,7 +1196,7 @@ RETURN a.name""")
     // Given empty db
 
     // when
-    val result = execute("optional match (a) with a optional match (a)-->(b) return b")
+    val result = executeWithNewPlanner("optional match (a) with a optional match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
     result.toList should equal (List(Map("b"->null)))

@@ -61,6 +61,9 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case NodeHashJoin(_, left, right) =>
       math.min(cardinality(left), cardinality(right))
 
+    case OuterHashJoin(_, left, right) =>
+      math.min(cardinality(left), cardinality(right))
+
     case expand @ Expand(left, _, dir, types, _, _, length) =>
       val degree = degreeByRelationshipTypesAndDirection(types, dir)
       cardinality(left) * math.pow(degree, averagePathLength(length))

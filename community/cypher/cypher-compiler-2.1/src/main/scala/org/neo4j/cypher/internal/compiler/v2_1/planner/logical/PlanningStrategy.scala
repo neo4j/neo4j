@@ -23,5 +23,5 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan,
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 
 trait PlanningStrategy {
-  def plan(implicit context: LogicalPlanContext): QueryPlan
+  def plan(implicit context: LogicalPlanContext, leafPlan: Option[QueryPlan] = None): QueryPlan
 }
