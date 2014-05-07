@@ -186,4 +186,30 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     aggregation(plan) should equal(QueryPlan(expectedPlan, context.queryGraph))
   }
+
+  test("MATCH n-->x RETURN n, collect(x)") {
+
+    val aggregationFunction = Count.invoke(Has.invoke(Property(ident("r"), PropertyKeyName("prop") _) _)(pos))(DummyPosition(1))
+
+    implicit val context = newMockedLogicalPlanContext(
+      newMockedPlanContext,
+      queryGraph = QueryGraph(
+        patternNodes = Set[IdName]("n", "m", "r"),
+        aggregatingProjections = Map("c" -> Add(aggregationFunction, SignedIntegerLiteral("1")_)_),
+        projections = Map("n" -> ident("n"), "m" -> ident("m"))
+      )
+    )
+
+    val plan = newMockedQueryPlan("n", "m", "r")
+    val expectedPlan = Projection(
+      Aggregation(
+        plan.plan,
+        Map("n" -> ident("n"), "m" -> ident("m")),
+        Map[String, Expression]("  AGGREGATION1" -> aggregationFunction)
+      ),
+      Map("n" -> ident("n"), "m" -> ident("m"), "c" -> Add(ident("  AGGREGATION1"), SignedIntegerLiteral("1")_)_)
+    )
+
+    aggregation(plan) should equal(QueryPlan(expectedPlan, context.queryGraph))
+  }
 }

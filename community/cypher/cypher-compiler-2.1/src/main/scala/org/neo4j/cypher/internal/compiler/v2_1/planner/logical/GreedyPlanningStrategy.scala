@@ -46,7 +46,8 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(afterExpandOrJoin)
     val afterCartesianProduct = iterateUntilConverged(findBestPlan(cartesianProduct))(afterOptionalApplies)
 
-    val bestPlan = projection(afterCartesianProduct.uniquePlan)
+    val afterAggregation = aggregation(afterCartesianProduct.uniquePlan)
+    val bestPlan = projection(afterAggregation)
 
     val finalPlan: QueryPlan = context.queryGraph.tail match {
       case Some(tail) =>
