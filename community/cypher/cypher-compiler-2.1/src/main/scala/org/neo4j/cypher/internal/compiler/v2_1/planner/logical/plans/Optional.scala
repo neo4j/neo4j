@@ -19,20 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-
 case class Optional(inputPlan: LogicalPlan) extends LogicalPlan {
   val lhs = Some(inputPlan)
   val rhs = None
   def availableSymbols = inputPlan.availableSymbols
-}
-
-object OptionalPlan {
-  def apply(inputPlan: QueryPlan) =
-    QueryPlan(
-      Optional(inputPlan.plan),
-      QueryGraph().
-        withAddedOptionalMatch(inputPlan.solved).
-        withProjections(inputPlan.solved.projections)
-    )
 }

@@ -47,8 +47,8 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     produceLogicalPlan("MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b") should equal(
       Projection(
         OuterHashJoin("b",
-          Expand(NodeByLabelScan("a", Left("X"))(), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength)(mockRel),
-          Expand(NodeByLabelScan("c", Left("Y"))(), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(mockRel)
+          Expand(NodeByLabelScan("a", Left("X")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength),
+          Expand(NodeByLabelScan("c", Left("Y")), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)
         ),
         expressions = Map("b" -> Identifier("b") _)
       )

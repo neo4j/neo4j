@@ -25,8 +25,3 @@ case class CartesianProduct(left: LogicalPlan, right: LogicalPlan) extends Logic
   val rhs = Some(right)
   def availableSymbols = left.availableSymbols ++ right.availableSymbols
 }
-
-object CartesianProductPlan {
-  def apply(left: QueryPlan, right: QueryPlan) =
-    QueryPlan( CartesianProduct(left.plan, right.plan), left.solved ++ right.solved )
-}

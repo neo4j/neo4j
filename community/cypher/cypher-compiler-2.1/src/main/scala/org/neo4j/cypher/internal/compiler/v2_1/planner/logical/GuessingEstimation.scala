@@ -82,10 +82,12 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       cardinality(outer) * cardinality(inner)
 
     case semiApply @ SemiApply(outer, inner) =>
-      semiApplyCardinality(outer, semiApply.predicate)
+      cardinality(outer) // TODO: This is not true. We should calculate cardinality on QG and not LP
 
     case semiApply @ AntiSemiApply(outer, inner) =>
-      semiApplyCardinality(outer, semiApply.predicate)
+      cardinality(outer)
+      // TODO: This is not true. We should calculate cardinality on QG and not LP
+//    private def semiApplyCardinality(outer: LogicalPlan, exp: ast.Expression) = cardinality(outer) * predicateSelectivity(Seq(exp))
 
     case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
       relIds.size
@@ -124,9 +126,6 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       cardinality(input)
 
   }
-
-  private def semiApplyCardinality(outer: LogicalPlan, exp: ast.Expression) =
-    cardinality(outer) * predicateSelectivity(Seq(exp))
 
   def averagePathLength(length:PatternLength) = length match {
     case SimplePatternLength              => 1

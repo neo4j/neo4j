@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object optionalExpand extends CandidateGenerator[PlanTable] {
 
@@ -36,7 +37,7 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
       if canSolveAllPredicates(optionalQG.selections, lhs.coveredIds + otherSide + patternRel.name)
     } yield {
       val dir = patternRel.directionRelativeTo(argumentId)
-      OptionalExpandPlan(lhs, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length, optionalQG.selections.flatPredicates, optionalQG)
+      planOptionalExpand(lhs, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length, optionalQG.selections.flatPredicates, optionalQG)
     }
 
     CandidateList(outerJoinPlans)

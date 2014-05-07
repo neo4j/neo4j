@@ -22,10 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTable, CandidateGenerator}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object expand extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
@@ -37,7 +37,7 @@ object expand extends CandidateGenerator[PlanTable] {
     } yield {
       val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)
-      val expandF = (otherSide: IdName) => ExpandPlan(plan, nodeId, dir, patternRel.types,
+      val expandF = (otherSide: IdName) => planExpand(plan, nodeId, dir, patternRel.types,
                                                       otherSide, patternRel.name, patternRel.length, patternRel)
 
       if (plan.coveredIds.contains(otherSide)) {
@@ -65,6 +65,6 @@ object expand extends CandidateGenerator[PlanTable] {
     val expand = f(temp)
     val left = Identifier(otherSide.name)(null)
     val right = Identifier(temp.name)(null)
-    HiddenSelectionPlan(Seq(Equals(left, right)(null)), expand)
+    planHiddenSelection(Seq(Equals(left, right)(null)), expand)
   }
 }

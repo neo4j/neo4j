@@ -20,13 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Predicate, QueryGraph, Selections, LogicalPlanningTestSupport}
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{SignedIntegerLiteral, Expression}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Predicate
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("when a predicate that isn't already solved is solvable it should be applied") {
@@ -42,7 +40,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = selectCovered(queryPlan)
 
     // Then
-    result should equal(SelectionPlan(Seq(predicate), queryPlan))
+    result should equal(planSelection(Seq(predicate), queryPlan))
   }
 
   test("should not try to solve predicates with unmet dependencies") {
@@ -58,7 +56,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = selectCovered(queryPlan)
 
     // Then
-    result should equal(SelectionPlan(Seq(predicate), queryPlan))
+    result should equal(planSelection(Seq(predicate), queryPlan))
   }
 
   test("when two predicates not already solved are solvable, they should be applied") {
@@ -77,7 +75,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = selectCovered(queryPlan)
 
     // Then
-    result should equal(SelectionPlan(Seq(predicate1, predicate2), queryPlan))
+    result should equal(planSelection(Seq(predicate1, predicate2), queryPlan))
   }
 
   test("when a predicate is already solved, it should not be applied again") {
