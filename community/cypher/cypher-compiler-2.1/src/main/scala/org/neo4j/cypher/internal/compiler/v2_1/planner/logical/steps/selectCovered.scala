@@ -38,27 +38,20 @@
 */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SelectionPlan, QueryPlan, Selection}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SelectionPlan, QueryPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Expression}
 
 object selectCovered extends PlanTransformer {
   def apply(plan: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
     val qg = context.queryGraph
     val coveredIds = plan.coveredIds
 
-    val predicates: Seq[Expression] = qg.selections.predicatesGiven(coveredIds).filter {
-      case predicate => !plan.solved.selections.contains(predicate) && !containsPatternPredicates(predicate)
-    }
+    val predicates = qg.selections.scalarPredicatesGiven(coveredIds).filterNot(plan.solved.selections.contains)
 
     if (predicates.isEmpty)
       plan
     else {
       SelectionPlan(predicates, plan)
     }
-  }
-
-  private def containsPatternPredicates(e:Expression) = e.exists {
-    case _:PatternExpression => true
   }
 }

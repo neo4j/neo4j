@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
-import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, ast}
+import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.parboiled.scala._
 
 trait Clauses extends Parser
@@ -84,6 +84,10 @@ trait Clauses extends Parser
   def With: Rule1[ast.With] = rule("WITH") (
       group(keyword("WITH DISTINCT") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = true, _, _, _, _, _))
     | group(keyword("WITH") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _))
+  )
+
+  def Unwind: Rule1[ast.Unwind] = rule("UNWIND") (
+    group(keyword("UNWIND") ~~ Expression ~~ keyword("AS") ~~ Identifier) ~~>> (ast.Unwind(_,_))
   )
 
   def Return: Rule1[ast.Return] = rule("RETURN") (

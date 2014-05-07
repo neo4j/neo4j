@@ -29,7 +29,6 @@ import static org.neo4j.helpers.Settings.ANY;
 import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.HOSTNAME_PORT;
-import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Settings.MANDATORY;
 import static org.neo4j.helpers.Settings.STRING;
 import static org.neo4j.helpers.Settings.TRUE;
@@ -38,13 +37,37 @@ import static org.neo4j.helpers.Settings.list;
 import static org.neo4j.helpers.Settings.matches;
 import static org.neo4j.helpers.Settings.setting;
 
+import org.neo4j.helpers.Function;
+
 /**
  * Settings for cluster members
  */
 public class ClusterSettings
 {
+    public static final Function<String, InstanceId> INSTANCE_ID = new Function<String, InstanceId>()
+    {
+        @Override
+        public InstanceId apply( String value )
+        {
+            try
+            {
+                return new InstanceId( Integer.parseInt( value ) );
+            }
+            catch ( NumberFormatException e )
+            {
+                throw new IllegalArgumentException( "not a valid integer value" );
+            }
+        }
+
+        @Override
+        public String toString()
+        {
+            return "an instance id";
+        }
+    };
+
     @Description( "Id for a cluster instance. Must be unique within the cluster." )
-    public static final Setting<Integer> server_id = setting( "ha.server_id", INTEGER, MANDATORY );
+    public static final Setting<InstanceId> server_id = setting( "ha.server_id", INSTANCE_ID, MANDATORY );
 
     @Description( "The name of a cluster." )
     public static final Setting<String> cluster_name = setting( "ha.cluster_name", STRING, "neo4j.ha",

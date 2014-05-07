@@ -19,39 +19,35 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Exists, Selections}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exists) extends AbstractSemiApply(outer, inner, subQuery)
-case class AntiSemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exists) extends AbstractSemiApply(outer, inner, subQuery)
+case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(predicate: Expression) extends AbstractSemiApply(outer, inner, predicate)
+case class AntiSemiApply(outer: LogicalPlan, inner: LogicalPlan)(predicate: Expression) extends AbstractSemiApply(outer, inner, predicate)
 
-abstract class AbstractSemiApply(outer: LogicalPlan, inner: LogicalPlan, val subQuery: Exists) extends LogicalPlan {
+abstract class AbstractSemiApply(outer: LogicalPlan, inner: LogicalPlan, val predicate: Expression) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
+
+  def availableSymbols = outer.availableSymbols
 }
 
 object AbstractSemiApply {
-  def solved(outer: QueryPlan, inner: QueryPlan, subQuery: Exists) = {
-    val newSelections = Selections(outer.solved.selections.predicates + subQuery.predicate)
-    outer.solved.copy(
-      subQueries = outer.solved.subQueries :+ subQuery,
-      selections = newSelections,
-      argumentIds = subQuery.queryGraph.argumentIds
-    )
-  }
+  def solved(outer: QueryPlan, inner: QueryPlan, solved: Expression) =
+    outer.solved.copy( selections = outer.solved.selections ++ solved)
 }
 
 object SemiApplyPlan {
-  def apply(outer: QueryPlan, inner: QueryPlan, subQuery: Exists) =
+  def apply(outer: QueryPlan, inner: QueryPlan, predicate: Expression, solved: Expression) =
     QueryPlan(
-      SemiApply(outer.plan, inner.plan)(subQuery),
-      AbstractSemiApply.solved(outer, inner, subQuery)
+      SemiApply(outer.plan, inner.plan)(predicate),
+      AbstractSemiApply.solved(outer, inner, solved)
     )
 }
 
 object AntiSemiApplyPlan {
-  def apply(outer: QueryPlan, inner: QueryPlan, subQuery: Exists) =
+  def apply(outer: QueryPlan, inner: QueryPlan, predicate: Expression, solved: Expression) =
     QueryPlan(
-      AntiSemiApply(outer.plan, inner.plan)(subQuery),
-      AbstractSemiApply.solved(outer, inner, subQuery)
+      AntiSemiApply(outer.plan, inner.plan)(predicate),
+      AbstractSemiApply.solved(outer, inner, solved)
     )
 }

@@ -23,6 +23,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 case class NodeHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
+
+  def availableSymbols = left.availableSymbols ++ right.availableSymbols
 }
 
 object NodeHashJoinPlan {

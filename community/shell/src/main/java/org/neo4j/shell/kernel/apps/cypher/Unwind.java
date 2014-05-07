@@ -17,23 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.shell.kernel.apps.cypher;
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.helpers.Service;
+import org.neo4j.shell.App;
 
-case class AllNodesScan(idName: IdName) extends LogicalLeafPlan {
-  def solved = AllNodesScanPlan(idName).solved
-
-  def availableSymbols = Set(idName)
+@Service.Implementation( App.class )
+public class Unwind extends Start
+{
 }
-
-object AllNodesScanPlan {
-  def apply(idName: IdName) =
-    QueryPlan(
-      AllNodesScan(idName),
-      QueryGraph
-        .empty
-        .addPatternNodes(idName)
-    )
-}
-

@@ -44,7 +44,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan)
 
     // then
-    result should equal(SkipPlan(startPlan, x))
+    result.plan should equal(Skip(startPlan.plan, x))
+    result.solved.skip should equal(Some(x))
   }
 
   test("should add limit if query graph contains limit") {
@@ -57,7 +58,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan)
 
     // then
-    result should equal(LimitPlan(startPlan, x))
+    result.plan should equal(Limit(startPlan.plan, x))
+    result.solved.limit should equal(Some(x))
   }
 
   test("should add skip first and then limit if the query graph contains both") {
@@ -71,7 +73,9 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan)
 
     // then
-    result should equal(LimitPlan(SkipPlan(startPlan, y), x))
+    result.plan should equal(Limit(Skip(startPlan.plan, y), x))
+    result.solved.limit should equal(Some(x))
+    result.solved.skip should equal(Some(y))
   }
 
   test("should add sort if query graph contains sort items") {
@@ -84,7 +88,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan)
 
     // then
-    result should equal(SortPlan(startPlan, Seq(sortDescription), Seq(identifierSortItem)))
+    result.plan should equal(Sort(startPlan.plan, Seq(sortDescription)))
+    result.solved.sortItems should equal(Seq(identifierSortItem))
   }
 
   test("should add projection before sort if query graph contains sort items that are not identifiers") {
@@ -100,16 +105,20 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan)
 
     // then
-    val expectedPlan: QueryPlan = SortPlan(
-      HiddenProjectionPlan(
-        startPlan,
-        expressions = Map("  FRESHID0" -> exp, "n" -> ast.Identifier("n")(pos))
-      ),
-      sortItems = Seq(Ascending("  FRESHID0")),
-      Seq(expressionSortItem)
-    )
+    result.solved.sortItems should equal(Seq(expressionSortItem))
 
-    result should equal(expectedPlan)
+    result.plan should equal(
+      Projection(
+        Sort(
+          left = Projection(
+            left = startPlan.plan,
+            expressions = Map("  FRESHID0" -> exp, "n" -> ast.Identifier("n")_)
+          ),
+          sortItems = Seq(Ascending("  FRESHID0"))
+        ),
+        expressions = Map("n" -> ast.Identifier("n")_)
+      )
+    )
   }
 
   test("should add projection before sort with mixed identifier and non-identifier expressions") {
@@ -125,22 +134,27 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan)
 
     // then
-    val expectedPlan: QueryPlan = SortPlan(
-      HiddenProjectionPlan(
-        startPlan,
-        expressions = Map("  FRESHID0" -> exp, "n" -> ast.Identifier("n") _)
-      ),
-      sortItems = Seq(Ascending("  FRESHID0"), Ascending("n")),
-      Seq(expressionSortItem, identifierSortItem)
-    )
+    result.solved.sortItems should equal(Seq(expressionSortItem, identifierSortItem))
 
-    result should equal(expectedPlan)
+    result.plan should equal(
+      Projection(
+        Sort(
+          left = Projection(
+            left = startPlan.plan,
+            expressions = Map("  FRESHID0" -> exp, "n" -> ast.Identifier("n")_)
+          ),
+          sortItems = Seq(Ascending("  FRESHID0"), Ascending("n"))
+        ),
+        expressions = Map("n" -> ast.Identifier("n")_)
+      )
+    )
   }
 
   test("should add SortedLimit when query uses both ORDER BY and LIMIT") {
+    val sortItems: Seq[AscSortItem] = Seq(identifierSortItem)
     // given
     implicit val (context, startPlan) = queryGraphWith(
-      sortItems = Seq(identifierSortItem),
+      sortItems = sortItems,
       limit = Some(x)
     )
 
@@ -148,7 +162,12 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan)
 
     // then
-    result should equal(SortedLimitPlan(startPlan, x, Seq[ast.SortItem](identifierSortItem), x))
+    result.plan should equal(
+      SortedLimit(startPlan.plan, x, sortItems)
+    )
+
+    result.solved.limit should equal(Some(x))
+    result.solved.sortItems should equal(sortItems)
   }
 
   test("should add SortedLimit when query uses both ORDER BY and LIMIT, and add the SKIP value to the SortedLimit") {
@@ -163,7 +182,20 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan)
 
     // then
-    result should equal(SkipPlan(SortedLimitPlan(startPlan, ast.Add(x, y)(pos), Seq(identifierSortItem), x), y))
+    result.plan should equal(
+      Skip(
+        SortedLimit(
+          startPlan.plan,
+          ast.Add(x, y)_,
+          Seq(identifierSortItem)
+        ),
+        y
+      )
+    )
+
+    result.solved.limit should equal(Some(x))
+    result.solved.skip should equal(Some(y))
+    result.solved.sortItems should equal(Seq(identifierSortItem))
   }
 
   test("should add projection for expressions not already covered") {
@@ -178,7 +210,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan)
 
     // then
-    result should equal(ProjectionPlan(startPlan, projections))
+    result.plan should equal(Projection(startPlan.plan, projections))
+    result.solved.projections should equal(projections)
   }
 
   test("does not add projection when not needed") {

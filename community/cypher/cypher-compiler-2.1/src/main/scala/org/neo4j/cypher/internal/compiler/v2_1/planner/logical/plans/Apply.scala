@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 case class Apply(outer: LogicalPlan, inner: LogicalPlan) extends LogicalPlan {
   val lhs = Some(outer)
   val rhs = Some(inner)
+
+  def availableSymbols = outer.availableSymbols ++ inner.availableSymbols
 }
 
 object ApplyPlan {

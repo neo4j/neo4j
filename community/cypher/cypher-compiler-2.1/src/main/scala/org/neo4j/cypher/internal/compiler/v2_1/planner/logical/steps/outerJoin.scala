@@ -32,7 +32,7 @@ object outerJoin extends CandidateGenerator[PlanTable] {
     } yield {
       val innerLogicalPlanContext = context.copy(queryGraph = optionalQG.copy(argumentIds = Set.empty))
       val rhs = context.strategy.plan(innerLogicalPlanContext)
-      OuterHashJoinPlan(optionalQG.argumentIds.head, lhs, rhs, optionalQG.introducedIds)
+      OuterHashJoinPlan(optionalQG.argumentIds.head, lhs, rhs)
     }
 
     CandidateList(outerJoinPlans)
@@ -40,9 +40,8 @@ object outerJoin extends CandidateGenerator[PlanTable] {
 
   private def applicable(outerPlan: QueryPlan, optionalQG: QueryGraph) = {
     val singleArgument = optionalQG.argumentIds.size == 1
-    val coveredByLHS = singleArgument && outerPlan.coveredIds(optionalQG.argumentIds.head)
-    val isSolved = (optionalQG.coveredIds -- outerPlan.coveredIds).isEmpty
-
+    val coveredByLHS = outerPlan.plan.covers(optionalQG.argumentIds)
+    val isSolved = outerPlan.solved.optionalMatches.contains(optionalQG)
     singleArgument && coveredByLHS && !isSolved
   }
 }
