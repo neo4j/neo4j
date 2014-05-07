@@ -586,6 +586,28 @@ public class MultiPaxosContext
         public void elected( final String roleName, final org.neo4j.cluster.InstanceId instanceId,
                              org.neo4j.cluster.InstanceId electorId, long version )
         {
+            if ( electorId.equals( clusterContext.getMyId() )  )
+            {
+                getLogger( getClass() ).debug( "I elected instance " + instanceId + " for role "
+                    + roleName + " at version " + version );
+                if ( version < electorVersion )
+                {
+                    return;
+                }
+            }
+            else if ( version < electorVersion && electorId.equals( lastElector ) )
+            {
+                getLogger( getClass() ).warn( "Election result for role " + roleName +
+                        " received from elector instance " + electorId + " with version " + version +
+                        ". I had version " + electorVersion + " for elector " + lastElector );
+                return;
+            }
+            else
+            {
+                getLogger( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
+                this.electorVersion = version;
+                this.lastElector = electorId;
+            }
             configuration.elected( roleName, instanceId );
             Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
             {
@@ -1161,7 +1183,7 @@ public class MultiPaxosContext
             for ( ElectionRole role : roles )
             {
                 // Elect myself for all roles
-                clusterContext.elected( role.getName(), clusterContext.getMyId() );
+                clusterContext.elected( role.getName(), clusterContext.getMyId(), clusterContext.getMyId(), 1 );
             }
         }
 
@@ -1223,6 +1245,10 @@ public class MultiPaxosContext
         public void startElectionProcess( String role )
         {
             clusterContext.getLogger( getClass() ).info( "Doing elections for role " + role );
+            if ( !clusterContext.getMyId().equals( clusterContext.getLastElector() ) )
+            {
+                clusterContext.setLastElector( clusterContext.getMyId() );
+            }
             elections.put( role, new Election( new WinnerStrategy()
             {
                 @Override

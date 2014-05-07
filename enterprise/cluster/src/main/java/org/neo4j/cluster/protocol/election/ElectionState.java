@@ -305,6 +305,9 @@ public enum ElectionState
                                 // We have all votes now
                                 InstanceId winner = context.getElectionWinner( data.getRole() );
 
+                                context.cancelTimeout( "election-" + data.getRole() );
+                                context.forgetElection( data.getRole() );
+
                                 if ( winner != null )
                                 {
                                     logger.debug( "Elected " + winner + " as " + data.getRole() );
@@ -329,8 +332,6 @@ public enum ElectionState
                                                 configurationChangeState ) );
                                     }
                                 }
-                                context.cancelTimeout( "election-" + data.getRole() );
-                                context.forgetElection( data.getRole() );
                             }
                             else if ( context.getVoteCount( data.getRole() ) == context.getNeededVoteCount() - 1 &&
                                     currentElected != null &&
