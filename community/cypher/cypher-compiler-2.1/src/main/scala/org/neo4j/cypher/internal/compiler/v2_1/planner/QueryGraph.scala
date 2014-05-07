@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport._
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
 
 // An abstract representation of the query graph being solved at the current step
 case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
@@ -30,12 +30,16 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       argumentIds: Set[IdName] = Set.empty,
                       selections: Selections = Selections(),
                       projections: Map[String, Expression] = Map.empty,
+                      aggregatingProjections: Map[String, Expression] = Map.empty,
                       sortItems: Seq[SortItem] = Seq.empty,
                       optionalMatches: Seq[QueryGraph] = Seq.empty,
                       subQueriesLookupTable: Map[PatternExpression, QueryGraph] = Map.empty,
                       limit: Option[Expression] = None,
                       skip: Option[Expression] = None,
                       tail: Option[QueryGraph] = None) extends Visitable[QueryGraph] {
+
+  def groupingKey: Option[Set[String]] =
+    if (aggregatingProjections.isEmpty) None else Some(projections.keySet)
 
   def ++(other: QueryGraph): QueryGraph =
     QueryGraph(
@@ -96,6 +100,9 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   def addArgumentId(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
 
   def withProjections(projections: Map[String, Expression]) = copy(projections = projections)
+
+  def withAggregatingProjections(aggregatingProjections: Map[String, Expression]) =
+    copy(aggregatingProjections = aggregatingProjections)
 
   def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
 

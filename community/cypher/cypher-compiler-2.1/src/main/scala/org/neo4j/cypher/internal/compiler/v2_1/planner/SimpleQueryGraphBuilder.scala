@@ -20,11 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_1.{Rewriter, topDown}
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport._
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator._
 
 object SimpleQueryGraphBuilder {
 
@@ -159,13 +158,13 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
   private def produceQueryGraphFromClauses(qg: QueryGraph, clauses: Seq[Clause]): QueryGraph =
       clauses match {
         case Return(false, ListedReturnItems(expressions), optOrderBy, skip, limit) :: tl =>
-
-          val projections = produceProjectionsMap(expressions)
+          val (projections, aggregations) = produceProjectionsMap(expressions)
           val sortItems = produceSortItems(optOrderBy)
 
           val newQG = qg
             .withSortItems(sortItems)
             .withProjections(projections)
+            .withAggregatingProjections(aggregations)
             .copy(
               limit = limit.map(_.expression),
               skip = skip.map(_.expression)
@@ -213,12 +212,13 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           produceQueryGraphFromClauses(qg ++ newQG, tl)
 
         case With(false, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
-          val projections = produceProjectionsMap(expressions)
+          val (projections, aggregations) = produceProjectionsMap(expressions)
           val sortItems = produceSortItems(optOrderBy)
 
           val newQG: QueryGraph = qg
             .withSortItems(sortItems)
             .withProjections(projections)
+            .withAggregatingProjections(aggregations)
             .copy(
               limit = limit.map(_.expression),
               skip = skip.map(_.expression)
@@ -239,14 +239,18 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           throw new CantHandleQueryException
       }
 
-  private def produceSortItems(optOrderBy: Option[OrderBy]) =
-    optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
+  private def produceSortItems(optOrderBy: Option[OrderBy]) = optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
 
-  private def produceProjectionsMap(expressions: Seq[ReturnItem]) = {
-    val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
-    if (projections.exists {
-      case (_,e) => e.asCommandExpression.containsAggregate
-    }) throw new CantHandleQueryException
-    projections.toMap
+  private def produceProjectionsMap(expressions: Seq[ReturnItem]): (Map[String, Expression], Map[String, Expression]) = {
+    val (projections, aggregations) = expressions.foldLeft((Map.empty[String, Expression], Map.empty[String, Expression])) {
+      case ((projections, aggregations), item) =>
+        val expr = item.expression
+        val pair = item.name -> expr
+        if (containsAggregate(expr))
+          (projections, aggregations + pair)
+        else
+          (projections + pair, aggregations)
+    }
+    (projections.toMap, aggregations.toMap)
   }
 }

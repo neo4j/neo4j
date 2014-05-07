@@ -23,7 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Descending, Ascending, SortDescription}
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.newIdName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.FreshIdNameGenerator
 
 object projection extends PlanTransformer {
 
@@ -57,7 +59,7 @@ object projection extends PlanTransformer {
       .withSortItems(context.queryGraph.sortItems)
       .copy(skip = context.queryGraph.skip, limit = context.queryGraph.limit)
 
-    projectIfNeeded(QueryPlan(sortSkipAndLimit, solved), queryGraph.projections)
+    projectIfNeeded(QueryPlan(sortSkipAndLimit, solved), queryGraph.projections, queryGraph.aggregatingProjections)
   }
 
   private def ensureSortablePlan(sort: List[ast.SortItem], plan: QueryPlan): LogicalPlan = {
@@ -66,7 +68,7 @@ object projection extends PlanTransformer {
     }
 
     val projections: Map[String, ast.Expression] = expressionsToProject.map {
-      e => newIdName(e.position.offset) -> e
+      e => FreshIdNameGenerator.name(e.position) -> e
     }.toMap
 
     val keepExistingIdentifiers = plan.coveredIds.map {
@@ -82,21 +84,30 @@ object projection extends PlanTransformer {
   private def sortDescription(in: ast.SortItem): SortDescription = in match {
     case ast.AscSortItem(ast.Identifier(key)) => Ascending(key)
     case ast.DescSortItem(ast.Identifier(key)) => Descending(key)
-    case sortItem@ast.AscSortItem(exp) => Ascending(newIdName(exp.position.offset))
-    case sortItem@ast.DescSortItem(exp) => Descending(newIdName(exp.position.offset))
+    case sortItem@ast.AscSortItem(exp) => Ascending(FreshIdNameGenerator.name(exp.position))
+    case sortItem@ast.DescSortItem(exp) => Descending(FreshIdNameGenerator.name(exp.position))
   }
 
-  private def projectIfNeeded(plan: QueryPlan, projections: Map[String, ast.Expression]): QueryPlan = {
-    val ids = plan.coveredIds
-    val projectAllCoveredIds = ids.map {
-      case IdName(id) => id -> ast.Identifier(id)(null)
-    }.toMap
+  private def projectIfNeeded(plan: QueryPlan,
+                              projections: Map[String, ast.Expression],
+                              aggregations: Map[String, ast.Expression]) = {
+    val missingProjections = missing(projections, plan.solved.projections, plan.coveredIds)
+    val missingAggregations = missing(aggregations, plan.solved.aggregatingProjections, plan.coveredIds)
+    val extraIdsInContext = plan.coveredIds.collect {
+      case x @ IdName(name) if !(projections.contains(name) || aggregations.contains(name)) => x
+    }
 
-    if (projections == projectAllCoveredIds)
+    if (missingAggregations.nonEmpty)
+      throw new ThisShouldNotHappenError("Stefan/Davide", "Aggregation must always happen before projection step")
+
+    if (aggregations.nonEmpty && missingProjections.nonEmpty)
+      throw new ThisShouldNotHappenError("Stefan/Davide", "There must not be any leftover projection after aggregation")
+
+    if (missingProjections.isEmpty && extraIdsInContext.isEmpty)
       plan
     else
       QueryPlan(
-        Projection(plan.plan, projections),
+        Projection(plan.plan, projections ++ aggregations.map( p => p._1 -> Identifier(p._1)(p._2.position))),
         plan.solved.withProjections(projections)
       )
   }
@@ -106,4 +117,16 @@ object projection extends PlanTransformer {
 
   private def addLimit(s: Option[ast.Expression], plan: LogicalPlan): LogicalPlan =
     s.map(x => Limit(plan, x)).getOrElse(plan)
+
+  private def missing(map: Map[String, ast.Expression], priorMap: Map[String, ast.Expression], coveredIds: Set[IdName]) =
+    map.foldLeft(Map.empty[String,  ast.Expression]) {
+      case (m, p @ (k, v)) =>
+        priorMap.get(k) match {
+          case Some(w) if w == v => m
+          case _                 => v match {
+            case Identifier(name) if k == name && coveredIds.contains(IdName(k)) => m
+            case _                                                               => m + p
+          }
+        }
+    }
 }

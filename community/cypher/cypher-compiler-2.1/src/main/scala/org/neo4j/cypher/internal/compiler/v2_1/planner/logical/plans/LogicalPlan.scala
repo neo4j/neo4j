@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and

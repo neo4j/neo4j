@@ -24,8 +24,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSuppo
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{UnsignedIntegerLiteral, AscSortItem}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, UnsignedIntegerLiteral, AscSortItem}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Ascending, SortDescription}
+import org.neo4j.cypher.internal.compiler.v2_1.functions.Collect
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -214,9 +215,36 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     result.solved.projections should equal(projections)
   }
 
+  test("should add projection without loosing aggregation data") {
+    // given
+    val aggregatingProjections = Map("c" -> Collect.invoke(ast.Identifier("n")(pos))(pos))
+
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = QueryGraph(
+        aggregatingProjections = aggregatingProjections
+      )
+    )
+
+    val startPlan = QueryPlan(
+      newMockedLogicalPlan("n")(context),
+      QueryGraph.empty
+        .addPatternNodes(IdName("n"))
+        .withAggregatingProjections(aggregatingProjections)
+    )
+
+    // when
+    val result = projection(startPlan)
+
+    // then
+    result.plan should equal(Projection(startPlan.plan, Map("c" -> ast.Identifier("c")_)))
+    result.solved.aggregatingProjections should equal(aggregatingProjections)
+    result.solved.projections should be(empty)
+  }
+
   test("does not add projection when not needed") {
     // given
-    val projections: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n") _)
+    val projections: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")_)
     implicit val (context, startPlan) = queryGraphWith(
       projections = projections
     )

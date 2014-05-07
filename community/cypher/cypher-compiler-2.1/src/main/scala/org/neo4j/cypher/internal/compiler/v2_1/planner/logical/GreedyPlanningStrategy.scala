@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Apply, QueryPlan, LogicalPlan}
-
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
@@ -46,7 +45,9 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)
     val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(afterExpandOrJoin)
     val afterCartesianProduct = iterateUntilConverged(findBestPlan(cartesianProduct))(afterOptionalApplies)
-    val bestPlan = projection(afterCartesianProduct.uniquePlan)
+
+    val afterAggregation = aggregation(afterCartesianProduct.uniquePlan)
+    val bestPlan = projection(afterAggregation)
 
     val finalPlan: QueryPlan = context.queryGraph.tail match {
       case Some(tail) =>

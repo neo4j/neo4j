@@ -879,7 +879,7 @@ RETURN a.name""")
 
   test("empty collect should not contain null") {
     val n = createNode()
-    val result = execute("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, collect(x)")
+    val result = executeWithNewPlanner("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, collect(x)")
 
     result.toList should equal (List(Map("n" -> n, "collect(x)" -> List())))
   }
@@ -1175,7 +1175,7 @@ RETURN a.name""")
     }
 
     // when
-    val count = executeScalar[Long]("match (a) where rand() < .5 return count(*)")
+    val count = executeScalarWithNewPlanner[Long]("match (a) where rand() < .5 return count(*)")
 
     // should give us a number in the middle, not all or nothing
     count should not equal 0

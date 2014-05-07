@@ -17,28 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
+case class Aggregation(left: LogicalPlan,
+                       groupingExpressions: Map[String, Expression],
+                       aggregationExpression: Map[String, Expression]) extends LogicalPlan {
 
-object expandStar extends Rewriter {
+  val lhs = Some(left)
+  def rhs = None
 
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
-
-  private val instance: Rewriter = Rewriter.lift {
-    case x: ReturnAll if x.seenIdentifiers.nonEmpty =>
-
-      val identifiers = x.seenIdentifiers.get.filter(UnNamedNameGenerator.isNamed).toSeq.sorted
-
-      val returnItems: Seq[ReturnItem] = identifiers.map {
-        id =>
-          val ident = Identifier(id)(x.position)
-          AliasedReturnItem(ident, ident)(x.position)
-      }.toSeq
-
-      ListedReturnItems(returnItems)(x.position)
-  }
+  val availableSymbols = groupingExpressions.keySet.map(IdName) ++ aggregationExpression.keySet.map(IdName)
 }
