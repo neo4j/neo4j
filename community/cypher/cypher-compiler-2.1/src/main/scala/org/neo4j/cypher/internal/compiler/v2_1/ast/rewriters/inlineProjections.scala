@@ -31,37 +31,41 @@ object inlineProjections extends (Statement => Statement) {
     val removePatternPartNames = TypedRewriter[Pattern](bottomUp(namedPatternPartRemover))
     val inlineIdentifiers = TypedRewriter[ASTNode](context.identifierRewriter)
     val inlinePatterns = TypedRewriter[Pattern](context.patternRewriter)
-    val inlineReturnItems = inlineReturnItemsFactory(inlineIdentifiers.narrowed(_))
+    val inlineReturnItems = inlineReturnItemsFactory(inlineIdentifiers.narrowed)
 
     val inliningRewriter = Rewriter.lift {
-      case withClause @ With(false, returnItems @ ListedReturnItems(items), orderBy, None, None, where) =>
+      case withClause @ With(false, returnItems @ ListedReturnItems(items), orderBy, _, _, _) =>
         val pos = returnItems.position
-        val filteredItems = items.collect {
-          case item@AliasedReturnItem(expr, ident) if (expr != ident && !context.projections.contains(ident)) || containsAggregate(expr) =>
-            item
+
+        def identifierOnly(item: AliasedReturnItem) = item.expression == item.identifier
+        def identifierAlreadyInScope(ident: Identifier) = !context.projections.contains(ident)
+        def shadows(item: AliasedReturnItem) = identifierAlreadyInScope(item.identifier) && !identifierOnly(item)
+
+        val uninlinableProjections = items.collect {
+          case item@AliasedReturnItem(expr, ident)
+            if containsAggregate(expr) || shadows(item) => item
         }
 
         val newReturnItems =
-          if (filteredItems.isEmpty) ReturnAll()(pos)
-          else inlineReturnItems(returnItems.copy(items = filteredItems)(pos))
+          if (uninlinableProjections.isEmpty) ReturnAll()(pos)
+          else inlineReturnItems(returnItems.copy(items = uninlinableProjections)(pos))
 
         withClause.copy(
           returnItems = newReturnItems,
-          orderBy = orderBy.map(inlineIdentifiers.narrowed(_)),
-          where = where
+          orderBy = orderBy.map(inlineIdentifiers.narrowed)
         )(withClause.position)
 
       case returnClause @ Return(_, returnItems: ListedReturnItems, orderBy, skip, limit) =>
         returnClause.copy(
           returnItems = inlineReturnItems(returnItems),
-          orderBy = orderBy.map(inlineIdentifiers.narrowed(_)),
-          skip = skip.map(inlineIdentifiers.narrowed(_)),
-          limit = limit.map(inlineIdentifiers.narrowed(_))
+          orderBy = orderBy.map(inlineIdentifiers.narrowed),
+          skip = skip.map(inlineIdentifiers.narrowed),
+          limit = limit.map(inlineIdentifiers.narrowed)
         )(returnClause.position)
 
       case m @ Match(_, mPattern, mHints, mOptWhere) =>
-        val newOptWhere = mOptWhere.map(inlineIdentifiers.narrowed(_))
-        val newHints = mHints.map(inlineIdentifiers.narrowed(_))
+        val newOptWhere = mOptWhere.map(inlineIdentifiers.narrowed)
+        val newHints = mHints.map(inlineIdentifiers.narrowed)
         // no need to inline expressions in patterns since all expressions have been moved to WHERE prior to
         // calling inlineProjections
         val newPattern = inlinePatterns(removePatternPartNames(mPattern))
