@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa.command;
 
-import static java.util.Collections.unmodifiableCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-
 import java.io.IOException;
 import java.util.Collection;
 
@@ -39,6 +36,9 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyRecordChange;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+
+import static java.util.Collections.unmodifiableCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo
@@ -126,11 +126,12 @@ public abstract class Command extends XaCommand
         private NodeRecord before;
         private NodeRecord after;
 
-        public void init( NodeRecord before, NodeRecord after )
+        public NodeCommand init( NodeRecord before, NodeRecord after )
         {
             setup( after.getId(), Mode.fromRecordState( after ) );
             this.before = before;
             this.after = after;
+            return this;
         }
 
         @Override
@@ -174,12 +175,13 @@ public abstract class Command extends XaCommand
         private RelationshipRecord beforeUpdate;
         private RelationshipRecord before;
 
-        public void init( RelationshipRecord record )
+        public RelationshipCommand init( RelationshipRecord record )
         {
             setup( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
             // the default (common) case is that the record to be written is complete and not from recovery or HA
             this.beforeUpdate = record;
+            return this;
         }
 
         @Override
@@ -240,10 +242,11 @@ public abstract class Command extends XaCommand
     {
         private RelationshipGroupRecord record;
 
-        public void init( RelationshipGroupRecord record )
+        public RelationshipGroupCommand init( RelationshipGroupRecord record )
         {
             setup( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
+            return this;
         }
 
         @Override
@@ -279,13 +282,14 @@ public abstract class Command extends XaCommand
     {
         private NeoStoreRecord record;
 
-        public void init( NeoStoreRecord record )
+        public NeoStoreCommand init( NeoStoreRecord record )
         {
             if( record != null )
             {
                 setup( record.getId(), Mode.fromRecordState( record ) );
             }
             this.record = record;
+            return this;
         }
 
         @Override
@@ -322,10 +326,11 @@ public abstract class Command extends XaCommand
     {
         private PropertyKeyTokenRecord record;
 
-        public void init( PropertyKeyTokenRecord record )
+        public PropertyKeyTokenCommand init( PropertyKeyTokenRecord record )
         {
             setup( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
+            return this;
         }
 
         @Override
@@ -365,11 +370,12 @@ public abstract class Command extends XaCommand
 
         // TODO as optimization the deserialized key/values could be passed in here
         // so that the cost of deserializing them only applies in recovery/HA
-        public void init( PropertyRecord before, PropertyRecord after )
+        public PropertyCommand init( PropertyRecord before, PropertyRecord after )
         {
             setup( after.getId(), Mode.fromRecordState( after ) );
             this.before = before;
             this.after = after;
+            return this;
         }
 
         @Override
@@ -432,10 +438,11 @@ public abstract class Command extends XaCommand
     {
         private RelationshipTypeTokenRecord record;
 
-        public void init( RelationshipTypeTokenRecord record )
+        public RelationshipTypeTokenCommand init( RelationshipTypeTokenRecord record )
         {
             setup( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
+            return this;
         }
 
         @Override
@@ -472,10 +479,11 @@ public abstract class Command extends XaCommand
     {
         private LabelTokenRecord record;
 
-        public void init( LabelTokenRecord record )
+        public LabelTokenCommand init( LabelTokenRecord record )
         {
             setup( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
+            return this;
         }
 
         @Override
@@ -516,7 +524,7 @@ public abstract class Command extends XaCommand
 
         private long txId;
 
-        public void init( Collection<DynamicRecord> recordsBefore,
+        public SchemaRuleCommand init( Collection<DynamicRecord> recordsBefore,
                            Collection<DynamicRecord> recordsAfter, SchemaRule schemaRule, long txId )
         {
             setup( first( recordsAfter ).getId(), Mode.fromRecordState( first( recordsAfter ) ) );
@@ -524,6 +532,7 @@ public abstract class Command extends XaCommand
             this.recordsAfter = recordsAfter;
             this.schemaRule = schemaRule;
             this.txId = txId;
+            return this;
         }
 
         @Override

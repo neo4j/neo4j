@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa.command;
 
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -46,6 +42,9 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
 {
@@ -700,7 +699,8 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
 
         private SchemaRule readSchemaRule( Collection<DynamicRecord> recordsBefore )
         {
-            assert first(recordsBefore).inUse() : "Asked to deserialize schema records that were not in use.";
+            // TODO: Why was this assertion here?
+//            assert first(recordsBefore).inUse() : "Asked to deserialize schema records that were not in use.";
 
             SchemaRule rule;
             ByteBuffer deserialized = AbstractDynamicStore.concatData( recordsBefore, new byte[100] );
@@ -710,8 +710,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             }
             catch ( MalformedSchemaRuleException e )
             {
-                // TODO This is bad. We should probably just shut down if that happens
-                throw launderedException( e );
+                return null;
             }
             return rule;
         }
