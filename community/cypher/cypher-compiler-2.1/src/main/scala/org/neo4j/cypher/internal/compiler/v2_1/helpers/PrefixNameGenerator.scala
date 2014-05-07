@@ -19,27 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.helpers
 
-object NameSupport {
+import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
 
-  val FRESHID = namePrefix("FRESHID")
-  val AGGREGATION = namePrefix("AGGREGATION")
-  val UNNAMED = namePrefix("UNNAMED")
+object FreshIdNameGenerator extends PrefixNameGenerator("FRESHID")
 
+object AggregationNameGenerator extends PrefixNameGenerator("AGGREGATION")
+
+object UnNamedNameGenerator extends PrefixNameGenerator("UNNAMED") {
   implicit class NameString(name: String) {
-    def isNamed = !unnamed
-    def unnamed = NameSupport.notNamed(name)
+    def isNamed = UnNamedNameGenerator.isNamed(name)
+    def unnamed = UnNamedNameGenerator.notNamed(name)
   }
+}
 
-  def newIdName(n: Int): String = produceName(FRESHID, n)
+object PrefixNameGenerator {
+  def namePrefix(prefix: String) = s"  $prefix"
+}
 
-  def aggregationName(n: Int): String = produceName(AGGREGATION, n)
+case class PrefixNameGenerator(generatorName: String) {
+  val prefix = s"  $generatorName"
 
-  def unamedEntity(n: Int): String = produceName(UNNAMED, n)
+  def name(position: InputPosition): String = name(position.offset)
+  def name(n: Int): String = s"$prefix$n"
 
   def isNamed(x: String) = !notNamed(x)
-
-  def notNamed(x: String) = x.startsWith(UNNAMED)
-
-  private def produceName(prefix: String, n: Int) = s"$prefix$n"
-  private def namePrefix(prefix: String) = s"  $prefix"
+  def notNamed(x: String) = x.startsWith(prefix)
 }

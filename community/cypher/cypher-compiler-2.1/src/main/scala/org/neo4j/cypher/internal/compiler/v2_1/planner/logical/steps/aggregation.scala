@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, PlanTransformer}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Projection, Aggregation, QueryPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{IsAggregate, Identifier, Expression}
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport
 import org.neo4j.cypher.internal.compiler.v2_1.{bottomUp, Rewriter}
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.AggregationNameGenerator
 
 object aggregation extends PlanTransformer {
   def apply(input: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
@@ -70,7 +70,7 @@ object aggregationAliaser {
   private def findAliases(expr: Expression): Map[String, Expression] =
     expr.treeFold(Map.empty[String, Expression]) {
       case IsAggregate(aggrExpr) =>
-        (aliases, children) => aliases + (NameSupport.aggregationName(aggrExpr.position.offset) -> aggrExpr)
+        (aliases, children) => aliases + (AggregationNameGenerator.name(aggrExpr.position) -> aggrExpr)
     }
 
 

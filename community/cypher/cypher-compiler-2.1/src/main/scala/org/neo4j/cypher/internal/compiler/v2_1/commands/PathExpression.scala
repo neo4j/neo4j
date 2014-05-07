@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
 import expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v2_1._
 import executionplan.builders.PatternGraphBuilder
 import pipes.matching.MatchingContext
