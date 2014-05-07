@@ -147,8 +147,8 @@ public class XaLogicalLog implements LogLoader
     private final LogReader<ReadableByteChannel> slaveLogReader;
 
     /** Reusable done entry */
-    private final LogEntry.Done doneEntry = new LogEntry.Done(-1)
-            ;
+    private final LogEntry.Done doneEntry = new LogEntry.Done(-1);
+
     private final KernelHealth kernelHealth;
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandReaderFactory commandReaderFactory,
