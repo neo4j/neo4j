@@ -354,9 +354,10 @@ public abstract class LogEntry
         }
     }
 
-    public void setIdentifier( int newXidIdentifier )
+    public LogEntry reset( int newXidIdentifier )
     {
         identifier = newXidIdentifier;
+        return this;
     }
 
     public String timestamp( long timeWritten, TimeZone timeZone )

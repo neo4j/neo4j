@@ -27,7 +27,11 @@ import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 import org.neo4j.kernel.impl.util.Consumer;
 
-class LogEntryConsumer implements Consumer<LogEntry, IOException>
+/**
+ * Handles on-the-fly translation of incoming log entries, forwards them to an underlying handler, generally for
+ * applying the entries to the store.
+ */
+class TranslatingEntryConsumer implements Consumer<LogEntry, IOException>
 {
     private LogEntry.Start startEntry;
 
@@ -36,7 +40,7 @@ class LogEntryConsumer implements Consumer<LogEntry, IOException>
     private List<LogEntry> entries;
     private final Function<List<LogEntry>, List<LogEntry>> translator;
 
-    LogEntryConsumer( Function<List<LogEntry>, List<LogEntry>> translator )
+    TranslatingEntryConsumer( Function<List<LogEntry>, List<LogEntry>> translator )
     {
         this.translator = translator;
     }
@@ -56,7 +60,7 @@ class LogEntryConsumer implements Consumer<LogEntry, IOException>
             }
         }
 
-        logEntry.setIdentifier( xidIdentifier );
+        logEntry.reset( xidIdentifier );
 
         if ( logEntry.getVersion() != LogEntry.CURRENT_LOG_ENTRY_VERSION )
         {
@@ -87,9 +91,12 @@ class LogEntryConsumer implements Consumer<LogEntry, IOException>
         return true;
     }
 
-    public void bind( int xidIdentifier, LogHandler handler )
+    /** Reset this consumer to be used for some new set of input data. */
+    public TranslatingEntryConsumer reset( int xidIdentifier, LogHandler handler )
     {
         this.xidIdentifier = xidIdentifier;
         this.handler = handler;
+        this.entries.clear();
+        return this;
     }
 }

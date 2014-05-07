@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Math.max;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -70,6 +64,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.Math.max;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -139,6 +139,16 @@ public class XaLogicalLog implements LogLoader
     private final XaCommandReaderFactory commandReaderFactory;
     private final XaCommandWriterFactory commandWriterFactory;
     private final LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
+
+    /** Reusable log translation layer, can ONLY be used if you are synchronized. */
+    private final TranslatingEntryConsumer translatingEntryConsumer = new TranslatingEntryConsumer( transactionTranslator );
+
+    private final LogReader<ReadableByteChannel> reader;
+    private final LogReader<ReadableByteChannel> slaveLogReader;
+
+    /** Reusable done entry */
+    private final LogEntry.Done doneEntry = new LogEntry.Done(-1)
+            ;
     private final KernelHealth kernelHealth;
 
     public XaLogicalLog( File fileName, XaResourceManager xaRm, XaCommandReaderFactory commandReaderFactory,
@@ -175,7 +185,8 @@ public class XaLogicalLog implements LogLoader
                 commandWriterFactory, msgLog, positionCache, this, logEntryWriter, xidIdentMap );
         this.injectedTxValidator = injectedTxValidator;
         logWriterSPI = new PhysicalLogWriterSPI();
-
+        reader = new LogDeserializer( sharedBuffer, commandReaderFactory );
+        slaveLogReader = new SlaveLogDeserializer( sharedBuffer, commandReaderFactory );
         logEntryWriter.setCommandWriter( commandWriterFactory.newInstance() );
 
         LogApplier applier = new LogApplier();
@@ -288,7 +299,7 @@ public class XaLogicalLog implements LogLoader
             VersionAwareLogEntryReader.writeLogHeader( sharedBuffer, logVersion, lastTxId );
             previousLogLastCommittedTx = lastTxId;
             positionCache.putHeader( logVersion, previousLogLastCommittedTx );
-            fileChannel.write( sharedBuffer );
+            fileChannel.writeAll( sharedBuffer );
             scanIsComplete = true;
             msgLog.info( openedLogicalLogMessage( fileToOpen, lastTxId, true ) );
         }
@@ -413,7 +424,7 @@ public class XaLogicalLog implements LogLoader
         assert xidIdentMap.get( identifier ) != null;
         try
         {
-            logEntryWriter.writeLogEntry( new LogEntry.Done( identifier ), writeBuffer );
+            logEntryWriter.writeLogEntry( doneEntry.reset( identifier ), writeBuffer );
             xidIdentMap.remove( identifier );
         }
         catch ( IOException e )
@@ -428,14 +439,14 @@ public class XaLogicalLog implements LogLoader
     {
         if ( writeBuffer != null )
         {   // For 2PC
-            logEntryWriter.writeLogEntry( new LogEntry.Done( identifier ), writeBuffer );
+            logEntryWriter.writeLogEntry( doneEntry.reset( identifier ), writeBuffer );
         }
         else
         {   // For 1PC
             // TODO Instantiating objects for writing a done entry is insane - fix this ASAP
             InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-            logEntryWriter.writeLogEntry( new LogEntry.Done( identifier ), buffer );
-            fileChannel.write( buffer.asByteBuffer() );
+            logEntryWriter.writeLogEntry( doneEntry.reset(identifier), buffer );
+            fileChannel.writeAll( buffer.asByteBuffer() );
         }
 
         xidIdentMap.remove( identifier );
@@ -689,7 +700,7 @@ public class XaLogicalLog implements LogLoader
         {
             ByteBuffer buff = ByteBuffer.allocate( 64 );
             VersionAwareLogEntryReader.writeLogHeader( buff, logVersion, header[1] );
-            fileChannel.write( buff, 0 );
+            fileChannel.writeAll( buff, 0 );
         }
 
         long lastCommittedTx = header[1];
@@ -743,7 +754,7 @@ public class XaLogicalLog implements LogLoader
             {
                 sharedBuffer.limit( (int) bytesLeft );
             }
-            fileChannel.write( sharedBuffer );
+            fileChannel.writeAll( sharedBuffer );
             sharedBuffer.flip();
         } while ( fileChannel.position() < endPosition );
         fileChannel.position( lastEntryPos );
@@ -824,6 +835,7 @@ public class XaLogicalLog implements LogLoader
         return new BufferedFileChannel( channel, bufferMonitor );
     }
 
+    // All calls to this must be synchronized elsewhere
     private void extractPreparedTransactionFromLog( int identifier, StoreChannel logChannel, LogBuffer targetBuffer )
             throws IOException
     {
@@ -831,9 +843,8 @@ public class XaLogicalLog implements LogLoader
         logChannel.position( startEntry.getStartPosition() );
         long startedAt = sharedBuffer.position();
 
-        LogDeserializer deserializer =  new LogDeserializer( sharedBuffer, commandReaderFactory );
         SkipPrepareLogEntryWriter consumer = new SkipPrepareLogEntryWriter( identifier, targetBuffer );
-        try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( logChannel ) )
+        try ( Cursor<LogEntry, IOException> cursor = reader.cursor( logChannel ) )
         {
             while ( cursor.next( consumer ) );
         }
@@ -1003,7 +1014,7 @@ public class XaLogicalLog implements LogLoader
     public boolean deleteLogicalLog( long version )
     {
         File file = getFileName( version );
-        return fileSystem.fileExists( file ) ? fileSystem.deleteFile( file ) : false;
+        return fileSystem.fileExists( file ) && fileSystem.deleteFile( file );
     }
 
     /**
@@ -1022,7 +1033,7 @@ public class XaLogicalLog implements LogLoader
                 VersionAwareLogEntryReader.writeLogHeader( scratch, 0, prevCommittedId );
                 while(scratch.hasRemaining())
                 {
-                    channel.write( scratch );
+                    channel.writeAll( scratch );
                 }
                 scratch.clear();
                 return new DirectLogBuffer( channel, scratch );
@@ -1060,20 +1071,13 @@ public class XaLogicalLog implements LogLoader
         scanIsComplete = false;
 
         logWriterSPI.bind( forceMode, nextTxId );
-
-        LogReader<ReadableByteChannel> reader =
-                new LogDeserializer( sharedBuffer, commandReaderFactory );
-
-
-        LogEntryConsumer consumer = new LogEntryConsumer( transactionTranslator );
-
-        consumer.bind( getNextIdentifier(), masterHandler );
+        translatingEntryConsumer.reset( getNextIdentifier(), masterHandler );
 
         boolean success = true;
         masterHandler.startLog();
         try ( Cursor<LogEntry, IOException> cursor = reader.cursor( byteChannel ) )
         {
-            while( cursor.next( consumer ) );
+            while( cursor.next( translatingEntryConsumer ) );
         }
         catch( IOException e )
         {
@@ -1097,17 +1101,13 @@ public class XaLogicalLog implements LogLoader
         kernelHealth.assertHealthy( IOException.class );
         scanIsComplete = false;
 
-        LogEntryConsumer consumer = new LogEntryConsumer( transactionTranslator );
-        consumer.bind( getNextIdentifier(), slaveHandler );
-
-        LogReader<ReadableByteChannel> logDeserializer =
-                new SlaveLogDeserializer( sharedBuffer, commandReaderFactory );
+        translatingEntryConsumer.reset( getNextIdentifier(), slaveHandler );
         boolean success = false;
 
         slaveHandler.startLog();
-        try ( Cursor<LogEntry, IOException> cursor = logDeserializer.cursor( byteChannel ) )
+        try ( Cursor<LogEntry, IOException> cursor = slaveLogReader.cursor( byteChannel ) )
         {
-            while( cursor.next( consumer ) );
+            while( cursor.next( translatingEntryConsumer ) );
             success = true;
         }
         catch( Exception e )

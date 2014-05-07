@@ -19,23 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.never;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.verifyZeroInteractions;
-
-import java.util.List;
-
 import javax.transaction.xa.Xid;
 
 import org.junit.Test;
-import org.mockito.Matchers;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
+
+import static org.mockito.Mockito.*;
 
 public class LogEntryConsumerTest
 {
@@ -43,9 +34,9 @@ public class LogEntryConsumerTest
     public void ensureCurrentVersionEntriesAreHandledImmediately() throws Exception
     {
         // GIVEN
-        LogEntryConsumer consumer = new LogEntryConsumer( mock(Function.class) );
+        TranslatingEntryConsumer consumer = new TranslatingEntryConsumer( mock(Function.class) );
         LogHandler handler = mock( LogHandler.class );
-        consumer.bind( 0, handler );
+        consumer.reset( 0, handler );
 
         // WHEN
         LogEntry.Start start = new LogEntry.Start( mock( Xid.class ), 1, 2, 3, 4, 5, 6 );
@@ -102,9 +93,9 @@ public class LogEntryConsumerTest
         // GIVEN
         Function translator = Functions.identity();
 
-        LogEntryConsumer consumer = new LogEntryConsumer( translator );
+        TranslatingEntryConsumer consumer = new TranslatingEntryConsumer( translator );
         LogHandler handler = mock( LogHandler.class );
-        consumer.bind( 0, handler );
+        consumer.reset( 0, handler );
 
         // WHEN
         LogEntry.Start start = new LogEntry.Start( mock( Xid.class ), 1, (byte) (LogEntry.CURRENT_LOG_VERSION + 1), 2, 3, 4, 5, 6 );
