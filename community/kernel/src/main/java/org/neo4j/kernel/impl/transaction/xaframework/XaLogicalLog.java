@@ -728,7 +728,7 @@ public class XaLogicalLog implements LogLoader
         }
         finally
         {
-            counter.endLog( success );
+            consumer.endLog( success );
         }
 
         long lastEntryPos = fileChannel.position();
