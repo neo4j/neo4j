@@ -19,16 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.OptionalExpand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.OptionalExpand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 
 object optionalExpand extends CandidateGenerator[PlanTable] {
 
@@ -40,7 +33,7 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
       patternRel <- findSinglePatternRelationship(lhs, optionalQG)
       argumentId = optionalQG.argumentIds.head
       otherSide = patternRel.otherSide( argumentId )
-      if optionalQG.selections.predicatesGiven(lhs.coveredIds + otherSide + patternRel.name) == optionalQG.selections.flatPredicates
+      if canSolveAllPredicates(optionalQG.selections, lhs.coveredIds + otherSide + patternRel.name)
     } yield {
       val dir = patternRel.directionRelativeTo(argumentId)
       OptionalExpandPlan(lhs, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length, optionalQG.selections.flatPredicates, optionalQG)
@@ -48,6 +41,8 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
 
     CandidateList(outerJoinPlans)
   }
+
+  private def canSolveAllPredicates(selections:Selections, ids:Set[IdName]) = selections.predicatesGiven(ids) == selections.flatPredicates
 
   private def findSinglePatternRelationship(outerPlan: QueryPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
     val singleArgument = optionalQG.argumentIds.size == 1

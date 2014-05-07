@@ -37,9 +37,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   // MATCH (a) WHERE (a)-->()
   val patternExp: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
-    NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
+    NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false)_,
     RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, types, None, None, dir) _,
-    NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
+    NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false)_
   ) _) _)
 
   val factory = newMockedMetricsFactory
@@ -60,11 +60,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
         addArgumentId(Seq(IdName("a"))).
         addCoveredIdsAsProjections()
 
-    val exists = Exists(predicate, patternQG)
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections,
-      subQueries = Seq(exists)
+      subQueriesLookupTable = Map(patternExp -> patternQG)
     )
 
     implicit val context = newMockedLogicalPlanContext(
@@ -73,7 +72,6 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
-
     val aPlan = newMockedQueryPlan("a")
     val inner = ExpandPlan(SingleRowPlan(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
@@ -81,12 +79,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(passThrough)(aPlan)
 
     // Then
-    result should equal(SemiApplyPlan(aPlan, inner, exists))
+    result should equal(SemiApplyPlan(aPlan, inner, patternExp, patternExp))
   }
 
   test("should introduce anti semi apply for unsolved exclusive negated pattern predicate") {
+    val notExpr = Not(patternExp)_
     // Given
-    val predicate = Predicate(Set(IdName("a")), Not(patternExp)_)
+    val predicate = Predicate(Set(IdName("a")), notExpr)
     val selections = Selections(Set(predicate))
     val patternQG = QueryGraph().
       addPatternRel(patternRel).
@@ -96,7 +95,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections,
-      subQueries = Seq(Exists(predicate, patternQG))
+      subQueriesLookupTable = Map(patternExp -> patternQG)
     )
 
     implicit val context = newMockedLogicalPlanContext(
@@ -112,7 +111,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(passThrough)(aPlan)
 
     // Then
-    result should equal(AntiSemiApplyPlan(aPlan, inner, Exists(predicate, patternQG)))
+    result should equal(AntiSemiApplyPlan(aPlan, inner, patternExp, notExpr))
   }
 
   test("should not introduce semi apply for unsolved exclusive pattern predicate when nodes not applicable") {
@@ -127,7 +126,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val qg = QueryGraph(
       patternNodes = Set("b"),
       selections = selections,
-      subQueries = Seq(Exists(predicate, patternQG))
+      subQueriesLookupTable = Map(patternExp -> patternQG)
     )
 
     implicit val context = newMockedLogicalPlanContext(
@@ -150,7 +149,8 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
-    val orPredicate = Predicate(Set(IdName("a")), Ors(List(patternExp, equals))_)
+    val orsExp: Ors = Ors(List(patternExp, equals))_
+    val orPredicate = Predicate(Set(IdName("a")), orsExp)
     val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph().
       addPatternRel(patternRel).
@@ -160,7 +160,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections,
-      subQueries = Seq(Exists(orPredicate, patternQG))
+      subQueriesLookupTable = Map(patternExp -> patternQG)
     )
 
     implicit val context = newMockedLogicalPlanContext(
@@ -176,7 +176,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(passThrough)(aPlan)
 
     // Then
-    result should equal(SelectOrSemiApplyPlan(aPlan, inner, equals, Exists(orPredicate, patternQG)))
+    result should equal(SelectOrSemiApplyPlan(aPlan, inner, equals, patternExp, orsExp))
   }
 
   test("should introduce select or anti semi apply for unsolved negated pattern predicates in disjunction with an expression") {
@@ -185,7 +185,8 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
       StringLiteral("42")_
     )_
-    val orPredicate = Predicate(Set(IdName("a")), Ors(List(Not(patternExp)(pos), equals))_)
+    val orsExp = Ors(List(Not(patternExp)(pos), equals))_
+    val orPredicate = Predicate(Set(IdName("a")), orsExp)
     val selections = Selections(Set(orPredicate))
     val patternQG = QueryGraph().
       addPatternRel(patternRel).
@@ -195,7 +196,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections,
-      subQueries = Seq(Exists(orPredicate, patternQG))
+      subQueriesLookupTable = Map(patternExp -> patternQG)
     )
 
     implicit val context = newMockedLogicalPlanContext(
@@ -211,6 +212,6 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val result = selectPatternPredicates(passThrough)(aPlan)
 
     // Then
-    result should equal(SelectOrAntiSemiApplyPlan(aPlan, inner, equals, Exists(orPredicate, patternQG)))
+    result should equal(SelectOrAntiSemiApplyPlan(aPlan, inner, equals, patternExp, orsExp))
   }
 }

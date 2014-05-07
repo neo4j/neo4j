@@ -20,7 +20,7 @@
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, inSequence, bottomUp}
+import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp}
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{inlineProjections, namePatternPredicates, nameVarLengthRelationships}
@@ -425,7 +425,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     ) _) _)
     val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val predicate= Predicate(Set(IdName("a")), exp)
-    val exists = Exists(predicate,
+    val subQueryTable = Map(exp ->
       QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
@@ -435,7 +435,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
 
     qg.selections should equal(selections)
     qg.patternNodes should equal(Set(IdName("a")))
-    qg.subQueries should equal(Seq(exists))
+    qg.subQueriesLookupTable should equal(subQueryTable)
   }
 
   test("match n return n.prop order by n.prop2 DESC") {
@@ -445,7 +445,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     // Then inner pattern query graph
     qg.selections should equal(Selections())
     qg.patternNodes should equal(Set(IdName("n")))
-    qg.subQueries should be(empty)
+    qg.subQueriesLookupTable should be(empty)
     val sortItem: DescSortItem = DescSortItem(Property(Identifier("n")_, PropertyKeyName("prop2")_)_)_
     qg.sortItems should equal(Seq(sortItem))
   }
@@ -492,7 +492,8 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       SignedIntegerLiteral("42")_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Ors(List(exp1, exp2))_)
-    val exists = Exists(orPredicate, QueryGraph(
+    val subQueriesTable = Map(exp1 ->
+      QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
         argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
@@ -501,7 +502,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
 
     qg.selections should equal(selections)
     qg.patternNodes should equal(Set(IdName("a")))
-    qg.subQueries should equal(Seq(exists))
+    qg.subQueriesLookupTable should equal(subQueriesTable)
   }
 
   test("match a where (a)-->() OR a.prop = 42 return a") {
@@ -522,7 +523,8 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       SignedIntegerLiteral("42") _
     ) _
     val orPredicate = Predicate(Set(IdName("a")), Ors(List(exp1, exp2))_)
-    val exists = Exists(orPredicate, QueryGraph(
+    val subQueriesTable = Map(exp1 ->
+      QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
         argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
@@ -531,7 +533,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
 
     qg.selections should equal(selections)
     qg.patternNodes should equal(Set(IdName("a")))
-    qg.subQueries should equal(Seq(exists))
+    qg.subQueriesLookupTable should equal(subQueriesTable)
   }
 
   test("match a where a.prop = 21 OR (a)-->() OR a.prop = 42 return a") {
@@ -556,16 +558,17 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       SignedIntegerLiteral("21")_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Ors(List(exp1, exp3, exp2))_)
-    val exists = Exists(orPredicate, QueryGraph(
-      patternRelationships = Set(relationship),
-      patternNodes = Set("a", nodeName),
-      argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
+    val subQueriesTable = Map(exp1 ->
+      QueryGraph(
+        patternRelationships = Set(relationship),
+        patternNodes = Set("a", nodeName),
+        argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
 
     val selections = Selections(Set(orPredicate))
 
     qg.selections should equal(selections)
     qg.patternNodes should equal(Set(IdName("a")))
-    qg.subQueries should equal(Seq(exists))
+    qg.subQueriesLookupTable should equal(subQueriesTable)
   }
 
   test("match n return n limit 10") {
@@ -575,7 +578,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     // Then inner pattern query graph
     qg.selections should equal(Selections())
     qg.patternNodes should equal(Set(IdName("n")))
-    qg.subQueries should be(empty)
+    qg.subQueriesLookupTable should be(empty)
     qg.sortItems should equal(Seq.empty)
     qg.limit should equal(Some(UnsignedIntegerLiteral("10")(pos)))
     qg.skip should equal(None)
@@ -588,7 +591,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     // Then inner pattern query graph
     qg.selections should equal(Selections())
     qg.patternNodes should equal(Set(IdName("n")))
-    qg.subQueries should be(empty)
+    qg.subQueriesLookupTable should be(empty)
     qg.sortItems should equal(Seq.empty)
     qg.limit should equal(None)
     qg.skip should equal(Some(UnsignedIntegerLiteral("10")(pos)))
@@ -599,6 +602,14 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     qg.patternNodes should equal(Set(IdName("a")))
     qg.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
     qg.tail should equal(None)
+  }
+
+  test("should fail with one or more pattern expression in or") {
+    evaluating(buildQueryGraph("match (a) where (a)-->() OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildQueryGraph("match (a) where not (a)-->() OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildQueryGraph("match (a) where (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildQueryGraph("match (a) where not (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildQueryGraph("match (a) where (a)-->() OR id(a) = 12 OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_

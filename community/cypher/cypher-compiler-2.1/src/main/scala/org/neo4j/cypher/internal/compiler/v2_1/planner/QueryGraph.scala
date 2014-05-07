@@ -19,16 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Visitable, Visitor, PatternRelationship, IdName}
 import org.neo4j.cypher.InternalException
-
-trait SubQuery {
-  def queryGraph: QueryGraph
-}
-
-case class OptionalMatch(queryGraph: QueryGraph) extends SubQuery
-case class Exists(predicate: Predicate, queryGraph: QueryGraph) extends SubQuery
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport._
 
 // An abstract representation of the query graph being solved at the current step
 case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
@@ -37,7 +31,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       selections: Selections = Selections(),
                       projections: Map[String, Expression] = Map.empty,
                       sortItems: Seq[SortItem] = Seq.empty,
-                      subQueries: Seq[SubQuery] = Seq.empty,
+                      optionalMatches: Seq[QueryGraph] = Seq.empty,
+                      subQueriesLookupTable: Map[PatternExpression, QueryGraph] = Map.empty,
                       limit: Option[Expression] = None,
                       skip: Option[Expression] = None,
                       tail: Option[QueryGraph] = None) extends Visitable[QueryGraph] {
@@ -48,7 +43,8 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       selections = selections ++ other.selections,
       patternNodes = patternNodes ++ other.patternNodes,
       patternRelationships = patternRelationships ++ other.patternRelationships,
-      subQueries = subQueries ++ other.subQueries,
+      optionalMatches = optionalMatches ++ other.optionalMatches,
+      subQueriesLookupTable = subQueriesLookupTable ++ other.subQueriesLookupTable,
       argumentIds = argumentIds ++ other.argumentIds,
       sortItems = other.sortItems,
       limit = either(limit, other.limit),
@@ -75,7 +71,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = coveredIds intersect optionalMatch.coveredIds
-    copy(subQueries = subQueries :+ OptionalMatch(optionalMatch.addArgumentId(argumentIds.toSeq))).
+    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentId(argumentIds.toSeq)).
       addCoveredIdsAsProjections()
   }
 
@@ -112,10 +108,7 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
 
   def coveredIds: Set[IdName] = {
     val patternIds = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships)
-    val optionalMatchIds = subQueries.flatMap {
-      case OptionalMatch(qg) => qg.coveredIds
-      case _ => Vector.empty
-    }
+    val optionalMatchIds = optionalMatches.flatMap(_.coveredIds)
     patternIds ++ argumentIds ++ optionalMatchIds
   }
 
@@ -136,10 +129,6 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
     val coveredIdProjections = coveredIds.map(x => x.name -> Identifier(x.name)(null)).toMap
     copy(projections = projections ++ coveredIdProjections)
   }
-
-  def optionalMatches : Seq[QueryGraph] = subQueries.collect { case OptionalMatch(qg) => qg }
-
-  def patternPredicates: Seq[Exists] = subQueries.collect { case e: Exists => e }
 }
 
 object QueryGraph {
@@ -152,11 +141,10 @@ object QueryGraph {
 }
 
 object SelectionPredicates {
-  def fromWhere(where: Where): Set[Predicate] = extractPredicates(where.expression)
+  def fromWhere(where: Where): Set[Predicate] = extractPredicates(where.expression).map(filterUnnamed)
 
   def idNames(predicate: Expression): Set[IdName] = predicate.treeFold(Set.empty[IdName]) {
-    case Identifier(name) =>
-      (acc: Set[IdName], _) => acc + IdName(name)
+    case Identifier(name) => (acc: Set[IdName], _) => acc + IdName(name)
   }
 
   def extractPredicates(predicate: Expression): Set[Predicate] = predicate.treeFold(Set.empty[Predicate]) {
@@ -176,5 +164,22 @@ object SelectionPredicates {
     // generic expression
     case predicate: Expression =>
       (acc, _) => acc + Predicate(idNames(predicate), predicate)
-  }.toSet
+  }.map(filterUnnamed).toSet
+
+  private def filterUnnamed(predicate: Predicate): Predicate = predicate match {
+    case Predicate(deps, e: PatternExpression) =>
+      Predicate(deps.filter(x => isNamed(x.name)), e)
+    case Predicate(deps, e@Not(_: PatternExpression)) =>
+      Predicate(deps.filter(x => isNamed(x.name)), e)
+    case Predicate(deps, ors@Ors(exprs)) =>
+      val newDeps = exprs.foldLeft(Set.empty[IdName]) { (acc, exp) =>
+        exp match {
+          case exp: PatternExpression        => acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
+          case exp@Not(_: PatternExpression) => acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
+          case exp                           => acc ++ SelectionPredicates.idNames(exp)
+        }
+      }
+      Predicate(newDeps, ors)
+    case p => p
+  }
 }

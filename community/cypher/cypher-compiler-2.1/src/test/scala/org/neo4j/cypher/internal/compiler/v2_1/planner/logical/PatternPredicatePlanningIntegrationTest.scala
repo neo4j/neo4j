@@ -29,7 +29,7 @@ import org.mockito.Matchers._
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  private val fakeExists = Exists(Predicate(Set.empty, True() _), QueryGraph.empty)
+  private val fakeExpression = True()_
 
   private implicit val planContext = newMockedPlanContext
   when(planContext.getOptRelTypeId(any())).thenReturn(None)
@@ -53,7 +53,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           SingleRow(Set("a")),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
         )( mockRel )
-      )( fakeExists )
+      )( fakeExpression )
     )
   }
 
@@ -65,7 +65,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           SingleRow(Set("a")),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED31", "  UNNAMED23", SimplePatternLength
         )( mockRel )
-      )( fakeExists )
+      )( fakeExpression )
     )
   }
 
@@ -78,12 +78,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
             SingleRow(Set("a")),
             "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
           )( mockRel )
-        )( fakeExists ),
+        )( fakeExpression ),
         Expand(
           SingleRow(Set("a")),
           "a", Direction.OUTGOING, Seq(RelTypeName("Y")_), "  UNNAMED44", "  UNNAMED36", SimplePatternLength
         )( mockRel )
-      )( fakeExists )
+      )( fakeExpression )
     )
   }
 
@@ -96,7 +96,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
         )( mockRel ),
         GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("4")_)_
-      )( fakeExists )
+      )( fakeExpression )
     )
   }
 
@@ -112,7 +112,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           Equals(Property(Identifier("a")_, PropertyKeyName("prop2")_)_, SignedIntegerLiteral("9")_)_,
           GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("4")_)_
         ))_
-      )( fakeExists )
+      )( fakeExpression )
     )
   }
 
@@ -125,7 +125,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED45", "  UNNAMED37", SimplePatternLength
         )( newPatternRelationship(start = "a", end = "  UNNAMED45", rel = "  UNNAMED37", types = Seq(RelTypeName("X")_)) ),
         Equals(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("9")_)_
-      )( fakeExists )
+      )( fakeExpression )
     )
   }
 
