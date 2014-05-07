@@ -165,7 +165,12 @@ public class Protocol
     private StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
     {
         byteBuffer.clear();
-        byteBuffer.limit( 8 + 8 + 8 );
+        int bytesToRead = 8 + 8; // random and timestamp
+        if ( internalProtocolVersion <= Server.INTERNAL_PROTOCOL_VERSION )
+        {
+            bytesToRead += 8; // previous versions also had
+        }
+        byteBuffer.limit( bytesToRead );
         source.readBytes( byteBuffer );
         byteBuffer.flip();
         return StoreId.deserialize( byteBuffer );

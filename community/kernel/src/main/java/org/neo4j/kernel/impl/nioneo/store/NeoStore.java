@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.String.format;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -35,8 +37,6 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.lang.String.format;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -401,7 +401,7 @@ public class NeoStore extends AbstractStore
 
     public StoreId getStoreId()
     {
-        return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion() );
+        return new StoreId( getCreationTime(), getRandomNumber() );
     }
 
     public long getCreationTime()

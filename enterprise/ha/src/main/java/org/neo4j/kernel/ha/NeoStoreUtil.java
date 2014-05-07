@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
+import static java.lang.String.format;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,8 +30,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-
-import static java.lang.String.format;
 
 public class NeoStoreUtil
 {
@@ -122,16 +122,6 @@ public class NeoStoreUtil
         return logVersion;
     }
 
-    public long getStoreVersion()
-    {
-        return storeVersion;
-    }
-
-    public StoreId asStoreId()
-    {
-        return new StoreId( creationTime, randomId, storeVersion );
-    }
-
     @Override
     public String toString()
     {
@@ -150,7 +140,7 @@ public class NeoStoreUtil
                 txId,
                 storeVersion,
                 firstGraphProp,
-                new StoreId( creationTime, randomId, storeVersion ) );
+                new StoreId( creationTime, randomId ) );
     }
 
     public static boolean storeExists( File storeDir )
