@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{OuterHashJoinPlan, QueryPlan, LogicalPlan, OuterHashJoin}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object outerJoin extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
@@ -32,7 +33,7 @@ object outerJoin extends CandidateGenerator[PlanTable] {
     } yield {
       val innerLogicalPlanContext = context.copy(queryGraph = optionalQG.copy(argumentIds = Set.empty))
       val rhs = context.strategy.plan(innerLogicalPlanContext)
-      OuterHashJoinPlan(optionalQG.argumentIds.head, lhs, rhs)
+      planOuterHashJoin(optionalQG.argumentIds.head, lhs, rhs)
     }
 
     CandidateList(outerJoinPlans)

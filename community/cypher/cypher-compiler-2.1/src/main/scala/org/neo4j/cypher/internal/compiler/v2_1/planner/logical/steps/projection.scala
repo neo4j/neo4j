@@ -93,7 +93,10 @@ object projection extends PlanTransformer {
     }.toMap
 
     if (projections == projectAllCoveredIds)
-      plan
+      QueryPlan(
+        plan.plan,
+        plan.solved.withProjections(projections)
+      )
     else
       QueryPlan(
         Projection(plan.plan, projections),

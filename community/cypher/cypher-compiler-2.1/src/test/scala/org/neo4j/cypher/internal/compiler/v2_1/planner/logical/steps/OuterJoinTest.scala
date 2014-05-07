@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -72,10 +73,10 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val left = newMockedQueryPlanWithPatterns(Set(aNode))
     val planTable = PlanTable(Map(Set(aNode) -> left))
 
-    val expectedPlan = OuterHashJoinPlan(aNode,
+    val expectedPlan = planOuterHashJoin(aNode,
       left,
-      ExpandPlan(
-        AllNodesScanPlan(bNode), bNode, Direction.INCOMING, Seq.empty, aNode, r1Name, SimplePatternLength, r1Rel)
+      planExpand(
+        planAllNodesScan(bNode), bNode, Direction.INCOMING, Seq.empty, aNode, r1Name, SimplePatternLength, r1Rel)
     )
 
     outerJoin(planTable) should equal(CandidateList(Seq(expectedPlan)))

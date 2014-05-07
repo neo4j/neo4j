@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -52,9 +53,9 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val planTable = PlanTable(Map())
-    val innerPlan = ExpandPlan(AllNodesScanPlan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength, patternRel)
+    val innerPlan = planExpand(planAllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength, patternRel)
 
     val optional2 = optional(planTable)
-    optional2.bestPlan(context.cost) should equal(Some(OptionalPlan(innerPlan)))
+    optional2.bestPlan(context.cost) should equal(Some(planOptional(innerPlan)))
   }
 }

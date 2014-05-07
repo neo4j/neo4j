@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 case class PlanTable(m: Map[Set[IdName], QueryPlan] = Map.empty) {
   def size = m.size
@@ -51,7 +50,7 @@ case class PlanTable(m: Map[Set[IdName], QueryPlan] = Map.empty) {
     if (allPlans.size > 1)
       throw new InternalException(s"Expected the final plan table to have 0 or 1 plan (got ${allPlans.size})")
 
-    allPlans.headOption.getOrElse(SingleRowPlan())
+    allPlans.headOption.getOrElse(planSingleRow(Set.empty))
   }
 }
 

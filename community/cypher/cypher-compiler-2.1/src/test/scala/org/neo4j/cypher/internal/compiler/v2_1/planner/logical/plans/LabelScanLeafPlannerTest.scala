@@ -28,6 +28,7 @@ import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.labelScanLeafPlanner
 import scala.collection.mutable
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -63,7 +64,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlans = labelScanLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(NodeByLabelScanPlan(idName, Left("Awesome"), Seq(hasLabels))))
+    resultPlans should equal(Candidates(planNodeByLabelScan(idName, Left("Awesome"), Seq(hasLabels))))
   }
 
   test("simple label scan with a compile-time label ID") {
@@ -98,6 +99,6 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val resultPlans = labelScanLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(NodeByLabelScanPlan(idName, Right(labelId), Seq(hasLabels))))
+    resultPlans should equal(Candidates(planNodeByLabelScan(idName, Right(labelId), Seq(hasLabels))))
   }
 }

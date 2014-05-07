@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlann
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, CandidateList, PlanTable}
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -52,8 +53,8 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
 
     join(planTable) should equal(Candidates(
-      NodeHashJoinPlan(IdName("b"), left, right),
-      NodeHashJoinPlan(IdName("b"), right, left)
+      planNodeHashJoin(IdName("b"), left, right),
+      planNodeHashJoin(IdName("b"), right, left)
     ))
   }
 
@@ -72,10 +73,10 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     ))
 
     join(planTable) should equal(Candidates(
-      NodeHashJoinPlan(IdName("b"), left, middle),
-      NodeHashJoinPlan(IdName("b"), middle, left),
-      NodeHashJoinPlan(IdName("c"), middle, right),
-      NodeHashJoinPlan(IdName("c"), right, middle)
+      planNodeHashJoin(IdName("b"), left, middle),
+      planNodeHashJoin(IdName("b"), middle, left),
+      planNodeHashJoin(IdName("c"), middle, right),
+      planNodeHashJoin(IdName("c"), right, middle)
     ))
   }
 

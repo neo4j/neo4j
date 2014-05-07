@@ -25,6 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 case class selectPatternPredicates(simpleSelection: PlanTransformer) extends PlanTransformer {
   private object candidateListProducer extends CandidateGenerator[PlanTable] {
@@ -38,16 +39,16 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
           pattern match {
             case p@Not(patternExpression: PatternExpression) =>
               val rhs = rhsPlan(context, patternExpression)
-              AntiSemiApplyPlan(lhs, rhs, patternExpression, p)
+              planAntiSemiApply(lhs, rhs, patternExpression, p)
             case p@Ors(Not(patternExpression: PatternExpression) :: tail) if doesNotContainPatterns(tail) =>
               val rhs = rhsPlan(context, patternExpression)
-              SelectOrAntiSemiApplyPlan(lhs, rhs, onePredicate(tail), pattern, p)
+              planSelectOrAntiSemiApply(lhs, rhs, onePredicate(tail), pattern)
             case p@Ors((patternExpression: PatternExpression) :: tail) if doesNotContainPatterns(tail) =>
               val rhs = rhsPlan(context, patternExpression)
-              SelectOrSemiApplyPlan(lhs, rhs, onePredicate(tail), pattern, p)
+              planSelectOrSemiApply(lhs, rhs, onePredicate(tail), pattern)
             case patternExpression: PatternExpression =>
               val rhs = rhsPlan(context, patternExpression)
-              SemiApplyPlan(lhs, rhs, patternExpression, patternExpression)
+              planSemiApply(lhs, rhs, patternExpression)
           }
         }
 

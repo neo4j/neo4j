@@ -19,35 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+case class SemiApply(left: LogicalPlan, right: LogicalPlan) extends AbstractSemiApply(left, right)
+case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan) extends AbstractSemiApply(left, right)
 
-case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(predicate: Expression) extends AbstractSemiApply(outer, inner, predicate)
-case class AntiSemiApply(outer: LogicalPlan, inner: LogicalPlan)(predicate: Expression) extends AbstractSemiApply(outer, inner, predicate)
+abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
+  val lhs = Some(left)
+  val rhs = Some(right)
 
-abstract class AbstractSemiApply(outer: LogicalPlan, inner: LogicalPlan, val predicate: Expression) extends LogicalPlan {
-  val lhs = Some(outer)
-  val rhs = Some(inner)
-
-  def availableSymbols = outer.availableSymbols
-}
-
-object AbstractSemiApply {
-  def solved(outer: QueryPlan, inner: QueryPlan, solved: Expression) =
-    outer.solved.copy( selections = outer.solved.selections ++ solved)
-}
-
-object SemiApplyPlan {
-  def apply(outer: QueryPlan, inner: QueryPlan, predicate: Expression, solved: Expression) =
-    QueryPlan(
-      SemiApply(outer.plan, inner.plan)(predicate),
-      AbstractSemiApply.solved(outer, inner, solved)
-    )
-}
-
-object AntiSemiApplyPlan {
-  def apply(outer: QueryPlan, inner: QueryPlan, predicate: Expression, solved: Expression) =
-    QueryPlan(
-      AntiSemiApply(outer.plan, inner.plan)(predicate),
-      AbstractSemiApply.solved(outer, inner, solved)
-    )
+  def availableSymbols = left.availableSymbols
 }

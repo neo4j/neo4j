@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, PlanTable, CandidateList}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+
 
 class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -46,9 +48,9 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       queryGraph = qg
     )
 
-    val inputPlan = SingleRowPlan(Set("a"))
+    val inputPlan = planSingleRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
-    val innerPlan = OptionalExpandPlan(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq.empty, optionalMatch)
+    val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq.empty, optionalMatch)
 
     optionalExpand(planTable) should equal(Candidates(innerPlan))
   }
@@ -66,7 +68,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       queryGraph = qg
     )
 
-    val inputPlan = SingleRowPlan(Set("a"))
+    val inputPlan = planSingleRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     optionalExpand(planTable) should equal(Candidates())
   }
@@ -84,9 +86,9 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       queryGraph = qg
     )
 
-    val inputPlan = SingleRowPlan(Set("a"))
+    val inputPlan = planSingleRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
-    val innerPlan = OptionalExpandPlan(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(r1Predicate), optionalMatch)
+    val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(r1Predicate), optionalMatch)
 
     optionalExpand(planTable) should equal(Candidates(innerPlan))
   }
@@ -104,9 +106,9 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       queryGraph = qg
     )
 
-    val inputPlan = SingleRowPlan(Set("a"))
+    val inputPlan = planSingleRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
-    val innerPlan = OptionalExpandPlan(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(bPredicate), optionalMatch)
+    val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(bPredicate), optionalMatch)
 
     optionalExpand(planTable) should equal(Candidates(innerPlan))
   }
@@ -124,9 +126,9 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       queryGraph = qg
     )
 
-    val inputPlan = SingleRowPlan(Set("a"))
+    val inputPlan = planSingleRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
-    val innerPlan = OptionalExpandPlan(inputPlan, IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r3"), SimplePatternLength, Seq(bPredicate), optionalMatch)
+    val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r3"), SimplePatternLength, Seq(bPredicate), optionalMatch)
 
     optionalExpand(planTable) should equal(Candidates(innerPlan))
   }
@@ -147,7 +149,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       queryGraph = qg
     )
 
-    val inputPlan = SingleRowPlan(Set("b"))
+    val inputPlan = planSingleRow(Set("b"))
     val planTable = PlanTable(Map(Set(IdName("b")) -> inputPlan))
 
     optionalExpand(planTable) should equal(CandidateList(Seq()))

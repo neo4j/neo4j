@@ -19,17 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{NodeHashJoinPlan, QueryPlan, NodeHashJoin}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable, LogicalPlanContext, CandidateGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object join extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
     val joinPlans: Seq[QueryPlan] = (for {
-      planA <- planTable.plans
-      planB <- planTable.plans if planA != planB
+      left <- planTable.plans
+      right <- planTable.plans if left != right
     } yield {
-      (planA.coveredIds & planB.coveredIds).toList match {
-        case id :: Nil => Some(NodeHashJoinPlan(id, planA, planB))
+      (left.coveredIds & right.coveredIds).toList match {
+        case id :: Nil => Some(planNodeHashJoin(id, left, right))
         case Nil => None
         case _ => None
       }
