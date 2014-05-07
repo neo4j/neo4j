@@ -28,7 +28,8 @@ import org.neo4j.cypher.internal.helpers._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.Operations
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import collection.Map
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.{NameSupport, IsMap}
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.IsMap
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator
 
 object NamedExpectation {
   def apply(name: String): NamedExpectation = NamedExpectation(name, Map.empty)
@@ -130,7 +131,7 @@ case class NamedExpectation(name: String, e: Expression, properties: Map[String,
   def symbolTableDependencies = properties.symboltableDependencies
 
   override def toString: String = {
-    val nameStr = if (NameSupport.notNamed(name)) s"(${name.drop(9)})" else name
+    val nameStr = if (UnNamedNameGenerator.notNamed(name)) s"(${name.drop(9)})" else name
     val props = if (properties.isEmpty)
       ""
     else

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.mutation
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
 import commands.expressions.{Expression, Identifier, Literal}
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.notNamed
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator
 import commands.values.KeyToken
 import pipes.QueryState
 import symbols._
@@ -152,7 +152,7 @@ case class UniqueLink(start: NamedExpectation, end: NamedExpectation, rel: Named
 
   override def toString = {
     val relInfo = {
-      val relName = if (notNamed(rel.name)) rel.name.drop(9) else "`" + rel.name + "`"
+      val relName = if (UnNamedNameGenerator.notNamed(rel.name)) rel.name.drop(9) else "`" + rel.name + "`"
       val props = if (rel.properties.isEmpty)
         ""
       else

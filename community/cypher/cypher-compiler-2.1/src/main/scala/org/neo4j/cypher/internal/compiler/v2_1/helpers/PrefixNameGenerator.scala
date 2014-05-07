@@ -19,18 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.helpers
 
-object NameSupport {
+import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
 
+object FreshIdNameGenerator extends PrefixNameGenerator("FRESHID")
+
+object AggregationNameGenerator extends PrefixNameGenerator("AGGREGATION")
+
+object UnNamedNameGenerator extends PrefixNameGenerator("UNNAMED") {
   implicit class NameString(name: String) {
-    def isNamed = !unnamed
-    def unnamed = NameSupport.notNamed(name)
+    def isNamed = UnNamedNameGenerator.isNamed(name)
+    def unnamed = UnNamedNameGenerator.notNamed(name)
   }
+}
 
-  def newIdName(n: Int): String = "  FRESHID" + n
+object PrefixNameGenerator {
+  def namePrefix(prefix: String) = s"  $prefix"
+}
 
-  def unamedEntity(n: Int): String = "  UNNAMED" + n
+case class PrefixNameGenerator(generatorName: String) {
+  val prefix = s"  $generatorName"
+
+  def name(position: InputPosition): String = name(position.offset)
+  def name(n: Int): String = s"$prefix$n"
 
   def isNamed(x: String) = !notNamed(x)
-
-  def notNamed(x: String) = x.startsWith("  UNNAMED")
+  def notNamed(x: String) = x.startsWith(prefix)
 }

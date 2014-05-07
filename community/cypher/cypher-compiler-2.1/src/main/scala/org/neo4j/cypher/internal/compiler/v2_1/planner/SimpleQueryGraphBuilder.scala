@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters.
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_1.{Rewriter, topDown}
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport._
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator._
 
 object SimpleQueryGraphBuilder {
 
