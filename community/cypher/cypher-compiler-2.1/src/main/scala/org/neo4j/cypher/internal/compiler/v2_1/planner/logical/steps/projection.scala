@@ -30,8 +30,9 @@ object projection extends PlanTransformer {
   def apply(plan: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
     val queryGraph = context.queryGraph
     val logicalPlan = plan.plan
+    val projection = queryGraph.projection
 
-    val sortSkipAndLimit: LogicalPlan = (queryGraph.sortItems.toList, queryGraph.skip, queryGraph.limit) match {
+    val sortSkipAndLimit: LogicalPlan = (projection.sortItems.toList, projection.skip, projection.limit) match {
       case (Nil, s, l) =>
         addLimit(l, addSkip(s, logicalPlan))
 
@@ -53,11 +54,14 @@ object projection extends PlanTransformer {
         addSkip(s, sortPlan)
     }
 
-    val solved = plan.solved
-      .withSortItems(context.queryGraph.sortItems)
-      .copy(skip = context.queryGraph.skip, limit = context.queryGraph.limit)
+    val newProjection = plan.solved.projection
+      .withSortItems(projection.sortItems)
+      .withSkip(projection.skip)
+      .withLimit(projection.limit)
 
-    projectIfNeeded(QueryPlan(sortSkipAndLimit, solved), queryGraph.projections)
+    val solved = plan.solved.withProjection(newProjection)
+
+    projectIfNeeded(QueryPlan(sortSkipAndLimit, solved), projection.projections)
   }
 
   private def ensureSortablePlan(sort: List[ast.SortItem], plan: QueryPlan): LogicalPlan = {
@@ -86,22 +90,19 @@ object projection extends PlanTransformer {
     case sortItem@ast.DescSortItem(exp) => Descending(FreshIdNameGenerator.name(exp.position))
   }
 
-  private def projectIfNeeded(plan: QueryPlan, projections: Map[String, ast.Expression]): QueryPlan = {
+  private def projectIfNeeded(plan: QueryPlan, projectionsMap: Map[String, ast.Expression]): QueryPlan = {
     val ids = plan.coveredIds
     val projectAllCoveredIds = ids.map {
       case IdName(id) => id -> ast.Identifier(id)(null)
     }.toMap
 
-    if (projections == projectAllCoveredIds)
-      QueryPlan(
-        plan.plan,
-        plan.solved.withProjections(projections)
-      )
+    val solvedProjections = plan.solved.projection.withProjections(projectionsMap)
+    val solvedQG = plan.solved.withProjection(solvedProjections)
+
+    if (projectionsMap == projectAllCoveredIds)
+      QueryPlan(plan.plan, solvedQG)
     else
-      QueryPlan(
-        Projection(plan.plan, projections),
-        plan.solved.withProjections(projections)
-      )
+      QueryPlan(Projection(plan.plan, projectionsMap), solvedQG)
   }
 
   private def addSkip(s: Option[ast.Expression], plan: LogicalPlan): LogicalPlan =

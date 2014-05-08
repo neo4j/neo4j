@@ -35,7 +35,7 @@ object QueryPlanProducer {
   def planAntiSemiApply(left: QueryPlan, right: QueryPlan, predicate: PatternExpression, solved: Expression) =
     QueryPlan(
       AntiSemiApply(left.plan, right.plan),
-      left.solved.addPredicates(Seq(solved)))
+      left.solved.addPredicates(solved))
 
   def planApply(left: QueryPlan, right: QueryPlan) =
     QueryPlan(
@@ -57,7 +57,7 @@ object QueryPlanProducer {
       DirectedRelationshipByIdSeek(idName, relIds, startNode, endNode),
       QueryGraph
         .empty
-        .addPatternRel(pattern).addPredicates(solvedPredicates)
+        .addPatternRel(pattern).addPredicates(solvedPredicates: _*)
     )
 
   def planExpand(left: QueryPlan,
@@ -81,7 +81,7 @@ object QueryPlanProducer {
       QueryGraph
         .empty
         .addPatternNodes(idName)
-        .addPredicates(solvedPredicates)
+        .addPredicates(solvedPredicates: _*)
     )
 
   def planNodeByLabelScan(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression]) =
@@ -90,7 +90,7 @@ object QueryPlanProducer {
       QueryGraph
         .empty
         .addPatternNodes(idName)
-        .addPredicates(solvedPredicates)
+        .addPredicates(solvedPredicates: _*)
     )
 
   def planNodeIndexSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression, solvedPredicates: Seq[Expression] = Seq.empty) =
@@ -99,7 +99,7 @@ object QueryPlanProducer {
       QueryGraph
         .empty
         .addPatternNodes(idName)
-        .addPredicates(solvedPredicates)
+        .addPredicates(solvedPredicates: _*)
     )
 
   def planNodeHashJoin(node: IdName, left: QueryPlan, right: QueryPlan) =
@@ -114,7 +114,7 @@ object QueryPlanProducer {
       QueryGraph
         .empty
         .addPatternNodes(idName)
-        .addPredicates(solvedPredicates)
+        .addPredicates(solvedPredicates: _*)
     )
 
   def planOptionalExpand(left: QueryPlan,
@@ -136,7 +136,7 @@ object QueryPlanProducer {
       Optional(inputPlan.plan),
       QueryGraph().
         withAddedOptionalMatch(inputPlan.solved).
-        withProjections(inputPlan.solved.projections)
+        withProjection(inputPlan.solved.projection) // Is this really correct?
     )
 
   def planOuterHashJoin(node: IdName, left: QueryPlan, right: QueryPlan) =
@@ -146,23 +146,23 @@ object QueryPlanProducer {
     )
 
   def planSelection(predicates: Seq[Expression], left: QueryPlan) =
-    QueryPlan(Selection(predicates, left.plan), left.solved.addPredicates(predicates))
+    QueryPlan(Selection(predicates, left.plan), left.solved.addPredicates(predicates: _*))
 
   def planSelectOrAntiSemiApply(outer: QueryPlan, inner: QueryPlan, expr: Expression, solved: Expression) =
     QueryPlan(
       SelectOrAntiSemiApply(outer.plan, inner.plan, expr),
-      outer.solved.addPredicates(Seq(solved)))
+      outer.solved.addPredicates(solved))
 
   def planSelectOrSemiApply(outer: QueryPlan, inner: QueryPlan, expr: Expression, solved: Expression) =
     QueryPlan(
       SelectOrSemiApply(outer.plan, inner.plan, expr),
-      outer.solved.copy(selections = outer.solved.selections ++ solved)
+      outer.solved.addPredicates(solved)
     )
 
   def planSemiApply(left: QueryPlan, right: QueryPlan, predicate: Expression) =
     QueryPlan(
       SemiApply(left.plan, right.plan),
-      left.solved.copy(selections = left.solved.selections ++ predicate)
+      left.solved.addPredicates(predicate)
     )
 
   //TODO: Clean up

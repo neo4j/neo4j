@@ -24,82 +24,30 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
 
-// An abstract representation of the query graph being solved at the current step
-case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
-                      patternNodes: Set[IdName] = Set.empty,
-                      argumentIds: Set[IdName] = Set.empty,
-                      selections: Selections = Selections(),
-                      projections: Map[String, Expression] = Map.empty,
-                      sortItems: Seq[SortItem] = Seq.empty,
-                      optionalMatches: Seq[QueryGraph] = Seq.empty,
-                      limit: Option[Expression] = None,
-                      skip: Option[Expression] = None,
-                      tail: Option[QueryGraph] = None) extends Visitable[QueryGraph] {
+trait QueryGraph {
+  def patternRelationships: Set[PatternRelationship]
+  def patternNodes: Set[IdName]
+  def argumentIds: Set[IdName]
+  def selections: Selections
+  def optionalMatches: Seq[QueryGraph]
+  def tail: Option[QueryGraph]
 
-  def ++(other: QueryGraph): QueryGraph =
-    QueryGraph(
-      projections = projections ++ other.projections,
-      selections = selections ++ other.selections,
-      patternNodes = patternNodes ++ other.patternNodes,
-      patternRelationships = patternRelationships ++ other.patternRelationships,
-      optionalMatches = optionalMatches ++ other.optionalMatches,
-      argumentIds = argumentIds ++ other.argumentIds,
-      sortItems = other.sortItems,
-      limit = either(limit, other.limit),
-      skip = either(skip, other.skip),
-      tail = either(tail, other.tail)
-    )
+  def projection: Projections
 
-  private def either[T](a: Option[T], b:Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
-    case (s@Some(_), None) => s
-    case (None, s) => s
-  }
+  def addPatternNodes(nodes: IdName*): QueryGraph
+  def addPatternRel(rel: PatternRelationship): QueryGraph
+  def addPatternRels(rels: Seq[PatternRelationship]): QueryGraph
+  def addArgumentId(newIds: Seq[IdName]): QueryGraph
+  def addSelections(selections: Selections): QueryGraph
+  def addPredicates(predicates: Expression*): QueryGraph
+  def addCoveredIdsAsProjections(): QueryGraph
 
-  def accept[R](visitor: Visitor[QueryGraph, R]): R = visitor.visit(this)
+  def withoutArguments(): QueryGraph
 
-  def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
-    val argumentIds = coveredIds intersect optionalMatch.coveredIds
-    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentId(argumentIds.toSeq)).
-      addCoveredIdsAsProjections()
-  }
-
-  def addPatternNodes(nodes: IdName*) = copy(
-    patternNodes = patternNodes ++ nodes,
-    projections = projections ++ nodes.map(symbol)
-  )
-
-  def addPatternRel(rel: PatternRelationship) = {
-    val withAddedPatternNodes = addPatternNodes(rel.left, rel.right)
-    withAddedPatternNodes.copy(
-        patternRelationships = withAddedPatternNodes.patternRelationships + rel,
-        projections = withAddedPatternNodes.projections + symbol(rel.name)
-    )
-  }
-
-  def addPatternRels(rels: Seq[PatternRelationship]) =
-    rels.foldLeft(this)( (qg, rel) => qg.addPatternRel(rel) )
-
-  private def symbol(id: IdName) = id.name -> Identifier(id.name)(null)
-
-  def addArgumentId(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
-
-  def withProjections(projections: Map[String, Expression]) = copy(projections = projections)
-
-  def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
-
-  def withTail(newTail: QueryGraph) = tail match {
-    case None    => copy(tail = Some(newTail))
-    case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
-  }
-
-  def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
-
-  def coveredIds: Set[IdName] = {
-    val patternIds = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships)
-    val optionalMatchIds = optionalMatches.flatMap(_.coveredIds)
-    patternIds ++ argumentIds ++ optionalMatchIds
-  }
+  def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph
+  def withTail(newTail: QueryGraph): QueryGraph
+  def withSelections(selections: Selections): QueryGraph
+  def withProjection(projection: Projections): QueryGraph
 
   def knownLabelsOnNode(node: IdName): Seq[LabelName] =
     selections
@@ -109,23 +57,104 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] =
     patternRelationships.filter { r => r.left == id || r.right == id }
 
-  def addPredicates(predicates: Seq[Expression]): QueryGraph = {
+
+  def coveredIds: Set[IdName] = {
+    val patternIds = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships)
+    val optionalMatchIds = optionalMatches.flatMap(_.coveredIds)
+    patternIds ++ argumentIds ++ optionalMatchIds
+  }
+
+  def ++(other: QueryGraph): QueryGraph =
+    QueryGraph(
+      projection = projection ++ other.projection,
+      selections = selections ++ other.selections,
+      patternNodes = patternNodes ++ other.patternNodes,
+      patternRelationships = patternRelationships ++ other.patternRelationships,
+      optionalMatches = optionalMatches ++ other.optionalMatches,
+      argumentIds = argumentIds ++ other.argumentIds,
+      tail = either(tail, other.tail)
+    )
+
+  private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
+    case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
+    case (s@Some(_), None) => s
+    case (None, s) => s
+  }
+
+}
+
+object QueryGraph {
+  def apply(patternRelationships: Set[PatternRelationship] = Set.empty,
+            patternNodes: Set[IdName] = Set.empty,
+            argumentIds: Set[IdName] = Set.empty,
+            selections: Selections = Selections(),
+            projection: Projections = Projections(),
+            optionalMatches: Seq[QueryGraph] = Seq.empty,
+            tail: Option[QueryGraph] = None): QueryGraph =
+    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, projection, optionalMatches, tail)
+
+  val empty = QueryGraph()
+
+  def coveredIdsForPatterns(patternNodeIds: Set[IdName], patternRels: Set[PatternRelationship]) = {
+    val patternRelIds = patternRels.flatMap(_.coveredIds)
+    patternNodeIds ++ patternRelIds
+  }
+}
+
+
+// An abstract representation of the query graph being solved at the current step
+case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.empty,
+                          patternNodes: Set[IdName] = Set.empty,
+                          argumentIds: Set[IdName] = Set.empty,
+                          selections: Selections = Selections(),
+                          projection: Projections,
+                          optionalMatches: Seq[QueryGraph] = Seq.empty,
+                          tail: Option[QueryGraph] = None) extends QueryGraph with Visitable[QueryGraph] {
+
+
+  def accept[R](visitor: Visitor[QueryGraph, R]): R = visitor.visit(this)
+
+  def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
+    val argumentIds = coveredIds intersect optionalMatch.coveredIds
+    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentId(argumentIds.toSeq)).
+      addCoveredIdsAsProjections()
+  }
+
+  def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
+
+  def addPatternRel(rel: PatternRelationship): QueryGraph =
+    copy(
+      patternNodes = patternNodes + rel.nodes._1 + rel.nodes._2,
+      patternRelationships = patternRelationships + rel
+    )
+
+  def addPatternRels(rels: Seq[PatternRelationship]) =
+    rels.foldLeft[QueryGraph](this)((qg, rel) => qg.addPatternRel(rel))
+
+  def addArgumentId(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
+
+  def withoutArguments(): QueryGraph = copy(argumentIds = Set.empty)
+
+  def withTail(newTail: QueryGraph) = tail match {
+    case None    => copy(tail = Some(newTail))
+    case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
+  }
+
+  def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
+
+  def withProjection(projection: Projections): QueryGraph = copy(projection = projection)
+
+  def addSelections(selections: Selections): QueryGraph =
+    copy(selections = Selections(selections.predicates ++ this.selections.predicates))
+
+  def addPredicates(predicates: Expression*): QueryGraph = {
     val newSelections = Selections(predicates.flatMap(SelectionPredicates.extractPredicates).toSet)
     copy(selections = selections ++ newSelections)
   }
 
   def addCoveredIdsAsProjections(): QueryGraph = {
     val coveredIdProjections = coveredIds.map(x => x.name -> Identifier(x.name)(null)).toMap
-    copy(projections = projections ++ coveredIdProjections)
-  }
-}
-
-object QueryGraph {
-  val empty = QueryGraph()
-
-  def coveredIdsForPatterns(patternNodeIds: Set[IdName], patternRels: Set[PatternRelationship]) = {
-    val patternRelIds = patternRels.flatMap(_.coveredIds)
-    patternNodeIds ++ patternRelIds
+    copy(projection = projection.addProjections(coveredIdProjections))
   }
 }
 
@@ -148,7 +177,7 @@ object SelectionPredicates {
       (acc, children) => children(acc)
     // iterable expression should not depend on the identifier they introduce
     case predicate: IterablePredicateExpression =>
-      val innerDeps = predicate.innerPredicate.map(idNames(_)).getOrElse(Set.empty) - IdName(predicate.identifier.name)
+      val innerDeps = predicate.innerPredicate.map(idNames).getOrElse(Set.empty) - IdName(predicate.identifier.name)
       (acc, _) => acc + Predicate(idNames(predicate.expression) ++ innerDeps, predicate)
     // generic expression
     case predicate: Expression =>

@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, LabelName, Identifier, HasLabels}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Predicate, LogicalPlanningTestSupport, QueryGraph, Selections}
-import org.mockito.Matchers._
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.labelScanLeafPlanner
-import scala.collection.mutable
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.mockito.Mockito._
+import org.mockito.Matchers._
+import collection.mutable
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -40,7 +40,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
@@ -74,7 +74,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val labelId = LabelId(12)
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 

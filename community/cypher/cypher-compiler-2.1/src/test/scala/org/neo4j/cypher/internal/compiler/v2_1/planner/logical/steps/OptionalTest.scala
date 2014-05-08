@@ -46,16 +46,17 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
       case _            => 1000.0
     })
 
+    val fakePlan = newMockedQueryPlan(Set(IdName("a"), IdName("b")))
+
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
+      strategy = newMockedStrategy(fakePlan),
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
     val planTable = PlanTable(Map())
-    val innerPlan = planExpand(planAllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength, patternRel)
 
-    val optional2 = optional(planTable)
-    optional2.bestPlan(context.cost) should equal(Some(planOptional(innerPlan)))
+    optional(planTable).plans should equal(Seq(planOptional(fakePlan)))
   }
 }

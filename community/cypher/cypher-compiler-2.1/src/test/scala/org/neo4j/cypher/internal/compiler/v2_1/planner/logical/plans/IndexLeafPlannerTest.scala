@@ -52,7 +52,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       SignedIntegerLiteral("42")_
     )_
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(idName), equals), Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
@@ -97,7 +97,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       SignedIntegerLiteral("42")_
     )_
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(
         Predicate(Set(idName), equals),
         Predicate(Set(idName), hasLabels))),
