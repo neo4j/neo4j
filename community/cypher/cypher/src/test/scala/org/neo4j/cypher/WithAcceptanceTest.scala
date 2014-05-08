@@ -126,6 +126,6 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
   }
 
   test("nulls passing through WITH") {
-    executeWithNewPlanner("optional match (a:Start) with a match a-->b return *") should be (empty)
+    execute("optional match (a:Start) with a match a-->b return *") should be (empty)
   }
 }

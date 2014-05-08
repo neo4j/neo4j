@@ -1186,10 +1186,23 @@ RETURN a.name""")
     // Given empty db
 
     // when
-    val result = executeWithNewPlanner("optional match (a) with a match (a)-->(b) return b")
+    val result = execute("optional match (a) with a match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
-    result shouldBe empty
+    result.toList should be(empty)
+  }
+
+  test("should not find node in the match if there is a filter on the optional match") {
+    // Given
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+
+    // when
+    val result = execute("optional match (a:Person) with a match (a)-->(b) return b").columnAs[Node]("b")
+
+    // should give us a number in the middle, not all or nothing
+    result.toList should be(empty)
   }
 
   test("optional match starting from a null node returns null") {

@@ -32,7 +32,7 @@ object QueryPlanProducer {
       AllNodesScan(idName),
       QueryGraph(patternNodes = Set(idName)))
 
-  def planAntiSemiApply(left: QueryPlan, right: QueryPlan, predicate: Expression, solved: Expression) =
+  def planAntiSemiApply(left: QueryPlan, right: QueryPlan, predicate: PatternExpression, solved: Expression) =
     QueryPlan(
       AntiSemiApply(left.plan, right.plan),
       left.solved.addPredicates(Seq(solved)))

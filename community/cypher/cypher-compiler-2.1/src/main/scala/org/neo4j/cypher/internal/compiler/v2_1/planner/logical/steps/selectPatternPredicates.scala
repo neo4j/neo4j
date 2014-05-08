@@ -56,7 +56,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
     }
 
     private def rhsPlan(context: LogicalPlanContext, pattern: PatternExpression) = {
-      val qg = context.queryGraph.subQueriesLookupTable.getOrElse(pattern,
+      val qg = context.subQueriesLookupTable.getOrElse(pattern,
         throw new ThisShouldNotHappenError("Davide/Stefan", s"Did not find QueryGraph for pattern expression $pattern")
       )
       context.strategy.plan(context.copy(queryGraph = qg))

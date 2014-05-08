@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, SemanticTable}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
 case class LogicalPlanContext(planContext: PlanContext,
                               metrics: Metrics,
                               semanticTable: SemanticTable,
                               queryGraph: QueryGraph,
+                              subQueriesLookupTable: Map[PatternExpression, QueryGraph],
                               strategy: PlanningStrategy) {
 
   def statistics = planContext.statistics

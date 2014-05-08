@@ -63,13 +63,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
-      selections = selections,
-      subQueriesLookupTable = Map(patternExp -> patternQG)
+      selections = selections
     )
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
+      subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
@@ -95,13 +95,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
-      selections = selections,
-      subQueriesLookupTable = Map(patternExp -> patternQG)
+      selections = selections
     )
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
+      subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
@@ -126,13 +126,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     val qg = QueryGraph(
       patternNodes = Set("b"),
-      selections = selections,
-      subQueriesLookupTable = Map(patternExp -> patternQG)
+      selections = selections
     )
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
+      subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
@@ -160,13 +160,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
-      selections = selections,
-      subQueriesLookupTable = Map(patternExp -> patternQG)
+      selections = selections
     )
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
+      subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
@@ -197,13 +197,13 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
-      selections = selections,
-      subQueriesLookupTable = Map(patternExp -> patternQG)
+      selections = selections
     )
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
+      subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
