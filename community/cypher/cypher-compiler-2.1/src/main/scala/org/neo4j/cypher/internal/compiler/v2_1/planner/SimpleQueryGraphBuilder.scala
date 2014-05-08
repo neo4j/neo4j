@@ -165,11 +165,13 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val projections = produceProjectionsMap(expressions)
           val sortItems = produceSortItems(optOrderBy)
 
-          val newQG = qg
-            .withSortItems(sortItems)
-            .withProjections(projections)
-            .withLimit(limit.map(_.expression))
-            .withSkip(skip.map(_.expression))
+          val projection = Projections(
+            projections = projections,
+            sortItems = sortItems,
+            limit = limit.map(_.expression),
+            skip = skip.map(_.expression))
+
+          val newQG = qg.withProjection(projection)
 
           produceQueryGraphFromClauses(newQG, subQueryLookupTable, tl)
 
@@ -200,8 +202,10 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
         case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
+          val newProjection = qg.projection.withSortItems(sortItems = produceSortItems(optOrderBy))
+
           val newQG: QueryGraph = qg.
-            withSortItems(sortItems = produceSortItems(optOrderBy)).
+            withProjection(newProjection).
             addSelections(selections)
 
           produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
@@ -210,11 +214,13 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val projections = produceProjectionsMap(expressions)
           val sortItems = produceSortItems(optOrderBy)
 
-          val newQG: QueryGraph = qg
-            .withSortItems(sortItems)
-            .withProjections(projections)
-            .withSkip(skip.map(_.expression))
-            .withLimit(limit.map(_.expression))
+          val projection = Projections(
+            projections = projections,
+            sortItems = sortItems,
+            limit = limit.map(_.expression),
+            skip = skip.map(_.expression))
+
+          val newQG = qg.withProjection(projection)
 
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 

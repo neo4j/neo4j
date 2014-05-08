@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, AstConstructionTestSupport, RelTypeName, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.mockito.Mockito._
+import org.mockito.Matchers._
 import org.scalatest.mock.MockitoSugar
 
 trait LogicalPlanningTestSupport
@@ -72,6 +73,12 @@ trait LogicalPlanningTestSupport
 
   def newMockedMetricsFactory = spy(new SpyableMetricsFactory)
 
+  def newMockedStrategy(plan: QueryPlan) = {
+    val strategy = mock[PlanningStrategy]
+    doReturn(plan).when(strategy).plan(any(), any())
+    strategy
+  }
+
   def newMockedLogicalPlanContext(planContext: PlanContext,
                                   metrics: Metrics = self.mock[Metrics],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
@@ -93,28 +100,30 @@ trait LogicalPlanningTestSupport
     context
   }
 
-  def newMockedQueryPlanWithProjections(ids: String*)(implicit context: LogicalPlanContext) =
+  def newMockedQueryPlanWithProjections(ids: String*)(implicit context: LogicalPlanContext) = {
+    val projections = Projections(projections = ids.map((id) => id -> ident(id)).toMap)
     QueryPlan(
       newMockedLogicalPlan(ids: _*),
       QueryGraph
         .empty
         .addPatternNodes(ids.map(IdName).toSeq: _*)
-        .withProjections(ids.map( (id) => id -> ident(id) ).toMap)
+        .withProjection(projections)
     )
+  }
 
-  def newMockedQueryPlan(idNames: Set[IdName])(implicit context: LogicalPlanContext): QueryPlan = {
+  def newMockedQueryPlan(idNames: Set[IdName]): QueryPlan = {
     val plan = newMockedLogicalPlan(idNames)
     val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*)
     QueryPlan( plan, qg )
   }
 
-  def newMockedQueryPlan(ids: String*)(implicit context: LogicalPlanContext): QueryPlan = {
+  def newMockedQueryPlan(ids: String*): QueryPlan = {
     newMockedQueryPlan( ids.map(IdName).toSet )
   }
 
-  def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan = FakePlan(ids.map(IdName).toSet)
+  def newMockedLogicalPlan(ids: String*): LogicalPlan = FakePlan(ids.map(IdName).toSet)
 
-  def newMockedLogicalPlan(ids: Set[IdName])(implicit context: LogicalPlanContext): LogicalPlan = FakePlan(ids)
+  def newMockedLogicalPlan(ids: Set[IdName]): LogicalPlan = FakePlan(ids)
 
   def newMockedQueryPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): QueryPlan = {
     val plan = newMockedLogicalPlan(ids)

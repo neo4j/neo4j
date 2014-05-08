@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Projections, QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
@@ -32,7 +32,7 @@ class AllNodesLeafPlannerTest
 
   test("simple all nodes scan") {
     // given
-    val qg = QueryGraph(projections = Map("n" -> Identifier("n")_), patternNodes = Set(IdName("n")))
+    val qg = QueryGraph(projection = Projections(projections = Map("n" -> Identifier("n") _)), patternNodes = Set(IdName("n")))
 
     implicit val planContext = newMockedPlanContext
     implicit val context = newMockedLogicalPlanContext(

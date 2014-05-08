@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{LogicalPlanningTestSupport, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Projections, LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
@@ -45,7 +45,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result.plan should equal(Skip(startPlan.plan, x))
-    result.solved.skip should equal(Some(x))
+    result.solved.projection.skip should equal(Some(x))
   }
 
   test("should add limit if query graph contains limit") {
@@ -59,7 +59,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result.plan should equal(Limit(startPlan.plan, x))
-    result.solved.limit should equal(Some(x))
+    result.solved.projection.limit should equal(Some(x))
   }
 
   test("should add skip first and then limit if the query graph contains both") {
@@ -74,8 +74,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result.plan should equal(Limit(Skip(startPlan.plan, y), x))
-    result.solved.limit should equal(Some(x))
-    result.solved.skip should equal(Some(y))
+    result.solved.projection.limit should equal(Some(x))
+    result.solved.projection.skip should equal(Some(y))
   }
 
   test("should add sort if query graph contains sort items") {
@@ -89,7 +89,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result.plan should equal(Sort(startPlan.plan, Seq(sortDescription)))
-    result.solved.sortItems should equal(Seq(identifierSortItem))
+    result.solved.projection.sortItems should equal(Seq(identifierSortItem))
   }
 
   test("should add projection before sort if query graph contains sort items that are not identifiers") {
@@ -105,7 +105,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan)
 
     // then
-    result.solved.sortItems should equal(Seq(expressionSortItem))
+    result.solved.projection.sortItems should equal(Seq(expressionSortItem))
 
     result.plan should equal(
       Projection(
@@ -134,7 +134,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val result = projection(startPlan)
 
     // then
-    result.solved.sortItems should equal(Seq(expressionSortItem, identifierSortItem))
+    result.solved.projection.sortItems should equal(Seq(expressionSortItem, identifierSortItem))
 
     result.plan should equal(
       Projection(
@@ -166,8 +166,8 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
       SortedLimit(startPlan.plan, x, sortItems)
     )
 
-    result.solved.limit should equal(Some(x))
-    result.solved.sortItems should equal(sortItems)
+    result.solved.projection.limit should equal(Some(x))
+    result.solved.projection.sortItems should equal(sortItems)
   }
 
   test("should add SortedLimit when query uses both ORDER BY and LIMIT, and add the SKIP value to the SortedLimit") {
@@ -193,51 +193,49 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
       )
     )
 
-    result.solved.limit should equal(Some(x))
-    result.solved.skip should equal(Some(y))
-    result.solved.sortItems should equal(Seq(identifierSortItem))
+    result.solved.projection.limit should equal(Some(x))
+    result.solved.projection.skip should equal(Some(y))
+    result.solved.projection.sortItems should equal(Seq(identifierSortItem))
   }
 
   test("should add projection for expressions not already covered") {
     // given
     val projections: Map[String, ast.Expression] = Map("42" -> ast.SignedIntegerLiteral("42") _)
 
-    implicit val (context, startPlan) = queryGraphWith(
-      projections = projections
-    )
+    implicit val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
     val result = projection(startPlan)
 
     // then
     result.plan should equal(Projection(startPlan.plan, projections))
-    result.solved.projections should equal(projections)
+    result.solved.projection.projections should equal(projections)
   }
 
   test("does not add projection when not needed") {
     // given
     val projections: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n") _)
-    implicit val (context, startPlan) = queryGraphWith(
-      projections = projections
-    )
+    implicit val (context, startPlan) = queryGraphWith(projectionsMap = projections)
 
     // when
     val result = projection(startPlan)
 
     // then
-    result should equal(startPlan)
+    result.plan should equal(startPlan.plan)
+    result.solved.projection.projections should equal(projections)
   }
 
   private def queryGraphWith(skip: Option[ast.Expression] = None,
                              limit: Option[ast.Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projections: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (LogicalPlanContext, QueryPlan) = {
-    val qg = QueryGraph(
+                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (LogicalPlanContext, QueryPlan) = {
+    val projections = Projections(
       limit = limit,
       skip = skip,
       sortItems = sortItems,
-      projections = projections,
-      patternNodes = Set(IdName("n")))
+      projections = projectionsMap)
+
+    val qg = QueryGraph(projection = projections, patternNodes = Set(IdName("n")))
 
     val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
@@ -245,7 +243,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
     )
 
     val plan = QueryPlan(
-      newMockedLogicalPlan("n")(context),
+      newMockedLogicalPlan("n"),
       QueryGraph.empty.addPatternNodes(IdName("n"))
     )
 

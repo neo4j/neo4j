@@ -29,12 +29,10 @@ trait QueryGraph {
   def patternNodes: Set[IdName]
   def argumentIds: Set[IdName]
   def selections: Selections
-  def projections: Map[String, Expression]
-  def sortItems: Seq[SortItem]
   def optionalMatches: Seq[QueryGraph]
-  def limit: Option[Expression]
-  def skip: Option[Expression]
   def tail: Option[QueryGraph]
+
+  def projection: Projections
 
   def addPatternNodes(nodes: IdName*): QueryGraph
   def addPatternRel(rel: PatternRelationship): QueryGraph
@@ -46,13 +44,10 @@ trait QueryGraph {
 
   def withoutArguments(): QueryGraph
 
-  def withProjections(projections: Map[String, Expression]): QueryGraph
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph
   def withTail(newTail: QueryGraph): QueryGraph
-  def withSkip(skip: Option[Expression]): QueryGraph
-  def withLimit(limit: Option[Expression]): QueryGraph
   def withSelections(selections: Selections): QueryGraph
-  def withSortItems(sortItems: Seq[SortItem]): QueryGraph
+  def withProjection(projection: Projections): QueryGraph
 
   def knownLabelsOnNode(node: IdName): Seq[LabelName] =
     selections
@@ -71,15 +66,12 @@ trait QueryGraph {
 
   def ++(other: QueryGraph): QueryGraph =
     QueryGraph(
-      projections = projections ++ other.projections,
+      projection = projection ++ other.projection,
       selections = selections ++ other.selections,
       patternNodes = patternNodes ++ other.patternNodes,
       patternRelationships = patternRelationships ++ other.patternRelationships,
       optionalMatches = optionalMatches ++ other.optionalMatches,
       argumentIds = argumentIds ++ other.argumentIds,
-      sortItems = other.sortItems,
-      limit = either(limit, other.limit),
-      skip = either(skip, other.skip),
       tail = either(tail, other.tail)
     )
 
@@ -96,14 +88,10 @@ object QueryGraph {
             patternNodes: Set[IdName] = Set.empty,
             argumentIds: Set[IdName] = Set.empty,
             selections: Selections = Selections(),
-            projections: Map[String, Expression] = Map.empty,
-            sortItems: Seq[SortItem] = Seq.empty,
+            projection: Projections = Projections(),
             optionalMatches: Seq[QueryGraph] = Seq.empty,
-            limit: Option[Expression] = None,
-            skip: Option[Expression] = None,
             tail: Option[QueryGraph] = None): QueryGraph =
-    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, projections, sortItems,
-      optionalMatches, limit, skip, tail)
+    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, projection, optionalMatches, tail)
 
   val empty = QueryGraph()
 
@@ -119,11 +107,8 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
                           patternNodes: Set[IdName] = Set.empty,
                           argumentIds: Set[IdName] = Set.empty,
                           selections: Selections = Selections(),
-                          projections: Map[String, Expression] = Map.empty,
-                          sortItems: Seq[SortItem] = Seq.empty,
+                          projection: Projections,
                           optionalMatches: Seq[QueryGraph] = Seq.empty,
-                          limit: Option[Expression] = None,
-                          skip: Option[Expression] = None,
                           tail: Option[QueryGraph] = None) extends QueryGraph with Visitable[QueryGraph] {
 
 
@@ -135,41 +120,29 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
       addCoveredIdsAsProjections()
   }
 
-  def addPatternNodes(nodes: IdName*): QueryGraph = copy(
-    patternNodes = patternNodes ++ nodes,
-    projections = projections ++ nodes.map(symbol)
-  )
+  def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
 
   def addPatternRel(rel: PatternRelationship): QueryGraph =
     copy(
       patternNodes = patternNodes + rel.nodes._1 + rel.nodes._2,
-      projections = projections + symbol(rel.nodes._1) + symbol(rel.nodes._2) + symbol(rel.name),
       patternRelationships = patternRelationships + rel
     )
 
   def addPatternRels(rels: Seq[PatternRelationship]) =
     rels.foldLeft[QueryGraph](this)((qg, rel) => qg.addPatternRel(rel))
 
-  private def symbol(id: IdName) = id.name -> Identifier(id.name)(null)
-
   def addArgumentId(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
 
   def withoutArguments(): QueryGraph = copy(argumentIds = Set.empty)
-
-  def withProjections(projections: Map[String, Expression]): QueryGraph = copy(projections = projections)
 
   def withTail(newTail: QueryGraph) = tail match {
     case None    => copy(tail = Some(newTail))
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
-  def withSortItems(sortItems: Seq[SortItem]): QueryGraph = copy(sortItems = sortItems)
-
-  def withSkip(skip: Option[Expression]): QueryGraph = copy(skip = skip)
-
-  def withLimit(limit: Option[Expression]): QueryGraph = copy(limit = limit)
-
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
+
+  def withProjection(projection: Projections): QueryGraph = copy(projection = projection)
 
   def addSelections(selections: Selections): QueryGraph =
     copy(selections = Selections(selections.predicates ++ this.selections.predicates))
@@ -181,7 +154,7 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
 
   def addCoveredIdsAsProjections(): QueryGraph = {
     val coveredIdProjections = coveredIds.map(x => x.name -> Identifier(x.name)(null)).toMap
-    copy(projections = projections ++ coveredIdProjections)
+    copy(projection = projection.addProjections(coveredIdProjections))
   }
 }
 

@@ -136,7 +136,7 @@ object QueryPlanProducer {
       Optional(inputPlan.plan),
       QueryGraph().
         withAddedOptionalMatch(inputPlan.solved).
-        withProjections(inputPlan.solved.projections)
+        withProjection(inputPlan.solved.projection) // Is this really correct?
     )
 
   def planOuterHashJoin(node: IdName, left: QueryPlan, right: QueryPlan) =
