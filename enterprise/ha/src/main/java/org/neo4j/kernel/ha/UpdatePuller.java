@@ -51,7 +51,7 @@ public class UpdatePuller implements Lifecycle
     private final JobScheduler scheduler;
     private final StringLogger logger;
     private final CappedOperation<Pair<String, ? extends Exception>> cappedLogger;
-    private boolean pullUpdates = false;
+    private volatile boolean pullUpdates = false;
     private final UpdatePullerHighAvailabilityMemberListener listener;
 
     public UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine, HaXaDataSourceManager xaDataSourceManager, Master master,
