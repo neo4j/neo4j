@@ -1,4 +1,4 @@
-#/bin/bash
+#!/bin/bash
 
 mvn dependency:copy-dependencies
 LIB_FILES=`find target/dependency -follow -iname "*.jar"`
