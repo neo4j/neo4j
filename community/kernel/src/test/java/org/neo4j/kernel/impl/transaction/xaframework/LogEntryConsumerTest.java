@@ -36,7 +36,7 @@ public class LogEntryConsumerTest
         // GIVEN
         TranslatingEntryConsumer consumer = new TranslatingEntryConsumer( mock(Function.class) );
         LogHandler handler = mock( LogHandler.class );
-        consumer.reset( 0, handler );
+        consumer.bind( 0, handler );
 
         // WHEN
         LogEntry.Start start = new LogEntry.Start( mock( Xid.class ), 1, 2, 3, 4, 5, 6 );
@@ -95,7 +95,7 @@ public class LogEntryConsumerTest
 
         TranslatingEntryConsumer consumer = new TranslatingEntryConsumer( translator );
         LogHandler handler = mock( LogHandler.class );
-        consumer.reset( 0, handler );
+        consumer.bind( 0, handler );
 
         // WHEN
         LogEntry.Start start = new LogEntry.Start( mock( Xid.class ), 1, (byte) (LogEntry.CURRENT_LOG_VERSION + 1), 2, 3, 4, 5, 6 );

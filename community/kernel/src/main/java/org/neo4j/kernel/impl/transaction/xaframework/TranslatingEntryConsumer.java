@@ -91,12 +91,16 @@ class TranslatingEntryConsumer implements Consumer<LogEntry, IOException>
         return true;
     }
 
-    /** Reset this consumer to be used for some new set of input data. */
-    public TranslatingEntryConsumer reset( int xidIdentifier, LogHandler handler )
+    /**
+     * Bind this consumer to a transaction handling context as identified by the xidIdentifier and a LogHandler.
+     * This is a necessary call before processing a transaction - bad things will happen if two transactions
+     * are processed with this consumer without a proper bind() call in between.
+     */
+    public TranslatingEntryConsumer bind( int xidIdentifier, LogHandler handler )
     {
         this.xidIdentifier = xidIdentifier;
         this.handler = handler;
-        this.entries.clear();
+        this.entries = null;
         return this;
     }
 }

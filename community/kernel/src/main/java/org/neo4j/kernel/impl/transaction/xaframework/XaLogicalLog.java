@@ -1071,7 +1071,7 @@ public class XaLogicalLog implements LogLoader
         scanIsComplete = false;
 
         logWriterSPI.bind( forceMode, nextTxId );
-        translatingEntryConsumer.reset( getNextIdentifier(), masterHandler );
+        translatingEntryConsumer.bind( getNextIdentifier(), masterHandler );
 
         boolean success = true;
         masterHandler.startLog();
@@ -1101,7 +1101,7 @@ public class XaLogicalLog implements LogLoader
         kernelHealth.assertHealthy( IOException.class );
         scanIsComplete = false;
 
-        translatingEntryConsumer.reset( getNextIdentifier(), slaveHandler );
+        translatingEntryConsumer.bind( getNextIdentifier(), slaveHandler );
         boolean success = false;
 
         slaveHandler.startLog();
