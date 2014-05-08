@@ -32,7 +32,6 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
                       projections: Map[String, Expression] = Map.empty,
                       sortItems: Seq[SortItem] = Seq.empty,
                       optionalMatches: Seq[QueryGraph] = Seq.empty,
-                      subQueriesLookupTable: Map[PatternExpression, QueryGraph] = Map.empty,
                       limit: Option[Expression] = None,
                       skip: Option[Expression] = None,
                       tail: Option[QueryGraph] = None) extends Visitable[QueryGraph] {
@@ -44,7 +43,6 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
       patternNodes = patternNodes ++ other.patternNodes,
       patternRelationships = patternRelationships ++ other.patternRelationships,
       optionalMatches = optionalMatches ++ other.optionalMatches,
-      subQueriesLookupTable = subQueriesLookupTable ++ other.subQueriesLookupTable,
       argumentIds = argumentIds ++ other.argumentIds,
       sortItems = other.sortItems,
       limit = either(limit, other.limit),
@@ -59,15 +57,6 @@ case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty
   }
 
   def accept[R](visitor: Visitor[QueryGraph, R]): R = visitor.visit(this)
-
-  def equivalent(other: QueryGraph) =
-    patternRelationships == other.patternRelationships &&
-    patternNodes == other.patternNodes &&
-    selections == other.selections &&
-    projections == other.projections &&
-    sortItems == other.sortItems &&
-    limit == other.limit &&
-    skip == other.skip
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = coveredIds intersect optionalMatch.coveredIds

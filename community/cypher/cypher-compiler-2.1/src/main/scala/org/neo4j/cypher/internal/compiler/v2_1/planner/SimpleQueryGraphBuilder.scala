@@ -121,7 +121,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
       case p => p
     }
 
-    val subQueries = predicates.collect {
+    val subQueries = predicatesWithCorrectDeps.collect {
       case Predicate(_, Ors((_:PatternExpression) :: (_:PatternExpression) :: _ )) =>
         throw new CantHandleQueryException
       case Predicate(_, Ors(Not(_:PatternExpression) :: (_:PatternExpression) :: _ )) =>
@@ -148,15 +148,17 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     (Selections(predicates), subQueries)
   }
 
-  override def produce(ast: Query): QueryGraph = ast match {
+  override def produce(ast: Query): (QueryGraph, Map[PatternExpression, QueryGraph]) = ast match {
     case Query(None, SingleQuery(clauses)) =>
-      produceQueryGraphFromClauses(QueryGraph.empty, clauses)
+      produceQueryGraphFromClauses(QueryGraph.empty, Map.empty, clauses)
 
     case _ =>
       throw new CantHandleQueryException
   }
 
-  private def produceQueryGraphFromClauses(qg: QueryGraph, clauses: Seq[Clause]): QueryGraph =
+  private def produceQueryGraphFromClauses(qg: QueryGraph,
+                                           subQueryLookupTable: Map[PatternExpression, QueryGraph],
+                                           clauses: Seq[Clause]): (QueryGraph, Map[PatternExpression, QueryGraph]) =
       clauses match {
         case Return(false, ListedReturnItems(expressions), optOrderBy, skip, limit) :: tl =>
 
@@ -171,7 +173,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
               skip = skip.map(_.expression)
             )
 
-          produceQueryGraphFromClauses(newQG, tl)
+          produceQueryGraphFromClauses(newQG, subQueryLookupTable, tl)
 
         case Match(optional@false, pattern: Pattern, Seq(), optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
@@ -180,12 +182,11 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val matchClause = QueryGraph(
             selections = selections,
             patternNodes = nodeIds.toSet,
-            patternRelationships = rels.toSet,
-            subQueriesLookupTable = subQueries.toMap)
+            patternRelationships = rels.toSet)
 
           val newQG = qg ++ matchClause
 
-          produceQueryGraphFromClauses(newQG, tl)
+          produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
 
         case Match(optional@true, pattern: Pattern, Seq(), optWhere) :: tl =>
           val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
@@ -193,24 +194,21 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val optionalMatch = QueryGraph(
             selections = selections,
             patternNodes = nodeIds.toSet,
-            subQueriesLookupTable = subQueries.toMap,
             patternRelationships = rels.toSet).addCoveredIdsAsProjections()
-
 
           val newQG = qg.withAddedOptionalMatch(optionalMatch)
 
-          produceQueryGraphFromClauses(newQG, tl)
+          produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
 
         case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
           val newQG: QueryGraph = QueryGraph(
             sortItems = produceSortItems(optOrderBy),
-            selections = selections,
-            subQueriesLookupTable = subQueries.toMap
+            selections = selections
           )
 
-          produceQueryGraphFromClauses(qg ++ newQG, tl)
+          produceQueryGraphFromClauses(qg ++ newQG, subQueryLookupTable ++ subQueries, tl)
 
         case With(false, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
           val projections = produceProjectionsMap(expressions)
@@ -226,14 +224,13 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
-          val tail = produceQueryGraphFromClauses(QueryGraph(
-            selections = selections,
-            subQueriesLookupTable = subQueries.toMap
-          ), tl)
-          newQG.withTail(tail)
+          val (tail, map) = produceQueryGraphFromClauses(QueryGraph(
+            selections = selections
+          ), subQueryLookupTable ++ subQueries.toMap, tl)
+          (newQG.withTail(tail), map)
 
         case Seq() =>
-          qg
+          (qg, subQueryLookupTable)
 
         case _ =>
           throw new CantHandleQueryException

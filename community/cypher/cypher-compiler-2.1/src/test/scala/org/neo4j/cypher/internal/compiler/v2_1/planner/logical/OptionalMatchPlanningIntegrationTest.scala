@@ -54,4 +54,22 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
       )
     )
   }
+
+  test("should build simple optional match plans") {
+    implicit val planContext = newMockedPlanContext
+    implicit val planner = newPlanner(newMockedMetricsFactory)
+    produceLogicalPlan("OPTIONAL MATCH a RETURN a") should equal(
+      Optional(AllNodesScan("a"))
+    )
+  }
+
+  // FIXME: Davide, Jakub 2014/5/8 - this is broken in ronja
+  ignore("should build simple optional match plans with expand") {
+    implicit val planContext = newMockedPlanContext
+    implicit val planner = newPlanner(newMockedMetricsFactory)
+    produceLogicalPlan("OPTIONAL MATCH a WITH a MATCH a-[r]->(b) RETURN a, r, b") should equal(
+      Expand(Optional(AllNodesScan("a")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)
+    )
+  }
+
 }

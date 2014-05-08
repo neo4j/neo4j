@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{AstConstructionTestSupport, RelTypeName, Query}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, AstConstructionTestSupport, RelTypeName, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.mockito.Mockito._
 import org.scalatest.mock.MockitoSugar
@@ -76,9 +76,10 @@ trait LogicalPlanningTestSupport
                                   metrics: Metrics = self.mock[Metrics],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
                                   queryGraph: QueryGraph = self.mock[QueryGraph],
+                                  subQueryLookupTable: Map[PatternExpression, QueryGraph] = Map.empty,
                                   strategy: PlanningStrategy = new GreedyPlanningStrategy()): LogicalPlanContext =
 
-    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
+    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, subQueryLookupTable, strategy)
 
   implicit class RichLogicalPlan(plan: QueryPlan) {
     def asTableEntry = plan.coveredIds -> plan
