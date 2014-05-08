@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -64,12 +70,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.Math.max;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -141,7 +141,7 @@ public class XaLogicalLog implements LogLoader
     private final LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
 
     /** Reusable log translation layer, can ONLY be used if you are synchronized. */
-    private final TranslatingEntryConsumer translatingEntryConsumer = new TranslatingEntryConsumer( transactionTranslator );
+    private final TranslatingEntryConsumer translatingEntryConsumer;
 
     private final LogReader<ReadableByteChannel> reader;
     private final LogReader<ReadableByteChannel> slaveLogReader;
@@ -210,6 +210,8 @@ public class XaLogicalLog implements LogLoader
                 new SlaveLogWriter(
                     new PositionCacheLogHandler( applier, positionCache, positionCacheSPI ),
                     logWriterSPI, logEntryWriter ) ) );
+
+        translatingEntryConsumer = new TranslatingEntryConsumer( transactionTranslator );
     }
 
     synchronized void open() throws IOException
@@ -656,7 +658,7 @@ public class XaLogicalLog implements LogLoader
     static long[] readAndAssertLogHeader( ByteBuffer localBuffer,
                                           ReadableByteChannel channel, long expectedVersion ) throws IOException
     {
-        long[] header = VersionAwareLogEntryReader.readLogHeader( localBuffer, channel, true );
+        long[] header = VersionAwareLogEntryReader.readLogHeader( localBuffer, channel, false );
         if ( header[0] != expectedVersion )
         {
             throw new IOException( "Wrong version in log. Expected " + expectedVersion +
@@ -675,7 +677,7 @@ public class XaLogicalLog implements LogLoader
         msgLog.info( "Non clean shutdown detected on log [" + logFileName +
                 "]. Recovery started ..." );
         // get log creation time
-        long[] header = readLogHeader( fileChannel, "Tried to do recovery on log with illegal format version" );
+        long[] header = readLogHeader( fileChannel, "Tried to do recovery on log with illegal format version", true );
         if ( header == null )
         {
             msgLog.info( "Unable to read header information, "
@@ -1041,11 +1043,11 @@ public class XaLogicalLog implements LogLoader
         };
     }
 
-    private long[] readLogHeader( ReadableByteChannel source, String message ) throws IOException
+    private long[] readLogHeader( ReadableByteChannel source, String message, boolean strict ) throws IOException
     {
         try
         {
-            return VersionAwareLogEntryReader.readLogHeader( sharedBuffer, source, true );
+            return VersionAwareLogEntryReader.readLogHeader( sharedBuffer, source, strict );
         }
         catch ( IllegalLogFormatException e )
         {

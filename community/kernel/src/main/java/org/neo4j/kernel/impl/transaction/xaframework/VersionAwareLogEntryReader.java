@@ -86,7 +86,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableByteCh
         long version = buffer.getLong();
         long previousCommittedTx = buffer.getLong();
         long logFormatVersion = ( version >> 56 ) & 0xFF;
-        if ( CURRENT_FORMAT_VERSION != logFormatVersion )
+        if ( (strict && CURRENT_FORMAT_VERSION != logFormatVersion ) || CURRENT_FORMAT_VERSION < logFormatVersion )
         {
             throw new IllegalLogFormatException( CURRENT_FORMAT_VERSION, logFormatVersion );
         }

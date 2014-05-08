@@ -56,7 +56,7 @@ public class DatabaseFiles
         try
         {
             StoreFile.move( fs, fromDirectory, toDirectory, storeFiles );
-            LogFiles.move( fs, fromDirectory, toDirectory );
+            // Log files remain. Since 2.1 Neo4j is log entry version aware, so it can read previous logs.
         }
         catch ( IOException e )
         {
