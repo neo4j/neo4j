@@ -45,8 +45,8 @@ object SimpleQueryGraphBuilder {
       val qg = QueryGraph(
         patternRelationships = relationships.toSet,
         patternNodes = patternNodes.toSet
-      ).addPredicates(predicates).addCoveredIdsAsProjections()
-      qg.copy(argumentIds = qg.coveredIds.filter(_.name.isNamed))
+      ).addPredicates(predicates: _*).addCoveredIdsAsProjections()
+      qg.addArgumentId(qg.coveredIds.filter(_.name.isNamed).toSeq)
     }
   }
 
@@ -168,10 +168,8 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val newQG = qg
             .withSortItems(sortItems)
             .withProjections(projections)
-            .copy(
-              limit = limit.map(_.expression),
-              skip = skip.map(_.expression)
-            )
+            .withLimit(limit.map(_.expression))
+            .withSkip(skip.map(_.expression))
 
           produceQueryGraphFromClauses(newQG, subQueryLookupTable, tl)
 
@@ -179,12 +177,11 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
           val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
-          val matchClause = QueryGraph(
-            selections = selections,
-            patternNodes = nodeIds.toSet,
-            patternRelationships = rels.toSet)
 
-          val newQG = qg ++ matchClause
+          val newQG = qg.
+            addSelections(selections).
+            addPatternNodes(nodeIds:_*).
+            addPatternRels(rels)
 
           produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
 
@@ -203,12 +200,11 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
         case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
-          val newQG: QueryGraph = QueryGraph(
-            sortItems = produceSortItems(optOrderBy),
-            selections = selections
-          )
+          val newQG: QueryGraph = qg.
+            withSortItems(sortItems = produceSortItems(optOrderBy)).
+            addSelections(selections)
 
-          produceQueryGraphFromClauses(qg ++ newQG, subQueryLookupTable ++ subQueries, tl)
+          produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
 
         case With(false, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
           val projections = produceProjectionsMap(expressions)
@@ -217,17 +213,17 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val newQG: QueryGraph = qg
             .withSortItems(sortItems)
             .withProjections(projections)
-            .copy(
-              limit = limit.map(_.expression),
-              skip = skip.map(_.expression)
-            )
+            .withSkip(skip.map(_.expression))
+            .withLimit(limit.map(_.expression))
 
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
-          val (tail, map) = produceQueryGraphFromClauses(QueryGraph(
-            selections = selections
-          ), subQueryLookupTable ++ subQueries.toMap, tl)
-          (newQG.withTail(tail), map)
+          val (tailQG, map) = produceQueryGraphFromClauses(
+            QueryGraph(selections = selections),
+            subQueryLookupTable ++ subQueries.toMap,
+            tl)
+
+          (newQG.withTail(tailQG), map)
 
         case Seq() =>
           (qg, subQueryLookupTable)

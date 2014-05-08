@@ -55,7 +55,8 @@ object projection extends PlanTransformer {
 
     val solved = plan.solved
       .withSortItems(context.queryGraph.sortItems)
-      .copy(skip = context.queryGraph.skip, limit = context.queryGraph.limit)
+      .withSkip(context.queryGraph.skip)
+      .withLimit(context.queryGraph.limit)
 
     projectIfNeeded(QueryPlan(sortSkipAndLimit, solved), queryGraph.projections)
   }

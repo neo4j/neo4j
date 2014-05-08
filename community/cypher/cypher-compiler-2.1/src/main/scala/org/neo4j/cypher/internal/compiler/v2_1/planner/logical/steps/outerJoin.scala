@@ -31,7 +31,7 @@ object outerJoin extends CandidateGenerator[PlanTable] {
       optionalQG <- context.queryGraph.optionalMatches
       lhs <- planTable.plans if applicable(lhs, optionalQG)
     } yield {
-      val innerLogicalPlanContext = context.copy(queryGraph = optionalQG.copy(argumentIds = Set.empty))
+      val innerLogicalPlanContext = context.copy(queryGraph = optionalQG.withoutArguments)
       val rhs = context.strategy.plan(innerLogicalPlanContext)
       planOuterHashJoin(optionalQG.argumentIds.head, lhs, rhs)
     }
