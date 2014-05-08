@@ -66,6 +66,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveIntIteratorForArray;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -304,7 +305,7 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodeGetUniqueFromIndexLookup(
+    public PrimitiveLongResourceIterator nodeGetUniqueFromIndexLookup(
             KernelStatement state,
             IndexDescriptor index,
             Object value )

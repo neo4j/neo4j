@@ -59,12 +59,14 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveIntIterator;
 import org.neo4j.kernel.impl.util.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.Collections.emptyList;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.option;
 import static org.neo4j.helpers.collection.IteratorUtil.filter;
+import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.helpers.collection.IteratorUtil.toPrimitiveIntIterator;
@@ -446,9 +448,10 @@ public class StateHandlingStatementOperations implements
             Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        PrimitiveLongIterator committed = storeLayer.nodeGetUniqueFromIndexLookup( state, index, value );
+        PrimitiveLongResourceIterator committed = storeLayer.nodeGetUniqueFromIndexLookup( state, index, value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, exactMatches );
+        PrimitiveLongIterator exactMatchesResource = resourceIterator( exactMatches, committed );
+        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, exactMatchesResource );
         return single( changeFilteredMatches, NO_SUCH_NODE );
     }
 

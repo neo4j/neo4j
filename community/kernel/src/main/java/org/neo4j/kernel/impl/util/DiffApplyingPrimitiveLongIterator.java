@@ -22,7 +22,13 @@ package org.neo4j.kernel.impl.util;
 import java.util.Iterator;
 import java.util.Set;
 
-public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLongIterator
+import org.neo4j.graphdb.Resource;
+
+/**
+ * Applies a diffset to the given source PrimitiveLongIterator.
+ * If the given source is a Resource, then so is this DiffApplyingPrimitiveLongIterator.
+ */
+public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLongIterator implements Resource
 {
     private enum Phase
     {
@@ -111,6 +117,15 @@ public final class DiffApplyingPrimitiveLongIterator extends AbstractPrimitiveLo
         else
         {
             endReached();
+        }
+    }
+
+    @Override
+    public void close()
+    {
+        if ( source instanceof Resource )
+        {
+            ((Resource) source).close();
         }
     }
 }
