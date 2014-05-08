@@ -142,6 +142,48 @@ public class SchemaTransactionStateTest
     }
 
     @Test
+    public void shouldReturnNonExistentRuleAddedInTransactionFromLookup() throws Exception
+    {
+        // GIVEN
+        // -- the store already have an index on the label and a different property
+        IndexDescriptor existingRule1 = new IndexDescriptor( labelId1, key1 );
+        when( store.indexesGetForLabelAndPropertyKey( state, labelId1, key1 ) ).thenReturn( existingRule1 );
+        // -- the store already have an index on a different label with the same property
+        IndexDescriptor existingRule2 = new IndexDescriptor( labelId2, key2 );
+        when( store.indexesGetForLabelAndPropertyKey( state, labelId2, key2 ) ).thenReturn( existingRule2 );
+        // -- a non-existent rule has been added in the transaction
+        txContext.indexCreate( state, labelId1, key2 );
+
+        // WHEN
+        IndexDescriptor rule = txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key2 );
+
+        // THEN
+        assertEquals( new IndexDescriptor( labelId1, key2 ), rule );
+    }
+
+    @Test
+    public void shouldNotReturnRulesAddedInTransactionWithDifferentLabelOrPropertyFromLookup() throws Exception
+    {
+        // GIVEN
+        // -- the store already have an index on the label and a different property
+        IndexDescriptor existingRule1 = new IndexDescriptor( labelId1, key1 );
+        when( store.indexesGetForLabelAndPropertyKey( state, labelId1, key1 ) ).thenReturn( existingRule1 );
+        // -- the store already have an index on a different label with the same property
+        IndexDescriptor existingRule2 = new IndexDescriptor( labelId2, key2 );
+        when( store.indexesGetForLabelAndPropertyKey( state, labelId2, key2 ) ).thenReturn( existingRule2 );
+        // -- a non-existent rule has been added in the transaction
+        txContext.indexCreate( state, labelId1, key2 );
+
+        // WHEN
+        IndexDescriptor lookupRule1 = txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key1 );
+        IndexDescriptor lookupRule2 = txContext.indexesGetForLabelAndPropertyKey( state, labelId2, key2 );
+
+        // THEN
+        assertEquals( existingRule1, lookupRule1 );
+        assertEquals( existingRule2, lookupRule2 );
+    }
+
+    @Test
     public void shouldNotReturnExistentRuleDroppedInTransaction() throws Exception
     {
         // GIVEN
