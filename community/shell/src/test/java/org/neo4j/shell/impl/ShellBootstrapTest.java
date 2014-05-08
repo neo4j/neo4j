@@ -20,17 +20,13 @@
 package org.neo4j.shell.impl;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.shell.kernel.GraphDatabaseShellServer;
 
 import static java.lang.Boolean.TRUE;
 import static java.lang.String.valueOf;
-
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-
+import static org.mockito.Mockito.*;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ShellBootstrapTest
