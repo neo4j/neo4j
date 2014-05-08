@@ -25,8 +25,16 @@ import java.util.Random;
 
 public final class StoreId
 {
-    private static final Random r = new SecureRandom();
+    public static final int SIZE_IN_BYTES = 8 + 8 + 8; // creation time + random + store version (fixed value)
+
+    /*
+     * This field represents the store version of the last Neo4j version which had the store version as part of
+     * the StoreId (2.0.1). This field is now deprecated but is not removed. Fixing it to this value ensures
+     * rolling upgrades can happen.
+     */
     private static final long storeVersionAsLong = NeoStore.versionStringToLong( "0.A.1" );
+
+    private static final Random r = new SecureRandom();
 
     private final long creationTime;
     private final long randomId;
