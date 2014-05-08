@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
+import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 /**
  * Abstraction for reading committed data.
@@ -105,7 +106,7 @@ public interface StoreReadLayer
 
     Iterator<UniquenessConstraint> constraintsGetAll();
 
-    PrimitiveLongIterator nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index,
+    PrimitiveLongResourceIterator nodeGetUniqueFromIndexLookup( KernelStatement state, IndexDescriptor index,
                                                         Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException;
 

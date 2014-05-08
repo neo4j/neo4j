@@ -19,23 +19,25 @@
  */
 package org.neo4j.server.enterprise;
 
-import static org.apache.http.HttpStatus.SC_FORBIDDEN;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.server.webadmin.rest.MasterInfoService.BASE_PATH;
-import static org.neo4j.server.webadmin.rest.MasterInfoService.IS_MASTER_PATH;
-import static org.neo4j.server.webadmin.rest.MasterInfoService.IS_SLAVE_PATH;
-import static org.neo4j.test.server.ha.EnterpriseServerHelper.createNonPersistentServer;
-
 import java.io.IOException;
 import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.server.helpers.FunctionalTestHelper;
 import org.neo4j.server.rest.JaxRsResponse;
 import org.neo4j.server.rest.RestRequest;
 import org.neo4j.server.rest.domain.JsonHelper;
+
+import static org.apache.http.HttpStatus.SC_FORBIDDEN;
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.server.webadmin.rest.MasterInfoService.BASE_PATH;
+import static org.neo4j.server.webadmin.rest.MasterInfoService.IS_MASTER_PATH;
+import static org.neo4j.server.webadmin.rest.MasterInfoService.IS_SLAVE_PATH;
+import static org.neo4j.test.server.ha.EnterpriseServerHelper.createNonPersistentServer;
 
 public class StandaloneHaInfoFunctionalTest
 {
