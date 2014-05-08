@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.{bottomUp, AggregatingFunction, R
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.CountStar
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.AggregationNameGenerator
 
 /**
  * This rewriter makes sure that aggregations are on their own in RETURN/WITH clauses, so
@@ -60,7 +61,7 @@ case object isolateAggregation extends Rewriter {
 
           val withReturnItems: Seq[ReturnItem] = expressionsToGoToWith.map {
             case id:Identifier => AliasedReturnItem(id, id)(id.position)
-            case e             => AliasedReturnItem(e, Identifier("  T$" + e.position.offset)(e.position))(e.position)
+            case e             => AliasedReturnItem(e, Identifier(AggregationNameGenerator.name(e.position.offset))(e.position))(e.position)
           }
           val pos = c.position
           val withClause = With(distinct = false, ListedReturnItems(withReturnItems)(pos), None, None, None, None)(pos)
