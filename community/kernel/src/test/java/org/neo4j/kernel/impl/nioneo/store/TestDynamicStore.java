@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -46,6 +41,12 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 public class TestDynamicStore
 {
@@ -124,7 +125,7 @@ public class TestDynamicStore
     private DynamicArrayStore newStore()
     {
         return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY,
-                WINDOW_POOL_FACTORY, fs.get(), StringLogger.DEV_NULL );
+                WINDOW_POOL_FACTORY, fs.get(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.THROW_EXCEPTION );
     }
 
     private void deleteBothFiles()

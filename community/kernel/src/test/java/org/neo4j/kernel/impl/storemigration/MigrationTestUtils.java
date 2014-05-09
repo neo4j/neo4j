@@ -123,6 +123,11 @@ public class MigrationTestUtils
         return Unzip.unzip( LegacyStore.class, "exampledb.zip" );
     }
 
+    public static File findOldFormatStoreDirectory( File unzipTarget ) throws IOException
+    {
+        return Unzip.unzip( LegacyStore.class, "exampledb.zip", unzipTarget );
+    }
+
     public static boolean allStoreFilesHaveVersion( FileSystemAbstraction fileSystem, File workingDirectory,
             String version ) throws IOException
     {
@@ -205,19 +210,6 @@ public class MigrationTestUtils
                 }
             }
         }
-    }
-
-    static class AlwaysAllowedUpgradeConfiguration implements UpgradeConfiguration
-    {
-        @Override
-        public void checkConfigurationAllowsAutomaticUpgrade()
-        {
-        }
-    }
-
-    public static UpgradeConfiguration alwaysAllowed()
-    {
-        return new AlwaysAllowedUpgradeConfiguration();
     }
 
     public static File isolatedMigrationDirectoryOf( File dbDirectory )

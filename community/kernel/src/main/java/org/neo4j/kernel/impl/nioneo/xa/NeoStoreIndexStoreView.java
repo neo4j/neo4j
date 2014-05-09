@@ -60,9 +60,14 @@ public class NeoStoreIndexStoreView implements IndexStoreView
 
     public NeoStoreIndexStoreView( LockService locks, NeoStore neoStore )
     {
+        this( locks, neoStore.getNodeStore(), neoStore.getPropertyStore() );
+    }
+
+    public NeoStoreIndexStoreView( LockService locks, NodeStore nodeStore, PropertyStore propertyStore )
+    {
         this.locks = locks;
-        this.propertyStore = neoStore.getPropertyStore();
-        this.nodeStore = neoStore.getNodeStore();
+        this.propertyStore = propertyStore;
+        this.nodeStore = nodeStore;
     }
 
     @Override

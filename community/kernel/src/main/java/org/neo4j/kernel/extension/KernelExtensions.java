@@ -34,6 +34,7 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleException;
@@ -103,7 +104,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
                 extensions.put( kernelExtensionFactory.getKeys(),
                         life.add( kernelExtensionFactory.newKernelExtension( configuration ) ) );
             }
-            catch ( UnsatisfiedDepencyException e )
+            catch ( UnsatisfiedDependencyException e )
             {
                 unsatisfiedDepencyStrategy.handle( kernelExtensionFactory, e );
             }
@@ -246,7 +247,7 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
             }
             catch ( IllegalArgumentException e )
             {
-                throw new UnsatisfiedDepencyException( e );
+                throw new UnsatisfiedDependencyException( e );
             }
         }
     }
@@ -264,14 +265,6 @@ public class KernelExtensions extends DependencyResolver.Adapter implements Life
         public T apply( Object o )
         {
             return type.cast( o );
-        }
-    }
-    
-    static class UnsatisfiedDepencyException extends RuntimeException
-    {
-        public UnsatisfiedDepencyException( Throwable cause )
-        {
-            super( cause );
         }
     }
 }

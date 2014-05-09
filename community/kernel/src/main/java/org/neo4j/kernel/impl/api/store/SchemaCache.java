@@ -51,7 +51,7 @@ import static org.neo4j.helpers.collection.Iterables.filter;
 public class SchemaCache
 {
     private final Map<Integer, Map<Long,SchemaRule>> rulesByLabelMap = new HashMap<>();
-    private final Map<Long, SchemaRule> ruleByIdMap = new HashMap<>();
+    private final Map<Long, SchemaRule> rulesByIdMap = new HashMap<>();
 
     private final Collection<UniquenessConstraint> constraints = new HashSet<>();
     private final Map<Integer, Map<Integer, CommittedIndexDescriptor>> indexDescriptors = new HashMap<>();
@@ -131,7 +131,7 @@ public class SchemaCache
     public void addSchemaRule( SchemaRule rule )
     {
         getOrCreateSchemaRulesMapForLabel( rule.getLabel() ).put( rule.getId(), rule );
-        ruleByIdMap.put( rule.getId(), rule );
+        rulesByIdMap.put( rule.getId(), rule );
 
         // Note: If you start adding more unmarshalling of other types of things here,
         // make this into a more generic thing rather than adding more branch statement.
@@ -151,7 +151,7 @@ public class SchemaCache
                     indexRule.getPropertyKey(), indexRule.getId() ) );
         }
     }
-    
+
     // We could have had this class extend IndexDescriptor instead. That way we could have gotten the id
     // from an IndexDescriptor instance directly. The problem is that it would only work for index descriptors
     // instantiated by a SchemaCache. Perhaps that is always the case. Anyways, doing it like that resulted
@@ -167,12 +167,12 @@ public class SchemaCache
             this.descriptor = new IndexDescriptor( labelId, propertyKey );
             this.id = id;
         }
-        
+
         public IndexDescriptor getDescriptor()
         {
             return descriptor;
         }
-        
+
         public long getId()
         {
             return id;
@@ -181,7 +181,7 @@ public class SchemaCache
 
     public void removeSchemaRule( long id )
     {
-        SchemaRule rule = ruleByIdMap.remove( id );
+        SchemaRule rule = rulesByIdMap.remove( id );
         if ( rule == null )
         {
             return;
@@ -243,5 +243,15 @@ public class SchemaCache
             }
         }
         throw new SchemaRuleNotFoundException( labelId, propertyKey, "No such index found" );
+    }
+
+    public IndexDescriptor indexDescriptor( long indexId ) throws SchemaRuleNotFoundException
+    {
+        SchemaRule rule = rulesByIdMap.get( indexId );
+        if ( rule instanceof IndexRule )
+        {
+            return indexDescriptor( rule.getLabel(), ((IndexRule) rule).getPropertyKey() );
+        }
+        throw new SchemaRuleNotFoundException( "No index descriptor for schema rule " + indexId );
     }
 }

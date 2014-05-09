@@ -19,9 +19,10 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.neo4j.kernel.extension.KernelExtensions.UnsatisfiedDepencyException;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+
 
 public interface UnsatisfiedDependencyStrategy
 {
-    void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDepencyException e );
+    void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e );
 }

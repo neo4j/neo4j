@@ -17,33 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.extension;
+package org.neo4j.kernel.impl.nioneo.store;
 
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
-
-
-public class UnsatisfiedDependencyStrategies
+public interface StoreVersionMismatchHandler
 {
-    public static UnsatisfiedDependencyStrategy fail()
+    void mismatch( String expected, String found );
+
+    public static final StoreVersionMismatchHandler THROW_EXCEPTION = new StoreVersionMismatchHandler()
     {
-        return new UnsatisfiedDependencyStrategy()
+        @Override
+        public void mismatch( String expected, String found )
         {
-            @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e )
-            {
-                throw e;
-            }
-        };
-    }
-    
-    public static UnsatisfiedDependencyStrategy ignore()
+            throw new NotCurrentStoreVersionException( expected, found, "", false );
+        }
+    };
+
+    public static final StoreVersionMismatchHandler ACCEPT = new StoreVersionMismatchHandler()
     {
-        return new UnsatisfiedDependencyStrategy()
-        {
-            @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e )
-            {
-            }
-        };
-    }
+        @Override
+        public void mismatch( String expected, String found )
+        {   // Dangerous, but used for dependency satisfaction during store migration
+        }
+    };
 }

@@ -59,6 +59,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
   }
 
   private def createDbWithFailedIndex: GraphDatabaseService = {
+    new File("target/test-data/impermanent-db").deleteAll()
     var graph = new GraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db")
     engine = new ExecutionEngine(graph)
     execute("CREATE INDEX ON :Person(name)")

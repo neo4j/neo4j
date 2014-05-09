@@ -22,4 +22,12 @@ package org.neo4j.kernel.impl.storemigration;
 public interface UpgradeConfiguration
 {
     void checkConfigurationAllowsAutomaticUpgrade();
+
+    public static final UpgradeConfiguration ALLOW_UPGRADE = new UpgradeConfiguration()
+    {
+        @Override
+        public void checkConfigurationAllowsAutomaticUpgrade()
+        {   // I'm silently agreeing to allow upgrade
+        }
+    };
 }
