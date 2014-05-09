@@ -605,9 +605,9 @@ public class MultiPaxosContext
             else
             {
                 getLogger( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
-                this.electorVersion = version;
-                this.lastElector = electorId;
             }
+            this.electorVersion = version;
+            this.lastElector = electorId;
             configuration.elected( roleName, instanceId );
             Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
             {
