@@ -20,11 +20,14 @@
 package files;
 
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.management.MBeanServer;
 import javax.management.ObjectName;
 
 import org.junit.After;
+import org.junit.Assume;
 import org.junit.Before;
+import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -32,6 +35,7 @@ import org.neo4j.cypher.javacompat.ExecutionEngine;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.helpers.Settings;
 import org.neo4j.test.TargetDirectory;
 
 import static java.lang.management.ManagementFactory.getPlatformMBeanServer;
@@ -58,6 +62,12 @@ public class TestNoFileDescriptorLeaks
     private MBeanServer jmx;
     private ObjectName osMBean;
     private ExecutionEngine cypher;
+
+    @BeforeClass
+    public static void beforeClass()
+    {
+        Assume.assumeFalse( Settings.osIsWindows() );
+    }
 
     @Before
     public void setUp() throws Exception
