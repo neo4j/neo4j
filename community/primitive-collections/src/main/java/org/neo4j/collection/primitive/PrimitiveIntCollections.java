@@ -28,6 +28,8 @@ import org.neo4j.function.primitive.PrimitiveIntPredicate;
 
 import static java.util.Arrays.copyOf;
 
+import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
+
 /**
  * Basic and common primitive int collection utils and manipulations.
  *
@@ -69,7 +71,7 @@ public class PrimitiveIntCollections
         protected abstract boolean fetchNext();
 
         /**
-         * Called from inside an implementation of {@link #computeNext()} if a next item was found.
+         * Called from inside an implementation of {@link #fetchNext()} if a next item was found.
          * This method returns {@code true} so that it can be used in short-hand conditionals
          * (TODO what are they called?), like:
          * <pre>
@@ -80,7 +82,6 @@ public class PrimitiveIntCollections
          * }
          * </pre>
          * @param nextItem the next item found.
-         * @see #end()
          */
         protected boolean next( int nextItem )
         {
@@ -445,29 +446,48 @@ public class PrimitiveIntCollections
 
     public static int single( PrimitiveIntIterator iterator )
     {
-        assertMoreItems( iterator );
-        int item = iterator.next();
-        if ( iterator.hasNext() )
+        try
         {
-            throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
-                    ", second:" + iterator.next() );
+            assertMoreItems( iterator );
+            int item = iterator.next();
+            if ( iterator.hasNext() )
+            {
+                throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
+                        ", second:" + iterator.next() );
+            }
+            closeSafely( iterator );
+            return item;
         }
-        return item;
+        catch ( NoSuchElementException exception )
+        {
+            closeSafely( iterator, exception );
+            throw exception;
+        }
     }
 
     public static int single( PrimitiveIntIterator iterator, int defaultItem )
     {
-        if ( !iterator.hasNext() )
+        try
         {
-            return defaultItem;
+            if ( !iterator.hasNext() )
+            {
+                closeSafely( iterator );
+                return defaultItem;
+            }
+            int item = iterator.next();
+            if ( iterator.hasNext() )
+            {
+                throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
+                        ", second:" + iterator.next() );
+            }
+            closeSafely( iterator );
+            return item;
         }
-        int item = iterator.next();
-        if ( iterator.hasNext() )
+        catch ( NoSuchElementException exception )
         {
-            throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
-                    ", second:" + iterator.next() );
+            closeSafely( iterator, exception );
+            throw exception;
         }
-        return item;
     }
 
     public static int itemAt( PrimitiveIntIterator iterator, int index )

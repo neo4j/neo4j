@@ -21,6 +21,7 @@ package org.neo4j.collection.primitive;
 
 import java.util.Arrays;
 import java.util.NoSuchElementException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
@@ -313,6 +314,83 @@ public class PrimitiveIntCollectionsTest
         {   // Good
             assertThat( e.getMessage(), containsString( "More than one" ) );
         }
+    }
+
+    private static final class CountingPrimitiveIntIteratorResource implements PrimitiveIntIterator, AutoCloseable
+    {
+        private final PrimitiveIntIterator delegate;
+        private final AtomicInteger closeCounter;
+
+        private CountingPrimitiveIntIteratorResource( PrimitiveIntIterator delegate, AtomicInteger closeCounter )
+        {
+            this.delegate = delegate;
+            this.closeCounter = closeCounter;
+        }
+
+        @Override
+        public void close() throws Exception
+        {
+            closeCounter.incrementAndGet();
+        }
+
+        @Override
+        public boolean hasNext()
+        {
+            return delegate.hasNext();
+        }
+
+        @Override
+        public int next()
+        {
+            return delegate.next();
+        }
+    }
+
+    @Test
+    public void singleMustAutoCloseIterator()
+    {
+        AtomicInteger counter = new AtomicInteger();
+        CountingPrimitiveIntIteratorResource itr = new CountingPrimitiveIntIteratorResource(
+                PrimitiveIntCollections.iterator( 13 ), counter );
+        assertEquals( PrimitiveIntCollections.single( itr ), 13 );
+        assertEquals( 1, counter.get() );
+    }
+
+    @Test
+    public void singleWithDefaultMustAutoCloseIterator()
+    {
+        AtomicInteger counter = new AtomicInteger();
+        CountingPrimitiveIntIteratorResource itr = new CountingPrimitiveIntIteratorResource(
+                PrimitiveIntCollections.iterator( 13 ), counter );
+        assertEquals( PrimitiveIntCollections.single( itr, 2 ), 13 );
+        assertEquals( 1, counter.get() );
+    }
+
+    @Test
+    public void singleMustAutoCloseEmptyIterator()
+    {
+        AtomicInteger counter = new AtomicInteger();
+        CountingPrimitiveIntIteratorResource itr = new CountingPrimitiveIntIteratorResource(
+                PrimitiveIntCollections.emptyIterator(), counter );
+        try
+        {
+            PrimitiveIntCollections.single( itr );
+            fail( "single() on empty iterator should have thrown" );
+        }
+        catch ( NoSuchElementException ignore )
+        {
+        }
+        assertEquals( 1, counter.get() );
+    }
+
+    @Test
+    public void singleWithDefaultMustAutoCloseEmptyIterator()
+    {
+        AtomicInteger counter = new AtomicInteger();
+        CountingPrimitiveIntIteratorResource itr = new CountingPrimitiveIntIteratorResource(
+                PrimitiveIntCollections.emptyIterator(), counter );
+        assertEquals( PrimitiveIntCollections.single( itr, 2 ), 2 );
+        assertEquals( 1, counter.get() );
     }
 
     @Test
