@@ -78,6 +78,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.PropertyReceiver;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.LockManager;
@@ -208,7 +209,8 @@ public class TestNeoStore
                 dependencyResolverForNoIndexProvider( nodeManager ), mock( AbstractTransactionManager.class),
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
                 mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), locks,
-                mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class), IndexingService.NO_MONITOR, fs );
+                mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class), IndexingService.NO_MONITOR, fs,
+                mock( StoreUpgrader.class ) );
         ds.init();
         ds.start();
 

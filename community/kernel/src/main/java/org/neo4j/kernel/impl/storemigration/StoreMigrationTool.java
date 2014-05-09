@@ -20,77 +20,98 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.io.IOException;
-import java.util.HashMap;
-import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
+import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
+import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
+
+import static java.lang.String.format;
+
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.ignore;
+import static org.neo4j.kernel.impl.storemigration.StoreUpgrader.NO_MONITOR;
 
 /**
  * Stand alone tool for migrating/upgrading a neo4j database from one version to the next.
- * 
+ *
  * @see StoreMigrator
  */
 public class StoreMigrationTool
 {
-    public static void main( String[] args ) throws IOException
+    public static void main( String[] args )
     {
         String legacyStoreDirectory = args[0];
-        String targetStoreDirectory = args[1];
-
-        new StoreMigrationTool().run( legacyStoreDirectory, targetStoreDirectory, StringLogger.SYSTEM );
+        new StoreMigrationTool().run( legacyStoreDirectory, new Config(), StringLogger.SYSTEM, NO_MONITOR );
     }
 
-    private void run( String legacyStoreDirectory, String targetStoreDirectory, StringLogger log ) throws IOException
+    public void run( String legacyStoreDirectory, Config config, StringLogger log, StoreUpgrader.Monitor monitor )
     {
-        LegacyStore legacyStore = new LegacyStore( new DefaultFileSystemAbstraction(),
-                new File( new File( legacyStoreDirectory ), NeoStore.DEFAULT_NAME ) );
+        FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        StoreUpgrader migrationProcess = new StoreUpgrader( new ConfigMapUpgradeConfiguration( config ), fs, monitor );
 
-        Map<String, String> config = new HashMap<String, String>();
+        // Add the kernel store migrator
+        config = StoreFactory.configForStoreDir( config, new File( legacyStoreDirectory ) );
+        migrationProcess.addParticipant( new StoreMigrator( new VisibleMigrationProgressMonitor( log, System.out ),
+                new UpgradableDatabase( new StoreVersionCheck( fs ) ),
+                new DefaultIdGeneratorFactory(), config ) );
 
-        File targetStoreDirectoryFile = new File( targetStoreDirectory );
-        if ( targetStoreDirectoryFile.exists() )
+        // Add participants from kernel extensions...
+        LifeSupport life = new LifeSupport();
+        KernelExtensions kernelExtensions = life.add( new KernelExtensions(
+                new DefaultGraphDatabaseDependencies().kernelExtensions(), config,
+                kernelExtensionDependencyResolver( fs, config ), ignore() ) );
+        life.start();
+        // ... TODO although hard coded to SchemaIndexProvider a.t.m.
+        try
         {
-            throw new IllegalStateException( "Cannot migrate to a directory that already exists, " +
-                    "please delete first and re-run" );
+            SchemaIndexProvider schemaIndexProvider = kernelExtensions.resolveDependency( SchemaIndexProvider.class,
+                    SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+            migrationProcess.addParticipant( schemaIndexProvider.storeMigrationParticipant() );
         }
-        boolean success = targetStoreDirectoryFile.mkdirs();
-        if ( !success )
+        catch ( IllegalArgumentException e )
+        {   // That's fine actually, no schema index provider on the classpath or something
+        }
+
+        // Perform the migration
+        try
         {
-            throw new IllegalStateException( "Failed to create directory" );
+            long startTime = System.currentTimeMillis();
+            migrationProcess.migrateIfNeeded( new File( legacyStoreDirectory ) );
+            long duration = System.currentTimeMillis() - startTime;
+            log.info( format( "Migration completed in %d s%n", duration / 1000 ) );
         }
+        finally
+        {
+            life.shutdown();
+        }
+    }
 
-        File targetStoreFile = new File( targetStoreDirectory, NeoStore.DEFAULT_NAME );
-        config.put( "neo_store", targetStoreFile.getPath() );
-        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-
-        NeoStore neoStore = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fileSystem, log, null ).createNeoStore( targetStoreFile );
-
-        long startTime = System.currentTimeMillis();
-
-        new StoreMigrator( new VisibleMigrationProgressMonitor( log, System.out ) ).migrate( legacyStore, neoStore );
-
-        long duration = System.currentTimeMillis() - startTime;
-        System.out.printf( "Migration completed in %d s%n", duration / 1000 );
-
-        neoStore.close();
-
-        GraphDatabaseService database =
-                new GraphDatabaseFactory().newEmbeddedDatabase( targetStoreDirectoryFile.getPath() );
-        database.shutdown();
+    private DependencyResolver kernelExtensionDependencyResolver(
+            final FileSystemAbstraction fileSystem, final Config config )
+    {
+        return new DependencyResolver.Adapter()
+        {
+            @Override
+            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
+            {
+                if ( type.isInstance( fileSystem ) )
+                {
+                    return type.cast( fileSystem );
+                }
+                if ( type.isInstance( config ) )
+                {
+                    return type.cast( config );
+                }
+                throw new IllegalArgumentException( type.toString() );
+            }
+        };
     }
 }

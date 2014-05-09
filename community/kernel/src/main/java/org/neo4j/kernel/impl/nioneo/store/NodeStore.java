@@ -71,12 +71,13 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     private DynamicArrayStore dynamicLabelStore;
 
-    public NodeStore(File fileName, Config config,
+    public NodeStore( File fileName, Config config,
                      IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                      FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                     DynamicArrayStore dynamicLabelStore )
+                     DynamicArrayStore dynamicLabelStore, StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super(fileName, config, IdType.NODE, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger);
+        super( fileName, config, IdType.NODE, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+                stringLogger, versionMismatchHandler );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 
@@ -308,7 +309,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
             // [xxxx,    ] higher bits for prop id
             short inUseUnsignedByte = ( record.inUse() ? Record.IN_USE : Record.NOT_IN_USE ).byteValue();
             inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
-            
+
             buffer.put( (byte) inUseUnsignedByte ).putInt( (int) nextRel ).putInt( (int) nextProp );
 
             // lsb of labels
@@ -316,7 +317,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
             buffer.putInt( (int) labelField );
             // msb of labels
             buffer.put( (byte) ((labelField&0xFF00000000L) >> 32) );
-            
+
             byte extra = record.isDense() ? (byte)1 : (byte)0;
             buffer.put( extra );
         }

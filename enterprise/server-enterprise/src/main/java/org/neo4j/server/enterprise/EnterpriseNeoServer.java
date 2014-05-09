@@ -27,11 +27,13 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.InterruptThreadTimer;
 import org.neo4j.server.advanced.AdvancedNeoServer;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
+import org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import org.neo4j.server.modules.ServerModule;
 import org.neo4j.server.preflight.EnsurePreparedForHttpLogging;
 import org.neo4j.server.preflight.PerformRecoveryIfNecessary;
@@ -46,7 +48,6 @@ import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterables.mix;
 import static org.neo4j.server.configuration.Configurator.DB_MODE_KEY;
 import static org.neo4j.server.database.LifecycleManagingDatabase.EMBEDDED;
-import static org.neo4j.server.database.LifecycleManagingDatabase.GraphFactory;
 import static org.neo4j.server.database.LifecycleManagingDatabase.lifecycleManagingDatabase;
 
 public class EnterpriseNeoServer extends AdvancedNeoServer
@@ -93,7 +94,7 @@ public class EnterpriseNeoServer extends AdvancedNeoServer
                 //new EnsureEnterpriseNeo4jPropertiesExist(configurator.configuration()),
                 new EnsurePreparedForHttpLogging(configurator.configuration()),
                 new PerformUpgradeIfNecessary(getConfiguration(),
-                        configurator.getDatabaseTuningProperties(), System.out, logging ),
+                        configurator.getDatabaseTuningProperties(), logging, StoreUpgrader.NO_MONITOR ),
                 new PerformRecoveryIfNecessary(getConfiguration(),
                         configurator.getDatabaseTuningProperties(), System.out, logging ));
     }

@@ -20,45 +20,41 @@
 package org.neo4j.server.preflight;
 
 import java.io.File;
-import java.io.PrintStream;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.CurrentDatabase;
-import org.neo4j.kernel.impl.storemigration.DatabaseFiles;
-import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationTool;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.UpgradeNotAllowedByConfigurationException;
-import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+
 public class PerformUpgradeIfNecessary implements PreflightTask
 {
     private String failureMessage = "Unable to upgrade database";
     private final Configuration config;
-    private final PrintStream out;
     private final Map<String, String> dbConfig;
     private final ConsoleLogger log;
+    private final Monitor monitor;
 
-    public PerformUpgradeIfNecessary( Configuration serverConfig, Map<String, String> dbConfig, PrintStream out,
-            Logging logging )
+    public PerformUpgradeIfNecessary( Configuration serverConfig, Map<String, String> dbConfig,
+            Logging logging, StoreUpgrader.Monitor monitor )
     {
         this.config = serverConfig;
         this.dbConfig = dbConfig;
-        this.out = out;
+        this.monitor = monitor;
         this.log = logging.getConsoleLog( getClass() );
     }
 
@@ -75,31 +71,23 @@ public class PerformUpgradeIfNecessary implements PreflightTask
                 return true;
             }
 
-            File store = new File( dbLocation, NeoStore.DEFAULT_NAME);
-            dbConfig.put( "store_dir", dbLocation );
-            dbConfig.put( "neo_store", store.getPath() );
-
+            File storeDir = new File( dbLocation );
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             UpgradableDatabase upgradableDatabase = new UpgradableDatabase( new StoreVersionCheck( fileSystem ) );
-            if ( !upgradableDatabase.storeFilesUpgradeable( store ) )
+            if ( !upgradableDatabase.storeFilesUpgradeable( storeDir ) )
             {
                 return true;
             }
 
-            Config conf = new Config( dbConfig, GraphDatabaseSettings.class );
-            StoreUpgrader storeUpgrader = new StoreUpgrader( conf,
-                    new ConfigMapUpgradeConfiguration( conf ),
-                    upgradableDatabase, new StoreMigrator( new VisibleMigrationProgressMonitor( StringLogger.DEV_NULL, out ) ),
-                    new DatabaseFiles( fileSystem ), new DefaultIdGeneratorFactory(), fileSystem );
-
             try
             {
-                storeUpgrader.attemptUpgrade( store );
+                new StoreMigrationTool().run( dbLocation,
+                        configForStoreDir( new Config( dbConfig ), storeDir ), StringLogger.SYSTEM, monitor );
             }
             catch ( UpgradeNotAllowedByConfigurationException e )
             {
                 log.log( e.getMessage() );
-                out.println( e.getMessage() );
+                System.out.println( e.getMessage() );
                 failureMessage = e.getMessage();
                 return false;
             }

@@ -73,9 +73,11 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
 
     public AbstractDynamicStore( File fileName, Config conf, IdType idType,
                                  IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                                 FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
+                                 FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                                 StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger );
+        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
+                versionMismatchHandler );
         this.conf = conf;
         this.recordAllocator = new ExistingThenNewRecordAllocator( this, this );
     }

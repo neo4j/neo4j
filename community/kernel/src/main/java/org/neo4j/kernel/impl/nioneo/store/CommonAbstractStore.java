@@ -80,6 +80,7 @@ public abstract class CommonAbstractStore implements IdSequence
     private boolean readOnly = false;
     private boolean backupSlave = false;
     private long highestUpdateRecordId = -1;
+    private final StoreVersionMismatchHandler versionMismatchHandler;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -98,7 +99,8 @@ public abstract class CommonAbstractStore implements IdSequence
      */
     public CommonAbstractStore( File fileName, Config configuration, IdType idType,
                                 IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                                FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
+                                FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                                StoreVersionMismatchHandler versionMismatchHandler )
     {
         this.storageFileName = fileName;
         this.configuration = configuration;
@@ -107,6 +109,7 @@ public abstract class CommonAbstractStore implements IdSequence
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.idType = idType;
         this.stringLogger = stringLogger;
+        this.versionMismatchHandler = versionMismatchHandler;
 
         try
         {
@@ -270,8 +273,7 @@ public abstract class CommonAbstractStore implements IdSequence
         {
             if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
             {
-                throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "",
-                                                           false );
+                versionMismatchHandler.mismatch( ALL_STORES_VERSION, foundTypeDescriptorAndVersion );
             }
             else
             {

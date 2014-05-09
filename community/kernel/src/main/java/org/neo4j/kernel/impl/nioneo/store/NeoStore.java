@@ -86,9 +86,8 @@ public class NeoStore extends AbstractStore
     private SchemaStore schemaStore;
     private RelationshipGroupStore relGroupStore;
     private final RemoteTxHook txHook;
-    private AtomicLong lastCommittedTx = new AtomicLong( -1 );
-    private AtomicLong latestConstraintIntroducingTx = new AtomicLong( -1 );
-    private final int denseNodeThreshold;
+    private final AtomicLong lastCommittedTx = new AtomicLong( -1 );
+    private final AtomicLong latestConstraintIntroducingTx = new AtomicLong( -1 );
 
     private final int REL_GRAB_SIZE;
 
@@ -98,10 +97,11 @@ public class NeoStore extends AbstractStore
                      StringLogger stringLogger, RemoteTxHook txHook,
                      RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore,
                      PropertyStore propStore, RelationshipStore relStore,
-                     NodeStore nodeStore, SchemaStore schemaStore, RelationshipGroupStore relGroupStore )
+                     NodeStore nodeStore, SchemaStore schemaStore, RelationshipGroupStore relGroupStore,
+                     StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger);
+                fileSystemAbstraction, stringLogger, versionMismatchHandler );
         this.relTypeStore = relTypeStore;
         this.labelTokenStore = labelTokenStore;
         this.propStore = propStore;
@@ -111,7 +111,6 @@ public class NeoStore extends AbstractStore
         this.relGroupStore = relGroupStore;
         REL_GRAB_SIZE = conf.get( Configuration.relationship_grab_size );
         this.txHook = txHook;
-        this.denseNodeThreshold = conf.get( Configuration.dense_node_threshold );
 
         /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
          * corresponding store version record was not added. That record was added in the release
@@ -326,7 +325,7 @@ public class NeoStore extends AbstractStore
     {
         return setRecord( fileSystem, neoStore, VERSION_POSITION, version );
     }
-    
+
     /**
      * Sets the store version for the given {@code neoStore} file.
      * @param neoStore the NeoStore file.
@@ -337,7 +336,7 @@ public class NeoStore extends AbstractStore
     {
         return setRecord( fileSystem, neoStore, STORE_VERSION_POSITION, storeVersion );
     }
-    
+
     private static long setRecord( FileSystemAbstraction fileSystem, File neoStore, int position, long value )
     {
         try ( StoreChannel channel = fileSystem.open( neoStore, "rw" ) )
@@ -567,7 +566,7 @@ public class NeoStore extends AbstractStore
     {
         return nodeStore;
     }
-    
+
     /**
      * @return the schema store.
      */
@@ -615,7 +614,7 @@ public class NeoStore extends AbstractStore
     {
         return propStore;
     }
-    
+
     public RelationshipGroupStore getRelationshipGroupStore()
     {
         return relGroupStore;
@@ -727,7 +726,7 @@ public class NeoStore extends AbstractStore
         labelTokenStore.logIdUsage( msgLog );
         propStore.logIdUsage( msgLog );
         relGroupStore.logIdUsage( msgLog );
-        
+
         stringLogger.flush();
     }
 

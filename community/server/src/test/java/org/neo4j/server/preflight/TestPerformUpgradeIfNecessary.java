@@ -19,30 +19,33 @@
  */
 package org.neo4j.server.preflight;
 
-import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
 import java.io.IOException;
-import java.io.PrintStream;
 import java.util.Map;
 import java.util.Properties;
 
 import org.apache.commons.configuration.Configuration;
 import org.junit.Test;
+import org.mockito.InOrder;
 
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.Unzip;
 
-import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.inOrder;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
@@ -59,16 +62,16 @@ public class TestPerformUpgradeIfNecessary
     {
         Configuration serverConfig = buildProperties( false );
         new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( STORE_DIRECTORY.getPath() ).newGraphDatabase().shutdown();
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
+        Monitor monitor = mock( Monitor.class );
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
-        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
+        		loadNeo4jProperties(), DEV_NULL, monitor );
 
         boolean exit = upgrader.run();
 
         assertEquals( true, exit );
 
-        assertEquals( "", new String( outputStream.toByteArray() ) );
+        verifyNoMoreInteractions( monitor );
     }
 
     @Test
@@ -76,34 +79,32 @@ public class TestPerformUpgradeIfNecessary
     {
         Configuration serverProperties = buildProperties( false );
         prepareSampleLegacyDatabase( STORE_DIRECTORY );
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
+        Monitor monitor = mock( Monitor.class );
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverProperties,
-        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
+        		loadNeo4jProperties(), DEV_NULL, monitor );
 
         boolean exit = upgrader.run();
 
         assertEquals( false, exit );
 
-        String[] lines = new String( outputStream.toByteArray() ).split( "\\r?\\n" );
-        assertThat( "'" + lines[0] + "' contains '" + "To enable automatic upgrade, please set configuration parameter " +
-                "\"allow_store_upgrade=true\"", lines[0].contains("To enable automatic upgrade, please set configuration parameter " +
-                "\"allow_store_upgrade=true\""), is(true) );
+        verify( monitor, times( 1 ) ).migrationNeeded();
+        verify( monitor, times( 1 ) ).migrationNotAllowed();
+        verifyNoMoreInteractions( monitor );
     }
 
     @Test
     public void shouldExitCleanlyIfDatabaseMissingSoThatDatabaseCreationIsLeftToMainProcess() throws IOException
     {
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-
+        Monitor monitor = mock( Monitor.class );
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( buildProperties( true ),
-        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
+        		loadNeo4jProperties(), DEV_NULL, monitor );
 
         boolean exit = upgrader.run();
 
         assertEquals( true, exit );
 
-        assertEquals( "", new String( outputStream.toByteArray() ) );
+        verifyNoMoreInteractions( monitor );
     }
 
     @Test
@@ -111,19 +112,19 @@ public class TestPerformUpgradeIfNecessary
     {
         Configuration serverConfig = buildProperties( true );
         prepareSampleLegacyDatabase( STORE_DIRECTORY );
-        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
 
+        Monitor monitor = mock( Monitor.class );
         PerformUpgradeIfNecessary upgrader = new PerformUpgradeIfNecessary( serverConfig,
-        		loadNeo4jProperties(), new PrintStream( outputStream ), DEV_NULL );
+        		loadNeo4jProperties(), DEV_NULL, monitor );
 
         boolean exit = upgrader.run();
 
         assertEquals( true, exit );
 
-        String[] lines = new String( outputStream.toByteArray() ).split( "\\r?\\n" );
-        assertEquals( "Starting upgrade of database store files", lines[0] );
-        assertEquals( dots(100), lines[1] );
-        assertEquals( "Finished upgrade of database store files", lines[2] );
+        InOrder order = inOrder( monitor );
+        order.verify( monitor, times( 1 ) ).migrationNeeded();
+        order.verify( monitor, times( 1 ) ).migrationCompleted();
+        order.verifyNoMoreInteractions();
     }
 
     private Configuration buildProperties(boolean allowStoreUpgrade) throws IOException

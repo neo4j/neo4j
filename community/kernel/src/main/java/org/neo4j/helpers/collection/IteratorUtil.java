@@ -1034,4 +1034,22 @@ public abstract class IteratorUtil
             }
         };
     }
+
+    public static <T> ResourceIterator<T> resourceIterator( final Iterator<T> iterator, final Resource resource )
+    {
+        return new PrefetchingResourceIterator<T>()
+        {
+            @Override
+            public void close()
+            {
+                resource.close();
+            }
+
+            @Override
+            protected T fetchNextOrNull()
+            {
+                return iterator.hasNext() ? iterator.next() : null;
+            }
+        };
+    }
 }
