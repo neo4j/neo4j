@@ -32,7 +32,7 @@ trait QueryGraph {
   def optionalMatches: Seq[QueryGraph]
   def tail: Option[QueryGraph]
 
-  def projection: Projections
+  def projection: QueryProjection
 
   def addPatternNodes(nodes: IdName*): QueryGraph
   def addPatternRel(rel: PatternRelationship): QueryGraph
@@ -47,7 +47,7 @@ trait QueryGraph {
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph
   def withTail(newTail: QueryGraph): QueryGraph
   def withSelections(selections: Selections): QueryGraph
-  def withProjection(projection: Projections): QueryGraph
+  def withProjection(projection: QueryProjection): QueryGraph
 
   def knownLabelsOnNode(node: IdName): Seq[LabelName] =
     selections
@@ -98,7 +98,7 @@ object QueryGraph {
             patternNodes: Set[IdName] = Set.empty,
             argumentIds: Set[IdName] = Set.empty,
             selections: Selections = Selections(),
-            projection: Projections = Projections(),
+            projection: QueryProjection = QueryProjection(),
             optionalMatches: Seq[QueryGraph] = Seq.empty,
             tail: Option[QueryGraph] = None): QueryGraph =
     QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, projection, optionalMatches, tail)
@@ -117,7 +117,7 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
                           patternNodes: Set[IdName] = Set.empty,
                           argumentIds: Set[IdName] = Set.empty,
                           selections: Selections = Selections(),
-                          projection: Projections,
+                          projection: QueryProjection,
                           optionalMatches: Seq[QueryGraph] = Seq.empty,
                           tail: Option[QueryGraph] = None) extends QueryGraph with Visitable[QueryGraph] {
 
@@ -152,7 +152,7 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
 
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
 
-  def withProjection(projection: Projections): QueryGraph = copy(projection = projection)
+  def withProjection(projection: QueryProjection): QueryGraph = copy(projection = projection)
 
   def addSelections(selections: Selections): QueryGraph =
     copy(selections = Selections(selections.predicates ++ this.selections.predicates))

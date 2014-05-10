@@ -165,7 +165,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val projections = produceProjectionsMap(expressions)
           val sortItems = produceSortItems(optOrderBy)
 
-          val projection = Projections(
+          val projection = QueryProjection(
             projections = projections,
             sortItems = sortItems,
             limit = limit.map(_.expression),
@@ -217,7 +217,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val projections = produceProjectionsMap(expressions)
           val sortItems = produceSortItems(optOrderBy)
 
-          val projection = Projections(
+          val projection = QueryProjection(
             projections = projections,
             sortItems = sortItems,
             limit = limit.map(_.expression),

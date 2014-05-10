@@ -40,7 +40,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
-      projection = Projections(projections = projections),
+      projection = QueryProjection(projections = projections),
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
@@ -74,7 +74,7 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val labelId = LabelId(12)
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
-      projection = Projections(projections = projections),
+      projection = QueryProjection(projections = projections),
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
