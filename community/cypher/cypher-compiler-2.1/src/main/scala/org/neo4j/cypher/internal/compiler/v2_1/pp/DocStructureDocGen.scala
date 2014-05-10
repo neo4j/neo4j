@@ -19,10 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pp
 
-sealed abstract class PrintCommand
-case class PrintText(value: String) extends PrintCommand
-case class PrintNewLine(indent: Int) extends PrintCommand
+object DocStructureDocGen extends DocGenerator[Doc] {
+ import Doc._
 
+ def apply(data: Doc): Doc = data match {
+   case ConsDoc(hd, tl)       => cons(apply(hd), cons(TextDoc("·"), apply(tl)))
+   case NilDoc                => text("ø")
 
+   case TextDoc(value)        => text(s"${"\""}$value${"\""}")
+   case BreakDoc              => breakWith("_")
+   case BreakWith(value)      => breakWith(s"_${value}_")
 
-
+   case GroupDoc(doc)         => group(cons(text("["), cons(apply(doc), text("]"))))
+   case NestDoc(doc)          => group(cons(text("<"), cons(apply(doc), text(">"))))
+   case NestWith(indent, doc) => group(cons(text(s"($indent)<"), cons(apply(doc), text(">"))))
+ }
+}

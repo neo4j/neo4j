@@ -19,10 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pp
 
-sealed abstract class PrintCommand
-case class PrintText(value: String) extends PrintCommand
-case class PrintNewLine(indent: Int) extends PrintCommand
+object LineDocFormatter extends DocFormatter {
+  def apply(doc: Doc): Seq[PrintCommand] =  {
+    doc match {
+      case ConsDoc(head, tail)  => apply(head) ++ apply(tail)
+      case NilDoc               => Seq.empty
 
-
-
-
+      case doc: ValueDoc        => Seq(PrintText(doc.value))
+      case doc: ContentDoc      => apply(doc.content)
+    }
+  }
+}
