@@ -38,8 +38,8 @@ object applyOptional extends CandidateGenerator[PlanTable] {
   }
 
   private def applicable(outerPlan: QueryPlan, optionalQG: QueryGraph) = {
-    val coveredByLHS = outerPlan.plan.covers(optionalQG.argumentIds)
+    val argumentsAvailable = optionalQG.argumentIds.subsetOf(outerPlan.plan.availableSymbols)
     val isSolved = outerPlan.solved.optionalMatches.contains(optionalQG)
-    coveredByLHS && !isSolved
+    argumentsAvailable && !isSolved
   }
 }

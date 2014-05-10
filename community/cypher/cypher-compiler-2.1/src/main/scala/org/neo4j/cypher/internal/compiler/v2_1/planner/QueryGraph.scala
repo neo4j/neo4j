@@ -75,6 +75,16 @@ trait QueryGraph {
       tail = either(tail, other.tail)
     )
 
+  def isCoveredBy(other: QueryGraph): Boolean = {
+    patternNodes.subsetOf(other.patternNodes) &&
+      patternRelationships.subsetOf(other.patternRelationships) &&
+      argumentIds.subsetOf(other.argumentIds) &&
+      optionalMatches.toSet.subsetOf(other.optionalMatches.toSet) &&
+      selections.predicates.subsetOf(other.selections.predicates)
+  }
+
+  def covers(other: QueryGraph): Boolean = other.isCoveredBy(this)
+
   private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
     case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
     case (s@Some(_), None) => s

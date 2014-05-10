@@ -31,7 +31,7 @@ object expand extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
     val expandPlans = for {
       plan <- planTable.plans
-      nodeId <- plan.coveredIds
+      nodeId <- plan.solved.patternNodes
       patternRel <- context.queryGraph.findRelationshipsEndingOn(nodeId)
       if !plan.solved.patternRelationships(patternRel)
     } yield {
@@ -40,7 +40,7 @@ object expand extends CandidateGenerator[PlanTable] {
       val expandF = (otherSide: IdName) => planExpand(plan, nodeId, dir, patternRel.types,
                                                       otherSide, patternRel.name, patternRel.length, patternRel)
 
-      if (plan.coveredIds.contains(otherSide)) {
+      if (plan.availableSymbols.contains(otherSide)) {
         expandIntoAlreadyExistingNode(expandF, otherSide)
       }
       else

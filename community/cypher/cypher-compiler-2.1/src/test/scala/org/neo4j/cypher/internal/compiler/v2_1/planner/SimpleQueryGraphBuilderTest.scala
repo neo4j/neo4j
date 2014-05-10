@@ -610,6 +610,10 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     evaluating(buildQueryGraph("match (a) where (a)-->() OR id(a) = 12 OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
   }
 
+  test("should fail when the first pattern is optional") {
+    evaluating(buildQueryGraph("optional match (a:Foo) with a match (a)-->() return a", normalize = true)) should produce[CantHandleQueryException]
+  }
+
   ignore("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {
     val (qg, _) = buildQueryGraph("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
     qg.tail should not be empty

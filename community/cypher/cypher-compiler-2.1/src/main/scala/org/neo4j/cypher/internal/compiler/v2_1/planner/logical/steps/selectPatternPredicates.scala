@@ -34,7 +34,8 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
       val applyCandidates =
         for (
           lhs <- planTable.plans;
-          pattern <- queryGraph.selections.patternPredicatesGiven(lhs.coveredIds) if applicable(lhs, queryGraph, pattern))
+          pattern <- queryGraph.selections.patternPredicatesGiven(lhs.availableSymbols)
+          if applicable(lhs, queryGraph, pattern))
         yield {
           pattern match {
             case p@Not(patternExpression: PatternExpression) =>
@@ -70,10 +71,9 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
     }
 
     private def applicable(outerPlan: QueryPlan, qg: QueryGraph, expression: Expression) = {
-      val providedIds = outerPlan.coveredIds
-      val hasDependencies = qg.argumentIds.forall(providedIds.contains)
+      val symbolsAvailable = qg.argumentIds.subsetOf(outerPlan.availableSymbols)
       val isSolved = outerPlan.solved.selections.contains(expression)
-      hasDependencies && !isSolved
+      symbolsAvailable && !isSolved
     }
   }
 
@@ -81,7 +81,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
     val plan = simpleSelection(input)
 
     def findBestPlanForPatternPredicates(plan: QueryPlan): QueryPlan = {
-      val secretPlanTable = PlanTable(Map(plan.coveredIds -> plan))
+      val secretPlanTable = PlanTable(Map(plan.availableSymbols -> plan))
       val result: CandidateList = candidateListProducer(secretPlanTable)
       result.bestPlan(context.cost).getOrElse(plan)
     }

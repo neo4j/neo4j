@@ -33,7 +33,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanContext(planContext)
     val queryPlan= newMockedQueryPlan("x")
     val predicate = mock[Expression]
-    val selections = Selections(Set(Predicate(queryPlan.coveredIds, predicate)))
+    val selections = Selections(Set(Predicate(queryPlan.availableSymbols, predicate)))
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
@@ -49,7 +49,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     implicit val context = newMockedLogicalPlanContext(planContext)
     val queryPlan = newMockedQueryPlanWithProjections("x")
     val predicate = mock[Expression]
-    val selections = Selections(Set(Predicate(queryPlan.coveredIds, predicate)))
+    val selections = Selections(Set(Predicate(queryPlan.availableSymbols, predicate)))
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When
@@ -67,8 +67,8 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val predicate1 = mock[Expression]
     val predicate2 = mock[Expression]
     val selections = Selections(Set(
-      Predicate(queryPlan.coveredIds, predicate1),
-      Predicate(queryPlan.coveredIds, predicate2)))
+      Predicate(queryPlan.availableSymbols, predicate1),
+      Predicate(queryPlan.availableSymbols, predicate2)))
     when(context.queryGraph.selections).thenReturn(selections)
 
     // When

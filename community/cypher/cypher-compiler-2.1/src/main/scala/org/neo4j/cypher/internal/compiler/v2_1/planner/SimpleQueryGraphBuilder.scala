@@ -199,6 +199,9 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
           produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
 
+        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl if qg.optionalMatches.nonEmpty =>
+          throw new CantHandleQueryException
+
         case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 

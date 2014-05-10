@@ -73,7 +73,7 @@ object projection extends PlanTransformer {
       e => FreshIdNameGenerator.name(e.position) -> e
     }.toMap
 
-    val keepExistingIdentifiers = plan.coveredIds.map {
+    val keepExistingIdentifiers = plan.availableSymbols.map {
       x => x.name -> ast.Identifier(x.name)(null)
     }
 
@@ -91,7 +91,7 @@ object projection extends PlanTransformer {
   }
 
   private def projectIfNeeded(plan: QueryPlan, projectionsMap: Map[String, ast.Expression]): QueryPlan = {
-    val ids = plan.coveredIds
+    val ids = plan.availableSymbols
     val projectAllCoveredIds = ids.map {
       case IdName(id) => id -> ast.Identifier(id)(null)
     }.toMap

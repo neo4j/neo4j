@@ -182,6 +182,6 @@ object QueryPlanProducer {
   def planSingleRow(coveredIds: Set[IdName]) =
     QueryPlan(
       SingleRow(coveredIds),
-      QueryGraph(argumentIds = coveredIds)
+      QueryGraph(argumentIds = coveredIds, patternNodes = coveredIds)
     )
 }

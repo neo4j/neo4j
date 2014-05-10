@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.CostModel
 case class CandidateList(plans: Seq[QueryPlan] = Seq.empty) {
 
   private def sorted(cost: CostModel) =
-    CandidateList(plans.sortBy[(Double, Int)](c => (cost(c.plan), -c.coveredIds.size)))
+    CandidateList(plans.sortBy[(Double, Int)](c => (cost(c.plan), -c.availableSymbols.size)))
 
   def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
 

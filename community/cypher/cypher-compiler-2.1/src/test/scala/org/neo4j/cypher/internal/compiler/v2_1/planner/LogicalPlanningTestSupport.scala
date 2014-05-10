@@ -89,7 +89,7 @@ trait LogicalPlanningTestSupport
     LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, subQueryLookupTable, strategy)
 
   implicit class RichLogicalPlan(plan: QueryPlan) {
-    def asTableEntry = plan.coveredIds -> plan
+    def asTableEntry = plan.availableSymbols -> plan
   }
 
   def newMockedStatistics = mock[GraphStatistics]
