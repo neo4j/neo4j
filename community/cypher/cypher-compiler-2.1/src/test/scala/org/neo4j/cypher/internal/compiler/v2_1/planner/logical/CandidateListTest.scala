@@ -35,23 +35,6 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val y = newMockedQueryPlan("y")
   val xAndY = newMockedQueryPlan("x", "y")
 
-  test("prune with no overlaps returns the same candidates") {
-    val candidates = CandidateList(Seq(x, y))
-    candidates.pruned should equal(candidates)
-  }
-
-  test("prune with overlaps returns the first ones") {
-    val candidates = CandidateList(Seq(x, xAndY))
-
-    candidates.pruned should equal(CandidateList(Seq(x)))
-  }
-
-  test("empty prune is legal") {
-    val candidates = CandidateList(Seq())
-
-    candidates.pruned should equal(CandidateList(Seq()))
-  }
-
   test("picks the right plan by cost, no matter the cardinality") {
     val a = newMockedQueryPlanWithProjections("a")
     val b = newMockedQueryPlanWithProjections("b")
