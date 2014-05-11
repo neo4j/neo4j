@@ -49,7 +49,7 @@ import static java.lang.Long.numberOfTrailingZeros;
  * </p>
  *
  * <p>
- * Why are these methods (like {@link #put(Table, Monitor, HashFunction, long, Object)},
+ * Why are these methods (like {@link #put(Table, Monitor, HashFunction, long, Object, ResizeMonitor)},
  * {@link #get(Table, Monitor, HashFunction, long)} a.s.o. static? To reduce garbage and also reduce overhead of each
  * set or map object making use of hop-scotch hashing where they won't need to have a reference to an algorithm
  * object, merely use its static methods. Also, all essential state is managed by {@link Table}.
