@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.{NoProjection, QueryProje
 object projection extends PlanTransformer {
 
   def apply(plan: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
-    val queryGraph = context.queryGraph
+    val queryGraph = context.query
     val logicalPlan = plan.plan
     val projection = queryGraph.projection
 

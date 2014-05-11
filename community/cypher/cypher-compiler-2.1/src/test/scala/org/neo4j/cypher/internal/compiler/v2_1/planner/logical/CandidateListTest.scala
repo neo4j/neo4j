@@ -21,7 +21,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan, IdName}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -50,7 +50,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("picks the right plan by cost, no matter the size of the covered ids") {
-    val ab = QueryPlan( newMockedLogicalPlan(Set(IdName("a"), IdName("b"))), QueryGraph.empty )
+    val ab = QueryPlan( newMockedLogicalPlan(Set(IdName("a"), IdName("b"))), PlannerQuery.empty )
     val b = newMockedQueryPlanWithProjections("b")
 
     val factory = newMockedMetricsFactory

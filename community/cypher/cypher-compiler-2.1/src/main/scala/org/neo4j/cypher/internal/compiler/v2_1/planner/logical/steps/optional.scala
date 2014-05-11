@@ -21,13 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateGenerator, CandidateList, LogicalPlanContext, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
 
 object optional extends CandidateGenerator[PlanTable] {
   def apply(ignored: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
     val optionalCandidates =
-      for (optionalQG <- context.queryGraph.optionalMatches if optionalQG.argumentIds.isEmpty)
+      for (optionalQG <- context.query.graph.optionalMatches if optionalQG.argumentIds.isEmpty)
       yield {
-        val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG))
+        val rhs = context.strategy.plan(context.copy(query = PlannerQuery(graph = optionalQG)))
 
         planOptional(rhs)
       }

@@ -47,7 +47,7 @@ object idSeekLeafPlanner extends LeafPlanner {
         (predicate, idExpr, idValueExprs)
     }.collect {
       case (predicate, Identifier(idName), idValues) =>
-        context.queryGraph.patternRelationships.find(_.name.name == idName) match {
+        context.query.graph.patternRelationships.find(_.name.name == idName) match {
           case Some(relationship) =>
             createRelationshipByIdSeek(relationship, idValues, predicate)
           case None =>

@@ -32,7 +32,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: PlanningMonitor) extends PipeBuilder {
   val tokenResolver = new SimpleTokenResolver()
-  val queryGraphBuilder = new SimpleQueryGraphBuilder
+  val plannerQueryBuilder = new SimplePlannerQueryBuilder
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
   val strategy = new GreedyPlanningStrategy()
 
@@ -68,10 +68,10 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): LogicalPlan = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
-    val (queryGraph, subQueriesLookupTable) = queryGraphBuilder.produce(ast)
+    val (plannerQuery, subQueriesLookupTable) = plannerQueryBuilder.produce(ast)
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
-    val context = LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, subQueriesLookupTable, strategy)
+    val context = LogicalPlanContext(planContext, metrics, semanticTable, plannerQuery, subQueriesLookupTable, strategy)
     strategy.plan(context).plan
   }
 }

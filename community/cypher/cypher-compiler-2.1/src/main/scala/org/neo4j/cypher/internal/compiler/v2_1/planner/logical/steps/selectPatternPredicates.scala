@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanPr
 case class selectPatternPredicates(simpleSelection: PlanTransformer) extends PlanTransformer {
   private object candidateListProducer extends CandidateGenerator[PlanTable] {
     def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-      val queryGraph = context.queryGraph
+      val queryGraph = context.query.graph
       val applyCandidates =
         for (
           lhs <- planTable.plans;
@@ -60,7 +60,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
       val qg = context.subQueriesLookupTable.getOrElse(pattern,
         throw new ThisShouldNotHappenError("Davide/Stefan", s"Did not find QueryGraph for pattern expression $pattern")
       )
-      context.strategy.plan(context.copy(queryGraph = qg))
+      context.strategy.plan(context.copy(query = PlannerQuery(graph = qg)))
     }
 
     private def doesNotContainPatterns(e: Seq[Expression]) = !e.exists(_.exists { case e: PatternExpression => true })
@@ -72,7 +72,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
 
     private def applicable(outerPlan: QueryPlan, qg: QueryGraph, expression: Expression) = {
       val symbolsAvailable = qg.argumentIds.subsetOf(outerPlan.availableSymbols)
-      val isSolved = outerPlan.solved.selections.contains(expression)
+      val isSolved = outerPlan.solved.graph.selections.contains(expression)
       symbolsAvailable && !isSolved
     }
   }

@@ -29,6 +29,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanPr
 object allNodesLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) =
     CandidateList(
-      context.queryGraph.patternNodes.map(planAllNodesScan).toSeq
+      context.query.graph.patternNodes.map(planAllNodesScan).toSeq
     )
 }

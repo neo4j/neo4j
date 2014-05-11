@@ -31,9 +31,9 @@ object expand extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
     val expandPlans = for {
       plan <- planTable.plans
-      nodeId <- plan.solved.patternNodes
-      patternRel <- context.queryGraph.findRelationshipsEndingOn(nodeId)
-      if !plan.solved.patternRelationships(patternRel)
+      nodeId <- plan.solved.graph.patternNodes
+      patternRel <- context.query.graph.findRelationshipsEndingOn(nodeId)
+      if !plan.solved.graph.patternRelationships(patternRel)
     } yield {
       val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)

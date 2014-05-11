@@ -45,7 +45,7 @@ object QueryProjection {
             limit: Option[Expression] = None,
             skip: Option[Expression] = None) = QueryProjectionImpl(projections, sortItems, limit, skip)
 
-  val empty = apply()
+  val empty = NoProjection
 }
 
 case object NoProjection extends QueryProjection {
@@ -54,13 +54,13 @@ case object NoProjection extends QueryProjection {
   def sortItems = Vector.empty
   def skip = None
 
-  def withLimit(limit: Option[Expression]) = thisIfEmpty(limit, QueryProjection.empty.withLimit)
-  def withProjections(projections: Map[String, Expression]) = thisIfEmpty(projections, QueryProjection.empty.withProjections)
-  def withSortItems(sortItems: Seq[SortItem]) = thisIfEmpty(sortItems, QueryProjection.empty.withSortItems)
-  def withSkip(skip: Option[Expression]) = thisIfEmpty(skip, QueryProjection.empty.withSkip)
+  def withLimit(limit: Option[Expression]) = thisIfEmpty(limit, QueryProjection(limit = limit))
+  def withProjections(projections: Map[String, Expression]) = thisIfEmpty(projections, QueryProjection(projections = projections))
+  def withSortItems(sortItems: Seq[SortItem]) = thisIfEmpty(sortItems, QueryProjection(sortItems = sortItems))
+  def withSkip(skip: Option[Expression]) = thisIfEmpty(skip, QueryProjection(skip = skip))
 
-  private def thisIfEmpty[A <: { def isEmpty: Boolean }](element: A, f: A => QueryProjection):QueryProjection =
-    if (element.isEmpty) this else f(element)
+  private def thisIfEmpty[A <: { def isEmpty: Boolean }](element: A, f: => QueryProjection):QueryProjection =
+    if (element.isEmpty) this else f
 
   def ++(other: QueryProjection): QueryProjection =
      withLimit(other.limit)

@@ -21,6 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Query}
 
-trait QueryGraphBuilder {
-  def produce(ast: Query): (QueryGraph, Map[PatternExpression, QueryGraph])
+trait PlannerQueryBuilder {
+  def produce(ast: Query): (PlannerQuery, Map[PatternExpression, QueryGraph])
 }

@@ -46,7 +46,12 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // MATCH (a)-->(b)
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
-      queryGraph = QueryGraph(patternNodes = Set(aNode, bNode), patternRelationships = Set(r1Rel))
+      query = PlannerQuery(
+        QueryGraph(
+          patternNodes = Set(aNode, bNode),
+          patternRelationships = Set(r1Rel)
+        )
+      )
     )
     val left = newMockedQueryPlan(Set(aNode, bNode))
     val planTable = PlanTable(Map(Set(aNode, bNode) -> left))
@@ -58,7 +63,6 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // MATCH a OPTIONAL MATCH a-->b
     val optionalQg = QueryGraph(
       patternNodes = Set(aNode, bNode),
-      projection = NoProjection,
       patternRelationships = Set(r1Rel))
 
     val factory = newMockedMetricsFactory
@@ -69,9 +73,12 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val innerPlan = newMockedQueryPlan("b")
 
+    val query = PlannerQuery(
+      QueryGraph(patternNodes = Set(aNode)).withAddedOptionalMatch(optionalQg)
+    )
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
-      queryGraph = QueryGraph(patternNodes = Set(aNode)).withAddedOptionalMatch(optionalQg),
+      query = query,
       strategy = newMockedStrategy(innerPlan),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )

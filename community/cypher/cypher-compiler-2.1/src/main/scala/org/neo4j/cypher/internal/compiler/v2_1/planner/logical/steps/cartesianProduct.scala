@@ -19,21 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, LogicalPlanContext, PlanTable, CandidateGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 
-object cartesianProduct extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-    if (planTable.size > 1) {
-      val plans = planTable.plans
-      val cartesianProducts =
-        for {
-          planA <- plans
-          planB <- plans if planA.plan != planB.plan
-        } yield planCartesianProduct(planA, planB)
-      CandidateList(cartesianProducts)
-    } else {
-      CandidateList()
-    }
+object cartesianProduct {
+  def apply(input: PlanTable)(implicit context: LogicalPlanContext): QueryPlan = {
+    val sortedList = input.plans.sortBy(p => context.metrics.cost(p.plan)).toList
+    sortedList.reduceRight(planCartesianProduct)
   }
 }

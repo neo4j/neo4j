@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
@@ -30,9 +29,6 @@ trait QueryGraph {
   def argumentIds: Set[IdName]
   def selections: Selections
   def optionalMatches: Seq[QueryGraph]
-  def tail: Option[QueryGraph]
-
-  def projection: QueryProjection
 
   def addPatternNodes(nodes: IdName*): QueryGraph
   def addPatternRel(rel: PatternRelationship): QueryGraph
@@ -44,9 +40,7 @@ trait QueryGraph {
   def withoutArguments(): QueryGraph
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph
-  def withTail(newTail: QueryGraph): QueryGraph
   def withSelections(selections: Selections): QueryGraph
-  def withProjection(projection: QueryProjection): QueryGraph
 
   def knownLabelsOnNode(node: IdName): Seq[LabelName] =
     selections
@@ -65,13 +59,11 @@ trait QueryGraph {
 
   def ++(other: QueryGraph): QueryGraph =
     QueryGraph(
-      projection = projection ++ other.projection,
       selections = selections ++ other.selections,
       patternNodes = patternNodes ++ other.patternNodes,
       patternRelationships = patternRelationships ++ other.patternRelationships,
       optionalMatches = optionalMatches ++ other.optionalMatches,
-      argumentIds = argumentIds ++ other.argumentIds,
-      tail = either(tail, other.tail)
+      argumentIds = argumentIds ++ other.argumentIds
     )
 
   def isCoveredBy(other: QueryGraph): Boolean = {
@@ -83,13 +75,6 @@ trait QueryGraph {
   }
 
   def covers(other: QueryGraph): Boolean = other.isCoveredBy(this)
-
-  private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
-    case (s@Some(_), None) => s
-    case (None, s) => s
-  }
-
 }
 
 object QueryGraph {
@@ -97,10 +82,8 @@ object QueryGraph {
             patternNodes: Set[IdName] = Set.empty,
             argumentIds: Set[IdName] = Set.empty,
             selections: Selections = Selections(),
-            projection: QueryProjection = NoProjection,
-            optionalMatches: Seq[QueryGraph] = Seq.empty,
-            tail: Option[QueryGraph] = None): QueryGraph =
-    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, projection, optionalMatches, tail)
+            optionalMatches: Seq[QueryGraph] = Seq.empty): QueryGraph =
+    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, optionalMatches)
 
   val empty = QueryGraph()
 
@@ -116,10 +99,7 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
                           patternNodes: Set[IdName] = Set.empty,
                           argumentIds: Set[IdName] = Set.empty,
                           selections: Selections = Selections(),
-                          projection: QueryProjection,
-                          optionalMatches: Seq[QueryGraph] = Seq.empty,
-                          tail: Option[QueryGraph] = None) extends QueryGraph with Visitable[QueryGraph] {
-
+                          optionalMatches: Seq[QueryGraph] = Seq.empty) extends QueryGraph with Visitable[QueryGraph] {
 
   def accept[R](visitor: Visitor[QueryGraph, R]): R = visitor.visit(this)
 
@@ -143,14 +123,7 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
 
   def withoutArguments(): QueryGraph = copy(argumentIds = Set.empty)
 
-  def withTail(newTail: QueryGraph) = tail match {
-    case None    => copy(tail = Some(newTail))
-    case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
-  }
-
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
-
-  def withProjection(projection: QueryProjection): QueryGraph = copy(projection = projection)
 
   def addSelections(selections: Selections): QueryGraph =
     copy(selections = Selections(selections.predicates ++ this.selections.predicates))

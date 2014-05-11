@@ -82,11 +82,11 @@ trait LogicalPlanningTestSupport
   def newMockedLogicalPlanContext(planContext: PlanContext,
                                   metrics: Metrics = self.mock[Metrics],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
-                                  queryGraph: QueryGraph = self.mock[QueryGraph],
+                                  query: PlannerQuery = PlannerQuery.empty,
                                   subQueryLookupTable: Map[PatternExpression, QueryGraph] = Map.empty,
                                   strategy: PlanningStrategy = new GreedyPlanningStrategy()): LogicalPlanContext =
 
-    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, subQueryLookupTable, strategy)
+    LogicalPlanContext(planContext, metrics, semanticTable, query, subQueryLookupTable, strategy)
 
   implicit class RichLogicalPlan(plan: QueryPlan) {
     def asTableEntry = plan.availableSymbols -> plan
@@ -105,17 +105,17 @@ trait LogicalPlanningTestSupport
     val projections = QueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
     QueryPlan(
       newMockedLogicalPlan(ids: _*),
-      QueryGraph
-        .empty
-        .addPatternNodes(ids.map(IdName).toSeq: _*)
-        .withProjection(projections)
+      PlannerQuery(
+        projection = projections,
+        graph = QueryGraph.empty.addPatternNodes(ids.map(IdName).toSeq: _*)
+      )
     )
   }
 
   def newMockedQueryPlan(idNames: Set[IdName]): QueryPlan = {
     val plan = newMockedLogicalPlan(idNames)
     val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*)
-    QueryPlan( plan, qg )
+    QueryPlan(plan, PlannerQuery(qg))
   }
 
   def newMockedQueryPlan(ids: String*): QueryPlan = {
@@ -129,7 +129,7 @@ trait LogicalPlanningTestSupport
   def newMockedQueryPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): QueryPlan = {
     val plan = newMockedLogicalPlan(ids)
     val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRels(patterns)
-    QueryPlan( plan, qg )
+    QueryPlan(plan, PlannerQuery(qg))
   }
 
   def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): LogicalPlan = {

@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{inlineProjections, namePatternPredicates, nameVarLengthRelationships}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 
-class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val builder = new SimpleQueryGraphBuilder
+  val builder = new SimplePlannerQueryBuilder
 
   val nIdent: Identifier = Identifier("n")_
   val A: LabelName = LabelName("A")_
@@ -39,7 +39,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   val lit43: SignedIntegerLiteral = SignedIntegerLiteral("43")_
 
 
-  def buildQueryGraph(query: String, normalize:Boolean = false): (QueryGraph, Map[PatternExpression, QueryGraph]) = {
+  def buildPlannerQuery(query: String, normalize:Boolean = false): (PlannerQuery, Map[PatternExpression, QueryGraph]) = {
     val ast = parser.parse(query)
 
     val rewrittenAst: Statement = if (normalize) {
@@ -55,64 +55,64 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("RETURN 42") {
-    val (qg, _) = buildQueryGraph("RETURN 42")
-    qg.projection.projections should equal(Map[String, Literal]("42" -> SignedIntegerLiteral("42")_))
+    val (query, _) = buildPlannerQuery("RETURN 42")
+    query.projection.projections should equal(Map[String, Literal]("42" -> SignedIntegerLiteral("42")_))
   }
 
   test("RETURN 42, 'foo'") {
-    val (qg, _) = buildQueryGraph("RETURN 42, 'foo'")
-    qg.projection.projections should equal(Map[String, Literal](
+    val (query, _) = buildPlannerQuery("RETURN 42, 'foo'")
+    query.projection.projections should equal(Map[String, Literal](
       "42" -> SignedIntegerLiteral("42")_,
       "'foo'" -> StringLiteral("foo")_
     ))
   }
 
   test("match n return n") {
-    val (qg, _) = buildQueryGraph("match n return n")
-    qg.projection.projections should equal(Map[String, Identifier](
+    val (query, _) = buildPlannerQuery("match n return n")
+    query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
-    qg.patternNodes should equal(Set(IdName("n")))
+    query.graph.patternNodes should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE n:A:B RETURN n") {
-    val (qg, _) = buildQueryGraph("MATCH n WHERE n:A:B RETURN n")
-    qg.projection.projections should equal(Map[String, Identifier](
+    val (query, _) = buildPlannerQuery("MATCH n WHERE n:A:B RETURN n")
+    query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
-    qg.selections should equal(Selections(Set(
+    query.graph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), HasLabels(nIdent, Seq(A))_),
       Predicate(Set(IdName("n")), HasLabels(nIdent, Seq(B))_
     ))))
 
-    qg.patternNodes should equal(Set(IdName("n")))
+    query.graph.patternNodes should equal(Set(IdName("n")))
   }
 
   test("match n where n:X OR n:Y return n") {
-    val (qg, _) = buildQueryGraph("match n where n:X OR n:Y return n", normalize = true)
-    qg.projection.projections should equal(Map[String, Identifier](
+    val (query, _) = buildPlannerQuery("match n where n:X OR n:Y return n", normalize = true)
+    query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
-    qg.selections should equal(Selections(Set(
+    query.graph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), Ors(List(
         HasLabels(nIdent, Seq(X))(pos),
         HasLabels(nIdent, Seq(Y))(pos)
       ))_
     ))))
 
-    qg.patternNodes should equal(Set(IdName("n")))
+    query.graph.patternNodes should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n") {
-    val (qg, _) = buildQueryGraph("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n", normalize = true)
-    qg.projection.projections should equal(Map[String, Identifier](
+    val (query, _) = buildPlannerQuery("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n", normalize = true)
+    query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
-    qg.selections should equal(Selections(Set(
+    query.graph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), Ors(List(
         HasLabels(nIdent, Seq(X))(pos),
         Ands(List(
@@ -121,48 +121,48 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
         ))(pos)))_
       ))))
 
-    qg.patternNodes should equal(Set(IdName("n")))
+    query.graph.patternNodes should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE id(n) = 42 RETURN n") {
-    val (qg, _) = buildQueryGraph("MATCH n WHERE id(n) = 42 RETURN n")
-    qg.projection.projections should equal(Map[String, Identifier](
+    val (query, _) = buildPlannerQuery("MATCH n WHERE id(n) = 42 RETURN n")
+    query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
-    qg.selections should equal(Selections(Set(
+    query.graph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), Equals(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
         SignedIntegerLiteral("42")_
       )_
     ))))
 
-    qg.patternNodes should equal(Set(IdName("n")))
+    query.graph.patternNodes should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE id(n) IN [42, 43] RETURN n") {
-    val (qg, _) = buildQueryGraph("MATCH n WHERE id(n) IN [42, 43] RETURN n")
-    qg.projection.projections should equal(Map[String, Identifier](
+    val (query, _) = buildPlannerQuery("MATCH n WHERE id(n) IN [42, 43] RETURN n")
+    query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
-    qg.selections should equal(Selections(Set(
+    query.graph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), In(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
         Collection(Seq(lit42, lit43))_
       )_
     ))))
 
-    qg.patternNodes should equal(Set(IdName("n")))
+    query.graph.patternNodes should equal(Set(IdName("n")))
   }
 
   test("MATCH n WHERE n:A AND id(n) = 42 RETURN n") {
-    val (qg, _) = buildQueryGraph("MATCH n WHERE n:A AND id(n) = 42 RETURN n", normalize = true)
-    qg.projection.projections should equal(Map[String, Identifier](
+    val (query, _) = buildPlannerQuery("MATCH n WHERE n:A AND id(n) = 42 RETURN n", normalize = true)
+    query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
-    qg.selections should equal(Selections(Set(
+    query.graph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), HasLabels(nIdent, Seq(A))_),
       Predicate(Set(IdName("n")), Equals(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
@@ -170,15 +170,15 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       )_
     ))))
 
-    qg.patternNodes should equal(Set(IdName("n")))
+    query.graph.patternNodes should equal(Set(IdName("n")))
   }
 
   test("match p = (a) return p") {
-    val (qg, _) = buildQueryGraph("match p = (a) return p", normalize = true)
-    qg.patternRelationships should equal(Set())
-    qg.patternNodes should equal(Set[IdName]("a"))
-    qg.selections should equal(Selections(Set.empty))
-    qg.projection.projections should equal(Map[String, Expression](
+    val (query, _) = buildPlannerQuery("match p = (a) return p", normalize = true)
+    query.graph.patternRelationships should equal(Set())
+    query.graph.patternNodes should equal(Set[IdName]("a"))
+    query.graph.selections should equal(Selections(Set.empty))
+    query.projection.projections should equal(Map[String, Expression](
       "p" -> PathExpression(NodePathStep(Identifier("a")_, NilPathStep))_
     ))
   }
@@ -186,24 +186,24 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   test("match p = (a)-[r]->(b) return a,r") {
     val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
-    val (qg, _) = buildQueryGraph("match p = (a)-[r]->(b) return a,r", normalize = true)
-    qg.patternRelationships should equal(Set(patternRel))
-    qg.patternNodes should equal(Set[IdName]("a", "b"))
-    qg.selections should equal(Selections(Set.empty))
-    qg.projection.projections should equal(Map[String, Identifier](
+    val (query, _) = buildPlannerQuery("match p = (a)-[r]->(b) return a,r", normalize = true)
+    query.graph.patternRelationships should equal(Set(patternRel))
+    query.graph.patternNodes should equal(Set[IdName]("a", "b"))
+    query.graph.selections should equal(Selections(Set.empty))
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
   }
 
   test("match (a)-[r]->(b)-[r2]->(c) return a,r,b") {
-    val (qg, _) = buildQueryGraph("match (a)-[r]->(b)-[r2]->(c) return a,r,b")
-    qg.patternRelationships should equal(Set(
+    val (query, _) = buildPlannerQuery("match (a)-[r]->(b)-[r2]->(c) return a,r,b")
+    query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    qg.selections should equal(Selections(Set.empty))
-    qg.projection.projections should equal(Map[String, Identifier](
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
+    query.graph.selections should equal(Selections(Set.empty))
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_,
       "b" -> Identifier("b")_
@@ -211,90 +211,90 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("match (a)-[r]->(b)-[r2]->(a) return a,r") {
-    val (qg, _) = buildQueryGraph("match (a)-[r]->(b)-[r2]->(a) return a,r")
-    qg.patternRelationships should equal(Set(
+    val (query, _) = buildPlannerQuery("match (a)-[r]->(b)-[r2]->(a) return a,r")
+    query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    qg.selections should equal(Selections(Set.empty))
-    qg.projection.projections should equal(Map[String, Identifier](
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    query.graph.selections should equal(Selections(Set.empty))
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
   }
 
   test("match (a)<-[r]-(b)-[r2]-(c) return a,r") {
-    val (qg, _) = buildQueryGraph("match (a)<-[r]-(b)-[r2]-(c) return a,r")
-    qg.patternRelationships should equal(Set(
+    val (query, _) = buildPlannerQuery("match (a)<-[r]-(b)-[r2]-(c) return a,r")
+    query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    qg.selections should equal(Selections(Set.empty))
-    qg.projection.projections should equal(Map[String, Identifier](
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
+    query.graph.selections should equal(Selections(Set.empty))
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
   }
 
   test("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r") {
-    val (qg, _) = buildQueryGraph("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r")
-    qg.patternRelationships should equal(Set(
+    val (query, _) = buildPlannerQuery("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r")
+    query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    qg.selections should equal(Selections())
-    qg.projection.projections should equal(Map[String, Identifier](
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
+    query.graph.selections should equal(Selections())
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
   }
 
   test("match (a), (n)-[r:Type]-(c) where b:A return a,r") {
-    val (qg, _) = buildQueryGraph("match (a), (n)-[r:Type]-(c) where n:A return a,r")
-    qg.patternRelationships should equal(Set(
+    val (query, _) = buildPlannerQuery("match (a), (n)-[r:Type]-(c) where n:A return a,r")
+    query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("n"), IdName("c")), Direction.BOTH, Seq(relType("Type")), SimplePatternLength)))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("n"), IdName("c")))
-    qg.selections should equal(Selections(Set(
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("n"), IdName("c")))
+    query.graph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), HasLabels(nIdent, Seq(A))_)
     )))
-    qg.projection.projections should equal(Map[String, Identifier](
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
   }
 
   test("match (a)-[r:Type|Foo]-(b) return a,r") {
-    val (qg, _) = buildQueryGraph("match (a)-[r:Type|Foo]-(b) return a,r")
-    qg.patternRelationships should equal(Set(
+    val (query, _) = buildPlannerQuery("match (a)-[r:Type|Foo]-(b) return a,r")
+    query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type"), relType("Foo")), SimplePatternLength)))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    qg.selections should equal(Selections())
-    qg.projection.projections should equal(Map[String, Identifier](
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    query.graph.selections should equal(Selections())
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
   }
 
   test("match (a)-[r:Type*]-(b) return a,r") {
-    val (qg, _) = buildQueryGraph("match (a)-[r:Type*]-(b) return a,r")
-    qg.patternRelationships should equal(Set(
+    val (query, _) = buildPlannerQuery("match (a)-[r:Type*]-(b) return a,r")
+    query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(1, None))))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    qg.selections should equal(Selections())
-    qg.projection.projections should equal(Map[String, Identifier](
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    query.graph.selections should equal(Selections())
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
   }
 
   test("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c") {
-    val (qg, _) = buildQueryGraph("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c")
-    qg.patternRelationships should equal(Set(
+    val (query, _) = buildPlannerQuery("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c")
+    query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(relType("CONTAINS")), VarPatternLength(0, Some(1))),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq(relType("FRIEND")), VarPatternLength(0, Some(1)))))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    qg.selections should equal(Selections())
-    qg.projection.projections should equal(Map[String, Identifier](
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
+    query.graph.selections should equal(Selections())
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "b" -> Identifier("b")_,
       "c" -> Identifier("c")_
@@ -302,55 +302,55 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("match (a)-[r:Type*3..]-(b) return a,r") {
-    val (qg, _) = buildQueryGraph("match (a)-[r:Type*3..]-(b) return a,r")
-    qg.patternRelationships should equal(Set(
+    val (query, _) = buildPlannerQuery("match (a)-[r:Type*3..]-(b) return a,r")
+    query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(3, None))))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    qg.selections should equal(Selections())
-    qg.projection.projections should equal(Map[String, Identifier](
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    query.graph.selections should equal(Selections())
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
   }
 
   test("match (a)-[r:Type*5]-(b) return a,r") {
-    val (qg, _) = buildQueryGraph("match (a)-[r:Type*5]-(b) return a,r")
-    qg.patternRelationships should equal(Set(
+    val (query, _) = buildPlannerQuery("match (a)-[r:Type*5]-(b) return a,r")
+    query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength.fixed(5))))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    qg.selections should equal(Selections())
-    qg.projection.projections should equal(Map[String, Identifier](
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    query.graph.selections should equal(Selections())
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
   }
 
   test("match (a)<-[r*]-(b)-[r2*]-(c) return a,r") {
-    val (qg, _) = buildQueryGraph("match (a)<-[r*]-(b)-[r2*]-(c) return a,r")
-    qg.patternRelationships should equal(Set(
+    val (query, _) = buildPlannerQuery("match (a)<-[r*]-(b)-[r2*]-(c) return a,r")
+    query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, VarPatternLength(1, None)),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, VarPatternLength(1, None))))
-    qg.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
-    qg.selections should equal(Selections(Set.empty))
-    qg.projection.projections should equal(Map[String, Identifier](
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
+    query.graph.selections should equal(Selections(Set.empty))
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
   }
 
   test("optional match (a) return a") {
-    val (qg, _) = buildQueryGraph("optional match (a) return a")
-    qg.patternRelationships should equal(Set())
-    qg.patternNodes should equal(Set())
-    qg.selections should equal(Selections(Set.empty))
-    qg.projection.projections should equal(Map[String, Identifier](
+    val (query, _) = buildPlannerQuery("optional match (a) return a")
+    query.graph.patternRelationships should equal(Set())
+    query.graph.patternNodes should equal(Set())
+    query.graph.selections should equal(Selections(Set.empty))
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_
     ))
 
-    qg.optionalMatches.size should equal(1)
-    qg.argumentIds should equal(Set())
+    query.graph.optionalMatches.size should equal(1)
+    query.graph.argumentIds should equal(Set())
 
-    val optMatchQG = qg.optionalMatches.head
+    val optMatchQG = query.graph.optionalMatches.head
     optMatchQG.patternRelationships should equal(Set())
     optMatchQG.patternNodes should equal(Set(IdName("a")))
     optMatchQG.selections should equal(Selections(Set.empty))
@@ -359,21 +359,21 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("optional match (a)-[r]->(b) return a,b,r") {
-    val (qg, _) = buildQueryGraph("optional match (a)-[r]->(b) return a,b,r")
-    qg.patternRelationships should equal(Set())
-    qg.patternNodes should equal(Set())
-    qg.selections should equal(Selections(Set.empty))
-    qg.projection.projections should equal(Map[String, Identifier](
+    val (query, _) = buildPlannerQuery("optional match (a)-[r]->(b) return a,b,r")
+    query.graph.patternRelationships should equal(Set())
+    query.graph.patternNodes should equal(Set())
+    query.graph.selections should equal(Selections(Set.empty))
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "b" -> Identifier("b")_,
       "r" -> Identifier("r")_
     ))
 
-    qg.optionalMatches.size should equal(1)
-    qg.argumentIds should equal(Set())
+    query.graph.optionalMatches.size should equal(1)
+    query.graph.argumentIds should equal(Set())
 
 
-    val optMatchQG = qg.optionalMatches.head
+    val optMatchQG = query.graph.optionalMatches.head
     optMatchQG.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     ))
@@ -384,19 +384,19 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("match a optional match (a)-[r]->(b) return a,b,r") {
-    val (qg, _) = buildQueryGraph("match a optional match (a)-[r]->(b) return a,b,r")
-    qg.patternNodes should equal(Set(IdName("a")))
-    qg.patternRelationships should equal(Set())
-    qg.selections should equal(Selections(Set.empty))
-    qg.projection.projections should equal(Map[String, Identifier](
+    val (query, _) = buildPlannerQuery("match a optional match (a)-[r]->(b) return a,b,r")
+    query.graph.patternNodes should equal(Set(IdName("a")))
+    query.graph.patternRelationships should equal(Set())
+    query.graph.selections should equal(Selections(Set.empty))
+    query.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "b" -> Identifier("b")_,
       "r" -> Identifier("r")_
     ))
-    qg.optionalMatches.size should equal(1)
-    qg.argumentIds should equal(Set())
+    query.graph.optionalMatches.size should equal(1)
+    query.graph.argumentIds should equal(Set())
 
-    val optMatchQG = qg.optionalMatches.head
+    val optMatchQG = query.graph.optionalMatches.head
     optMatchQG.patternNodes should equal(Set(IdName("a"), IdName("b")))
     optMatchQG.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
@@ -404,12 +404,11 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     optMatchQG.selections should equal(Selections(Set.empty))
     optMatchQG.optionalMatches should be(empty)
     optMatchQG.argumentIds should equal(Set(IdName("a")))
-    optMatchQG.projection should equal(NoProjection)
   }
 
   test("match a where (a)-->() return a") {
     // Given
-    val (qg, lookupTable) = buildQueryGraph("match a where (a)-->() return a", normalize = true)
+    val (query, lookupTable) = buildPlannerQuery("match a where (a)-->() return a", normalize = true)
 
     // Then inner pattern query graph
     val relName = "  UNNAMED17"
@@ -425,55 +424,54 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
-        projection = NoProjection,
         argumentIds = Set(IdName("a"))))
 
     val selections = Selections(Set(predicate))
 
-    qg.selections should equal(selections)
-    qg.patternNodes should equal(Set(IdName("a")))
+    query.graph.selections should equal(selections)
+    query.graph.patternNodes should equal(Set(IdName("a")))
     lookupTable should equal(subQueryTable)
   }
 
   test("match n return n.prop order by n.prop2 DESC") {
     // Given
-    val (qg, lookupTable) = buildQueryGraph("match n return n.prop order by n.prop2 DESC", normalize = true)
+    val (query, lookupTable) = buildPlannerQuery("match n return n.prop order by n.prop2 DESC", normalize = true)
 
     // Then inner pattern query graph
-    qg.selections should equal(Selections())
-    qg.patternNodes should equal(Set(IdName("n")))
+    query.graph.selections should equal(Selections())
+    query.graph.patternNodes should equal(Set(IdName("n")))
     lookupTable should be(empty)
     val sortItem: DescSortItem = DescSortItem(Property(Identifier("n")_, PropertyKeyName("prop2")_)_)_
-    qg.projection.sortItems should equal(Seq(sortItem))
+    query.projection.sortItems should equal(Seq(sortItem))
   }
 
   test("MATCH (a) WITH 1 as b RETURN b") {
-    val (qg, _) = buildQueryGraph("MATCH (a) WITH 1 as b RETURN b", normalize = true)
-    qg.patternNodes should equal(Set(IdName("a")))
-    qg.projection.projections should equal(Map[String, Expression]("b" -> SignedIntegerLiteral("1")_))
-    qg.tail should equal(None)
+    val (query, _) = buildPlannerQuery("MATCH (a) WITH 1 as b RETURN b", normalize = true)
+    query.graph.patternNodes should equal(Set(IdName("a")))
+    query.projection.projections should equal(Map[String, Expression]("b" -> SignedIntegerLiteral("1")_))
+    query.tail should equal(None)
   }
 
   test("WITH 1 as b RETURN b") {
-    val (qg, _) = buildQueryGraph("WITH 1 as b RETURN b", normalize = true)
+    val (query, _) = buildPlannerQuery("WITH 1 as b RETURN b", normalize = true)
 
-    qg.projection.projections should equal(Map[String, Expression]("b" -> SignedIntegerLiteral("1")_))
-    qg.tail should equal(None)
+    query.projection.projections should equal(Map[String, Expression]("b" -> SignedIntegerLiteral("1")_))
+    query.tail should equal(None)
   }
 
   test("MATCH (a) WITH a WHERE TRUE RETURN a") {
-    val (qg, _) = buildQueryGraph("MATCH (a) WITH a WHERE TRUE RETURN a", normalize = true)
-    qg.tail should be(empty)
-    qg.patternNodes should equal(Set(IdName("a")))
-    qg.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
-    qg.selections.predicates should equal(
+    val (query, _) = buildPlannerQuery("MATCH (a) WITH a WHERE TRUE RETURN a", normalize = true)
+    query.tail should be(empty)
+    query.graph.patternNodes should equal(Set(IdName("a")))
+    query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    query.graph.selections.predicates should equal(
       Set(Predicate(Set.empty, True()_))
     )
   }
 
   test("match a where a.prop = 42 OR (a)-->() return a") {
     // Given
-    val (qg, lookupTable) = buildQueryGraph("match a where a.prop = 42 OR (a)-->() return a", normalize = true)
+    val (query, lookupTable) = buildPlannerQuery("match a where a.prop = 42 OR (a)-->() return a", normalize = true)
 
     // Then inner pattern query graph
     val relName = "  UNNAMED32"
@@ -493,19 +491,18 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
-        projection = NoProjection,
         argumentIds = Set(IdName("a"))))
 
     val selections = Selections(Set(orPredicate))
 
-    qg.selections should equal(selections)
-    qg.patternNodes should equal(Set(IdName("a")))
+    query.graph.selections should equal(selections)
+    query.graph.patternNodes should equal(Set(IdName("a")))
     lookupTable should equal(subQueriesTable)
   }
 
   test("match a where (a)-->() OR a.prop = 42 return a") {
     // Given
-    val (qg, lookupTable) = buildQueryGraph("match a where (a)-->() OR a.prop = 42 return a", normalize = true)
+    val (query, lookupTable) = buildPlannerQuery("match a where (a)-->() OR a.prop = 42 return a", normalize = true)
 
     // Then inner pattern query graph
     val relName = "  UNNAMED17"
@@ -525,19 +522,18 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
-        projection = NoProjection,
         argumentIds = Set(IdName("a"))))
 
     val selections = Selections(Set(orPredicate))
 
-    qg.selections should equal(selections)
-    qg.patternNodes should equal(Set(IdName("a")))
+    query.graph.selections should equal(selections)
+    query.graph.patternNodes should equal(Set(IdName("a")))
     lookupTable should equal(subQueriesTable)
   }
 
   test("match a where a.prop = 21 OR (a)-->() OR a.prop = 42 return a") {
     // Given
-    val (qg, lookupTable) = buildQueryGraph("match a where a.prop = 21 OR (a)-->() OR a.prop = 42 return a", normalize = true)
+    val (query, lookupTable) = buildPlannerQuery("match a where a.prop = 21 OR (a)-->() OR a.prop = 42 return a", normalize = true)
 
     // Then inner pattern query graph
     val relName = "  UNNAMED32"
@@ -561,73 +557,72 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
-        projection = NoProjection,
         argumentIds = Set(IdName("a"))))
 
     val selections = Selections(Set(orPredicate))
 
-    qg.selections should equal(selections)
-    qg.patternNodes should equal(Set(IdName("a")))
+    query.graph.selections should equal(selections)
+    query.graph.patternNodes should equal(Set(IdName("a")))
     lookupTable should equal(subQueriesTable)
   }
 
   test("match n return n limit 10") {
     // Given
-    val (qg, _) = buildQueryGraph("match n return n limit 10", normalize = true)
+    val (query, _) = buildPlannerQuery("match n return n limit 10", normalize = true)
 
     // Then inner pattern query graph
-    qg.selections should equal(Selections())
-    qg.patternNodes should equal(Set(IdName("n")))
-    qg.projection.sortItems should equal(Seq.empty)
-    qg.projection.limit should equal(Some(UnsignedIntegerLiteral("10")(pos)))
-    qg.projection.skip should equal(None)
+    query.graph.selections should equal(Selections())
+    query.graph.patternNodes should equal(Set(IdName("n")))
+    query.projection.sortItems should equal(Seq.empty)
+    query.projection.limit should equal(Some(UnsignedIntegerLiteral("10")(pos)))
+    query.projection.skip should equal(None)
   }
 
   test("match n return n skip 10") {
     // Given
-    val (qg, _) = buildQueryGraph("match n return n skip 10", normalize = true)
+    val (query, _) = buildPlannerQuery("match n return n skip 10", normalize = true)
 
     // Then inner pattern query graph
-    qg.selections should equal(Selections())
-    qg.patternNodes should equal(Set(IdName("n")))
-    qg.projection.sortItems should equal(Seq.empty)
-    qg.projection.limit should equal(None)
-    qg.projection.skip should equal(Some(UnsignedIntegerLiteral("10")(pos)))
+    query.graph.selections should equal(Selections())
+    query.graph.patternNodes should equal(Set(IdName("n")))
+    query.projection.sortItems should equal(Seq.empty)
+    query.projection.limit should equal(None)
+    query.projection.skip should equal(Some(UnsignedIntegerLiteral("10")(pos)))
   }
 
   test("match (a) with * return a") {
-    val (qg, _) = buildQueryGraph("match (a) with * return a")
-    qg.patternNodes should equal(Set(IdName("a")))
-    qg.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
-    qg.tail should equal(None)
+    val (query, _) = buildPlannerQuery("match (a) with * return a")
+    query.graph.patternNodes should equal(Set(IdName("a")))
+    query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    query.tail should equal(None)
   }
 
   test("should fail with one or more pattern expression in or") {
-    evaluating(buildQueryGraph("match (a) where (a)-->() OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
-    evaluating(buildQueryGraph("match (a) where not (a)-->() OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
-    evaluating(buildQueryGraph("match (a) where (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
-    evaluating(buildQueryGraph("match (a) where not (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
-    evaluating(buildQueryGraph("match (a) where (a)-->() OR id(a) = 12 OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildPlannerQuery("match (a) where (a)-->() OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildPlannerQuery("match (a) where not (a)-->() OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildPlannerQuery("match (a) where (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildPlannerQuery("match (a) where not (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildPlannerQuery("match (a) where (a)-->() OR id(a) = 12 OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
   }
 
   test("should fail when the first pattern is optional") {
-    evaluating(buildQueryGraph("optional match (a:Foo) with a match (a)-->() return a", normalize = true)) should produce[CantHandleQueryException]
+    evaluating(buildPlannerQuery("optional match (a:Foo) with a match (a)-->() return a", normalize = true)) should produce[CantHandleQueryException]
   }
 
   ignore("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {
-    val (qg, _) = buildQueryGraph("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
-    qg.tail should not be empty
-    qg.selections.predicates should equal(Set(
+    val (query, _) = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
+    query.tail should not be empty
+    query.graph.selections.predicates should equal(Set(
       Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_)
     ))
-    qg.patternNodes should equal(Set(IdName("a")))
-    qg.projection.projections should equal(Map[String, Expression]("a" -> Property(Identifier("a")_, PropertyKeyName("prop")_)_))
-    qg.projection.limit should equal(Some(UnsignedIntegerLiteral("1")(null)))
+    query.graph.patternNodes should equal(Set(IdName("a")))
+    query.projection.projections should equal(Map[String, Expression]("a" -> Property(Identifier("a")_, PropertyKeyName("prop")_)_))
+    query.projection.limit should equal(Some(UnsignedIntegerLiteral("1")(null)))
 
-    val tailQg = qg.tail.get
-    tailQg.patternNodes should equal(Set(IdName("b")))
-    tailQg.patternRelationships should be(empty)
-    tailQg.selections.predicates should equal(Set(
+    val tailQg = query.tail.get
+    tailQg.graph.patternNodes should equal(Set(IdName("b")))
+    tailQg.graph.patternRelationships should be(empty)
+    tailQg.graph.selections.predicates should equal(Set(
       Predicate(
         Set(IdName("b"), IdName("a")),
         Equals(Property(Identifier("a")_, PropertyKeyName("prop")_)_, FunctionInvocation(FunctionName("id")_, Identifier("b")_)_)_

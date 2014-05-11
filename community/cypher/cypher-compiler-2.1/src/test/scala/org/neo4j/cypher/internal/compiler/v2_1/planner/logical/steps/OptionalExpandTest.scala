@@ -45,7 +45,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = PlannerQuery(qg)
     )
 
     val inputPlan = planSingleRow(Set("a"))
@@ -65,7 +65,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = PlannerQuery(qg)
     )
 
     val inputPlan = planSingleRow(Set("a"))
@@ -83,7 +83,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = PlannerQuery(qg)
     )
 
     val inputPlan = planSingleRow(Set("a"))
@@ -103,7 +103,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = PlannerQuery(qg)
     )
 
     val inputPlan = planSingleRow(Set("a"))
@@ -123,7 +123,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = PlannerQuery(qg)
     )
 
     val inputPlan = planSingleRow(Set("a"))
@@ -146,7 +146,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = PlannerQuery(qg)
     )
 
     val inputPlan = planSingleRow(Set("b"))

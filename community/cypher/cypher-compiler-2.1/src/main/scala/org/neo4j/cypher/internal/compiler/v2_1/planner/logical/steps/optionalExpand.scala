@@ -29,7 +29,7 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
 
     val outerJoinPlans: Seq[QueryPlan] = for {
-      optionalQG <- context.queryGraph.optionalMatches
+      optionalQG <- context.query.graph.optionalMatches
       lhs <- planTable.plans
       patternRel <- findSinglePatternRelationship(lhs, optionalQG)
       argumentId = optionalQG.argumentIds.head
@@ -47,7 +47,7 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
 
   private def findSinglePatternRelationship(outerPlan: QueryPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
     val singleArgumentAvailable = optionalQG.argumentIds.size == 1 && outerPlan.plan.availableSymbols(optionalQG.argumentIds.head)
-    val isSolved = outerPlan.solved.optionalMatches.contains(optionalQG)
+    val isSolved = outerPlan.solved.graph.optionalMatches.contains(optionalQG)
     val hasOnlyOnePatternRelationship = optionalQG.patternRelationships.size == 1
 
     if (singleArgumentAvailable && !isSolved && hasOnlyOnePatternRelationship) {

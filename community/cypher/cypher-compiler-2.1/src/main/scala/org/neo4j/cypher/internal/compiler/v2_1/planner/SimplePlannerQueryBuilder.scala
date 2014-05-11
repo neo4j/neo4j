@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_1.{Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator._
 
-object SimpleQueryGraphBuilder {
+object SimplePlannerQueryBuilder {
 
   object SubQueryExtraction {
 
@@ -44,8 +44,7 @@ object SimpleQueryGraphBuilder {
       val (patternNodes, relationships) = PatternDestructuring.destruct(rewrittenChain)
       val qg = QueryGraph(
         patternRelationships = relationships.toSet,
-        patternNodes = patternNodes.toSet,
-        projection = NoProjection
+        patternNodes = patternNodes.toSet
       ).addPredicates(predicates: _*)
       qg.addArgumentId(qg.coveredIds.filter(_.name.isNamed).toSeq)
     }
@@ -100,11 +99,12 @@ object SimpleQueryGraphBuilder {
 
 }
 
-class SimpleQueryGraphBuilder extends QueryGraphBuilder {
-  import SimpleQueryGraphBuilder.PatternDestructuring._
+class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
+
+  import SimplePlannerQueryBuilder.PatternDestructuring._
 
   private def getSelectionsAndSubQueries(optWhere: Option[Where]): (Selections, Seq[(PatternExpression, QueryGraph)]) = {
-    import SimpleQueryGraphBuilder.SubQueryExtraction.extractQueryGraph
+    import SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
 
     val predicates: Set[Predicate] = optWhere.map(SelectionPredicates.fromWhere).getOrElse(Set.empty)
 
@@ -149,18 +149,18 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     (Selections(predicates), subQueries)
   }
 
-  override def produce(ast: Query): (QueryGraph, Map[PatternExpression, QueryGraph]) = ast match {
+  override def produce(ast: Query): (PlannerQuery, Map[PatternExpression, QueryGraph]) = ast match {
     case Query(None, SingleQuery(clauses)) =>
-      produceQueryGraphFromClauses(QueryGraph.empty, Map.empty, clauses)
+      produceQueryGraphFromClauses(PlannerQuery.empty, Map.empty, clauses)
 
     case _ =>
       throw new CantHandleQueryException
   }
 
-  private def produceQueryGraphFromClauses(qg: QueryGraph,
+  private def produceQueryGraphFromClauses(querySoFar: PlannerQuery,
                                            subQueryLookupTable: Map[PatternExpression, QueryGraph],
-                                           clauses: Seq[Clause]): (QueryGraph, Map[PatternExpression, QueryGraph]) =
-      clauses match {
+                                           clauses: Seq[Clause]): (PlannerQuery, Map[PatternExpression, QueryGraph]) =
+    clauses match {
         case Return(false, ListedReturnItems(expressions), optOrderBy, skip, limit) :: tl =>
 
           val projections = produceProjectionsMap(expressions)
@@ -172,7 +172,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
             limit = limit.map(_.expression),
             skip = skip.map(_.expression))
 
-          val newQG = qg.withProjection(projection)
+          val newQG = querySoFar.withProjection(projection)
 
           produceQueryGraphFromClauses(newQG, subQueryLookupTable, tl)
 
@@ -181,12 +181,14 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
           val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
 
-          val newQG = qg.
-            addSelections(selections).
-            addPatternNodes(nodeIds:_*).
-            addPatternRels(rels)
+          val newQuery = querySoFar.updateGraph {
+            qg => qg.
+              addSelections(selections).
+              addPatternNodes(nodeIds: _*).
+              addPatternRels(rels)
+          }
 
-          produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
+          produceQueryGraphFromClauses(newQuery, subQueryLookupTable ++ subQueries, tl)
 
         case Match(optional@true, pattern: Pattern, Seq(), optWhere) :: tl =>
           val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
@@ -194,26 +196,29 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val optionalMatch = QueryGraph(
             selections = selections,
             patternNodes = nodeIds.toSet,
-            projection = NoProjection,
             patternRelationships = rels.toSet)
 
-          val newQG = qg.withAddedOptionalMatch(optionalMatch)
+          val newQuery = querySoFar.updateGraph {
+            qg => qg.withAddedOptionalMatch(optionalMatch)
+          }
 
-          produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
+          produceQueryGraphFromClauses(newQuery, subQueryLookupTable ++ subQueries, tl)
 
-        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl if qg.optionalMatches.nonEmpty =>
-          throw new CantHandleQueryException
+        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl if querySoFar.graph.optionalMatches.nonEmpty =>
+        throw new CantHandleQueryException
 
         case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
-          val newProjection = qg.projection.withSortItems(sortItems = produceSortItems(optOrderBy))
+          val newProjection = querySoFar.projection.withSortItems(sortItems = produceSortItems(optOrderBy))
 
-          val newQG: QueryGraph = qg.
+          val newQuery = querySoFar.
             withProjection(newProjection).
-            addSelections(selections)
+            updateGraph {
+            qg => qg.addSelections(selections)
+          }
 
-          produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
+          produceQueryGraphFromClauses(newQuery, subQueryLookupTable ++ subQueries, tl)
 
         case With(false, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
           throw new CantHandleQueryException
@@ -238,7 +243,7 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 //          (newQG.withTail(tailQG), map)
 
         case Seq() =>
-          (qg, subQueryLookupTable)
+          (querySoFar, subQueryLookupTable)
 
         case _ =>
           throw new CantHandleQueryException

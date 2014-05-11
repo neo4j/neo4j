@@ -57,11 +57,11 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     produceLogicalPlan("MATCH n, m WHERE n.prop = 12 AND m:Label RETURN n, m") should equal(
       CartesianProduct(
+        NodeByLabelScan("m", Left("Label")),
         Selection(
           Seq(Equals(Property(Identifier("n")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("12")_)_),
           AllNodesScan("n")
-        ),
-        NodeByLabelScan("m", Left("Label"))
+        )
       )
     )
   }
@@ -89,11 +89,11 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
 
     produceLogicalPlan("MATCH a, b, c WHERE a:A AND b:B AND c:C RETURN a, b, c") should equal(
       CartesianProduct(
+        NodeByLabelScan("b", labelIdB),
         CartesianProduct(
-          NodeByLabelScan("b", labelIdB),
-          NodeByLabelScan("c", labelIdC)
-        ),
-        NodeByLabelScan("a", labelIdA)
+          NodeByLabelScan("c", labelIdC),
+          NodeByLabelScan("a", labelIdA)
+        )
       )
     )
   }

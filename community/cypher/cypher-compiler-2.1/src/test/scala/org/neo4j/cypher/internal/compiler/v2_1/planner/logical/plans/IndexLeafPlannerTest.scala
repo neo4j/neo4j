@@ -42,7 +42,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("index scan when there is an index on the property") {
     // given
     val identifier = Identifier("n")_
-    val projections: Map[String, Expression]  = Map("n" -> identifier)
     val labelId = LabelId(12)
     val propertyKeyId = PropertyKeyId(15)
     val idName = IdName("n")
@@ -52,7 +51,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       SignedIntegerLiteral("42")_
     )_
     val qg = QueryGraph(
-      projection = QueryProjection(projections = projections),
       selections = Selections(Set(Predicate(Set(idName), equals), Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
@@ -70,7 +68,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val context = newMockedLogicalPlanContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = PlannerQuery(qg),
       metrics = factory.newMetrics(statistics, semanticTable))
     when(context.planContext.indexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
       override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
@@ -87,7 +85,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("index seek when there is an index on the property") {
     // given
     val identifier = Identifier("n")_
-    val projections: Map[String, Expression] = Map("n" -> identifier)
     val labelId = LabelId(12)
     val propertyKeyId = PropertyKeyId(15)
     val idName = IdName("n")
@@ -97,7 +94,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       SignedIntegerLiteral("42")_
     )_
     val qg = QueryGraph(
-      projection = QueryProjection(projections = projections),
       selections = Selections(Set(
         Predicate(Set(idName), equals),
         Predicate(Set(idName), hasLabels))),
@@ -117,7 +113,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     implicit val context = newMockedLogicalPlanContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = PlannerQuery(qg),
       metrics = factory.newMetrics(statistics, semanticTable))
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator())
     when(context.planContext.uniqueIndexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {

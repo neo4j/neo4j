@@ -37,8 +37,7 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val optionalMatch = QueryGraph(
       patternNodes = Set("a", "b"),
-      patternRelationships = Set(patternRel),
-      projection = NoProjection
+      patternRelationships = Set(patternRel)
     )
     val qg = QueryGraph().withAddedOptionalMatch(optionalMatch)
 
@@ -52,7 +51,7 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = PlannerQuery(qg),
       strategy = newMockedStrategy(fakePlan),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
@@ -69,13 +68,11 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val patternRel2 = PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val optionalMatch1 = QueryGraph(
       patternNodes = Set("a", "b"),
-      patternRelationships = Set(patternRel1),
-      projection = NoProjection
+      patternRelationships = Set(patternRel1)
     )
     val optionalMatch2 = QueryGraph(
       patternNodes = Set("a", "c"),
-      patternRelationships = Set(patternRel2),
-      projection = NoProjection
+      patternRelationships = Set(patternRel2)
     )
     val qg = QueryGraph().
       withAddedOptionalMatch(optionalMatch1).
@@ -92,7 +89,7 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = PlannerQuery(qg),
       strategy = FakePlanningStrategy(fakePlan1, fakePlan2),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )

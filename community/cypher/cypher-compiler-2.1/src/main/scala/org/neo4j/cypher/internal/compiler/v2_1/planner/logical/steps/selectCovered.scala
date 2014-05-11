@@ -44,11 +44,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanPr
 
 object selectCovered extends PlanTransformer {
   def apply(plan: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
-    val qg = context.queryGraph
+    val query = context.query
 
-    val unsolvedPredicates = qg.selections
+    val unsolvedPredicates = query.graph.selections
       .scalarPredicatesGiven(plan.availableSymbols)
-      .filterNot(plan.solved.selections.contains)
+      .filterNot(plan.solved.graph.selections.contains)
 
     if (unsolvedPredicates.isEmpty)
       plan
