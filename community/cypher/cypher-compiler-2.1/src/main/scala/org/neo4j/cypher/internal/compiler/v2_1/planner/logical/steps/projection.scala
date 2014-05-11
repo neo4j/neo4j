@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer,
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Descending, Ascending, SortDescription}
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.FreshIdNameGenerator
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{NoProjection, QueryProjection}
 
 object projection extends PlanTransformer {
 
@@ -61,7 +62,7 @@ object projection extends PlanTransformer {
 
     val solved = plan.solved.withProjection(newProjection)
 
-    projectIfNeeded(QueryPlan(sortSkipAndLimit, solved), projection.projections)
+    projectIfNeeded(QueryPlan(sortSkipAndLimit, solved), projection)
   }
 
   private def ensureSortablePlan(sort: List[ast.SortItem], plan: QueryPlan): LogicalPlan = {
@@ -90,24 +91,27 @@ object projection extends PlanTransformer {
     case sortItem@ast.DescSortItem(exp) => Descending(FreshIdNameGenerator.name(exp.position))
   }
 
-  private def projectIfNeeded(plan: QueryPlan, projectionsMap: Map[String, ast.Expression]): QueryPlan = {
-    val ids = plan.availableSymbols
-    val projectAllCoveredIds = ids.map {
-      case IdName(id) => id -> ast.Identifier(id)(null)
-    }.toMap
+  private def projectIfNeeded(plan: QueryPlan, projection: QueryProjection): QueryPlan = projection match {
+    case NoProjection => plan
+    case _ =>
+      val ids = plan.availableSymbols
+      val projectAllCoveredIds = ids.map {
+        case IdName(id) => id -> ast.Identifier(id)(null)
+      }.toMap
 
-    val solvedProjections = plan.solved.projection.withProjections(projectionsMap)
-    val solvedQG = plan.solved.withProjection(solvedProjections)
+      val projectionsMap = projection.projections
+      val solvedProjections = plan.solved.projection.withProjections(projectionsMap)
+      val solvedQG = plan.solved.withProjection(solvedProjections)
 
-    if (projectionsMap == projectAllCoveredIds)
-      QueryPlan(plan.plan, solvedQG)
-    else
-      QueryPlan(Projection(plan.plan, projectionsMap), solvedQG)
+      if (projectionsMap == projectAllCoveredIds)
+        QueryPlan(plan.plan, solvedQG)
+      else
+        QueryPlan(Projection(plan.plan, projectionsMap), solvedQG)
   }
 
   private def addSkip(s: Option[ast.Expression], plan: LogicalPlan): LogicalPlan =
-    s.map(x => Skip(plan, x)).getOrElse(plan)
+    s.fold(plan)(x => Skip(plan, x))
 
   private def addLimit(s: Option[ast.Expression], plan: LogicalPlan): LogicalPlan =
-    s.map(x => Limit(plan, x)).getOrElse(plan)
+    s.fold(plan)(x => Limit(plan, x))
 }

@@ -30,7 +30,7 @@ import org.mockito.Matchers._
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("Should build plans containing expand for single relationship pattern") {
-    implicit val statistics = newMockedStatistics
+    implicit val statistics = hardcodedStatistics
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
@@ -83,7 +83,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("Should build plans containing expand for self-referencing relationship patterns") {
-    implicit val statistics = newMockedStatistics
+    implicit val statistics = hardcodedStatistics
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
@@ -101,7 +101,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("Should build plans containing expand for looping relationship patterns") {
-    implicit val statistics = newMockedStatistics
+    implicit val statistics = hardcodedStatistics
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 

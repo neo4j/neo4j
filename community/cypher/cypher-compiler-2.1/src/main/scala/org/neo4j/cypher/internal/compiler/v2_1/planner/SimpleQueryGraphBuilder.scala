@@ -44,8 +44,9 @@ object SimpleQueryGraphBuilder {
       val (patternNodes, relationships) = PatternDestructuring.destruct(rewrittenChain)
       val qg = QueryGraph(
         patternRelationships = relationships.toSet,
-        patternNodes = patternNodes.toSet
-      ).addPredicates(predicates: _*).addCoveredIdsAsProjections()
+        patternNodes = patternNodes.toSet,
+        projection = NoProjection
+      ).addPredicates(predicates: _*)
       qg.addArgumentId(qg.coveredIds.filter(_.name.isNamed).toSeq)
     }
   }
@@ -193,7 +194,8 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val optionalMatch = QueryGraph(
             selections = selections,
             patternNodes = nodeIds.toSet,
-            patternRelationships = rels.toSet).addCoveredIdsAsProjections()
+            projection = NoProjection,
+            patternRelationships = rels.toSet)
 
           val newQG = qg.withAddedOptionalMatch(optionalMatch)
 
@@ -214,25 +216,26 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
 
         case With(false, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
-          val projections = produceProjectionsMap(expressions)
-          val sortItems = produceSortItems(optOrderBy)
-
-          val projection = QueryProjection(
-            projections = projections,
-            sortItems = sortItems,
-            limit = limit.map(_.expression),
-            skip = skip.map(_.expression))
-
-          val newQG = qg.withProjection(projection)
-
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-
-          val (tailQG, map) = produceQueryGraphFromClauses(
-            QueryGraph(selections = selections),
-            subQueryLookupTable ++ subQueries.toMap,
-            tl)
-
-          (newQG.withTail(tailQG), map)
+          throw new CantHandleQueryException
+//          val projections = produceProjectionsMap(expressions)
+//          val sortItems = produceSortItems(optOrderBy)
+//
+//          val projection = QueryProjection(
+//            projections = projections,
+//            sortItems = sortItems,
+//            limit = limit.map(_.expression),
+//            skip = skip.map(_.expression))
+//
+//          val newQG = qg.withProjection(projection)
+//
+//          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+//
+//          val (tailQG, map) = produceQueryGraphFromClauses(
+//            QueryGraph(selections = selections),
+//            subQueryLookupTable ++ subQueries.toMap,
+//            tl)
+//
+//          (newQG.withTail(tailQG), map)
 
         case Seq() =>
           (qg, subQueryLookupTable)

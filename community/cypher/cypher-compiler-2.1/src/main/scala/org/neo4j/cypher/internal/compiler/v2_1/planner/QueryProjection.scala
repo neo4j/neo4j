@@ -70,7 +70,7 @@ case object NoProjection extends QueryProjection {
 }
 
 case class QueryProjectionImpl(projections: Map[String, Expression], sortItems: Seq[SortItem], limit: Option[Expression],
-                          skip: Option[Expression]) extends QueryProjection{
+                          skip: Option[Expression]) extends QueryProjection {
   def withProjections(projections: Map[String, Expression]): QueryProjection = copy(projections = projections)
 
   def withSortItems(sortItems: Seq[SortItem]): QueryProjection = copy(sortItems = sortItems)

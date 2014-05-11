@@ -93,6 +93,7 @@ trait LogicalPlanningTestSupport
   }
 
   def newMockedStatistics = mock[GraphStatistics]
+  def hardcodedStatistics = HardcodedGraphStatistics
 
   def newMockedPlanContext(implicit statistics: GraphStatistics = newMockedStatistics) = {
     val context = mock[PlanContext]

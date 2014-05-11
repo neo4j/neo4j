@@ -38,7 +38,7 @@ class AllNodesLeafPlannerTest
     implicit val context = newMockedLogicalPlanContext(
       planContext = planContext,
       queryGraph = qg,
-      metrics = newMockedMetricsFactory.newMetrics(newMockedStatistics, newMockedSemanticTable))
+      metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, newMockedSemanticTable))
 
     // when
     val resultPlans = allNodesLeafPlanner(context.queryGraph)

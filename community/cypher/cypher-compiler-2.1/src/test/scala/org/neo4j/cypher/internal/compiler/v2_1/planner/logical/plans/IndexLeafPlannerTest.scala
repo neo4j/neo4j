@@ -37,7 +37,7 @@ import scala.collection.mutable
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val statistics = newMockedStatistics
+  val statistics = hardcodedStatistics
 
   test("index scan when there is an index on the property") {
     // given

@@ -40,7 +40,6 @@ trait QueryGraph {
   def addArgumentId(newIds: Seq[IdName]): QueryGraph
   def addSelections(selections: Selections): QueryGraph
   def addPredicates(predicates: Expression*): QueryGraph
-  def addCoveredIdsAsProjections(): QueryGraph
 
   def withoutArguments(): QueryGraph
 
@@ -98,7 +97,7 @@ object QueryGraph {
             patternNodes: Set[IdName] = Set.empty,
             argumentIds: Set[IdName] = Set.empty,
             selections: Selections = Selections(),
-            projection: QueryProjection = QueryProjection(),
+            projection: QueryProjection = NoProjection,
             optionalMatches: Seq[QueryGraph] = Seq.empty,
             tail: Option[QueryGraph] = None): QueryGraph =
     QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, projection, optionalMatches, tail)
@@ -126,8 +125,7 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = coveredIds intersect optionalMatch.coveredIds
-    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentId(argumentIds.toSeq)).
-      addCoveredIdsAsProjections()
+    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentId(argumentIds.toSeq))
   }
 
   def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
@@ -160,11 +158,6 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
   def addPredicates(predicates: Expression*): QueryGraph = {
     val newSelections = Selections(predicates.flatMap(SelectionPredicates.extractPredicates).toSet)
     copy(selections = selections ++ newSelections)
-  }
-
-  def addCoveredIdsAsProjections(): QueryGraph = {
-    val coveredIdProjections = coveredIds.map(x => x.name -> Identifier(x.name)(null)).toMap
-    copy(projection = projection.addProjections(coveredIdProjections))
   }
 }
 

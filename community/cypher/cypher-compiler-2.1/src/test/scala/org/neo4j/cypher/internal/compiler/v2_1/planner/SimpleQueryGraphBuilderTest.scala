@@ -404,11 +404,7 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
     optMatchQG.selections should equal(Selections(Set.empty))
     optMatchQG.optionalMatches should be(empty)
     optMatchQG.argumentIds should equal(Set(IdName("a")))
-    optMatchQG.projection.projections should equal(Map[String, Identifier](
-      "a" -> Identifier("a")_,
-      "b" -> Identifier("b")_,
-      "r" -> Identifier("r")_
-    ))
+    optMatchQG.projection should equal(NoProjection)
   }
 
   test("match a where (a)-->() return a") {
@@ -429,7 +425,8 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
-        argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
+        projection = NoProjection,
+        argumentIds = Set(IdName("a"))))
 
     val selections = Selections(Set(predicate))
 
@@ -496,7 +493,8 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
-        argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
+        projection = NoProjection,
+        argumentIds = Set(IdName("a"))))
 
     val selections = Selections(Set(orPredicate))
 
@@ -527,7 +525,8 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
-        argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
+        projection = NoProjection,
+        argumentIds = Set(IdName("a"))))
 
     val selections = Selections(Set(orPredicate))
 
@@ -562,7 +561,8 @@ class SimpleQueryGraphBuilderTest extends CypherFunSuite with LogicalPlanningTes
       QueryGraph(
         patternRelationships = Set(relationship),
         patternNodes = Set("a", nodeName),
-        argumentIds = Set(IdName("a"))).addCoveredIdsAsProjections())
+        projection = NoProjection,
+        argumentIds = Set(IdName("a"))))
 
     val selections = Selections(Set(orPredicate))
 

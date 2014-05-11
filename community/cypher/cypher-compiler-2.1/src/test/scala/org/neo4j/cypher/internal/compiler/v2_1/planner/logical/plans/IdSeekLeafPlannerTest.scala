@@ -34,7 +34,7 @@ import scala.collection.mutable
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
-  private val statistics = newMockedStatistics
+  private val statistics = hardcodedStatistics
 
   test("simple node by id seek with a node id expression") {
     // given

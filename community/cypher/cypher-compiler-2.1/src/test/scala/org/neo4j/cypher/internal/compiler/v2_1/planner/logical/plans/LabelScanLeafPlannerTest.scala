@@ -32,7 +32,7 @@ import collection.mutable
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val statistics = newMockedStatistics
+  val statistics = hardcodedStatistics
 
   test("simple label scan without compile-time label id") {
     // given

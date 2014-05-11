@@ -52,7 +52,7 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projection.projections should equal(projections("a", "r", "b"))
+    qg.projection should equal(NoProjection)
     qg.selections should equal(Selections())
     qg.patternRelationships should equal(Set(planRel))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r"), IdName("b")))
@@ -67,7 +67,7 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projection.projections should equal(projections("a", "r", "b"))
+    qg.projection should equal(NoProjection)
     qg.selections should equal(Selections())
     qg.patternRelationships should equal(Set(planRelWithType))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r"), IdName("b")))
@@ -82,7 +82,7 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projection.projections should equal(projections("a", "r", "  UNNAMED1"))
+    qg.projection should equal(NoProjection)
     qg.selections should equal(Selections())
     qg.patternRelationships should equal(Set(planRel.copy(nodes = (IdName("a"), IdName("  UNNAMED1")))))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r")))
@@ -98,7 +98,7 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projection.projections should equal(projections("a", "r", "b"))
+    qg.projection should equal(NoProjection)
     val predicate: ast.HasLabels = ast.HasLabels(ast.Identifier("b")(pos), Seq(labelName))_
     qg.selections should equal(Selections(Set(Predicate(Set(IdName("b")), predicate))))
     qg.patternRelationships should equal(Set(planRel))

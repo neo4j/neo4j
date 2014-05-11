@@ -26,6 +26,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.OuterHashJoin
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Optional
 
 class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport   {
 
@@ -50,7 +58,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
           Expand(NodeByLabelScan("a", Left("X")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength),
           Expand(NodeByLabelScan("c", Left("Y")), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)
         ),
-        expressions = Map("b" -> Identifier("b") _)
+        expressions = Map("b" -> ident("b"))
       )
     )
   }
@@ -72,4 +80,24 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     )
   }
 
+  test("should solve multiple optional matches") {
+    // OPTIONAL MATCH (a)-[r]->(b)
+    implicit val planContext = newMockedPlanContext(hardcodedStatistics)
+    implicit val planner = newPlanner(newMockedMetricsFactory)
+
+    when(planContext.getOptRelTypeId("R1")).thenReturn(None)
+    when(planContext.getOptRelTypeId("R2")).thenReturn(None)
+
+    produceLogicalPlan("MATCH a OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2") should equal(
+      Projection(
+        OptionalExpand(
+          OptionalExpand(
+            AllNodesScan(IdName("a")),
+            IdName("a"), Direction.OUTGOING, List(RelTypeName("R1")_), IdName("x1"), IdName("  UNNAMED26"), SimplePatternLength, Seq.empty),
+          IdName("a"), Direction.OUTGOING, List(RelTypeName("R2")_), IdName("x2"), IdName("  UNNAMED57"), SimplePatternLength, Seq.empty),
+        Map("a" -> ident("a"), "x1" -> ident("x1"), "x2" -> ident("x2")
+        )
+      )
+    )
+  }
 }

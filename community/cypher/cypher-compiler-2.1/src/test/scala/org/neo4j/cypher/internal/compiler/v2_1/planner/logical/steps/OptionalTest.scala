@@ -25,8 +25,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, PlanningStrategy, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import scala.collection.mutable
 
 class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -36,8 +37,9 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val optionalMatch = QueryGraph(
       patternNodes = Set("a", "b"),
-      patternRelationships = Set(patternRel)
-    ).addCoveredIdsAsProjections()
+      patternRelationships = Set(patternRel),
+      projection = NoProjection
+    )
     val qg = QueryGraph().withAddedOptionalMatch(optionalMatch)
 
     val factory = newMockedMetricsFactory
@@ -52,11 +54,56 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
       planContext = newMockedPlanContext,
       queryGraph = qg,
       strategy = newMockedStrategy(fakePlan),
-      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
     val planTable = PlanTable(Map())
 
     optional(planTable).plans should equal(Seq(planOptional(fakePlan)))
   }
+
+  test("should solve multiple optional matches") {
+    // OPTIONAL MATCH (a)-[r]->(b)
+
+    val patternRel1 = PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val patternRel2 = PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+    val optionalMatch1 = QueryGraph(
+      patternNodes = Set("a", "b"),
+      patternRelationships = Set(patternRel1),
+      projection = NoProjection
+    )
+    val optionalMatch2 = QueryGraph(
+      patternNodes = Set("a", "c"),
+      patternRelationships = Set(patternRel2),
+      projection = NoProjection
+    )
+    val qg = QueryGraph().
+      withAddedOptionalMatch(optionalMatch1).
+      withAddedOptionalMatch(optionalMatch2)
+
+    val factory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: SingleRow => 1.0
+      case _            => 1000.0
+    })
+
+    val fakePlan1 = newMockedQueryPlan(Set(IdName("a"), IdName("b")))
+    val fakePlan2 = newMockedQueryPlan(Set(IdName("a"), IdName("c")))
+
+    implicit val context = newMockedLogicalPlanContext(
+      planContext = newMockedPlanContext,
+      queryGraph = qg,
+      strategy = FakePlanningStrategy(fakePlan1, fakePlan2),
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
+    )
+
+    val planTable = PlanTable(Map())
+
+    optional(planTable).plans should equal(Seq(planOptional(fakePlan1)))
+  }
+}
+
+case class FakePlanningStrategy(plans: QueryPlan*) extends PlanningStrategy {
+  val queue = mutable.Queue[QueryPlan](plans:_*)
+  def plan(implicit context: LogicalPlanContext, leafPlan: Option[QueryPlan]): QueryPlan = queue.dequeue()
 }
