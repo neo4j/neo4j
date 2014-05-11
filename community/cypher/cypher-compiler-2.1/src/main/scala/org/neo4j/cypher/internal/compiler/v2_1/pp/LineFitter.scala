@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pp
 
 import scala.annotation.tailrec
 
-object LineWidthChecker {
+object LineFitter {
 
   def fitsDoc(width: Int, doc: Doc, mode: FormatMode = LineFormat): Boolean =
     fitsDoc(width, List(DocIndent(0, mode, doc)))

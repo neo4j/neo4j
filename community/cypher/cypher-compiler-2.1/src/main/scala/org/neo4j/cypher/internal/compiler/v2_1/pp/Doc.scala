@@ -24,14 +24,17 @@ sealed abstract class Doc {
 }
 
 object Doc {
+  def breakCons(head: Doc, tail: Doc) = ConsDoc(head, ConsDoc(breakHere, tail))
+
   def cons(head: Doc, tail: Doc = end): Doc = ConsDoc(head, tail)
   def end: Doc = NilDoc
 
-  def text(value: String): Doc = TextDoc(value)
-  def break: Doc = BreakDoc
+  implicit def text(value: String): Doc = TextDoc(value)
+  def breakHere: Doc = BreakDoc
   def breakWith(value: String): Doc = BreakWith(value)
 
   def group(doc: Doc): Doc = GroupDoc(doc)
+
   def nest(content: Doc): Doc = NestDoc(content)
   def nest(indent: Int, content: Doc): Doc = NestWith(indent, content)
 }

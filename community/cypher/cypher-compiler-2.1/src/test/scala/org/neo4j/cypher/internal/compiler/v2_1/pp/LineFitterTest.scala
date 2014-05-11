@@ -21,41 +21,41 @@ package org.neo4j.cypher.internal.compiler.v2_1.pp
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class LineWidthCheckerTest extends CypherFunSuite {
+class LineFitterTest extends CypherFunSuite {
 
   import Doc._
 
   test("fits cons") {
-    LineWidthChecker.fitsDoc(2, cons(text("m"), cons(text("e")))) should equal(true)
-    LineWidthChecker.fitsDoc(2, cons(text("y"), cons(text("ou")))) should equal(false)
+    LineFitter.fitsDoc(2, cons(text("m"), cons(text("e")))) should equal(true)
+    LineFitter.fitsDoc(2, cons(text("y"), cons(text("ou")))) should equal(false)
   }
 
   test("fits end") {
-    LineWidthChecker.fitsDoc(0, end) should equal(true)
+    LineFitter.fitsDoc(0, end) should equal(true)
   }
 
   test("fits text") {
-    LineWidthChecker.fitsDoc(2, text("me")) should equal(true)
-    LineWidthChecker.fitsDoc(2, text("you")) should equal(false)
+    LineFitter.fitsDoc(2, text("me")) should equal(true)
+    LineFitter.fitsDoc(2, text("you")) should equal(false)
   }
 
   test("fits breaks") {
-    LineWidthChecker.fitsDoc(1, break) should equal(true)
-    LineWidthChecker.fitsDoc(0, break) should equal(false)
+    LineFitter.fitsDoc(1, breakHere) should equal(true)
+    LineFitter.fitsDoc(0, breakHere) should equal(false)
   }
 
   test("fits breakWith") {
-    LineWidthChecker.fitsDoc(2, breakWith("me")) should equal(true)
-    LineWidthChecker.fitsDoc(2, breakWith("you")) should equal(false)
+    LineFitter.fitsDoc(2, breakWith("me")) should equal(true)
+    LineFitter.fitsDoc(2, breakWith("you")) should equal(false)
   }
 
   test("fits group") {
-    LineWidthChecker.fitsDoc(2, group(cons(text("m"), cons(text("e"))))) should equal(true)
-    LineWidthChecker.fitsDoc(2, group(cons(text("y"), cons(text("ou"))))) should equal(false)
+    LineFitter.fitsDoc(2, group(cons(text("m"), cons(text("e"))))) should equal(true)
+    LineFitter.fitsDoc(2, group(cons(text("y"), cons(text("ou"))))) should equal(false)
   }
 
   test("fits nest") {
-    LineWidthChecker.fitsDoc(4, nest(2, cons(text("m"), cons(text("e"))))) should equal(true)
-    LineWidthChecker.fitsDoc(4, nest(2, cons(text("y"), cons(text("ou"))))) should equal(true)
+    LineFitter.fitsDoc(4, nest(2, cons(text("m"), cons(text("e"))))) should equal(true)
+    LineFitter.fitsDoc(4, nest(2, cons(text("y"), cons(text("ou"))))) should equal(true)
   }
 }

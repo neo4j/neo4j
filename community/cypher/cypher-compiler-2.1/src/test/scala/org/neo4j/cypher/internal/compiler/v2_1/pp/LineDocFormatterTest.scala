@@ -23,31 +23,33 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class LineDocFormatterTest extends CypherFunSuite {
 
+  import Doc._
+
   test("format ConsDoc") {
-    LineDocFormatter(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b")))) should equal(Seq(PrintText("a"), PrintText("b")))
+    LineDocFormatter(cons("a", cons("b"))) should equal(Seq(PrintText("a"), PrintText("b")))
   }
 
   test("format NilDoc") {
-    LineDocFormatter(NilDoc) should equal(Seq.empty)
+    LineDocFormatter(end) should equal(Seq.empty)
   }
 
   test("format TextDoc") {
-    LineDocFormatter(TextDoc("text")) should equal(Seq(PrintText("text")))
+    LineDocFormatter("text") should equal(Seq(PrintText("text")))
   }
 
   test("format BreakDoc") {
-    LineDocFormatter(BreakDoc) should equal(Seq(PrintText(" ")))
+    LineDocFormatter(breakHere) should equal(Seq(PrintText(" ")))
   }
 
   test("format BreakWith") {
-    LineDocFormatter(BreakWith("-")) should equal(Seq(PrintText("-")))
+    LineDocFormatter(breakWith("-")) should equal(Seq(PrintText("-")))
   }
 
   test("format GroupDoc") {
-    LineDocFormatter(GroupDoc(ConsDoc(TextDoc("a"), TextDoc("b")))) should equal(Seq(PrintText("a"), PrintText("b")))
+    LineDocFormatter(group(cons("a", "b"))) should equal(Seq(PrintText("a"), PrintText("b")))
   }
 
   test("format NestDoc") {
-    LineDocFormatter(NestWith(10, NilDoc)) should equal(Seq.empty)
+    LineDocFormatter(nest(10, end)) should equal(Seq.empty)
   }
 }

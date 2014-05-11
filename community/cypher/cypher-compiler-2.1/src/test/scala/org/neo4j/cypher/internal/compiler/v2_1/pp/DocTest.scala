@@ -36,7 +36,7 @@ class DocTest extends CypherFunSuite {
   }
 
   test("break == BreakDoc") {
-    Doc.break should equal(BreakDoc)
+    Doc.breakHere should equal(BreakDoc)
   }
 
   test("breakWith(v) == BreakWith(v)") {
@@ -53,5 +53,9 @@ class DocTest extends CypherFunSuite {
 
   test("nest(i, ...) = NestWith(i, ...)") {
     Doc.nest(3, BreakDoc) should equal(NestWith(3, BreakDoc))
+  }
+
+  test("breakCons(hd, tl) = cons(hd, cons(breakHere, tl))") {
+    Doc.breakCons(Doc.text("a"), Doc.text("b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(BreakDoc, TextDoc("b"))))
   }
 }

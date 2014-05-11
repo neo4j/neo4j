@@ -30,7 +30,7 @@ class DocStructureDocGenRenderTest extends CypherFunSuite {
   }
 
   test("break => \"_\"") {
-    render(break) should equal("_")
+    render(breakHere) should equal("_")
   }
 
   test("breakWith(...) => \"_..._\"") {
