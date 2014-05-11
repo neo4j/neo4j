@@ -19,14 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pp
 
-object LineDocFormatter extends DocFormatter {
-  def apply(doc: Doc): Seq[PrintCommand] =  {
-    doc match {
-      case ConsDoc(head, tail)  => apply(head) ++ apply(tail)
-      case NilDoc               => Seq.empty
+import scala.annotation.tailrec
 
-      case doc: ValueDoc        => Seq(PrintText(doc.value))
-      case doc: ContentDoc      => apply(doc.content)
-    }
+object LineDocFormatter extends DocFormatter {
+  def apply(doc: Doc): Seq[PrintCommand] =
+    build(List(doc), Vector.newBuilder[PrintCommand]).result()
+
+  @tailrec
+  private def build(doc: List[Doc], builder: CommandPrinter[Seq[PrintCommand]]): CommandPrinter[Seq[PrintCommand]] = doc match {
+    case ConsDoc(head, tail) :: rest  =>
+      build(head :: tail :: rest, builder)
+
+    case NilDoc :: rest =>
+      build(rest, builder)
+
+    case (doc: ValueDoc) :: rest =>
+      build(rest, builder += PrintText(doc.value))
+
+    case (doc: ContentDoc) :: rest =>
+      build(doc.content :: rest, builder)
+
+    case nil =>
+      builder
   }
 }

@@ -19,11 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pp
 
-case class LineWidthChecker(defaultAddIndent: Int = 2) {
+import scala.annotation.tailrec
 
-  def fitsDoc(width: Int, doc: Doc, mode: FormatMode = LineFormat, initialIndent: Int = 0): Boolean =
-    fitsDoc(width - initialIndent, List(DocIndent(0, mode, doc)))
+object LineWidthChecker {
 
+  def fitsDoc(width: Int, doc: Doc, mode: FormatMode = LineFormat): Boolean =
+    fitsDoc(width, List(DocIndent(0, mode, doc)))
+
+  @tailrec
   def fitsDoc(width: Int, docIndents: List[DocIndent]): Boolean =
     if (width >= 0)
       docIndents match {
@@ -38,9 +41,6 @@ case class LineWidthChecker(defaultAddIndent: Int = 2) {
 
         case DocIndent(indent, mode, doc: ValueDoc) :: rest =>
           fitsDoc(width - doc.size, rest)
-
-        case DocIndent(indent, mode, doc: NestingDoc) :: rest =>
-          fitsDoc(width, DocIndent(indent + doc.optIndent.getOrElse(defaultAddIndent), mode, doc.content) :: rest)
 
         case DocIndent(indent, mode, doc: ContentDoc) :: rest =>
           fitsDoc(width, DocIndent(indent, LineFormat, doc.content) :: rest)
