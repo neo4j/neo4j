@@ -19,24 +19,43 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pp
 
+/**
+ * Class of pretty-printable documents.
+ *
+ * This package implements ideas from C. Lindig: "Strictly Pretty"
+ * (cf. http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.34.2200&rep=rep1&type=pdf)
+ *
+ */
 sealed abstract class Doc {
-  override def toString = printString(LineDocFormatter(DocStructureDocGen(this)))
+  override def toString = pp(this, formatter = LineDocFormatter)(DocStructureDocGen)
 }
 
 object Doc {
-  def breakCons(head: Doc, tail: Doc) = ConsDoc(head, ConsDoc(breakHere, tail))
+  // sequences of docs
 
   def cons(head: Doc, tail: Doc = end): Doc = ConsDoc(head, tail)
   def end: Doc = NilDoc
 
+  // unbreakable text doc
   implicit def text(value: String): Doc = TextDoc(value)
+
+  // breaks are either expanded to their value or a line break
+
   def breakHere: Doc = BreakDoc
   def breakWith(value: String): Doc = BreakWith(value)
 
+  // *all* breaks in a group are either expanded to their value or a line break
+
   def group(doc: Doc): Doc = GroupDoc(doc)
+
+  // change nesting level for inner content (used when breaks are printed as newlines)
 
   def nest(content: Doc): Doc = NestDoc(content)
   def nest(indent: Int, content: Doc): Doc = NestWith(indent, content)
+
+  // helper
+
+  def breakCons(head: Doc, tail: Doc) = ConsDoc(head, ConsDoc(breakHere, tail))
 }
 
 final case class ConsDoc(head: Doc, tail: Doc = NilDoc) extends Doc

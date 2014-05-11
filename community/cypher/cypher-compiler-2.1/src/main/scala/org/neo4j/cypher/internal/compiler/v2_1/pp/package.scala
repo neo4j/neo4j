@@ -21,6 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1
 
 import scala.collection.mutable
 
+/**
+ * See pp.Doc
+ */
 package object pp {
   type DocFormatter = Doc => Seq[PrintCommand]
   type DocGenerator[-T] = T => Doc

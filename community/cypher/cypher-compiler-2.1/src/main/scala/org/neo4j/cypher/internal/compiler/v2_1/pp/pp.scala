@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pp
 
-sealed trait FormatMode
-
-// horizontal formatting ("single line")
-case object LineFormat extends FormatMode
-
-// vertical formatting ("page with newlines and indentation")
-case object PageFormat extends FormatMode
-
+object pp {
+  // Convert value to String by first converting to a doc using the given generator and formatter
+  // and then running the formatter for the given mode
+  def apply[T](value: T, formatter: DocFormatter = PageDocFormatter(100))(implicit generator: DocGenerator[T]): String =
+    printString(formatter(generator(value)))
+}
