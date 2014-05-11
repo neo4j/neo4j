@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class LeafPlannerList(leafPlanners: LeafPlanner*) {
-  def candidateLists(qg: QueryGraph)(implicit context: LogicalPlanContext): Iterable[CandidateList] = {
+  def candidateLists(qg: QueryGraph)(implicit context: QueryGraphSolvingContext): Iterable[CandidateList] = {
     val queryPlans = leafPlanners.flatMap(_(qg).plans)
     queryPlans.groupBy(_.availableSymbols).values.map(CandidateList)
   }

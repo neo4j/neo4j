@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, PlanningStrategy, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{QueryGraphSolver, QueryGraphSolvingContext, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 import scala.collection.mutable
 
@@ -49,9 +49,9 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val fakePlan = newMockedQueryPlan(Set(IdName("a"), IdName("b")))
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       strategy = newMockedStrategy(fakePlan),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
@@ -87,9 +87,9 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val fakePlan1 = newMockedQueryPlan(Set(IdName("a"), IdName("b")))
     val fakePlan2 = newMockedQueryPlan(Set(IdName("a"), IdName("c")))
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       strategy = FakePlanningStrategy(fakePlan1, fakePlan2),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
@@ -100,7 +100,7 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 }
 
-case class FakePlanningStrategy(plans: QueryPlan*) extends PlanningStrategy {
+case class FakePlanningStrategy(plans: QueryPlan*) extends QueryGraphSolver {
   val queue = mutable.Queue[QueryPlan](plans:_*)
-  def plan(implicit context: LogicalPlanContext, leafPlan: Option[QueryPlan]): QueryPlan = queue.dequeue()
+  override def plan(implicit context: QueryGraphSolvingContext, leafPlan: Option[QueryPlan]): QueryPlan = queue.dequeue()
 }

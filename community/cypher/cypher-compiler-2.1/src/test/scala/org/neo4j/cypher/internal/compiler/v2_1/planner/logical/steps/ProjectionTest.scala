@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryProjection, LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{UnsignedIntegerLiteral, AscSortItem}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Ascending, SortDescription}
 
@@ -228,7 +228,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def queryGraphWith(skip: Option[ast.Expression] = None,
                              limit: Option[ast.Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (LogicalPlanContext, QueryPlan) = {
+                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (LogicalPlanningContext, QueryPlan) = {
     val projections = QueryProjection(
       limit = limit,
       skip = skip,
@@ -237,7 +237,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val qg = QueryGraph(patternNodes = Set(IdName("n")))
 
-    val context = newMockedLogicalPlanContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       query = PlannerQuery(qg, projections)
     )
@@ -249,6 +249,4 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     (context, plan)
   }
-
-
 }

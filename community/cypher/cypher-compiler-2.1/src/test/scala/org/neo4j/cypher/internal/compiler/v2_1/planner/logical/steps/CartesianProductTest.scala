@@ -29,7 +29,7 @@ import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.HardcodedGraphStatistics
 
 class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  implicit val context = newMockedLogicalPlanContext(
+  implicit val context = newMockedQueryGraphSolvingContext(
     planContext = newMockedPlanContext,
     metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, newMockedSemanticTable))
 
@@ -72,7 +72,7 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val factory = newMockedMetricsFactory
 
     when(factory.newCostModel(any())).thenReturn(cost)
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
       metrics = factory.newMetrics(HardcodedGraphStatistics, newMockedSemanticTable)
     )

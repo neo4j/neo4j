@@ -29,8 +29,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanPr
 
 case class selectPatternPredicates(simpleSelection: PlanTransformer) extends PlanTransformer {
   private object candidateListProducer extends CandidateGenerator[PlanTable] {
-    def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
-      val queryGraph = context.query.graph
+    def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
+      val queryGraph = context.queryGraph
       val applyCandidates =
         for (
           lhs <- planTable.plans;
@@ -56,11 +56,11 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
       CandidateList(applyCandidates)
     }
 
-    private def rhsPlan(context: LogicalPlanContext, pattern: PatternExpression) = {
+    private def rhsPlan(context: QueryGraphSolvingContext, pattern: PatternExpression) = {
       val qg = context.subQueriesLookupTable.getOrElse(pattern,
         throw new ThisShouldNotHappenError("Davide/Stefan", s"Did not find QueryGraph for pattern expression $pattern")
       )
-      context.strategy.plan(context.copy(query = PlannerQuery(graph = qg)))
+      context.strategy.plan(context.copy(queryGraph = qg))
     }
 
     private def doesNotContainPatterns(e: Seq[Expression]) = !e.exists(_.exists { case e: PatternExpression => true })
@@ -77,7 +77,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
     }
   }
 
-  def apply(input: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
+  def apply(input: QueryPlan)(implicit context: QueryGraphSolvingContext): QueryPlan = {
     val plan = simpleSelection(input)
 
     def findBestPlanForPatternPredicates(plan: QueryPlan): QueryPlan = {

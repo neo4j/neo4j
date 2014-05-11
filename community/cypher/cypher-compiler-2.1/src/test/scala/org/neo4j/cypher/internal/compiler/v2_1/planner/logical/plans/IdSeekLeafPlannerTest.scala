@@ -53,9 +53,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: NodeByIdSeek => 1
       case _               => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
@@ -88,9 +88,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: NodeByIdSeek => 1
       case _               => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
@@ -127,9 +127,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: DirectedRelationshipByIdSeek => 1
       case _                               => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
@@ -162,9 +162,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: UndirectedRelationshipByIdSeek => 2
       case _                                 => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
 
@@ -200,9 +200,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: DirectedRelationshipByIdSeek => 1
       case _                               => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
@@ -238,9 +238,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: UndirectedRelationshipByIdSeek => 2
       case _                                 => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
@@ -282,9 +282,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: UndirectedRelationshipByIdSeek => 2
       case _                                 => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       metrics = factory.newMetrics(statistics, semanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
@@ -330,9 +330,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: UndirectedRelationshipByIdSeek => 2
       case _                                 => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       metrics = factory.newMetrics(statistics, semanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)

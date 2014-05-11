@@ -20,15 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Descending, Ascending, SortDescription}
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{NoProjection, QueryProjection}
 
-object projection extends PlanTransformer {
+object projection  {
 
-  def apply(plan: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
+  def apply(plan: QueryPlan)(implicit context: LogicalPlanningContext): QueryPlan = {
     val queryGraph = context.query
     val logicalPlan = plan.plan
     val projection = queryGraph.projection

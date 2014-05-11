@@ -34,7 +34,8 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
   val tokenResolver = new SimpleTokenResolver()
   val plannerQueryBuilder = new SimplePlannerQueryBuilder
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
-  val strategy = new GreedyPlanningStrategy()
+  val strategy = new QueryPlanningStrategy()
+  val queryGraphSolver = new GreedyQueryGraphSolver()
 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
     producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)
@@ -71,7 +72,8 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
     val (plannerQuery, subQueriesLookupTable) = plannerQueryBuilder.produce(ast)
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
-    val context = LogicalPlanContext(planContext, metrics, semanticTable, plannerQuery, subQueriesLookupTable, strategy)
+
+    val context = LogicalPlanningContext(planContext, metrics, semanticTable, plannerQuery, queryGraphSolver, subQueriesLookupTable)
     strategy.plan(context).plan
   }
 }

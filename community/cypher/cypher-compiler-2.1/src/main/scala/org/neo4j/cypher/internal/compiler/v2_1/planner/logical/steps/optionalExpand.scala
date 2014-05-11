@@ -26,10 +26,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanPr
 
 object optionalExpand extends CandidateGenerator[PlanTable] {
 
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+  def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
 
     val outerJoinPlans: Seq[QueryPlan] = for {
-      optionalQG <- context.query.graph.optionalMatches
+      optionalQG <- context.queryGraph.optionalMatches
       lhs <- planTable.plans
       patternRel <- findSinglePatternRelationship(lhs, optionalQG)
       argumentId = optionalQG.argumentIds.head

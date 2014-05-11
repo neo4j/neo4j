@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryProjection, QueryGraph, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
@@ -32,19 +31,16 @@ class AllNodesLeafPlannerTest
 
   test("simple all nodes scan") {
     // given
-    val query = PlannerQuery(
-      projection = QueryProjection(projections = Map("n" -> Identifier("n") _)), 
-      graph = QueryGraph(patternNodes = Set(IdName("n")))
-    )
+    val queryGraph = QueryGraph(patternNodes = Set(IdName("n")))
 
     implicit val planContext = newMockedPlanContext
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = planContext,
-      query = query,
+      query = queryGraph,
       metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, newMockedSemanticTable))
 
     // when
-    val resultPlans = allNodesLeafPlanner(context.query.graph)
+    val resultPlans = allNodesLeafPlanner(queryGraph)
 
     // then
     resultPlans should equal(Candidates(planAllNodesScan(IdName("n"))))

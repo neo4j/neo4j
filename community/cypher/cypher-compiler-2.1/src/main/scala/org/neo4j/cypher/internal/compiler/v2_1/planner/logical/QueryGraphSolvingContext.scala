@@ -24,27 +24,42 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Identifier}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
-case class LogicalPlanContext(planContext: PlanContext,
-                              metrics: Metrics,
-                              semanticTable: SemanticTable,
-                              query: PlannerQuery,
-                              subQueriesLookupTable: Map[PatternExpression, QueryGraph],
-                              strategy: PlanningStrategy) {
+case class QueryGraphSolvingContext(planContext: PlanContext,
+                                    metrics: Metrics,
+                                    semanticTable: SemanticTable,
+                                    queryGraph: QueryGraph,
+                                    subQueriesLookupTable: Map[PatternExpression, QueryGraph],
+                                    strategy: QueryGraphSolver) {
 
   def statistics = planContext.statistics
   def cost = metrics.cost
   def cardinality = metrics.cardinality
 }
 
+case class LogicalPlanningContext(planContext: PlanContext,
+                                  metrics: Metrics,
+                                  semanticTable: SemanticTable,
+                                  query: PlannerQuery,
+                                  strategy: QueryGraphSolver,
+                                  subQueriesLookupTable: Map[PatternExpression, QueryGraph]) {
+
+  def statistics = planContext.statistics
+  def cost = metrics.cost
+  def cardinality = metrics.cardinality
+
+  def asQueryGraphSolvingContext(graph: QueryGraph) =
+    QueryGraphSolvingContext(planContext, metrics, semanticTable, graph, subQueriesLookupTable, strategy)
+}
+
 object NodeIdName {
-  def unapply(v: Any)(implicit context: LogicalPlanContext): Option[IdName] = v match {
+  def unapply(v: Any)(implicit context: QueryGraphSolvingContext): Option[IdName] = v match {
     case identifier @ Identifier(name) if context.semanticTable.isNode(identifier) => Some(IdName(identifier.name))
     case _                                                                         => None
   }
 }
 
 object RelationshipIdName {
-  def unapply(v: Any)(implicit context: LogicalPlanContext): Option[IdName] = v match {
+  def unapply(v: Any)(implicit context: QueryGraphSolvingContext): Option[IdName] = v match {
     case identifier @ Identifier(name) if context.semanticTable.isRelationship(identifier) => Some(IdName(identifier.name))
     case _                                                                                 => None
   }

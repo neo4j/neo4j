@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryGraph, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, CandidateList, PlanTable}
 import org.neo4j.graphdb.Direction
@@ -31,7 +31,7 @@ class ExpandTest
   extends CypherFunSuite
   with LogicalPlanningTestSupport {
 
-  private def createQuery(rels: PatternRelationship*) = PlannerQuery(QueryGraph(patternRelationships = rels.toSet))
+  private def createQuery(rels: PatternRelationship*) = QueryGraph(patternRelationships = rels.toSet)
   val aNode = IdName("a")
   val bNode = IdName("b")
   val rName = IdName("r")
@@ -40,7 +40,7 @@ class ExpandTest
   val rSelfRel = PatternRelationship(rName, (aNode, aNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("do not expand when no pattern relationships exist in query graph") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
       query = createQuery()
     )
@@ -50,7 +50,7 @@ class ExpandTest
   }
 
   test("finds single pattern relationship when start point is picked") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
       query = createQuery(rRel)
     )
@@ -63,7 +63,7 @@ class ExpandTest
   }
 
   test("finds expansion going both sides") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
       query = createQuery(rRel)
     )
@@ -78,7 +78,7 @@ class ExpandTest
   }
 
   test("does not include plan that has the relationship name already covered") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
       query = createQuery()
     )
@@ -89,7 +89,7 @@ class ExpandTest
   }
 
   test("self referencing pattern is handled correctly") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
       query = createQuery(rSelfRel)
     )
@@ -104,7 +104,7 @@ class ExpandTest
   }
 
   test("looping pattern is handled as it should") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
       query = createQuery(rRel)
     )
@@ -124,7 +124,7 @@ class ExpandTest
   }
 
   test("unlimited variable length relationship") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
       query = createQuery(rVarRel)
     )

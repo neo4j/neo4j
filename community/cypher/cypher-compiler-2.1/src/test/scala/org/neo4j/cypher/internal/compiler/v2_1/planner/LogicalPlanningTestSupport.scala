@@ -74,19 +74,26 @@ trait LogicalPlanningTestSupport
   def newMockedMetricsFactory = spy(new SpyableMetricsFactory)
 
   def newMockedStrategy(plan: QueryPlan) = {
-    val strategy = mock[PlanningStrategy]
+    val strategy = mock[QueryGraphSolver]
     doReturn(plan).when(strategy).plan(any(), any())
     strategy
   }
 
-  def newMockedLogicalPlanContext(planContext: PlanContext,
-                                  metrics: Metrics = self.mock[Metrics],
-                                  semanticTable: SemanticTable = self.mock[SemanticTable],
-                                  query: PlannerQuery = PlannerQuery.empty,
-                                  subQueryLookupTable: Map[PatternExpression, QueryGraph] = Map.empty,
-                                  strategy: PlanningStrategy = new GreedyPlanningStrategy()): LogicalPlanContext =
+  def newMockedQueryGraphSolvingContext(planContext: PlanContext,
+                                        metrics: Metrics = self.mock[Metrics],
+                                        semanticTable: SemanticTable = self.mock[SemanticTable],
+                                        query: QueryGraph = QueryGraph.empty,
+                                        subQueryLookupTable: Map[PatternExpression, QueryGraph] = Map.empty,
+                                        strategy: QueryGraphSolver = new GreedyQueryGraphSolver()): QueryGraphSolvingContext =
+    QueryGraphSolvingContext(planContext, metrics, semanticTable, query, subQueryLookupTable, strategy)
 
-    LogicalPlanContext(planContext, metrics, semanticTable, query, subQueryLookupTable, strategy)
+  def newMockedLogicalPlanningContext(planContext: PlanContext,
+                                        metrics: Metrics = self.mock[Metrics],
+                                        semanticTable: SemanticTable = self.mock[SemanticTable],
+                                        query: PlannerQuery = PlannerQuery.empty,
+                                        subQueryLookupTable: Map[PatternExpression, QueryGraph] = Map.empty,
+                                        strategy: QueryGraphSolver = new GreedyQueryGraphSolver()): LogicalPlanningContext =
+    LogicalPlanningContext(planContext, metrics, semanticTable, query, strategy, subQueryLookupTable)
 
   implicit class RichLogicalPlan(plan: QueryPlan) {
     def asTableEntry = plan.availableSymbols -> plan
@@ -101,7 +108,7 @@ trait LogicalPlanningTestSupport
     context
   }
 
-  def newMockedQueryPlanWithProjections(ids: String*)(implicit context: LogicalPlanContext) = {
+  def newMockedQueryPlanWithProjections(ids: String*)(implicit context: QueryGraphSolvingContext) = {
     val projections = QueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
     QueryPlan(
       newMockedLogicalPlan(ids: _*),
@@ -126,13 +133,13 @@ trait LogicalPlanningTestSupport
 
   def newMockedLogicalPlan(ids: Set[IdName]): LogicalPlan = FakePlan(ids)
 
-  def newMockedQueryPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): QueryPlan = {
+  def newMockedQueryPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: QueryGraphSolvingContext): QueryPlan = {
     val plan = newMockedLogicalPlan(ids)
     val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRels(patterns)
     QueryPlan(plan, PlannerQuery(qg))
   }
 
-  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): LogicalPlan = {
+  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: QueryGraphSolvingContext): LogicalPlan = {
     val plan = mock[LogicalPlan]
     doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
     plan

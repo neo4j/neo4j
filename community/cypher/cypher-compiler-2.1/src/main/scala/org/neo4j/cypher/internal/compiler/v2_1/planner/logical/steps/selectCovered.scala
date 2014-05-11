@@ -39,14 +39,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, QueryGraphSolvingContext}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object selectCovered extends PlanTransformer {
-  def apply(plan: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
-    val query = context.query
-
-    val unsolvedPredicates = query.graph.selections
+  def apply(plan: QueryPlan)(implicit context: QueryGraphSolvingContext): QueryPlan = {
+    val unsolvedPredicates = context.queryGraph.selections
       .scalarPredicatesGiven(plan.availableSymbols)
       .filterNot(plan.solved.graph.selections.contains)
 

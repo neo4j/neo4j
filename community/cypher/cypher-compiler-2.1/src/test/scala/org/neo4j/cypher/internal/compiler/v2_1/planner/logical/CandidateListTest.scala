@@ -21,7 +21,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryGraph, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan, IdName}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -29,7 +29,7 @@ import org.mockito.Mockito._
 class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   implicit val semanticTable = newMockedSemanticTable
   implicit val planContext = newMockedPlanContext
-  implicit val context = newMockedLogicalPlanContext(planContext)
+  implicit val context = newMockedQueryGraphSolvingContext(planContext)
 
   val x = newMockedQueryPlan("x")
   val y = newMockedQueryPlan("y")

@@ -44,9 +44,9 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
       case _            => 1000.0
     })
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
@@ -67,9 +67,9 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val optionalMatch = QueryGraph(patternNodes = Set("a"))
     val qg = QueryGraph.empty.withAddedOptionalMatch(optionalMatch)
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg)
+      query = qg
     )
 
     applyOptional(PlanTable()) should equal(Candidates())

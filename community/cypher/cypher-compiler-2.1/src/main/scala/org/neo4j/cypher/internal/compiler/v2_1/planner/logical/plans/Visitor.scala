@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.QueryGraphSolvingContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 trait Visitor[T, R] {
@@ -30,7 +30,7 @@ trait Visitable[T] {
   def accept[R](visitor: Visitor[T, R]): R
 }
 
-class QueryPlanTreeStringVisitor(optContext: Option[LogicalPlanContext] = None) extends Visitor[QueryPlan, String] {
+class QueryPlanTreeStringVisitor(optContext: Option[QueryGraphSolvingContext] = None) extends Visitor[QueryPlan, String] {
   def visit(target: QueryPlan) = {
     val planRepr = target.plan.toString
     val qgRepr = QueryGraphStringVisitor.visit(target.solved.graph)
@@ -39,7 +39,7 @@ class QueryPlanTreeStringVisitor(optContext: Option[LogicalPlanContext] = None) 
   }
 }
 
-class LogicalPlanTreeStringVisitor(optContext: Option[LogicalPlanContext] = None) extends Visitor[LogicalPlan, String] {
+class LogicalPlanTreeStringVisitor(optContext: Option[QueryGraphSolvingContext] = None) extends Visitor[LogicalPlan, String] {
   def visit(target: LogicalPlan) = {
     val metrics = optContext match {
       case Some(context) => s"(cost ${context.cost(target)}/cardinality ${context.cardinality(target)})"

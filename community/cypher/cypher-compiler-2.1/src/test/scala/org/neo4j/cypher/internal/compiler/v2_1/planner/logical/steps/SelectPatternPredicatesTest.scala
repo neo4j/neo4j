@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{QueryGraphSolvingContext, PlanTransformer}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
@@ -49,7 +49,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   })
 
   val passThrough = new PlanTransformer {
-    def apply(input: QueryPlan)(implicit context: LogicalPlanContext) = input
+    def apply(input: QueryPlan)(implicit context: QueryGraphSolvingContext) = input
   }
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
@@ -67,9 +67,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
@@ -100,9 +100,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
@@ -133,9 +133,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
@@ -168,9 +168,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
@@ -206,9 +206,9 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )

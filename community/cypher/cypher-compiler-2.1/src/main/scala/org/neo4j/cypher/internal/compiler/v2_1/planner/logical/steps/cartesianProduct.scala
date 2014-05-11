@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.QueryGraphSolvingContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 
 object cartesianProduct {
-  def apply(input: PlanTable)(implicit context: LogicalPlanContext): QueryPlan = {
+  def apply(input: PlanTable)(implicit context: QueryGraphSolvingContext): QueryPlan = {
     val sortedList = input.plans.sortBy(p => context.metrics.cost(p.plan)).toList
     sortedList.reduceRight(planCartesianProduct)
   }

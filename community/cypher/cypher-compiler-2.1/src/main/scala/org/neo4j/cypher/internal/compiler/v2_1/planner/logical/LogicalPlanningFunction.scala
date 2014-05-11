@@ -19,13 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 trait LogicalPlanningFunction[-A, +B] {
-  def apply(input: A)(implicit context: LogicalPlanContext): B
+  def apply(input: A)(implicit context: QueryGraphSolvingContext): B
 
-  def asFunctionInContext(implicit context: LogicalPlanContext): A => B = apply
+  def asFunctionInContext(implicit context: QueryGraphSolvingContext): A => B = apply
 }
 
 trait CandidateGenerator[-T] extends LogicalPlanningFunction[T, CandidateList]

@@ -21,17 +21,17 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object outerJoin extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+  def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
 
     val outerJoinPlans = for {
-      optionalQG <- context.query.graph.optionalMatches
+      optionalQG <- context.queryGraph.optionalMatches
       lhs <- planTable.plans if applicable(lhs, optionalQG)
     } yield {
-      val innerLogicalPlanContext = context.copy(query = PlannerQuery(graph = optionalQG.withoutArguments()))
+      val innerLogicalPlanContext = context.copy(queryGraph = optionalQG.withoutArguments())
       val rhs = context.strategy.plan(innerLogicalPlanContext)
       planOuterHashJoin(optionalQG.argumentIds.head, lhs, rhs)
     }

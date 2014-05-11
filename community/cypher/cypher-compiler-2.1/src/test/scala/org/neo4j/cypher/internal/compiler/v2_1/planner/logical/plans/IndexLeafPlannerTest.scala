@@ -65,10 +65,10 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       case _: NodeByLabelScan => 100
       case _                  => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       metrics = factory.newMetrics(statistics, semanticTable))
     when(context.planContext.indexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
       override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
@@ -110,10 +110,10 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       case _: NodeByLabelScan => 100
       case _                  => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      query = PlannerQuery(qg),
+      query = qg,
       metrics = factory.newMetrics(statistics, semanticTable))
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator())
     when(context.planContext.uniqueIndexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {

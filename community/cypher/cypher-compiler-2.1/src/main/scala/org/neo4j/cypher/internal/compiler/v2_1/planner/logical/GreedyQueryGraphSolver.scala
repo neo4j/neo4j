@@ -19,19 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SingleRow, Apply, QueryPlan, LogicalPlan}
-
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SingleRow, QueryPlan}
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.cartesianProduct
+import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
 
-class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
-  def plan(implicit context: LogicalPlanContext, leafPlan: Option[QueryPlan] = None): QueryPlan = {
+class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
+  extends QueryGraphSolver{
+  def plan(implicit context: QueryGraphSolvingContext, leafPlan: Option[QueryPlan] = None): QueryPlan = {
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
 
     def generateLeafPlanTable() = {
-      val leafPlanCandidateLists = config.leafPlanners.candidateLists(context.query.graph)
+      val leafPlanCandidateLists = config.leafPlanners.candidateLists(context.queryGraph)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select))
       val bestLeafPlans: Iterable[QueryPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
       val startTable: PlanTable = leafPlan.foldLeft(PlanTable.empty)(_ + _)
@@ -45,21 +45,10 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
     val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)
     val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(afterExpandOrJoin)
 
-    val planAfterMatch = if (afterOptionalApplies.nonEmpty) {
+    if (afterOptionalApplies.nonEmpty) {
       select(cartesianProduct(afterOptionalApplies))
     } else {
       QueryPlan(SingleRow(Set.empty), PlannerQuery.empty)
     }
-
-    val bestPlan = projection(planAfterMatch)
-
-    val finalPlan: QueryPlan = context.query.tail match {
-      case Some(tail) =>
-        val finalPlan = plan(context.copy(query = tail), Some(QueryPlan(bestPlan.plan, PlannerQuery.empty)))
-        finalPlan.copy(solved = bestPlan.solved.withTail(tail))
-      case _ => bestPlan
-    }
-
-    verifyBestPlan(finalPlan)
   }
 }
