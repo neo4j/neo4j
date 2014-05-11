@@ -17,10 +17,27 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp
+package org.neo4j.cypher.internal.compiler.v2_1.pp.docgen
 
-object pp {
-  // Convert value to String by first converting to a doc using the given generator and formatter
-  def apply[T](value: T, formatter: DocFormatter = PageDocFormatter(100))(implicit generator: DocGenerator[T]): String =
-    printString(formatter(generator(value)))
+import org.neo4j.cypher.internal.compiler.v2_1.pp._
+
+case class productDocGen(f: DocGenerator[Any]) extends DocGenerator[Product] {
+
+  import Doc._
+
+  def apply(product: Product): Doc = {
+    if (product.productArity == 0) {
+      text(product.productPrefix)
+    } else {
+      val innerDocs = product.productIterator.map(f).toList
+
+      group(list(List(
+        text(product.productPrefix),
+        text("("),
+        nest(group(cons(pageBreak, sepList(innerDocs)))),
+        pageBreak,
+        text(")")
+      )))
+    }
+  }
 }

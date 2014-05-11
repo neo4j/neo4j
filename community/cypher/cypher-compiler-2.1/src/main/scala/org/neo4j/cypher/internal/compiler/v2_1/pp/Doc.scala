@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pp
 
+import org.neo4j.cypher.internal.compiler.v2_1.pp.docgen.docStructureDocGen
+
 /**
  * Class of pretty-printable documents.
  *
@@ -27,7 +29,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pp
  *
  */
 sealed abstract class Doc {
-  override def toString = pp(this, formatter = LineDocFormatter)(DocStructureDocGen)
+  override def toString = pp(this, formatter = LineDocFormatter)(docStructureDocGen)
 }
 
 object Doc {
@@ -36,6 +38,19 @@ object Doc {
   def cons(head: Doc, tail: Doc = end): Doc = ConsDoc(head, tail)
   def end: Doc = NilDoc
 
+  implicit def list(docs: List[Doc]): Doc = docs.foldRight(end)(cons)
+
+  def sepList(docs: List[Doc], sep: Doc => Doc = frontSeparator(",")): Doc = docs.foldRight(end) {
+    case (hd, NilDoc) => cons(hd, end)
+    case (hd, tail)   => cons(hd, sep(tail))
+  }
+
+  def frontSeparator(sep: Doc): Doc => Doc =
+    (tail: Doc) => breakCons(sep, tail)
+
+  def backSeparator(sep: Doc): Doc => Doc =
+    (tail: Doc) => cons(breakHere, cons(sep, tail))
+
   // unbreakable text doc
   implicit def text(value: String): Doc = TextDoc(value)
 
@@ -43,6 +58,10 @@ object Doc {
 
   def breakHere: Doc = BreakDoc
   def breakWith(value: String): Doc = BreakWith(value)
+
+  // useful to force a page break if a group is in PageMode and print nothing otherwise
+
+  def pageBreak = breakWith("")
 
   // *all* breaks in a group are either expanded to their value or a line break
 

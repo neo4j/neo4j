@@ -58,4 +58,12 @@ class DocTest extends CypherFunSuite {
   test("breakCons(hd, tl) = cons(hd, cons(breakHere, tl))") {
     Doc.breakCons(Doc.text("a"), Doc.text("b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(BreakDoc, TextDoc("b"))))
   }
+
+  test("list(a :: b) => cons(a, cons(b))") {
+    Doc.list(List("a", "b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"))))
+  }
+
+  test("sepList(a :: b) => cons(a, cons(',', breakCons(b)))") {
+    Doc.sepList(List("a", "b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(TextDoc(","), ConsDoc(BreakDoc, ConsDoc(TextDoc("b"))))))
+  }
 }

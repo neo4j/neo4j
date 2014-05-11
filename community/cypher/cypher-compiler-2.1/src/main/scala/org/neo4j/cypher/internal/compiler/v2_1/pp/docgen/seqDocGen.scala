@@ -17,21 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp
+package org.neo4j.cypher.internal.compiler.v2_1.pp.docgen
 
-object DocStructureDocGen extends DocGenerator[Doc] {
- import Doc._
+import org.neo4j.cypher.internal.compiler.v2_1.pp.{Doc, DocGenerator}
 
- def apply(data: Doc): Doc = data match {
-   case ConsDoc(hd, tl)       => cons(apply(hd), cons(TextDoc("·"), apply(tl)))
-   case NilDoc                => text("ø")
+case class seqDocGen[K](f: DocGenerator[Any]) extends DocGenerator[Seq[K]] {
 
-   case TextDoc(value)        => text(s"${"\""}$value${"\""}")
-   case BreakDoc              => breakWith("_")
-   case BreakWith(value)      => breakWith(s"_${value}_")
+  import Doc._
 
-   case GroupDoc(doc)         => group(cons(text("["), cons(apply(doc), text("]"))))
-   case NestDoc(doc)          => group(cons(text("<"), cons(apply(doc), text(">"))))
-   case NestWith(indent, doc) => group(cons(text(s"($indent)<"), cons(apply(doc), text(">"))))
- }
+  def apply(seq: Seq[K]): Doc =
+    group(list(List(
+      text("${seqType(seq)}("),
+      nest(group(cons(pageBreak, sepList(innerDocs(seq))))),
+      pageBreak,
+      text(")")
+    )))
+
+  private def innerDocs(seq: Seq[K]): List[Doc] = seq.map(f).toList
+
+  private def seqType(seq: Seq[K]) = seq.getClass.getSimpleName
 }

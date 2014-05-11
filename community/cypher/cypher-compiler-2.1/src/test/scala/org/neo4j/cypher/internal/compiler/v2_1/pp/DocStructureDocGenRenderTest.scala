@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pp
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.pp.docgen.docStructureDocGen
 
 class DocStructureDocGenRenderTest extends CypherFunSuite {
 
@@ -57,5 +58,5 @@ class DocStructureDocGenRenderTest extends CypherFunSuite {
     render(nest(text("a"))) should equal("<\"a\">")
   }
 
-  private def render(doc: Doc) = printString(LineDocFormatter(DocStructureDocGen(doc)))
+  private def render(doc: Doc) = printString(LineDocFormatter(docStructureDocGen(doc)))
 }
