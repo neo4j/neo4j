@@ -31,6 +31,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.AscSortItem
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
+  import QueryPlanProducer._
+
   val x: ast.Expression = ast.UnsignedIntegerLiteral("110") _
   val y: ast.Expression = ast.UnsignedIntegerLiteral("10") _
   val identifierSortItem: AscSortItem = ast.AscSortItem(ast.Identifier("n") _) _
@@ -158,8 +160,8 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan)
 
     // then
-    result.plan should equal(
-      SortedLimit(startPlan.plan, x, sortItems)
+    result should equal(
+      planSortedLimit(startPlan, x, sortItems)
     )
 
     result.solved.projection.limit should equal(Some(x))
@@ -178,14 +180,12 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan)
 
     // then
-    result.plan should equal(
-      Skip(
-        SortedLimit(
-          startPlan.plan,
-          ast.Add(x, y) _,
-          Seq(identifierSortItem)
-        ),
-        y
+    result should equal(
+      planSortedSkipAndLimit(
+        startPlan,
+        y,
+        x,
+        Seq(identifierSortItem)
       )
     )
 

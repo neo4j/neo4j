@@ -24,34 +24,49 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
+
+  import QueryPlanProducer._
+
   def plan(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): QueryPlan = {
     val query = context.query
+    val firstPart = planPart(query, leafPlan)
+    val projectedFirstPart = planEventHorizon(query.projection, firstPart)
+    val finalPlan = plan(projectedFirstPart, query.tail, context)
+    verifyBestPlan(finalPlan)
+  }
 
+  private def plan(pred: QueryPlan, remaining: Option[PlannerQuery], context: LogicalPlanningContext): QueryPlan = remaining match {
+    case Some(query) =>
+      val innerContext = context.copy(query = query)
+      val lhs = pred
+      val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))(innerContext)
+      val applyPlan = planTailApply(lhs, rhs)
+      val projectedPlan = planEventHorizon(query.projection, applyPlan)(innerContext)
+      plan( projectedPlan, query.tail, innerContext )
+    case None =>
+      pred
+  }
+
+  private def planPart(query: PlannerQuery, leafPlan: Option[QueryPlan] = None)(implicit context: LogicalPlanningContext): QueryPlan = {
     val graphSolvingContext = context.asQueryGraphSolvingContext(query.graph)
-
     val afterSolvingPattern = context.strategy.plan(graphSolvingContext, leafPlan)
-    val afterProjection = query.projection match {
+
+    afterSolvingPattern
+  }
+
+  private def planEventHorizon(queryProjection: QueryProjection, plan: QueryPlan)(implicit context: LogicalPlanningContext) = {
+    queryProjection match {
       case aggr:AggregationProjection =>
         if (context.query.projection.skip.nonEmpty ||
           context.query.projection.sortItems.nonEmpty ||
           context.query.projection.limit.nonEmpty)
           throw new CantHandleQueryException
 
-        aggregation(afterSolvingPattern, aggr)
+        aggregation(plan, aggr)
 
       case _ =>
-        val sortedAndLimited = sortSkipAndLimit(afterSolvingPattern)
-        projection(sortedAndLimited, query.projection.projections)
+        val sortedAndLimited = sortSkipAndLimit(plan)
+        projection(sortedAndLimited, queryProjection.projections)
     }
-
-    val finalPlan: QueryPlan = query.tail match {
-      case Some(tail) =>
-        val finalPlan = plan(context.copy(query = tail), Some(QueryPlan(afterProjection.plan, PlannerQuery.empty)))
-        finalPlan.copy(solved = afterProjection.solved.withTail(tail))
-
-      case _ => afterProjection
-    }
-
-    verifyBestPlan(finalPlan)
   }
 }

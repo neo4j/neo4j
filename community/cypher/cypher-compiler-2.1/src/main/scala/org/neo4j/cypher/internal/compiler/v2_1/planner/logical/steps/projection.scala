@@ -26,6 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.NoProjection
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
 object projection {
+
+  import QueryPlanProducer._
+
   def apply(plan: QueryPlan, projectionsMap: Map[String, Expression])(implicit context: LogicalPlanningContext): QueryPlan = {
     val projection = context.query.projection
     projection match {
@@ -36,13 +39,10 @@ object projection {
           case IdName(id) => id -> ast.Identifier(id)(null)
         }.toMap
 
-        val solvedProjections = plan.solved.projection.withProjections(projectionsMap)
-        val solvedQG = plan.solved.withProjection(solvedProjections)
-
         if (projectionsMap == projectAllCoveredIds)
-          QueryPlan(plan.plan, solvedQG)
+          planStarProjection(plan, projectionsMap)
         else
-          QueryPlan(Projection(plan.plan, projectionsMap), solvedQG)
+          planRegularProjection(plan, projectionsMap)
     }
   }
 }
