@@ -19,6 +19,26 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.containsAnyStoreFiles;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.isolatedMigrationDirectoryOf;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
+import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.Writer;
@@ -27,7 +47,6 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -41,28 +60,6 @@ import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.containsAnyLogicalLogs;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.containsAnyStoreFiles;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.isolatedMigrationDirectoryOf;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.prepareSampleLegacyDatabase;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.truncateFile;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.verifyFilesHaveSameContent;
-import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
-
 public class StoreUpgraderTestIT
 {
     @Test
@@ -75,7 +72,7 @@ public class StoreUpgraderTestIT
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, ALL_STORES_VERSION ) );
 
-        assertFalse( containsAnyLogicalLogs( fileSystem, dbDirectory ) );
+        // We leave logical logs in place since the new version can read the old
 
         assertFalse( containsAnyStoreFiles( fileSystem, isolatedMigrationDirectoryOf( dbDirectory ) ) );
     }
@@ -91,7 +88,7 @@ public class StoreUpgraderTestIT
 
         verifyFilesHaveSameContent( fileSystem, MigrationTestUtils.findOldFormatStoreDirectory(), backupDirectory );
 
-        assertTrue( containsAnyLogicalLogs( fileSystem, backupDirectory ) );
+        // We leave logical logs in place since the new version can read the old
     }
 
     @Test
