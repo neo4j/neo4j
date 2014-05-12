@@ -630,5 +630,45 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     ))
   }
 
+  test("MATCH n RETURN count(*)") {
+    val (query, _) = buildPlannerQuery("MATCH n RETURN count(*)")
+
+    query.projection match {
+      case AggregationProjection(groupingKeys, aggregationExpression, sorting, limit, skip) =>
+        groupingKeys should be (empty)
+        sorting should be (empty)
+        limit should be (empty)
+        skip should be (empty)
+        aggregationExpression should equal(Map("count(*)" -> CountStar()(pos)))
+
+      case x =>
+        fail(s"Expected AggregationProjection, got $x")
+    }
+
+    query.graph.selections.predicates should be (empty)
+    query.graph.patternRelationships should be (empty)
+    query.graph.patternNodes should be (Set(IdName("n")))
+  }
+
+  test("MATCH n RETURN n.prop, count(*)") {
+    val (query, _) = buildPlannerQuery("MATCH n RETURN n.prop, count(*)")
+
+    query.projection match {
+      case AggregationProjection(groupingKeys, aggregationExpression, sorting, limit, skip) =>
+        groupingKeys should equal(Map("n.prop" -> Property(Identifier("n")(pos), PropertyKeyName("prop")(pos))(pos)))
+        sorting should be (empty)
+        limit should be (empty)
+        skip should be (empty)
+        aggregationExpression should equal(Map("count(*)" -> CountStar()(pos)))
+
+      case x =>
+        fail(s"Expected AggregationProjection, got $x")
+    }
+
+    query.graph.selections.predicates should be (empty)
+    query.graph.patternRelationships should be (empty)
+    query.graph.patternNodes should be (Set(IdName("n")))
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }

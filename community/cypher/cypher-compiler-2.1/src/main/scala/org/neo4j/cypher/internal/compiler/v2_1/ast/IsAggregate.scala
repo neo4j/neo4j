@@ -38,4 +38,6 @@ object IsAggregate {
     case _ =>
       None
   }
+
+  def apply(e: Expression): Boolean = unapply(e).nonEmpty
 }

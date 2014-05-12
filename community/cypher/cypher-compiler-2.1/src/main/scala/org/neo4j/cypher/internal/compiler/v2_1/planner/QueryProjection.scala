@@ -93,3 +93,18 @@ case class QueryProjectionImpl(projections: Map[String, Expression], sortItems: 
     case (None, s) => s
   }
 }
+
+case class AggregationProjection(groupingKeys: Map[String, Expression], aggregationExpressions: Map[String, Expression],
+                                 sortItems: Seq[SortItem], limit: Option[Expression], skip: Option[Expression])
+  extends QueryProjection {
+
+  def withSkip(skip: Option[Expression]) = copy(skip = skip)
+  def withLimit(limit: Option[Expression]) = copy(limit = limit)
+  def withProjections(projections: Map[String, Expression]) =
+    throw new InternalException("Can't change type of projection")
+  def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
+
+  def ++(other: QueryProjection): QueryProjection = ???
+
+  def projections: Map[String, Expression] = groupingKeys
+}

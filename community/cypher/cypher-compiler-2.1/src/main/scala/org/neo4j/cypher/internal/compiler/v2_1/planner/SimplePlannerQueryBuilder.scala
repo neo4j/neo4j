@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_1.{Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator._
+import org.neo4j.cypher.InternalException
 
 object SimplePlannerQueryBuilder {
 
@@ -163,16 +163,25 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
     clauses match {
         case Return(false, ListedReturnItems(expressions), optOrderBy, skip, limit) :: tl =>
 
-          val projections = produceProjectionsMap(expressions)
+          val (projections, aggregations) = produceProjectionsMap(expressions)
+
           val sortItems = produceSortItems(optOrderBy)
 
-          val projection = QueryProjection(
-            projections = projections,
-            sortItems = sortItems,
-            limit = limit.map(_.expression),
-            skip = skip.map(_.expression))
+          val projection = if (aggregations.isEmpty)
+            QueryProjection(
+              projections = projections,
+              sortItems = sortItems,
+              limit = limit.map(_.expression),
+              skip = skip.map(_.expression))
+          else
+            AggregationProjection(
+              aggregationExpressions = aggregations,
+              groupingKeys = projections,
+              sortItems = sortItems,
+              limit = limit.map(_.expression),
+              skip = skip.map(_.expression))
 
-          val newQG = querySoFar.withProjection(projection)
+    val newQG = querySoFar.withProjection(projection)
 
           produceQueryGraphFromClauses(newQG, subQueryLookupTable, tl)
 
@@ -252,11 +261,18 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
   private def produceSortItems(optOrderBy: Option[OrderBy]) =
     optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
 
-  private def produceProjectionsMap(expressions: Seq[ReturnItem]) = {
-    val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
-    if (projections.exists {
-      case (_,e) => e.asCommandExpression.containsAggregate
-    }) throw new CantHandleQueryException
-    projections.toMap
+  private def produceProjectionsMap(expressions: Seq[ReturnItem]): (Map[String, Expression], Map[String, Expression]) = {
+    val (aggregatingItems: Seq[ReturnItem], nonAggrItems: Seq[ReturnItem]) =
+      expressions.partition(item => IsAggregate(item.expression))
+
+    def turnIntoMap(x: Seq[ReturnItem]) = x.map(e => e.name -> e.expression).toMap
+
+    val projectionMap = turnIntoMap(nonAggrItems)
+    val aggregationsMap = turnIntoMap(aggregatingItems)
+
+    if(projectionMap.values.exists(containsAggregate))
+      throw new InternalException("Grouping keys contains aggregation. AST has not been rewritten?")
+
+    (projectionMap, aggregationsMap)
   }
 }
