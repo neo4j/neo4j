@@ -19,6 +19,15 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos;
 
+import static org.neo4j.cluster.util.Quorums.isQuorum;
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.limit;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.toList;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -62,15 +71,6 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.cluster.util.Quorums.isQuorum;
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.limit;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 /**
  * Context that implements all the context interfaces used by the Paxos state machines.
@@ -131,6 +131,9 @@ public class MultiPaxosContext
         heartbeatContext = new HeartbeatContextImpl();
         electionContext = new ElectionContextImpl( roles );
         atomicBroadcastContext = new AtomicBroadcastContextImpl();
+
+        // So that vote count can be adjusted if a member dies during an election after casting its vote
+        heartbeatContext.addHeartbeatListener( electionContext );
     }
 
     public ClusterContext getClusterContext()
@@ -433,9 +436,7 @@ public class MultiPaxosContext
         }
     }
 
-    private class ClusterContextImpl
-            extends AbstractContextImpl
-            implements ClusterContext
+    private class ClusterContextImpl extends AbstractContextImpl implements ClusterContext
     {
         // ClusterContext
         Iterable<ClusterListener> clusterListeners = Listeners.newListeners();
@@ -445,6 +446,30 @@ public class MultiPaxosContext
         private ConfigurationResponseState joinDeniedConfigurationResponseState;
         private final Map<org.neo4j.cluster.InstanceId, URI> currentlyJoiningInstances =
                 new HashMap<org.neo4j.cluster.InstanceId, URI>();
+        private long electorVersion;
+        private org.neo4j.cluster.InstanceId lastElector;
+
+        public long getLastElectorVersion()
+        {
+            return electorVersion;
+        }
+
+        @Override
+        public void setLastElectorVersion( long lastElectorVersion )
+        {
+            this.electorVersion = lastElectorVersion;
+        }
+
+        public org.neo4j.cluster.InstanceId getLastElector()
+        {
+            return lastElector;
+        }
+
+        @Override
+        public void setLastElector( org.neo4j.cluster.InstanceId lastElector )
+        {
+            this.lastElector = lastElector;
+        }
 
         // Cluster API
         @Override
@@ -554,6 +579,35 @@ public class MultiPaxosContext
         @Override
         public void elected( final String roleName, final org.neo4j.cluster.InstanceId instanceId )
         {
+            elected( roleName, instanceId, null, -1 );
+        }
+
+        @Override
+        public void elected( final String roleName, final org.neo4j.cluster.InstanceId instanceId,
+                             org.neo4j.cluster.InstanceId electorId, long version )
+        {
+            if ( electorId.equals( clusterContext.getMyId() )  )
+            {
+                getLogger( getClass() ).debug( "I elected instance " + instanceId + " for role "
+                    + roleName + " at version " + version );
+                if ( version < electorVersion )
+                {
+                    return;
+                }
+            }
+            else if ( version < electorVersion && electorId.equals( lastElector ) )
+            {
+                getLogger( getClass() ).warn( "Election result for role " + roleName +
+                        " received from elector instance " + electorId + " with version " + version +
+                        ". I had version " + electorVersion + " for elector " + lastElector );
+                return;
+            }
+            else
+            {
+                getLogger( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
+            }
+            this.electorVersion = version;
+            this.lastElector = electorId;
             configuration.elected( roleName, instanceId );
             Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
             {
@@ -567,6 +621,13 @@ public class MultiPaxosContext
 
         @Override
         public void unelected( final String roleName, final org.neo4j.cluster.InstanceId instanceId )
+        {
+            unelected( roleName, instanceId, null, -1 );
+        }
+
+        @Override
+        public void unelected( final String roleName, final org.neo4j.cluster.InstanceId instanceId,
+                               org.neo4j.cluster.InstanceId electorId, long version )
         {
             configuration.unelected( roleName );
             Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
@@ -1098,7 +1159,7 @@ public class MultiPaxosContext
 
     private class ElectionContextImpl
         extends AbstractContextImpl
-        implements ElectionContext
+        implements ElectionContext, HeartbeatListener
     {
         private final List<ElectionRole> roles = new ArrayList<ElectionRole>();
 
@@ -1122,7 +1183,7 @@ public class MultiPaxosContext
             for ( ElectionRole role : roles )
             {
                 // Elect myself for all roles
-                clusterContext.elected( role.getName(), clusterContext.getMyId() );
+                clusterContext.elected( role.getName(), clusterContext.getMyId(), clusterContext.getMyId(), 1 );
             }
         }
 
@@ -1184,6 +1245,10 @@ public class MultiPaxosContext
         public void startElectionProcess( String role )
         {
             clusterContext.getLogger( getClass() ).info( "Doing elections for role " + role );
+            if ( !clusterContext.getMyId().equals( clusterContext.getLastElector() ) )
+            {
+                clusterContext.setLastElector( clusterContext.getMyId() );
+            }
             elections.put( role, new Election( new WinnerStrategy()
             {
                 @Override
@@ -1219,13 +1284,17 @@ public class MultiPaxosContext
         }
 
         @Override
-        public void voted( String role, org.neo4j.cluster.InstanceId suggestedNode, Comparable<Object> suggestionCredentials )
+        public boolean voted( String role, org.neo4j.cluster.InstanceId suggestedNode,
+                           Comparable<Object> suggestionCredentials, long electionVersion )
         {
-            if ( isElectionProcessInProgress( role ) )
+            if ( !isElectionProcessInProgress( role ) ||
+                    (electionVersion != -1 && electionVersion < clusterContext.getLastElectorVersion() ) )
             {
-                Map<org.neo4j.cluster.InstanceId, Vote> votes = elections.get( role ).getVotes();
-                votes.put( suggestedNode, new Vote( suggestedNode, suggestionCredentials ) );
+                return false;
             }
+            Map<org.neo4j.cluster.InstanceId, Vote> votes = elections.get( role ).getVotes();
+            votes.put( suggestedNode, new Vote( suggestedNode, suggestionCredentials ) );
+            return true;
         }
 
         @Override
@@ -1272,12 +1341,14 @@ public class MultiPaxosContext
         public int getNeededVoteCount()
         {
             return clusterContext.getConfiguration().getMembers().size() - heartbeatContext.getFailed().size();
+            // TODO increment election epoch
         }
 
         @Override
-        public void cancelElection( String role )
+        public void forgetElection( String role )
         {
             elections.remove( role );
+            clusterContext.setLastElectorVersion( clusterContext.getLastElectorVersion() + 1 );
         }
 
         @Override
@@ -1305,7 +1376,7 @@ public class MultiPaxosContext
         {
             int total = clusterContext.getConfiguration().getMembers().size();
             int available = total - heartbeatContext.getFailed().size();
-            return isQuorum(available, total);
+            return isQuorum( available, total );
         }
 
         @Override
@@ -1357,6 +1428,37 @@ public class MultiPaxosContext
         public Set<org.neo4j.cluster.InstanceId> getFailed()
         {
             return heartbeatContext.getFailed();
+        }
+
+        @Override
+        public ClusterMessage.VersionedConfigurationStateChange newConfigurationStateChange()
+        {
+            ClusterMessage.VersionedConfigurationStateChange result = new ClusterMessage
+                    .VersionedConfigurationStateChange();
+            result.setElector( clusterContext.getMyId() );
+            result.setVersion( clusterContext.getLastElectorVersion() );
+            return result;
+        }
+
+        @Override
+        public VoteRequest voteRequestForRole( ElectionRole role )
+        {
+            return new VoteRequest( role.getName(), clusterContext.getLastElectorVersion() );
+        }
+
+        @Override
+        public void failed( org.neo4j.cluster.InstanceId server )
+        {
+            for ( Map.Entry<String, Election> ongoingElection : elections.entrySet() )
+            {
+                ongoingElection.getValue().getVotes().remove( server );
+            }
+        }
+
+        @Override
+        public void alive( org.neo4j.cluster.InstanceId server )
+        {
+            // Not needed
         }
     }
 

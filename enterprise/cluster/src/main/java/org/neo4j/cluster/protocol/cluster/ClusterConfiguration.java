@@ -49,23 +49,23 @@ public class ClusterConfiguration
     private int allowedFailures = 1;
 
     public ClusterConfiguration( String name, StringLogger logger, String... members )
+    {
+        this.name = name;
+        this.logger = logger;
+        this.candidateMembers = new ArrayList<URI>();
+        for ( String node : members )
         {
-            this.name = name;
-            this.logger = logger;
-            this.candidateMembers = new ArrayList<URI>();
-            for ( String node : members )
+            try
             {
-                try
-                {
-                    this.candidateMembers.add( new URI( node ) );
-                }
-                catch ( URISyntaxException e )
-                {
-                    e.printStackTrace();
-                }
+                this.candidateMembers.add( new URI( node ) );
             }
-            this.members = new HashMap<InstanceId, URI>();
+            catch ( URISyntaxException e )
+            {
+                e.printStackTrace();
+            }
         }
+        this.members = new HashMap<InstanceId, URI>();
+    }
     
         public ClusterConfiguration( String name, StringLogger logger, Collection<URI> members )
         {
