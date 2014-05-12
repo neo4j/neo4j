@@ -42,6 +42,7 @@ public class LogFilter implements LogHandler
     @Override
     public void startLog()
     {
+        logEntries.clear();
     }
 
     @Override
@@ -90,7 +91,7 @@ public class LogFilter implements LogHandler
         {
             entry.accept( delegate );
         }
-        delegate.endLog( true );
+        delegate.endLog( success );
 
         logEntries.clear();
     }

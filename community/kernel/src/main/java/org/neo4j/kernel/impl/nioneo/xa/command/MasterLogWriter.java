@@ -57,6 +57,16 @@ public class MasterLogWriter extends LogHandler.Filter
     public void startEntry( LogEntry.Start startEntry ) throws IOException
     {
         this.startEntry = startEntry;
+
+        try
+        {
+            injectedTxValidator.assertInjectionAllowed( startEntry.getLastCommittedTxWhenTransactionStarted() );
+        }
+        catch ( XAException e )
+        {
+            throw new IOException( e );
+        }
+
         /*
          * You are wondering what is going on here. Let me take you on a journey
          * A transaction, call it A starts, prepares locally, goes to the master and commits there
@@ -118,14 +128,6 @@ public class MasterLogWriter extends LogHandler.Filter
     @Override
     public void endLog( boolean success ) throws IOException
     {
-        try
-        {
-            injectedTxValidator.assertInjectionAllowed( startEntry.getLastCommittedTxWhenTransactionStarted() );
-        }
-        catch ( XAException e )
-        {
-            throw new IOException( e );
-        }
         spi.commitTransactionWithoutTxId( startEntry );
         super.endLog( success );
 
