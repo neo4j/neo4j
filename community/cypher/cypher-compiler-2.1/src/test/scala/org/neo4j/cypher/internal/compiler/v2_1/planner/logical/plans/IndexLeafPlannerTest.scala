@@ -20,18 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.mockito.Mockito._
-import org.mockito.stubbing.Answer
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.mockito.invocation.InvocationOnMock
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import scala.collection.mutable
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+
+import org.mockito.Mockito._
+import org.mockito.stubbing.Answer
+import org.mockito.Matchers._
+import org.mockito.invocation.InvocationOnMock
+import scala.collection.mutable
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -50,7 +52,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       SignedIntegerLiteral("42")_
     )_
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(idName), equals), Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
@@ -79,7 +81,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val resultPlans = indexSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(NodeIndexSeekPlan(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
+    resultPlans should equal(Candidates(planNodeIndexSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
   }
 
   test("index seek when there is an index on the property") {
@@ -95,7 +97,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       SignedIntegerLiteral("42")_
     )_
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(
         Predicate(Set(idName), equals),
         Predicate(Set(idName), hasLabels))),
@@ -126,6 +128,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val resultPlans = uniqueIndexSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(NodeIndexUniqueSeekPlan(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
+    resultPlans should equal(Candidates(planNodeIndexUniqueSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
   }
 }

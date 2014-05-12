@@ -19,9 +19,9 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import static org.neo4j.cluster.ClusterSettings.INSTANCE_ID;
 import static org.neo4j.helpers.Functions.withDefaults;
 import static org.neo4j.helpers.NamedThreadFactory.named;
-import static org.neo4j.helpers.Settings.INTEGER;
 import static org.neo4j.helpers.Uris.parameter;
 
 import java.net.URI;
@@ -56,10 +56,10 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     private volatile URI masterHaURI;
     private volatile URI slaveHaURI;
 
-    public static int getServerId( URI haUri )
+    public static InstanceId getServerId( URI haUri )
     {
         // Get serverId parameter, default to -1 if it is missing, and parse to integer
-        return INTEGER.apply( withDefaults(
+        return INSTANCE_ID.apply( withDefaults(
                 Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haUri ));
     }
 
@@ -248,7 +248,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     msgLog.logMessage( "Failed to switch to master", e );
 
                     // Since this master switch failed, elect someone else
-                    election.demote( new InstanceId(getServerId( me )) );
+                    election.demote( getServerId( me ) );
 
                     return;
                 }

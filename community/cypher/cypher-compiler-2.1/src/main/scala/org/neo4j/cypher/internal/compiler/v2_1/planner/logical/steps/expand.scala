@@ -19,17 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, PlanTable, LogicalPlanContext, CandidateGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTable, CandidateGenerator}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object expand extends CandidateGenerator[PlanTable] {
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
@@ -41,8 +37,8 @@ object expand extends CandidateGenerator[PlanTable] {
     } yield {
       val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)
-      val expandF = (otherSide: IdName) => Expand(plan.plan, nodeId, dir, patternRel.types,
-                                                  otherSide, patternRel.name, patternRel.length)(patternRel)
+      val expandF = (otherSide: IdName) => planExpand(plan, nodeId, dir, patternRel.types,
+                                                      otherSide, patternRel.name, patternRel.length, patternRel)
 
       if (plan.coveredIds.contains(otherSide)) {
         expandIntoAlreadyExistingNode(expandF, otherSide)
@@ -50,7 +46,7 @@ object expand extends CandidateGenerator[PlanTable] {
       else
         expandF(otherSide)
     }
-    CandidateList(expandPlans.map(QueryPlan))
+    CandidateList(expandPlans)
   }
 
   /*
@@ -63,12 +59,12 @@ object expand extends CandidateGenerator[PlanTable] {
   is solved by something that looks like
   MATCH (a)-[r]->($TEMP) WHERE $TEMP = a
    */
-  private def expandIntoAlreadyExistingNode(f: IdName => Expand, otherSide: IdName)
-                                           (implicit context: LogicalPlanContext): LogicalPlan = {
+  private def expandIntoAlreadyExistingNode(f: IdName => QueryPlan, otherSide: IdName)
+                                           (implicit context: LogicalPlanContext): QueryPlan = {
     val temp = IdName(otherSide.name + "$$$")
     val expand = f(temp)
     val left = Identifier(otherSide.name)(null)
     val right = Identifier(temp.name)(null)
-    Selection(Seq(Equals(left, right)(null)), expand, hideSelections = true)
+    planHiddenSelection(Seq(Equals(left, right)(null)), expand)
   }
 }

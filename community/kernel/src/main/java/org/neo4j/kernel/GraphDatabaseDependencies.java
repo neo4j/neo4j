@@ -32,7 +32,6 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
     private final Iterable<CacheProvider> cacheProviders;
     private final Iterable<TransactionInterceptorProvider> transactionInterceptorProviders;
 
-    @SuppressWarnings( "deprecation" )
     public GraphDatabaseDependencies(
             Logging logging,
             Iterable<Class<?>> settingsClasses,

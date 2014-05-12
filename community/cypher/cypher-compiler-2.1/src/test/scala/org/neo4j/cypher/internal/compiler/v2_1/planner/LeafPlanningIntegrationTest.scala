@@ -28,11 +28,8 @@ import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 
-class LeafPlanningIntegrationTest
-  extends CypherFunSuite
-  with LogicalPlanningTestSupport {
+class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should build plans for all nodes scans") {
     implicit val planContext = newMockedPlanContext
@@ -62,7 +59,7 @@ class LeafPlanningIntegrationTest
     when(planContext.getOptLabelId("Awesome")).thenReturn(None)
 
     produceLogicalPlan("MATCH (n:Awesome) RETURN n") should equal(
-      NodeByLabelScan("n", Left("Awesome"))()
+      NodeByLabelScan("n", Left("Awesome"))
     )
   }
 
@@ -79,7 +76,7 @@ class LeafPlanningIntegrationTest
     when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
 
     produceLogicalPlan("MATCH (n:Awesome) RETURN n") should equal(
-      NodeByLabelScan("n", Right(LabelId(12)))()
+      NodeByLabelScan("n", Right(LabelId(12)))
     )
   }
 
@@ -103,7 +100,7 @@ class LeafPlanningIntegrationTest
     when(planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator())
 
     produceLogicalPlan("MATCH (n:Awesome) WHERE n.prop = 42 RETURN n") should equal(
-      NodeIndexSeek("n", LabelId(12), PropertyKeyId(15), SignedIntegerLiteral("42")_)()
+      NodeIndexSeek("n", LabelId(12), PropertyKeyId(15), SignedIntegerLiteral("42")_)
     )
   }
 
@@ -127,7 +124,7 @@ class LeafPlanningIntegrationTest
     })
 
     produceLogicalPlan("MATCH (n:Awesome) WHERE n.prop = 42 RETURN n") should equal(
-      NodeIndexUniqueSeek("n", LabelId(12), PropertyKeyId(15), SignedIntegerLiteral("42")_)()
+      NodeIndexUniqueSeek("n", LabelId(12), PropertyKeyId(15), SignedIntegerLiteral("42")_)
     )
   }
 
@@ -147,7 +144,7 @@ class LeafPlanningIntegrationTest
     produceLogicalPlan("MATCH (n:Awesome) WHERE id(n) = 42 RETURN n") should equal(
       Selection(
         List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", Seq(SignedIntegerLiteral("42")_))()
+        NodeByIdSeek("n", Seq(SignedIntegerLiteral("42")_))
       )
     )
   }
@@ -171,7 +168,7 @@ class LeafPlanningIntegrationTest
           FunctionInvocation(FunctionName("id")_, Identifier("n")_)_,
           SignedIntegerLiteral("42")_
         )_),
-        NodeByLabelScan("n", Right(LabelId(12)))()
+        NodeByLabelScan("n", Right(LabelId(12)))
       )
     )
   }

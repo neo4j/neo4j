@@ -25,5 +25,5 @@ case class Limit(left: LogicalPlan, count: Expression) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
 
-  val solved = left.solved.copy(limit = Some(count))
+  def availableSymbols = left.availableSymbols
 }

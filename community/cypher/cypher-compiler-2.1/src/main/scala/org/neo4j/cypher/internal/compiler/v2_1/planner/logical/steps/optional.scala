@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, Optional}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateGenerator, CandidateList, LogicalPlanContext, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object optional extends CandidateGenerator[PlanTable] {
   def apply(ignored: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
@@ -29,9 +29,9 @@ object optional extends CandidateGenerator[PlanTable] {
       yield {
         val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG))
 
-        Optional(optionalQG.introducedIds, rhs.plan)
+        planOptional(rhs)
       }
 
-    CandidateList(optionalCandidates.map(QueryPlan))
+    CandidateList(optionalCandidates)
   }
 }

@@ -28,9 +28,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{AstConstructionTestSupport, RelTypeName, Query}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, AstConstructionTestSupport, RelTypeName, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.mockito.Mockito._
+import org.mockito.Matchers._
 import org.scalatest.mock.MockitoSugar
 
 trait LogicalPlanningTestSupport
@@ -72,13 +73,20 @@ trait LogicalPlanningTestSupport
 
   def newMockedMetricsFactory = spy(new SpyableMetricsFactory)
 
+  def newMockedStrategy(plan: QueryPlan) = {
+    val strategy = mock[PlanningStrategy]
+    doReturn(plan).when(strategy).plan(any(), any())
+    strategy
+  }
+
   def newMockedLogicalPlanContext(planContext: PlanContext,
                                   metrics: Metrics = self.mock[Metrics],
                                   semanticTable: SemanticTable = self.mock[SemanticTable],
                                   queryGraph: QueryGraph = self.mock[QueryGraph],
+                                  subQueryLookupTable: Map[PatternExpression, QueryGraph] = Map.empty,
                                   strategy: PlanningStrategy = new GreedyPlanningStrategy()): LogicalPlanContext =
 
-    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
+    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, subQueryLookupTable, strategy)
 
   implicit class RichLogicalPlan(plan: QueryPlan) {
     def asTableEntry = plan.coveredIds -> plan
@@ -92,28 +100,40 @@ trait LogicalPlanningTestSupport
     context
   }
 
-  def newMockedQueryPlan(ids: String*)(implicit context: LogicalPlanContext) =
+  def newMockedQueryPlanWithProjections(ids: String*)(implicit context: LogicalPlanContext) = {
+    val projections = Projections(projections = ids.map((id) => id -> ident(id)).toMap)
     QueryPlan(
       newMockedLogicalPlan(ids: _*),
       QueryGraph
         .empty
         .addPatternNodes(ids.map(IdName).toSeq: _*)
-        .withProjections(ids.map( (id) => id -> ident(id) ).toMap)
+        .withProjection(projections)
     )
-
-  def newMockedQueryPlan(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
-    val mockedPlan = newMockedLogicalPlan( qg.coveredIds.map(_.name).toSeq: _* )
-    QueryPlan( mockedPlan, qg )
   }
 
-  def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan =
-    newMockedLogicalPlanWithPatterns(ids.map(IdName).toSet)
+  def newMockedQueryPlan(idNames: Set[IdName]): QueryPlan = {
+    val plan = newMockedLogicalPlan(idNames)
+    val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*)
+    QueryPlan( plan, qg )
+  }
+
+  def newMockedQueryPlan(ids: String*): QueryPlan = {
+    newMockedQueryPlan( ids.map(IdName).toSet )
+  }
+
+  def newMockedLogicalPlan(ids: String*): LogicalPlan = FakePlan(ids.map(IdName).toSet)
+
+  def newMockedLogicalPlan(ids: Set[IdName]): LogicalPlan = FakePlan(ids)
+
+  def newMockedQueryPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): QueryPlan = {
+    val plan = newMockedLogicalPlan(ids)
+    val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRels(patterns)
+    QueryPlan( plan, qg )
+  }
 
   def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): LogicalPlan = {
     val plan = mock[LogicalPlan]
     doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
-    doReturn(ids).when(plan).coveredIds
-    doReturn(QueryGraph(patternNodes = ids, patternRelationships = patterns.toSet)).when(plan).solved
     plan
   }
 
@@ -136,7 +156,9 @@ trait LogicalPlanningTestSupport
   }
 
   implicit def idName(name: String): IdName = IdName(name)
+}
 
-  // TODO: This should go away together with LogicalPlan.solved
-  implicit def logicalToQueryPlan(plan: LogicalPlan): QueryPlan = QueryPlan(plan)
+case class FakePlan(availableSymbols: Set[IdName]) extends LogicalPlan{
+  def rhs = None
+  def lhs = None
 }

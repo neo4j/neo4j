@@ -19,40 +19,36 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.OptionalExpand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.OptionalExpand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object optionalExpand extends CandidateGenerator[PlanTable] {
 
   def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
 
-    val outerJoinPlans: Seq[OptionalExpand] = for {
+    val outerJoinPlans: Seq[QueryPlan] = for {
       optionalQG <- context.queryGraph.optionalMatches
       lhs <- planTable.plans
-      patternRel <- findSinglePatternRelationship(lhs.plan, optionalQG)
+      patternRel <- findSinglePatternRelationship(lhs, optionalQG)
       argumentId = optionalQG.argumentIds.head
       otherSide = patternRel.otherSide( argumentId )
-      if optionalQG.selections.predicatesGiven(lhs.coveredIds + otherSide + patternRel.name) == optionalQG.selections.flatPredicates
+      if canSolveAllPredicates(optionalQG.selections, lhs.coveredIds + otherSide + patternRel.name)
     } yield {
       val dir = patternRel.directionRelativeTo(argumentId)
-      OptionalExpand(lhs.plan, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length, optionalQG.selections.flatPredicates)(optionalQG)
+      planOptionalExpand(lhs, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length, optionalQG.selections.flatPredicates, optionalQG)
     }
 
-    CandidateList(outerJoinPlans.map(QueryPlan))
+    CandidateList(outerJoinPlans)
   }
 
-  private def findSinglePatternRelationship(outerPlan: LogicalPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
+  private def canSolveAllPredicates(selections:Selections, ids:Set[IdName]) = selections.predicatesGiven(ids) == selections.flatPredicates
+
+  private def findSinglePatternRelationship(outerPlan: QueryPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
     val singleArgument = optionalQG.argumentIds.size == 1
-    val coveredByLHS = singleArgument && outerPlan.coveredIds.contains(optionalQG.argumentIds.head)
-    val isSolved = (optionalQG.coveredIds -- outerPlan.coveredIds).isEmpty
+    val coveredByLHS = outerPlan.plan.covers(optionalQG.argumentIds)
+    val isSolved = outerPlan.solved.optionalMatches.contains(optionalQG)
     val hasOnlyOnePatternRelationship = optionalQG.patternRelationships.size == 1
     if (singleArgument && coveredByLHS && !isSolved && hasOnlyOnePatternRelationship) {
       optionalQG.patternRelationships.headOption

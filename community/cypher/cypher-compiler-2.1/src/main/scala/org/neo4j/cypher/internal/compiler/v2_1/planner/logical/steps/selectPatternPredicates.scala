@@ -24,49 +24,56 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 case class selectPatternPredicates(simpleSelection: PlanTransformer) extends PlanTransformer {
   private object candidateListProducer extends CandidateGenerator[PlanTable] {
     def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+      val queryGraph = context.queryGraph
       val applyCandidates =
-        for (pattern <- context.queryGraph.patternPredicates;
-             lhs <- planTable.plans if applicable(lhs.plan, pattern))
+        for (
+          lhs <- planTable.plans;
+          pattern <- queryGraph.selections.patternPredicatesGiven(lhs.coveredIds) if applicable(lhs, queryGraph, pattern))
         yield {
-          val rhs = context.strategy.plan(context.copy(queryGraph = pattern.queryGraph))
-          val exp: Expression = pattern.predicate.exp
-          exp match {
-            case _: Not =>
-              AntiSemiApply(lhs.plan, rhs.plan)(pattern)
-            case Ors((_: Not) :: tail) if doesNotContainPatterns(tail) =>
-              SelectOrAntiSemiApply(lhs.plan, rhs.plan, onePredicate(tail))(pattern)
-            case Ors(_ :: tail) if doesNotContainPatterns(tail) =>
-              SelectOrSemiApply(lhs.plan, rhs.plan, onePredicate(tail))(pattern)
-            case _ =>
-              SemiApply(lhs.plan, rhs.plan)(pattern)
+          pattern match {
+            case p@Not(patternExpression: PatternExpression) =>
+              val rhs = rhsPlan(context, patternExpression)
+              planAntiSemiApply(lhs, rhs, patternExpression, p)
+            case p@Ors(Not(patternExpression: PatternExpression) :: tail) if doesNotContainPatterns(tail) =>
+              val rhs = rhsPlan(context, patternExpression)
+              planSelectOrAntiSemiApply(lhs, rhs, onePredicate(tail), pattern)
+            case p@Ors((patternExpression: PatternExpression) :: tail) if doesNotContainPatterns(tail) =>
+              val rhs = rhsPlan(context, patternExpression)
+              planSelectOrSemiApply(lhs, rhs, onePredicate(tail), pattern)
+            case patternExpression: PatternExpression =>
+              val rhs = rhsPlan(context, patternExpression)
+              planSemiApply(lhs, rhs, patternExpression)
           }
         }
 
-      CandidateList(applyCandidates.map(QueryPlan))
+      CandidateList(applyCandidates)
     }
 
-    private def doesNotContainPatterns(e: Seq[Expression]) = !e.exists(_.exists {
-      case e: PatternExpression => true
-    })
+    private def rhsPlan(context: LogicalPlanContext, pattern: PatternExpression) = {
+      val qg = context.subQueriesLookupTable.getOrElse(pattern,
+        throw new ThisShouldNotHappenError("Davide/Stefan", s"Did not find QueryGraph for pattern expression $pattern")
+      )
+      context.strategy.plan(context.copy(queryGraph = qg))
+    }
+
+    private def doesNotContainPatterns(e: Seq[Expression]) = !e.exists(_.exists { case e: PatternExpression => true })
 
     private def onePredicate(expressions: Seq[Expression]): Expression = expressions.toList match {
       case e :: Nil => e
       case predicates => Ors(predicates)(predicates.head.position)
     }
 
-    private def applicable(outerPlan: LogicalPlan, inner: SubQuery) = {
-      inner match {
-        case e: Exists => {
-          val providedIds = outerPlan.coveredIds
-          val hasDependencies = inner.queryGraph.argumentIds.forall(providedIds.contains)
-          val isSolved = outerPlan.solved.selections.contains(e.predicate.exp)
-          hasDependencies && !isSolved
-        }
-      }
+    private def applicable(outerPlan: QueryPlan, qg: QueryGraph, expression: Expression) = {
+      val providedIds = outerPlan.coveredIds
+      val hasDependencies = qg.argumentIds.forall(providedIds.contains)
+      val isSolved = outerPlan.solved.selections.contains(expression)
+      hasDependencies && !isSolved
     }
   }
 

@@ -23,6 +23,5 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 case class CartesianProduct(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
-
-  val solved = left.solved ++ right.solved
+  def availableSymbols = left.availableSymbols ++ right.availableSymbols
 }

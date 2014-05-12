@@ -26,6 +26,7 @@ import org.junit.Test;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.graphdb.Resource;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -41,6 +42,7 @@ import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.Arrays.asList;
 
@@ -55,6 +57,7 @@ import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsIteratorFrom;
 import static org.neo4j.graphdb.Neo4jMockitoHelpers.answerAsPrimitiveLongIteratorFrom;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
@@ -85,7 +88,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
-                PrimitiveLongCollections.iterator( 1l ) );
+                asPrimitiveResourceIterator( 1l ) );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
         when( oldTxState.hasChanges() ).thenReturn( true );
 
@@ -122,7 +125,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
-                PrimitiveLongCollections.emptyIterator() );
+                asPrimitiveResourceIterator() );
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
         when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
                 new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
@@ -163,7 +166,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
-                PrimitiveLongCollections.emptyIterator() );
+                asPrimitiveResourceIterator() );
         when( store.nodeGetProperty( anyLong(), eq( propertyKeyId ) ) ).thenReturn(
                 noNodeProperty( 1, propertyKeyId ) );
         when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( IteratorUtil
@@ -211,7 +214,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
-                PrimitiveLongCollections.emptyIterator() );
+                asPrimitiveResourceIterator() );
         when( store.nodeHasLabel( 2l, labelId ) ).thenReturn( false );
 
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
@@ -255,7 +258,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
-                PrimitiveLongCollections.iterator( 1l ) );
+                asPrimitiveResourceIterator( 1l ) );
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
 
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
@@ -297,7 +300,7 @@ public class IndexQueryTransactionStateTest
     {
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
-                PrimitiveLongCollections.iterator( 1l ) );
+                asPrimitiveResourceIterator( 1l ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
         state.txState().nodeDoRemoveProperty( 1l, stringProperty( propertyKeyId, value ) );
@@ -351,5 +354,15 @@ public class IndexQueryTransactionStateTest
     private void assertNoSuchNode( long node )
     {
         assertThat( node, equalTo( NO_SUCH_NODE ) );
+    }
+
+    private static PrimitiveLongResourceIterator asPrimitiveResourceIterator( long... values )
+    {
+        return resourceIterator( PrimitiveLongCollections.iterator( values ), new Resource()
+        {
+            @Override
+            public void close()
+            { }
+        } );
     }
 }

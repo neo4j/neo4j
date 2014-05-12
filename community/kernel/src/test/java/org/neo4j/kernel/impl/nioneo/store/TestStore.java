@@ -19,15 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -38,6 +36,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class TestStore
 {
@@ -158,14 +159,17 @@ public class TestStore
         {
             super( fileName, new Config( MapUtil.stringMap( "store_dir", "target/var/teststore" ),
                     GraphDatabaseSettings.class ),
-                    IdType.NODE, ID_GENERATOR_FACTORY, WINDOW_POOL_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL );
+                    IdType.NODE, ID_GENERATOR_FACTORY, WINDOW_POOL_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL,
+                    StoreVersionMismatchHandler.THROW_EXCEPTION );
         }
 
+        @Override
         public int getRecordSize()
         {
             return RECORD_SIZE;
         }
 
+        @Override
         public String getTypeDescriptor()
         {
             return TYPE_DESCRIPTOR;
@@ -180,6 +184,7 @@ public class TestStore
             return new Store( fileName );
         }
 
+        @Override
         protected void rebuildIdGenerator()
         {
         }

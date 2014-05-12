@@ -162,7 +162,7 @@ With Neo4j 2.0 several Cypher features in version 1.9 have been deprecated or re
   Note that they are not the same, though.
 * Optional relationships are handled by +OPTIONAL MATCH+, not question marks.
 * Non-existing properties return +NULL+, +n.prop?+ and +n.prop!+ have been removed.
-* The separator for collection functions changed form +:+ to +\|+.
+* The separator for collection functions changed from +:+ to +\|+.
 * Paths are no longer collections, use +nodes(path)+ or +rels(path)+.
 * Parentheses around nodes in patterns are no longer optional.
 * +CREATE a=\{property:’value’\}+ has been removed.

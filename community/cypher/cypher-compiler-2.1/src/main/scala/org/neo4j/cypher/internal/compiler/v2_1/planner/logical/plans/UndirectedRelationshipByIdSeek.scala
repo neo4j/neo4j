@@ -20,27 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class UndirectedRelationshipByIdSeek(idName: IdName, relIds: Seq[Expression], leftNode: IdName, rightNode: IdName)
-                                   (val pattern: PatternRelationship, val solvedPredicates: Seq[Expression] = Seq.empty)
   extends LogicalLeafPlan {
 
-  def solved = UndirectedRelationshipByIdSeekPlan(idName, relIds, leftNode, rightNode, pattern, solvedPredicates).solved
-  override def coveredIds = Set(idName, leftNode, rightNode)
-}
-
-object UndirectedRelationshipByIdSeekPlan {
-  def apply(idName: IdName,
-            relIds: Seq[Expression],
-            leftNode: IdName,
-            rightNode: IdName,
-            pattern: PatternRelationship,
-            solvedPredicates: Seq[Expression] = Seq.empty) =
-    QueryPlan(
-      UndirectedRelationshipByIdSeek(idName, relIds, leftNode, rightNode)(pattern, solvedPredicates),
-      QueryGraph
-        .empty
-        .addPatternRel(pattern)
-    )
+  def availableSymbols = Set(idName, leftNode, rightNode)
 }

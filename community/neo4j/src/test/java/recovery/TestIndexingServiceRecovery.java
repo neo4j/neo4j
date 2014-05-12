@@ -192,7 +192,7 @@ public class TestIndexingServiceRecovery
                             {
                                 return Functions.identity();
                             }
-                        });
+                        }, storeMigrationProcess );
                         xaDataSourceManager.registerDataSource( neoDataSource );
                     }
                 };

@@ -74,6 +74,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.hasSize;
 import static org.neo4j.graphdb.Neo4jMatchers.haveState;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
+import static org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant.NOT_PARTICIPATING;
 
 public class IndexRecoveryIT
 {
@@ -219,6 +220,7 @@ public class IndexRecoveryIT
                 .thenReturn( TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR );
         when( mockedIndexProvider.compareTo( any( SchemaIndexProvider.class ) ) )
                 .thenReturn( 1 ); // always pretend to have highest priority
+        when( mockedIndexProvider.storeMigrationParticipant() ).thenReturn( NOT_PARTICIPATING );
     }
 
     @SuppressWarnings("deprecation")

@@ -20,8 +20,12 @@
 package org.neo4j.kernel.api.index.util;
 
 import java.io.File;
+import java.io.FileFilter;
 
-public class FolderLayout
+import static java.lang.Integer.parseInt;
+import static java.lang.Long.parseLong;
+
+public class FolderLayout implements FileFilter
 {
     private final File rootDirectory;
 
@@ -29,9 +33,36 @@ public class FolderLayout
     {
         this.rootDirectory = rootDirectory;
     }
-    
+
     public File getFolder( long indexId )
     {
         return new File( rootDirectory, "" + indexId );
+    }
+
+    @Override
+    public boolean accept( File path )
+    {
+        if ( !path.isDirectory() )
+        {
+            return false;
+        }
+        try
+        {
+            parseInt( path.getName() );
+            return true;
+        }
+        catch ( NumberFormatException e )
+        {
+            return false;
+        }
+    }
+
+    public long getIndexId( File indexDirectory )
+    {
+        if ( !indexDirectory.getParentFile().equals( rootDirectory ) )
+        {
+            throw new IllegalArgumentException( indexDirectory + " not child of " + rootDirectory );
+        }
+        return parseLong( indexDirectory.getName() );
     }
 }

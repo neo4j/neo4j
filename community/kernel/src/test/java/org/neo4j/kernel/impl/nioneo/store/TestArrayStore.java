@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.lang.reflect.Array;
 import java.nio.ByteBuffer;
@@ -32,6 +29,7 @@ import java.util.Map;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.MapUtil;
@@ -44,11 +42,14 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 public class TestArrayStore
 {
     private File dir;
     private DynamicArrayStore arrayStore;
-    
+
     @Before
     public void before() throws Exception
     {
@@ -62,16 +63,18 @@ public class TestArrayStore
         File fileName = new File( dir, "arraystore" );
         factory.createDynamicArrayStore( fileName, 120 );
         arrayStore = new DynamicArrayStore( fileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory,
-                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL );
+                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, StoreVersionMismatchHandler.THROW_EXCEPTION );
     }
 
     @After
     public void after() throws Exception
     {
         if ( arrayStore != null )
+        {
             arrayStore.close();
+        }
     }
-    
+
     @Test
     public void intArrayPropertiesShouldBeBitPacked() throws Exception
     {
@@ -79,7 +82,7 @@ public class TestArrayStore
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new int[] { 1, 2, 3, 4, 5, 6, 7, 8 }, PropertyType.INT, 4, 1 );
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new int[] { 1000, 10000, 13000 }, PropertyType.INT, 14, 2 );
     }
-    
+
     @Test
     public void longArrayPropertiesShouldBeBitPacked() throws Exception
     {
@@ -87,7 +90,7 @@ public class TestArrayStore
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1, 2, 3, 4, 5, 6, 7, 8 }, PropertyType.LONG, 4, 1 );
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new long[] { 1000, 10000, 13000, 15000000000L }, PropertyType.LONG, 34, 2 );
     }
-    
+
     @Test
     public void byteArrayPropertiesShouldNotBeBitPacked() throws Exception
     {
@@ -97,7 +100,7 @@ public class TestArrayStore
          *   any bit analysis would take. For both writing and reading */
         assertBitPackedArrayGetsCorrectlySerializedAndDeserialized( new byte[] { 1, 2, 3, 4, 5 }, PropertyType.BYTE, Byte.SIZE, 1 );
     }
-    
+
     @Test
     public void stringArrayGetsStoredAsUtf8() throws Exception
     {
@@ -115,7 +118,7 @@ public class TestArrayStore
             assertTrue( Arrays.equals( expectedData, loadedItem ) );
         }
     }
-    
+
     private void assertStringHeader( byte[] header, int itemCount )
     {
         assertEquals( PropertyType.STRING.byteValue(), header[0] );
@@ -131,9 +134,11 @@ public class TestArrayStore
         Bits bits = Bits.bitsFromBytes( asBytes.other() );
         int length = Array.getLength( array );
         for ( int i = 0; i < length; i++ )
+        {
             assertEquals( ((Number)Array.get( array, i )).longValue(), bits.getLong( expectedBitsUsedPerItem ) );
+        }
     }
-    
+
     private void assertArrayHeader( byte[] header, PropertyType type, int bitsPerItem )
     {
         assertEquals( type.byteValue(), header[0] );
@@ -144,10 +149,12 @@ public class TestArrayStore
     {
         Collection<DynamicRecord> records = arrayStore.allocateRecords( array );
         for ( DynamicRecord record : records )
+        {
             arrayStore.updateRecord( record );
+        }
         return records;
     }
-    
+
     private Pair<byte[], byte[]> loadArray( Collection<DynamicRecord> records )
     {
         return arrayStore.readFullByteArray( records, PropertyType.ARRAY );

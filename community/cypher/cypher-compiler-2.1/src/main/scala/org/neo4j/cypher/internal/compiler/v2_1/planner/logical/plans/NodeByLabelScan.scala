@@ -20,23 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId])
-                          (val solvedPredicates: Seq[Expression] = Seq.empty) extends LogicalLeafPlan {
-  def solved = NodeByLabelScanPlan(idName, label, solvedPredicates).solved
-  override def coveredIds = Set(idName)
+case class NodeByLabelScan(idName: IdName, label: Either[String, LabelId]) extends LogicalLeafPlan {
+  def availableSymbols: Set[IdName] = Set(idName)
 }
-
-object NodeByLabelScanPlan {
-  def apply(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression] = Seq.empty) =
-    QueryPlan(
-      NodeByLabelScan(idName, label)(solvedPredicates),
-      QueryGraph
-        .empty
-        .addPatternNodes(idName)
-        .addPredicates(solvedPredicates)
-    )
-}
-

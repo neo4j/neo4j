@@ -38,6 +38,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -143,6 +144,12 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
+import org.neo4j.kernel.impl.storemigration.StoreMigrator;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
+import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
+import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
+import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.ReadOnlyTxManager;
@@ -283,6 +290,7 @@ public abstract class InternalAbstractGraphDatabase
     private final Map<String, CacheProvider> cacheProviders;
     protected AvailabilityGuard availabilityGuard;
     protected long accessTimeout;
+    protected StoreUpgrader storeMigrationProcess;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
     {
@@ -384,7 +392,6 @@ public abstract class InternalAbstractGraphDatabase
 
         if ( txManager instanceof TxManager )
         {
-            @SuppressWarnings("deprecation")
             NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
             storeId = neoStoreDataSource.getStoreId();
             KernelDiagnostics.register( diagnosticsManager, InternalAbstractGraphDatabase.this, neoStoreDataSource );
@@ -426,6 +433,9 @@ public abstract class InternalAbstractGraphDatabase
 
         // Component monitoring
         this.monitors = createMonitors();
+
+        storeMigrationProcess = new StoreUpgrader( new ConfigMapUpgradeConfiguration( config ), fileSystem,
+                monitors.newMonitor( StoreUpgrader.Monitor.class ) );
 
         // Apply autoconfiguration for memory settings
         AutoConfigurator autoConfigurator = new AutoConfigurator( fileSystem,
@@ -527,6 +537,10 @@ public abstract class InternalAbstractGraphDatabase
         lockManager = createLockManager();
 
         idGeneratorFactory = createIdGeneratorFactory();
+
+        storeMigrationProcess.addParticipant( new StoreMigrator(
+                new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrator.class ), System.out ),
+                new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), idGeneratorFactory, config ) );
 
         persistenceSource = life.add( new NioNeoDbPersistenceSource( xaDataSourceManager ) );
 
@@ -970,7 +984,7 @@ public abstract class InternalAbstractGraphDatabase
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 persistenceManager, lockManager, this, transactionEventHandlers,
-                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, translatorFactory );
+                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, translatorFactory, storeMigrationProcess );
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 
@@ -1462,7 +1476,11 @@ public abstract class InternalAbstractGraphDatabase
             }
             else if ( KernelHealth.class.isAssignableFrom( type ) )
             {
-                return (T) kernelHealth;
+                return type.cast( kernelHealth );
+            }
+            else if ( StoreUpgrader.class.isAssignableFrom( type ) )
+            {
+                return type.cast( storeMigrationProcess );
             }
             else if ( AvailabilityGuard.class.isAssignableFrom( type ) )
             {

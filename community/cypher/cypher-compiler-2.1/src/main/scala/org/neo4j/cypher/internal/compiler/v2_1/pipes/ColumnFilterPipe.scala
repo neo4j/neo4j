@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
 import commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
-import data.SimpleVal
 import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
+import org.neo4j.cypher.internal.compiler.v2_1.data.SimpleVal
 
 class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {

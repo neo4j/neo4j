@@ -47,12 +47,29 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
     produceLogicalPlan("MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b") should equal(
       Projection(
         OuterHashJoin("b",
-          Expand(NodeByLabelScan("a", Left("X"))(), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength)(mockRel),
-          Expand(NodeByLabelScan("c", Left("Y"))(), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)(mockRel),
-          Set(IdName("r2"), IdName("c"))
+          Expand(NodeByLabelScan("a", Left("X")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength),
+          Expand(NodeByLabelScan("c", Left("Y")), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)
         ),
         expressions = Map("b" -> Identifier("b") _)
       )
     )
   }
+
+  test("should build simple optional match plans") {
+    implicit val planContext = newMockedPlanContext
+    implicit val planner = newPlanner(newMockedMetricsFactory)
+    produceLogicalPlan("OPTIONAL MATCH a RETURN a") should equal(
+      Optional(AllNodesScan("a"))
+    )
+  }
+
+  // FIXME: Davide, Jakub 2014/5/8 - this is broken in ronja
+  ignore("should build simple optional match plans with expand") {
+    implicit val planContext = newMockedPlanContext
+    implicit val planner = newPlanner(newMockedMetricsFactory)
+    produceLogicalPlan("OPTIONAL MATCH a WITH a MATCH a-[r]->(b) RETURN a, r, b") should equal(
+      Expand(Optional(AllNodesScan("a")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)
+    )
+  }
+
 }

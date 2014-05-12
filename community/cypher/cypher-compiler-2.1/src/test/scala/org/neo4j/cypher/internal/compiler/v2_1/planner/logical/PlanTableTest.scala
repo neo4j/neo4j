@@ -27,10 +27,10 @@ class PlanTableTest extends CypherFunSuite with LogicalPlanningTestSupport {
   implicit val planContext = newMockedPlanContext
   implicit val context = newMockedLogicalPlanContext(planContext)
 
-  val x = QueryPlan(newMockedLogicalPlan("x"))
-  val x2 = QueryPlan(newMockedLogicalPlan("x"))
-  val y = QueryPlan(newMockedLogicalPlan("y"))
-  val xAndY = QueryPlan(newMockedLogicalPlan("x", "y"))
+  val x = newMockedQueryPlan("x")
+  val x2 = newMockedQueryPlan("x")
+  val y = newMockedQueryPlan("y")
+  val xAndY = newMockedQueryPlan("x", "y")
 
   test("adding a new plan to an empty PlanTable returns a PlanTable with that plan in it") {
     val plans = PlanTable()

@@ -19,21 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Exists, Selections}
+case class SemiApply(left: LogicalPlan, right: LogicalPlan) extends AbstractSemiApply(left, right)
+case class AntiSemiApply(left: LogicalPlan, right: LogicalPlan) extends AbstractSemiApply(left, right)
 
-case class SemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exists) extends AbstractSemiApply(outer, inner, subQuery)
-case class AntiSemiApply(outer: LogicalPlan, inner: LogicalPlan)(subQuery: Exists) extends AbstractSemiApply(outer, inner, subQuery)
+abstract class AbstractSemiApply(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
+  val lhs = Some(left)
+  val rhs = Some(right)
 
-abstract class AbstractSemiApply(outer: LogicalPlan, inner: LogicalPlan, val subQuery: Exists) extends LogicalPlan {
-  val lhs = Some(outer)
-  val rhs = Some(inner)
-
-  val solved = {
-    val newSelections = Selections(outer.solved.selections.predicates + subQuery.predicate)
-    outer.solved.copy(
-      subQueries = outer.solved.subQueries :+ subQuery,
-      selections = newSelections,
-      argumentIds = subQuery.queryGraph.argumentIds
-    )
-  }
+  def availableSymbols = left.availableSymbols
 }

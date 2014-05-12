@@ -26,8 +26,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
   test("should introduce apply for unsolved exclusive optional match") {
     // OPTIONAL MATCH (a)-[r]->(b)
 
@@ -44,16 +46,17 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
       case _            => 1000.0
     })
 
+    val fakePlan = newMockedQueryPlan(Set(IdName("a"), IdName("b")))
+
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = qg,
+      strategy = newMockedStrategy(fakePlan),
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
 
     val planTable = PlanTable(Map())
-    val innerPlan = Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)(patternRel)
 
-    val optional2 = optional(planTable)
-    optional2.bestPlan(context.cost).map(_.plan) should equal(Some(Optional(Set("a", "b", "r"), innerPlan)))
+    optional(planTable).plans should equal(Seq(planOptional(fakePlan)))
   }
 }

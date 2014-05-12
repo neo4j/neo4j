@@ -67,14 +67,14 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     private DynamicArrayStore arrayPropertyStore;
     private final PropertyPhysicalToLogicalConverter physicalToLogicalConverter;
 
-    public PropertyStore(File fileName, Config configuration,
+    public PropertyStore( File fileName, Config configuration,
                          IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                          FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
                          DynamicStringStore stringPropertyStore, PropertyKeyTokenStore propertyKeyTokenStore,
-                         DynamicArrayStore arrayPropertyStore)
+                         DynamicArrayStore arrayPropertyStore, StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger );
+                fileSystemAbstraction, stringLogger, versionMismatchHandler );
         this.stringPropertyStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayPropertyStore = arrayPropertyStore;

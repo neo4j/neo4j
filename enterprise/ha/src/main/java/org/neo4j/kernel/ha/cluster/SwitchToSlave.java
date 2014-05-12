@@ -32,6 +32,7 @@ import java.util.List;
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -83,6 +84,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -257,7 +259,7 @@ public class SwitchToSlave
         MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), haCommunicationLife );
 
         Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
-                new RequestContextFactory( getServerId( masterUri ), xaDataSourceManager,
+                new RequestContextFactory( getServerId( masterUri ).toIntegerIndex(), xaDataSourceManager,
                         resolver ), xaDataSourceManager );
 
         SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging,
@@ -310,7 +312,7 @@ public class SwitchToSlave
     {
         String hostString = ServerUtil.getHostString( server.getSocketAddress() );
         int port = server.getSocketAddress().getPort();
-        Integer serverId = config.get( ClusterSettings.server_id );
+        InstanceId serverId = config.get( ClusterSettings.server_id );
         String host = hostString.contains( HighAvailabilityModeSwitcher.INADDR_ANY ) ? me.getHost() : hostString;
         return URI.create( "ha://" + host + ":" + port + "?serverId=" + serverId );
     }
@@ -337,7 +339,7 @@ public class SwitchToSlave
                 public Response<?> copyStore( StoreWriter writer )
                 {
                     return copyMaster.copyStore( new RequestContext( 0,
-                            config.get( ClusterSettings.server_id ), 0, new RequestContext.Tx[0], 0, 0 ), writer );
+                            config.get( ClusterSettings.server_id ).toIntegerIndex(), 0, new RequestContext.Tx[0], 0, 0 ), writer );
                 }
 
                 @Override
@@ -497,7 +499,8 @@ public class SwitchToSlave
                     resolver.resolveDependency( TransactionEventHandlers.class ),
                     monitors.newMonitor( IndexingService.Monitor.class ),
                     resolver.resolveDependency( FileSystemAbstraction.class ),
-                    thing );
+                    thing,
+                    resolver.resolveDependency( StoreUpgrader.class ));
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential

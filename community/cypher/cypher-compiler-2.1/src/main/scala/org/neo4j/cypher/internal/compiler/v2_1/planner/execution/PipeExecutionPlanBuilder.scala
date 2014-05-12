@@ -26,9 +26,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{SortItem, True}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.commands.True
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.OtherConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
@@ -39,11 +39,11 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
     def buildPipe(plan: LogicalPlan): Pipe = {
       implicit val monitor = monitors.newMonitor[PipeMonitor]()
       plan match {
-        case Projection(left, expressions, _) =>
+        case Projection(left, expressions) =>
           ProjectionNewPipe(buildPipe(left), toLegacyExpressions(expressions))
 
-        case SingleRow(_) =>
-          NullPipe()
+        case SingleRow(ids) =>
+          NullPipe(new SymbolTable(ids.map { case IdName(key) => key -> CTAny}.toMap))
 
         case AllNodesScan(IdName(id)) =>
           AllNodesScanPipe(id)
@@ -66,7 +66,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case NodeIndexUniqueSeek(IdName(id), labelId, propertyKeyId, valueExpr) =>
           NodeUniqueIndexSeekPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)
 
-        case Selection(predicates, left, _) =>
+        case Selection(predicates, left) =>
           FilterPipe(buildPipe(left), predicates.map(_.asCommandPredicate).reduce(_ ++ _))
 
         case CartesianProduct(left, right) =>
@@ -85,11 +85,11 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case NodeHashJoin(node, left, right) =>
           NodeHashJoinPipe(node.name, buildPipe(left), buildPipe(right))
 
-        case OuterHashJoin(node, left, right, nullableIds) =>
-          NodeOuterHashJoinPipe(node.name, buildPipe(left), buildPipe(right), nullableIds.map(_.name))
+        case OuterHashJoin(node, left, right) =>
+          NodeOuterHashJoinPipe(node.name, buildPipe(left), buildPipe(right), (right.availableSymbols -- left.availableSymbols).map(_.name))
 
-        case Optional(nullableIds, inner) =>
-          OptionalPipe(nullableIds.map(_.name), buildPipe(inner))
+        case Optional(inner) =>
+          OptionalPipe(inner.availableSymbols.map(_.name), buildPipe(inner))
 
         case Apply(outer, inner) =>
           ApplyPipe(buildPipe(outer), buildPipe(inner))

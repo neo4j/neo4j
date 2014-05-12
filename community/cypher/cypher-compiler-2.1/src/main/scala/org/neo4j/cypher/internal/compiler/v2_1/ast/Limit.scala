@@ -27,3 +27,5 @@ case class Limit(expression: Expression)(val position: InputPosition) extends AS
     expression.semanticCheck(Expression.SemanticContext.Simple) chain
     expression.expectType(CTInteger.covariant)
 }
+
+

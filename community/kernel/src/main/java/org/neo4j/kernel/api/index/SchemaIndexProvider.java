@@ -26,8 +26,11 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.graphdb.DependencyResolver.SelectionStrategy;
+import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexingService;
+import org.neo4j.kernel.impl.storemigration.StoreMigrationParticipant;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
@@ -90,7 +93,8 @@ import static org.neo4j.kernel.extension.KernelExtensionUtil.servicesClassPathEn
  * Once the index is online, the database will move to using the {@link #getOnlineAccessor(long, IndexConfiguration) online accessor} to
  * write to the index.
  */
-public abstract class SchemaIndexProvider extends LifecycleAdapter implements Comparable<SchemaIndexProvider>
+public abstract class SchemaIndexProvider extends LifecycleAdapter
+        implements Comparable<SchemaIndexProvider>
 {
     public static final SchemaIndexProvider NO_INDEX_PROVIDER =
             new SchemaIndexProvider( new Descriptor("no-index-provider", "1.0"), -1 )
@@ -142,7 +146,6 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
     };
 
     protected final int priority;
-
     private final Descriptor providerDescriptor;
 
     protected SchemaIndexProvider( Descriptor descriptor, int priority )
@@ -220,7 +223,26 @@ public abstract class SchemaIndexProvider extends LifecycleAdapter implements Co
 
     protected File getRootDirectory( Config config, String key )
     {
-        return new File( new File( new File( config.get( store_dir ), "schema" ), "index" ), key );
+        return getRootDirectory( config.get( store_dir ), key );
+    }
+
+    public static File getRootDirectory( File storeDir, String key )
+    {
+        return new File( new File( new File( storeDir, "schema" ), "index" ), key );
+    }
+
+    public StoreMigrationParticipant storeMigrationParticipant()
+    {
+        return StoreMigrationParticipant.NOT_PARTICIPATING;
+    }
+
+    /**
+     * Provides a snapshot of meta files about this index provider, not the indexes themselves.
+     * @return
+     */
+    public ResourceIterator<File> snapshotMetaFiles()
+    {
+        return IteratorUtil.emptyIterator();
     }
 
     public static class Descriptor

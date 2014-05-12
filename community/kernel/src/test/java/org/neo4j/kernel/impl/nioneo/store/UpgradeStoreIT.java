@@ -31,6 +31,7 @@ import java.util.Map;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -48,6 +49,7 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
@@ -307,7 +309,7 @@ public class UpgradeStoreIT
     {
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
         DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names"), null, IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.THROW_EXCEPTION );
         RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
@@ -331,7 +333,8 @@ public class UpgradeStoreIT
         public RelationshipTypeTokenStoreWithOneOlderVersion( File fileName, DynamicStringStore stringStore )
         {
             super( fileName, new Config( stringMap() ), new NoLimitIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                    new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, stringStore );
+                    new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, stringStore,
+                    StoreVersionMismatchHandler.THROW_EXCEPTION );
         }
 
         @Override
@@ -353,7 +356,7 @@ public class UpgradeStoreIT
             }
         }
     }
-    
+
     private static class NoLimitIdGeneratorFactory implements IdGeneratorFactory
     {
         private final Map<IdType, IdGenerator> generators = new HashMap<IdType, IdGenerator>();

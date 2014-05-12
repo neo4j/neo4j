@@ -26,6 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.InputPosition.NONE
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object idSeekLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
@@ -50,7 +51,7 @@ object idSeekLeafPlanner extends LeafPlanner {
           case Some(relationship) =>
             createRelationshipByIdSeek(relationship, idValues, predicate)
           case None =>
-            NodeByIdSeekPlan(IdName(idName), idValues, Seq(predicate))
+            planNodeByIdSeek(IdName(idName), idValues, Seq(predicate))
         }
     }
 
@@ -62,13 +63,13 @@ object idSeekLeafPlanner extends LeafPlanner {
     val name = relationship.name
     val plan = relationship.dir match {
       case Direction.BOTH =>
-        UndirectedRelationshipByIdSeekPlan(name, idValues, left, right, relationship, Seq(predicate))
+        planUndirectedRelationshipByIdSeek(name, idValues, left, right, relationship, Seq(predicate))
 
       case Direction.INCOMING =>
-        DirectedRelationshipByIdSeekPlan(name, idValues, right, left, relationship, Seq(predicate))
+        planDirectedRelationshipByIdSeek(name, idValues, right, left, relationship, Seq(predicate))
 
       case Direction.OUTGOING =>
-        DirectedRelationshipByIdSeekPlan(name, idValues, left, right, relationship, Seq(predicate))
+        planDirectedRelationshipByIdSeek(name, idValues, left, right, relationship, Seq(predicate))
     }
     filterIfNeeded(plan, name.name, relationship.types)
   }
@@ -90,6 +91,6 @@ object idSeekLeafPlanner extends LeafPlanner {
         case _ => Ors(predicates)(predicates.head.position)
       }
 
-      HiddenSelectionPlan(Seq(predicate), plan)
+      planHiddenSelection(Seq(predicate), plan)
     }
 }

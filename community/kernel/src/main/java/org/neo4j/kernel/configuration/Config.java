@@ -231,7 +231,7 @@ public class Config implements DiagnosticsProvider
     {
         int firstNonDigitIndex = findFirstNonDigit( numberWithPotentialUnit );
         String number = numberWithPotentialUnit.substring( 0, firstNonDigitIndex );
-        
+
         long multiplier = 1;
         if ( firstNonDigitIndex < numberWithPotentialUnit.length() )
         {
@@ -254,7 +254,7 @@ public class Config implements DiagnosticsProvider
                         "Illegal unit '" + unit + "' for number '" + numberWithPotentialUnit + "'" );
             }
         }
-        
+
         return Long.parseLong( number ) * multiplier;
     }
 
@@ -274,5 +274,16 @@ public class Config implements DiagnosticsProvider
             }
         }
         return firstNonDigitIndex;
+    }
+
+    /**
+     * Returns a copy of this config with the given modifications.
+     * @return a new modified config, leaves this config unchanged.
+     */
+    public Config with( Map<String, String> additionalConfig )
+    {
+        Map<String, String> newParams = getParams(); // copy is returned
+        newParams.putAll( additionalConfig );
+        return new Config( newParams );
     }
 }

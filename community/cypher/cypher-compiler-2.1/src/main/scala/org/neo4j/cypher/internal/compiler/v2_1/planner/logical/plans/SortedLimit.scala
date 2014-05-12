@@ -21,10 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{SortItem, Expression}
 
-case class SortedLimit(left: LogicalPlan, limit: Expression, sortItems: Seq[SortItem])(originalLimit: Expression)
-  extends LogicalPlan {
+case class SortedLimit(left: LogicalPlan, limit: Expression, sortItems: Seq[SortItem]) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = None
-
-  val solved = left.solved.copy(limit = Some(originalLimit), sortItems = sortItems)
+  def availableSymbols = left.availableSymbols
 }

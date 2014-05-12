@@ -25,9 +25,11 @@ import java.io.IOException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public class DirectStoreAccess implements Closeable
 {
+    private final LifeSupport life = new LifeSupport();
     private final StoreAccess nativeStores;
     private final LabelScanStore labelScanStore;
     private final SchemaIndexProvider indexes;
@@ -37,7 +39,7 @@ public class DirectStoreAccess implements Closeable
     {
         this.nativeStores = nativeStores;
         this.labelScanStore = labelScanStore;
-        this.indexes = indexes;
+        this.indexes = life.add( indexes );
     }
 
     public StoreAccess nativeStores()
@@ -60,13 +62,6 @@ public class DirectStoreAccess implements Closeable
     {
         nativeStores.close();
         labelScanStore.shutdown();
-        try
-        {
-            indexes.shutdown();
-        }
-        catch ( Throwable throwable )
-        {
-            throw new IOException( throwable );
-        }
+        life.shutdown();
     }
 }

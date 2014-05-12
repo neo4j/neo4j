@@ -47,6 +47,7 @@ import org.neo4j.kernel.api.index.IndexUpdater;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
+import org.neo4j.kernel.api.index.SchemaIndexProvider.Descriptor;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
@@ -687,12 +688,17 @@ public class IndexingService extends LifecycleAdapter
     public ResourceIterator<File> snapshotStoreFiles() throws IOException
     {
         Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
+        Set<SchemaIndexProvider.Descriptor> fromProviders = new HashSet<>();
         for ( IndexProxy indexProxy : indexMapReference.getAllIndexProxies() )
         {
-            snapshots.add(indexProxy.snapshotFiles());
+            Descriptor providerDescriptor = indexProxy.getProviderDescriptor();
+            if ( fromProviders.add( providerDescriptor ) )
+            {
+                snapshots.add( providerMap.apply( providerDescriptor ).snapshotMetaFiles() );
+            }
+            snapshots.add( indexProxy.snapshotFiles() );
         }
 
         return concatResourceIterators( snapshots.iterator() );
     }
 }
-

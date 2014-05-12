@@ -25,10 +25,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 import scala.collection.mutable
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, CandidateList}
 
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
@@ -43,7 +45,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       SignedIntegerLiteral("42")_
     )_
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(IdName("n")), expr))),
       patternNodes = Set(IdName("n")))
 
@@ -64,7 +66,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(Candidates(
-      NodeByIdSeekPlan(IdName("n"), Seq(SignedIntegerLiteral("42")_), Seq(expr))
+      planNodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("42")_), Seq(expr))
     ))
   }
 
@@ -79,7 +81,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       )_
     )_
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(IdName("n")), expr))),
       patternNodes = Set(IdName("n")))
 
@@ -100,7 +102,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(Candidates(
-      NodeByIdSeekPlan(IdName("n"), Seq(
+      planNodeByIdSeek(IdName("n"), Seq(
         SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
       ), Seq(expr))
     ))
@@ -120,7 +122,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val end = IdName("to")
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(IdName("r")), expr))),
       patternNodes = Set(from, end),
       patternRelationships = Set(patternRel))
@@ -141,7 +143,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(DirectedRelationshipByIdSeekPlan(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))))
+    resultPlans should equal(Candidates(planDirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))))
   }
 
   test("simple undirected relationship by id seek with a rel id expression") {
@@ -158,7 +160,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val end = IdName("to")
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(IdName("r")), expr))),
       patternNodes = Set(from, end),
       patternRelationships = Set(patternRel))
@@ -180,7 +182,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(UndirectedRelationshipByIdSeekPlan(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))))
+    resultPlans should equal(Candidates(planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))))
   }
 
   test("simple directed relationship by id seek with a collection of relationship ids") {
@@ -199,7 +201,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val end = IdName("to")
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(IdName("r")), expr))),
       patternNodes = Set(from, end),
       patternRelationships = Set(patternRel))
@@ -220,7 +222,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(DirectedRelationshipByIdSeekPlan(IdName("r"), Seq(
+    resultPlans should equal(Candidates(planDirectedRelationshipByIdSeek(IdName("r"), Seq(
       SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
     ), from, end, patternRel, Seq(expr))))
   }
@@ -241,7 +243,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val end = IdName("to")
     val patternRel = PatternRelationship(IdName("r"), (from, end), Direction.BOTH, Seq.empty, SimplePatternLength)
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(IdName("r")), expr))),
       patternNodes = Set(from, end),
       patternRelationships = Set(patternRel))
@@ -262,7 +264,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val resultPlans = idSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(UndirectedRelationshipByIdSeekPlan(IdName("r"), Seq(
+    resultPlans should equal(Candidates(planUndirectedRelationshipByIdSeek(IdName("r"), Seq(
       SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
     ), from, end, patternRel, Seq(expr))))
   }
@@ -289,7 +291,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       SimplePatternLength
     )
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(IdName("r")), expr))),
       patternNodes = Set(from, end),
       patternRelationships = Set(patternRel))
@@ -311,9 +313,9 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(Candidates(
-      HiddenSelectionPlan(
+      planHiddenSelection(
         Seq(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_),
-        UndirectedRelationshipByIdSeekPlan(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
+        planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
       )
     ))
   }
@@ -341,7 +343,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       SimplePatternLength
     )
     val qg = QueryGraph(
-      projections = projections,
+      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(IdName("r")), expr))),
       patternNodes = Set(from, end),
       patternRelationships = Set(patternRel))
@@ -363,14 +365,14 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(Candidates(
-      HiddenSelectionPlan(
+      planHiddenSelection(
         Seq(
           Ors(List(
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)(pos),
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)(pos)
           ))_
         ),
-        UndirectedRelationshipByIdSeekPlan(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
+        planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
     )))
   }
 }

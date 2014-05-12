@@ -19,12 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-
-case class OuterHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan, nullableIds: Set[IdName])
-  extends LogicalPlan {
-
+case class OuterHashJoin(node: IdName, left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
-
-  val solved = left.solved.withAddedOptionalMatch(right.solved)
+  val availableSymbols = left.availableSymbols ++ right.availableSymbols
 }

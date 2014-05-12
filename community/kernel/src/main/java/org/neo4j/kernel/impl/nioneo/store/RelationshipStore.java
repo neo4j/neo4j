@@ -38,7 +38,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         extends AbstractStore.Configuration
     {
     }
-    
+
     public static final String TYPE_DESCRIPTOR = "RelationshipStore";
 
     // record header size
@@ -47,11 +47,12 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     // second_next_rel_id+next_prop_id(int)+first-in-chain-markers(1)
     public static final int RECORD_SIZE = 34;
 
-    public RelationshipStore(File fileName, Config configuration, IdGeneratorFactory idGeneratorFactory,
-                             WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+    public RelationshipStore( File fileName, Config configuration, IdGeneratorFactory idGeneratorFactory,
+                             WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
+                             StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super(fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
-                windowPoolFactory, fileSystemAbstraction, stringLogger);
+        super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
+                windowPoolFactory, fileSystemAbstraction, stringLogger, versionMismatchHandler );
     }
 
     @Override
@@ -220,7 +221,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
             // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
             // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
             int typeInt = (int)(record.getType() | secondNodeMod | firstPrevRelMod | firstNextRelMod | secondPrevRelMod | secondNextRelMod);
-            
+
             // [    ,   x] 1:st in start node chain, 0x1
             // [    ,  x ] 1:st in end node chain,   0x2
             long firstInStartNodeChain = record.isFirstInFirstChain() ? 0x1 : 0;
@@ -302,7 +303,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
 
         long nextProp = buffer.getUnsignedInt();
         long nextPropMod = (inUseByte & 0xF0L) << 28;
-        
+
         byte extraByte = buffer.get();
 
         record.setFirstInFirstChain( (extraByte & 0x1) != 0 );

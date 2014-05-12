@@ -45,19 +45,20 @@ public class DynamicArrayStore extends AbstractDynamicStore
 {
     static final int NUMBER_HEADER_SIZE = 3;
     static final int STRING_HEADER_SIZE = 5;
-    
+
     // store version, each store ends with this string (byte encoded)
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
     public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
 
-    public DynamicArrayStore(File fileName, Config configuration, IdType idType,
+    public DynamicArrayStore( File fileName, Config configuration, IdType idType,
                              IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                             FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+                             FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                             StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger);
+                fileSystemAbstraction, stringLogger, versionMismatchHandler );
     }
-    
+
     @Override
     public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record ) throws FAILURE
     {
@@ -77,8 +78,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
         boolean isPrimitiveByteArray = componentType.equals( Byte.TYPE );
         boolean isByteArray = componentType.equals( Byte.class ) || isPrimitiveByteArray;
         ShortArray type = ShortArray.typeOf( array );
-        if ( type == null ) throw new IllegalArgumentException( array + " not a valid array type." );
-        
+        if ( type == null )
+        {
+            throw new IllegalArgumentException( array + " not a valid array type." );
+        }
+
         int arrayLength = Array.getLength( array );
         int requiredBits = isByteArray ? Byte.SIZE : type.calculateRequiredBitsForArray( array, arrayLength);
         int totalBits = requiredBits*arrayLength;
@@ -93,11 +97,17 @@ public class DynamicArrayStore extends AbstractDynamicStore
             bytes[0] = (byte) type.intValue();
             bytes[1] = (byte) bitsUsedInLastByte;
             bytes[2] = (byte) requiredBits;
-            if ( isPrimitiveByteArray ) arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE, arrayLength );
+            if ( isPrimitiveByteArray )
+            {
+                arraycopy( array, 0, bytes, NUMBER_HEADER_SIZE, arrayLength );
+            }
             else
             {
                 Byte[] source = (Byte[]) array;
-                for ( int i = 0; i < source.length; i++ ) bytes[NUMBER_HEADER_SIZE+i] = source[i];
+                for ( int i = 0; i < source.length; i++ )
+                {
+                    bytes[NUMBER_HEADER_SIZE+i] = source[i];
+                }
             }
         }
         else
@@ -139,7 +149,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
     {
         return allocateRecords( array, Collections.<DynamicRecord>emptyList().iterator() );
     }
-    
+
     public Collection<DynamicRecord> allocateRecords( Object array, Iterator<DynamicRecord> recordsToUseFirst )
     {
         if ( !array.getClass().isArray() )
@@ -168,7 +178,7 @@ public class DynamicArrayStore extends AbstractDynamicStore
             ByteBuffer headerBuffer = ByteBuffer.wrap( header, 1/*skip the type*/, header.length-1 );
             int arrayLength = headerBuffer.getInt();
             String[] result = new String[arrayLength];
-            
+
             ByteBuffer dataBuffer = ByteBuffer.wrap( bArray );
             for ( int i = 0; i < arrayLength; i++ )
             {
@@ -185,7 +195,9 @@ public class DynamicArrayStore extends AbstractDynamicStore
             int bitsUsedInLastByte = header[1];
             int requiredBits = header[2];
             if ( requiredBits == 0 )
+            {
                 return type.createEmptyArray();
+            }
             Object result;
             if ( type == ShortArray.BYTE && requiredBits == Byte.SIZE )
             {   // Optimization for byte arrays (probably large ones)

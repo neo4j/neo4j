@@ -87,6 +87,7 @@ import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
@@ -182,6 +183,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private final IndexingService.Monitor indexingServiceMonitor;
     private final FileSystemAbstraction fs;
     private Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory;
+    private final StoreUpgrader storeMigrationProcess;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -279,7 +281,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  PersistenceManager persistenceManager, Locks lockManager,
                                  SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
                                  IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs, Function
-            <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory )
+            <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory,StoreUpgrader storeMigrationProcess )
     {
         super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
@@ -300,6 +302,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         this.indexingServiceMonitor = indexingServiceMonitor;
         this.fs = fs;
         this.translatorFactory = translatorFactory;
+        this.storeMigrationProcess = storeMigrationProcess;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -336,6 +339,16 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         {
             tf = new TransactionFactory();
         }
+
+        indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
+                SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+        storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant() );
+
+        // TODO: Build a real provider map
+        DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
+
+        storeMigrationProcess.migrateIfNeeded( store.getParentFile() );
+
         neoStore = storeFactory.newNeoStore( store );
 
         neoStoreTransactionContextSupplier = new NeoStoreTransactionContextSupplier( neoStore );
@@ -358,12 +371,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
         try
         {
-            indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
-                    SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
-
-            // TODO: Build a real provider map
-            DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
-
             indexingService = life.add(
                     new IndexingService(
                             scheduler,
@@ -760,6 +767,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         indexingService.startIndexes();
     }
 
+    @Override
     public LogBufferFactory createLogBufferFactory()
     {
         return xaContainer.getLogicalLog().createLogWriter( new Function<Config, File>()

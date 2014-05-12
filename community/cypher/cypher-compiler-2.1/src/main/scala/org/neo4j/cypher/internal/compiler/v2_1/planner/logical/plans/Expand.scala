@@ -28,10 +28,9 @@ case class Expand(left: LogicalPlan,
                   types: Seq[RelTypeName],
                   to: IdName,
                   relName: IdName,
-                  length: PatternLength)
-                 (pattern: PatternRelationship) extends LogicalPlan {
+                  length: PatternLength) extends LogicalPlan {
   val lhs = Some(left)
   def rhs = None
 
-  val solved = left.solved.addPatternRel(pattern)
+  def availableSymbols: Set[IdName] = left.availableSymbols + relName + to
 }

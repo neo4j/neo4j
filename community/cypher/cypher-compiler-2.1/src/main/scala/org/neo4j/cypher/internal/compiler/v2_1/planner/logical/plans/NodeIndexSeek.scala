@@ -21,21 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class NodeIndexSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
-                        (val solvedPredicates: Seq[Expression]= Seq.empty) extends LogicalLeafPlan {
-  def solved = NodeIndexSeekPlan(idName, label, propertyKeyId, valueExpr, solvedPredicates).solved
-  override def coveredIds = Set(idName)
-}
-
-object NodeIndexSeekPlan {
-  def apply(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression, solvedPredicates: Seq[Expression] = Seq.empty) =
-    QueryPlan(
-      NodeIndexSeek(idName, label, propertyKeyId, valueExpr)(solvedPredicates),
-      QueryGraph
-        .empty
-        .addPatternNodes(idName)
-        .addPredicates(solvedPredicates)
-    )
+                         extends LogicalLeafPlan {
+  def availableSymbols = Set(idName)
 }

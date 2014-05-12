@@ -44,10 +44,10 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
     public LabelTokenStore( File fileName, Config config,
                             IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                             FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                            DynamicStringStore nameStore )
+                            DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler )
     {
         super(fileName, config, IdType.LABEL_TOKEN, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, nameStore);
+                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler);
     }
 
     @Override
@@ -61,13 +61,13 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
     {
         return new LabelTokenRecord( id );
     }
-    
+
     @Override
     protected void readRecord( LabelTokenRecord record, Buffer buffer )
     {
         record.setNameId( buffer.getInt() );
     }
-    
+
     @Override
     protected void writeRecord( LabelTokenRecord record, Buffer buffer )
     {

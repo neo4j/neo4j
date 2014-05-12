@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -47,7 +48,7 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       planContext = newMockedPlanContext,
       queryGraph = QueryGraph(patternNodes = Set(aNode, bNode), patternRelationships = Set(r1Rel))
     )
-    val left: LogicalPlan = newMockedLogicalPlanWithPatterns(Set(aNode, bNode))
+    val left = newMockedQueryPlan(Set(aNode, bNode))
     val planTable = PlanTable(Map(Set(aNode, bNode) -> left))
 
     outerJoin(planTable) should equal(CandidateList(Seq.empty))
@@ -64,22 +65,19 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       case _                         => 1000.0
     })
 
+    val innerPlan = newMockedQueryPlan("b")
+
     implicit val context = newMockedLogicalPlanContext(
       planContext = newMockedPlanContext,
       queryGraph = QueryGraph(patternNodes = Set(aNode)).withAddedOptionalMatch(optionalQg),
+      strategy = newMockedStrategy(innerPlan),
       metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
     )
-    val left: LogicalPlan = newMockedLogicalPlanWithPatterns(Set(aNode))
+    val left = newMockedQueryPlanWithPatterns(Set(aNode))
     val planTable = PlanTable(Map(Set(aNode) -> left))
 
-    val expectedPlan = OuterHashJoin(aNode,
-      left,
-      Expand(
-        AllNodesScan(bNode), bNode, Direction.INCOMING, Seq.empty, aNode, r1Name, SimplePatternLength
-      )(r1Rel),
-      Set(bNode, r1Name)
-    )
+    val expectedPlan = planOuterHashJoin(aNode, left, innerPlan)
 
-    outerJoin(planTable) should equal(CandidateList(Seq(expectedPlan)))
+    outerJoin(planTable).plans.head should equal(expectedPlan)
   }
 }
