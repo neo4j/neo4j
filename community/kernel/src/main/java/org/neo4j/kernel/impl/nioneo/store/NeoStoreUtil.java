@@ -26,10 +26,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 public class NeoStoreUtil
 {
@@ -120,6 +116,11 @@ public class NeoStoreUtil
     public long getLogVersion()
     {
         return logVersion;
+    }
+
+    public long getStoreVersion()
+    {
+        return storeVersion;
     }
 
     @Override
