@@ -19,14 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Apply, QueryPlan, LogicalPlan}
-
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SingleRow, QueryPlan}
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.cartesianProduct
+import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
 
-class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
-  def plan(implicit context: LogicalPlanContext, leafPlan: Option[QueryPlan] = None): QueryPlan = {
+class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
+  extends QueryGraphSolver{
+  def plan(implicit context: QueryGraphSolvingContext, leafPlan: Option[QueryPlan] = None): QueryPlan = {
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
 
@@ -42,20 +42,10 @@ class GreedyPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStr
       (planTable: PlanTable) => pickBest(planGenerator(planTable).map(select)).fold(planTable)(planTable + _)
 
     val leaves: PlanTable = generateLeafPlanTable()
-
     val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)
     val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(afterExpandOrJoin)
     val afterCartesianProduct = iterateUntilConverged(findBestPlan(cartesianProduct))(afterOptionalApplies)
-    val bestPlan = projection(afterCartesianProduct.uniquePlan)
 
-    val finalPlan: QueryPlan = context.queryGraph.tail match {
-      case Some(tail) =>
-        val finalPlan = plan(context.copy(queryGraph = tail), Some(QueryPlan(bestPlan.plan, QueryGraph.empty)))
-        finalPlan.copy(solved = bestPlan.solved.withTail(tail))
-      case _ => bestPlan
-    }
-
-    verifyBestPlan(finalPlan)
-    finalPlan
+    afterCartesianProduct.uniquePlan
   }
 }

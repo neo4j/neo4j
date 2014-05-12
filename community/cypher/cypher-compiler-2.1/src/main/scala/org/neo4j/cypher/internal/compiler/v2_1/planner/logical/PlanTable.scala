@@ -28,17 +28,20 @@ case class PlanTable(m: Map[Set[IdName], QueryPlan] = Map.empty) {
   def size = m.size
 
   def isEmpty = m.isEmpty
+  def nonEmpty = !isEmpty
 
   def -(ids: Set[IdName]) = copy(m = m - ids)
 
   def +(newPlan: QueryPlan): PlanTable = {
-    if (m.keys.exists(newPlan.plan.isCoveredBy)) {
+    val newPlanCoveredByOldPlan = m.values.exists(p => newPlan.solved.graph.isCoveredBy(p.solved.graph))
+
+    if (newPlanCoveredByOldPlan) {
       this
     } else {
-      val newMap = m.filter {
-        case (_, existingPlan) => !newPlan.plan.covers(existingPlan.plan)
+      val oldPlansNotCoveredByNewPlan = m.filter {
+        case (_, existingPlan) => !newPlan.solved.graph.covers(existingPlan.solved.graph)
       }
-      PlanTable(newMap + (newPlan.coveredIds -> newPlan))
+      PlanTable(oldPlansNotCoveredByNewPlan + (newPlan.availableSymbols -> newPlan))
     }
   }
 

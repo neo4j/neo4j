@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanContext, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{QueryGraphSolvingContext, PlanTransformer}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
@@ -49,28 +49,29 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
   })
 
   val passThrough = new PlanTransformer {
-    def apply(input: QueryPlan)(implicit context: LogicalPlanContext) = input
+    def apply(input: QueryPlan)(implicit context: QueryGraphSolvingContext) = input
   }
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
     // Given
     val predicate = Predicate(Set(IdName("a")), patternExp)
     val selections = Selections(Set(predicate))
-    val patternQG = QueryGraph().
-        addPatternRel(patternRel).
-        addArgumentId(Seq(IdName("a"))).
-        addCoveredIdsAsProjections()
+    val patternQG = QueryGraph(
+      patternRelationships = Set(patternRel),
+      argumentIds = Set(IdName("a")),
+      patternNodes = Set(IdName("a"), IdName(nodeName))
+    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = qg,
       subQueryLookupTable = Map(patternExp -> patternQG),
-      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
     val aPlan = newMockedQueryPlan("a")
@@ -88,21 +89,22 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Given
     val predicate = Predicate(Set(IdName("a")), notExpr)
     val selections = Selections(Set(predicate))
-    val patternQG = QueryGraph().
-      addPatternRel(patternRel).
-      addArgumentId(Seq(IdName("a"))).
-      addCoveredIdsAsProjections()
+    val patternQG = QueryGraph(
+      patternRelationships = Set(patternRel),
+      argumentIds = Set(IdName("a")),
+      patternNodes = Set(IdName("a"), IdName(nodeName))
+    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = qg,
       subQueryLookupTable = Map(patternExp -> patternQG),
-      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
     val aPlan = newMockedQueryPlan("a")
@@ -119,21 +121,23 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     // Given
     val predicate = Predicate(Set(IdName("a")), patternExp)
     val selections = Selections(Set(predicate))
-    val patternQG = QueryGraph().
-        addPatternRel(patternRel).
-        addArgumentId(Seq(IdName("a"))).
-        addCoveredIdsAsProjections()
+    val patternQG = QueryGraph(
+      patternRelationships = Set(patternRel),
+      argumentIds = Set(IdName("a")),
+      patternNodes = Set(IdName("a"), IdName(nodeName))
+    )
+
 
     val qg = QueryGraph(
       patternNodes = Set("b"),
       selections = selections
     )
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = qg,
       subQueryLookupTable = Map(patternExp -> patternQG),
-      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
     val bPlan = newMockedQueryPlan("b")
@@ -153,21 +157,22 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val orsExp: Ors = Ors(List(patternExp, equals))_
     val orPredicate = Predicate(Set(IdName("a")), orsExp)
     val selections = Selections(Set(orPredicate))
-    val patternQG = QueryGraph().
-      addPatternRel(patternRel).
-      addArgumentId(Seq(IdName("a"))).
-      addCoveredIdsAsProjections()
+    val patternQG = QueryGraph(
+      patternRelationships = Set(patternRel),
+      argumentIds = Set(IdName("a")),
+      patternNodes = Set(IdName("a"), IdName(nodeName))
+    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = qg,
       subQueryLookupTable = Map(patternExp -> patternQG),
-      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
     val aPlan = newMockedQueryPlan("a")
@@ -190,21 +195,22 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val orsExp = Ors(List(Not(patternExp)(pos), equals))_
     val orPredicate = Predicate(Set(IdName("a")), orsExp)
     val selections = Selections(Set(orPredicate))
-    val patternQG = QueryGraph().
-      addPatternRel(patternRel).
-      addArgumentId(Seq(IdName("a"))).
-      addCoveredIdsAsProjections()
+    val patternQG = QueryGraph(
+      patternRelationships = Set(patternRel),
+      argumentIds = Set(IdName("a")),
+      patternNodes = Set(IdName("a"), IdName(nodeName))
+    )
 
     val qg = QueryGraph(
       patternNodes = Set("a"),
       selections = selections
     )
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = qg,
       subQueryLookupTable = Map(patternExp -> patternQG),
-      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
     val aPlan = newMockedQueryPlan("a")

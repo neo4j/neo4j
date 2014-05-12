@@ -20,12 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1
-import v2_1.planner.LogicalPlanningTestSupport
-import v2_1.planner.logical.plans._
-import v2_1.ast._
-import v2_1.LabelId
-import v2_1.planner.logical.Metrics.{SelectivityModel, CardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{SelectivityModel, CardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.mockito.stubbing.Answer
 import org.mockito.invocation.InvocationOnMock
 import org.mockito.Matchers._

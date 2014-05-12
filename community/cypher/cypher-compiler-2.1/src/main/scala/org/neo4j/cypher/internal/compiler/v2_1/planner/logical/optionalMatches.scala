@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{optionalExpand, outerJoin, optional, applyOptional}
 
 object optionalMatches extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+  def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
     val optionalApplies = applyOptional(planTable)
     val optionals = optional(planTable)
     val outerJoins = outerJoin(planTable)

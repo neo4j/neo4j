@@ -24,12 +24,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object join extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+  def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
     val joinPlans: Seq[QueryPlan] = (for {
       left <- planTable.plans
       right <- planTable.plans if left != right
     } yield {
-      (left.coveredIds & right.coveredIds).toList match {
+      (left.availableSymbols & right.availableSymbols).toList match {
         case id :: Nil => Some(planNodeHashJoin(id, left, right))
         case Nil => None
         case _ => None

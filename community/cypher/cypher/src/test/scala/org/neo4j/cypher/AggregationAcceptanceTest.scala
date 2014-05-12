@@ -162,4 +162,19 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     //THEN
     result.toList should equal (List(Map("count(n)" -> 1, "collect(n)" -> Seq(a))))
   }
+
+  test("simple counting of nodes works as expected") {
+
+    graph.inTx {
+      (1 to 100).foreach {
+        x => createNode()
+      }
+    }
+
+    //WHEN
+    val result = execute("match n return count(*)")
+
+    //THEN
+    result.toList should equal (List(Map("count(*)" -> 100)))
+  }
 }

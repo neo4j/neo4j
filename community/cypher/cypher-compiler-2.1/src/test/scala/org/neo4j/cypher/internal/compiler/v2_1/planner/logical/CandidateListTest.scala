@@ -21,7 +21,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan, IdName}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
@@ -29,28 +29,11 @@ import org.mockito.Mockito._
 class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   implicit val semanticTable = newMockedSemanticTable
   implicit val planContext = newMockedPlanContext
-  implicit val context = newMockedLogicalPlanContext(planContext)
+  implicit val context = newMockedQueryGraphSolvingContext(planContext)
 
   val x = newMockedQueryPlan("x")
   val y = newMockedQueryPlan("y")
   val xAndY = newMockedQueryPlan("x", "y")
-
-  test("prune with no overlaps returns the same candidates") {
-    val candidates = CandidateList(Seq(x, y))
-    candidates.pruned should equal(candidates)
-  }
-
-  test("prune with overlaps returns the first ones") {
-    val candidates = CandidateList(Seq(x, xAndY))
-
-    candidates.pruned should equal(CandidateList(Seq(x)))
-  }
-
-  test("empty prune is legal") {
-    val candidates = CandidateList(Seq())
-
-    candidates.pruned should equal(CandidateList(Seq()))
-  }
 
   test("picks the right plan by cost, no matter the cardinality") {
     val a = newMockedQueryPlanWithProjections("a")
@@ -67,7 +50,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("picks the right plan by cost, no matter the size of the covered ids") {
-    val ab = QueryPlan( newMockedLogicalPlan(Set(IdName("a"), IdName("b"))), QueryGraph.empty )
+    val ab = QueryPlan( newMockedLogicalPlan(Set(IdName("a"), IdName("b"))), PlannerQuery.empty )
     val b = newMockedQueryPlanWithProjections("b")
 
     val factory = newMockedMetricsFactory

@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanPr
 
 
 abstract class IndexLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
+  def apply(qg: QueryGraph)(implicit context: QueryGraphSolvingContext) = {
     implicit val semanticTable = context.semanticTable
     val predicates: Seq[Expression] = qg.selections.flatPredicates
     val labelPredicateMap = qg.selections.labelPredicates
@@ -55,27 +55,27 @@ abstract class IndexLeafPlanner extends LeafPlanner {
   protected def constructPlan(idName: IdName,
                               labelId: LabelId,
                               propertyKeyId: PropertyKeyId,
-                              valueExpr: Expression)(implicit context: LogicalPlanContext): (Seq[Expression]) => QueryPlan
+                              valueExpr: Expression)(implicit context: QueryGraphSolvingContext): (Seq[Expression]) => QueryPlan
 
-  protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanContext): Iterator[IndexDescriptor]
+  protected def findIndexesForLabel(labelId: Int)(implicit context: QueryGraphSolvingContext): Iterator[IndexDescriptor]
 }
 
 object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
   protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
-                             (implicit context: LogicalPlanContext): (Seq[Expression]) => QueryPlan =
+                             (implicit context: QueryGraphSolvingContext): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
       planNodeIndexUniqueSeek(idName, labelId, propertyKeyId, valueExpr, predicates)
 
-  protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanContext): Iterator[IndexDescriptor] =
+  protected def findIndexesForLabel(labelId: Int)(implicit context: QueryGraphSolvingContext): Iterator[IndexDescriptor] =
     context.planContext.uniqueIndexesGetForLabel(labelId)
 }
 
 object indexSeekLeafPlanner extends IndexLeafPlanner {
   protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
-                             (implicit context: LogicalPlanContext): (Seq[Expression]) => QueryPlan =
+                             (implicit context: QueryGraphSolvingContext): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
       planNodeIndexSeek(idName, labelId, propertyKeyId, valueExpr, predicates)
 
-  protected def findIndexesForLabel(labelId: Int)(implicit context: LogicalPlanContext): Iterator[IndexDescriptor] =
+  protected def findIndexesForLabel(labelId: Int)(implicit context: QueryGraphSolvingContext): Iterator[IndexDescriptor] =
     context.planContext.indexesGetForLabel(labelId)
 }

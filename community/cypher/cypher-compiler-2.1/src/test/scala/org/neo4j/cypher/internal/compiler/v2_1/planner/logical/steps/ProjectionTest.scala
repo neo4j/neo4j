@@ -20,10 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Projections, LogicalPlanningTestSupport, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryProjection, LogicalPlanningTestSupport, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{UnsignedIntegerLiteral, AscSortItem}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Ascending, SortDescription}
 
@@ -228,27 +228,25 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
   private def queryGraphWith(skip: Option[ast.Expression] = None,
                              limit: Option[ast.Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
-                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (LogicalPlanContext, QueryPlan) = {
-    val projections = Projections(
+                             projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (LogicalPlanningContext, QueryPlan) = {
+    val projections = QueryProjection(
       limit = limit,
       skip = skip,
       sortItems = sortItems,
       projections = projectionsMap)
 
-    val qg = QueryGraph(projection = projections, patternNodes = Set(IdName("n")))
+    val qg = QueryGraph(patternNodes = Set(IdName("n")))
 
-    val context = newMockedLogicalPlanContext(
+    val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = PlannerQuery(qg, projections)
     )
 
     val plan = QueryPlan(
       newMockedLogicalPlan("n"),
-      QueryGraph.empty.addPatternNodes(IdName("n"))
+      PlannerQuery(QueryGraph.empty.addPatternNodes(IdName("n")))
     )
 
     (context, plan)
   }
-
-
 }

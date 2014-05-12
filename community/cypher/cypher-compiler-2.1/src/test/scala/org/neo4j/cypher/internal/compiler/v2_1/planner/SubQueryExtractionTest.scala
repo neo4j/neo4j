@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Expression}
 
 class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  import SimpleQueryGraphBuilder.SubQueryExtraction.extractQueryGraph
+  import SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
 
   val aNode: ast.NodePattern = ast.NodePattern(Some(ast.Identifier("a")(pos)), Seq.empty, None, naked = false)_
   val bNode: ast.NodePattern = ast.NodePattern(Some(ast.Identifier("b")(pos)), Seq.empty, None, naked = false)_
@@ -52,7 +52,6 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projection.projections should equal(projections("a", "r", "b"))
     qg.selections should equal(Selections())
     qg.patternRelationships should equal(Set(planRel))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r"), IdName("b")))
@@ -67,7 +66,6 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projection.projections should equal(projections("a", "r", "b"))
     qg.selections should equal(Selections())
     qg.patternRelationships should equal(Set(planRelWithType))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r"), IdName("b")))
@@ -82,7 +80,6 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projection.projections should equal(projections("a", "r", "  UNNAMED1"))
     qg.selections should equal(Selections())
     qg.patternRelationships should equal(Set(planRel.copy(nodes = (IdName("a"), IdName("  UNNAMED1")))))
     qg.argumentIds should equal(Set(IdName("a"), IdName("r")))
@@ -98,7 +95,6 @@ class SubQueryExtractionTest extends CypherFunSuite with LogicalPlanningTestSupp
     val qg = extractQueryGraph(patternExpression)
 
     // Then
-    qg.projection.projections should equal(projections("a", "r", "b"))
     val predicate: ast.HasLabels = ast.HasLabels(ast.Identifier("b")(pos), Seq(labelName))_
     qg.selections should equal(Selections(Set(Predicate(Set(IdName("b")), predicate))))
     qg.patternRelationships should equal(Set(planRel))

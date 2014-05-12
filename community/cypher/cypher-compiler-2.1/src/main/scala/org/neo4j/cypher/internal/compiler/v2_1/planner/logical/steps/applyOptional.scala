@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object applyOptional extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+  def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
     val applyCandidates =
       for (optionalQG <- context.queryGraph.optionalMatches;
            lhs <- planTable.plans if applicable(lhs, optionalQG))
@@ -38,8 +38,8 @@ object applyOptional extends CandidateGenerator[PlanTable] {
   }
 
   private def applicable(outerPlan: QueryPlan, optionalQG: QueryGraph) = {
-    val coveredByLHS = outerPlan.plan.covers(optionalQG.argumentIds)
-    val isSolved = outerPlan.solved.optionalMatches.contains(optionalQG)
-    coveredByLHS && !isSolved
+    val argumentsAvailable = optionalQG.argumentIds.subsetOf(outerPlan.plan.availableSymbols)
+    val isSolved = outerPlan.solved.graph.optionalMatches.contains(optionalQG)
+    argumentsAvailable && !isSolved
   }
 }
