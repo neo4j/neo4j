@@ -111,10 +111,11 @@ public class PriorityMap<E, K, P>
     {
         return PriorityMap.<K, P>withSelfKeyNaturalOrder( false );
     }
+
     public static <K, P extends Comparable<P>> PriorityMap<K, K, P> withSelfKeyNaturalOrder(
             boolean reversed )
     {
-        return withSelfKeyNaturalOrder( reversed, true );
+        return PriorityMap.<K, P>withSelfKeyNaturalOrder( reversed, true );
     }
 
     @SuppressWarnings( "unchecked" )
