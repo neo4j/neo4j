@@ -20,19 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.AggregationProjection
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{CantHandleQueryException, AggregationProjection, PlannerQuery}
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
   def plan(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): QueryPlan = {
     val query = context.query
-    if(query.projection.isInstanceOf[AggregationProjection])
-      throw new CantHandleQueryException
 
     val graphSolvingContext = context.asQueryGraphSolvingContext(query.graph)
 
     val afterSolvingPattern = context.strategy.plan(graphSolvingContext, leafPlan)
-    val afterProjection = projection(afterSolvingPattern)
+    val afterProjection = query.projection match {
+      case AggregationProjection(grouping, aggregation, sortItems, limit, skip) =>
+        throw new CantHandleQueryException
+
+      case _ =>
+        projection(afterSolvingPattern)
+    }
 
     val finalPlan: QueryPlan = query.tail match {
       case Some(tail) =>
