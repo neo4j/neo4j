@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, Candidates, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
@@ -34,38 +34,23 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
     metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, newMockedSemanticTable))
 
 
-  test("single plan is returned as is") {
+  test("single plan does not produce cartesian product") {
     val plan = newMockedQueryPlan("a")
 
     val cost = Map(plan.plan -> 1.0)
     implicit val (table, context) = prepare(cost, plan)
 
-    cartesianProduct(table) should equal(plan)
+    cartesianProduct(table) should equal(Candidates())
   }
 
-  test("two plans are ordered by cheapest first") {
+  test("cartesian product produces all possible combinations") {
     val plan1 = newMockedQueryPlan("a")
     val plan2 = newMockedQueryPlan("b")
     val cost = Map(plan1.plan -> 1.0, plan2.plan -> 2.0)
 
     implicit val (table, context) = prepare(cost, plan1, plan2)
 
-    cartesianProduct(table) should equal(planCartesianProduct(plan1, plan2))
-  }
-
-  test("three plans are ordered by cheapest first") {
-    val plan1 = newMockedQueryPlan("a")
-    val plan2 = newMockedQueryPlan("b")
-    val plan3 = newMockedQueryPlan("c")
-    val cost = Map(plan1.plan -> 3.0, plan2.plan -> 2.0, plan3.plan -> 1.0)
-
-    implicit val (table, context) = prepare(cost, plan1, plan2, plan3)
-
-    cartesianProduct(table) should equal(
-      planCartesianProduct(plan3,
-        planCartesianProduct(plan2, plan1)
-      )
-    )
+    cartesianProduct(table).plans.toSet should equal(Set(planCartesianProduct(plan1, plan2), planCartesianProduct(plan2, plan1)))
   }
 
   private def prepare(cost: LogicalPlan => Double, plans: QueryPlan*) = {
