@@ -19,10 +19,18 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import static junit.framework.Assert.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.LinkedList;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -30,7 +38,6 @@ import java.util.concurrent.Executor;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.Mockito;
-
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectInputStreamFactory;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectOutputStreamFactory;
@@ -43,12 +50,6 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
-
-import static junit.framework.Assert.assertNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class ElectionContextTest
 {
@@ -206,13 +207,112 @@ public class ElectionContextTest
 
         // When
         toTest.startElectionProcess( coordinatorRole );
-        toTest.voted( coordinatorRole, new InstanceId( 1 ), new IntegerElectionCredentials( 100 ) );
-        toTest.voted( coordinatorRole, new InstanceId( 2 ), new IntegerElectionCredentials( 100 ) );
-        toTest.voted( coordinatorRole, new InstanceId( 2 ), new IntegerElectionCredentials( 101 ) );
+        toTest.voted( coordinatorRole, new InstanceId( 1 ), new IntegerElectionCredentials( 100 ), -1 );
+        toTest.voted( coordinatorRole, new InstanceId( 2 ), new IntegerElectionCredentials( 100 ), -1 );
+        toTest.voted( coordinatorRole, new InstanceId( 2 ), new IntegerElectionCredentials( 101 ), -1 );
 
         // Then
         assertNull( toTest.getElectionWinner( coordinatorRole ) );
         assertEquals( 2, toTest.getVoteCount( coordinatorRole ) );
+    }
+
+    @Test
+    public void electionBeingForgottenMustIncreaseElectionId() throws Exception
+    {
+        // Given
+        final String coordinatorRole = "coordinator";
+        HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+
+        Logging logging = Mockito.mock( Logging.class );
+        when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+
+        ElectionContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
+                new ElectionRole( coordinatorRole ) ),  mock( ClusterConfiguration.class ),
+                Mockito.mock(Executor.class), logging,
+                Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
+                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class) ).getElectionContext();
+
+        ElectionContext.VoteRequest voteRequestBefore = context.voteRequestForRole( new ElectionRole( coordinatorRole ) );
+        context.forgetElection( coordinatorRole );
+        ElectionContext.VoteRequest voteRequestAfter = context.voteRequestForRole( new ElectionRole( coordinatorRole ) );
+        assertEquals( voteRequestBefore.getVersion() + 1, voteRequestAfter.getVersion() );
+    }
+
+    @Test
+    public void voteFromPreviousSuccessfulElectionMustNotBeCounted() throws Exception
+    {
+        // Given
+        final String coordinatorRole = "coordinator";
+        HeartbeatContext heartbeatContext = mock(HeartbeatContext.class);
+        when( heartbeatContext.getFailed() ).thenReturn( Collections.<InstanceId>emptySet() );
+
+        Logging logging = Mockito.mock( Logging.class );
+        when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+
+        ElectionContext context = new MultiPaxosContext( new InstanceId(1), Iterables.<ElectionRole, ElectionRole>iterable(
+                new ElectionRole( coordinatorRole ) ),  mock( ClusterConfiguration.class ),
+                Mockito.mock(Executor.class), logging,
+                Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
+                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class) ).getElectionContext();
+
+        // When
+        ElectionContext.VoteRequest voteRequestBefore = context.voteRequestForRole( new ElectionRole( coordinatorRole ) );
+        context.forgetElection( coordinatorRole );
+
+        // Then
+        assertFalse( context.voted( coordinatorRole, new InstanceId( 2 ), null, voteRequestBefore.getVersion() - 1 ) );
+    }
+
+    @Test
+    public void instanceFailingShouldHaveItsVotesInvalidated() throws Exception
+    {
+        // Given
+        final String role1 = "coordinator1";
+        final String role2 = "coordinator2";
+        InstanceId me = new InstanceId( 1 );
+        InstanceId failingInstance = new InstanceId( 2 );
+        InstanceId otherInstance = new InstanceId( 3 );
+
+        Logging logging = Mockito.mock( Logging.class );
+        when ( logging.getMessagesLog( Matchers.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+
+        ClusterConfiguration clusterConfiguration = mock( ClusterConfiguration.class );
+        List<InstanceId> clusterMemberIds = new LinkedList<InstanceId>();
+        clusterMemberIds.add( failingInstance );
+        clusterMemberIds.add( otherInstance );
+        clusterMemberIds.add( me );
+        when( clusterConfiguration.getMemberIds() ).thenReturn( clusterMemberIds );
+
+        MultiPaxosContext context = new MultiPaxosContext( me, Iterables.<ElectionRole, ElectionRole>iterable(
+                new ElectionRole( role1 ), new ElectionRole( role2 ) ), clusterConfiguration,
+                new Executor()
+                {
+                    @Override
+                    public void execute( Runnable command )
+                    {
+                        command.run();
+                    }
+                }, logging,
+                Mockito.mock( ObjectInputStreamFactory.class), Mockito.mock( ObjectOutputStreamFactory.class),
+                Mockito.mock( AcceptorInstanceStore.class), Mockito.mock( Timeouts.class) );
+
+        HeartbeatContext heartbeatContext = context.getHeartbeatContext();
+        ElectionContext electionContext = context.getElectionContext();
+
+        electionContext.startElectionProcess( role1 );
+        electionContext.startElectionProcess( role2 );
+
+        electionContext.voted( role1, failingInstance, mock( Comparable.class ), 2 );
+        electionContext.voted( role2, failingInstance, mock( Comparable.class ), 2 );
+
+        electionContext.voted( role1, otherInstance, mock( Comparable.class ), 2 );
+        electionContext.voted( role2, otherInstance, mock( Comparable.class ), 2 );
+
+        heartbeatContext.suspect( failingInstance );
+
+        assertEquals( 1, electionContext.getVoteCount( role1 ) );
+        assertEquals( 1, electionContext.getVoteCount( role2 ) );
     }
 
     private void baseTestForElectionOk( Set<InstanceId> failed, boolean moreThanQuorum )
@@ -240,5 +340,4 @@ public class ElectionContextTest
 
         assertEquals( moreThanQuorum, !toTest.electionOk() );
     }
-
 }

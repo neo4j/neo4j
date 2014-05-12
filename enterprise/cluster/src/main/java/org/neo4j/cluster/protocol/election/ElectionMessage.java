@@ -66,7 +66,34 @@ public enum ElectionMessage
         public String toString()
         {
             return getClass().getSimpleName() + "[role:" + role + ", instance:" + instanceId + ", credentials:" +
-                    voteCredentials + "]";
+                    voteCredentials + ", " + getImplementationSpecificDetails() + "]";
+        }
+
+        protected String getImplementationSpecificDetails()
+        {
+            return "";
+        }
+    }
+
+    public static class VersionedVotedData extends VotedData
+    {
+        private final long version;
+
+        public VersionedVotedData( String role, InstanceId instanceId, Comparable<Object> voteCredentials, long version )
+        {
+            super( role, instanceId, voteCredentials );
+            this.version = version;
+        }
+
+        public long getVersion()
+        {
+            return version;
+        }
+
+        @Override
+        protected String getImplementationSpecificDetails()
+        {
+            return "version: " + version;
         }
     }
 }

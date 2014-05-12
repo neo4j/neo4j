@@ -19,6 +19,8 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import static org.neo4j.helpers.collection.Iterables.first;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -32,8 +34,6 @@ import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.statemachine.State;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.helpers.collection.Iterables.first;
 
 /**
  * State machine that implements the {@link Election} API.
@@ -105,16 +105,15 @@ public enum ElectionState
 
                                 if ( isElector )
                                 {
-                                    logger.debug( "I (" + context.getMyId() + ") am the elector, " +
-                                            "executing the election" );
+                                    logger.debug( "I (" + context.getMyId() +
+                                            ") am the elector, executing the election" );
                                     // Start election process for all roles that are currently unassigned
                                     Iterable<String> rolesRequiringElection = context.getRolesRequiringElection();
                                     for ( String role : rolesRequiringElection )
                                     {
                                         if ( !context.isElectionProcessInProgress( role ) )
                                         {
-                                            logger.debug(
-                                                    "Starting election process for role " + role );
+                                            logger.debug( "Starting election process for role " + role );
 
                                             context.startDemotionProcess( role, demoteNode );
 
@@ -133,8 +132,7 @@ public enum ElectionState
                                         }
                                         else
                                         {
-                                            logger.debug(
-                                                    "Election already in progress for role " + role );
+                                            logger.debug( "Election already in progress for role " + role );
                                         }
                                     }
                                 }
@@ -179,7 +177,8 @@ public enum ElectionState
                                                         !server.getKey().equals( context.getElected( roleName ) ) )
                                                 {
                                                     // This is a candidate - allow it to vote itself for promotion
-                                                    outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(), roleName ) );
+                                                    outgoing.offer( Message.to( ElectionMessage.vote,
+                                                            server.getValue(), context.voteRequestForRole( role ) ) );
                                                     sentSome = true;
                                                 }
                                             }
@@ -204,8 +203,7 @@ public enum ElectionState
                                         }
                                         else
                                         {
-                                            logger.debug(
-                                                    "Election already in progress for role " + roleName );
+                                            logger.debug( "Election already in progress for role " + roleName );
                                         }
                                     }
                                 }
@@ -251,20 +249,48 @@ public enum ElectionState
 
                         case vote:
                         {
-                            String role = message.getPayload();
-                            outgoing.offer( Message.respond( ElectionMessage.voted, message,
-                                    new ElectionMessage.VotedData( role, context.getMyId(),
-                                            context.getCredentialsForRole( role ) ) ) );
+                            Object request = message.getPayload();
+                            if ( request instanceof ElectionContext.VoteRequest )
+                            {
+                                ElectionContext.VoteRequest voteRequest = (ElectionContext.VoteRequest) request;
+                                outgoing.offer( Message.respond( ElectionMessage.voted, message,
+                                        new ElectionMessage.VersionedVotedData( voteRequest.getRole(), context.getMyId(),
+                                                context.getCredentialsForRole( voteRequest.getRole() ), voteRequest.getVersion() ) ) );
+                            }
+                            else if ( request instanceof String )
+                            {
+                                String role = (String) request;
+                                outgoing.offer( Message.respond( ElectionMessage.voted, message,
+                                        new ElectionMessage.VotedData( role, context.getMyId(),
+                                                context.getCredentialsForRole( role ) ) ) );
+                            }
+                            else
+                            {
+                                context.getLogger( getClass() ).error( "Unknown vote request message " + request );
+                            }
                             break;
                         }
 
                         case voted:
                         {
                             ElectionMessage.VotedData data = message.getPayload();
-                            context.voted( data.getRole(), data.getInstanceId(), data.getVoteCredentials() );
+                            long version = -1;
+                            if ( data instanceof ElectionMessage.VersionedVotedData )
+                            {
+                                version = ((ElectionMessage.VersionedVotedData) data).getVersion();
+                            }
+                            boolean accepted =
+                                    context.voted( data.getRole(), data.getInstanceId(), data.getVoteCredentials(),
+                                            version );
 
                             String voter = message.hasHeader( Message.FROM ) ? message.getHeader( Message.FROM ) : "I";
-                            logger.debug( voter + " voted " + data );
+                            logger.debug( voter + " voted " + data + " which i " +
+                                    ( accepted ? "accepted" : "did not accept" ) );
+
+                            if ( !accepted )
+                            {
+                                break;
+                            }
 
                             /*
                              * This is the URI of the current role holder and, yes, it could very well be null. However
@@ -279,13 +305,16 @@ public enum ElectionState
                                 // We have all votes now
                                 InstanceId winner = context.getElectionWinner( data.getRole() );
 
+                                context.cancelTimeout( "election-" + data.getRole() );
+                                context.forgetElection( data.getRole() );
+
                                 if ( winner != null )
                                 {
                                     logger.debug( "Elected " + winner + " as " + data.getRole() );
 
                                     // Broadcast this
-                                    ClusterMessage.ConfigurationChangeState configurationChangeState = new
-                                            ClusterMessage.ConfigurationChangeState();
+                                    ClusterMessage.VersionedConfigurationStateChange configurationChangeState =
+                                            context.newConfigurationStateChange();
                                     configurationChangeState.elected( data.getRole(), winner );
                                     outgoing.offer( Message.internal( ProposerMessage.propose,
                                             configurationChangeState ) );
@@ -303,10 +332,10 @@ public enum ElectionState
                                                 configurationChangeState ) );
                                     }
                                 }
-                                context.cancelTimeout( "election-" + data.getRole() );
                             }
                             else if ( context.getVoteCount( data.getRole() ) == context.getNeededVoteCount() - 1 &&
-                                    currentElected != null && !context.hasCurrentlyElectedVoted(data.getRole(), currentElected))
+                                    currentElected != null &&
+                                    !context.hasCurrentlyElectedVoted( data.getRole(), currentElected ) )
                             {
                                 // Missing one vote, the one from the current role holder
                                 outgoing.offer( Message.to( ElectionMessage.vote,
@@ -322,7 +351,7 @@ public enum ElectionState
                             ElectionTimeoutData electionTimeoutData = message.getPayload();
                             logger.warn( String.format(
                                     "Election timed out for '%s'- trying again", electionTimeoutData.getRole() ) );
-                            context.cancelElection( electionTimeoutData.getRole() );
+                            context.forgetElection( electionTimeoutData.getRole() );
                             outgoing.offer( electionTimeoutData.getMessage() );
                             break;
                         }
@@ -337,13 +366,12 @@ public enum ElectionState
                 }
             };
 
-
-    private static class ElectionTimeoutData
+    public static class ElectionTimeoutData
     {
         private final String role;
         private final Message message;
 
-        private ElectionTimeoutData( String role, Message message )
+        public ElectionTimeoutData( String role, Message message )
         {
             this.role = role;
             this.message = message;
