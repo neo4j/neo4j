@@ -92,7 +92,7 @@ public class TestPriorityMap
     {
         // GIVEN
         int entity = 5;
-        PriorityMap<Integer, Integer, Double> map = PriorityMap.withSelfKeyNaturalOrder( false, false );
+        PriorityMap<Integer, Integer, Double> map = PriorityMap.<Integer, Double>withSelfKeyNaturalOrder( false, false );
         assertTrue( map.put( entity, 3d ) );
         assertTrue( map.put( entity, 2d ) );
 
