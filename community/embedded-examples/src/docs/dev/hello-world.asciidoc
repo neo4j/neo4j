@@ -82,13 +82,13 @@ tag=transaction
 ----
 
 For more information on transactions, see <<transactions>> and
-http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Transaction.html[Java API for Transaction].
+link:javadocs/org/neo4j/graphdb/Transaction.html[Java API for Transaction].
 
 == Create a small graph ==
 
 Now, let's create a few nodes.
 The API is very intuitive.
-Feel free to have a look at the JavaDocs at http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/.
+Feel free to have a look at the JavaDocs at link:javadocs/index.html.
 They're included in the distribution, as well.
 Here's how to create a small graph consisting of two nodes, connected with one relationship and some properties: 
 

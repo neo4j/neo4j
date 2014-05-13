@@ -113,7 +113,7 @@ _Where the coordinates (+org.neo4j:neo4j+ in the example) are found in <<edition
 [[tutorials-java-embedded-setup-startstop]]
 == Starting and stopping ==
 
-To create a new database or ópen an existing one you instantiate an +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html[EmbeddedGraphDatabase]+.
+To create a new database or ópen an existing one you instantiate an +link:javadocs/org/neo4j/kernel/EmbeddedGraphDatabase.html[EmbeddedGraphDatabase]+.
 
 [snippet,java]
 ----

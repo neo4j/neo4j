@@ -63,7 +63,7 @@ public class JmxDocTest
     private static final String BEAN_NAME0 = "name0";
     private static final String BEAN_NAME = "name";
     private static final List<String> QUERIES = Arrays.asList( new String[]{"org.neo4j:*"} );
-    private static final String JAVADOC_URL = "http://components.neo4j.org/neo4j-enterprise/{neo4j-version}/apidocs/";
+    private static final String JAVADOC_URL = "link:javadocs/";
     private static final int EXPECTED_NUMBER_OF_BEANS = 13;
     private static final Set<String> EXCLUDES = new HashSet<String>()
     {
@@ -429,7 +429,7 @@ public class JmxDocTest
                         + ">";
             }
         }
-        else if ( nonHtml )
+        else if ( nonHtml || type.startsWith( "org.neo4j.kernel" ))
         {
             return type;
         }

@@ -63,7 +63,7 @@ tag=onlineBackup
 classifier=test-sources
 ----
 
-For more information, please see http://components.neo4j.org/neo4j-enterprise/{neo4j-version}/apidocs/org/neo4j/backup/OnlineBackup.html[the Javadocs for 
+For more information, please see link:javadocs/org/neo4j/backup/OnlineBackup.html[the Javadocs for 
 OnlineBackup]
 
 [[backup-ha]]

@@ -19,6 +19,7 @@
   <properties>
     <short-name>manual</short-name>
     <docs.sources>${project.build.directory}/docs</docs.sources>
+    <docs.javadocs>${project.build.directory}/javadoc</docs.javadocs>
     <docs.sourcecode>${project.build.directory}/sources</docs.sourcecode>
     <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
@@ -27,6 +28,10 @@
     <doctools.version>10</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
   </properties>
+
+  <modules>
+    <module>javadocs</module>
+  </modules>
 
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
@@ -47,6 +52,13 @@
       <artifactId>neo4j</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-javadocs</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>javadoc</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -289,6 +301,23 @@
             </configuration>
           </execution>
           <execution>
+            <id>unpack-javadoc</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <classifier>javadoc</classifier>
+              <includeClassifiers>javadoc</includeClassifiers>
+              <excludeTransitive>true</excludeTransitive>
+              <useSubDirectoryPerArtifact>false</useSubDirectoryPerArtifact>
+              <stripVersion>true</stripVersion>
+              <excludes>META-INF,META-INF/**</excludes>
+              <type>jar</type>
+              <outputDirectory>${docs.javadocs}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>unpack-test-sources</id>
             <phase>generate-sources</phase>
             <goals>
@@ -343,6 +372,24 @@
                 <argument>preview</argument>
               </arguments>
             </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <artifactId>maven-antrun-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>compile</phase>
+            <configuration>
+              <tasks>
+                <copy todir="${project.build.directory}/html5/javadocs">
+                  <fileset dir="${docs.javadocs}" includes="**/*" />
+                </copy>
+              </tasks>
+            </configuration>
+            <goals>
+              <goal>run</goal>
+            </goals>
           </execution>
         </executions>
       </plugin>

@@ -120,7 +120,7 @@ On High Availability, an external single-threaded client can perform the operati
 
 [[transactions-get-or-create]]
 === Get or create ===
-By using http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
+By using link:javadocs/org/neo4j/graphdb/index/Index.html#putIfAbsent%28T,%20java.lang.String,%20java.lang.Object%29[+put-if-absent+] functionality,
 entity uniqueness can be guaranteed using an index.
 Here the index acts as the lock and will only lock the smallest part needed to guaranteed uniqueness across threads and transactions.
 

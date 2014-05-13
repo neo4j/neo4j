@@ -27,7 +27,7 @@ relationships:: Decides which relationship types and directions should be follow
  * +in+
  * +out+
 uniqueness:: Decides how uniqueness should be calculated.
- For details on different uniqueness values see the http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/Uniqueness.html[Java API on Uniqueness].
+ For details on different uniqueness values see the link:javadocs/org/neo4j/kernel/Uniqueness.html[Java API on Uniqueness].
  Possible values:
  * +node_global+
  * +none+
@@ -44,11 +44,11 @@ max_depth:: Is a short-hand way of specifying a prune evaluator which prunes aft
  If not specified a max depth of 1 is used and if a +prune_evaluator+ is specified instead of a +max_depth+, no max depth limit is set.
 
 The +position+ object in the body of the +return_filter+ and +prune_evaluator+ is a
-+http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/Path.html[Path]+
++link:javadocs/org/neo4j/graphdb/Path.html[Path]+
 object representing the path from the start node to the current traversal position.
 
 Out of the box, the REST API supports JavaScript code in filters and evaluators.
-The script body will be executed in a Java context which has access to the full Neo4j http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/[Java API].
+The script body will be executed in a Java context which has access to the full Neo4j link:javadocs/[Java API].
 See the examples for the exact syntax of the request.
 
 include::traversal-using-a-return-filter.asciidoc[]
