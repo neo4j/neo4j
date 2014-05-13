@@ -176,7 +176,7 @@ public class TestNeo4jApiExceptions
 
         try
         {
-            node.getRelationships();
+            node.getRelationships().iterator();
             fail( "Did not get a nice exception" );
         }
         catch ( DatabaseShutdownException e )

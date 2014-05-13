@@ -29,6 +29,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -38,7 +39,6 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.helpers.collection.CombiningIterator;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
 public class ConfigurationParser
@@ -46,20 +46,27 @@ public class ConfigurationParser
     @SuppressWarnings( "unchecked" )
     public ConfigurationParser( File configFile, String... format )
     {
-        this( IteratorUtil.asIterable( new CombiningIterator<String>( Arrays.asList(
-                new LineIterator( configFile ), new ArrayIterator<String>( format ) ) ) ) );
+        this( new CombiningIterator<>( Arrays.asList(
+                new LineIterator( configFile ), new ArrayIterator<>( format ) ) ) );
     }
 
     public ConfigurationParser( String... format )
     {
-        this( IteratorUtil.asIterable( new ArrayIterator<String>( format ) ) );
+        this( new ArrayIterator<>( format ) );
     }
 
+    @Deprecated
     public ConfigurationParser( Iterable<String> format )
     {
+        this( format.iterator() );
+    }
+
+    public ConfigurationParser( Iterator<String> format )
+    {
         Class<? extends ConfigurationParser> type = getClass();
-        for ( String spec : format )
+        while ( format.hasNext() )
         {
+            final String spec = format.next();
             String[] parts = spec.split( "=", 2 );
             String name = parts[0];
             String[] args = null;

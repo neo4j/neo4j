@@ -36,8 +36,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.logging.LogMarker;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 public abstract class StringLogger
 {
     public static final String DEFAULT_NAME = "messages.log";
@@ -417,9 +415,9 @@ public abstract class StringLogger
             @Override
             public boolean visit( LineLogger logger )
             {
-                for ( String line : loop( source ) )
+                while ( source.hasNext() )
                 {
-                    logger.logLine( line );
+                    logger.logLine( source.next() );
                 }
                 return true;
             }

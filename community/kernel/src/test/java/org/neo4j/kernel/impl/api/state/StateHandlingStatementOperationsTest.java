@@ -119,7 +119,7 @@ public class StateHandlingStatementOperationsTest
 
         // when
         Set<UniquenessConstraint> result = asSet(
-                asIterable( context.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) ) );
+                context.constraintsGetForLabelAndPropertyKey( state, 10, 66 ) );
 
         // then
         assertEquals( asSet( constraint ), result );
@@ -148,7 +148,7 @@ public class StateHandlingStatementOperationsTest
         context.uniquenessConstraintCreate( state, 11, 99 );
 
         // when
-        Set<UniquenessConstraint> result = asSet( asIterable( context.constraintsGetForLabel( state, 11 ) ) );
+        Set<UniquenessConstraint> result = asSet( context.constraintsGetForLabel( state, 11 ) );
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );
@@ -173,7 +173,7 @@ public class StateHandlingStatementOperationsTest
         context.uniquenessConstraintCreate( state, 10, 66 );
 
         // when
-        Set<UniquenessConstraint> result = asSet( asIterable( context.constraintsGetAll( state ) ) );
+        Set<UniquenessConstraint> result = asSet( context.constraintsGetAll( state ) );
 
         // then
         assertEquals( asSet( constraint1, constraint2 ), result );

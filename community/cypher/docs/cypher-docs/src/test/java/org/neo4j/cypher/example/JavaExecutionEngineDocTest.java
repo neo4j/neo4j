@@ -54,7 +54,6 @@ import static org.hamcrest.CoreMatchers.instanceOf;
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
 import static org.neo4j.cypher.javacompat.RegularExpressionMatcher.matchesPattern;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 
 public class JavaExecutionEngineDocTest
@@ -136,14 +135,17 @@ public class JavaExecutionEngineDocTest
     @Test
     public void exampleQuery() throws Exception
     {
+        try ( Transaction ignored = db.beginTx() )
+        {
 // START SNIPPET: JavaQuery
-        ExecutionEngine engine = new ExecutionEngine( db );
-        ExecutionResult result = engine.execute( "START n=node(0) WHERE 1=1 RETURN n" );
+            ExecutionEngine engine = new ExecutionEngine(db);
+            ExecutionResult result = engine.execute("START n=node(0) WHERE 1=1 RETURN n");
 
-        assertThat( result.columns(), hasItem( "n" ) );
-        Iterator<Node> n_column = result.columnAs( "n" );
-        assertThat( asIterable( n_column ), hasItem( db.getNodeById( 0 ) ) );
+            assertThat(result.columns(), hasItem("n"));
+            Iterator<Node> n_column = result.columnAs("n");
+            assertThat(IteratorUtil.asList(n_column), hasItem(db.getNodeById(0)));
 // END SNIPPET: JavaQuery
+        }
     }
 
     @Test

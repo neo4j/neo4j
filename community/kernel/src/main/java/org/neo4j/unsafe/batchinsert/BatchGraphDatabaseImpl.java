@@ -318,34 +318,69 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public Iterable<Relationship> getRelationships()
         {
-            return newRelIterator( Direction.BOTH, null );
+            return new Iterable<Relationship>()
+            {
+                @Override
+                public Iterator<Relationship> iterator()
+                {
+                    return newRelIterator( Direction.BOTH, null );
+                }
+            };
         }
 
         @Override
         public Iterable<Relationship> getRelationships(
-                RelationshipType... types )
+                final RelationshipType... types )
         {
-            return newRelIterator( Direction.BOTH, types );
+            return new Iterable<Relationship>()
+            {
+                @Override
+                public Iterator<Relationship> iterator()
+                {
+                    return newRelIterator( Direction.BOTH, types );
+                }
+            };
         }
 
         @Override
-        public Iterable<Relationship> getRelationships( Direction direction,
-                                                        RelationshipType... types )
+        public Iterable<Relationship> getRelationships( final Direction direction,
+                                                        final RelationshipType... types )
         {
-            return newRelIterator( direction, types );
+            return new Iterable<Relationship>()
+            {
+                @Override
+                public Iterator<Relationship> iterator()
+                {
+                    return newRelIterator( direction, types );
+                }
+            };
         }
 
         @Override
-        public Iterable<Relationship> getRelationships( Direction dir )
+        public Iterable<Relationship> getRelationships( final Direction dir )
         {
-            return newRelIterator( dir, null );
+            return new Iterable<Relationship>()
+            {
+                @Override
+                public Iterator<Relationship> iterator()
+                {
+                    return newRelIterator( dir, null );
+                }
+            };
         }
 
         @Override
-        public Iterable<Relationship> getRelationships( RelationshipType type,
-                                                        Direction dir )
+        public Iterable<Relationship> getRelationships( final RelationshipType type,
+                                                        final Direction dir )
         {
-            return newRelIterator( dir, new RelationshipType[]{type} );
+            return new Iterable<Relationship>()
+            {
+                @Override
+                public Iterator<Relationship> iterator()
+                {
+                    return newRelIterator( dir, new RelationshipType[]{type} );
+                }
+            };
         }
 
         @Override
@@ -743,8 +778,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         rels.put( id, rel );
     }
 
-    static class RelIterator implements
-            Iterable<Relationship>, Iterator<Relationship>
+    static class RelIterator implements Iterator<Relationship>
     {
 
         private final BatchGraphDatabaseImpl graphDbService;
@@ -765,12 +799,6 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
             this.nodeId = nodeId;
             this.dir = dir;
             this.types = types;
-        }
-
-        @Override
-        public Iterator<Relationship> iterator()
-        {
-            return new RelIterator( graphDbService, relIds, nodeId, dir, types );
         }
 
         @Override

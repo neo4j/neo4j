@@ -477,48 +477,6 @@ public abstract class IteratorUtil
     }
 
     /**
-     * Convenience method for looping over an {@link Iterator}. Converts the
-     * {@link Iterator} to an {@link Iterable} by wrapping it in an
-     * {@link Iterable} that returns the {@link Iterator}. It breaks the
-     * contract of {@link Iterable} in that it returns the supplied iterator
-     * instance for each call to {@code iterator()} on the returned
-     * {@link Iterable} instance. This method exists to make it easy to use an
-     * {@link Iterator} in a for-loop.
-     *
-     * @param <T> the type of items in the iterator.
-     * @param iterator the iterator to expose as an {@link Iterable}.
-     * @return the supplied iterator posing as an {@link Iterable}.
-     */
-    public static <T> Iterable<T> loop( final Iterator<T> iterator )
-    {
-        return new Iterable<T>()
-        {
-            @Override
-            public Iterator<T> iterator()
-            {
-                return iterator;
-            }
-        };
-    }
-
-    /**
-     * Exposes {@code iterator} as an {@link Iterable}. It breaks the contract
-     * of {@link Iterable} in that it returns the supplied iterator instance for
-     * each call to {@code iterator()} on the returned {@link Iterable}
-     * instance. This method mostly exists to make it easy to use an
-     * {@link Iterator} in a for-loop.
-     *
-     * @param <T> the type of items in the iterator.
-     * @param iterator the iterator to expose as an {@link Iterable}.
-     * @return the supplied iterator posing as an {@link Iterable}.
-     */
-    //@Deprecated * @deprecated use {@link #loop(Iterator) the loop method} instead.
-    public static <T> Iterable<T> asIterable( final Iterator<T> iterator )
-    {
-        return loop( iterator );
-    }
-
-    /**
      * Counts the number of items in the {@code iterator} by looping
      * through it.
      * @param <T> the type of items in the iterator.
@@ -895,8 +853,9 @@ public abstract class IteratorUtil
     {
         try
         {
-            for ( T element : loop( iterator ) )
+            while ( iterator.hasNext() )
             {
+                final T element = iterator.next();
                 if ( item == null ? element == null : item.equals( element ) )
                 {
                     return true;
