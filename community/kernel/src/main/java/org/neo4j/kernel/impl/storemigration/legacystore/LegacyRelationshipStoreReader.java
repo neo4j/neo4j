@@ -23,8 +23,13 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.Iterator;
 
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -173,6 +178,67 @@ public class LegacyRelationshipStoreReader implements Closeable
 
             position += buffer.capacity();
         }
+    }
+
+    public Iterator<RelationshipRecord> iterator( final long approximateStartId ) throws IOException
+    {
+        final ReusableRelationship rel = new ReusableRelationship();
+        final ByteBuffer buffer = ByteBuffer.allocateDirect( 4 * 1024 * RECORD_SIZE );
+        final long fileSize = fileChannel.size();
+        return new PrefetchingIterator<RelationshipRecord>()
+        {
+            private long position = (approximateStartId * RECORD_SIZE) - ( (approximateStartId * RECORD_SIZE) % buffer.capacity());
+            private final Collection<RelationshipRecord> pageRecords = new ArrayList<>();
+            private Iterator<RelationshipRecord> pageRecordsIterator = IteratorUtil.emptyIterator();
+
+            @Override
+            protected RelationshipRecord fetchNextOrNull()
+            {
+                // Next from current page
+                if ( pageRecordsIterator.hasNext() )
+                {
+                    return pageRecordsIterator.next();
+                }
+
+                while ( position < fileSize )
+                {
+                    int recordOffset = 0;
+                    buffer.clear();
+                    try
+                    {
+                        fileChannel.read( buffer, position );
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                    // Visit each record in the page
+                    pageRecords.clear();
+                    while(recordOffset < buffer.capacity() && (recordOffset + position) < fileSize)
+                    {
+                        buffer.position(recordOffset);
+                        long id = (position + recordOffset) / RECORD_SIZE;
+
+                        readRecord( buffer, id, rel );
+
+                        if ( rel.inUse() )
+                        {
+                            pageRecords.add( rel.createRecord() );
+                        }
+
+                        recordOffset += RECORD_SIZE;
+                    }
+
+                    position += buffer.capacity();
+                    pageRecordsIterator = pageRecords.iterator();
+                    if ( pageRecordsIterator.hasNext() )
+                    {
+                        return pageRecordsIterator.next();
+                    }
+                }
+                return null;
+            }
+        };
     }
 
     private void readRecord( ByteBuffer buffer, long id, ReusableRelationship rel)
