@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.AggregationProjection
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
@@ -32,11 +31,17 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
 
     val afterSolvingPattern = context.strategy.plan(graphSolvingContext, leafPlan)
     val afterProjection = query.projection match {
-      case AggregationProjection(grouping, aggregation, sortItems, limit, skip) =>
-        throw new CantHandleQueryException
+      case aggr:AggregationProjection =>
+        if (context.query.projection.skip.nonEmpty ||
+          context.query.projection.sortItems.nonEmpty ||
+          context.query.projection.limit.nonEmpty)
+          throw new CantHandleQueryException
+
+        aggregation(afterSolvingPattern, aggr)
 
       case _ =>
-        projection(afterSolvingPattern)
+        val sortedAndLimited = sortSkipAndLimit(afterSolvingPattern)
+        projection(sortedAndLimited, query.projection.projections)
     }
 
     val finalPlan: QueryPlan = query.tail match {

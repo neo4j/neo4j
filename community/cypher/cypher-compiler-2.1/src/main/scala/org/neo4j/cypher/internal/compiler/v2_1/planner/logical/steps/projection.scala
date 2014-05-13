@@ -23,33 +23,26 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.NoProjection
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-object projection  {
-  def apply(plan: QueryPlan)(implicit context: LogicalPlanningContext): QueryPlan = {
-    val sortedAndLimited = sortSkipAndLimit(plan)
-    projectIfNeeded(sortedAndLimited)
-  }
+object projection {
+  def apply(plan: QueryPlan, projectionsMap: Map[String, Expression])(implicit context: LogicalPlanningContext): QueryPlan = {
+    val projection = context.query.projection
+    projection match {
+      case NoProjection => plan
+      case _ =>
+        val ids = plan.availableSymbols
+        val projectAllCoveredIds = ids.map {
+          case IdName(id) => id -> ast.Identifier(id)(null)
+        }.toMap
 
-  object projectIfNeeded {
-    def apply(plan: QueryPlan)(implicit context: LogicalPlanningContext): QueryPlan = {
-      val projection = context.query.projection
-      projection match {
-        case NoProjection => plan
-        case _ =>
-          val ids = plan.availableSymbols
-          val projectAllCoveredIds = ids.map {
-            case IdName(id) => id -> ast.Identifier(id)(null)
-          }.toMap
+        val solvedProjections = plan.solved.projection.withProjections(projectionsMap)
+        val solvedQG = plan.solved.withProjection(solvedProjections)
 
-          val projectionsMap = projection.projections
-          val solvedProjections = plan.solved.projection.withProjections(projectionsMap)
-          val solvedQG = plan.solved.withProjection(solvedProjections)
-
-          if (projectionsMap == projectAllCoveredIds)
-            QueryPlan(plan.plan, solvedQG)
-          else
-            QueryPlan(Projection(plan.plan, projectionsMap), solvedQG)
-      }
+        if (projectionsMap == projectAllCoveredIds)
+          QueryPlan(plan.plan, solvedQG)
+        else
+          QueryPlan(Projection(plan.plan, projectionsMap), solvedQG)
     }
   }
 }

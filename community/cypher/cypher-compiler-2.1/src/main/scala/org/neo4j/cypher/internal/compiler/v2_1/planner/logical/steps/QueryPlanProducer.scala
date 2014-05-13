@@ -22,11 +22,19 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1
 import v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{AggregationProjection, PlannerQuery, QueryGraph}
 import v2_1.ast._
 import v2_1.{PropertyKeyId, LabelId}
 
 object QueryPlanProducer {
+  def planAggregation(left: QueryPlan, grouping: Map[String, Expression], aggregation: Map[String, Expression]) =
+    QueryPlan(
+      Aggregation(left.plan, grouping, aggregation),
+      left.solved.withProjection(
+      AggregationProjection(groupingKeys = grouping, aggregationExpressions = aggregation, Seq.empty, None, None)
+      )
+    )
+
   def planAllNodesScan(idName: IdName) =
     QueryPlan(
       AllNodesScan(idName),

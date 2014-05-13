@@ -29,6 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 import org.neo4j.cypher.internal.compiler.v2_1.commands.True
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.AggregationExpression
 
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
@@ -117,6 +118,12 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
         case SortedLimit(input, exp, sortItems) =>
           TopPipe(buildPipe(input), sortItems.map(_.asCommandSortItem).toList, exp.asCommandExpression)
+
+        case Aggregation(input, groupingExpressions, aggregatingExpressions) =>
+          EagerAggregationPipe(
+            buildPipe(input),
+            groupingExpressions.mapValues(_.asCommandExpression),
+            aggregatingExpressions.mapValues(_.asCommandExpression.asInstanceOf[AggregationExpression]))
 
         case _ =>
           throw new CantHandleQueryException
