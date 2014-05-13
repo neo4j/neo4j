@@ -35,7 +35,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     relate(a, b1, "A")
     relate(a, b2, "A")
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       s"match (a:Start)-[rel]->(b) return a, count(*)"
     )
 
@@ -43,10 +43,10 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
   }
 
   test("should sort on aggregated function and normal property") {
-    val n1 = createNode(Map("name" -> "andres", "division" -> "Sweden"))
-    val n2 = createNode(Map("name" -> "michael", "division" -> "Germany"))
-    val n3 = createNode(Map("name" -> "jim", "division" -> "England"))
-    val n4 = createNode(Map("name" -> "mattias", "division" -> "Sweden"))
+    createNode(Map("name" -> "andres", "division" -> "Sweden"))
+    createNode(Map("name" -> "michael", "division" -> "Germany"))
+    createNode(Map("name" -> "jim", "division" -> "England"))
+    createNode(Map("name" -> "mattias", "division" -> "Sweden"))
 
     val result = execute(
       """match n
@@ -60,11 +60,11 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
   }
 
   test("should aggregate on properties") {
-    val n1 = createNode(Map("x" -> 33))
-    val n2 = createNode(Map("x" -> 33))
-    val n3 = createNode(Map("x" -> 42))
+    createNode(Map("x" -> 33))
+    createNode(Map("x" -> 33))
+    createNode(Map("x" -> 42))
 
-    val result = execute("match n return n.x, count(*)")
+    val result = executeWithNewPlanner("match n return n.x, count(*)")
 
     result.toList should equal(List(Map("n.x" -> 42, "count(*)" -> 1), Map("n.x" -> 33, "count(*)" -> 2)))
   }
@@ -74,7 +74,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     createNode(Map("y" -> "a"))
     createNode(Map("y" -> "b", "x" -> 42))
 
-    val result = execute("match n return n.y, count(n.x)")
+    val result = executeWithNewPlanner("match n return n.y, count(n.x)")
 
     result.toSet should equal(Set(Map("n.y" -> "a", "count(n.x)" -> 1), Map("n.y" -> "b", "count(n.x)" -> 1)))
   }
@@ -84,7 +84,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     createNode(Map("y" -> "a"))
     createNode(Map("y" -> "a", "x" -> 42))
 
-    val result = execute("match n return n.y, sum(n.x)")
+    val result = executeWithNewPlanner("match n return n.y, sum(n.x)")
 
     result.toList should contain(Map("n.y" -> "a", "sum(n.x)" -> 75))
   }
@@ -96,7 +96,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     relate(a, b)
     relate(a, c)
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       """match p = (a:Start) -[*]-> (b)
         |return b, avg(length(p))""".stripMargin)
 
@@ -104,14 +104,14 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
   }
 
   test("should be able to do distinct on unbound node") {
-    val result = execute("optional match a return count(distinct a)")
+    val result = executeWithNewPlanner("optional match a return count(distinct a)")
     result.toList should equal (List(Map("count(distinct a)" -> 0)))
   }
 
   test("shouldBeAbleToDoDistinctOnNull") {
     createNode()
 
-    val result = execute("match a return count(distinct a.foo)")
+    val result = executeWithNewPlanner("match a return count(distinct a.foo)")
     result.toList should equal (List(Map("count(distinct a.foo)" -> 0)))
   }
 
@@ -135,7 +135,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
   test("aggregates in aggregates should fail") {
     createNode()
 
-    intercept[SyntaxException](execute("match a return count(count(*))").toList)
+    intercept[SyntaxException](executeWithNewPlanner("match a return count(count(*))").toList)
   }
 
   test("aggregates should be possible to use with arithmetics") {
@@ -157,7 +157,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
   test("should handle multiple aggregates on the same node") {
     //WHEN
     val a = createNode()
-    val result = execute("match n return count(n), collect(n)")
+    val result = executeWithNewPlanner("match n return count(n), collect(n)")
 
     //THEN
     result.toList should equal (List(Map("count(n)" -> 1, "collect(n)" -> Seq(a))))
@@ -172,7 +172,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     }
 
     //WHEN
-    val result = execute("match n return count(*)")
+    val result = executeWithNewPlanner("match n return count(*)")
 
     //THEN
     result.toList should equal (List(Map("count(*)" -> 100)))
