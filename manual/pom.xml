@@ -20,7 +20,6 @@
     <short-name>manual</short-name>
     <docs.sources>${project.build.directory}/docs</docs.sources>
     <docs.javadocs>${project.build.directory}/javadoc</docs.javadocs>
-    <docs.javadocs.target>${project.build.directory}/html5/javadocs</docs.javadocs.target>
     <docs.sourcecode>${project.build.directory}/sources</docs.sourcecode>
     <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
@@ -380,10 +379,11 @@
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
+            <id>include-javadocs</id>
             <phase>prepare-package</phase>
             <configuration>
               <tasks>
-                <copy todir="${docs.javadocs.target}">
+                <copy todir="${project.build.directory}/html5/javadocs">
                   <fileset dir="${docs.javadocs}" includes="**/*" />
                 </copy>
               </tasks>
@@ -493,6 +493,28 @@
             </executions>
           </plugin>
           <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>include-javadocs</id>
+                <phase>prepare-package</phase>
+                <configuration>
+                  <tasks>
+                    <copy todir="${project.build.directory}/chunked-offline/javadocs">
+                      <fileset dir="${docs.javadocs}" includes="**/*" />
+                    </copy>
+                    <copy todir="${project.build.directory}/chunked/javadocs">
+                      <fileset dir="${docs.javadocs}" includes="**/*" />
+                    </copy>
+                  </tasks>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
+          <plugin>
             <groupId>org.apache.maven.plugins</groupId>
             <artifactId>maven-assembly-plugin</artifactId>
             <executions>
@@ -577,7 +599,6 @@
       </build>
       <properties>
         <attach-docs-phase>none</attach-docs-phase>
-        <docs.javadocs.target>${project.build.directory}/chunked-offline/javadocs</docs.javadocs.target>
       </properties>
     </profile>
     <profile>
@@ -621,11 +642,32 @@
               </execution>
             </executions>
           </plugin>
+          <plugin>
+            <artifactId>maven-antrun-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>include-javadocs</id>
+                <phase>prepare-package</phase>
+                <configuration>
+                  <tasks>
+                    <copy todir="${project.build.directory}/chunked-offline/javadocs">
+                      <fileset dir="${docs.javadocs}" includes="**/*" />
+                    </copy>
+                    <copy todir="${project.build.directory}/chunked/javadocs">
+                      <fileset dir="${docs.javadocs}" includes="**/*" />
+                    </copy>
+                  </tasks>
+                </configuration>
+                <goals>
+                  <goal>run</goal>
+                </goals>
+              </execution>
+            </executions>
+          </plugin>
         </plugins>
       </build>
       <properties>
         <attach-docs-phase>none</attach-docs-phase>
-        <docs.javadocs.target>${project.build.directory}/chunked-offline/javadocs</docs.javadocs.target>
       </properties>
     </profile>
     <profile>
