@@ -65,8 +65,6 @@ import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Arrays.asList;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
 {
     private final Set<File> directories = Collections.newSetFromMap( new ConcurrentHashMap<File, Boolean>() );
@@ -110,8 +108,10 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         List<FileStillOpenException> open = new ArrayList<>();
         for ( EphemeralFileData file : files.values() )
         {
-            for ( EphemeralFileChannel channel : loop( file.getOpenChannels() ) )
+            final Iterator<EphemeralFileChannel> channels = file.getOpenChannels();
+            while ( channels.hasNext() )
             {
+                final EphemeralFileChannel channel = channels.next();
                 open.add( channel.openedAt );
             }
         }

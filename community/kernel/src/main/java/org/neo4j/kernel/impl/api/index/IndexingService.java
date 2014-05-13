@@ -61,7 +61,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -162,8 +161,9 @@ public class IndexingService extends LifecycleAdapter
     {
         IndexMap indexMap = indexMapReference.getIndexMapCopy();
 
-        for ( IndexRule indexRule : loop( indexRules ) )
+        while ( indexRules.hasNext() )
         {
+            final IndexRule indexRule = indexRules.next();
             IndexProxy indexProxy;
 
             long indexId = indexRule.getId();

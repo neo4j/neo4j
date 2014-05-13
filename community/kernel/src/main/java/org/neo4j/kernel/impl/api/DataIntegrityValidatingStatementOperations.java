@@ -39,8 +39,6 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 public class DataIntegrityValidatingStatementOperations implements
     KeyWriteOperations,
     SchemaWriteOperations
@@ -147,15 +145,19 @@ public class DataIntegrityValidatingStatementOperations implements
     private void checkIndexExistence( KernelStatement state, int labelId, int propertyKey )
             throws AlreadyIndexedException, AlreadyConstrainedException
     {
-        for ( IndexDescriptor descriptor : loop( schemaReadDelegate.indexesGetForLabel( state, labelId ) ) )
+        final Iterator<IndexDescriptor> indexesForLabel = schemaReadDelegate.indexesGetForLabel( state, labelId );
+        while ( indexesForLabel.hasNext() )
         {
+            final IndexDescriptor descriptor = indexesForLabel.next();
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
                 throw new AlreadyIndexedException( descriptor );
             }
         }
-        for ( IndexDescriptor descriptor : loop( schemaReadDelegate.uniqueIndexesGetForLabel( state, labelId ) ) )
+        final Iterator<IndexDescriptor> uniqueIndexesForLabel = schemaReadDelegate.uniqueIndexesGetForLabel( state, labelId );
+        while ( uniqueIndexesForLabel.hasNext() )
         {
+            final IndexDescriptor descriptor = uniqueIndexesForLabel.next();
             if ( descriptor.getPropertyKeyId() == propertyKey )
             {
                 throw new AlreadyConstrainedException(
@@ -190,8 +192,9 @@ public class DataIntegrityValidatingStatementOperations implements
     private void assertIndexExists( IndexDescriptor descriptor, Iterator<IndexDescriptor> indexes )
             throws NoSuchIndexException
     {
-        for ( IndexDescriptor existing : loop( indexes ) )
+        while ( indexes.hasNext() )
         {
+            final IndexDescriptor existing = indexes.next();
             if ( existing.getPropertyKeyId() == descriptor.getPropertyKeyId() )
             {
                 return;
@@ -203,8 +206,9 @@ public class DataIntegrityValidatingStatementOperations implements
     private void assertConstraintExists( UniquenessConstraint constraint, Iterator<UniquenessConstraint> constraints )
             throws NoSuchConstraintException
     {
-        for ( UniquenessConstraint existing : loop( constraints ) )
+        while ( constraints.hasNext() )
         {
+            final UniquenessConstraint existing = constraints.next();
             if ( existing.equals( constraint.label(), constraint.propertyKeyId() ) )
             {
                 return;

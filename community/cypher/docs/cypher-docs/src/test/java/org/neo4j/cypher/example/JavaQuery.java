@@ -32,7 +32,6 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.helpers.collection.IteratorUtil;
 
 import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
 
@@ -75,8 +74,9 @@ public class JavaQuery
             // END SNIPPET: execute
             // START SNIPPET: items
             Iterator<Node> n_column = result.columnAs( "n" );
-            for ( Node node : IteratorUtil.asIterable( n_column ) )
+            while ( n_column.hasNext() )
             {
+                final Node node = n_column.next();
                 // note: we're grabbing the name property from the node,
                 // not from the n.name in this case.
                 nodeResult = node + ": " + node.getProperty( "name" );

@@ -273,7 +273,7 @@ public interface Node extends PropertyContainer
      * @return the newly created relationship
      */
     Relationship createRelationshipTo( Node otherNode, RelationshipType type );
-    
+
     /**
      * Returns relationship types which this node has one more relationships
      * for. If this node doesn't have any relationships an empty {@link Iterable}

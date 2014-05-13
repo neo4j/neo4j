@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import java.util.Iterator;
 
 /**
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for
@@ -181,8 +181,10 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public void start() throws Throwable
     {
-        for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
+        final Iterator<SchemaRule> schemaRules = neoStore.getSchemaStore().loadAllSchemaRules();
+        while ( schemaRules.hasNext() )
         {
+            final SchemaRule schemaRule = schemaRules.next();
             schemaCache.addSchemaRule( schemaRule );
         }
         statisticsService.start();

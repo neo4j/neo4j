@@ -259,14 +259,10 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
 
     public static <E> void assertContains( Iterator<E> actual, E... expected )
     {
-        assertContains( IteratorUtil.asIterable( actual ), expected );
-    }
-
-    public static <E> void assertContains( Iterable<E> actual, E... expected )
-    {
         Set<E> expectation = new HashSet<E>( Arrays.asList( expected ) );
-        for ( E element : actual )
+        while ( actual.hasNext() )
         {
+            final E element = actual.next();
             if ( !expectation.remove( element ) )
             {
                 fail( "unexpected element <" + element + ">" );
@@ -275,8 +271,13 @@ public abstract class TraversalTestBase extends AbstractNeo4jTestCase
         if ( !expectation.isEmpty() )
         {
             fail( "the expected elements <" + expectation
-                  + "> were not contained" );
+                    + "> were not contained" );
         }
+    }
+
+    public static <E> void assertContains( Iterable<E> actual, E... expected )
+    {
+        assertContains( actual.iterator(), expected );
     }
 
     public static <T> void assertContainsInOrder( Collection<T> collection,
