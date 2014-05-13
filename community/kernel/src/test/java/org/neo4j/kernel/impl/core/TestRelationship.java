@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -936,5 +937,59 @@ public class TestRelationship extends AbstractNeo4jTestCase
 
         // THEN
         assertEquals( two, one );
+    }
+
+    @Test
+    public void shouldIterateRelationshipsTwice()
+    {
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        node1.createRelationshipTo( node2, MyRelTypes.TEST );
+        node1.createRelationshipTo( node2, MyRelTypes.TEST2 );
+        newTransaction();
+
+        final Iterable<Relationship> relationshipsIterable = node1.getRelationships(Direction.BOTH);
+
+        final Collection<Relationship> relationships1 = IteratorUtil.asCollection( relationshipsIterable.iterator() );
+        assertFalse( relationships1.isEmpty() );
+
+        final Collection<Relationship> relationships2 = IteratorUtil.asCollection( relationshipsIterable.iterator() );
+        assertEquals( relationships1, relationships2 );
+    }
+
+    @Test
+    public void shouldIterateRelationshipsByTypeTwice()
+    {
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        node1.createRelationshipTo( node2, MyRelTypes.TEST );
+        node1.createRelationshipTo( node2, MyRelTypes.TEST2 );
+        newTransaction();
+
+        final Iterable<Relationship> relationshipsIterable = node1.getRelationships(Direction.BOTH, MyRelTypes.TEST, MyRelTypes.TEST2);
+
+        final Collection<Relationship> relationships1 = IteratorUtil.asCollection( relationshipsIterable.iterator() );
+        assertFalse( relationships1.isEmpty() );
+
+        final Collection<Relationship> relationships2 = IteratorUtil.asCollection( relationshipsIterable.iterator() );
+        assertEquals( relationships1, relationships2 );
+    }
+
+    @Test
+    public void shouldIterateRelationshipTypesTwice()
+    {
+        Node node1 = getGraphDb().createNode();
+        Node node2 = getGraphDb().createNode();
+        node1.createRelationshipTo( node2, MyRelTypes.TEST );
+        node1.createRelationshipTo( node2, MyRelTypes.TEST2 );
+        newTransaction();
+
+        final Iterable<RelationshipType> relationshipTypesIterable = node1.getRelationshipTypes();
+
+        final Collection<RelationshipType> relationshipsTypes1 = IteratorUtil.asCollection( relationshipTypesIterable.iterator() );
+        assertFalse( relationshipsTypes1.isEmpty() );
+
+        final Collection<RelationshipType> relationshipsTypes2 = IteratorUtil.asCollection( relationshipTypesIterable.iterator() );
+        assertEquals( relationshipsTypes1, relationshipsTypes2 );
     }
 }

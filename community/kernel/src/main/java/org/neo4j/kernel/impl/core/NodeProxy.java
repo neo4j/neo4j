@@ -68,7 +68,6 @@ import static java.lang.String.format;
 import static org.neo4j.collection.primitive.PrimitiveIntCollections.map;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.asResourceIterable;
 import static org.neo4j.helpers.collection.IteratorUtil.asList;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_RELATIONSHIP_TYPE;
 import static org.neo4j.kernel.impl.core.TokenHolder.NO_ID;
@@ -135,18 +134,24 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public ResourceIterable<Relationship> getRelationships( Direction dir )
+    public ResourceIterable<Relationship> getRelationships( final Direction dir )
     {
-        Statement statement = statementContextProvider.instance();
-        try
+        return new ResourceIterable<Relationship>()
         {
-            return map2rels( statement, statement.readOperations().nodeGetRelationships( nodeId, dir ) );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            statement.close();
-            throw new NotFoundException( format( "Node %d not found", nodeId ), e );
-        }
+            public ResourceIterator<Relationship> iterator()
+            {
+                Statement statement = statementContextProvider.instance();
+                try
+                {
+                    return map2rels( statement, statement.readOperations().nodeGetRelationships( nodeId, dir ) );
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    statement.close();
+                    throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+                }
+            }
+        };
     }
 
     @Override
@@ -162,19 +167,25 @@ public class NodeProxy implements Node
     }
 
     @Override
-    public ResourceIterable<Relationship> getRelationships( Direction direction, RelationshipType ... types )
+    public ResourceIterable<Relationship> getRelationships( final Direction direction, final RelationshipType... types )
     {
-        Statement statement = statementContextProvider.instance();
-        try
+        return new ResourceIterable<Relationship>()
         {
-            return map2rels( statement, statement.readOperations().nodeGetRelationships( nodeId, direction,
-                    relTypeIds( types, statement ) ) );
-        }
-        catch ( EntityNotFoundException e )
-        {
-            statement.close();
-            throw new NotFoundException( format( "Node %d not found", nodeId ), e );
-        }
+            public ResourceIterator<Relationship> iterator()
+            {
+                Statement statement = statementContextProvider.instance();
+                try
+                {
+                    return map2rels( statement, statement.readOperations().nodeGetRelationships( nodeId, direction,
+                            relTypeIds( types, statement ) ) );
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    statement.close();
+                    throw new NotFoundException( format( "Node %d not found", nodeId ), e );
+                }
+            }
+        };
     }
 
     @Override
@@ -707,9 +718,9 @@ public class NodeProxy implements Node
         return ids;
     }
 
-    private ResourceIterable<Relationship> map2rels( Statement statement, PrimitiveLongIterator input )
+    private ResourceIterator<Relationship> map2rels( Statement statement, PrimitiveLongIterator input )
     {
-        return asResourceIterable( ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong
+        return ResourceClosingIterator.newResourceIterator( statement, map( new FunctionFromPrimitiveLong
                 <Relationship>()
         {
             @Override
@@ -717,10 +728,10 @@ public class NodeProxy implements Node
             {
                 return new RelationshipProxy( id, relLookup, statementContextProvider );
             }
-        }, input ) ) );
+        }, input ) );
     }
 
-    private Iterable<RelationshipType> map2relTypes( final Statement statement, PrimitiveIntIterator input )
+    private List<RelationshipType> map2relTypes( final Statement statement, PrimitiveIntIterator input )
     {
         return asList( map( new FunctionFromPrimitiveInt<RelationshipType>()
         {
