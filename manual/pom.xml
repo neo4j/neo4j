@@ -659,13 +659,6 @@
     </profile>
   </profiles>
 
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
-
 	<repositories>
 		<repository>
 		<id>neo4j-release-repository</id>
