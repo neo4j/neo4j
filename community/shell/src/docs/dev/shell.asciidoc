@@ -161,7 +161,7 @@ Single line comments, which will be ignored, can be made by using the prefix "//
 [[shell-current-pos]]
 === Current node/relationship and path ===
 You have a current node/relationship and a "current path" (like a current working directory in bash) that you've traversed so far.
-You start at the http://api.neo4j.org/current/org/neo4j/graphdb/GraphDatabaseService.html#getReferenceNode()[reference node] and can then +cd+ your way through the graph (check your current path at any time with the +pwd+ command).
+You start at the link:javadocs/org/neo4j/graphdb/GraphDatabaseService.html#getReferenceNode()[reference node] and can then +cd+ your way through the graph (check your current path at any time with the +pwd+ command).
 +cd+ can be used in different ways:
 
 * +cd <node-id>+ will traverse one relationship to the supplied node id. The node must have a direct relationship to the current node.
@@ -274,9 +274,9 @@ all open transactions.
 [[shell-extending]]
 == Extending the shell: Adding your own commands ==
 
-Of course the shell is extendable and has a generic core which has nothing to do with Neo4j... only some of the http://components.neo4j.org/neo4j-shell/{neo4j-version}/apidocs/org/neo4j/shell/App.html[commands] do.
+Of course the shell is extendable and has a generic core which has nothing to do with Neo4j ... only some of the +org.neo4j.shell.App+ commands do.
 
-So you say you'd like to start a Neo4j http://api.neo4j.org/current/org/neo4j/graphdb/GraphDatabaseService.html[graph database], <<shell-enabling-remote,enable the remote shell>> and add your own apps to it so that your apps and the standard Neo4j apps co-exist side by side? Well, here's an example of how an app could look like:
+So you say you'd like to start a Neo4j link:javadocs/org/neo4j/graphdb/GraphDatabaseService.html[graph database], <<shell-enabling-remote,enable the remote shell>> and add your own apps to it so that your apps and the standard Neo4j apps co-exist side by side? Well, here's an example of how an app could look like:
 
 [source,java]
 ----

@@ -20,12 +20,13 @@
     <short-name>manual</short-name>
     <docs.sources>${project.build.directory}/docs</docs.sources>
     <docs.javadocs>${project.build.directory}/javadoc</docs.javadocs>
+    <docs.javadocs.target>${project.build.directory}/html5/javadocs</docs.javadocs.target>
     <docs.sourcecode>${project.build.directory}/sources</docs.sourcecode>
     <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
     <docs.tools>${project.build.directory}/tools</docs.tools>
     <neo4j.version>${project.version}</neo4j.version>
-    <doctools.version>10</doctools.version>
+    <doctools.version>15</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
   </properties>
 
@@ -379,10 +380,10 @@
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
-            <phase>compile</phase>
+            <phase>prepare-package</phase>
             <configuration>
               <tasks>
-                <copy todir="${project.build.directory}/html5/javadocs">
+                <copy todir="${docs.javadocs.target}">
                   <fileset dir="${docs.javadocs}" includes="**/*" />
                 </copy>
               </tasks>
@@ -576,6 +577,7 @@
       </build>
       <properties>
         <attach-docs-phase>none</attach-docs-phase>
+        <docs.javadocs.target>${project.build.directory}/chunked-offline/javadocs</docs.javadocs.target>
       </properties>
     </profile>
     <profile>
@@ -589,39 +591,6 @@
       <properties>
         <attach-docs-phase>none</attach-docs-phase>
       </properties>
-    </profile>
-    <profile>
-      <id>annotated</id>
-      <activation>
-        <activeByDefault>false</activeByDefault>
-        <property>
-          <name>annotated</name>
-        </property>
-      </activation>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.codehaus.mojo</groupId>
-            <artifactId>exec-maven-plugin</artifactId>
-            <executions>
-              <execution>
-                <id>execute-asciidoc</id>
-                <phase>compile</phase>
-                <goals>
-                  <goal>exec</goal>
-                </goals>
-                <configuration>
-                  <executable>make</executable>
-                  <arguments>
-                    <argument>init</argument>
-                    <argument>commented</argument>
-                  </arguments>
-                </configuration>
-              </execution>
-            </executions>
-          </plugin>
-        </plugins>
-      </build>
     </profile>
     <profile>
       <id>neo-full-manual-build</id>
@@ -656,6 +625,7 @@
       </build>
       <properties>
         <attach-docs-phase>none</attach-docs-phase>
+        <docs.javadocs.target>${project.build.directory}/chunked-offline/javadocs</docs.javadocs.target>
       </properties>
     </profile>
     <profile>

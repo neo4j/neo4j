@@ -21,6 +21,6 @@ For running the server and embedded installations in high availability mode, see
 == Embedded ==
 
 Neo4j can be embedded directly in a server application by including the appropriate Java libraries.
-When programming, you can refer to the +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/graphdb/GraphDatabaseService.html[GraphDatabaseService]+ API.
-To switch from a single instance to multiple highly available instances, simply switch from the concrete +http://components.neo4j.org/neo4j/{neo4j-version}/apidocs/org/neo4j/kernel/EmbeddedGraphDatabase.html[EmbeddedGraphDatabase]+ to the +http://components.neo4j.org/neo4j-enterprise/{neo4j-version}/apidocs/org/neo4j/kernel/HighlyAvailableGraphDatabase.html[HighlyAvailableGraphDatabase]+.
+When programming, you can refer to the +link:javadocs/org/neo4j/graphdb/GraphDatabaseService.html[GraphDatabaseService]+ API.
+To switch from a single instance to multiple highly available instances, simply switch from the concrete +link:javadocs/org/neo4j/kernel/EmbeddedGraphDatabase.html[EmbeddedGraphDatabase]+ to the +link:javadocs/org/neo4j/kernel/HighlyAvailableGraphDatabase.html[HighlyAvailableGraphDatabase]+.
 
