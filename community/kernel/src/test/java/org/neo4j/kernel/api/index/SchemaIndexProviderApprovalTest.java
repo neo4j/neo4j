@@ -167,8 +167,8 @@ public abstract class SchemaIndexProviderApprovalTest
     @Test
     public void test()
     {
-        Set<Object> noIndexResult = asSet( noIndexRun.get( currentValue ) );
-        Set<Object> indexResult = asSet( indexRun.get( currentValue ) );
+        Set<Object> noIndexResult = noIndexRun.get( currentValue );
+        Set<Object> indexResult = indexRun.get( currentValue );
 
         String errorMessage = currentValue.toString();
 

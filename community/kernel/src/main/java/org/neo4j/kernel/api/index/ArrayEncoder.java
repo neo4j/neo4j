@@ -21,10 +21,10 @@ package org.neo4j.kernel.api.index;
 
 import java.lang.reflect.Array;
 
-import org.neo4j.kernel.impl.util.Charsets;
-
 import sun.misc.BASE64Decoder;
 import sun.misc.BASE64Encoder;
+
+import org.neo4j.kernel.impl.util.Charsets;
 
 public class ArrayEncoder
 {
@@ -82,6 +82,14 @@ public class ArrayEncoder
             return doubleValue == doubleAfterRoundTrip;
         }
         return false;
+    }
+
+    public static boolean isIntegerType( Object value )
+    {
+        return value instanceof Long
+                || value instanceof Integer
+                || value instanceof Short
+                || value instanceof Byte;
     }
 
     public static long[] asLongArray( Object value )

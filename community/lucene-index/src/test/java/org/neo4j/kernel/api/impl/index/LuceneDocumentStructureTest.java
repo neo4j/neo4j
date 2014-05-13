@@ -104,7 +104,7 @@ public class LuceneDocumentStructureTest
         TermQuery query = (TermQuery) new LuceneDocumentStructure().newQuery( 12 );
 
         // then
-        assertEquals( NumericUtils.doubleToPrefixCoded( 12.0 ), query.getTerm().text() );
+        assertEquals( NumericUtils.longToPrefixCoded( 12 ), query.getTerm().text() );
     }
 
     @Test
@@ -114,6 +114,6 @@ public class LuceneDocumentStructureTest
         TermQuery query = (TermQuery) new LuceneDocumentStructure().newQuery( new Integer[] { 1,2,3 } );
 
         // then
-        assertEquals( "D1.0|2.0|3.0|", query.getTerm().text() );
+        assertEquals( "D1|2|3|", query.getTerm().text() );
     }
 }

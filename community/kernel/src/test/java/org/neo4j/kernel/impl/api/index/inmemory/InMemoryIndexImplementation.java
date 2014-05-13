@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.index.ArrayEncoder;
 import org.neo4j.kernel.api.index.IndexReader;
 
 import static org.neo4j.kernel.api.index.ArrayEncoder.isFloatingPointValueAndCanCoerceCleanlyIntoLong;
+import static org.neo4j.kernel.api.index.ArrayEncoder.isIntegerType;
 
 abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterable<Long>
 {
@@ -95,7 +96,7 @@ abstract class InMemoryIndexImplementation implements IndexReader, BoundedIterab
 
     private static boolean hasCoercionProblems( Object propertyValue )
     {
-        return propertyValue instanceof Long || isFloatingPointValueAndCanCoerceCleanlyIntoLong( propertyValue );
+        return isIntegerType( propertyValue ) || isFloatingPointValueAndCanCoerceCleanlyIntoLong( propertyValue );
     }
 
     private static boolean anyElementHasCoercionProblems( Object array )

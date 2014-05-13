@@ -39,6 +39,7 @@ import static org.apache.lucene.util.NumericUtils.longToPrefixCoded;
 import static org.neo4j.kernel.api.index.ArrayEncoder.asDoubleArray;
 import static org.neo4j.kernel.api.index.ArrayEncoder.asLongArray;
 import static org.neo4j.kernel.api.index.ArrayEncoder.isFloatingPointValueAndCanCoerceCleanlyIntoLong;
+import static org.neo4j.kernel.api.index.ArrayEncoder.isIntegerType;
 
 public class LuceneDocumentStructure
 {
@@ -57,7 +58,7 @@ public class LuceneDocumentStructure
          * Indexing numbers is a little tricky because we do coercion between numeric types for the purpose of checking
          * equality. All the integer types can coerce cleanly to long without loss, and all integer types except long
          * can coerce cleanly to double without loss, and 32 bit floats can coerce to doubles without loss. However,
-         * long values cannot always be coerced to a double without loosing precision. This introduces a number of
+         * long values cannot always be coerced to a double without losing precision. This introduces a number of
          * cases that we need to guard for.
          *
          * We solve this by always indexing the double representation for longs, so that when we query with a double
@@ -95,7 +96,7 @@ public class LuceneDocumentStructure
             @Override
             boolean canEncode( Object value )
             {
-                return value instanceof Long || isFloatingPointValueAndCanCoerceCleanlyIntoLong( value );
+                return isIntegerType( value ) || isFloatingPointValueAndCanCoerceCleanlyIntoLong( value );
             }
 
             @Override
@@ -300,9 +301,7 @@ public class LuceneDocumentStructure
         {
             if ( encoding.canEncode( value ) )
             {
-                Query query = encoding.encodeQuery( value );
-                System.out.println( "Query for " + value + "::" + value.getClass().getSimpleName() + " = " + query );
-                return query;
+                return encoding.encodeQuery( value );
             }
         }
         throw new IllegalArgumentException( format( "Unable to create newQuery for %s", value ) );
