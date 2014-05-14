@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
 
@@ -30,12 +31,11 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
-import static junit.framework.Assert.assertNotNull;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
 
@@ -211,5 +211,54 @@ public class NodeImplTest
         }
 
         return relIdArray;
+    }
+
+    @Test
+    public void shouldReturnFreshIteratorFromRelationshipsIterable() throws Exception
+    {
+        // given
+        NodeImpl nodeImpl = new NodeImpl( 1 );
+        RelationshipType loves = DynamicRelationshipType.withName( "LOVES" );
+
+        TransactionState txState = mock( TransactionState.class );
+        ThreadToStatementContextBridge stmCtxBridge = mock( ThreadToStatementContextBridge.class );
+
+        NodeManager nodeManager = mock( NodeManager.class );
+        RelationshipProxy.RelationshipLookups relLookup = mock( RelationshipProxy.RelationshipLookups.class );
+        when( relLookup.getNodeManager() ).thenReturn( nodeManager );
+
+        when( nodeManager.getRelationshipTypeById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_TYPE ) )
+                .thenReturn( loves );
+        when( relLookup.lookupRelationship( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID ) )
+                .thenReturn( new RelationshipImpl( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, 1, 2,
+                        TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_TYPE, false ) );
+
+        when( relLookup.lookupRelationship( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1 ) )
+                .thenReturn( new RelationshipImpl( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1, 1, 2,
+                        TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_TYPE, false ) );
+
+        when( nodeManager.getMoreRelationships( nodeImpl ) ).thenReturn( tripletWithValues(
+                TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1
+        ) ).thenReturn( noMoreRelationshipsTriplet() );
+        when( nodeManager.getTransactionState() ).thenReturn( txState );
+
+        when( nodeManager.newRelationshipProxyById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID ) )
+                .thenReturn( new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID, relLookup,
+                        stmCtxBridge ) );
+        when( nodeManager.newRelationshipProxyById( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1 ) )
+                .thenReturn( new RelationshipProxy( TOTALLY_ARBITRARY_VALUE_DENOTING_RELATIONSHIP_ID + 1, relLookup,
+                        stmCtxBridge ) );
+
+        // when
+        final Iterable<Relationship> relationships = nodeImpl.getRelationships( nodeManager, loves,
+                Direction.OUTGOING );
+
+        // then
+        assertNotNull( relationships );
+        final Collection<Relationship> firstIteration = IteratorUtil.asCollection(relationships.iterator());
+        assertFalse( firstIteration.isEmpty() );
+
+        final Collection<Relationship> secondIteration = IteratorUtil.asCollection(relationships.iterator());
+        assertEquals( firstIteration, secondIteration );
     }
 }

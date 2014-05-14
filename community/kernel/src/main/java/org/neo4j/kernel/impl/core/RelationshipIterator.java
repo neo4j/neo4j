@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
 
-class RelationshipIterator extends PrefetchingIterator<Relationship> implements Iterable<Relationship>
+class RelationshipIterator extends PrefetchingIterator<Relationship>
 {
     private RelIdIterator[] rels;
     private int currentTypeIndex;
@@ -59,12 +59,6 @@ class RelationshipIterator extends PrefetchingIterator<Relationship> implements 
     {
         this.rels = rels;
         this.currentTypeIndex = 0;
-    }
-
-    @Override
-    public Iterator<Relationship> iterator()
-    {
-        return this;
     }
 
     @Override

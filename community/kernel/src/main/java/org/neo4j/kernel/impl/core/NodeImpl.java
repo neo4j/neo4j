@@ -145,120 +145,149 @@ public class NodeImpl extends ArrayBasedPrimitive
         return this == obj || (obj instanceof NodeImpl && ((NodeImpl) obj).getId() == getId());
     }
 
-    Iterable<Relationship> getAllRelationships( NodeManager nodeManager, DirectionWrapper direction )
+    Iterable<Relationship> getAllRelationships( final NodeManager nodeManager, final DirectionWrapper direction )
     {
         ensureRelationshipMapNotNull( nodeManager );
 
-        // We need to check if there are more relationships to load before grabbing
-        // the references to the RelIdArrays since otherwise there could be
-        // another concurrent thread exhausting the chain position in between the point
-        // where we got an empty iterator for a type that the other thread loaded and
-        // the point where we check whether or not there are more relationships to load.
-        boolean hasMore = hasMoreRelationshipsToLoad();
-
-        RelIdArray[] localRelationships = relationships;
-        RelIdIterator[] result = new RelIdIterator[localRelationships.length];
-        TransactionState tx = nodeManager.getTransactionState();
-        ArrayMap<Integer, RelIdArray> addMap = null;
-        ArrayMap<Integer, Collection<Long>> skipMap = null;
-        if ( tx.hasChanges() )
+        final NodeImpl nodeImpl = this;
+        return new Iterable<Relationship>()
         {
-            addMap = tx.getCowRelationshipAddMap( this );
-            skipMap = tx.getCowRelationshipRemoveMap( this );
-        }
+            public Iterator<Relationship> iterator()
+            {
+                // We need to check if there are more relationships to load before grabbing
+                // the references to the RelIdArrays since otherwise there could be
+                // another concurrent thread exhausting the chain position in between the point
+                // where we got an empty iterator for a type that the other thread loaded and
+                // the point where we check whether or not there are more relationships to load.
+                final boolean hasMore = hasMoreRelationshipsToLoad();
 
-        for ( int i = 0; i < localRelationships.length; i++ )
-        {
-            RelIdArray src = localRelationships[i];
-            int type = src.getType();
-            RelIdIterator iterator;
-            if ( addMap != null || skipMap != null )
-            {
-                iterator = new CombinedRelIdIterator( type, direction, src,
-                        addMap != null ? addMap.get( type ) : null,
-                        skipMap != null ? skipMap.get( type ) : null );
-            }
-            else
-            {
-                iterator = src.iterator( direction );
-            }
-            result[i] = iterator;
-        }
-
-        // New relationship types for this node which hasn't been committed yet,
-        // but exists only as transactional state.
-        if ( addMap != null )
-        {
-            RelIdIterator[] additional = new RelIdIterator[addMap.size() /*worst case size*/];
-            int additionalSize = 0;
-            for ( int type : addMap.keySet() )
-            {
-                if ( getRelIdArray( type ) == null )
+                RelIdArray[] localRelationships = relationships;
+                final RelIdIterator[] relIdIterators = new RelIdIterator[localRelationships.length];
+                TransactionState tx = nodeManager.getTransactionState();
+                ArrayMap<Integer, RelIdArray> addMap = null;
+                ArrayMap<Integer, Collection<Long>> skipMap = null;
+                if ( tx.hasChanges() )
                 {
-                    RelIdArray add = addMap.get( type );
-                    additional[additionalSize++] = new CombinedRelIdIterator( type, direction, null, add,
-                            skipMap != null ? skipMap.get( type ) : null );
+                    addMap = tx.getCowRelationshipAddMap( nodeImpl );
+                    skipMap = tx.getCowRelationshipRemoveMap( nodeImpl );
                 }
+
+                for ( int i = 0; i < localRelationships.length; i++ )
+                {
+                    RelIdArray src = localRelationships[i];
+                    int type = src.getType();
+                    RelIdIterator iterator;
+                    if ( addMap != null || skipMap != null )
+                    {
+                        iterator = new CombinedRelIdIterator( type, direction, src,
+                                addMap != null ? addMap.get( type ) : null,
+                                skipMap != null ? skipMap.get( type ) : null );
+                    }
+                    else
+                    {
+                        iterator = src.iterator( direction );
+                    }
+                    relIdIterators[i] = iterator;
+                }
+
+                // New relationship types for this node which hasn't been committed yet,
+                // but exists only as transactional state.
+                final RelIdIterator[] result;
+                if ( addMap != null )
+                {
+                    RelIdIterator[] additional = new RelIdIterator[addMap.size() /*worst case size*/];
+                    int additionalSize = 0;
+                    for ( int type : addMap.keySet() )
+                    {
+                        if ( getRelIdArray( type ) == null )
+                        {
+                            RelIdArray add = addMap.get( type );
+                            additional[additionalSize++] = new CombinedRelIdIterator( type, direction, null, add,
+                                    skipMap != null ? skipMap.get( type ) : null );
+                        }
+                    }
+                    RelIdIterator[] newResult = new RelIdIterator[relIdIterators.length + additionalSize];
+                    arraycopy( relIdIterators, 0, newResult, 0, relIdIterators.length );
+                    arraycopy( additional, 0, newResult, relIdIterators.length, additionalSize );
+                    result = newResult;
+                }
+                else
+                {
+                    result = relIdIterators;
+                }
+
+                if ( result.length == 0 )
+                {
+                    return Collections.emptyIterator();
+                }
+
+                return new RelationshipIterator( result, nodeImpl, direction, nodeManager, hasMore, true );
             }
-            RelIdIterator[] newResult = new RelIdIterator[result.length + additionalSize];
-            arraycopy( result, 0, newResult, 0, result.length );
-            arraycopy( additional, 0, newResult, result.length, additionalSize );
-            result = newResult;
-        }
-        if ( result.length == 0 )
-        {
-            return Collections.emptyList();
-        }
-        return new RelationshipIterator( result, this, direction, nodeManager, hasMore, true );
+        };
     }
 
-    Iterable<Relationship> getAllRelationshipsOfType( NodeManager nodeManager,
-                                                      DirectionWrapper direction, RelationshipType... types )
+    Iterable<Relationship> getAllRelationshipsOfType( final NodeManager nodeManager,
+                                                      final DirectionWrapper direction,
+                                                      RelationshipType... initialTypes )
     {
-        types = deduplicate( types );
+        final RelationshipType types[] = deduplicate( initialTypes );
         ensureRelationshipMapNotNull( nodeManager );
 
-        // We need to check if there are more relationships to load before grabbing
-        // the references to the RelIdArrays. Otherwise there could be
-        // another concurrent thread exhausting the chain position in between the point
-        // where we got an empty iterator for a type that the other thread loaded and
-        // the point where we check if there are more relationships to load.
-        boolean hasMore = hasMoreRelationshipsToLoad();
-
-        RelIdIterator[] result = new RelIdIterator[types.length];
-        TransactionState tx = nodeManager.getTransactionState();
-        ArrayMap<Integer, RelIdArray> addMap = null;
-        ArrayMap<Integer, Collection<Long>> skipMap = null;
-        if ( tx.hasChanges() )
+        final NodeImpl nodeImpl = this;
+        return new Iterable<Relationship>()
         {
-            addMap = tx.getCowRelationshipAddMap( this );
-            skipMap = tx.getCowRelationshipRemoveMap( this );
-        }
-        int actualLength = 0;
-        for ( RelationshipType type : types )
-        {
-            int typeId = nodeManager.getRelationshipTypeIdFor( type );
-            if ( typeId == TokenHolder.NO_ID )
+            public Iterator<Relationship> iterator()
             {
-                continue;
+                // We need to check if there are more relationships to load before grabbing
+                // the references to the RelIdArrays. Otherwise there could be
+                // another concurrent thread exhausting the chain position in between the point
+                // where we got an empty iterator for a type that the other thread loaded and
+                // the point where we check if there are more relationships to load.
+                final boolean hasMore = hasMoreRelationshipsToLoad();
+
+                final RelIdIterator[] relIdIterators = new RelIdIterator[types.length];
+                TransactionState tx = nodeManager.getTransactionState();
+                ArrayMap<Integer, RelIdArray> addMap = null;
+                ArrayMap<Integer, Collection<Long>> skipMap = null;
+                if ( tx.hasChanges() )
+                {
+                    addMap = tx.getCowRelationshipAddMap( nodeImpl );
+                    skipMap = tx.getCowRelationshipRemoveMap( nodeImpl );
+                }
+                int actualLength = 0;
+                for ( RelationshipType type : types )
+                {
+                    int typeId = nodeManager.getRelationshipTypeIdFor( type );
+                    if ( typeId == TokenHolder.NO_ID )
+                    {
+                        continue;
+                    }
+
+                    relIdIterators[actualLength++] = getRelationshipsIterator( direction,
+                            addMap != null ? addMap.get( typeId ) : null,
+                            skipMap != null ? skipMap.get( typeId ) : null, typeId );
+                }
+
+                final RelIdIterator[] result;
+                if ( actualLength < relIdIterators.length )
+                {
+                    RelIdIterator[] compacted = new RelIdIterator[actualLength];
+                    arraycopy( relIdIterators, 0, compacted, 0, actualLength );
+                    result = compacted;
+                }
+                else
+                {
+                    result = relIdIterators;
+                }
+
+                if ( result.length == 0 )
+                {
+                    return Collections.emptyIterator();
+                }
+
+                return new RelationshipIterator( result, nodeImpl, direction, nodeManager, hasMore, false );
             }
-
-            result[actualLength++] = getRelationshipsIterator( direction,
-                                                               addMap != null ? addMap.get( typeId ) : null,
-                                                               skipMap != null ? skipMap.get( typeId ) : null, typeId );
-        }
-
-        if ( actualLength < result.length )
-        {
-            RelIdIterator[] compacted = new RelIdIterator[actualLength];
-            arraycopy( result, 0, compacted, 0, actualLength );
-            result = compacted;
-        }
-        if ( result.length == 0 )
-        {
-            return Collections.emptyList();
-        }
-        return new RelationshipIterator( result, this, direction, nodeManager, hasMore, false );
+        };
     }
 
     private static RelationshipType[] deduplicate( RelationshipType[] types )
