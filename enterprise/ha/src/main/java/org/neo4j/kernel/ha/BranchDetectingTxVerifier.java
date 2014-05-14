@@ -22,27 +22,21 @@ package org.neo4j.kernel.ha;
 import java.io.IOException;
 
 import org.neo4j.com.TxChecksumVerifier;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
 
 public class BranchDetectingTxVerifier implements TxChecksumVerifier
 {
     private final StringLogger logger;
+    private Provider<XaDataSource> xaDataSourceProvider;
     private XaDataSource dataSource;
-    private DependencyResolver resolver;
 
-    public BranchDetectingTxVerifier( DependencyResolver resolver /* I'd like to get in StringLogger, XaDataSource instead */ )
+    public BranchDetectingTxVerifier(StringLogger logger, Provider<XaDataSource> xaDataSourceProvider )
     {
-        this.resolver = resolver;
-        /* We cannot pass in XaResourceManager because it this time we don't have a
-         * proper db, merely the HA graph db which is a layer around a not-yet-started db
-         * Rickards restructuring will of course fix this */
-        this.logger = resolver.resolveDependency( Logging.class ).getMessagesLog( getClass() );
+        this.logger = logger;
+        this.xaDataSourceProvider = xaDataSourceProvider;
     }
     
     @Override
@@ -70,8 +64,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
     {
         if ( dataSource == null )
         {
-            dataSource = resolver.resolveDependency( XaDataSourceManager.class )
-                    .getXaDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            dataSource = xaDataSourceProvider.instance();
         }
         return dataSource;
     }

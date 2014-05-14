@@ -19,17 +19,12 @@
  */
 package org.neo4j.kernel.index;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Future;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
@@ -43,6 +38,11 @@ import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ha.ClusterManager;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+
 public class IndexOperationsIT extends AbstractClusterTest
 {
     @Test
@@ -50,7 +50,6 @@ public class IndexOperationsIT extends AbstractClusterTest
     {
         // GIVEN
         // -- a slave
-        cluster.await( allSeesAllAsAvailable() );
         String key = "name";
         String value = "Mattias";
         HighlyAvailableGraphDatabase author = cluster.getAnySlave();
@@ -73,7 +72,6 @@ public class IndexOperationsIT extends AbstractClusterTest
     {
         // GIVEN
         // -- an existing index
-        cluster.await( allSeesAllAsAvailable() );
         String key = "key", value = "value";
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         long nodeId = createNode( master, key, value, true );
@@ -144,7 +142,6 @@ public class IndexOperationsIT extends AbstractClusterTest
     {
         // GIVEN
         // -- two instances, each begin a transaction
-        cluster.await( allSeesAllAsAvailable() );
         String key = "key", value = "value";
         HighlyAvailableGraphDatabase db1 = cluster.getMaster(), db2 = cluster.getAnySlave();
         long node = createNode( db1, key, value, false );

@@ -186,6 +186,7 @@ import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_
 public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
+
     public interface Dependencies
     {
         /**
@@ -265,6 +266,7 @@ public abstract class InternalAbstractGraphDatabase
     protected RelationshipAutoIndexerImpl relAutoIndexer;
     protected KernelData extensions;
     protected Caches caches;
+    protected Factory<NeoStoreXaDataSource> neoDataSourceFactory;
 
     protected TransactionStateFactory stateFactory;
     protected ThreadToStatementContextBridge statementContextProvider;
@@ -376,7 +378,7 @@ public abstract class InternalAbstractGraphDatabase
         } );
     }
 
-    protected void doAfterRecoveryAndStartup( boolean isMaster )
+    public void doAfterRecoveryAndStartup( boolean isMaster )
     {
         if ( txManager.getRecoveryError() != null )
         {   // If recovery failed then there's no point in going any further here. The database startup will fail.
@@ -482,7 +484,7 @@ public abstract class InternalAbstractGraphDatabase
         caches = createCaches();
         diagnosticsManager = life.add( new DiagnosticsManager( logging.getMessagesLog( DiagnosticsManager.class ) ) );
 
-        kernelPanicEventGenerator = new KernelPanicEventGenerator( kernelEventHandlers );
+        kernelPanicEventGenerator = life.add(new KernelPanicEventGenerator( kernelEventHandlers ));
 
         kernelHealth = new KernelHealth( kernelPanicEventGenerator, logging );
 
@@ -940,13 +942,23 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void createNeoDataSource()
     {
+        // Create factory for datasources
+        neoDataSourceFactory = new Factory<NeoStoreXaDataSource>()
+        {
+            @Override
+            public NeoStoreXaDataSource newInstance()
+            {
+                return new NeoStoreXaDataSource( config,
+                                storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
+                                xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
+                                updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
+                                dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
+                                persistenceManager, lockManager, InternalAbstractGraphDatabase.this, monitors.newMonitor( IndexingService.Monitor.class ) );
+            }
+        };
+
         // Create DataSource
-        neoDataSource = new NeoStoreXaDataSource( config,
-                storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
-                xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
-                updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
-                dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
-                persistenceManager, lockManager, this, monitors.newMonitor( IndexingService.Monitor.class ) );
+        neoDataSource = neoDataSourceFactory.newInstance();
         xaDataSourceManager.registerDataSource( neoDataSource );
     }
 

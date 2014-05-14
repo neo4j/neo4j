@@ -19,17 +19,13 @@
  */
 package org.neo4j.test;
 
-import static org.neo4j.cluster.ClusterSettings.default_timeout;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
 import java.io.File;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.rules.TestName;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
@@ -37,6 +33,10 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterManager.Provider;
+
+import static org.neo4j.cluster.ClusterSettings.default_timeout;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public abstract class AbstractClusterTest
 {
@@ -79,7 +79,7 @@ public abstract class AbstractClusterTest
         } );
         life.start();
         cluster = clusterManager.getDefaultCluster();
-        cluster.await( masterAvailable() );
+        cluster.await( ClusterManager.allSeesAllAsAvailable() );
     }
 
     protected void configureClusterMember( GraphDatabaseBuilder builder, String clusterName, InstanceId serverId )
@@ -93,6 +93,7 @@ public abstract class AbstractClusterTest
     @After
     public void after() throws Exception
     {
+        cluster.debug( "Shutting down cluster" );
         life.shutdown();
     }
 }

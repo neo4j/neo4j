@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
@@ -40,7 +41,6 @@ import org.neo4j.test.AbstractClusterTest;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 
 import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
 
 public class TestUniqueKeys extends AbstractClusterTest
 {
@@ -193,7 +193,6 @@ public class TestUniqueKeys extends AbstractClusterTest
     public void getCluster() throws Exception
     {
         cluster = clusterManager.getDefaultCluster();
-        cluster.await( masterAvailable() );
     }
 
     private <KEY extends Token> int highestIdOf( TokenHolder<KEY> holder, int high ) throws TokenNotFoundException

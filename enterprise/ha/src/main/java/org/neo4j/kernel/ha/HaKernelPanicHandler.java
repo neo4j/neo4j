@@ -19,36 +19,19 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.transaction.TxManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
 
-public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGuard.AvailabilityRequirement
+public class HaKernelPanicHandler implements KernelEventHandler
 {
-    private final XaDataSourceManager dataSourceManager;
-    private final TxManager txManager;
-    private final AtomicInteger epoch = new AtomicInteger();
     private final AvailabilityGuard availabilityGuard;
-    private final DelegateInvocationHandler<Master> masterDelegateInvocationHandler;
-    private final StringLogger logger;
+    private final HaRecovery recovery;
 
-    public HaKernelPanicHandler( XaDataSourceManager dataSourceManager, TxManager txManager,
-                                 AvailabilityGuard availabilityGuard, Logging logging,
-                                 DelegateInvocationHandler<Master> masterDelegateInvocationHandler )
+    public HaKernelPanicHandler( AvailabilityGuard availabilityGuard, HaRecovery recovery )
     {
-        this.dataSourceManager = dataSourceManager;
-        this.txManager = txManager;
         this.availabilityGuard = availabilityGuard;
-        this.logger = logging.getMessagesLog( getClass() );
-        this.masterDelegateInvocationHandler = masterDelegateInvocationHandler;
-        availabilityGuard.grant(this);
+        this.recovery = recovery;
     }
 
     @Override
@@ -61,41 +44,7 @@ public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGua
     {
         if ( error == ErrorState.TX_MANAGER_NOT_OK )
         {
-            try
-            {
-                int myEpoch = epoch.get();
-                synchronized ( dataSourceManager )
-                {
-                    if ( myEpoch != epoch.get() )
-                    {
-                        return;
-                    }
-
-                    logger.info( "Recovering from HA kernel panic" );
-                    epoch.incrementAndGet();
-                    availabilityGuard.deny(this);
-                    try
-                    {
-                        txManager.stop();
-                        dataSourceManager.stop();
-                        dataSourceManager.start();
-                        txManager.start();
-                        txManager.doRecovery();
-                        masterDelegateInvocationHandler.harden();
-                    }
-                    finally
-                    {
-                        availabilityGuard.grant(this);
-                        logger.info( "Done recovering from HA kernel panic" );
-                    }
-                }
-            }
-            catch ( Throwable t )
-            {
-                String msg = "Error while handling HA kernel panic";
-                logger.warn( msg, t );
-                throw new RuntimeException( msg, t );
-            }
+            recovery.recover();
         }
         else if ( error == ErrorState.STORAGE_MEDIA_FULL )
         {
@@ -116,9 +65,4 @@ public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGua
         return ExecutionOrder.DOESNT_MATTER;
     }
 
-    @Override
-    public String description()
-    {
-        return getClass().getSimpleName();
-    }
 }

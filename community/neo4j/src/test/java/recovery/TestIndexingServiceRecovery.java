@@ -39,12 +39,11 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
-import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.LogTestUtils;
 import org.neo4j.test.LogTestUtils.LogHook;
 import org.neo4j.test.LogTestUtils.LogHookAdapter;
@@ -173,16 +172,11 @@ public class TestIndexingServiceRecovery
                         state.databaseDependencies() )
                 {
                     @Override
-                    protected void createNeoDataSource()
+                    protected Monitors createMonitors()
                     {
-                        // Register our little special recovery listener
-                        neoDataSource = new NeoStoreXaDataSource( config,
-                                storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
-                                xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
-                                updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
-                                dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
-                                persistenceManager, lockManager, this, recoveryMonitor );
-                        xaDataSourceManager.registerDataSource( neoDataSource );
+                        Monitors monitors = super.createMonitors();
+                        monitors.addMonitorListener( recoveryMonitor );
+                        return monitors;
                     }
                 };
             }

@@ -50,6 +50,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
 import org.neo4j.kernel.GraphDatabaseDependencies;
@@ -60,9 +61,8 @@ import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HANewSnapshotFunction;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
+import org.neo4j.kernel.ha.cluster.HighAvailability;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberContext;
-import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
@@ -87,10 +87,10 @@ import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
+import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -130,6 +130,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private DelegateInvocationHandler memberContextDelegateInvocationHandler;
     private DelegateInvocationHandler clusterMemberAvailabilityDelegateInvocationHandler;
     private HighAvailabilityModeSwitcher highAvailabilityModeSwitcher;
+    private HaRecovery recovery;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
@@ -157,8 +158,33 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         super.create();
 
-        kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( xaDataSourceManager,
-                (TxManager) txManager, availabilityGuard, logging, masterDelegateInvocationHandler ) );
+        recovery = new HaRecovery( xaDataSourceManager, logging.getMessagesLog( HaRecovery.class ), availabilityGuard,
+                txManager, masterDelegateInvocationHandler );
+
+        highAvailabilityModeSwitcher =
+                new HighAvailabilityModeSwitcher( new SwitchToSlave( logging.getConsoleLog(
+                        HighAvailabilityModeSwitcher.class ), config,
+                        (HaIdGeneratorFactory) idGeneratorFactory,
+                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
+                        updateableSchemaState, monitors, kernelExtensions.listFactories(), this, fileSystem,
+                        (HaXaDataSourceManager) xaDataSourceManager, recovery, storeLocker, indexStore, txManager, nodeManager, neoDataSourceFactory ),
+
+                        new SwitchToMaster( logging, msgLog, this,
+                                (HaIdGeneratorFactory) idGeneratorFactory, config, txManager, xaDataSourceManager,
+                                masterDelegateInvocationHandler, clusterMemberAvailability, recovery, monitors ),
+                        clusterClient, clusterMemberAvailability,
+                        logging.getMessagesLog( HighAvailabilityModeSwitcher.class )
+                );
+
+        clusterClient.addBindingListener( highAvailabilityModeSwitcher );
+        memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );
+
+        /*
+         * We always need the mode switcher and we need it to restart on switchover.
+         */
+        paxosLife.add( highAvailabilityModeSwitcher );
+
+        kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( availabilityGuard, recovery ) );
         life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
                 requestContextFactory, txManager, availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog ) );
 
@@ -253,7 +279,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         XaDataSourceManager toReturn = new HaXaDataSourceManager( logging.getMessagesLog( HaXaDataSourceManager.class
         ) );
         requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ).toIntegerIndex(),
-                toReturn, dependencyResolver );
+                toReturn, new Provider<AbstractTransactionManager>()
+        {
+            @Override
+            public AbstractTransactionManager instance()
+            {
+                return txManager;
+            }
+        } );
         return toReturn;
     }
 
@@ -421,27 +454,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
-        highAvailabilityModeSwitcher =
-                new HighAvailabilityModeSwitcher( new SwitchToSlave( logging.getConsoleLog(
-                        HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
-                        (HaIdGeneratorFactory) idGeneratorFactory,
-                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
-                        updateableSchemaState, monitors, kernelExtensions.listFactories() ),
-                        new SwitchToMaster( logging, msgLog, this,
-                                (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
-                                masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
-                        clusterClient, clusterMemberAvailability,
-                        logging.getMessagesLog( HighAvailabilityModeSwitcher.class )
-                );
-
-        clusterClient.addBindingListener( highAvailabilityModeSwitcher );
-        memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );
-
-        /*
-         * We always need the mode switcher and we need it to restart on switchover.
-         */
-        paxosLife.add( highAvailabilityModeSwitcher );
-
         /*
          * We don't really switch to master here. We just need to initialize the idGenerator so the initial store
          * can be started (if required). In any case, the rest of the database is in pending state, so nothing will
@@ -541,7 +553,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected void registerRecovery()
     {
-        memberStateMachine.addHighAvailabilityMemberListener( new HighAvailabilityMemberListener()
+/*        memberStateMachine.addHighAvailabilityMemberListener( new HighAvailabilityMemberListener()
         {
             @Override
             public void masterIsElected( HighAvailabilityMemberChangeEvent event )
@@ -603,7 +615,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     }
                 }
             }
-        } );
+        } );*/
     }
 
     @Override
@@ -673,6 +685,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     else if ( RequestContextFactory.class.isAssignableFrom( type ) )
                     {
                         result = type.cast( requestContextFactory );
+                    }
+                    else if ( HighAvailability.class.isAssignableFrom( type ) )
+                    {
+                        result = type.cast( memberStateMachine );
                     }
                     else
                     {

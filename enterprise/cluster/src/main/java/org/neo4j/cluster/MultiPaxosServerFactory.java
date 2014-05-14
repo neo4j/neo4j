@@ -134,7 +134,7 @@ public class MultiPaxosServerFactory
                     Executor stateMachineExecutor, final MultiPaxosContext context,
                     StateMachine[] machines )
     {
-        StateMachines stateMachines = new StateMachines( input, output, timeouts, executor, stateMachineExecutor, me );
+        StateMachines stateMachines = new StateMachines( logging.getMessagesLog( StateMachines.class ), input, output, timeouts, executor, stateMachineExecutor, me );
 
         for ( StateMachine machine : machines )
         {
