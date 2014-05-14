@@ -93,7 +93,21 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
     pattern.semanticCheck(Pattern.SemanticContext.Match) chain
     hints.semanticCheck chain
     where.semanticCheck chain
-    checkHints
+    checkHints chain
+    checkUsageBoundIds
+
+  def checkUsageBoundIds:  SemanticState => Seq[SemanticError] = (state) => {
+    pattern.elements.collect {
+      case Left(r @ RelationshipPattern(Some(id), _, types, _, props, _))
+        if state.hasSymbol(id.name) && (types.nonEmpty || props.isDefined) =>
+
+        SemanticError("Cannot add types or properties on a relationship which is already bound", r.position)
+      case Right(n @ NodePattern(Some(id), labels, props, _))
+        if state.hasSymbol(id.name) && (labels.nonEmpty || props.isDefined) =>
+
+        SemanticError("Cannot add labels or properties on a node which is already bound", n.position)
+    }
+  }
 
   def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {

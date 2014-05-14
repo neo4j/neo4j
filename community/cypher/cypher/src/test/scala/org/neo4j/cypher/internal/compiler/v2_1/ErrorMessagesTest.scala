@@ -371,6 +371,12 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     expectError("match (a)-[r]->(b)-[r]-(c) return r", "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 21)")
   }
 
+  test("should forbid to match properties or labels on already bound identifiers") {
+    expectError("match a with a match (a {name: 'foo'})-->(b) return a",
+    "Cannot add labels or properties on a node which is already bound (line 1, column 22)"
+    )
+  }
+
   def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
