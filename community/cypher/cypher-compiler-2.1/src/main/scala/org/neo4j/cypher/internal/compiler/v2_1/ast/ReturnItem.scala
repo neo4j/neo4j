@@ -26,13 +26,23 @@ sealed trait ReturnItems extends ASTNode with SemanticCheckable {
 }
 
 case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition) extends ReturnItems {
-  def semanticCheck = items.semanticCheck
+  def semanticCheck = items.semanticCheck chain
+    ensureProjectedToUniqueIds
 
   def declareIdentifiers(currentState: SemanticState) =
     items.foldSemanticCheck(item => item.alias match {
       case Some(identifier) => identifier.declare(item.expression.types(currentState))
       case None             => SemanticCheckResult.success
     })
+
+  private def ensureProjectedToUniqueIds: SemanticCheck = {
+    items.groupBy(_.name).foldLeft(SemanticCheckResult.success) {
+       case (acc, (k, items)) if items.size > 1 =>
+        acc chain SemanticError("Cannot project different values to the same column", items.head.position)
+       case (acc, _) =>
+         acc
+    }
+  }
 }
 
 case class ReturnAll()(val position: InputPosition) extends ReturnItems {
