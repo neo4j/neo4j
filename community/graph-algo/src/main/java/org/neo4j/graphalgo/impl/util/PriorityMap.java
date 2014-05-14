@@ -44,7 +44,7 @@ public class PriorityMap<E, K, P>
 
         Entry( Node<E, P> node )
         {
-            this( node.head.entity, node.priority );
+            this( node.head.entity, node.head.priority );
         }
 
         public E getEntity()
@@ -58,7 +58,7 @@ public class PriorityMap<E, K, P>
         }
     }
 
-    @SuppressWarnings( "unchecked" )
+    @SuppressWarnings( "rawtypes" )
     private static final Converter SELF_KEY = new Converter()
     {
         @Override
@@ -71,7 +71,7 @@ public class PriorityMap<E, K, P>
     public static <K, P> PriorityMap<K, K, P> withSelfKey(
             Comparator<P> priority )
     {
-        return new PriorityMap<K, K, P>( SELF_KEY, priority );
+        return new PriorityMap<K, K, P>( SELF_KEY, priority, true );
     }
 
     private static class NaturalPriority<P extends Comparable<P>> implements
@@ -87,14 +87,7 @@ public class PriorityMap<E, K, P>
         @Override
         public int compare( P o1, P o2 )
         {
-            if ( reversed )
-            {
-                return o2.compareTo( o1 );
-            }
-            else
-            {
-                return o1.compareTo( o2 );
-            }
+            return reversed ? o2.compareTo( o1 ) : o1.compareTo( o2 );
         }
     }
     public static <E, K, P extends Comparable<P>> PriorityMap<E, K, P> withNaturalOrder(
@@ -105,29 +98,43 @@ public class PriorityMap<E, K, P>
     public static <E, K, P extends Comparable<P>> PriorityMap<E, K, P> withNaturalOrder(
             Converter<K, E> key, boolean reversed )
     {
+        return withNaturalOrder( key, reversed, true );
+    }
+    public static <E, K, P extends Comparable<P>> PriorityMap<E, K, P> withNaturalOrder(
+            Converter<K, E> key, boolean reversed, boolean onlyKeepBestPriorities )
+    {
         Comparator<P> priority = new NaturalPriority<P>( reversed );
-        return new PriorityMap<E, K, P>( key, priority );
+        return new PriorityMap<E, K, P>( key, priority, onlyKeepBestPriorities );
     }
 
     public static <K, P extends Comparable<P>> PriorityMap<K, K, P> withSelfKeyNaturalOrder()
     {
         return PriorityMap.<K, P>withSelfKeyNaturalOrder( false );
     }
-    @SuppressWarnings( "unchecked" )
+
     public static <K, P extends Comparable<P>> PriorityMap<K, K, P> withSelfKeyNaturalOrder(
             boolean reversed )
     {
+        return PriorityMap.<K, P>withSelfKeyNaturalOrder( reversed, true );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public static <K, P extends Comparable<P>> PriorityMap<K, K, P> withSelfKeyNaturalOrder(
+            boolean reversed, boolean onlyKeepBestPriorities )
+    {
         Comparator<P> priority = new NaturalPriority<P>( reversed );
-        return new PriorityMap<K, K, P>( SELF_KEY, priority );
+        return new PriorityMap<K, K, P>( SELF_KEY, priority, onlyKeepBestPriorities );
     }
 
     private final Converter<K, E> keyFunction;
     private final Comparator<P> order;
+    private final boolean onlyKeepBestPriorities;
 
-    private PriorityMap( Converter<K, E> key, Comparator<P> priority )
+    private PriorityMap( Converter<K, E> key, Comparator<P> priority, boolean onlyKeepBestPriorities )
     {
         this.keyFunction = key;
         this.order = priority;
+        this.onlyKeepBestPriorities = onlyKeepBestPriorities;
     }
 
     /**
@@ -149,21 +156,55 @@ public class PriorityMap<E, K, P>
         Node<E, P> node = map.get( key );
         boolean result = false;
         if ( node != null )
-        {
-            if ( priority.equals( node.priority ) )
+        {   // it already existed
+            if ( onlyKeepBestPriorities )
             {
-                node.head = new Link<E>( entity, node.head );
-                result = true;
+                if ( priority.equals( node.head.priority ) )
+                {   // ...with same priority => add as a candidate first in chain
+                    node.head = new Link<E,P>( entity, priority, node.head );
+                    result = true;
+                }
+                else if ( order.compare( priority, node.head.priority ) < 0 )
+                {   // ...with lower (better) priority => this new one replaces any existing
+                    queue.remove( node );
+                    put( entity, priority, key );
+                    result = true;
+                }
             }
-            else if ( order.compare( priority, node.priority ) < 0 )
-            {
-                queue.remove( node );
-                put( entity, priority, key );
-                result = true;
+            else
+            {   // put in the appropriate place in the node linked list
+                if ( order.compare( priority, node.head.priority ) < 0 )
+                {   // ...first in chain
+                    node.head = new Link<E,P>( entity, priority, node.head );
+                    result = true;
+                }
+                else
+                {   // we couldn't add it first in chain, go look for the appropriate place
+                    Link<E,P> link = node.head, prev = link;
+                    // skip the first one since we already compared head
+                    link = link.next;
+                    while ( link != null )
+                    {
+                        if ( order.compare( priority, link.priority ) <= 0 )
+                        {   // here's our place, put it
+                            // NODE ==> N ==> N ==> N
+                            prev.next = new Link<E,P>( entity, priority, link );
+                            result = true;
+                            break;
+                        }
+                        prev = link;
+                        link = link.next;
+                    }
+                    if ( !result )
+                    {   // not added so append last in the chain
+                        prev.next = new Link<E,P>( entity, priority, null );
+                        result = true;
+                    }
+                }
             }
         }
         else
-        {
+        {   // Didn't exist, just put
             put( entity, priority, key );
             result = true;
         }
@@ -172,7 +213,7 @@ public class PriorityMap<E, K, P>
 
     private void put( E entity, P priority, K key )
     {
-        Node<E, P> node = new Node<E, P>( entity, priority );
+        Node<E, P> node = new Node<E, P>( new Link<E,P>( entity, priority, null ) );
         map.put( key, node );
         queue.add( node );
     }
@@ -186,11 +227,7 @@ public class PriorityMap<E, K, P>
     public P get( K key )
     {
         Node<E, P> node = map.get( key );
-        if ( node == null )
-        {
-            return null;
-        }
-        return node.priority;
+        return node != null ? node.head.priority : null;
     }
 
     /**
@@ -239,30 +276,30 @@ public class PriorityMap<E, K, P>
                 @Override
                 public int compare( Node<E, P> o1, Node<E, P> o2 )
                 {
-                    return order.compare( o1.priority, o2.priority );
+                    return order.compare( o1.head.priority, o2.head.priority );
                 }
             } );
 
-    private static class Node<E, P>
+    private static class Node<E,P>
     {
-        Link<E> head;
-        final P priority;
+        private Link<E,P> head;
 
-        Node( E entity, P priority )
+        Node( Link<E,P> head )
         {
-            this.head = new Link<E>( entity, null );
-            this.priority = priority;
+            this.head = head;
         }
     }
 
-    private static class Link<E>
+    private static class Link<E,P>
     {
-        final E entity;
-        final Link<E> next;
+        private final E entity;
+        private final P priority;
+        private Link<E,P> next;
 
-        Link( E entity, Link<E> next )
+        Link( E entity, P priority, Link<E,P> next )
         {
             this.entity = entity;
+            this.priority = priority;
             this.next = next;
         }
     }
