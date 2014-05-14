@@ -6,7 +6,7 @@ div(ng-controller="CypherResultCtrl", fullscreen)
         svg(neo-graph, graph-data='frame.response.graph', ng-controller='D3GraphCtrl'
           style="pointer-events:fill;", preserveAspectRatio="xMidyMid")
         include partials/legend
-      .view-result-table.result(ng-show='isActive("table")', ng-animate = "'animate-box'")
+      .view-result-table.result(ng-show='isActive("table")')
         neo-table(table-data='frame.response.table')
         a.icon-download-alt(exportable 'ng-click'='exportCSV(frame.response.table)', tooltip-placement='left', tooltip='Download CSV')
       .view-result-error.result(ng-show='frame.detailedErrorText')

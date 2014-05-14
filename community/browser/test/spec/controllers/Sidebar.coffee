@@ -7,14 +7,18 @@ describe 'Controller: SidebarCtrl', () ->
 
   SidebarCtrl = {}
   scope = {}
+  Document = {}
 
   # Initialize the controller and a mock scope
-  beforeEach inject ($controller, $rootScope) ->
+  beforeEach inject ($controller, $rootScope, _Document_) ->
     scope = $rootScope.$new()
+    Document = _Document_
     SidebarCtrl = $controller 'SidebarCtrl', {
       $scope: scope
     }
 
-  describe 'createFolder:', ->
-
-  describe 'removeDocument', ->
+  describe '#playDocument', ->
+    it 'increases document play count', ->
+      doc = Document.create()
+      scope.playDocument(doc)
+      expect(doc.metrics.total_runs).toBe 1

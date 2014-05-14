@@ -15,10 +15,65 @@
   border-bottom: 1px solid #D6D8DA
   box-shadow: 0 1px 2px rgba(0,0,0,0.07)
 
+  .file-bar
+    color: #fff
+    height: 49px
+    display: none
+    background: #69707E
+    line-height: 49px
+    padding: 0 24px
+    &.enabled
+      display: block
+    .title
+      float: left;
+      line-height: 49px
+      font-size: 15px
+      .edited
+        font-size: 10px;
+        position: relative;
+        top: -2px
+        left: 9px
+        color: #7ACAFF
+      &:before
+        color: #fdcc59
+        padding-right: 6px
+    .actions
+      float: right
+      padding-top: 9px
+      a
+        float: right
+        transist: all 0.15s
+        line-height: 30px
+        text-align: center
+        border-radius: 3px
+        color: #E7E9EB
+        &.button
+          padding: 0 14px
+          font-size: 13px
+          font-weight: bold
+          margin-right: 6px
+          color: #E7E9EB
+          border: 2px solid #E7E9EB
+          line-height: 26px
+        &.icon
+          background: rgba(0,0,0,0.4)
+          font-size: 18px
+          width: 30px
+        &:hover
+          color: #333946
+          background: #E7E9EB
+
+  .starred
+    display: none
+    position: absolute
+    &.enabled
+      display: block
+
   textarea
     opacity: 0 // avoid being displayed before CodeMirror has loaded
 
   .view-editor
+    position: relative
     transist: min-height
     min-height: 0%
     overflow-y: auto
@@ -61,7 +116,7 @@
 
   ul.controls
     z-index: 1000
-    fixed: top 20px right 16px
+    absolute: top 20px right 16px
     .divider
       margin: 0 6px
       width: 1px

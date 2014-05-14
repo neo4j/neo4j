@@ -25,7 +25,17 @@ angular.module('neo4jApp.directives')
       replace: yes
       restrict: 'E'
       link: (scope, elm, attr) ->
-        predicate = null
+        entityMap = {
+          "&": "&amp;",
+          "<": "&lt;",
+          ">": "&gt;",
+          '"': '&quot;',
+          "'": '&#39;',
+          "/": '&#x2F;'
+        };
+
+        escapeHtml = (string) ->
+          String(string).replace(/[&<>"'\/]/g, (s) -> entityMap[s])
 
         unbind = scope.$watch attr.tableData, (result) ->
           return unless result
@@ -40,13 +50,13 @@ angular.module('neo4jApp.directives')
 
         cell2html = (cell) ->
           if angular.isString(cell)
-            cell
+            escapeHtml(cell)
           else if angular.isArray(cell)
             (cell2html(el) for el in cell).join(', ')
           else if angular.isObject(cell)
             json2html(cell)
           else
-            JSON.stringify(cell)
+            escapeHtml(JSON.stringify(cell))
 
         # Manual rendering function due to performance reasons
         # (repeat watchers are expensive)
@@ -59,7 +69,7 @@ angular.module('neo4jApp.directives')
             html += "<th>#{col}</th>"
           html += "</tr></thead>"
           html += "<tbody>"
-          for row in result.rows()
+          for row in rows
             html += "<tr>"
             for cell in row
               html += '<td>' + cell2html(cell) + '</td>'

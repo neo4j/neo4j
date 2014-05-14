@@ -1,0 +1,12 @@
+div(fullscreen)
+  include partials/frame-common-actions
+  .inner
+    .view-result.account(ng-show='!frame.hasErrors')
+      span(ng-show='frame.isLoading') Initated login...
+      span(ng-show='!frame.isLoading', ng-bind-template="Logged in as {{currentUser.name}} ({{currentUser.email}})")
+
+    .status-bar.error(ng-show='frame.hasErrors')
+      div
+        span
+          .icon-warning-sign
+          {{frame.errorText}}

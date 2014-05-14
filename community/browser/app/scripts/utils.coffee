@@ -41,6 +41,9 @@ angular.module('neo4jApp.utils', [])
         result = func.apply(context, args) if callNow
         result
 
+    firstWord: (input) ->
+      input.split(/\n| /)[0]
+
     parseId: (resource = "") ->
       id = resource.substr(resource.lastIndexOf("/")+1)
       return parseInt(id, 10)
@@ -51,6 +54,11 @@ angular.module('neo4jApp.utils', [])
       rv.push row for row in rows when row.indexOf('//') isnt 0
       rv.join("\n")
 
-    firstWord: (input) ->
-      input.split(/\n| /)[0] 
+    timeNow: -> (new Date()).getTime()
+
+    updateAverage: (newVal, avg = 0, count = 0) ->
+      avg = (avg*count++) + newVal
+      parseInt(avg / count, 10)
+
+
   ])

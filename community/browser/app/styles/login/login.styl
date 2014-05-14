@@ -1,0 +1,62 @@
+@import 'nib'
+@import 'mixins'
+
+html, body
+  margin 0
+  padding 0
+  -webkit-font-smoothing: antialiased
+
+*
+  word-wrap: break-word
+  outline: none
+
+body
+  font: 13px 'Helvetica Neue', Helvetica, Arial, sans-serif
+  // background: #222
+  color: #E6E8EB
+  overflow: hidden
+
+//html
+
+.expand
+  display: none
+  //background: radial-gradient(ellipse at center, rgba(34,34,34,0.91) 0%,rgba(34,34,34,1) 100%);
+  background: rgba(34,34,34,0.95);
+  stretch()
+
+.wrapper
+  width: 380px
+  margin: 0 auto
+  margin-top: 22%
+
+h1
+  text-align: center
+  font-size: 25px
+  font-weight: normal
+  margin: 0 0 36px
+
+.btn
+  margin: 0
+  text-decoration: none
+  text-align: center
+  display: block
+  vertical-align: middle
+  zoom: 1
+  border-radius: 6px
+  box-shadow: none
+  transition: all 0.3s
+  text-shadow: none
+  border: none
+  padding: 12px
+
+  font-size: 19px
+  background: rgba(230, 232, 235, 0.1);
+  color: #E6E8EB
+  border: 2px solid #E6E8EB
+
+  &:hover
+    background: #E6E8EB
+    color: #22262E
+
+  &:active
+    opacity: 0.6

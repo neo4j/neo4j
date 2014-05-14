@@ -23,13 +23,28 @@ along with this program.  If not, see <http://www.gnu.org/licenses/>.
 angular.module('neo4jApp.services')
   .factory 'Persistable', [
     'localStorageService'
-    (localStorageService) ->
+    'Utils'
+    (localStorageService, Utils) ->
       class Persistable
         # Set all properties and generate an ID if missing
         constructor: (data = {})->
           if angular.isObject(data)
             angular.extend(@, data)
           @id ?= UUID.genV1().toString()
+          @timestamps ?= {}
+          now = Utils.timeNow()
+          @timestamps = angular.extend({
+            created_at: now
+            updated_at: now
+          }, @timestamps)
+
+        toJSON: ->
+          {@id, @timestamps}
+
+        update: (data, silent = no) ->
+          return unless angular.isObject(data)
+          angular.extend(@, data)
+          @timestamps?.updated_at = Utils.timeNow() unless silent
 
         #
         # Class methods

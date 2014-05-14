@@ -19,7 +19,7 @@ describe 'Utils: firstWord', () ->
     text = """
           cypher queries
           will often be more
-          legible on multiple lines 
+          legible on multiple lines
           than squashed onto a single line
           """
     expect(Utils.firstWord text).toBe 'cypher'
@@ -31,3 +31,10 @@ describe 'Utils: firstWord', () ->
           still extractable
           """
     expect(Utils.firstWord text).toBe 'alone'
+
+  describe '#updateAverage', ->
+    it 'creates new average with only one parameter', ->
+      expect(Utils.updateAverage(100)).toBe 100
+
+    it 'updates existing average', ->
+      expect(Utils.updateAverage(100, 100, 2)).toBe(100)
