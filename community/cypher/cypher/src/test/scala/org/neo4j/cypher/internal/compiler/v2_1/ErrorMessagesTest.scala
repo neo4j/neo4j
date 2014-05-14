@@ -385,6 +385,13 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
+  test("should not allow binding a path name that is already bound") {
+    expectError(
+      "match p = a with p,a match p = a-->b return a",
+      "p already declared (line 1, column 28)\n\"match p = a with p,a match p = a-->b return a"
+    )
+  }
+
   def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
