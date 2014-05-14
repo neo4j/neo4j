@@ -19,9 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 
 trait PlanningStrategy {
-  def plan(implicit context: LogicalPlanContext): QueryPlan
+  def plan(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): QueryPlan
+}
+
+trait QueryGraphSolver {
+  def plan(implicit context: QueryGraphSolvingContext, leafPlan: Option[QueryPlan] = None): QueryPlan
 }

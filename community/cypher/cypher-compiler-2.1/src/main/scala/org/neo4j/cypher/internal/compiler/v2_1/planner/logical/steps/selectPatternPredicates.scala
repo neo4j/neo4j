@@ -25,37 +25,39 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 case class selectPatternPredicates(simpleSelection: PlanTransformer) extends PlanTransformer {
   private object candidateListProducer extends CandidateGenerator[PlanTable] {
-    def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+    def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
       val queryGraph = context.queryGraph
       val applyCandidates =
         for (
           lhs <- planTable.plans;
-          pattern <- queryGraph.selections.patternPredicatesGiven(lhs.coveredIds) if applicable(lhs, queryGraph, pattern))
+          pattern <- queryGraph.selections.patternPredicatesGiven(lhs.availableSymbols)
+          if applicable(lhs, queryGraph, pattern))
         yield {
           pattern match {
             case p@Not(patternExpression: PatternExpression) =>
               val rhs = rhsPlan(context, patternExpression)
-              AntiSemiApplyPlan(lhs, rhs, patternExpression, p)
+              planAntiSemiApply(lhs, rhs, patternExpression, p)
             case p@Ors(Not(patternExpression: PatternExpression) :: tail) if doesNotContainPatterns(tail) =>
               val rhs = rhsPlan(context, patternExpression)
-              SelectOrAntiSemiApplyPlan(lhs, rhs, onePredicate(tail), pattern, p)
+              planSelectOrAntiSemiApply(lhs, rhs, onePredicate(tail), pattern)
             case p@Ors((patternExpression: PatternExpression) :: tail) if doesNotContainPatterns(tail) =>
               val rhs = rhsPlan(context, patternExpression)
-              SelectOrSemiApplyPlan(lhs, rhs, onePredicate(tail), pattern, p)
+              planSelectOrSemiApply(lhs, rhs, onePredicate(tail), pattern)
             case patternExpression: PatternExpression =>
               val rhs = rhsPlan(context, patternExpression)
-              SemiApplyPlan(lhs, rhs, patternExpression, patternExpression)
+              planSemiApply(lhs, rhs, patternExpression)
           }
         }
 
       CandidateList(applyCandidates)
     }
 
-    private def rhsPlan(context: LogicalPlanContext, pattern: PatternExpression) = {
-      val qg = context.queryGraph.subQueriesLookupTable.getOrElse(pattern,
+    private def rhsPlan(context: QueryGraphSolvingContext, pattern: PatternExpression) = {
+      val qg = context.subQueriesLookupTable.getOrElse(pattern,
         throw new ThisShouldNotHappenError("Davide/Stefan", s"Did not find QueryGraph for pattern expression $pattern")
       )
       context.strategy.plan(context.copy(queryGraph = qg))
@@ -69,18 +71,17 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
     }
 
     private def applicable(outerPlan: QueryPlan, qg: QueryGraph, expression: Expression) = {
-      val providedIds = outerPlan.coveredIds
-      val hasDependencies = qg.argumentIds.forall(providedIds.contains)
-      val isSolved = outerPlan.solved.selections.contains(expression)
-      hasDependencies && !isSolved
+      val symbolsAvailable = qg.argumentIds.subsetOf(outerPlan.availableSymbols)
+      val isSolved = outerPlan.solved.graph.selections.contains(expression)
+      symbolsAvailable && !isSolved
     }
   }
 
-  def apply(input: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
+  def apply(input: QueryPlan)(implicit context: QueryGraphSolvingContext): QueryPlan = {
     val plan = simpleSelection(input)
 
     def findBestPlanForPatternPredicates(plan: QueryPlan): QueryPlan = {
-      val secretPlanTable = PlanTable(Map(plan.coveredIds -> plan))
+      val secretPlanTable = PlanTable(Map(plan.availableSymbols -> plan))
       val result: CandidateList = candidateListProducer(secretPlanTable)
       result.bestPlan(context.cost).getOrElse(plan)
     }

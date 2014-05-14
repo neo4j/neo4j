@@ -33,11 +33,9 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
     when(planContext.getOptLabelId("X")).thenReturn(None)
     implicit val planner = newPlanner(newMetricsFactory)
 
-    val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-
     produceLogicalPlan("MATCH p = (a:X)-[r]->(b) RETURN p") should equal(
       Projection(
-        Expand( NodeByLabelScan("a",  Left("X"))(), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength )(patternRel),
+        Expand( NodeByLabelScan("a",  Left("X")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength ),
         expressions = Map(
           "p" -> PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
         )
@@ -61,7 +59,7 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
             Identifier("a")_,
             FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, pathExpr)_)_
           )_),
-          Expand( NodeByLabelScan("a",  Left("X"))(), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength )(patternRel)
+          Expand( NodeByLabelScan("a",  Left("X")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength )
         ),
         expressions = Map("b" -> Identifier("b") _)
       )

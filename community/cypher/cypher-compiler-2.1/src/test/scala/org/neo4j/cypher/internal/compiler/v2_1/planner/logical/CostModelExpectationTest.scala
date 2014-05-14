@@ -39,7 +39,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
     val cost1 = cost(
       Selection(
         Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
-        NodeByLabelScan("a", Left("Label"))()
+        NodeByLabelScan("a", Left("Label"))
       )
     )
 
@@ -63,7 +63,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
     val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
 
     val cost1 = cost(
-      NodeByLabelScan("a", Left("Label"))()
+      NodeByLabelScan("a", Left("Label"))
     )
 
     val cost2 = cost(
@@ -119,14 +119,14 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
           AllNodesScan("b")
         ),
         "b", Direction.OUTGOING, Seq.empty, "c", "r1", SimplePatternLength
-      )( mockRel )
+      )
     )
 
     val cost2 = cost(
       Expand(
         AllNodesScan("a"),
         "a", Direction.OUTGOING, Seq.empty, "d", "r2", SimplePatternLength
-      )( mockRel )
+      )
     )
 
     cost1 should be < cost2
@@ -150,7 +150,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
           AllNodesScan("a")
         ),
         "a", Direction.BOTH, relTypeX, "start", "rel", SimplePatternLength
-      )( mockRel )
+      )
     )
 
     val cost2 = cost(
@@ -159,7 +159,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
         Expand(
           AllNodesScan("start"),
           "start", Direction.BOTH, relTypeX, "a", "rel", SimplePatternLength
-        )( mockRel )
+        )
       )
     )
 

@@ -20,12 +20,12 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
 
-object verifyBestPlan extends PlanTransformer {
-  def apply(plan: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
-    if (!context.queryGraph.equivalent(plan.solved))
+object verifyBestPlan {
+  def apply(plan: QueryPlan)(implicit context: LogicalPlanningContext): QueryPlan = {
+    if (context.query != plan.solved)
       throw new CantHandleQueryException()
     plan
   }

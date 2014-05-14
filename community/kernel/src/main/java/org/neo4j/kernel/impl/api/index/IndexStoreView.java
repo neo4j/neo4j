@@ -20,13 +20,10 @@
 package org.neo4j.kernel.impl.api.index;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
-import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
-import org.neo4j.kernel.api.properties.Property;
 
 /** The indexing services view of the universe. */
 public interface IndexStoreView extends PropertyAccessor
@@ -50,7 +47,4 @@ public interface IndexStoreView extends PropertyAccessor
             Visitor<NodeLabelUpdate, FAILURE> labelUpdateVisitor );
 
     Iterable<NodePropertyUpdate> nodeAsUpdates( long nodeId );
-
-    @Override
-    Property getProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException, PropertyNotFoundException;
 }

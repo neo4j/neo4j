@@ -32,9 +32,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: PlanningMonitor) extends PipeBuilder {
   val tokenResolver = new SimpleTokenResolver()
-  val queryGraphBuilder = new SimpleQueryGraphBuilder
+  val plannerQueryBuilder = new SimplePlannerQueryBuilder
   val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
-  val strategy = new GreedyPlanningStrategy()
+  val strategy = new QueryPlanningStrategy()
+  val queryGraphSolver = new GreedyQueryGraphSolver()
 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
     producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)
@@ -68,13 +69,11 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
 
   def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): LogicalPlan = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
-    val queryGraph = queryGraphBuilder.produce(ast)
-
-    if (queryGraph.tail.nonEmpty)
-      throw new CantHandleQueryException
+    val (plannerQuery, subQueriesLookupTable) = plannerQueryBuilder.produce(ast)
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
-    val context = LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
+
+    val context = LogicalPlanningContext(planContext, metrics, semanticTable, plannerQuery, queryGraphSolver, subQueriesLookupTable)
     strategy.plan(context).plan
   }
 }

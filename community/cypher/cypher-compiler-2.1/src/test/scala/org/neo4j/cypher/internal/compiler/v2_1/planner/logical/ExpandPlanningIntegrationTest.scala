@@ -30,7 +30,7 @@ import org.mockito.Matchers._
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("Should build plans containing expand for single relationship pattern") {
-    implicit val statistics = newMockedStatistics
+    implicit val statistics = hardcodedStatistics
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
@@ -39,7 +39,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         Expand(
           AllNodesScan("a"),
           "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength
-        )( mockRel ),
+        ),
         Map("r" -> Identifier("r") _)
       )
     )
@@ -67,11 +67,11 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             Expand(
               AllNodesScan("a"),
               "a", Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength
-            )( newPatternRelationship("a", "b", "r1") ),
+            ),
             Expand(
               AllNodesScan("c"),
               "c", Direction.OUTGOING, Seq.empty, "d", "r2", SimplePatternLength
-            )( newPatternRelationship("c", "d", "r2") )
+            )
           )
         ),
         Map(
@@ -83,7 +83,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("Should build plans containing expand for self-referencing relationship patterns") {
-    implicit val statistics = newMockedStatistics
+    implicit val statistics = hardcodedStatistics
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
@@ -93,7 +93,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
           predicates = Seq(Equals(Identifier("a") _, Identifier("a$$$") _) _),
           left = Expand(
             AllNodesScan("a"),
-            "a", Direction.OUTGOING, Seq.empty, "a$$$", "r", SimplePatternLength)(mockRel)
+            "a", Direction.OUTGOING, Seq.empty, "a$$$", "r", SimplePatternLength)
         ),
         Map("r" -> Identifier("r") _)
       )
@@ -101,7 +101,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("Should build plans containing expand for looping relationship patterns") {
-    implicit val statistics = newMockedStatistics
+    implicit val statistics = hardcodedStatistics
     implicit val planContext = newMockedPlanContext
     implicit val planner = newPlanner(newMetricsFactory)
 
@@ -112,8 +112,8 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
           left = Selection(
             Seq(Equals(Identifier("b") _, Identifier("b$$$") _) _),
             Expand(
-              Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength)(mockRel),
-              "a", Direction.OUTGOING, Seq.empty, "b$$$", "r2", SimplePatternLength)(mockRel)
+              Expand(AllNodesScan("a"), "a", Direction.OUTGOING, Seq.empty, "b", "r1", SimplePatternLength),
+              "a", Direction.OUTGOING, Seq.empty, "b$$$", "r2", SimplePatternLength)
           )
         ),
         Map(
@@ -145,7 +145,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
             AllNodesScan("a")
           ),
           "a", Direction.BOTH, Seq(RelTypeName("x")_), "start", "rel", SimplePatternLength
-        )( newPatternRelationship("start", "a", "rel", Direction.BOTH, Seq(RelTypeName("x")_)) ),
+        ),
         Map("a" -> Identifier("a") _)
       )
     )

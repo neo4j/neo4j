@@ -38,20 +38,20 @@
 */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SelectionPlan, QueryPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, QueryGraphSolvingContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object selectCovered extends PlanTransformer {
-  def apply(plan: QueryPlan)(implicit context: LogicalPlanContext): QueryPlan = {
-    val qg = context.queryGraph
-    val coveredIds = plan.coveredIds
+  def apply(plan: QueryPlan)(implicit context: QueryGraphSolvingContext): QueryPlan = {
+    val unsolvedPredicates = context.queryGraph.selections
+      .scalarPredicatesGiven(plan.availableSymbols)
+      .filterNot(plan.solved.graph.selections.contains)
 
-    val predicates = qg.selections.scalarPredicatesGiven(coveredIds).filterNot(plan.solved.selections.contains)
-
-    if (predicates.isEmpty)
+    if (unsolvedPredicates.isEmpty)
       plan
     else {
-      SelectionPlan(predicates, plan)
+      planSelection(unsolvedPredicates, plan)
     }
   }
 }

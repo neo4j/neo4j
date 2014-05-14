@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{NodeByLabelScanPlan, QueryPlan, NodeByLabelScan}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, LogicalPlanContext, LeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, QueryGraphSolvingContext, LeafPlanner}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object labelScanLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
+  def apply(qg: QueryGraph)(implicit context: QueryGraphSolvingContext) = {
     implicit val semanticTable = context.semanticTable
     val labelPredicateMap = qg.selections.labelPredicates
 
@@ -32,7 +32,7 @@ object labelScanLeafPlanner extends LeafPlanner {
       for (idName <- qg.patternNodes.toSeq;
            labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
            labelName <- labelPredicate.labels) yield
-        NodeByLabelScanPlan(idName, labelName.either, Seq(labelPredicate))
+        planNodeByLabelScan(idName, labelName.either, Seq(labelPredicate))
     )
   }
 }

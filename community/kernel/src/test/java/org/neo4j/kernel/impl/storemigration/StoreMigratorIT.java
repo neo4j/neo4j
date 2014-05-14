@@ -40,6 +40,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
@@ -70,6 +71,8 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.findOldFormatStoreDirectory;
+import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
 public class StoreMigratorIT
 {
@@ -77,16 +80,16 @@ public class StoreMigratorIT
     public void shouldMigrate() throws IOException
     {
         // WHEN
-        new StoreMigrator( monitor ).migrate( new LegacyStore( fs,
-                new File( MigrationTestUtils.findOldFormatStoreDirectory(), NeoStore.DEFAULT_NAME ) ),
-                storeFactory.createNeoStore( storeFileName ) );
+        upgrader( new StoreMigrator( monitor, fs, idGeneratorFactory ) )
+                .migrateIfNeeded( findOldFormatStoreDirectory( storeDir ) );
 
         // THEN
         assertEquals( 100, monitor.events.size() );
         assertTrue( monitor.started );
         assertTrue( monitor.finished );
 
-        GraphDatabaseService database = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
+        GraphDatabaseService database = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
+                storeDir.getAbsolutePath() ) );
 
         DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
         verifier.verifyNodes();
@@ -102,6 +105,13 @@ public class StoreMigratorIT
         neoStore.close();
     }
 
+    private StoreUpgrader upgrader( StoreMigrator storeMigrator )
+    {
+        StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fs, StoreUpgrader.NO_MONITOR );
+        upgrader.addParticipant( storeMigrator );
+        return upgrader;
+    }
+
     @Test
     public void shouldDedupUniquePropertyIndexKeys() throws Exception
     {
@@ -109,14 +119,13 @@ public class StoreMigratorIT
         // a store that contains two nodes with property "name" of which there are two key tokens
         // that should be merged in the store migration
         // WHEN
-        File legacyStoreDir = Unzip.unzip( LegacyStore.class, "propkeydupdb.zip" );
-        new StoreMigrator( monitor ).migrate( new LegacyStore( fs,
-                new File( legacyStoreDir, NeoStore.DEFAULT_NAME ) ),
-                storeFactory.createNeoStore( storeFileName ) );
+        Unzip.unzip( LegacyStore.class, "propkeydupdb.zip", storeDir );
+        upgrader( new StoreMigrator( monitor, fs, idGeneratorFactory ) ).migrateIfNeeded( storeDir );
 
         // THEN
         // verify that the "name" property for both the involved nodes
-        GraphDatabaseService db = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
+        GraphDatabaseService db = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
+                storeDir.getAbsolutePath() ) );
         Node nodeA = getNodeWithName( db, "A" );
         assertThat( nodeA, inTx( db, hasProperty( "name" ).withValue( "A" ) ) );
 
@@ -142,21 +151,21 @@ public class StoreMigratorIT
     public void shouldMigrateEmptyDb() throws Exception
     {
         // GIVEN a store that is merely created, no additional data at all
-        File legacyStoreDir = Unzip.unzip( LegacyStore.class, "emptydb.zip" );
+        Unzip.unzip( LegacyStore.class, "emptydb.zip", storeDir );
 
         // WHEN migrating that to the new version
-        new StoreMigrator( monitor ).migrate( new LegacyStore( fs,
-                new File( legacyStoreDir, NeoStore.DEFAULT_NAME ) ),
-                storeFactory.createNeoStore( storeFileName ) );
+        upgrader( new StoreMigrator( monitor, fs, idGeneratorFactory ) ).migrateIfNeeded( storeDir );
 
         // THEN it should result in an updated database with the new store format
-        GraphDatabaseService db = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase( storeDir ) );
-        // TODO assert stuff
+        GraphDatabaseService db = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(
+                storeDir.getAbsolutePath() ) );
+        // TODO assert stuff, no?
+        db.shutdown();
     }
 
     private void assertNuDuplicates( Token[] tokens )
     {
-        Set<String> visited = new HashSet<String>();
+        Set<String> visited = new HashSet<>();
         for ( Token token : tokens )
         {
             assertTrue( visited.add( token.name() ) );
@@ -185,8 +194,9 @@ public class StoreMigratorIT
     }
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    private final String storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir().getAbsolutePath();
+    private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
+    private final IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
     private StoreFactory storeFactory;
     private File storeFileName;
 
@@ -194,9 +204,8 @@ public class StoreMigratorIT
     public void setUp()
     {
         Config config = MigrationTestUtils.defaultConfig();
-        File outputDir = new File( storeDir );
-        storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME );
-        storeFactory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
+        storeFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
+        storeFactory = new StoreFactory( config, idGeneratorFactory,
                 new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
     }
 
@@ -222,32 +231,34 @@ public class StoreMigratorIT
 
         private void verifyRelationships()
         {
-            Transaction tx = database.beginTx();
-            int traversalCount = 0;
-            for ( Relationship rel : GlobalGraphOperations.at( database ).getAllRelationships() )
+            try ( Transaction tx = database.beginTx() )
             {
-                traversalCount++;
-                verifyProperties( rel );
+                int traversalCount = 0;
+                for ( Relationship rel : GlobalGraphOperations.at( database ).getAllRelationships() )
+                {
+                    traversalCount++;
+                    verifyProperties( rel );
+                }
+                tx.success();
+                assertEquals( 500, traversalCount );
             }
-            tx.success();
-            tx.finish();
-            assertEquals( 500, traversalCount );
         }
 
         private void verifyNodes()
         {
             int nodeCount = 0;
-            Transaction tx = database.beginTx();
-            for ( Node node : GlobalGraphOperations.at( database ).getAllNodes() )
+            try ( Transaction tx = database.beginTx() )
             {
-                nodeCount++;
-                if ( node.getId() > 0 )
+                for ( Node node : GlobalGraphOperations.at( database ).getAllNodes() )
                 {
-                    verifyProperties( node );
+                    nodeCount++;
+                    if ( node.getId() > 0 )
+                    {
+                        verifyProperties( node );
+                    }
                 }
+                tx.success();
             }
-            tx.success();
-            tx.finish();
             assertEquals( 501, nodeCount );
         }
 
@@ -268,47 +279,32 @@ public class StoreMigratorIT
 
         private void verifyNodeIdsReused()
         {
-            Transaction transaction = database.beginTx();
-            try
+            try ( Transaction transaction = database.beginTx() )
             {
                 database.getNodeById( 1 );
-                fail( "Node 2 should not exist" );
+                fail( "Node 1 should not exist" );
             }
             catch ( NotFoundException e )
-            {
-                //expected
-            }
-            finally {
-                transaction.finish();
+            {   // expected
             }
 
-            transaction = database.beginTx();
-            try
+            try ( Transaction transaction = database.beginTx() )
             {
                 Node newNode = database.createNode();
                 assertEquals( 1, newNode.getId() );
                 transaction.success();
             }
-            finally
-            {
-                transaction.finish();
-            }
         }
 
         private void verifyRelationshipIdsReused()
         {
-            Transaction transaction = database.beginTx();
-            try
+            try ( Transaction transaction = database.beginTx() )
             {
                 Node node1 = database.createNode();
                 Node node2 = database.createNode();
                 Relationship relationship1 = node1.createRelationshipTo( node2, withName( "REUSE" ) );
                 assertEquals( 0, relationship1.getId() );
                 transaction.success();
-            }
-            finally
-            {
-                transaction.finish();
             }
         }
 
@@ -327,7 +323,7 @@ public class StoreMigratorIT
 
     private class ListAccumulatorMigrationProgressMonitor implements MigrationProgressMonitor
     {
-        private final List<Integer> events = new ArrayList<Integer>();
+        private final List<Integer> events = new ArrayList<>();
         private boolean started = false;
         private boolean finished = false;
 

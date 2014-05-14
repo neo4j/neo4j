@@ -19,17 +19,11 @@
  */
 package org.neo4j.ha;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.test.ha.ClusterManager.fromXml;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-
 import java.net.URI;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 
 import org.hamcrest.CoreMatchers;
-import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -43,17 +37,26 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+import static org.neo4j.test.ha.ClusterManager.fromXml;
+
 public class TestSlaveOnlyCluster
 {
-    public final @Rule TargetDirectory.TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+    public final TargetDirectory directory = TargetDirectory.forTest( getClass() );
 
     @Test
     public void testMasterElectionAfterMasterRecoversInSlaveOnlyCluster() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                directory.directory(), MapUtil.stringMap(),
-                MapUtil.<Integer, Map<String, String>>genericMap( 2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
-                                                                  3, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" )
+                .toURI() ),
+                directory.cleanDirectory( "masterrecovery" ), MapUtil.stringMap(),
+                MapUtil.<Integer, Map<String, String>>genericMap( 2, MapUtil.stringMap( HaSettings.slave_only.name(),
+                                "true" ),
+                        3, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ) )
+        );
 
 
         try
@@ -78,13 +81,16 @@ public class TestSlaveOnlyCluster
                 }
             };
 
-            for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : clusterManager.getDefaultCluster().getAllMembers() )
+            for ( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase : clusterManager.getDefaultCluster()
+                    .getAllMembers() )
             {
-                if (!highlyAvailableGraphDatabase.isMaster())
+                if ( !highlyAvailableGraphDatabase.isMaster() )
                 {
-                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class ).addHeartbeatListener( masterDownListener );
+                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class )
+                            .addHeartbeatListener( masterDownListener );
 
-                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class ).addClusterListener( new ClusterListener.Adapter()
+                    highlyAvailableGraphDatabase.getDependencyResolver().resolveDependency( ClusterClient.class )
+                            .addClusterListener( new ClusterListener.Adapter()
                     {
                         @Override
                         public void elected( String role, InstanceId electedMember, URI availableAtUri )
@@ -104,7 +110,7 @@ public class TestSlaveOnlyCluster
 
             electedLatch.await();
 
-            HighlyAvailableGraphDatabase slaveDatabase = clusterManager.getDefaultCluster().getAnySlave(  );
+            HighlyAvailableGraphDatabase slaveDatabase = clusterManager.getDefaultCluster().getAnySlave();
             long nodeId;
             try ( Transaction tx = slaveDatabase.beginTx() )
             {
@@ -128,10 +134,13 @@ public class TestSlaveOnlyCluster
     @Test
     public void testMasterElectionAfterSlaveOnlyInstancesStartFirst() throws Throwable
     {
-        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" ).toURI() ),
-                directory.directory(), MapUtil.stringMap(),
-                MapUtil.<Integer, Map<String, String>>genericMap( 1, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ),
-                                       2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" )) );
+        ClusterManager clusterManager = new ClusterManager( fromXml( getClass().getResource( "/threeinstances.xml" )
+                .toURI() ),
+                directory.cleanDirectory( "slaveonly" ), MapUtil.stringMap(),
+                MapUtil.<Integer, Map<String, String>>genericMap( 1, MapUtil.stringMap( HaSettings.slave_only.name(),
+                                "true" ),
+                        2, MapUtil.stringMap( HaSettings.slave_only.name(), "true" ) )
+        );
 
         try
         {

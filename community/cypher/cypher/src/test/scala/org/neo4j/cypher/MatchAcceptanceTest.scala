@@ -879,7 +879,7 @@ RETURN a.name""")
 
   test("empty collect should not contain null") {
     val n = createNode()
-    val result = execute("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, collect(x)")
+    val result = executeWithNewPlanner("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, collect(x)")
 
     result.toList should equal (List(Map("n" -> n, "collect(x)" -> List())))
   }
@@ -1189,7 +1189,20 @@ RETURN a.name""")
     val result = execute("optional match (a) with a match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
-    result shouldBe empty
+    result.toList should be(empty)
+  }
+
+  test("should not find node in the match if there is a filter on the optional match") {
+    // Given
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+
+    // when
+    val result = execute("optional match (a:Person) with a match (a)-->(b) return b").columnAs[Node]("b")
+
+    // should give us a number in the middle, not all or nothing
+    result.toList should be(empty)
   }
 
   test("optional match starting from a null node returns null") {

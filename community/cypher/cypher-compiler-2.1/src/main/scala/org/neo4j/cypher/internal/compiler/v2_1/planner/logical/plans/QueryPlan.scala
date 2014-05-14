@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
 
-case class QueryPlan(plan: LogicalPlan, solved: QueryGraph) extends Visitable[QueryPlan] {
+case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) extends Visitable[QueryPlan] {
 
-  def coveredIds: Set[IdName] = plan.availableSymbols
+  def availableSymbols: Set[IdName] = plan.availableSymbols
 
   def accept[R](visitor: Visitor[QueryPlan, R]): R = visitor.visit(this)
 

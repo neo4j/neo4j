@@ -17,10 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.kernel.impl.util;
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Query
+import org.neo4j.graphdb.DependencyResolver;
 
-trait QueryGraphBuilder {
-  def produce(ast: Query): QueryGraph
+/**
+ * Able to satisfy dependencies, later needed to be resolved by for example a {@link DependencyResolver}.
+ */
+public interface DependencySatisfier
+{
+    <T> void satisfyDependency( Class<T> type, T dependency );
 }

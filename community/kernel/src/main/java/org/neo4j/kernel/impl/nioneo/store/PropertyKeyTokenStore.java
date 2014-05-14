@@ -46,10 +46,10 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
     public PropertyKeyTokenStore( File fileName, Config config,
                                   IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                                   FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                                  DynamicStringStore nameStore )
+                                  DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler )
     {
         super(fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, nameStore);
+                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler);
     }
 
     @Override
@@ -63,14 +63,14 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
     {
         return new PropertyKeyTokenRecord( id );
     }
-    
+
     @Override
     protected void readRecord( PropertyKeyTokenRecord record, Buffer buffer )
     {
         record.setPropertyCount( buffer.getInt() );
         record.setNameId( buffer.getInt() );
     }
-    
+
     @Override
     protected void writeRecord( PropertyKeyTokenRecord record, Buffer buffer )
     {

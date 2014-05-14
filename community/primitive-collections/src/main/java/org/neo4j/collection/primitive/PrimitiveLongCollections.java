@@ -28,6 +28,8 @@ import org.neo4j.function.primitive.PrimitiveLongPredicate;
 
 import static java.util.Arrays.copyOf;
 
+import static org.neo4j.collection.primitive.PrimitiveCommons.closeSafely;
+
 /**
  * Basic and common primitive int collection utils and manipulations.
  *
@@ -445,29 +447,48 @@ public class PrimitiveLongCollections
 
     public static long single( PrimitiveLongIterator iterator )
     {
-        assertMoreItems( iterator );
-        long item = iterator.next();
-        if ( iterator.hasNext() )
+        try
         {
-            throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
-                    ", second:" + iterator.next() );
+            assertMoreItems( iterator );
+            long item = iterator.next();
+            if ( iterator.hasNext() )
+            {
+                throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
+                        ", second:" + iterator.next() );
+            }
+            closeSafely( iterator );
+            return item;
         }
-        return item;
+        catch ( NoSuchElementException exception )
+        {
+            closeSafely( iterator, exception );
+            throw exception;
+        }
     }
 
     public static long single( PrimitiveLongIterator iterator, long defaultItem )
     {
-        if ( !iterator.hasNext() )
+        try
         {
-            return defaultItem;
+            if ( !iterator.hasNext() )
+            {
+                closeSafely( iterator );
+                return defaultItem;
+            }
+            long item = iterator.next();
+            if ( iterator.hasNext() )
+            {
+                throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
+                        ", second:" + iterator.next() );
+            }
+            closeSafely( iterator );
+            return item;
         }
-        long item = iterator.next();
-        if ( iterator.hasNext() )
+        catch ( NoSuchElementException exception )
         {
-            throw new NoSuchElementException( "More than one item in " + iterator + ", first:" + item +
-                    ", second:" + iterator.next() );
+            closeSafely( iterator, exception );
+            throw exception;
         }
-        return item;
     }
 
     public static long itemAt( PrimitiveLongIterator iterator, int index )

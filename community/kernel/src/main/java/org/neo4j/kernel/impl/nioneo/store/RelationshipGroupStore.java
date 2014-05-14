@@ -45,10 +45,11 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     private int denseNodeThreshold;
 
     public RelationshipGroupStore( File fileName, Config config, IdGeneratorFactory idGeneratorFactory,
-            WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
+            WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger );
+                fileSystemAbstraction, stringLogger, versionMismatchHandler );
     }
 
     @Override

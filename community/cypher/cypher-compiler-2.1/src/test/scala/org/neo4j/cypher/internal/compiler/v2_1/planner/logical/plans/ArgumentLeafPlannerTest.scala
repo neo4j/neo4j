@@ -23,11 +23,12 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.argumentLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, CandidateList}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should return an empty candidate list argument ids is empty") {
-    implicit val context = newMockedLogicalPlanContext(newMockedPlanContext)
+    implicit val context = newMockedQueryGraphSolvingContext(newMockedPlanContext)
 
     val qg = QueryGraph(
       argumentIds = Set(),
@@ -38,7 +39,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should return an empty candidate list pattern nodes is empty") {
-    implicit val context = newMockedLogicalPlanContext(newMockedPlanContext)
+    implicit val context = newMockedQueryGraphSolvingContext(newMockedPlanContext)
 
     val qg = QueryGraph(
       argumentIds = Set("a", "b"),
@@ -49,7 +50,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
   }
 
   test("should return a plan containing all the id in argument ids and in pattern nodes") {
-    implicit val context = newMockedLogicalPlanContext(newMockedPlanContext)
+    implicit val context = newMockedQueryGraphSolvingContext(newMockedPlanContext)
 
     val qg = QueryGraph(
       argumentIds = Set("a", "b", "c"),
@@ -57,7 +58,7 @@ class ArgumentLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSup
     )
 
     argumentLeafPlanner(qg) should equal(Candidates(
-      SingleRowPlan(Set("a", "b"))
+      planSingleRow(Set("a", "b"))
     ))
   }
 }

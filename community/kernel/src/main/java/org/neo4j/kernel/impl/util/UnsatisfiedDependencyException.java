@@ -17,20 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.helpers
+package org.neo4j.kernel.impl.util;
 
-object NameSupport {
-
-  implicit class NameString(name: String) {
-    def isNamed = !unnamed
-    def unnamed = NameSupport.notNamed(name)
-  }
-
-  def newIdName(n: Int): String = "  FRESHID" + n
-
-  def unamedEntity(n: Int): String = "  UNNAMED" + n
-
-  def isNamed(x: String) = !notNamed(x)
-
-  def notNamed(x: String) = x.startsWith("  UNNAMED")
+public class UnsatisfiedDependencyException extends RuntimeException
+{
+    public UnsatisfiedDependencyException( Throwable cause )
+    {
+        super( cause );
+    }
 }

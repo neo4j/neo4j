@@ -44,11 +44,11 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     implicit val planContext = newMockedPlanContext
 
     produceLogicalPlan("MATCH n WHERE ID(n) = 0 RETURN n") should equal(
-      NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("0") _))(Seq.empty)
+      NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("0") _))
     )
 
     produceLogicalPlan("MATCH n WHERE id(n) = 0 RETURN n") should equal(
-      NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("0") _))(Seq.empty)
+      NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("0") _))
     )
   }
 }

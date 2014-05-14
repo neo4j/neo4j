@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
 import expressions.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.notNamed
 import org.neo4j.graphdb.Direction
 import collection.Seq
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken
 import org.neo4j.cypher.internal.compiler.v2_1.mutation.GraphElementPropertyFunctions
 import collection.Map
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator
 
 trait Pattern extends TypeSafe with AstNode[Pattern] {
   def possibleStartPoints: Seq[(String,CypherType)]
@@ -79,7 +79,7 @@ case class SingleNode(name: String,
   def symbolTableDependencies = properties.symboltableDependencies
 
   override def toString: String = {
-    val namePart = if (notNamed(name)) s"${name.drop(9)}" else name
+    val namePart = if (UnNamedNameGenerator.notNamed(name)) s"${name.drop(9)}" else name
     val labelPart = if (labels.isEmpty) "" else labels.mkString(":", ":", "")
     val props = if (properties.isEmpty) "" else " " + toString(properties)
     "(%s%s%s)".format(namePart, labelPart, props)

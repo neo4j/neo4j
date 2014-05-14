@@ -28,9 +28,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{AstConstructionTestSupport, RelTypeName, Query}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, AstConstructionTestSupport, RelTypeName, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.mockito.Mockito._
+import org.mockito.Matchers._
 import org.scalatest.mock.MockitoSugar
 
 trait LogicalPlanningTestSupport
@@ -72,19 +73,34 @@ trait LogicalPlanningTestSupport
 
   def newMockedMetricsFactory = spy(new SpyableMetricsFactory)
 
-  def newMockedLogicalPlanContext(planContext: PlanContext,
-                                  metrics: Metrics = self.mock[Metrics],
-                                  semanticTable: SemanticTable = self.mock[SemanticTable],
-                                  queryGraph: QueryGraph = self.mock[QueryGraph],
-                                  strategy: PlanningStrategy = new GreedyPlanningStrategy()): LogicalPlanContext =
+  def newMockedStrategy(plan: QueryPlan) = {
+    val strategy = mock[QueryGraphSolver]
+    doReturn(plan).when(strategy).plan(any(), any())
+    strategy
+  }
 
-    LogicalPlanContext(planContext, metrics, semanticTable, queryGraph, strategy)
+  def newMockedQueryGraphSolvingContext(planContext: PlanContext,
+                                        metrics: Metrics = self.mock[Metrics],
+                                        semanticTable: SemanticTable = self.mock[SemanticTable],
+                                        query: QueryGraph = QueryGraph.empty,
+                                        subQueryLookupTable: Map[PatternExpression, QueryGraph] = Map.empty,
+                                        strategy: QueryGraphSolver = new GreedyQueryGraphSolver()): QueryGraphSolvingContext =
+    QueryGraphSolvingContext(planContext, metrics, semanticTable, query, subQueryLookupTable, strategy)
+
+  def newMockedLogicalPlanningContext(planContext: PlanContext,
+                                        metrics: Metrics = self.mock[Metrics],
+                                        semanticTable: SemanticTable = self.mock[SemanticTable],
+                                        query: PlannerQuery = PlannerQuery.empty,
+                                        subQueryLookupTable: Map[PatternExpression, QueryGraph] = Map.empty,
+                                        strategy: QueryGraphSolver = new GreedyQueryGraphSolver()): LogicalPlanningContext =
+    LogicalPlanningContext(planContext, metrics, semanticTable, query, strategy, subQueryLookupTable)
 
   implicit class RichLogicalPlan(plan: QueryPlan) {
-    def asTableEntry = plan.coveredIds -> plan
+    def asTableEntry = plan.availableSymbols -> plan
   }
 
   def newMockedStatistics = mock[GraphStatistics]
+  def hardcodedStatistics = HardcodedGraphStatistics
 
   def newMockedPlanContext(implicit statistics: GraphStatistics = newMockedStatistics) = {
     val context = mock[PlanContext]
@@ -92,36 +108,38 @@ trait LogicalPlanningTestSupport
     context
   }
 
-  def newMockedQueryPlanWithProjections(ids: String*)(implicit context: LogicalPlanContext) =
+  def newMockedQueryPlanWithProjections(ids: String*)(implicit context: QueryGraphSolvingContext) = {
+    val projections = QueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
     QueryPlan(
       newMockedLogicalPlan(ids: _*),
-      QueryGraph
-        .empty
-        .addPatternNodes(ids.map(IdName).toSeq: _*)
-        .withProjections(ids.map( (id) => id -> ident(id) ).toMap)
+      PlannerQuery(
+        projection = projections,
+        graph = QueryGraph.empty.addPatternNodes(ids.map(IdName).toSeq: _*)
+      )
     )
-
-  def newMockedQueryPlan(idNames: Set[IdName])(implicit context: LogicalPlanContext): QueryPlan = {
-    val plan = newMockedLogicalPlan(idNames)
-    val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*)
-    QueryPlan( plan, qg )
   }
 
-  def newMockedQueryPlan(ids: String*)(implicit context: LogicalPlanContext): QueryPlan = {
+  def newMockedQueryPlan(idNames: Set[IdName]): QueryPlan = {
+    val plan = newMockedLogicalPlan(idNames)
+    val qg = QueryGraph.empty.addPatternNodes(idNames.toSeq: _*)
+    QueryPlan(plan, PlannerQuery(qg))
+  }
+
+  def newMockedQueryPlan(ids: String*): QueryPlan = {
     newMockedQueryPlan( ids.map(IdName).toSet )
   }
 
-  def newMockedLogicalPlan(ids: String*)(implicit context: LogicalPlanContext): LogicalPlan = FakePlan(ids.map(IdName).toSet)
+  def newMockedLogicalPlan(ids: String*): LogicalPlan = FakePlan(ids.map(IdName).toSet)
 
-  def newMockedLogicalPlan(ids: Set[IdName])(implicit context: LogicalPlanContext): LogicalPlan = FakePlan(ids)
+  def newMockedLogicalPlan(ids: Set[IdName]): LogicalPlan = FakePlan(ids)
 
-  def newMockedQueryPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): QueryPlan = {
+  def newMockedQueryPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: QueryGraphSolvingContext): QueryPlan = {
     val plan = newMockedLogicalPlan(ids)
     val qg = QueryGraph.empty.addPatternNodes(ids.toSeq: _*).addPatternRels(patterns)
-    QueryPlan( plan, qg )
+    QueryPlan(plan, PlannerQuery(qg))
   }
 
-  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: LogicalPlanContext): LogicalPlan = {
+  def newMockedLogicalPlanWithPatterns(ids: Set[IdName], patterns: Seq[PatternRelationship] = Seq.empty)(implicit context: QueryGraphSolvingContext): LogicalPlan = {
     val plan = mock[LogicalPlan]
     doReturn(s"MockedLogicalPlan(ids = $ids})").when(plan).toString
     plan

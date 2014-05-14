@@ -19,16 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SingleRowPlan, QueryPlan, SingleRow}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, LeafPlanner, CandidateList, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, LeafPlanner, QueryGraphSolvingContext}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object argumentLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit ignored: LogicalPlanContext) = {
+  def apply(qg: QueryGraph)(implicit ignored: QueryGraphSolvingContext) = {
     val givenNodeIds = qg.argumentIds intersect qg.patternNodes
     if (givenNodeIds.isEmpty)
       Candidates()
     else
-      Candidates(SingleRowPlan(givenNodeIds))
+      Candidates(planSingleRow(givenNodeIds))
   }
 }
