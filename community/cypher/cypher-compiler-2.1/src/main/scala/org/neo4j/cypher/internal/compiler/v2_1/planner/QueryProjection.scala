@@ -83,12 +83,12 @@ case class QueryProjectionImpl(projections: Map[String, Expression], sortItems: 
     QueryProjection(
       projections = projections ++ other.projections,
       sortItems = other.sortItems,
-      limit = either(limit, other.limit),
-      skip = either(skip, other.skip)
+      limit = either("LIMIT", limit, other.limit),
+      skip = either("SKIP", skip, other.skip)
     )
 
-  private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
+  private def either[T](what: String, a: Option[T], b: Option[T]): Option[T] = (a, b) match {
+    case (Some(_), Some(_)) => throw new InternalException(s"Can't join two query graphs with different $what")
     case (s@Some(_), None) => s
     case (None, s) => s
   }
