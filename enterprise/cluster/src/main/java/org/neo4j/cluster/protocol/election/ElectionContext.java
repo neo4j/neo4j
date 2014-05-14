@@ -19,6 +19,7 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import java.io.Serializable;
 import java.util.List;
 import java.util.Set;
 
@@ -26,6 +27,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.ConfigurationContext;
 import org.neo4j.cluster.protocol.LoggingContext;
 import org.neo4j.cluster.protocol.TimeoutsContext;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 
 /**
  * Context used by {@link ElectionState}.
@@ -56,7 +58,8 @@ public interface ElectionContext
 
     void startPromotionProcess( String role, final InstanceId promoteNode );
 
-    void voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials );
+    public boolean voted( String role, InstanceId suggestedNode, Comparable<Object> suggestionCredentials,
+                       long electionVersion );
 
     InstanceId getElectionWinner( String role );
 
@@ -66,7 +69,7 @@ public interface ElectionContext
 
     int getNeededVoteCount();
 
-    void cancelElection( String role );
+    public void forgetElection( String role );
 
     Iterable<String> getRolesRequiringElection();
 
@@ -84,5 +87,33 @@ public interface ElectionContext
 
     boolean hasCurrentlyElectedVoted( String role, InstanceId currentElected );
 
-    Set<InstanceId> getFailed();
+    public Set<InstanceId> getFailed();
+
+    public ClusterMessage.VersionedConfigurationStateChange newConfigurationStateChange();
+
+    public VoteRequest voteRequestForRole( ElectionRole role );
+
+    public class VoteRequest implements Serializable
+    {
+        private static final long serialVersionUID = -715604979485263049L;
+
+        private String role;
+        private long version;
+
+        public VoteRequest( String role, long version )
+        {
+            this.role = role;
+            this.version = version;
+        }
+
+        public String getRole()
+        {
+            return role;
+        }
+
+        public long getVersion()
+        {
+            return version;
+        }
+    }
 }

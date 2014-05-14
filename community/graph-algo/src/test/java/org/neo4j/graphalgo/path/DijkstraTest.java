@@ -19,6 +19,11 @@
  */
 package org.neo4j.graphalgo.path;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -28,12 +33,13 @@ import org.junit.Test;
 import org.neo4j.graphalgo.CommonEvaluators;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.path.Dijkstra;
+import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.PathExpanders;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.Traversal;
 
-import static org.junit.Assert.*;
 
 public class DijkstraTest extends Neo4jAlgoTestCase
 {
@@ -56,6 +62,40 @@ public class DijkstraTest extends Neo4jAlgoTestCase
         assertFalse( "expected at most one path", paths.hasNext() );
 
         assertPath( algo.findSinglePath( nodeA, nodeC ), nodeA, nodeB, nodeC );
+    }
+
+    @Test
+    public void canContinueGettingPathsByDiminishingCost() throws Exception
+    {
+        /*
+         * (A)-*2->(B)-*3->(C)-*1->(D)
+         *  |        \             ^ ^
+         *  |          ----*7-----/  |
+         *   \                       |
+         *     ---------*8-----------
+         */
+
+        Node nodeA = graph.makeNode( "A" );
+                     graph.makeNode( "B" );
+                     graph.makeNode( "C" );
+        Node nodeD = graph.makeNode( "D" );
+
+        // Path "1"
+        graph.makeEdge( "A", "B", "length", 2d );
+        graph.makeEdge( "B", "C", "length", 3d );
+        graph.makeEdge( "C", "D", "length", 1d ); // = 6
+
+        // Path "2"
+        graph.makeEdge( "B", "D", "length", 5d ); // = 7
+
+        // Path "3"
+        graph.makeEdge( "A", "D", "length", 6d ); // = 8
+
+        Dijkstra algo = new Dijkstra( Traversal.expanderForAllTypes( Direction.OUTGOING ),
+                CommonEvaluators.doubleCostEvaluator( "length" ), false );
+
+        assertPaths( algo.findAllPaths( nodeA, nodeD ),
+                "A,B,C,D", "A,B,D", "A,D" );
     }
 
     @Test

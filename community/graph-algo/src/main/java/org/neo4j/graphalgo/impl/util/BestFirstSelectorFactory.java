@@ -32,30 +32,27 @@ import org.neo4j.graphdb.traversal.BranchSelector;
 import org.neo4j.graphdb.traversal.TraversalBranch;
 import org.neo4j.graphdb.traversal.TraversalContext;
 import org.neo4j.helpers.Function2;
+import org.neo4j.kernel.Traversal;
 
 import static org.neo4j.kernel.StandardExpander.toPathExpander;
 
 public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
         implements BranchOrderingPolicy
 {
+    private final PathInterest interest;
     private final Function2<Visit<P>, P, Boolean> interestPredicate;
 
-    public BestFirstSelectorFactory( boolean forMultiplePaths )
-    {
-        // If we are interested in multiple paths then we must keep around branches that have the same
-        // cost to any same end node, but if we're only interested in a single path then we can skip
-        // branches that have the same cost to any given end node and only keep one of the lowest cost branches.
-        this.interestPredicate = forMultiplePaths ?
-                new Function2<Visit<P>,P,Boolean>()
-                {
-                    @Override
-                    public Boolean apply( Visit<P> from1, P from2 )
-                    {
-                        return from1.compareTo( from2 ) >= 0;
-                    }
-                }
-                :
-                new Function2<Visit<P>,P,Boolean>()
+    public static enum PathInterest
+    {   // Ordered by how expensive they are, ASC
+
+        /* If we're only interested in a single path then we can skip branches that have the same cost
+         * to any given end node and only keep one of the lowest cost branches. */
+        singleLowest
+        {
+            @Override
+            protected <P extends Comparable<P>> Function2<Visit<P>, P, Boolean> interestFunction()
+            {
+                return new Function2<Visit<P>,P,Boolean>()
                 {
                     @Override
                     public Boolean apply( Visit<P> from1, P from2 )
@@ -63,6 +60,60 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
                         return from1.compareTo( from2 ) > 0;
                     }
                 };
+            }
+        },
+
+        /* If we are interested in multiple paths then we must keep around branches that have the same
+         * cost to any same end node. */
+        multipleLowest
+        {
+            @Override
+            protected <P extends Comparable<P>> Function2<Visit<P>, P, Boolean> interestFunction()
+            {
+                return new Function2<Visit<P>,P,Boolean>()
+                {
+                    @Override
+                    public Boolean apply( Visit<P> from1, P from2 )
+                    {
+                        return from1.compareTo( from2 ) >= 0;
+                    }
+                };
+            }
+        },
+
+        /* If we are interested in all paths then we must keep around all branches. */
+        all
+        {
+            @Override
+            protected <P extends Comparable<P>> Function2<Visit<P>, P, Boolean> interestFunction()
+            {
+                return new Function2<Visit<P>,P,Boolean>()
+                {
+                    @Override
+                    public Boolean apply( Visit<P> from1, P from2 )
+                    {
+                        return Boolean.TRUE;
+                    }
+                };
+            }
+        };
+
+        protected abstract <P extends Comparable<P>> Function2<Visit<P>,P,Boolean> interestFunction();
+    }
+
+    public static PathInterest pathInterest( boolean multiplePaths, boolean stopAfterLowestWeight )
+    {
+        if ( !multiplePaths )
+        {
+            return PathInterest.singleLowest;
+        }
+        return stopAfterLowestWeight ? PathInterest.multipleLowest : PathInterest.all;
+    }
+
+    public BestFirstSelectorFactory( PathInterest interest )
+    {
+        this.interest = interest;
+        this.interestPredicate = interest.interestFunction();
     }
 
     @Override
@@ -98,7 +149,7 @@ public abstract class BestFirstSelectorFactory<P extends Comparable<P>, D>
     public final class BestFirstSelector implements BranchSelector
     {
         private final PriorityMap<TraversalBranch, Node, P> queue =
-                PriorityMap.withNaturalOrder( CONVERTER );
+                PriorityMap.withNaturalOrder( CONVERTER, false, interest != PathInterest.all );
         private TraversalBranch current;
         private P currentAggregatedValue;
         private final PathExpander expander;
