@@ -232,7 +232,7 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
-                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null );
+                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null, null );
                 tx.create( nodeRecord );
             }
         } );
@@ -256,8 +256,8 @@ public class FullCheckIntegrationTest
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
-                Collection<DynamicRecord> newRecords = allocateFromNumbers( prependNodeId( nodeRecord.getLongId(),
-                        new long[]{42l} ),
+                Collection<DynamicRecord> newRecords = new ArrayList<>();
+                allocateFromNumbers( newRecords, prependNodeId( nodeRecord.getLongId(), new long[]{42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
@@ -301,7 +301,8 @@ public class FullCheckIntegrationTest
                 DynamicRecord record2 = notInUse( new DynamicRecord( chain.get( 1 ).getId() ) );
                 long[] data = (long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) );
                 PreAllocatedRecords allocator = new PreAllocatedRecords( 60 );
-                allocateFromNumbers( Arrays.copyOf( data, 11 ), iterator( record1 ), allocator );
+                allocateFromNumbers( new ArrayList<DynamicRecord>(), Arrays.copyOf( data, 11 ),
+                        iterator( record1 ), allocator );
 
                 NodeRecord before = inUse( new NodeRecord( data[0], false, -1, -1 ) );
                 NodeRecord after = inUse( new NodeRecord( data[0], false, -1, -1 ) );
@@ -592,8 +593,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record3 = inUse( new DynamicRecord( next.nodeLabel() ) );
                 labels[0] = nodeRecord.getLongId(); // the first id should not be a label id, but the id of the node
                 PreAllocatedRecords allocator = new PreAllocatedRecords( 60 );
-                chain.addAll( allocateFromNumbers(
-                        labels, iterator( record1, record2, record3 ), allocator ) );
+                allocateFromNumbers( chain, labels, iterator( record1, record2, record3 ), allocator );
 
                 nodeRecord.setLabelField( dynamicPointer( chain ), chain );
 
@@ -617,7 +617,8 @@ public class FullCheckIntegrationTest
 
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
-                Collection<DynamicRecord> newRecords = allocateFromNumbers(
+                Collection<DynamicRecord> newRecords = new ArrayList<>();
+                allocateFromNumbers( newRecords,
                         prependNodeId( nodeRecord.getLongId(), new long[]{42l, 42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
@@ -647,7 +648,8 @@ public class FullCheckIntegrationTest
 
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
-                Collection<DynamicRecord> newRecords = allocateFromNumbers( prependNodeId( next.node(), new long[]{42l} ),
+                Collection<DynamicRecord> newRecords = new ArrayList<>();
+                allocateFromNumbers( newRecords, prependNodeId( next.node(), new long[]{42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
@@ -879,7 +881,9 @@ public class FullCheckIntegrationTest
 
         byte[] data = serializer.serialize();
         PreAllocatedRecords dynamicRecordAllocator = new PreAllocatedRecords( data.length );
-        return AbstractDynamicStore.allocateRecordsFromBytes( data, records.iterator(), dynamicRecordAllocator );
+        Collection<DynamicRecord> result = new ArrayList<>();
+        AbstractDynamicStore.allocateRecordsFromBytes( result, data, records.iterator(), dynamicRecordAllocator );
+        return result;
     }
 
     @Test

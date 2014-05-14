@@ -162,6 +162,26 @@ public class BasicTableTest
                 return new long[] {1458489572354L};
             }
         } } );
+        result.add( new Object[] { new TableFactory()
+        {
+            @Override
+            public Table newTable( int capacity )
+            {
+                return new LongKeyLongValueUnsafeTable( capacity );
+            }
+
+            @Override
+            public boolean supportsLongs()
+            {
+                return true;
+            }
+
+            @Override
+            public Object sampleValue()
+            {
+                return new long[] {1458489572354L};
+            }
+        } } );
         return result;
     }
 
@@ -174,7 +194,7 @@ public class BasicTableTest
     public void shouldSetAndGetSmallKey() throws Exception
     {
         // GIVEN
-        Table table = factory.newTable( Primitive.BASE_CAPACITY );
+        Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY );
         long nullKey = table.nullKey();
         assertEquals( nullKey, table.key( 0 ) );
 
@@ -196,7 +216,7 @@ public class BasicTableTest
     {
         // GIVEN
         assumeTrue( factory.supportsLongs() );
-        Table table = factory.newTable( Primitive.BASE_CAPACITY );
+        Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY );
         long nullKey = table.nullKey();
         assertEquals( nullKey, table.key( 0 ) );
 
@@ -214,7 +234,7 @@ public class BasicTableTest
     {
         // GIVEN
         assumeTrue( factory.supportsLongs() );
-        Table table = factory.newTable( Primitive.BASE_CAPACITY );
+        Table table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY );
         long nullKey = table.nullKey();
         long key = 0x24F1FF3FEL;
         int index = 5;
@@ -232,7 +252,7 @@ public class BasicTableTest
     public void shouldSetHopBits() throws Exception
     {
         // GIVEN
-        Table<?> table = factory.newTable( Primitive.BASE_CAPACITY );
+        Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY );
         int index = 10;
         long hopBits = table.hopBits( index );
         assertEquals( 0L, hopBits );
@@ -249,7 +269,7 @@ public class BasicTableTest
     public void shouldMoveHopBit() throws Exception
     {
         // GIVEN
-        Table<?> table = factory.newTable( Primitive.BASE_CAPACITY );
+        Table<?> table = factory.newTable( Primitive.DEFAULT_HEAP_CAPACITY );
         int index = 10;
         table.putHopBit( index, 2 );
         table.putHopBit( index, 11 );

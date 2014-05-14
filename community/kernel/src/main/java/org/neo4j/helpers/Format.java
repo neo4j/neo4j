@@ -23,6 +23,7 @@ import java.text.DateFormat;
 import java.text.SimpleDateFormat;
 import java.util.Date;
 import java.util.TimeZone;
+import java.util.concurrent.TimeUnit;
 
 public class Format
 {
@@ -35,7 +36,7 @@ public class Format
     {
         return date( new Date(), timeZone );
     }
-    
+
     public static String date( long millis )
     {
         return date( millis, DEFAULT_TIME_ZONE );
@@ -45,7 +46,7 @@ public class Format
     {
         return date( new Date( millis ), timeZone );
     }
-    
+
     public static String date( Date date )
     {
         return date( date, DEFAULT_TIME_ZONE );
@@ -55,7 +56,7 @@ public class Format
     {
         return DATE.format( date, timeZone );
     }
-    
+
     public static String time()
     {
         return time( DEFAULT_TIME_ZONE );
@@ -65,7 +66,7 @@ public class Format
     {
         return time( new Date() );
     }
-    
+
     public static String time( long millis )
     {
         return time( millis, DEFAULT_TIME_ZONE );
@@ -75,7 +76,7 @@ public class Format
     {
         return time( new Date( millis ), timeZone );
     }
-    
+
     public static String time( Date date )
     {
         return time( date, DEFAULT_TIME_ZONE );
@@ -85,16 +86,90 @@ public class Format
     {
         return TIME.format( date, timeZone );
     }
-    
+
     public static String bytes( long bytes )
     {
         double size = bytes;
         for ( String suffix : BYTE_SIZES )
         {
-            if ( size < 1024 ) return String.format( "%.2f %s", Double.valueOf( size ), suffix );
+            if ( size < 1024 )
+            {
+                return String.format( "%.2f %s", Double.valueOf( size ), suffix );
+            }
             size /= 1024;
         }
         return String.format( "%.2f TB", Double.valueOf( size ) );
+    }
+
+    public static String duration( long durationMillis )
+    {
+        return duration( durationMillis, TimeUnit.DAYS, TimeUnit.MILLISECONDS );
+    }
+
+    public static String duration( long durationMillis, TimeUnit highestGranularity, TimeUnit lowestGranularity )
+    {
+        StringBuilder builder = new StringBuilder();
+
+        TimeUnit[] units = TimeUnit.values();
+        reverse( units );
+        boolean use = false;
+        for ( TimeUnit unit : units )
+        {
+            if ( unit.equals( highestGranularity ) )
+            {
+                use = true;
+            }
+
+            if ( use )
+            {
+                durationMillis = extractFromDuration( durationMillis, unit, builder );
+                if ( unit.equals( lowestGranularity ) )
+                {
+                    break;
+                }
+            }
+        }
+
+        return builder.toString();
+    }
+
+    private static <T> void reverse( T[] array )
+    {
+        int half = array.length >> 1;
+        for ( int i = 0; i < half; i++ )
+        {
+            T temp = array[i];
+            int highIndex = array.length-1-i;
+            array[i] = array[highIndex];
+            array[highIndex] = temp;
+        }
+    }
+
+    private static String shortName( TimeUnit unit )
+    {
+        switch ( unit )
+        {
+        case NANOSECONDS: return "ns";
+        case MICROSECONDS: return "μs";
+        case MILLISECONDS: return "ms";
+        default: return unit.name().substring( 0, 1 ).toLowerCase();
+        }
+    }
+
+    private static long extractFromDuration( long durationMillis, TimeUnit unit, StringBuilder target )
+    {
+        int count = 0;
+        long millisPerUnit = unit.toMillis( 1 );
+        while ( durationMillis >= millisPerUnit )
+        {
+            count++;
+            durationMillis -= millisPerUnit;
+        }
+        if ( count > 0 )
+        {
+            target.append( target.length() > 0 ? " " : "" ).append( count ).append( shortName( unit ) );
+        }
+        return durationMillis;
     }
 
     private Format()
@@ -106,13 +181,13 @@ public class Format
 
     public static final String DATE_FORMAT = "yyyy-MM-dd HH:mm:ss.SSSZ";
     public static final String TIME_FORMAT = "HH:mm:ss.SSS";
-    
+
     /**
      * Default time zone is UTC (+00:00) so that comparing timestamped logs from different
      * sources is an easier task.
      */
     public static final TimeZone DEFAULT_TIME_ZONE = TimeZone.getTimeZone( "UTC" );
-    
+
     private static final ThreadLocalFormat DATE = new ThreadLocalFormat( DATE_FORMAT ),
             TIME = new ThreadLocalFormat( TIME_FORMAT );
 

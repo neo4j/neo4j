@@ -28,5 +28,5 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public interface WindowPoolFactory
 {
     WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel,
-                       Config configuration, StringLogger log );
+                       Config configuration, StringLogger log, int numberOfReservedLowIds );
 }

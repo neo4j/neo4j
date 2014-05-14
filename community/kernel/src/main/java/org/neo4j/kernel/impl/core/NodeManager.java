@@ -67,6 +67,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
+
 import static org.neo4j.helpers.collection.Iterables.cast;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
 
@@ -181,7 +182,7 @@ public class NodeManager implements Lifecycle, EntityFactory
             {
                 NeoStore neoStore = ((NeoStoreXaDataSource) ds).getNeoStore();
 
-                TokenStore<?> propTokens = neoStore.getPropertyStore().getPropertyKeyTokenStore();
+                TokenStore<?> propTokens = neoStore.getPropertyKeyTokenStore();
                 TokenStore<?> labelTokens = neoStore.getLabelTokenStore();
                 TokenStore<?> relTokens = neoStore.getRelationshipTypeStore();
 
@@ -671,6 +672,16 @@ public class NodeManager implements Lifecycle, EntityFactory
     public void removeRelationshipTypeFromCache( int id )
     {
         relTypeHolder.removeToken( id );
+    }
+
+    public void removeLabelFromCache( int id )
+    {
+        labelTokenHolder.removeToken( id );
+    }
+
+    public void removePropertyKeyFromCache( int id )
+    {
+        propertyKeyTokenHolder.removeToken( id );
     }
 
     void addPropertyKeyTokens( Token[] propertyKeyTokens )

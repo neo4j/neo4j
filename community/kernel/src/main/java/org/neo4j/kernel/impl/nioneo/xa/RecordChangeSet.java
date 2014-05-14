@@ -22,12 +22,15 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 public class RecordChangeSet implements RecordAccessSet
@@ -37,6 +40,9 @@ public class RecordChangeSet implements RecordAccessSet
     private final RecordChanges<Long, RelationshipRecord, Void> relRecords;
     private final RecordChanges<Long, RelationshipGroupRecord, Integer> relGroupRecords;
     private final RecordChanges<Long, Collection<DynamicRecord>, SchemaRule> schemaRuleChanges;
+    private final RecordChanges<Integer, PropertyKeyTokenRecord, Void> propertyKeyTokenChanges;
+    private final RecordChanges<Integer, LabelTokenRecord, Void> labelTokenChanges;
+    private final RecordChanges<Integer, RelationshipTypeTokenRecord, Void> relationshipTypeTokenChanges;
 
     public RecordChangeSet( NeoStore neoStore )
     {
@@ -45,6 +51,12 @@ public class RecordChangeSet implements RecordAccessSet
         this.relRecords = new RecordChanges<>( Loaders.relationshipLoader( neoStore.getRelationshipStore() ), false );
         this.relGroupRecords = new RecordChanges<>( Loaders.relationshipGroupLoader( neoStore.getRelationshipGroupStore() ), false );
         this.schemaRuleChanges = new RecordChanges<>( Loaders.schemaRuleLoader( neoStore.getSchemaStore() ), true );
+        this.propertyKeyTokenChanges = new RecordChanges<>(
+                Loaders.propertyKeyTokenLoader( neoStore.getPropertyKeyTokenStore() ), false );
+        this.labelTokenChanges = new RecordChanges<>(
+                Loaders.labelTokenLoader( neoStore.getLabelTokenStore() ), false );
+        this.relationshipTypeTokenChanges = new RecordChanges<>(
+                Loaders.relationshipTypeTokenLoader( neoStore.getRelationshipTypeStore() ), false );
     }
 
     @Override
@@ -77,6 +89,21 @@ public class RecordChangeSet implements RecordAccessSet
         return schemaRuleChanges;
     }
 
+    public RecordChanges<Integer, PropertyKeyTokenRecord, Void> getPropertyKeyTokenChanges()
+    {
+        return propertyKeyTokenChanges;
+    }
+
+    public RecordChanges<Integer, LabelTokenRecord, Void> getLabelTokenChanges()
+    {
+        return labelTokenChanges;
+    }
+
+    public RecordChanges<Integer, RelationshipTypeTokenRecord, Void> getRelationshipTypeTokenChanges()
+    {
+        return relationshipTypeTokenChanges;
+    }
+
     @Override
     public void close()
     {
@@ -85,5 +112,8 @@ public class RecordChangeSet implements RecordAccessSet
         relRecords.close();
         schemaRuleChanges.close();
         relGroupRecords.close();
+        propertyKeyTokenChanges.close();
+        labelTokenChanges.close();
+        relationshipTypeTokenChanges.close();
     }
 }

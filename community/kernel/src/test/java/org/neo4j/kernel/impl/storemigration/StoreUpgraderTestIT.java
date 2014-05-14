@@ -29,6 +29,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -38,8 +39,8 @@ import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.SilentMigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
-import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.test.TargetDirectory;
+import org.neo4j.test.TargetDirectory.TestDirectory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -70,7 +71,7 @@ public class StoreUpgraderTestIT
     {
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, LegacyStore.LEGACY_VERSION ) );
 
-        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, idGeneratorFactory ) )
+        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
                 .migrateIfNeeded( dbDirectory );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, ALL_STORES_VERSION ) );
@@ -84,7 +85,7 @@ public class StoreUpgraderTestIT
     @Test
     public void shouldLeaveACopyOfOriginalStoreFilesInBackupDirectory() throws IOException
     {
-        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, idGeneratorFactory ) )
+        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
                 .migrateIfNeeded( dbDirectory );
 
         File backupDirectory = new File( dbDirectory, "upgrade_backup" );
@@ -95,13 +96,13 @@ public class StoreUpgraderTestIT
     }
 
     @Test
-    public void shouldBackupOriginalStoreEvenIfMessagesLogIsMissing() throws IOException
+    public void shouldBackupOriginalStoreEvenIfMessagesLogIsMissing()
     {
         // given
         fileSystem.deleteFile( new File( dbDirectory, StringLogger.DEFAULT_NAME ) );
 
         // when
-        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, idGeneratorFactory ) )
+        newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
                 .migrateIfNeeded( dbDirectory );
 
         // then
@@ -111,7 +112,7 @@ public class StoreUpgraderTestIT
     }
 
     @Test
-    public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess() throws IOException
+    public void shouldHaltUpgradeIfUpgradeConfigurationVetoesTheProcess()
     {
         UpgradeConfiguration vetoingUpgradeConfiguration = new UpgradeConfiguration()
         {
@@ -124,7 +125,7 @@ public class StoreUpgraderTestIT
 
         try
         {
-            newUpgrader( vetoingUpgradeConfiguration, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, idGeneratorFactory ) )
+            newUpgrader( vetoingUpgradeConfiguration, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
                     .migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
@@ -146,7 +147,7 @@ public class StoreUpgraderTestIT
 
         try
         {
-            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, idGeneratorFactory ) )
+            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
                     .migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
@@ -170,7 +171,7 @@ public class StoreUpgraderTestIT
         fileSystem.copyRecursively( dbDirectory, comparisonDirectory );
         try
         {
-            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, idGeneratorFactory ) )
+            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
                     .migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
@@ -194,7 +195,7 @@ public class StoreUpgraderTestIT
 
         try
         {
-            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem, idGeneratorFactory ) )
+            newUpgrader( ALLOW_UPGRADE, new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) )
                     .migrateIfNeeded( dbDirectory );
             fail( "Should throw exception" );
         }
@@ -320,15 +321,15 @@ public class StoreUpgraderTestIT
         }
     }
 
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final File dbDirectory = new File( "dir" );
-    private EphemeralFileSystemAbstraction fileSystem;
+    public final @Rule TestDirectory directory = TargetDirectory.forTest( getClass() ).testDirectory();
+    private File dbDirectory;
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
     @SuppressWarnings( "deprecation" )
     private final IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
 
     private StoreUpgrader newUpgrader( UpgradeConfiguration config, StoreMigrator migrator )
     {
-        StoreUpgrader upgrader = new StoreUpgrader( config, fs.get(), StoreUpgrader.NO_MONITOR );
+        StoreUpgrader upgrader = new StoreUpgrader( config, fileSystem, StoreUpgrader.NO_MONITOR );
         upgrader.addParticipant( migrator );
         return upgrader;
     }
@@ -336,7 +337,7 @@ public class StoreUpgraderTestIT
     @Before
     public void before() throws Exception
     {
-        fileSystem = fs.get();
+        dbDirectory = directory.directory();
         prepareSampleLegacyDatabase( fileSystem, dbDirectory );
     }
 }

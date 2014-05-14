@@ -28,6 +28,7 @@ import java.util.List;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -512,17 +513,26 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         this.updateHighId();
     }
 
-    private Collection<DynamicRecord> allocateStringRecords( byte[] chars )
+    public static void allocateStringRecords( Collection<DynamicRecord> target, byte[] chars,
+            DynamicRecordAllocator allocator )
     {
-        return stringPropertyStore.allocateRecordsFromBytes( chars );
+        AbstractDynamicStore.allocateRecordsFromBytes( target, chars,
+                IteratorUtil.<DynamicRecord>emptyIterator(), allocator );
     }
 
-    private Collection<DynamicRecord> allocateArrayRecords( Object array )
+    public static void allocateArrayRecords( Collection<DynamicRecord> target, Object array,
+            DynamicRecordAllocator allocator )
     {
-        return arrayPropertyStore.allocateRecords( array );
+        DynamicArrayStore.allocateRecords( target, array, IteratorUtil.<DynamicRecord>emptyIterator(), allocator );
     }
 
     public void encodeValue( PropertyBlock block, int keyId, Object value )
+    {
+        encodeValue( block, keyId, value, stringPropertyStore, arrayPropertyStore );
+    }
+
+    public static void encodeValue( PropertyBlock block, int keyId, Object value,
+            DynamicRecordAllocator stringAllocator, DynamicRecordAllocator arrayAllocator )
     {
         if ( value instanceof String )
         {   // Try short string first, i.e. inlined in the property block
@@ -534,7 +544,8 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
 
             // Fall back to dynamic string store
             byte[] encodedString = encodeString( string );
-            Collection<DynamicRecord> valueRecords = allocateStringRecords( encodedString );
+            Collection<DynamicRecord> valueRecords = new ArrayList<>();
+            allocateStringRecords( valueRecords, encodedString, stringAllocator );
             setSingleBlockValue( block, keyId, PropertyType.STRING, first( valueRecords ).getId() );
             for ( DynamicRecord valueRecord : valueRecords )
             {
@@ -592,7 +603,8 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             }
 
             // Fall back to dynamic array store
-            Collection<DynamicRecord> arrayRecords = allocateArrayRecords( value );
+            Collection<DynamicRecord> arrayRecords = new ArrayList<>();
+            allocateArrayRecords( arrayRecords, value, arrayAllocator );
             setSingleBlockValue( block, keyId, PropertyType.ARRAY, first( arrayRecords ).getId() );
             for ( DynamicRecord valueRecord : arrayRecords )
             {
@@ -606,7 +618,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         }
     }
 
-    private void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
+    private static void setSingleBlockValue( PropertyBlock block, int keyId, PropertyType type, long longValue )
     {
         block.setSingleBlock( keyId | (((long) type.intValue()) << 24)
                 | (longValue << 28) );
@@ -721,7 +733,9 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     }
 
     public void toLogicalUpdates( Collection<NodePropertyUpdate> target,
-            Iterable<PropertyRecordChange> changes, long[] nodeLabelsBefore, long[] nodeLabelsAfter )
+            Iterable<PropertyRecordChange> changes,
+            long[] nodeLabelsBefore,
+            long[] nodeLabelsAfter )
     {
         physicalToLogicalConverter.apply( target, changes, nodeLabelsBefore, nodeLabelsAfter );
     }

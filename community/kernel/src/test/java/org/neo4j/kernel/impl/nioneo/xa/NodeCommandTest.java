@@ -109,7 +109,7 @@ public class NodeCommandTest
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
-        nodeLabels.add( 1337, nodeStore );
+        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore() );
 
         // When
         assertSerializationWorksFor( new Command.NodeCommand( null, before, after ) );
@@ -127,7 +127,7 @@ public class NodeCommandTest
         NodeLabels nodeLabels = parseLabelsField( after );
         for ( int i = 10; i < 100; i++ )
         {
-            nodeLabels.add( i, nodeStore );
+            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore() );
         }
 
         // When

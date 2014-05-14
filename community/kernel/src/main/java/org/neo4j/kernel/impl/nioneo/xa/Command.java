@@ -907,8 +907,7 @@ public abstract class Command extends XaCommand
             {
                 return null;
             }
-            return new PropertyKeyTokenCommand( neoStore == null ? null : neoStore.getPropertyStore()
-                .getPropertyKeyTokenStore(), record );
+            return new PropertyKeyTokenCommand( neoStore == null ? null : neoStore.getPropertyKeyTokenStore(), record );
         }
     }
 

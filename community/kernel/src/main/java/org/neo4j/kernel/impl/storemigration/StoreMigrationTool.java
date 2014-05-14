@@ -24,7 +24,6 @@ import java.io.File;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensions;
@@ -61,7 +60,7 @@ public class StoreMigrationTool
         config = StoreFactory.configForStoreDir( config, new File( legacyStoreDirectory ) );
         migrationProcess.addParticipant( new StoreMigrator( new VisibleMigrationProgressMonitor( log, System.out ),
                 new UpgradableDatabase( new StoreVersionCheck( fs ) ),
-                new DefaultIdGeneratorFactory(), config ) );
+                config ) );
 
         // Add participants from kernel extensions...
         LifeSupport life = new LifeSupport();

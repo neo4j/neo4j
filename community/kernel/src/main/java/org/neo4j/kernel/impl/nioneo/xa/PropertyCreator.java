@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.util.Iterator;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecordAllocator;
+import org.neo4j.kernel.impl.nioneo.store.IdSequence;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
@@ -32,12 +34,22 @@ import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
 
 public class PropertyCreator
 {
-    private final PropertyStore propertyStore;
+    private final DynamicRecordAllocator stringRecordAllocator;
+    private final DynamicRecordAllocator arrayRecordAllocator;
+    private final IdSequence propertyRecordIdGenerator;
     private final PropertyTraverser traverser;
 
     public PropertyCreator( PropertyStore propertyStore, PropertyTraverser traverser )
     {
-        this.propertyStore = propertyStore;
+        this( propertyStore.getStringStore(), propertyStore.getArrayStore(), propertyStore, traverser );
+    }
+
+    public PropertyCreator( DynamicRecordAllocator stringRecordAllocator, DynamicRecordAllocator arrayRecordAllocator,
+            IdSequence propertyRecordIdGenerator, PropertyTraverser traverser )
+    {
+        this.stringRecordAllocator = stringRecordAllocator;
+        this.arrayRecordAllocator = arrayRecordAllocator;
+        this.propertyRecordIdGenerator = propertyRecordIdGenerator;
         this.traverser = traverser;
     }
 
@@ -71,7 +83,7 @@ public class PropertyCreator
             record.setInUse( false, block.getType().intValue() );
             propertyRecord.addDeletedRecord( record );
         }
-        propertyStore.encodeValue( block, propertyKey, value );
+        encodeValue( block, propertyKey, value );
         if ( propertyRecord.size() > PropertyType.getPayloadSize() )
         {
             propertyRecord.removePropertyBlock( propertyKey );
@@ -90,6 +102,17 @@ public class PropertyCreator
         assert traverser.assertPropertyChain( primitive, propertyRecords );
     }
 
+    public PropertyBlock encodePropertyValue( int propertyKey, Object value )
+    {
+        return encodeValue( new PropertyBlock(), propertyKey, value );
+    }
+
+    public PropertyBlock encodeValue( PropertyBlock block, int propertyKey, Object value )
+    {
+        PropertyStore.encodeValue( block, propertyKey, value, stringRecordAllocator, arrayRecordAllocator );
+        return block;
+    }
+
     public <P extends PrimitiveRecord> void primitiveAddProperty(
             RecordProxy<Long, P, Void> primitive, int propertyKey, Object value,
             RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
@@ -97,7 +120,7 @@ public class PropertyCreator
         P record = primitive.forReadingLinkage();
         assert traverser.assertPropertyChain( record, propertyRecords );
         PropertyBlock block = new PropertyBlock();
-        propertyStore.encodeValue( block, propertyKey, value );
+        encodeValue( block, propertyKey, value );
         addPropertyBlockToPrimitive( block, primitive, propertyRecords );
         assert traverser.assertPropertyChain( record, propertyRecords );
     }
@@ -139,7 +162,7 @@ public class PropertyCreator
         if ( host == null )
         {
             // First record in chain didn't fit, make new one
-            host = propertyRecords.create( propertyStore.nextId(), primitive ).forChangingData();
+            host = propertyRecords.create( propertyRecordIdGenerator.nextId(), primitive ).forChangingData();
             if ( primitive.getNextProp() != Record.NO_NEXT_PROPERTY.intValue() )
             {
                 PropertyRecord prevProp = propertyRecords.getOrLoad( primitive.getNextProp(),
@@ -157,29 +180,27 @@ public class PropertyCreator
         assert traverser.assertPropertyChain( primitive, propertyRecords );
     }
 
-    public long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyKeyAndValue> properties,
+    public long createPropertyChain( PrimitiveRecord owner, Iterator<PropertyBlock> properties,
             RecordAccess<Long, PropertyRecord, PrimitiveRecord> propertyRecords )
     {
         if ( properties == null || !properties.hasNext() )
         {
             return Record.NO_NEXT_PROPERTY.intValue();
         }
-        PropertyRecord currentRecord = propertyRecords.create( propertyStore.nextId(), owner ).forChangingData();
+        PropertyRecord currentRecord = propertyRecords.create( propertyRecordIdGenerator.nextId(), owner )
+                .forChangingData();
         currentRecord.setInUse( true );
         currentRecord.setCreated();
         PropertyRecord firstRecord = currentRecord;
         while ( properties.hasNext() )
         {
-            PropertyKeyAndValue property = properties.next();
-            int keyId = property.getKey();
-            PropertyBlock block = new PropertyBlock();
-            propertyStore.encodeValue( block, keyId, property.getValue() );
+            PropertyBlock block = properties.next();
             if ( currentRecord.size() + block.getSize() > PropertyType.getPayloadSize() )
             {
                 // Here it means the current block is done for
                 PropertyRecord prevRecord = currentRecord;
                 // Create new record
-                long propertyId = propertyStore.nextId();
+                long propertyId = propertyRecordIdGenerator.nextId();
                 currentRecord = propertyRecords.create( propertyId, owner ).forChangingData();
                 currentRecord.setInUse( true );
                 currentRecord.setCreated();
@@ -200,7 +221,7 @@ public class PropertyCreator
         PrimitiveRecord primitive = primitiveProxy.forReadingLinkage();
         long nextProp = primitive.getNextProp();
         PropertyBlock block = new PropertyBlock();
-        propertyStore.encodeValue( block, key, value );
+        encodeValue( block, key, value );
         int size = block.getSize();
 
         /*
@@ -255,7 +276,7 @@ public class PropertyCreator
          */
         if ( thatFits == null )
         {
-            thatFits = propertyRecords.create( propertyStore.nextId(), primitive );
+            thatFits = propertyRecords.create( propertyRecordIdGenerator.nextId(), primitive );
             PropertyRecord thatFitsRecord = thatFits.forChangingData();
             thatFitsRecord.setInUse( true );
 
@@ -270,30 +291,5 @@ public class PropertyCreator
         }
 
         thatFits.forChangingData().addPropertyBlock( block );
-    }
-
-    /**
-     * Mutable structure to use in iterators, just to reduce garbage.
-     */
-    public static class PropertyKeyAndValue
-    {
-        private int key;
-        private Object value;
-
-        public void set( int key, Object value )
-        {
-            this.key = key;
-            this.value = value;
-        }
-
-        public int getKey()
-        {
-            return key;
-        }
-
-        public Object getValue()
-        {
-            return value;
-        }
     }
 }
