@@ -52,7 +52,7 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val inputPlan = newMockedQueryPlan("a")
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
-    val innerPlan = Expand(SingleRow(Set("a")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)
+    val innerPlan = Expand(SingleRow(Set("a"))(), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)
 
     val candidates = applyOptional(planTable)
 

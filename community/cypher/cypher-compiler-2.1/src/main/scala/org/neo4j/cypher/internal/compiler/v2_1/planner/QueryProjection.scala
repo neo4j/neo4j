@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{SortItem, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SortItem, Expression}
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 
 trait QueryProjection {
   def projections: Map[String, Expression]
@@ -45,28 +46,10 @@ object QueryProjection {
             limit: Option[Expression] = None,
             skip: Option[Expression] = None) = QueryProjectionImpl(projections, sortItems, limit, skip)
 
-  val empty = NoProjection
-}
+  def forIds(coveredIds: Set[IdName]) =
+    apply(coveredIds.toSeq.map( idName => idName.name -> Identifier(idName.name)(null)).toMap)
 
-case object NoProjection extends QueryProjection {
-  def projections = Map.empty
-  def limit = None
-  def sortItems = Vector.empty
-  def skip = None
-
-  def withLimit(limit: Option[Expression]) = thisIfEmpty(limit, QueryProjection(limit = limit))
-  def withProjections(projections: Map[String, Expression]) = thisIfEmpty(projections, QueryProjection(projections = projections))
-  def withSortItems(sortItems: Seq[SortItem]) = thisIfEmpty(sortItems, QueryProjection(sortItems = sortItems))
-  def withSkip(skip: Option[Expression]) = thisIfEmpty(skip, QueryProjection(skip = skip))
-
-  private def thisIfEmpty[A <: { def isEmpty: Boolean }](element: A, f: => QueryProjection):QueryProjection =
-    if (element.isEmpty) this else f
-
-  def ++(other: QueryProjection): QueryProjection =
-     withLimit(other.limit)
-      .withProjections(other.projections)
-      .withSkip(other.skip)
-      .withSortItems(other.sortItems)
+  val empty = apply(Map.empty)
 }
 
 case class QueryProjectionImpl(projections: Map[String, Expression], sortItems: Seq[SortItem], limit: Option[Expression],
@@ -83,12 +66,12 @@ case class QueryProjectionImpl(projections: Map[String, Expression], sortItems: 
     QueryProjection(
       projections = projections ++ other.projections,
       sortItems = other.sortItems,
-      limit = either(limit, other.limit),
-      skip = either(skip, other.skip)
+      limit = either("LIMIT", limit, other.limit),
+      skip = either("SKIP", skip, other.skip)
     )
 
-  private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
+  private def either[T](what: String, a: Option[T], b: Option[T]): Option[T] = (a, b) match {
+    case (Some(_), Some(_)) => throw new InternalException(s"Can't join two query graphs with different $what")
     case (s@Some(_), None) => s
     case (None, s) => s
   }
@@ -104,7 +87,8 @@ case class AggregationProjection(groupingKeys: Map[String, Expression], aggregat
     throw new InternalException("Can't change type of projection")
   def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
 
-  def ++(other: QueryProjection): QueryProjection = ???
+  def ++(other: QueryProjection): QueryProjection =
+    throw new InternalException("Aggregations cannot be combined")
 
   def projections: Map[String, Expression] = groupingKeys
 }

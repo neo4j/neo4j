@@ -48,7 +48,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       SemiApply(
         AllNodesScan("a"),
         Expand(
-          SingleRow(Set("a")),
+          SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
         )
       )
@@ -60,7 +60,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       AntiSemiApply(
         AllNodesScan("a"),
         Expand(
-          SingleRow(Set("a")),
+          SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED31", "  UNNAMED23", SimplePatternLength
         )
       )
@@ -73,12 +73,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
         SemiApply(
           AllNodesScan("a"),
           Expand(
-            SingleRow(Set("a")),
+            SingleRow(Set("a"))(),
             "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
           )
         ),
         Expand(
-          SingleRow(Set("a")),
+          SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("Y")_), "  UNNAMED44", "  UNNAMED36", SimplePatternLength
         )
       )
@@ -90,7 +90,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       SelectOrSemiApply(
         AllNodesScan("a"),
         Expand(
-          SingleRow(Set("a")),
+          SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
         ),
         GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("4")_)_
@@ -103,7 +103,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       SelectOrSemiApply(
         AllNodesScan("a"),
         Expand(
-          SingleRow(Set("a")),
+          SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED42", "  UNNAMED34", SimplePatternLength
         ),
         Ors(List(
@@ -119,7 +119,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
       SelectOrAntiSemiApply(
         AllNodesScan("a"),
         Expand(
-          SingleRow(Set("a")),
+          SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED45", "  UNNAMED37", SimplePatternLength
         ),
         Equals(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("9")_)_

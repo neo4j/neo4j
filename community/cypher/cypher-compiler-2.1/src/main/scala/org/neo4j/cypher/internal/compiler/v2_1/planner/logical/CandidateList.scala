@@ -24,14 +24,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.CostModel
 
 case class CandidateList(plans: Seq[QueryPlan] = Seq.empty) {
 
-  private def sorted(cost: CostModel) =
-    CandidateList(plans.sortBy[(Double, Int)](c => (cost(c.plan), -c.availableSymbols.size)))
-
   def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
 
   def +(plan: QueryPlan) = copy(plans :+ plan)
 
-  def bestPlan(costs: CostModel): Option[QueryPlan] = sorted(costs).plans.headOption
+  def bestPlan(costs: CostModel): Option[QueryPlan] = {
+    val sortedPlans = plans.sortBy[(Double, Int)](c => (costs(c.plan), -c.availableSymbols.size))
+    sortedPlans.headOption
+  }
 
   def map(f: QueryPlan => QueryPlan): CandidateList = copy(plans = plans.map(f))
 }

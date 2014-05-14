@@ -19,13 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, CantHandleQueryException}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
 
 object verifyBestPlan {
   def apply(plan: QueryPlan)(implicit context: LogicalPlanningContext): QueryPlan = {
-    if (context.query != plan.solved)
+    val expected = context.query
+    val constructed = plan.solved
+    if (expected != constructed)
       throw new CantHandleQueryException()
     plan
   }

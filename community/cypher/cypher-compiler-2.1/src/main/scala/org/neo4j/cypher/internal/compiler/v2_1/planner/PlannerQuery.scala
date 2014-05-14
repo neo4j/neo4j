@@ -23,7 +23,7 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 
-trait PlannerQuery {
+trait PlannerQuery extends Visitable[PlannerQuery] {
   def graph: QueryGraph
   def projection: QueryProjection
   def tail: Option[PlannerQuery]
@@ -33,6 +33,10 @@ trait PlannerQuery {
   def withGraph(graph: QueryGraph): PlannerQuery
 
   def updateGraph(f: QueryGraph => QueryGraph): PlannerQuery = withGraph(f(graph))
+  def updateProjections(f: QueryProjection => QueryProjection): PlannerQuery = withProjection(f(projection))
+  def updateTail(f: PlannerQuery => PlannerQuery): PlannerQuery
+
+  def updateTailOrSelf(f: PlannerQuery => PlannerQuery): PlannerQuery = if (tail.isEmpty) f(this) else updateTail(f)
 
   def ++(other: PlannerQuery): PlannerQuery =
     PlannerQuery(
@@ -40,6 +44,8 @@ trait PlannerQuery {
       projection = projection ++ other.projection,
       tail = either(tail, other.tail)
     )
+
+  def accept[R](visitor: Visitor[PlannerQuery, R]): R = visitor.visit(this)
 
   private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
     case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
@@ -65,12 +71,14 @@ case class PlannerQueryImpl(graph: QueryGraph,
                             projection: QueryProjection,
                             tail: Option[PlannerQuery] = None) extends PlannerQuery with Visitable[PlannerQuery] {
 
-
-  def accept[R](visitor: Visitor[PlannerQuery, R]): R = visitor.visit(this)
-
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
     case None => copy(tail = Some(newTail))
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
+  }
+
+  def updateTail(f: PlannerQuery => PlannerQuery) = tail match {
+    case None            => this
+    case Some(tailQuery) => copy(tail = Some(f(tailQuery)))
   }
 
   def withProjection(projection: QueryProjection): PlannerQuery = copy(projection = projection)

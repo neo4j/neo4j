@@ -19,6 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-case class SingleRow(coveredIds: Set[IdName]) extends LogicalLeafPlan {
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+
+case class SingleRow(coveredIds: Set[IdName])
+                    (val typeInfo: Map[String, CypherType] = coveredIds.map( id => id.name -> CTNode).toMap) extends LogicalLeafPlan {
   def availableSymbols = coveredIds
 }
