@@ -22,7 +22,7 @@ div(ng-controller="CypherResultCtrl", fullscreen)
           div(ng-show='frame.response.table')
             .icon-ok
             include partials/result-status
-      .btn-group(ng-hide='frame.hasErrors')
+      .btn-group.toolbar(ng-hide='frame.hasErrors || frame.isLoading')
         a.btn.btn-small(ng-click='setActive("graph")', ng-class='{active: isActive("graph")}')
           i.icon-code-fork
         a.btn.btn-small(ng-click='setActive("table")', ng-class='{active: isActive("table")}')
@@ -30,4 +30,13 @@ div(ng-controller="CypherResultCtrl", fullscreen)
 
       span(ng-show='frame.isLoading')
         .icon-spinner.icon-spin
-        | Executing query...
+        |  Query {{frame.state }}... 
+        span(ng-show='frame.state === "expired"')
+          | Expired after about {{ settings.maxExecutionTime | duration }}
+          .btn-group
+            a.btn.btn-small.btn-danger(ng-click='frame.abort()')
+              i.icon-stop &nbsp;Abort
+            a.btn.btn-small.btn-warning(ng-click='frame.continue()')
+              i.icon-step-forward &nbsp;Continue
+            a.btn.btn-small.btn-success(ng-click='frame.block()')
+              i.icon-play &nbsp;Wait forever

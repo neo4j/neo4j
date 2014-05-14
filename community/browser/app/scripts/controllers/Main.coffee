@@ -49,6 +49,8 @@ angular.module('neo4jApp.controllers')
 
         $scope.today = Date.now()
 
+        $scope.settings = Settings
+
         $scope.cmdchar = Settings.cmdchar
 
         $scope.goodBrowser = (navigator.appName != 'Microsoft Internet Explorer' && navigator.userAgent.indexOf('Trident') == -1)
