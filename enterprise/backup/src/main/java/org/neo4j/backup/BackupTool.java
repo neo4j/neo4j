@@ -28,6 +28,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import ch.qos.logback.classic.LoggerContext;
+
 import org.neo4j.com.ComException;
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -47,8 +48,9 @@ import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class BackupTool
 {
@@ -95,6 +97,10 @@ public class BackupTool
         String to = arguments.get( TO, null );
         boolean verify = arguments.getBoolean( VERIFY, true, true );
         Config tuningConfiguration = readTuningConfiguration( TO, arguments );
+
+        if (!from.contains( ":" ))
+            from = "single://"+from;
+
         URI backupURI = null;
         try
         {
@@ -155,7 +161,10 @@ public class BackupTool
 
         try
         {
-            systemOut.println("Performing backup from '" + backupURI.toASCIIString() + "'");
+            String str = backupURI.toASCIIString();
+            if (str.contains( "://" ))
+                str = str.split( "://" )[1];
+            systemOut.println("Performing backup from '" + str + "'");
             doBackup( backupURI, to, verify, tuningConfiguration );
         }
         catch ( TransactionFailureException e )
@@ -190,10 +199,9 @@ public class BackupTool
         if ( arguments.get( FROM, null ) == null )
         {
             throw new ToolFailureException( "Please specify " + dash( FROM ) + ", examples:\n" +
-                    "  " + dash( FROM ) + " single://192.168.1.34\n" +
-                    "  " + dash( FROM ) + " single://192.168.1.34:1234\n" +
-                    "  " + dash( FROM ) + " ha://192.168.1.15:2181\n" +
-                    "  " + dash( FROM ) + " ha://192.168.1.15:2181,192.168.1.16:2181" );
+                    "  " + dash( FROM ) + " 192.168.1.34\n" +
+                    "  " + dash( FROM ) + " 192.168.1.34:1234\n" +
+                    "  " + dash( FROM ) + " 192.168.1.15:2181,192.168.1.16:2181" );
         }
 
         if ( arguments.get( TO, null ) == null )
