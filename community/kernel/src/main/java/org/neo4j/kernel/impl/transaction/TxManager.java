@@ -720,7 +720,7 @@ public class TxManager extends AbstractTransactionManager implements Lifecycle
         // TxManager.commit(Thread, TransactionImpl), wherein the monitor lock on TxManager is held!
         // It's very important that we check the tmOk state, during commit, while holding the lock on the
         // TxManager, as we could otherwise get into a situation where a transaction crashes the database
-        // during commit, while another makes it past the check and then procedes to rotate the log, making
+        // during commit, while another makes it past the check and then proceeds to rotate the log, making
         // the crashed transaction unrecoverable.
         assertTmOk();
         return txThreadMap.get();

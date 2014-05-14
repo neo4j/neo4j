@@ -55,6 +55,7 @@ import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
+import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -146,6 +147,12 @@ public class SwitchToSlave
         this.kernelExtensions = kernelExtensions;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
+
+        this.masterClientResolver = new MasterClientResolver( logging,
+                config.get( HaSettings.read_timeout ).intValue(),
+                config.get( HaSettings.lock_read_timeout ).intValue(),
+                config.get( HaSettings.max_concurrent_channels_per_slave ).intValue(),
+                config.get( HaSettings.com_chunk_size ).intValue()  );
     }
 
     public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri ) throws Throwable
@@ -154,13 +161,6 @@ public class SwitchToSlave
                 masterUri );
 
         assert masterUri != null; // since we are here it must already have been set from outside
-
-        this.masterClientResolver = new MasterClientResolver( logging,
-                config.get( HaSettings.read_timeout ).intValue(),
-                config.get( HaSettings.lock_read_timeout ).intValue(),
-                config.get( HaSettings.max_concurrent_channels_per_slave ).intValue(),
-                config.get( HaSettings.com_chunk_size ).intValue()  );
-
 
         HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency(
                 HaXaDataSourceManager.class );
@@ -172,12 +172,10 @@ public class SwitchToSlave
                 copyStoreFromMaster( masterUri );
             }
 
-                            /*
-                             * We get here either with a fresh store from the master copy above so we need to
-                             * start the ds
-                             * or we already had a store, so we have already started the ds. Either way,
-                             * make sure it's there.
-                             */
+            /*
+             * We get here either with a fresh store from the master copy above so we need to start the ds
+             * or we already had a store, so we have already started the ds. Either way, make sure it's there.
+             */
             NeoStoreXaDataSource nioneoDataSource = ensureDataSourceStarted( xaDataSourceManager, resolver );
             checkDataConsistency( xaDataSourceManager, resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
 
@@ -359,8 +357,13 @@ public class SwitchToSlave
 
     private MasterClient newMasterClient( URI masterUri, StoreId storeId, LifeSupport life )
     {
-        return masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(),
+        MasterClient masterClient = masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(),
                 resolver.resolveDependency( Monitors.class ), storeId, life );
+        if ( !(masterClient instanceof MasterClient210 ))
+        {
+            idGeneratorFactory.doTheThing();
+        }
+        return masterClient;
     }
 
     private void startServicesAgain() throws Throwable

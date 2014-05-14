@@ -127,7 +127,8 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
                 true,   // allow skip non existent source files
                 true ); // allow overwrite target files
         StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
-        LogFiles.move( fileSystem, storeDir, leftOversDir );
+        // Log files can remain in place, old versions can still be read
+//        LogFiles.move( fileSystem, storeDir, leftOversDir );
     }
 
     @Override

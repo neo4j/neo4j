@@ -173,5 +173,6 @@ public class NodeRecord extends PrimitiveRecord
         this.labels = from.labels;
         this.isLight = from.isLight;
         this.dense = from.dense;
+        this.setNextProp( from.getNextProp() );
     }
 }

@@ -43,7 +43,10 @@ public class LogEntryWriterv1 implements LogEntryWriter
 
     public void writeLogEntry( LogEntry entry, LogBuffer buffer ) throws IOException
     {
-        buffer.put( entry.getVersion() );
+        if ( entry.getVersion() == LogEntry.CURRENT_LOG_ENTRY_VERSION )
+        {
+            buffer.put( entry.getVersion() );
+        }
         switch ( entry.getType() )
         {
             case LogEntry.TX_START:
@@ -71,6 +74,8 @@ public class LogEntryWriterv1 implements LogEntryWriter
             case LogEntry.DONE:
                 writeDone( entry.getIdentifier(), buffer );
                 break;
+            default:
+                throw new IllegalArgumentException("Unknown entry type " + entry.getType() );
 
         }
     }

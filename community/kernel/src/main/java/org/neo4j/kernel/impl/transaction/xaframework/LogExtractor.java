@@ -328,7 +328,7 @@ public class LogExtractor
         return lastCommitEntryTxId;
     }
 
-    private class LogEntryCollectingConsumer implements Consumer<LogEntry, IOException>
+    private static class LogEntryCollectingConsumer implements Consumer<LogEntry, IOException>
     {
         private LogEntry lastEntry;
 

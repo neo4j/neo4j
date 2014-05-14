@@ -66,7 +66,7 @@ public class DumpLogicalLog
             long logVersion, prevLastCommittedTx;
             try
             {
-                long[] header = VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
+                long[] header = VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, false );
                 logVersion = header[0];
                 prevLastCommittedTx = header[1];
             }

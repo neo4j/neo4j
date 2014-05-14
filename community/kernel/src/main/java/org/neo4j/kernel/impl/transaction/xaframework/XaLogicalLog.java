@@ -121,8 +121,6 @@ public class XaLogicalLog implements LogLoader
     private final LogPositionCache positionCache = new LogPositionCache();
 
     private final FileSystemAbstraction fileSystem;
-    private final Function<List<LogEntry>, List<LogEntry>> interceptor;
-    private Function<List<LogEntry>, List<LogEntry>> transactionTranslator;
     private final LogPruneStrategy pruneStrategy;
     private final XaLogicalLogFiles logFiles;
     private final PartialTransactionCopier partialTransactionCopier;
@@ -165,8 +163,6 @@ public class XaLogicalLog implements LogLoader
         this.commandWriterFactory = commandWriterFactory;
         this.xaTf = xaTf;
         this.fileSystem = fileSystem;
-        this.interceptor = interceptor;
-        this.transactionTranslator = transactionTranslator;
         this.kernelHealth = kernelHealth;
         this.bufferMonitor = monitors.newMonitor( ByteCounterMonitor.class, XaLogicalLog.class );
         this.logDeserializerMonitor = monitors.newMonitor( ByteCounterMonitor.class, "logdeserializer" );

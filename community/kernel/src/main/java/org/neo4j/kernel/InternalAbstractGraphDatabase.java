@@ -969,14 +969,6 @@ public abstract class InternalAbstractGraphDatabase
     protected void createNeoDataSource()
     {
         // Create DataSource
-        Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory = new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
-        {
-            @Override
-            public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
-            {
-                return identity();
-            }
-        };
 
         neoDataSource = new NeoStoreXaDataSource( config,
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
@@ -984,8 +976,22 @@ public abstract class InternalAbstractGraphDatabase
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 persistenceManager, lockManager, this, transactionEventHandlers,
-                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, translatorFactory, storeMigrationProcess );
+                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(), storeMigrationProcess );
         xaDataSourceManager.registerDataSource( neoDataSource );
+    }
+
+    protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
+    {
+        return
+                new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
+                {
+                    @Override
+                    public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
+                    {
+                        return identity();
+                    }
+                };
+
     }
 
     @Override

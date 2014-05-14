@@ -19,21 +19,31 @@
  */
 package org.neo4j.ha.upgrade;
 
+import static org.junit.Assert.fail;
+import static org.neo4j.cluster.ClusterSettings.cluster_server;
+import static org.neo4j.cluster.ClusterSettings.initial_hosts;
+import static org.neo4j.cluster.ClusterSettings.server_id;
+import static org.neo4j.ha.upgrade.Utils.assembleClassPathFromPackage;
+import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
+import static org.neo4j.kernel.ha.HaSettings.ha_server;
+
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
+import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
@@ -41,30 +51,35 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.test.TargetDirectory;
 
-import static java.lang.System.currentTimeMillis;
-import static java.lang.Thread.sleep;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.fail;
-
-import static org.neo4j.cluster.ClusterSettings.cluster_server;
-import static org.neo4j.cluster.ClusterSettings.initial_hosts;
-import static org.neo4j.cluster.ClusterSettings.server_id;
-import static org.neo4j.ha.upgrade.Utils.assembleClassPathFromPackage;
-import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.ha.HaSettings.ha_server;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
-
-@Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
+//@Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
 public class RollingUpgradeIT
 {
-    private static final String OLD_VERSION = "2.0.0";
-    
+    private static final String OLD_VERSION = "2.0.1";
+
+    public static final RelationshipType type1 = new RelationshipType()
+    {
+        @Override
+        public String name()
+        {
+            return "type1";
+        }
+    };
+
+    public static final RelationshipType type2 = new RelationshipType()
+    {
+        @Override
+        public String name()
+        {
+            return "type2";
+        }
+    };
+
     private final TargetDirectory DIR = TargetDirectory.forTest( getClass() );
-    private final File DBS_DIR = DIR.cleanDirectory( "dbs" );
+//    private final File DBS_DIR = DIR.cleanDirectory( "dbs" );
+
     private LegacyDatabase[] legacyDbs;
     private GraphDatabaseAPI[] newDbs;
+    private long centralNode;
 
     @Test
     public void doRollingUpgradeFromPreviousVersionWithMasterLast() throws Throwable
@@ -90,7 +105,6 @@ public class RollingUpgradeIT
         {
             startOldVersionCluster();
             rollOverToNewVersion();
-            verify();
         }
         catch ( Throwable e )
         {
@@ -148,7 +162,8 @@ public class RollingUpgradeIT
         Future[] legacyDbFutures = new Future[3];
         for ( int i = 0; i < legacyDbFutures.length; i++ )
         {
-            legacyDbFutures[i] = LegacyDatabaseImpl.start( classpath, new File( DBS_DIR, "" + i ), config( i ) );
+            legacyDbFutures[i] = LegacyDatabaseImpl.start( classpath,
+                    new File( new File("/Users/chris/Desktop/ru"), "" + i ), config( i ) );
             debug( "  Started " + i );
         }
         legacyDbs = new LegacyDatabase[legacyDbFutures.length];
@@ -165,14 +180,15 @@ public class RollingUpgradeIT
         }
         for ( int i = 0; i < legacyDbs.length; i++ )
         {
-            String name = "initial-" + i;
-            long node = legacyDbs[i].createNode( name );
+            long node = legacyDbs[i].createNode();
             for ( LegacyDatabase db : legacyDbs )
             {
-                db.verifyNodeExists( node, name );
+                db.verifyNodeExists( node );
             }
         }
         debug( OLD_VERSION + " cluster fully operational" );
+
+        centralNode = legacyDbs[0].initialize();
     }
 
     private Map<String, String> config( int serverId ) throws UnknownHostException
@@ -180,8 +196,9 @@ public class RollingUpgradeIT
         String localhost = InetAddress.getLocalHost().getHostAddress();
         Map<String, String> result = MapUtil.stringMap(
                 server_id.name(), "" + serverId,
-                cluster_server.name(), localhost + ":" + ( 5000+serverId ),
-                ha_server.name(), localhost + ":" + ( 6000+serverId ),
+                cluster_server.name(), localhost + ":" + (5000 + serverId),
+                ha_server.name(), localhost + ":" + (6000 + serverId),
+                GraphDatabaseSettings.allow_store_upgrade.name(), "true",
                 initial_hosts.name(), localhost + ":" + 5000 + "," + localhost + ":" + 5001 + "," + localhost + ":" + 5002 );
         return result;
     }
@@ -196,10 +213,12 @@ public class RollingUpgradeIT
             LegacyDatabase legacyDb = legacyDbs[i];
             if ( legacyDb == master.first() )
             {   // Roll over the master last
+                System.out.println("master is " + master.first().getStoreDir());
                 continue;
             }
-            
+
             rollOver( legacyDb, i );
+//            return;
         }
         rollOver( master.first(), master.other() );
     }
@@ -207,6 +226,10 @@ public class RollingUpgradeIT
     private void rollOver( LegacyDatabase legacyDb, int i ) throws Exception
     {
         String storeDir = legacyDb.getStoreDir();
+        if ( i == 0)
+        {
+            storeDir += "new";
+        }
         stop( i );
         Thread.sleep( 30000 );
 
@@ -220,14 +243,22 @@ public class RollingUpgradeIT
         legacyDbs[i] = null;
 
         // issue transaction and see that it propagates
-        String name = "upgraded-" + i;
-        long node = createNodeWithRetry( newDbs[i], name );
-        debug( "Node created on " + i );
-        for ( int j = 0; j < i; j++ )
+        if ( i == 2 || i == 1  )
         {
-            if ( legacyDbs[i] != null )
+            // if the instance is not the old master, create on the old master
+            legacyDbs[0].doComplexLoad( centralNode );
+            debug( "Node created on " + i );
+        }
+        else
+        {
+            // TODO figure out the master properly instead of guessing
+            doComplexLoad( newDbs[1], centralNode );
+        }
+        for ( int j = 0; j < legacyDbs.length; j++ )
+        {
+            if ( legacyDbs[j] != null )
             {
-                legacyDbs[j].verifyNodeExists( node, name );
+                legacyDbs[j].verifyComplexLoad( centralNode );
                 debug( "Verified on legacy db " + j );
             }
         }
@@ -235,9 +266,129 @@ public class RollingUpgradeIT
         {
             if ( newDbs[j] != null )
             {
-                verifyNodeExists( newDbs[j], node, name );
+                verifyComplexLoad( newDbs[j], centralNode );
                 debug( "Verified on new db " + j );
             }
+        }
+    }
+
+    public void doComplexLoad( GraphDatabaseAPI db, long center )
+    {
+        try( Transaction tx = db.beginTx() )
+        {
+            Node central = db.getNodeById( center );
+
+            long type1RelCount = central.getDegree( type1 );
+            long type2RelCount = central.getDegree( type2 );
+
+            long[] type1RelId = new long[(int) type1RelCount];
+            long[] type2RelId = new long[(int) type2RelCount];
+
+            int index = 0;
+            for ( Relationship relationship : central.getRelationships( type1 ) )
+            {
+                type1RelId[index++] = relationship.getId();
+            }
+            index = 0;
+            for ( Relationship relationship : central.getRelationships( type2 ) )
+            {
+                type2RelId[index++] = relationship.getId();
+            }
+
+            // Delete the first half of each type
+            Arrays.sort( type1RelId );
+            Arrays.sort( type2RelId );
+
+            for ( int i = 0; i < type1RelId.length / 2; i++ )
+            {
+                db.getRelationshipById( type1RelId[i] ).delete();
+            }
+            for ( int i = 0; i < type2RelId.length / 2; i++ )
+            {
+                db.getRelationshipById( type2RelId[i] ).delete();
+            }
+
+            // Go ahead and create relationships to make up for these deletes
+            for ( int i = 0; i < type1RelId.length / 2; i++ )
+            {
+                central.createRelationshipTo( db.createNode(), type1 );
+            }
+
+            long largestCreated = 0;
+            // The result is the id of the latest created relationship. We'll use that to set the properties
+            for ( int i = 0; i < type2RelId.length / 2; i++ )
+            {
+                long current = central.createRelationshipTo( db.createNode(), type2 ).getId();
+                if ( current > largestCreated )
+                {
+                    largestCreated = current;
+                }
+            }
+
+            for ( Relationship relationship : central.getRelationships() )
+            {
+                relationship.setProperty( "relProp", "relProp" + relationship.getId() + "-" + largestCreated );
+                Node end = relationship.getEndNode();
+                end.setProperty( "nodeProp", "nodeProp" + end.getId() + "-" + largestCreated  );
+            }
+
+            tx.success();
+        }
+    }
+
+    public void verifyComplexLoad( GraphDatabaseAPI db, long centralNode )
+    {
+        db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
+        try( Transaction tx = db.beginTx() )
+        {
+            Node center = db.getNodeById( centralNode );
+            long maxRelId = -1;
+            for ( Relationship relationship : center.getRelationships() )
+            {
+                if (relationship.getId() > maxRelId )
+                {
+                    maxRelId = relationship.getId();
+                }
+            }
+
+            int typeCount = 0;
+            for ( Relationship relationship : center.getRelationships( type1 ) )
+            {
+                typeCount++;
+                if ( !relationship.getProperty( "relProp" ).equals( "relProp" +relationship.getId()+"-"+maxRelId) )
+                {
+                    fail( "damn");
+                }
+                Node other = relationship.getEndNode();
+                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp"+other.getId()+"-"+maxRelId ) )
+                {
+                    fail("double damn");
+                }
+            }
+            if ( typeCount != 100 )
+            {
+                fail("tripled damn");
+            }
+
+            typeCount = 0;
+            for ( Relationship relationship : center.getRelationships( type2 ) )
+            {
+                typeCount++;
+                if ( !relationship.getProperty( "relProp" ).equals( "relProp" +relationship.getId()+"-"+maxRelId) )
+                {
+                    fail( "damn");
+                }
+                Node other = relationship.getEndNode();
+                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp"+other.getId()+"-"+maxRelId ) )
+                {
+                    fail("double damn");
+                }
+            }
+            if ( typeCount != 100 )
+            {
+                fail("tripled damn");
+            }
+            tx.success();
         }
     }
 
@@ -276,66 +427,5 @@ public class RollingUpgradeIT
         {
             // OK
         }
-    }
-
-    private void verify( )
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-    private long createNodeWithRetry( GraphDatabaseService db, String name ) throws InterruptedException
-    {
-        long end = currentTimeMillis() + SECONDS.toMillis( 60*2 );
-        Exception exception = null;
-        while ( currentTimeMillis() < end )
-        {
-            try
-            {
-                return createNode( db, name );
-            }
-            catch ( Exception e )
-            {
-                // OK
-                exception = e;
-                // Jiffy is a less well known SI unit for time equal to 1024 millis, aka binary second
-                debug( "Master not switched yet, retrying in a jiffy (" + e + ")" );
-                sleep( 1024 ); // 1024, because why the hell not
-            }
-        }
-        throw launderedException( exception );
-    }
-
-    private long createNode( GraphDatabaseService db, String name )
-    {
-        Transaction tx = db.beginTx();
-        try
-        {
-            Node node = db.createNode();
-            node.setProperty( "name", name );
-            tx.success();
-            return node.getId();
-        }
-        finally
-        {
-            tx.finish();
-        }
-    }
-
-    private void verifyNodeExists( GraphDatabaseAPI db, long id, String name )
-    {
-        try ( Transaction tx = db.beginTx() )
-        {
-            db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
-            for ( Node node : at( db ).getAllNodes() )
-            {
-                if ( name.equals( node.getProperty( "name", null ) ) )
-                {
-                    return;
-                }
-            }
-            tx.success();
-        }
-        fail( "Node " + id + " with name '" + name + "' not found" );
     }
 }

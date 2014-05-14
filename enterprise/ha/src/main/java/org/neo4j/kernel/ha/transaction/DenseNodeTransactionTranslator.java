@@ -93,7 +93,9 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
         LogEntry done = null;
         for ( LogEntry logEntry : from )
         {
-            assert logEntry.getVersion() != LogEntry.CURRENT_LOG_ENTRY_VERSION;
+            if( logEntry.getVersion() == LogEntry.CURRENT_LOG_ENTRY_VERSION
+                    )
+                throw new RuntimeException( "crap" );
 
             switch ( logEntry.getType() )
             {
@@ -260,6 +262,9 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
             NodeRecord created = recordChangeSet.getNodeRecords().create( command.getKey(), null ).forChangingData();
             created.copyFrom( command.getAfter() );
             created.setNextRel( Record.NO_NEXT_RELATIONSHIP.intValue() );
+            created.setInUse( true );
+//            recordChangeSet.getNodeRecords().getOrLoad( command.getKey(), null )
+//                    .forChangingData().setNextProp( command.getAfter().getNextProp() );
         }
 
         @Override
@@ -349,6 +354,8 @@ public class DenseNodeTransactionTranslator implements Function<List<LogEntry>, 
             RelationshipRecord record = command.getRecord();
             relationshipCreator.relationshipCreate( record.getId(), record.getType(), record.getFirstNode(),
                     record.getSecondNode(), recordChangeSet );
+            recordChangeSet.getRelRecords().getOrLoad( command.getKey(), null ).forChangingData()
+                    .setNextProp( command.getRecord().getNextProp() );
         }
 
         private void translateRelationshipDeletion( Command.RelationshipCommand command )

@@ -31,8 +31,9 @@ public final class StoreId
      * This field represents the store version of the last Neo4j version which had the store version as part of
      * the StoreId (2.0.1). This field is now deprecated but is not removed. Fixing it to this value ensures
      * rolling upgrades can happen.
+     * // TODO use NeoStore.versionStringToLong() to do the translation - currently does not work as expected
      */
-    private static final long storeVersionAsLong = NeoStore.versionStringToLong( "0.A.1" );
+    private static final long storeVersionAsLong = 13843131341501958l;
 
     private static final Random r = new SecureRandom();
 
