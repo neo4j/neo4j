@@ -31,7 +31,7 @@ class ExpandTest
   extends CypherFunSuite
   with LogicalPlanningTestSupport {
 
-  private def createQueryGraph(rels: PatternRelationship*) = QueryGraph(patternRelationships = rels.toSet)
+  private def createQuery(rels: PatternRelationship*) = QueryGraph(patternRelationships = rels.toSet)
   val aNode = IdName("a")
   val bNode = IdName("b")
   val rName = IdName("r")
@@ -40,9 +40,9 @@ class ExpandTest
   val rSelfRel = PatternRelationship(rName, (aNode, aNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("do not expand when no pattern relationships exist in query graph") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = createQueryGraph()
+      query = createQuery()
     )
     val plan = PlanTable(Map(Set(aNode) -> planAllNodesScan(aNode)))
 
@@ -50,9 +50,9 @@ class ExpandTest
   }
 
   test("finds single pattern relationship when start point is picked") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = createQueryGraph(rRel)
+      query = createQuery(rRel)
     )
     val planA = newMockedQueryPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
@@ -63,9 +63,9 @@ class ExpandTest
   }
 
   test("finds expansion going both sides") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = createQueryGraph(rRel)
+      query = createQuery(rRel)
     )
     val planA = newMockedQueryPlan("a")
     val planB = newMockedQueryPlan("b")
@@ -78,9 +78,9 @@ class ExpandTest
   }
 
   test("does not include plan that has the relationship name already covered") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = createQueryGraph(rRel)
+      query = createQuery()
     )
     val aAndB = newMockedQueryPlanWithPatterns(Set("a", "b"), Seq(rRel))
     val plan = PlanTable(Map(Set(aNode, bNode) -> aAndB))
@@ -89,9 +89,9 @@ class ExpandTest
   }
 
   test("self referencing pattern is handled correctly") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = createQueryGraph(rSelfRel)
+      query = createQuery(rSelfRel)
     )
     val planA = newMockedQueryPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))
@@ -104,9 +104,9 @@ class ExpandTest
   }
 
   test("looping pattern is handled as it should") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = createQueryGraph(rRel)
+      query = createQuery(rRel)
     )
     val aAndB = newMockedQueryPlan("a", "b")
     val plan = PlanTable(Map(Set(aNode) -> aAndB))
@@ -124,9 +124,9 @@ class ExpandTest
   }
 
   test("unlimited variable length relationship") {
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = createQueryGraph(rVarRel)
+      query = createQuery(rVarRel)
     )
     val planA = newMockedQueryPlan("a")
     val plan = PlanTable(Map(Set(aNode) -> planA))

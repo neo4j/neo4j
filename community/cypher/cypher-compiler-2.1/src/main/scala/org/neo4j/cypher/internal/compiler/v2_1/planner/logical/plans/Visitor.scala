@@ -19,8 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.QueryGraphSolvingContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryGraph}
 
 trait Visitor[T, R] {
   def visit(target: T): R
@@ -30,17 +30,16 @@ trait Visitable[T] {
   def accept[R](visitor: Visitor[T, R]): R
 }
 
-class QueryPlanTreeStringVisitor(optContext: Option[LogicalPlanContext] = None) extends Visitor[QueryPlan, String] {
+class QueryPlanTreeStringVisitor(optContext: Option[QueryGraphSolvingContext] = None) extends Visitor[QueryPlan, String] {
   def visit(target: QueryPlan) = {
-    // val planRepr = new LogicalPlanTreeStringVisitor(optContext).visit(target.plan)
     val planRepr = target.plan.toString
-    val qgRepr = QueryGraphStringVisitor.visit(target.solved)
+    val pqRepr = PlannerQueryStringVisitor.visit(target.solved)
 
-    s"QueryPlan(\nplan = $planRepr,\nsolved = $qgRepr)\n"
+    s"QueryPlan(\nplan = $planRepr,\nsolved = $pqRepr)\n"
   }
 }
 
-class LogicalPlanTreeStringVisitor(optContext: Option[LogicalPlanContext] = None) extends Visitor[LogicalPlan, String] {
+class LogicalPlanTreeStringVisitor(optContext: Option[QueryGraphSolvingContext] = None) extends Visitor[LogicalPlan, String] {
   def visit(target: LogicalPlan) = {
     val metrics = optContext match {
       case Some(context) => s"(cost ${context.cost(target)}/cardinality ${context.cardinality(target)})"
@@ -57,8 +56,16 @@ class LogicalPlanTreeStringVisitor(optContext: Option[LogicalPlanContext] = None
 }
 
 
-object QueryGraphStringVisitor extends Visitor[QueryGraph, String] {
-  def visit(target: QueryGraph) = {
-    target.toString
+object PlannerQueryStringVisitor extends Visitor[PlannerQuery, String] {
+  def visit(target: PlannerQuery) = {
+    val pjRepr = target.projection.toString
+    val qgRepr = target.graph.toString
+    val tailRepr = target.tail match {
+      case None            => "None"
+      case Some(tailQuery) => s"Some(${tailQuery.accept(this)})"
+    }
+
+    s"PlannerQuery(qg = $qgRepr, projection = $pjRepr, tail = $tailRepr})"
   }
 }
+

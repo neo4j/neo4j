@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.mockito.Mockito._
@@ -27,7 +27,9 @@ import org.mockito.invocation.InvocationOnMock
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -170,6 +172,28 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         )_),
         NodeByLabelScan("n", Right(LabelId(12)))
       )
+    )
+  }
+
+  test("should use node by id when possible") {
+    val factory: SpyableMetricsFactory = newMockedMetricsFactory
+    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
+      case _: AllNodesScan => 1000
+      case _: NodeByLabelScan => 100
+      case _: NodeIndexSeek => 10
+      case _: NodeByIdSeek => 1
+      case _: Expand => 100.0
+      case _ => Double.MaxValue
+    })
+    implicit val planner = newPlanner(factory)
+    implicit val planContext = newMockedPlanContext
+
+    produceLogicalPlan("MATCH n WHERE ID(n) = 0 RETURN n") should equal(
+      NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("0") _))
+    )
+
+    produceLogicalPlan("MATCH n WHERE id(n) = 0 RETURN n") should equal(
+      NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("0") _))
     )
   }
 }

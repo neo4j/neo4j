@@ -39,7 +39,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
 
     relate(a,createNode())
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       "MATCH a WITH a ORDER BY a.name LIMIT 1 MATCH a-->b RETURN a"
     )
     result.toList should equal(List(Map("a" -> a)))

@@ -62,6 +62,8 @@ class NewPlannerMonitor extends NewQueryPlanSuccessRateMonitor {
 trait NewPlannerTestSupport extends CypherTestSupport {
   self: ExecutionEngineFunSuite =>
 
+  override def databaseConfig(): Map[String,String] = Map("cypher_parser_version" -> CypherVersion.experimental.name)
+
   val newPlannerMonitor = new NewPlannerMonitor
 
   override protected def initTest() {

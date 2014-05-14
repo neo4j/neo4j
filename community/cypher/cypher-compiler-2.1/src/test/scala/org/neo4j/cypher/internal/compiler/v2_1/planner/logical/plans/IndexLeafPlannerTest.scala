@@ -37,12 +37,11 @@ import scala.collection.mutable
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val statistics = newMockedStatistics
+  val statistics = hardcodedStatistics
 
   test("index scan when there is an index on the property") {
     // given
     val identifier = Identifier("n")_
-    val projections: Map[String, Expression]  = Map("n" -> identifier)
     val labelId = LabelId(12)
     val propertyKeyId = PropertyKeyId(15)
     val idName = IdName("n")
@@ -52,7 +51,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       SignedIntegerLiteral("42")_
     )_
     val qg = QueryGraph(
-      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(idName), equals), Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
@@ -67,10 +65,10 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       case _: NodeByLabelScan => 100
       case _                  => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = qg,
       metrics = factory.newMetrics(statistics, semanticTable))
     when(context.planContext.indexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
       override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
@@ -87,7 +85,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("index seek when there is an index on the property") {
     // given
     val identifier = Identifier("n")_
-    val projections: Map[String, Expression] = Map("n" -> identifier)
     val labelId = LabelId(12)
     val propertyKeyId = PropertyKeyId(15)
     val idName = IdName("n")
@@ -97,7 +94,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       SignedIntegerLiteral("42")_
     )_
     val qg = QueryGraph(
-      projection = Projections(projections = projections),
       selections = Selections(Set(
         Predicate(Set(idName), equals),
         Predicate(Set(idName), hasLabels))),
@@ -114,10 +110,10 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       case _: NodeByLabelScan => 100
       case _                  => Double.MaxValue
     })
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = qg,
       metrics = factory.newMetrics(statistics, semanticTable))
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator())
     when(context.planContext.uniqueIndexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {

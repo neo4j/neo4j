@@ -19,19 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateGenerator, CandidateList, QueryGraphSolvingContext, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, QueryPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.AggregationProjection
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Expression}
 
-object optional extends CandidateGenerator[PlanTable] {
-  def apply(ignored: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
-    val optionalCandidates =
-      for (optionalQG <- context.queryGraph.optionalMatches if optionalQG.argumentIds.isEmpty)
-      yield {
-        val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG))
+object aggregation {
+  def apply(plan: QueryPlan, aggregation: AggregationProjection)(implicit context: LogicalPlanningContext): QueryPlan = {
 
-        planOptional(rhs)
-      }
+    // Writes down the grouping values
+    val expressionsMap: Map[String, Expression] = aggregation.groupingKeys ++ plan.plan.availableSymbols.map {
+      case IdName(x) => x -> Identifier(x)(null)
+    }
 
-    CandidateList(optionalCandidates)
+    val projectedPlan = projection(plan, expressionsMap)
+    planAggregation(projectedPlan, aggregation.groupingKeys, aggregation.aggregationExpressions)
   }
 }

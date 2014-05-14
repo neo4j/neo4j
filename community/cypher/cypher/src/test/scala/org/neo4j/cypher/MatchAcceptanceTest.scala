@@ -879,7 +879,7 @@ RETURN a.name""")
 
   test("empty collect should not contain null") {
     val n = createNode()
-    val result = execute("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, collect(x)")
+    val result = executeWithNewPlanner("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, collect(x)")
 
     result.toList should equal (List(Map("n" -> n, "collect(x)" -> List())))
   }
@@ -1209,7 +1209,7 @@ RETURN a.name""")
     // Given empty db
 
     // when
-    val result = executeWithNewPlanner("optional match (a) with a optional match (a)-->(b) return b")
+    val result = execute("optional match (a) with a optional match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
     result.toList should equal (List(Map("b"->null)))

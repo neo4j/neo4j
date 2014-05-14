@@ -113,7 +113,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
   test("allows optional match to start a query") {
     //GIVEN
-    val result: ExecutionResult = engine.profile("optional match (n) return n")
+    val result: ExecutionResult = engine.profile("cypher experimental optional match (n) return n")
 
     //WHEN THEN
     assertRows(1)(result)("Optional")

@@ -32,15 +32,13 @@ import collection.mutable
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val statistics = newMockedStatistics
+  val statistics = hardcodedStatistics
 
   test("simple label scan without compile-time label id") {
     // given
     val idName = IdName("n")
-    val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
-      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
@@ -53,10 +51,10 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val semanticTable = newMockedSemanticTable
     when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map.empty[String, LabelId])
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
 
@@ -70,11 +68,9 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
   test("simple label scan with a compile-time label ID") {
     // given
     val idName = IdName("n")
-    val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
     val labelId = LabelId(12)
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
-      projection = Projections(projections = projections),
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
@@ -87,10 +83,10 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val semanticTable = newMockedSemanticTable
     when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> labelId))
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = qg,
       metrics = factory.newMetrics(statistics, semanticTable)
     )
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)

@@ -28,12 +28,15 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("should throw when finding plan that does not solve all selections") {
-    implicit val logicalPlanContext = newMockedLogicalPlanContext(
-      planContext= newMockedPlanContext,
-      queryGraph = QueryGraph(
+    val query = PlannerQuery(
+      QueryGraph(
         selections = Selections(Set(Predicate(Set.empty[IdName], null))),
-        patternNodes = Set(IdName("a"), IdName("b")))
+        patternNodes = Set(IdName("a"), IdName("b"))
+      )
     )
+    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext,
+      query = query)
     val plan = newMockedQueryPlan("b")
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))
 
@@ -44,9 +47,15 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
 
   test("should throw when finding plan that does not solve all pattern relationships") {
     val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, VarPatternLength.unlimited)
-    implicit val logicalPlanContext = newMockedLogicalPlanContext(
+    val query = PlannerQuery(
+      QueryGraph(
+        patternNodes = Set(IdName("a"), IdName("b")),
+        patternRelationships = Set(patternRel)
+      )
+    )
+    implicit val logicalPlanContext = newMockedLogicalPlanningContext(
       planContext= newMockedPlanContext,
-      queryGraph = QueryGraph(patternNodes = Set(IdName("a"), IdName("b")), patternRelationships = Set(patternRel))
+      query = query
     )
     val plan = newMockedQueryPlan("b")
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))

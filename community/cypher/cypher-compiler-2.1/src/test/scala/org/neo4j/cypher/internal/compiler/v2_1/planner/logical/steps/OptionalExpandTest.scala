@@ -43,12 +43,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
     val optionalMatch = QueryGraph(patternNodes = Set("a", "b"), patternRelationships = Set(patternRel1))
     val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = qg
     )
 
-    val inputPlan = planSingleRow(Set("a"))
+    val inputPlan = planArgumentRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq.empty, optionalMatch)
 
@@ -63,12 +63,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
 
     val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = qg
     )
 
-    val inputPlan = planSingleRow(Set("a"))
+    val inputPlan = planArgumentRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     optionalExpand(planTable) should equal(Candidates())
   }
@@ -81,12 +81,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       selections = Selections(Set(Predicate(Set(IdName("r1")), r1Predicate))))
     val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = qg
     )
 
-    val inputPlan = planSingleRow(Set("a"))
+    val inputPlan = planArgumentRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(r1Predicate), optionalMatch)
 
@@ -101,12 +101,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       selections = Selections(Set(Predicate(Set(IdName("b")), bPredicate))))
     val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = qg
     )
 
-    val inputPlan = planSingleRow(Set("a"))
+    val inputPlan = planArgumentRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(bPredicate), optionalMatch)
 
@@ -121,12 +121,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       selections = Selections(Set(Predicate(Set(IdName("b")), bPredicate))))
     val qg = QueryGraph(patternNodes = Set("a")).withAddedOptionalMatch(optionalMatch)
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = qg
     )
 
-    val inputPlan = planSingleRow(Set("a"))
+    val inputPlan = planArgumentRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r3"), SimplePatternLength, Seq(bPredicate), optionalMatch)
 
@@ -144,12 +144,12 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       patternRelationships = Set(patternRel1)).
       withAddedOptionalMatch(optionalMatch)
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = qg
+      query = qg
     )
 
-    val inputPlan = planSingleRow(Set("b"))
+    val inputPlan = planArgumentRow(Set("b"))
     val planTable = PlanTable(Map(Set(IdName("b")) -> inputPlan))
 
     optionalExpand(planTable) should equal(CandidateList(Seq()))

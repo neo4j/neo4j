@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_1.{Rewriter, topDown}
+import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator._
+import org.neo4j.cypher.InternalException
 
-object SimpleQueryGraphBuilder {
+object SimplePlannerQueryBuilder {
 
   object SubQueryExtraction {
 
@@ -45,7 +45,7 @@ object SimpleQueryGraphBuilder {
       val qg = QueryGraph(
         patternRelationships = relationships.toSet,
         patternNodes = patternNodes.toSet
-      ).addPredicates(predicates: _*).addCoveredIdsAsProjections()
+      ).addPredicates(predicates: _*)
       qg.addArgumentId(qg.coveredIds.filter(_.name.isNamed).toSeq)
     }
   }
@@ -99,11 +99,12 @@ object SimpleQueryGraphBuilder {
 
 }
 
-class SimpleQueryGraphBuilder extends QueryGraphBuilder {
-  import SimpleQueryGraphBuilder.PatternDestructuring._
+class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
+
+  import SimplePlannerQueryBuilder.PatternDestructuring._
 
   private def getSelectionsAndSubQueries(optWhere: Option[Where]): (Selections, Seq[(PatternExpression, QueryGraph)]) = {
-    import SimpleQueryGraphBuilder.SubQueryExtraction.extractQueryGraph
+    import SimplePlannerQueryBuilder.SubQueryExtraction.extractQueryGraph
 
     val predicates: Set[Predicate] = optWhere.map(SelectionPredicates.fromWhere).getOrElse(Set.empty)
 
@@ -148,30 +149,39 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
     (Selections(predicates), subQueries)
   }
 
-  override def produce(ast: Query): (QueryGraph, Map[PatternExpression, QueryGraph]) = ast match {
+  override def produce(ast: Query): (PlannerQuery, Map[PatternExpression, QueryGraph]) = ast match {
     case Query(None, SingleQuery(clauses)) =>
-      produceQueryGraphFromClauses(QueryGraph.empty, Map.empty, clauses)
+      produceQueryGraphFromClauses(PlannerQuery.empty, Map.empty, clauses)
 
     case _ =>
       throw new CantHandleQueryException
   }
 
-  private def produceQueryGraphFromClauses(qg: QueryGraph,
+  private def produceQueryGraphFromClauses(querySoFar: PlannerQuery,
                                            subQueryLookupTable: Map[PatternExpression, QueryGraph],
-                                           clauses: Seq[Clause]): (QueryGraph, Map[PatternExpression, QueryGraph]) =
-      clauses match {
+                                           clauses: Seq[Clause]): (PlannerQuery, Map[PatternExpression, QueryGraph]) =
+    clauses match {
         case Return(false, ListedReturnItems(expressions), optOrderBy, skip, limit) :: tl =>
 
-          val projections = produceProjectionsMap(expressions)
+          val (projections, aggregations) = produceProjectionsMap(expressions)
+
           val sortItems = produceSortItems(optOrderBy)
 
-          val projection = Projections(
-            projections = projections,
-            sortItems = sortItems,
-            limit = limit.map(_.expression),
-            skip = skip.map(_.expression))
+          val projection = if (aggregations.isEmpty)
+            QueryProjection(
+              projections = projections,
+              sortItems = sortItems,
+              limit = limit.map(_.expression),
+              skip = skip.map(_.expression))
+          else
+            AggregationProjection(
+              aggregationExpressions = aggregations,
+              groupingKeys = projections,
+              sortItems = sortItems,
+              limit = limit.map(_.expression),
+              skip = skip.map(_.expression))
 
-          val newQG = qg.withProjection(projection)
+    val newQG = querySoFar.withProjection(projection)
 
           produceQueryGraphFromClauses(newQG, subQueryLookupTable, tl)
 
@@ -180,12 +190,14 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
 
           val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
 
-          val newQG = qg.
-            addSelections(selections).
-            addPatternNodes(nodeIds:_*).
-            addPatternRels(rels)
+          val newQuery = querySoFar.updateGraph {
+            qg => qg.
+              addSelections(selections).
+              addPatternNodes(nodeIds: _*).
+              addPatternRels(rels)
+          }
 
-          produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
+          produceQueryGraphFromClauses(newQuery, subQueryLookupTable ++ subQueries, tl)
 
         case Match(optional@true, pattern: Pattern, Seq(), optWhere) :: tl =>
           val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
@@ -193,46 +205,82 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
           val optionalMatch = QueryGraph(
             selections = selections,
             patternNodes = nodeIds.toSet,
-            patternRelationships = rels.toSet).addCoveredIdsAsProjections()
+            patternRelationships = rels.toSet)
 
-          val newQG = qg.withAddedOptionalMatch(optionalMatch)
+          val newQuery = querySoFar.updateGraph {
+            qg => qg.withAddedOptionalMatch(optionalMatch)
+          }
 
-          produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
+          produceQueryGraphFromClauses(newQuery, subQueryLookupTable ++ subQueries, tl)
+
+        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl if querySoFar.graph.optionalMatches.nonEmpty =>
+          throw new CantHandleQueryException
 
         case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
-          val newProjection = qg.projection.withSortItems(sortItems = produceSortItems(optOrderBy))
+          val newQuery = querySoFar
+            .updateGraph(_.addSelections(selections))
+            .updateProjections(
+               _.withSortItems(produceSortItems(optOrderBy))
+            )
 
-          val newQG: QueryGraph = qg.
-            withProjection(newProjection).
-            addSelections(selections)
+          produceQueryGraphFromClauses(newQuery, subQueryLookupTable ++ subQueries, tl)
 
-          produceQueryGraphFromClauses(newQG, subQueryLookupTable ++ subQueries, tl)
-
-        case With(false, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
-          val projections = produceProjectionsMap(expressions)
-          val sortItems = produceSortItems(optOrderBy)
-
-          val projection = Projections(
-            projections = projections,
-            sortItems = sortItems,
-            limit = limit.map(_.expression),
-            skip = skip.map(_.expression))
-
-          val newQG = qg.withProjection(projection)
-
+        case With(false, _: ReturnAll, optOrderBy, skip, limit, optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
-          val (tailQG, map) = produceQueryGraphFromClauses(
-            QueryGraph(selections = selections),
+          val (tailQuery: PlannerQuery, tailMap) = produceQueryGraphFromClauses(
+            PlannerQuery(QueryGraph(selections = selections)),
             subQueryLookupTable ++ subQueries.toMap,
-            tl)
+            tl
+          )
 
-          (newQG.withTail(tailQG), map)
+          val inputIds = querySoFar.graph.coveredIds
+          val argumentIds = inputIds intersect tailQuery.graph.coveredIds
+
+          val newQuery =
+            querySoFar
+              .withProjection(
+                QueryProjection.forIds(inputIds)
+                  .withSortItems( produceSortItems(optOrderBy))
+                  .withLimit(limit.map(_.expression))
+                  .withSkip(skip.map(_.expression))
+              )
+              .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
+
+          (newQuery, tailMap)
+
+        case With(false, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
+          val (projections, aggregations) = produceProjectionsMap(expressions)
+          if (aggregations.nonEmpty)
+            throw new CantHandleQueryException
+
+          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+          val (tailQuery: PlannerQuery, tailMap) = produceQueryGraphFromClauses(
+            PlannerQuery(QueryGraph(selections = selections)),
+            subQueryLookupTable ++ subQueries.toMap,
+            tl
+          )
+
+          val inputIds = projections.keySet.map(IdName) ++ aggregations.keySet.map(IdName)
+          val argumentIds = inputIds intersect tailQuery.graph.coveredIds
+
+          val newQuery =
+            querySoFar
+              .withProjection(QueryProjection(
+                projections = projections,
+                sortItems = produceSortItems(optOrderBy),
+                limit = limit.map(_.expression),
+                skip = skip.map(_.expression)
+              ))
+              .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
+
+
+          (newQuery, tailMap)
 
         case Seq() =>
-          (qg, subQueryLookupTable)
+          (querySoFar, subQueryLookupTable)
 
         case _ =>
           throw new CantHandleQueryException
@@ -241,11 +289,18 @@ class SimpleQueryGraphBuilder extends QueryGraphBuilder {
   private def produceSortItems(optOrderBy: Option[OrderBy]) =
     optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
 
-  private def produceProjectionsMap(expressions: Seq[ReturnItem]) = {
-    val projections: Seq[(String, Expression)] = expressions.map(e => e.name -> e.expression)
-    if (projections.exists {
-      case (_,e) => e.asCommandExpression.containsAggregate
-    }) throw new CantHandleQueryException
-    projections.toMap
+  private def produceProjectionsMap(expressions: Seq[ReturnItem]): (Map[String, Expression], Map[String, Expression]) = {
+    val (aggregatingItems: Seq[ReturnItem], nonAggrItems: Seq[ReturnItem]) =
+      expressions.partition(item => IsAggregate(item.expression))
+
+    def turnIntoMap(x: Seq[ReturnItem]) = x.map(e => e.name -> e.expression).toMap
+
+    val projectionMap = turnIntoMap(nonAggrItems)
+    val aggregationsMap = turnIntoMap(aggregatingItems)
+
+    if(projectionMap.values.exists(containsAggregate))
+      throw new InternalException("Grouping keys contains aggregation. AST has not been rewritten?")
+
+    (projectionMap, aggregationsMap)
   }
 }

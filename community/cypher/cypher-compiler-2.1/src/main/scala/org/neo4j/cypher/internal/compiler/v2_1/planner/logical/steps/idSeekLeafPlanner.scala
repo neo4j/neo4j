@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object idSeekLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) = {
+  def apply(qg: QueryGraph)(implicit context: QueryGraphSolvingContext) = {
     val predicates: Seq[Expression] = qg.selections.flatPredicates
 
     val candidatePlans = predicates.collect {

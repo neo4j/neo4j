@@ -17,27 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.ast
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.AggregatingFunction
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-object IsAggregate {
-  def unapply(v: Any) = v match {
-    case expr: CountStar =>
-      Some(expr)
+case class Aggregation(left: LogicalPlan,
+                       groupingExpressions: Map[String, Expression],
+                       aggregationExpression: Map[String, Expression]) extends LogicalPlan {
 
-    case fi: FunctionInvocation if fi.distinct =>
-      Some(fi)
+  val lhs = Some(left)
 
-    case fi: FunctionInvocation =>
-      fi.function match {
-        case Some(fun: AggregatingFunction) => Some(fi)
-        case _                              => None
-      }
+  def rhs = None
 
-    case _ =>
-      None
-  }
-
-  def apply(e: Expression): Boolean = unapply(e).nonEmpty
+  val availableSymbols = left.availableSymbols ++ groupingExpressions.keySet.map(IdName)
 }

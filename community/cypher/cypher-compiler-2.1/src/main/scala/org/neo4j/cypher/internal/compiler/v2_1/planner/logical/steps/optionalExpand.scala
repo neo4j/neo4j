@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanPr
 
 object optionalExpand extends CandidateGenerator[PlanTable] {
 
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+  def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
 
     val outerJoinPlans: Seq[QueryPlan] = for {
       optionalQG <- context.queryGraph.optionalMatches
@@ -34,7 +34,7 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
       patternRel <- findSinglePatternRelationship(lhs, optionalQG)
       argumentId = optionalQG.argumentIds.head
       otherSide = patternRel.otherSide( argumentId )
-      if canSolveAllPredicates(optionalQG.selections, lhs.coveredIds + otherSide + patternRel.name)
+      if canSolveAllPredicates(optionalQG.selections, lhs.availableSymbols + otherSide + patternRel.name)
     } yield {
       val dir = patternRel.directionRelativeTo(argumentId)
       planOptionalExpand(lhs, argumentId, dir, patternRel.types, otherSide, patternRel.name, patternRel.length, optionalQG.selections.flatPredicates, optionalQG)
@@ -46,11 +46,11 @@ object optionalExpand extends CandidateGenerator[PlanTable] {
   private def canSolveAllPredicates(selections:Selections, ids:Set[IdName]) = selections.predicatesGiven(ids) == selections.flatPredicates
 
   private def findSinglePatternRelationship(outerPlan: QueryPlan, optionalQG: QueryGraph): Option[PatternRelationship] = {
-    val singleArgument = optionalQG.argumentIds.size == 1
-    val coveredByLHS = outerPlan.plan.covers(optionalQG.argumentIds)
-    val isSolved = outerPlan.solved.optionalMatches.contains(optionalQG)
+    val singleArgumentAvailable = optionalQG.argumentIds.size == 1 && outerPlan.plan.availableSymbols(optionalQG.argumentIds.head)
+    val isSolved = outerPlan.solved.graph.optionalMatches.contains(optionalQG)
     val hasOnlyOnePatternRelationship = optionalQG.patternRelationships.size == 1
-    if (singleArgument && coveredByLHS && !isSolved && hasOnlyOnePatternRelationship) {
+
+    if (singleArgumentAvailable && !isSolved && hasOnlyOnePatternRelationship) {
       optionalQG.patternRelationships.headOption
     } else {
       None

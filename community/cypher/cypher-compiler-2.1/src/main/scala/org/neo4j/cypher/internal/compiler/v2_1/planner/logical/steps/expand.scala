@@ -24,23 +24,23 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.QueryGraphSolvingContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object expand extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+  def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
     val expandPlans = for {
       plan <- planTable.plans
-      nodeId <- plan.coveredIds
+      nodeId <- plan.solved.graph.patternNodes
       patternRel <- context.queryGraph.findRelationshipsEndingOn(nodeId)
-      if !plan.solved.patternRelationships(patternRel)
+      if !plan.solved.graph.patternRelationships(patternRel)
     } yield {
       val dir = patternRel.directionRelativeTo(nodeId)
       val otherSide = patternRel.otherSide(nodeId)
       val expandF = (otherSide: IdName) => planExpand(plan, nodeId, dir, patternRel.types,
                                                       otherSide, patternRel.name, patternRel.length, patternRel)
 
-      if (plan.coveredIds.contains(otherSide)) {
+      if (plan.availableSymbols.contains(otherSide)) {
         expandIntoAlreadyExistingNode(expandF, otherSide)
       }
       else
@@ -60,7 +60,7 @@ object expand extends CandidateGenerator[PlanTable] {
   MATCH (a)-[r]->($TEMP) WHERE $TEMP = a
    */
   private def expandIntoAlreadyExistingNode(f: IdName => QueryPlan, otherSide: IdName)
-                                           (implicit context: LogicalPlanContext): QueryPlan = {
+                                           (implicit context: QueryGraphSolvingContext): QueryPlan = {
     val temp = IdName(otherSide.name + "$$$")
     val expand = f(temp)
     val left = Identifier(otherSide.name)(null)
