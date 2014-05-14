@@ -41,9 +41,9 @@ public class ShellSettings
     @Description("Enable a remote shell server which shell clients can log in to")
     public static final Setting<Boolean> remote_shell_enabled = setting( "remote_shell_enabled", BOOLEAN, FALSE );
 
-    public static final Setting<String> remote_shell_host = setting( "remote_shell_host", STRING, "localhost",
+    public static final Setting<String> remote_shell_host = setting( "remote_shell_host", STRING, "127.0.0.1",
             illegalValueMessage( "must be a valid name", matches( ANY ) ) );
-    
+
     public static final Setting<Integer> remote_shell_port = setting( "remote_shell_port", INTEGER, "1337", port );
 
     public static final Setting<Boolean> remote_shell_read_only = setting( "remote_shell_read_only", BOOLEAN, FALSE );
