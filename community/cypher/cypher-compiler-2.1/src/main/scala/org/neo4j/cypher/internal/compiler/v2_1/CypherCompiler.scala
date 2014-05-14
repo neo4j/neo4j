@@ -61,22 +61,36 @@ trait AstCacheMonitor extends CypherCacheMonitor[Statement, CacheAccessor[Statem
 object CypherCompilerFactory {
   val monitorTag = "cypher2.1"
 
-  def newInstance(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
-      val monitors = new Monitors(kernelMonitors)
-      val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
-      val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
-      val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
-      val planBuilderMonitor = monitors.newMonitor[NewQueryPlanSuccessRateMonitor](monitorTag)
-      val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
-      val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
-      val planner = new Planner(monitors, metricsFactory, planningMonitor)
-      val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
-      val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
-      val planCacheFactory = () => new LRUCache[ast.Statement, ExecutionPlan](queryCacheSize)
-      val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
-      val cache = new MonitoringCacheAccessor[ast.Statement, ExecutionPlan](cacheMonitor)
+  def ronjaCompiler(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
+    val monitors = new Monitors(kernelMonitors)
+    val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
+    val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
+    val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
+    val planBuilderMonitor = monitors.newMonitor[NewQueryPlanSuccessRateMonitor](monitorTag)
+    val planningMonitor = monitors.newMonitor[PlanningMonitor](monitorTag)
+    val metricsFactory = CachedMetricsFactory(SimpleMetricsFactory)
+    val planner = new Planner(monitors, metricsFactory, planningMonitor)
+    val pipeBuilder = new LegacyVsNewPipeBuilder(new LegacyPipeBuilder(monitors), planner, planBuilderMonitor)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
+    val planCacheFactory = () => new LRUCache[ast.Statement, ExecutionPlan](queryCacheSize)
+    val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
+    val cache = new MonitoringCacheAccessor[ast.Statement, ExecutionPlan](cacheMonitor)
 
-      new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
+    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
+  }
+
+  def legacyCompiler(graph: GraphDatabaseService, queryCacheSize: Int, kernelMonitors: KernelMonitors): CypherCompiler = {
+    val monitors = new Monitors(kernelMonitors)
+    val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
+    val checker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
+    val rewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag))
+    val pipeBuilder = new LegacyPipeBuilder(monitors)
+    val execPlanBuilder = new ExecutionPlanBuilder(graph, pipeBuilder)
+    val planCacheFactory = () => new LRUCache[ast.Statement, ExecutionPlan](queryCacheSize)
+    val cacheMonitor = monitors.newMonitor[AstCacheMonitor](monitorTag)
+    val cache = new MonitoringCacheAccessor[ast.Statement, ExecutionPlan](cacheMonitor)
+
+    new CypherCompiler(parser, checker, execPlanBuilder, rewriter, cache, planCacheFactory, cacheMonitor, monitors)
   }
 }
 
