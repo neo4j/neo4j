@@ -17,9 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp
+package org.neo4j.cypher.internal.compiler.v2_1.pp.impl
 
 import scala.annotation.tailrec
+import org.neo4j.cypher.internal.compiler.v2_1.pp._
+import org.neo4j.cypher.internal.compiler.v2_1.pp.PrintText
+import org.neo4j.cypher.internal.compiler.v2_1.pp.PrintNewLine
+import org.neo4j.cypher.internal.compiler.v2_1.pp.ConsDoc
 
 final case class PageDocFormatter(width: Int,
                                   defaultAddIndent: Int = 2,
@@ -31,7 +35,7 @@ final case class PageDocFormatter(width: Int,
   @tailrec
   private def build(consumed: Int,
                     docs: List[DocIndent],
-                    builder: CommandPrinter[Seq[PrintCommand]]): CommandPrinter[Seq[PrintCommand]] = docs match {
+                    builder: PrintingConverter[Seq[PrintCommand]]): PrintingConverter[Seq[PrintCommand]] = docs match {
 
     case DocIndent(indent, mode, NilDoc) :: rest =>
       build(consumed, rest, builder)

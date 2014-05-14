@@ -25,20 +25,24 @@ import org.neo4j.cypher.internal.compiler.v2_1.pp.NestDoc
 import org.neo4j.cypher.internal.compiler.v2_1.pp.GroupDoc
 import org.neo4j.cypher.internal.compiler.v2_1.pp.ConsDoc
 import org.neo4j.cypher.internal.compiler.v2_1.pp.BreakWith
+import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
 
-object docStructureDocGen extends DocGenerator[Doc] {
- import Doc._
+object DocStructureDocGenerator {
 
- def apply(data: Doc): Doc = data match {
-   case ConsDoc(hd, tl)       => cons(apply(hd), cons(TextDoc("·"), apply(tl)))
-   case NilDoc                => text("ø")
+  import Doc._
 
-   case TextDoc(value)        => text(s"${"\""}$value${"\""}")
-   case BreakDoc              => breakWith("_")
-   case BreakWith(value)      => breakWith(s"_${value}_")
+  val forNestedDocStructure: RecursiveDocGenerator[Doc] = {
+    case ConsDoc(hd, tl)       => (inner: DocGenerator[Doc]) => cons(inner(hd), cons(TextDoc("·"), inner(tl)))
+    case NilDoc                => (inner: DocGenerator[Doc]) => text("ø")
 
-   case GroupDoc(doc)         => group(cons(text("["), cons(apply(doc), text("]"))))
-   case NestDoc(doc)          => group(cons(text("<"), cons(apply(doc), text(">"))))
-   case NestWith(indent, doc) => group(cons(text(s"($indent)<"), cons(apply(doc), text(">"))))
- }
+    case TextDoc(value)        => (inner: DocGenerator[Doc]) => text(s"${"\""}$value${"\""}")
+    case BreakDoc              => (inner: DocGenerator[Doc]) => breakWith("_")
+    case BreakWith(value)      => (inner: DocGenerator[Doc]) => breakWith(s"_${value}_")
+
+    case GroupDoc(doc)         => (inner: DocGenerator[Doc]) => group(cons(text("["), cons(inner(doc), text("]"))))
+    case NestDoc(doc)          => (inner: DocGenerator[Doc]) => group(cons(text("<"), cons(inner(doc), text(">"))))
+    case NestWith(indent, doc) => (inner: DocGenerator[Doc]) => group(cons(text(s"($indent)<"), cons(inner(doc), text(">"))))
+  }
+
+  val forNestedDocLiteral: RecursiveDocGenerator[Any] = PartialFunctionSupport.uplift(forNestedDocStructure)
 }

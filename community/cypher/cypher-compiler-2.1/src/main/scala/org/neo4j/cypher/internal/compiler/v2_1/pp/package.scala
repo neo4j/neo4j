@@ -20,12 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v2_1
 
 import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.pp.impl.{PageDocFormatter, LineDocFormatter}
+import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
+import org.neo4j.cypher.internal.compiler.v2_1.pp.docgen.{DocStructureDocGenerator, ScalaDocGenerator}
 
 /**
  * See pp.Doc
  */
 package object pp {
   type DocFormatter = Doc => Seq[PrintCommand]
-  type DocGenerator[-T] = T => Doc
-  type CommandPrinter[+T] = mutable.Builder[PrintCommand, T]
+  type DocGenerator[-T] = PartialFunction[T, Doc]
+  type RecursiveDocGenerator[T] = PartialFunction[T, DocGenerator[T] => Doc]
+  type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
 }
+
+

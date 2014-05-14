@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pp.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_1.pp.{Doc, DocGenerator}
-import org.neo4j.cypher.internal.compiler.v2_1.pp.Doc._
 
-object valueDocGen extends DocGenerator[Any] {
-  def apply(value: Any): Doc =
-    nest(group(sepList(value.toString.split(' ').map(text).toList, frontSeparator(breakHere))))
+object catchNotImplemented {
+  def apply[T](docGen: DocGenerator[T]): DocGenerator[T] = new PartialFunction[T, Doc] {
+    def isDefinedAt(v: T) = try { docGen.isDefinedAt(v) } catch { case _: NotImplementedError => true }
+    def apply(v: T) = try { docGen.apply(v) } catch { case _: NotImplementedError => Doc.text("???") }
+  }
 }

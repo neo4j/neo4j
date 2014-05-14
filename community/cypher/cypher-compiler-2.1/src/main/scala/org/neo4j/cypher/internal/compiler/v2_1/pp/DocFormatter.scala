@@ -17,23 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pp
 
-import org.neo4j.cypher.internal.compiler.v2_1.pp.{Doc, DocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.pp.impl.{PageDocFormatter, LineDocFormatter}
 
-case class seqDocGen[K](f: DocGenerator[Any]) extends DocGenerator[Seq[K]] {
+object DocFormatter {
+  val defaultLineWidth = 80
 
-  import Doc._
+  val defaultLineFormatter = LineDocFormatter
+  val defaultPageFormatter = PageDocFormatter(defaultLineWidth)
 
-  def apply(seq: Seq[K]): Doc =
-    group(list(List(
-      text("${seqType(seq)}("),
-      nest(group(cons(pageBreak, sepList(innerDocs(seq))))),
-      pageBreak,
-      text(")")
-    )))
-
-  private def innerDocs(seq: Seq[K]): List[Doc] = seq.map(f).toList
-
-  private def seqType(seq: Seq[K]) = seq.getClass.getSimpleName
+  def pageFormatter(lineWidth: Int = defaultLineWidth) =
+    if (lineWidth == defaultLineWidth) defaultPageFormatter else PageDocFormatter(lineWidth)
 }

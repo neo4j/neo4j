@@ -17,29 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp
+package org.neo4j.cypher.internal.compiler.v2_1.pp.impl
 
-import scala.annotation.tailrec
+import org.neo4j.cypher.internal.compiler.v2_1.pp.Doc
 
-object LineDocFormatter extends DocFormatter {
-  def apply(doc: Doc): Seq[PrintCommand] =
-    build(List(doc), Vector.newBuilder[PrintCommand]).result()
-
-  @tailrec
-  private def build(doc: List[Doc], builder: CommandPrinter[Seq[PrintCommand]]): CommandPrinter[Seq[PrintCommand]] = doc match {
-    case ConsDoc(head, tail) :: rest  =>
-      build(head :: tail :: rest, builder)
-
-    case NilDoc :: rest =>
-      build(rest, builder)
-
-    case (doc: ValueDoc) :: rest =>
-      build(rest, builder += PrintText(doc.value))
-
-    case (doc: ContentDoc) :: rest =>
-      build(doc.content :: rest, builder)
-
-    case nil =>
-      builder
-  }
-}
+final case class DocIndent(indent: Int, mode: FormatMode, doc: Doc)

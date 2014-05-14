@@ -21,6 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.pp
 
 object pp {
   // Convert value to String by first converting to a doc using the given generator and formatter
-  def apply[T](value: T, formatter: DocFormatter = PageDocFormatter(100))(implicit generator: DocGenerator[T]): String =
-    printString(formatter(generator(value)))
+  def format[T](value: T, formatter: DocFormatter = DocFormatter.defaultPageFormatter)
+               (implicit generator: DocGenerator[T] = DocGenerator.forValues): String =
+    printToString(formatter(generator(value)))
+
+  def apply[T](value: T, formatter: DocFormatter = DocFormatter.defaultPageFormatter)
+              (implicit generator: DocGenerator[T] = DocGenerator.forValues): Unit =
+    println(format(value, formatter)(generator))
 }

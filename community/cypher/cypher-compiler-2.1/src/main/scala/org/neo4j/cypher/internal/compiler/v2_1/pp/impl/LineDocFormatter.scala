@@ -17,27 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pp.impl
 
+import scala.annotation.tailrec
 import org.neo4j.cypher.internal.compiler.v2_1.pp._
+import org.neo4j.cypher.internal.compiler.v2_1.pp.PrintText
+import org.neo4j.cypher.internal.compiler.v2_1.pp.ConsDoc
 
-case class productDocGen(f: DocGenerator[Any]) extends DocGenerator[Product] {
+object LineDocFormatter extends DocFormatter {
+  def apply(doc: Doc): Seq[PrintCommand] =
+    build(List(doc), Vector.newBuilder[PrintCommand]).result()
 
-  import Doc._
+  @tailrec
+  private def build(doc: List[Doc], builder: PrintingConverter[Seq[PrintCommand]]): PrintingConverter[Seq[PrintCommand]] = doc match {
+    case ConsDoc(head, tail) :: rest  =>
+      build(head :: tail :: rest, builder)
 
-  def apply(product: Product): Doc = {
-    if (product.productArity == 0) {
-      text(product.productPrefix)
-    } else {
-      val innerDocs = product.productIterator.map(f).toList
+    case NilDoc :: rest =>
+      build(rest, builder)
 
-      group(list(List(
-        text(product.productPrefix),
-        text("("),
-        nest(group(cons(pageBreak, sepList(innerDocs)))),
-        pageBreak,
-        text(")")
-      )))
-    }
+    case (doc: ValueDoc) :: rest =>
+      build(rest, builder += PrintText(doc.value))
+
+    case (doc: ContentDoc) :: rest =>
+      build(doc.content :: rest, builder)
+
+    case nil =>
+      builder
   }
 }
