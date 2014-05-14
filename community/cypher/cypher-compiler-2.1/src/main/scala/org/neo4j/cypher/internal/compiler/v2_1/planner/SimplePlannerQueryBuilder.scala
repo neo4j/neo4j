@@ -244,12 +244,12 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
           val newQuery =
             querySoFar
-              .updateProjections(
-                _.withSortItems(produceSortItems(optOrderBy))
-                 .withLimit(limit.map(_.expression))
-                 .withSkip(skip.map(_.expression))
-                 .withProjections(projectionsMap)
-              )
+              .withProjection(QueryProjection(
+                projections = projectionsMap,
+                sortItems = produceSortItems(optOrderBy),
+                limit = limit.map(_.expression),
+                skip = skip.map(_.expression)
+              ))
               .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
 
 
@@ -272,12 +272,12 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
           val newQuery =
             querySoFar
-              .updateProjections(
-                _.withProjections(projections)
-                 .withSortItems(produceSortItems(optOrderBy))
-                 .withLimit(limit.map(_.expression))
-                 .withSkip(skip.map(_.expression))
-              )
+              .withProjection(QueryProjection(
+                projections = projections,
+                sortItems = produceSortItems(optOrderBy),
+                limit = limit.map(_.expression),
+                skip = skip.map(_.expression)
+              ))
               .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
 
 
