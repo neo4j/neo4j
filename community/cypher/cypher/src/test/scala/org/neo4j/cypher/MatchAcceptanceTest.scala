@@ -931,23 +931,6 @@ RETURN a.name""")
     result.toList should equal (List(Map("b" -> b1)))
   }
 
-  test("should filter nodes by label given in match even if nodes are start nodes") {
-    // GIVEN
-    val a1 = createLabeledNode("bar")
-    val a2 = createLabeledNode("baz")
-    val b = createLabeledNode("foo")
-
-    relate(a1, b)
-    relate(a2, b)
-
-    // WHEN
-    val result = execute("START a=node(0,1), b=node(2) MATCH (a:bar) --> (b:foo) RETURN a")
-
-    // THEN
-    result.toList should equal (List(Map("a" -> a1)))
-  }
-
-
   test("should use predicates in the correct place") {
     //GIVEN
     val m = execute( """create
