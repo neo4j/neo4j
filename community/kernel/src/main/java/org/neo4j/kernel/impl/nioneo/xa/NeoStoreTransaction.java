@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import static java.util.Arrays.binarySearch;
 import static java.util.Arrays.copyOf;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.encodeString;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.CREATE;
 import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.DELETE;
@@ -85,6 +83,8 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
@@ -122,9 +122,6 @@ import org.neo4j.unsafe.batchinsert.LabelScanWriter;
  */
 public class NeoStoreTransaction extends XaTransaction
 {
-    private Map<Integer, RelationshipTypeTokenRecord> relationshipTypeTokenRecords;
-    private Map<Integer, LabelTokenRecord> labelTokenRecords;
-    private Map<Integer, PropertyKeyTokenRecord> propertyKeyTokenRecords;
     private final Map<Long, Map<Integer, RelationshipGroupRecord>> relGroupCache = new HashMap<>();
     private RecordChanges<Long, NeoStoreRecord, Void> neoStoreRecord;
 
@@ -192,17 +189,20 @@ public class NeoStoreTransaction extends XaTransaction
         if ( isRecovered() )
         {
             return context.getNodeCommands().isEmpty() && context.getPropCommands().isEmpty() &&
-                   context.getRelCommands().isEmpty() && context.getSchemaRuleCommands().isEmpty() &&
+                    context.getRelCommands().isEmpty() && context.getSchemaRuleCommands().isEmpty() &&
                     context.getRelationshipTypeTokenCommands().isEmpty() &&
-                   context.getLabelTokenCommands().isEmpty() &&
-                   context.getRelGroupCommands().isEmpty() &&
+                    context.getLabelTokenCommands().isEmpty() &&
+                    context.getRelGroupCommands().isEmpty() &&
                     context.getPropertyKeyTokenCommands().isEmpty() && kernelTransaction.isReadOnly();
         }
         return context.getNodeRecords().changeSize() == 0 && context.getRelRecords().changeSize() == 0 &&
                 context.getSchemaRuleChanges().changeSize() == 0 &&
-               context.getPropertyRecords().changeSize() == 0 && relationshipTypeTokenRecords == null &&
-               context.getRelGroupRecords().changeSize() == 0 &&
-               labelTokenRecords == null && propertyKeyTokenRecords == null && kernelTransaction.isReadOnly();
+                context.getPropertyRecords().changeSize() == 0 &&
+                context.getRelGroupRecords().changeSize() == 0 &&
+                context.getPropertyKeyTokenRecords().changeSize() == 0 &&
+                context.getLabelTokenRecords().changeSize() == 0 &&
+                context.getRelationshipTypeTokenRecords().changeSize() == 0 &&
+                kernelTransaction.isReadOnly();
     }
 
     // Make this accessible in this package
@@ -238,30 +238,24 @@ public class NeoStoreTransaction extends XaTransaction
                            context.getRelRecords().changeSize() +
                            context.getPropertyRecords().changeSize() +
                            context.getSchemaRuleChanges().changeSize() +
-                           (propertyKeyTokenRecords != null ? propertyKeyTokenRecords.size() : 0) +
-                           (relationshipTypeTokenRecords != null ? relationshipTypeTokenRecords.size() : 0) +
-                           (labelTokenRecords != null ? labelTokenRecords.size() : 0) +
+                           context.getPropertyKeyTokenRecords().changeSize() +
+                           context.getLabelTokenRecords().changeSize() +
+                           context.getRelationshipTypeTokenRecords().changeSize() +
                            context.getRelGroupRecords().changeSize();
         List<Command> commands = new ArrayList<>( noOfCommands );
-        if ( relationshipTypeTokenRecords != null )
+        for ( RecordProxy<Integer, LabelTokenRecord, Void> record : context.getLabelTokenRecords().changes() )
         {
-            for ( RelationshipTypeTokenRecord record : relationshipTypeTokenRecords.values() )
-            {
-                Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
-                command.init( record );
-                context.getRelationshipTypeTokenCommands().add( command );
-                commands.add( command );
-            }
+            Command.LabelTokenCommand command = new Command.LabelTokenCommand();
+            command.init(  record.forReadingLinkage()  );
+            context.getLabelTokenCommands().add( command );
+            commands.add( command );
         }
-        if ( labelTokenRecords != null )
+        for ( RecordProxy<Integer, RelationshipTypeTokenRecord, Void> record : context.getRelationshipTypeTokenRecords().changes() )
         {
-            for ( LabelTokenRecord record : labelTokenRecords.values() )
-            {
-                Command.LabelTokenCommand command = new Command.LabelTokenCommand();
-                command.init( record );
-                context.getLabelTokenCommands().add( command );
-                commands.add( command );
-            }
+            Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
+            command.init( record.forReadingLinkage() );
+            context.getRelationshipTypeTokenCommands().add( command );
+            commands.add( command );
         }
         for ( RecordChange<Long, NodeRecord, Void> change : context.getNodeRecords().changes() )
         {
@@ -294,15 +288,13 @@ public class NeoStoreTransaction extends XaTransaction
                 addCommand( context.getNeoStoreCommand() );
             }
         }
-        if ( propertyKeyTokenRecords != null )
+        for ( RecordProxy<Integer, PropertyKeyTokenRecord, Void> record : context.getPropertyKeyTokenRecords().changes() )
         {
-            for ( PropertyKeyTokenRecord record : propertyKeyTokenRecords.values() )
-            {
-                Command.PropertyKeyTokenCommand command = new Command.PropertyKeyTokenCommand();
-                command.init( record );
-                context.getPropertyKeyTokenCommands().add( command );
-                commands.add( command );
-            }
+            Command.PropertyKeyTokenCommand command =
+                    new Command.PropertyKeyTokenCommand();
+            command.init( record.forReadingLinkage() );
+            context.getPropertyKeyTokenCommands().add( command );
+            commands.add( command );
         }
         for ( RecordChange<Long, PropertyRecord, PrimitiveRecord> change : context.getPropertyRecords().changes() )
         {
@@ -403,28 +395,6 @@ public class NeoStoreTransaction extends XaTransaction
         try
         {
             boolean freeIds = neoStore.freeIdsDuringRollback();
-            if ( relationshipTypeTokenRecords != null )
-            {
-                for ( RelationshipTypeTokenRecord record : relationshipTypeTokenRecords.values() )
-                {
-                    if ( record.isCreated() )
-                    {
-                        if ( freeIds )
-                        {
-                            getRelationshipTypeStore().freeId( record.getId() );
-                        }
-                        for ( DynamicRecord dynamicRecord : record.getNameRecords() )
-                        {
-                            if ( dynamicRecord.isCreated() )
-                            {
-                                getRelationshipTypeStore().freeId(
-                                        (int) dynamicRecord.getId() );
-                            }
-                        }
-                    }
-                    removeRelationshipTypeFromCache( record.getId() );
-                }
-            }
             for ( RecordProxy<Long, NodeRecord, Void> change : context.getNodeRecords().changes() )
             {
                 NodeRecord record = change.forReadingLinkage();
@@ -450,27 +420,14 @@ public class NeoStoreTransaction extends XaTransaction
             {
                 removeGraphPropertiesFromCache();
             }
-            if ( propertyKeyTokenRecords != null )
-            {
-                for ( PropertyKeyTokenRecord record : propertyKeyTokenRecords.values() )
-                {
-                    if ( record.isCreated() )
-                    {
-                        if ( freeIds )
-                        {
-                            getPropertyStore().getPropertyKeyTokenStore().freeId( record.getId() );
-                        }
-                        for ( DynamicRecord dynamicRecord : record.getNameRecords() )
-                        {
-                            if ( dynamicRecord.isCreated() )
-                            {
-                                getPropertyStore().getPropertyKeyTokenStore().freeId(
-                                        (int) dynamicRecord.getId() );
-                            }
-                        }
-                    }
-                }
-            }
+
+            rollbackTokenRecordChanges( context.getPropertyKeyTokenRecords(),
+                    getPropertyKeyTokenStore(), freeIds, PROPERTY_KEY_CACHE_REMOVER );
+            rollbackTokenRecordChanges( context.getLabelTokenRecords(), getLabelTokenStore(), freeIds,
+                    LABEL_CACHE_REMOVER );
+            rollbackTokenRecordChanges( context.getRelationshipTypeTokenRecords(), getRelationshipTypeStore(),
+                    freeIds, RELATIONSHIP_TYPE_CACHE_REMOVER );
+
             for ( RecordProxy<Long, PropertyRecord, PrimitiveRecord> change : context.getPropertyRecords().changes() )
             {
                 PropertyRecord record = change.forReadingLinkage();
@@ -544,9 +501,59 @@ public class NeoStoreTransaction extends XaTransaction
         }
     }
 
-    private void removeRelationshipTypeFromCache( int id )
+    private interface CacheRemover
     {
-        cacheAccess.removeRelationshipTypeFromCache( id );
+        void remove( CacheAccessBackDoor cacheAccess, int id );
+    }
+
+    private static final CacheRemover PROPERTY_KEY_CACHE_REMOVER = new CacheRemover()
+    {
+        @Override
+        public void remove( CacheAccessBackDoor cacheAccess, int id )
+        {
+            cacheAccess.removePropertyKeyFromCache( id );
+        }
+    };
+
+    private static final CacheRemover RELATIONSHIP_TYPE_CACHE_REMOVER = new CacheRemover()
+    {
+        @Override
+        public void remove( CacheAccessBackDoor cacheAccess, int id )
+        {
+            cacheAccess.removeRelationshipTypeFromCache( id );
+        }
+    };
+
+    private static final CacheRemover LABEL_CACHE_REMOVER = new CacheRemover()
+    {
+        @Override
+        public void remove( CacheAccessBackDoor cacheAccess, int id )
+        {
+            cacheAccess.removeLabelFromCache( id );
+        }
+    };
+
+    private <T extends TokenRecord> void rollbackTokenRecordChanges( RecordChanges<Integer, T, Void> records,
+            TokenStore<T> store, boolean freeIds, CacheRemover cacheRemover )
+    {
+        for ( RecordChange<Integer, T, Void> record : records.changes() )
+        {
+            if ( record.isCreated() )
+            {
+                if ( freeIds )
+                {
+                    store.freeId( record.getKey() );
+                }
+                for ( DynamicRecord dynamicRecord : record.forReadingLinkage().getNameRecords() )
+                {
+                    if ( dynamicRecord.isCreated() )
+                    {
+                        store.getNameStore().freeId( (int) dynamicRecord.getId() );
+                    }
+                }
+            }
+            cacheRemover.remove( cacheAccess, record.getKey() );
+        }
     }
 
     private void patchDeletedRelationshipNodes( long id, long firstNodeId, long firstNodeNextRelId, long secondNodeId,
@@ -590,8 +597,8 @@ public class NeoStoreTransaction extends XaTransaction
     private void addPropertyKey( int id )
     {
         Token index = isRecovered() ?
-                      neoStore.getPropertyStore().getPropertyKeyTokenStore().getToken( id, true ) :
-                      neoStore.getPropertyStore().getPropertyKeyTokenStore().getToken( id );
+                      neoStore.getPropertyKeyTokenStore().getToken( id, true ) :
+                      neoStore.getPropertyKeyTokenStore().getToken( id );
         cacheAccess.addPropertyKeyToken( index );
     }
 
@@ -971,8 +978,6 @@ public class NeoStoreTransaction extends XaTransaction
     private void clear()
     {
         context.close();
-        relationshipTypeTokenRecords = null;
-        propertyKeyTokenRecords = null;
         relGroupCache.clear();
         neoStoreRecord = null;
     }
@@ -985,6 +990,11 @@ public class NeoStoreTransaction extends XaTransaction
     private LabelTokenStore getLabelTokenStore()
     {
         return neoStore.getLabelTokenStore();
+    }
+
+    private PropertyKeyTokenStore getPropertyKeyTokenStore()
+    {
+        return neoStore.getPropertyKeyTokenStore();
     }
 
     private int getRelGrabSize()
@@ -1298,15 +1308,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public void createPropertyKeyToken( String key, int id )
     {
-        PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( id );
-        record.setInUse( true );
-        record.setCreated();
-        PropertyKeyTokenStore propIndexStore = getPropertyStore().getPropertyKeyTokenStore();
-        Collection<DynamicRecord> nameRecords =
-                propIndexStore.allocateNameRecords( encodeString( key ) );
-        record.setNameId( (int) first( nameRecords ).getId() );
-        record.addNameRecords( nameRecords );
-        addPropertyKeyTokenRecord( record );
+        context.createPropertyKeyToken( key, id );
     }
 
     /**
@@ -1317,15 +1319,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public void createLabelToken( String name, int id )
     {
-        LabelTokenRecord record = new LabelTokenRecord( id );
-        record.setInUse( true );
-        record.setCreated();
-        LabelTokenStore labelTokenStore = getLabelTokenStore();
-        Collection<DynamicRecord> nameRecords =
-                labelTokenStore.allocateNameRecords( encodeString( name ) );
-        record.setNameId( (int) first( nameRecords ).getId() );
-        record.addNameRecords( nameRecords );
-        addLabelIdRecord( record );
+        context.createLabelToken( name, id );
     }
 
     /**
@@ -1337,14 +1331,7 @@ public class NeoStoreTransaction extends XaTransaction
      */
     public void createRelationshipTypeToken( int id, String name )
     {
-        RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( id );
-        record.setInUse( true );
-        record.setCreated();
-        Collection<DynamicRecord> typeNameRecords =
-                getRelationshipTypeStore().allocateNameRecords( encodeString( name ) );
-        record.setNameId( (int) first( typeNameRecords ).getId() );
-        record.addNameRecords( typeNameRecords );
-        addRelationshipTypeRecord( record );
+        context.createRelationshipTypeToken( name, id );
     }
 
     static class CommandSorter implements Comparator<Command>, Serializable
@@ -1380,33 +1367,6 @@ public class NeoStoreTransaction extends XaTransaction
         {
             return 3217;
         }
-    }
-
-    void addRelationshipTypeRecord( RelationshipTypeTokenRecord record )
-    {
-        if ( relationshipTypeTokenRecords == null )
-        {
-            relationshipTypeTokenRecords = new HashMap<>();
-        }
-        relationshipTypeTokenRecords.put( record.getId(), record );
-    }
-
-    void addLabelIdRecord( LabelTokenRecord record )
-    {
-        if ( labelTokenRecords == null )
-        {
-            labelTokenRecords = new HashMap<>();
-        }
-        labelTokenRecords.put( record.getId(), record );
-    }
-
-    void addPropertyKeyTokenRecord( PropertyKeyTokenRecord record )
-    {
-        if ( propertyKeyTokenRecords == null )
-        {
-            propertyKeyTokenRecords = new HashMap<>();
-        }
-        propertyKeyTokenRecords.put( record.getId(), record );
     }
 
     private RecordProxy<Long, NeoStoreRecord, Void> getOrLoadNeoStoreRecord()
@@ -1516,7 +1476,7 @@ public class NeoStoreTransaction extends XaTransaction
     public void addLabelToNode( int labelId, long nodeId )
     {
         NodeRecord nodeRecord = context.getNodeRecords().getOrLoad( nodeId, null ).forChangingData();
-        parseLabelsField( nodeRecord ).add( labelId, getNodeStore() );
+        parseLabelsField( nodeRecord ).add( labelId, getNodeStore(), getNodeStore().getDynamicLabelStore() );
     }
 
     public void removeLabelFromNode( int labelId, long nodeId )

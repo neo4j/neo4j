@@ -210,7 +210,7 @@ public abstract class CommonAbstractStore implements IdSequence
         loadIdGenerator();
 
         this.windowPool = windowPoolFactory.create( getStorageFileName(), getEffectiveRecordSize(),
-                                                    getFileChannel(), configuration, stringLogger );
+                getFileChannel(), configuration, stringLogger, getNumberOfReservedLowIds() );
     }
 
     protected abstract int getEffectiveRecordSize();
@@ -689,5 +689,10 @@ public abstract class CommonAbstractStore implements IdSequence
     public String toString()
     {
         return getClass().getSimpleName();
+    }
+
+    public int getNumberOfReservedLowIds()
+    {
+        return 0;
     }
 }

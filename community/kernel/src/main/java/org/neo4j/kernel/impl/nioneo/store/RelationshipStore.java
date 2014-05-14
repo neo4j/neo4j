@@ -82,10 +82,15 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     @Override
     public RelationshipRecord getRecord( long id )
     {
+        return getRecord( id, new RelationshipRecord( id ) );
+    }
+
+    public RelationshipRecord getRecord( long id, RelationshipRecord target )
+    {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            return getRecord( id, window, RecordLoad.NORMAL );
+            return getRecord( id, window, RecordLoad.NORMAL, target );
         }
         finally
         {
@@ -108,7 +113,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
 
         try
         {
-            return getRecord( id, window, RecordLoad.FORCE );
+            return getRecord( id, window, RecordLoad.FORCE, new RelationshipRecord( id ) );
         }
         finally
         {
@@ -142,7 +147,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         }
         try
         {
-            return getRecord( id, window, RecordLoad.CHECK );
+            return getRecord( id, window, RecordLoad.CHECK, new RelationshipRecord( id ) );
         }
         finally
         {
@@ -244,7 +249,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     }
 
     private RelationshipRecord getRecord( long id, PersistenceWindow window,
-        RecordLoad load )
+        RecordLoad load, RelationshipRecord record )
     {
         Buffer buffer = window.getOffsettedBuffer( id );
 
@@ -280,9 +285,10 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         long secondNodeMod = (typeInt & 0x70000000L) << 4;
         int type = (int)(typeInt & 0xFFFF);
 
-        RelationshipRecord record = new RelationshipRecord( id,
-            longFromIntAndMod( firstNode, firstNodeMod ),
-            longFromIntAndMod( secondNode, secondNodeMod ), type );
+        record.setId( id );
+        record.setFirstNode( longFromIntAndMod( firstNode, firstNodeMod ) );
+        record.setSecondNode( longFromIntAndMod( secondNode, secondNodeMod ) );
+        record.setType( type );
         record.setInUse( inUse );
 
         long firstPrevRel = buffer.getUnsignedInt();
@@ -328,7 +334,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         try
         {
 //            return getFullRecord( relId, window );
-            return getRecord( relId, window, RecordLoad.NORMAL );
+            return getRecord( relId, window, RecordLoad.NORMAL, new RelationshipRecord( relId ) );
         }
         finally
         {

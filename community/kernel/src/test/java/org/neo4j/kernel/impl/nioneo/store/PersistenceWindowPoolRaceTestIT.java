@@ -29,6 +29,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Rule;
@@ -108,7 +109,12 @@ public class PersistenceWindowPoolRaceTestIT
         } while ( observedFailure == null && System.currentTimeMillis() < deadline );
         executor.shutdown();
         mailbox.compareAndSet( null, STOP_SIGNAL );
+        pwp.close();
         raf.close();
+        if ( !executor.awaitTermination( 10, TimeUnit.SECONDS ) )
+        {
+            System.err.println( "WARNING: Executor did not terminate after 10 seconds." );
+        }
 
         if ( observedFailure != null )
         {

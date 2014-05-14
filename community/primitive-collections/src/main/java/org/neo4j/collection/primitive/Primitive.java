@@ -23,6 +23,7 @@ import org.neo4j.collection.primitive.hopscotch.IntKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyTable;
 import org.neo4j.collection.primitive.hopscotch.IntKeyUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyIntValueTable;
+import org.neo4j.collection.primitive.hopscotch.LongKeyLongValueUnsafeTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyObjectValueTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyTable;
 import org.neo4j.collection.primitive.hopscotch.LongKeyUnsafeTable;
@@ -30,6 +31,7 @@ import org.neo4j.collection.primitive.hopscotch.PrimitiveIntHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveIntObjectHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongHashSet;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongIntHashMap;
+import org.neo4j.collection.primitive.hopscotch.PrimitiveLongLongHashMap;
 import org.neo4j.collection.primitive.hopscotch.PrimitiveLongObjectHashMap;
 
 import static org.neo4j.collection.primitive.hopscotch.HopScotchHashingAlgorithm.NO_MONITOR;
@@ -48,12 +50,13 @@ public class Primitive
      * the correct semantics to the algorithm.
      */
     public static final Object VALUE_MARKER = new Object();
-    public static final int BASE_CAPACITY = 1 << 8;
+    public static final int DEFAULT_HEAP_CAPACITY = 1 << 8;
+    public static final int DEFAULT_OFFHEAP_CAPACITY = 1 << 20;
 
     // Some example would be...
     public static PrimitiveLongSet longSet()
     {
-        return longSet( BASE_CAPACITY );
+        return longSet( DEFAULT_HEAP_CAPACITY );
     }
 
     public static PrimitiveLongSet longSet( int initialCapacity )
@@ -64,7 +67,7 @@ public class Primitive
 
     public static PrimitiveLongSet offHeapLongSet()
     {
-        return offHeapLongSet( 1 << 20 );
+        return offHeapLongSet( DEFAULT_OFFHEAP_CAPACITY );
     }
 
     public static PrimitiveLongSet offHeapLongSet( int initialCapacity )
@@ -75,7 +78,7 @@ public class Primitive
 
     public static PrimitiveLongIntMap longIntMap()
     {
-        return longIntMap( BASE_CAPACITY );
+        return longIntMap( DEFAULT_HEAP_CAPACITY );
     }
 
     public static PrimitiveLongIntMap longIntMap( int initialCapacity )
@@ -83,9 +86,19 @@ public class Primitive
         return new PrimitiveLongIntHashMap( new LongKeyIntValueTable( initialCapacity ), NO_MONITOR );
     }
 
+    public static PrimitiveLongLongMap offHeapLongLongMap()
+    {
+        return offHeapLongLongMap( DEFAULT_OFFHEAP_CAPACITY );
+    }
+
+    public static PrimitiveLongLongMap offHeapLongLongMap( int initialCapacity )
+    {
+        return new PrimitiveLongLongHashMap( new LongKeyLongValueUnsafeTable( initialCapacity ), NO_MONITOR );
+    }
+
     public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap()
     {
-        return longObjectMap( BASE_CAPACITY );
+        return longObjectMap( DEFAULT_HEAP_CAPACITY );
     }
 
     public static <VALUE> PrimitiveLongObjectMap<VALUE> longObjectMap( int initialCapacity )
@@ -95,7 +108,7 @@ public class Primitive
 
     public static PrimitiveIntSet intSet()
     {
-        return intSet( BASE_CAPACITY );
+        return intSet( DEFAULT_HEAP_CAPACITY );
     }
 
     public static PrimitiveIntSet intSet( int initialCapacity )
@@ -118,7 +131,7 @@ public class Primitive
 
     public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap()
     {
-        return intObjectMap( BASE_CAPACITY );
+        return intObjectMap( DEFAULT_HEAP_CAPACITY );
     }
 
     public static <VALUE> PrimitiveIntObjectMap<VALUE> intObjectMap( int initialCapacity )

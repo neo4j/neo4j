@@ -451,8 +451,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
             this.idGenerators.put( RelationshipType.class, neoStore.getRelationshipTypeStore() );
             this.idGenerators.put( Label.class, neoStore.getLabelTokenStore() );
             this.idGenerators.put( PropertyStore.class, neoStore.getPropertyStore() );
-            this.idGenerators.put( PropertyKeyTokenRecord.class,
-                    neoStore.getPropertyStore().getPropertyKeyTokenStore() );
+            this.idGenerators.put( PropertyKeyTokenRecord.class, neoStore.getPropertyKeyTokenStore() );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
 
             // TODO Problem here is that we don't know if recovery has been performed at this point

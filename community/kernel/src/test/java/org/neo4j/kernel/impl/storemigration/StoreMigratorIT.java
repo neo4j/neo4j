@@ -80,7 +80,7 @@ public class StoreMigratorIT
     public void shouldMigrate() throws IOException
     {
         // WHEN
-        upgrader( new StoreMigrator( monitor, fs, idGeneratorFactory ) )
+        upgrader( new StoreMigrator( monitor, fs ) )
                 .migrateIfNeeded( findOldFormatStoreDirectory( storeDir ) );
 
         // THEN
@@ -120,7 +120,7 @@ public class StoreMigratorIT
         // that should be merged in the store migration
         // WHEN
         Unzip.unzip( LegacyStore.class, "propkeydupdb.zip", storeDir );
-        upgrader( new StoreMigrator( monitor, fs, idGeneratorFactory ) ).migrateIfNeeded( storeDir );
+        upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded( storeDir );
 
         // THEN
         // verify that the "name" property for both the involved nodes
@@ -154,7 +154,7 @@ public class StoreMigratorIT
         Unzip.unzip( LegacyStore.class, "emptydb.zip", storeDir );
 
         // WHEN migrating that to the new version
-        upgrader( new StoreMigrator( monitor, fs, idGeneratorFactory ) ).migrateIfNeeded( storeDir );
+        upgrader( new StoreMigrator( monitor, fs ) ).migrateIfNeeded( storeDir );
 
         // THEN it should result in an updated database with the new store format
         GraphDatabaseService db = cleanup.add( new GraphDatabaseFactory().newEmbeddedDatabase(

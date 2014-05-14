@@ -158,7 +158,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             return Iterables.empty(); // node not in use => no updates
         }
-        long firstPropertyId = node.getCommittedNextProp();
+        long firstPropertyId = node.getNextProp();
         if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
         {
             return Iterables.empty(); // no properties => no updates (it's not going to be in any index)
@@ -188,7 +188,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
         {
             throw new EntityNotFoundException( EntityType.NODE, nodeId );
         }
-        long firstPropertyId = node.getCommittedNextProp();
+        long firstPropertyId = node.getNextProp();
         if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
         {
             throw new PropertyNotFoundException( propertyKeyId, EntityType.NODE, nodeId );
@@ -276,7 +276,7 @@ public class NeoStoreIndexStoreView implements IndexStoreView
 
         PropertyBlockIterator( NodeRecord node )
         {
-            long firstPropertyId = node.getCommittedNextProp();
+            long firstPropertyId = node.getNextProp();
             if ( firstPropertyId == Record.NO_NEXT_PROPERTY.intValue() )
             {
                 records = IteratorUtil.emptyIterator();

@@ -95,14 +95,19 @@ public enum StoreFile
         return typeDescriptor;
     }
 
+    public String fileName( StoreFileType type )
+    {
+        return type.augment( NeoStore.DEFAULT_NAME + storeFileNamePart );
+    }
+
     public String storeFileName()
     {
-        return NeoStore.DEFAULT_NAME + storeFileNamePart;
+        return fileName( StoreFileType.STORE );
     }
 
     public String idFileName()
     {
-        return storeFileName() + ".id";
+        return fileName( StoreFileType.ID );
     }
 
     public static Iterable<StoreFile> legacyStoreFiles()
@@ -134,16 +139,17 @@ public enum StoreFile
      * @throws IOException If any of the move operations fail for any reason.
      */
     public static void move( FileSystemAbstraction fs, File fromDirectory, File toDirectory,
-            Iterable<StoreFile> files, boolean allowSkipNonExistentFiles, boolean allowOverwriteTarget )
-                    throws IOException
+            Iterable<StoreFile> files, boolean allowSkipNonExistentFiles, boolean allowOverwriteTarget,
+            StoreFileType... types ) throws IOException
     {
         // TODO: change the order that files are moved to handle failure conditions properly
         for ( StoreFile storeFile : files )
         {
-            moveFile( fs, storeFile.storeFileName(), fromDirectory, toDirectory,
-                    allowSkipNonExistentFiles, allowOverwriteTarget );
-            moveFile( fs, storeFile.idFileName(), fromDirectory, toDirectory,
-                    allowSkipNonExistentFiles, allowOverwriteTarget );
+            for ( StoreFileType type : types )
+            {
+                moveFile( fs, storeFile.fileName( type ), fromDirectory, toDirectory,
+                        allowSkipNonExistentFiles, allowOverwriteTarget );
+            }
         }
     }
 
@@ -211,6 +217,14 @@ public enum StoreFile
         for ( StoreFile store : stores )
         {
             fs.deleteFile( new File( directory, store.idFileName() ) );
+        }
+    }
+
+    public static void deleteStoreFile( FileSystemAbstraction fs, File directory, StoreFile... stores )
+    {
+        for ( StoreFile store : stores )
+        {
+            fs.deleteFile( new File( directory, store.storeFileName() ) );
         }
     }
 }

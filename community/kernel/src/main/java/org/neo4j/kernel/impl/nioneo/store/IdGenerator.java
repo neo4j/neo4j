@@ -19,18 +19,17 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public interface IdGenerator
+public interface IdGenerator extends IdSequence
 {
-    long nextId();
     IdRange nextIdBatch( int size );
-    
+
     /**
      * @param id the highest in use + 1
      */
     void setHighId( long id );
     long getHighId();
     void freeId( long id );
-    
+
     /**
      * Closes the id generator.
      */

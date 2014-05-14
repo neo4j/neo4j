@@ -620,6 +620,17 @@ public class NeoStore extends AbstractStore
         return propStore;
     }
 
+    /**
+     * @return the {@link PropertyKeyTokenStore}
+     */
+    public PropertyKeyTokenStore getPropertyKeyTokenStore()
+    {
+        return propStore.getPropertyKeyTokenStore();
+    }
+
+    /**
+     * @return the {@link RelationshipGroupStore}
+     */
     public RelationshipGroupStore getRelationshipGroupStore()
     {
         return relGroupStore;
