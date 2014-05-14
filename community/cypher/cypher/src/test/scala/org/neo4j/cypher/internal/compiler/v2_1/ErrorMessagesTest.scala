@@ -372,8 +372,16 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
   }
 
   test("should forbid to match properties or labels on already bound identifiers") {
-    expectError("match a with a match (a {name: 'foo'})-->(b) return a",
-    "Cannot add labels or properties on a node which is already bound (line 1, column 22)"
+    expectError(
+      "match a with a match (a {name: 'foo'})-->(b) return a",
+      "Cannot add labels or properties on a node which is already bound (line 1, column 22)"
+    )
+  }
+
+  test("should forbid to match a node using an identifier which is already bound") {
+    expectError(
+      "match a with a match a return a",
+      "Cannot match on a pattern containing only already bound identifiers (line 1, column 16)"
     )
   }
 

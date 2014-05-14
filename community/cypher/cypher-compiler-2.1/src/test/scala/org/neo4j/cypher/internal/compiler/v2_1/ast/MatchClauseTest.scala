@@ -26,9 +26,11 @@ import org.neo4j.graphdb.Direction
 
 class MatchClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  test("should not allow adding constraints to already bound nod identifiers") {
+  private val unboundPattern: NodePattern = NodePattern(Some(ident("unbound")), Seq.empty, None, naked = false)_
+
+  test("should not allow adding constraints to already bound node identifiers") {
     val nodePattern: NodePattern = NodePattern(Some(ident("a")), Seq(LabelName("A")_), None, naked = false)_
-    val pattern: Pattern = Pattern(Seq(EveryPath(nodePattern)))_
+    val pattern: Pattern = Pattern(Seq(EveryPath(nodePattern), EveryPath(unboundPattern)))_
     val matchClause: Match = Match(optional = false, pattern, Seq.empty, None)_
 
     val state = SemanticState.clean.declareIdentifier(ident("a"), CTNode.invariant).right.get
@@ -41,7 +43,7 @@ class MatchClauseTest extends CypherFunSuite with AstConstructionTestSupport {
   test("should not allow adding constraints to already bound relationship identifiers") {
     val nodePattern: NodePattern = NodePattern(Some(ident("a")), Seq.empty, None, naked = false)_
     val relPattern: RelationshipPattern = RelationshipPattern(Some(ident("r")), optional = false, Seq(RelTypeName("R")_), None, None, Direction.OUTGOING)_
-    val pattern: Pattern = Pattern(Seq(EveryPath(RelationshipChain(nodePattern, relPattern, nodePattern)_)))_
+    val pattern: Pattern = Pattern(Seq(EveryPath(RelationshipChain(nodePattern, relPattern, nodePattern)_), EveryPath(unboundPattern)))_
     val matchClause: Match = Match(optional = false, pattern, Seq.empty, None)_
 
     val state = SemanticState.clean.declareIdentifier(ident("a"), CTNode.invariant).right.get
@@ -50,5 +52,31 @@ class MatchClauseTest extends CypherFunSuite with AstConstructionTestSupport {
 
     result.errors should have size 1
     result.errors.head.msg should startWith("Cannot add types or properties on a relationship which is already bound")
+  }
+
+  test("should not allow match on a pattern containing only already bound identifiers") {
+    val nodePattern: NodePattern = NodePattern(Some(ident("a")), Seq.empty, None, naked = false)_
+    val pattern: Pattern = Pattern(Seq(EveryPath(nodePattern)))_
+    val matchClause: Match = Match(optional = false, pattern, Seq.empty, None)_
+
+    val state = SemanticState.clean.declareIdentifier(ident("a"), CTNode.invariant).right.get
+    val result = matchClause.semanticCheck(state)
+
+    result.errors should have size 1
+    result.errors.head.msg should startWith("Cannot match on a pattern containing only already bound identifiers")
+  }
+
+  test("should not allow match on a pattern containing only already bound identifiers with relationships") {
+    val nodePattern: NodePattern = NodePattern(Some(ident("a")), Seq.empty, None, naked = false)_
+    val relPattern: RelationshipPattern = RelationshipPattern(Some(ident("r")), optional = false, Seq.empty, None, None, Direction.OUTGOING)_
+    val pattern: Pattern = Pattern(Seq(EveryPath(RelationshipChain(nodePattern, relPattern, nodePattern)_)))_
+    val matchClause: Match = Match(optional = false, pattern, Seq.empty, None)_
+
+    val state = SemanticState.clean.declareIdentifier(ident("a"), CTNode.invariant).right.get
+      .declareIdentifier(ident("r"), CTRelationship.invariant).right.get
+    val result = matchClause.semanticCheck(state)
+
+    result.errors should have size 1
+    result.errors.head.msg should startWith("Cannot match on a pattern containing only already bound identifiers")
   }
 }
