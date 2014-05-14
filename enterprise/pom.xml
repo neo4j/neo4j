@@ -60,13 +60,6 @@ terms of the relevant Commercial Agreement.
     </license>
   </licenses>
 
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
-
   <profiles>
     <profile>
       <id>freeze</id>

@@ -292,6 +292,26 @@ public enum ClusterMessage
             }
         }
 
+        protected InstanceId getWinner()
+        {
+            return winner;
+        }
+
+        protected String getRoleWon()
+        {
+            return roleWon;
+        }
+
+        protected InstanceId getLoser()
+        {
+            return loser;
+        }
+
+        protected String getRoleLost()
+        {
+            return roleLost;
+        }
+
         public boolean isLeaving( InstanceId me )
         {
             return me.equals( leave );
@@ -372,6 +392,55 @@ public enum ClusterMessage
             result = 31 * result + (roleLost != null ? roleLost.hashCode() : 0);
             result = 31 * result + (loser != null ? loser.hashCode() : 0);
             return result;
+        }
+    }
+
+    public static class VersionedConfigurationStateChange extends ConfigurationChangeState
+    {
+        private InstanceId elector;
+        private long version;
+
+        public InstanceId getElector()
+        {
+            return elector;
+        }
+
+        public void setElector( InstanceId elector )
+        {
+            this.elector = elector;
+        }
+
+        public long getVersion()
+        {
+            return version;
+        }
+
+        public void setVersion( long version )
+        {
+            this.version = version;
+        }
+
+        public void apply( ClusterContext context )
+        {
+            if ( getJoin() != null )
+            {
+                context.joined( getJoin(), getJoinUri() );
+            }
+
+            if ( getLeave() != null )
+            {
+                context.left( getLeave() );
+            }
+
+            if ( getRoleWon() != null )
+            {
+                context.elected( getRoleWon(), getWinner(), elector, version );
+            }
+
+            if ( getRoleLost() != null )
+            {
+                context.unelected( getRoleLost(), getLoser(), elector, version );
+            }
         }
     }
 

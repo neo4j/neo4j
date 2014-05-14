@@ -25,7 +25,8 @@ import org.neo4j.graphalgo.CostEvaluator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory;
-import org.neo4j.graphalgo.impl.util.StopAfterWeightIterator;
+import org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory.PathInterest;
+import org.neo4j.graphalgo.impl.util.WeightedPathIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
@@ -38,6 +39,7 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Uniqueness;
 
+import static org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory.pathInterest;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
 import static org.neo4j.kernel.StandardExpander.toPathExpander;
 import static org.neo4j.kernel.Traversal.traversal;
@@ -55,49 +57,68 @@ public class Dijkstra implements PathFinder<WeightedPath>
     private final InitialBranchState stateFactory;
     private final CostEvaluator<Double> costEvaluator;
     private Traverser lastTraverser;
+    private final boolean stopAfterLowestCost;
 
     public Dijkstra( PathExpander expander, CostEvaluator<Double> costEvaluator )
     {
-        this( expander, InitialBranchState.NO_STATE, costEvaluator );
+        this( expander, InitialBranchState.NO_STATE, costEvaluator, true );
     }
 
     public Dijkstra( PathExpander expander, InitialBranchState stateFactory, CostEvaluator<Double> costEvaluator )
     {
-        this.expander = expander;
-        this.costEvaluator = costEvaluator;
-        this.stateFactory = stateFactory;
+        this( expander, stateFactory, costEvaluator, true );
     }
 
     public Dijkstra( RelationshipExpander expander, CostEvaluator<Double> costEvaluator )
     {
-        this( toPathExpander( expander ), costEvaluator );
+        this( toPathExpander( expander ), costEvaluator, true );
+    }
+
+    public Dijkstra( PathExpander expander, CostEvaluator<Double> costEvaluator, boolean stopAfterLowestCost )
+    {
+        this( expander, InitialBranchState.NO_STATE, costEvaluator, stopAfterLowestCost );
+    }
+
+    public Dijkstra( PathExpander expander, InitialBranchState stateFactory, CostEvaluator<Double> costEvaluator,
+            boolean stopAfterLowestCost )
+    {
+        this.expander = expander;
+        this.costEvaluator = costEvaluator;
+        this.stateFactory = stateFactory;
+        this.stopAfterLowestCost = stopAfterLowestCost;
+    }
+
+    public Dijkstra( RelationshipExpander expander, CostEvaluator<Double> costEvaluator, boolean stopAfterLowestCost )
+    {
+        this( toPathExpander( expander ), costEvaluator, stopAfterLowestCost );
     }
 
     @Override
     public Iterable<WeightedPath> findAllPaths( Node start, final Node end )
     {
-        final Traverser traverser = traverser( start, end, true );
+        final Traverser traverser = traverser( start, end, pathInterest( true, stopAfterLowestCost ) );
         return new Iterable<WeightedPath>()
         {
             @Override
             public Iterator<WeightedPath> iterator()
             {
-                return new StopAfterWeightIterator( traverser.iterator(), costEvaluator );
+                return new WeightedPathIterator( traverser.iterator(), costEvaluator, stopAfterLowestCost );
             }
         };
     }
 
-    private Traverser traverser( Node start, final Node end, boolean forMultiplePaths )
+    private Traverser traverser( Node start, final Node end, PathInterest interest )
     {
         return (lastTraverser = TRAVERSAL.expand( expander, stateFactory )
-                .order( new SelectorFactory( forMultiplePaths, costEvaluator ) )
+                .order( new SelectorFactory( interest, costEvaluator ) )
                 .evaluator( Evaluators.includeWhereEndNodeIs( end ) ).traverse( start ) );
     }
 
     @Override
     public WeightedPath findSinglePath( Node start, Node end )
     {
-        return firstOrNull( new StopAfterWeightIterator( traverser( start, end, false ).iterator(), costEvaluator ) );
+        return firstOrNull( new WeightedPathIterator(
+                traverser( start, end, PathInterest.singleLowest ).iterator(), costEvaluator, true ) );
     }
 
     @Override
@@ -110,9 +131,9 @@ public class Dijkstra implements PathFinder<WeightedPath>
     {
         private final CostEvaluator<Double> evaluator;
 
-        SelectorFactory( boolean forMultiplePaths, CostEvaluator<Double> evaluator )
+        SelectorFactory( PathInterest interest, CostEvaluator<Double> evaluator )
         {
-            super( forMultiplePaths );
+            super( interest );
             this.evaluator = evaluator;
         }
 

@@ -26,7 +26,7 @@ import org.neo4j.graphalgo.EstimateEvaluator;
 import org.neo4j.graphalgo.PathFinder;
 import org.neo4j.graphalgo.WeightedPath;
 import org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory;
-import org.neo4j.graphalgo.impl.util.StopAfterWeightIterator;
+import org.neo4j.graphalgo.impl.util.WeightedPathIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PathExpander;
@@ -38,6 +38,7 @@ import org.neo4j.graphdb.traversal.TraversalMetadata;
 import org.neo4j.graphdb.traversal.Traverser;
 import org.neo4j.kernel.Uniqueness;
 
+import static org.neo4j.graphalgo.impl.util.BestFirstSelectorFactory.pathInterest;
 import static org.neo4j.graphdb.traversal.Evaluators.includeWhereEndNodeIs;
 import static org.neo4j.graphdb.traversal.InitialBranchState.NO_STATE;
 import static org.neo4j.helpers.collection.IteratorUtil.firstOrNull;
@@ -58,27 +59,51 @@ public class TraversalAStar implements PathFinder<WeightedPath>
     private Traverser lastTraverser;
 
     private final EstimateEvaluator<Double> estimateEvaluator;
+    private boolean stopAfterLowestWeight;
 
     @SuppressWarnings( "unchecked" )
     public <T> TraversalAStar( PathExpander<T> expander,
             CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator )
     {
-        this( expander, NO_STATE, costEvaluator, estimateEvaluator );
+        this( expander, NO_STATE, costEvaluator, estimateEvaluator, true );
     }
 
     public <T> TraversalAStar( PathExpander<T> expander, InitialBranchState<T> initialState,
             CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator )
     {
-        this.costEvaluator = costEvaluator;
-        this.estimateEvaluator = estimateEvaluator;
-        this.traversalDescription = traversal().uniqueness( Uniqueness.NONE ).expand( expander, initialState );
+        this( expander, initialState, costEvaluator, estimateEvaluator, true );
     }
 
     @SuppressWarnings( "unchecked" )
     public TraversalAStar( RelationshipExpander expander, CostEvaluator<Double> costEvaluator,
             EstimateEvaluator<Double> estimateEvaluator )
     {
-        this( toPathExpander( expander ), costEvaluator, estimateEvaluator );
+        this( toPathExpander( expander ), costEvaluator, estimateEvaluator, true );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public <T> TraversalAStar( PathExpander<T> expander,
+            CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator,
+            boolean stopAfterLowestWeight )
+    {
+        this( expander, NO_STATE, costEvaluator, estimateEvaluator, stopAfterLowestWeight );
+    }
+
+    public <T> TraversalAStar( PathExpander<T> expander, InitialBranchState<T> initialState,
+            CostEvaluator<Double> costEvaluator, EstimateEvaluator<Double> estimateEvaluator,
+            boolean stopAfterLowestWeight )
+    {
+        this.costEvaluator = costEvaluator;
+        this.estimateEvaluator = estimateEvaluator;
+        this.stopAfterLowestWeight = stopAfterLowestWeight;
+        this.traversalDescription = traversal().uniqueness( Uniqueness.NONE ).expand( expander, initialState );
+    }
+
+    @SuppressWarnings( "unchecked" )
+    public TraversalAStar( RelationshipExpander expander, CostEvaluator<Double> costEvaluator,
+            EstimateEvaluator<Double> estimateEvaluator, boolean stopAfterLowestWeight )
+    {
+        this( toPathExpander( expander ), costEvaluator, estimateEvaluator, stopAfterLowestWeight );
     }
 
     @Override
@@ -96,13 +121,15 @@ public class TraversalAStar implements PathFinder<WeightedPath>
     private Iterable<WeightedPath> findPaths( Node start, Node end, boolean multiplePaths )
     {
         lastTraverser = traversalDescription.order(
-                new SelectorFactory( end, multiplePaths ) ).evaluator( includeWhereEndNodeIs( end ) ).traverse( start );
+                new SelectorFactory( end, pathInterest( true, stopAfterLowestWeight ) ) )
+                .evaluator( includeWhereEndNodeIs( end ) )
+                .traverse( start );
         return new Iterable<WeightedPath>()
         {
             @Override
             public Iterator<WeightedPath> iterator()
             {
-                return new StopAfterWeightIterator( lastTraverser.iterator(), costEvaluator );
+                return new WeightedPathIterator( lastTraverser.iterator(), costEvaluator, stopAfterLowestWeight );
             }
         };
     }
@@ -146,9 +173,9 @@ public class TraversalAStar implements PathFinder<WeightedPath>
     {
         private final Node end;
 
-        SelectorFactory( Node end, boolean forMultiplePaths )
+        SelectorFactory( Node end, PathInterest interest )
         {
-            super( forMultiplePaths );
+            super( interest );
             this.end = end;
         }
 
