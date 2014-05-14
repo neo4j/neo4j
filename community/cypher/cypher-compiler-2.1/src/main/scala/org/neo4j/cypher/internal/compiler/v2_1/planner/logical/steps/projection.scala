@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.NoProjection
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
 object projection {
@@ -30,19 +29,14 @@ object projection {
   import QueryPlanProducer._
 
   def apply(plan: QueryPlan, projectionsMap: Map[String, Expression])(implicit context: LogicalPlanningContext): QueryPlan = {
-    val projection = context.query.projection
-    projection match {
-      case NoProjection => plan
-      case _ =>
-        val ids = plan.availableSymbols
-        val projectAllCoveredIds = ids.map {
-          case IdName(id) => id -> ast.Identifier(id)(null)
-        }.toMap
+    val ids = plan.availableSymbols
+    val projectAllCoveredIds = ids.map {
+      case IdName(id) => id -> ast.Identifier(id)(null)
+    }.toMap
 
-        if (projectionsMap == projectAllCoveredIds)
-          planStarProjection(plan, projectionsMap)
-        else
-          planRegularProjection(plan, projectionsMap)
-    }
+    if (projectionsMap == projectAllCoveredIds)
+      planStarProjection(plan, projectionsMap)
+    else
+      planRegularProjection(plan, projectionsMap)
   }
 }

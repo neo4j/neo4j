@@ -236,22 +236,18 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
             tl
           )
 
-          val projectionsMap =
-            querySoFar.graph.coveredIds.map( (idName) => idName.name -> Identifier(idName.name)(new InputPosition(0, 1, 0)) ).toMap
-
-          val inputIds = projectionsMap.keySet.map(IdName)
+          val inputIds = querySoFar.graph.coveredIds
           val argumentIds = inputIds intersect tailQuery.graph.coveredIds
 
           val newQuery =
             querySoFar
-              .withProjection(QueryProjection(
-                projections = projectionsMap,
-                sortItems = produceSortItems(optOrderBy),
-                limit = limit.map(_.expression),
-                skip = skip.map(_.expression)
-              ))
+              .withProjection(
+                QueryProjection.forIds(inputIds)
+                  .withSortItems( produceSortItems(optOrderBy))
+                  .withLimit(limit.map(_.expression))
+                  .withSkip(skip.map(_.expression))
+              )
               .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
-
 
           (newQuery, tailMap)
 
