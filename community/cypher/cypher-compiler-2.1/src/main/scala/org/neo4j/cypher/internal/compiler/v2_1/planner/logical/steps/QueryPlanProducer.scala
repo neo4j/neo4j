@@ -55,7 +55,7 @@ object QueryPlanProducer {
   def planTailApply(left: QueryPlan, right: QueryPlan) =
     QueryPlan(
       plan = Apply(left.plan, right.plan),
-      solved = left.solved.withTail(right.solved))
+      solved = left.solved.updateTailOrSelf(_.withTail(right.solved)))
 
   def planCartesianProduct(left: QueryPlan, right: QueryPlan) =
     QueryPlan(
@@ -164,7 +164,7 @@ object QueryPlanProducer {
     )
 
   def planSelection(predicates: Seq[Expression], left: QueryPlan) =
-    QueryPlan(Selection(predicates, left.plan), left.solved.updateGraph(_.addPredicates(predicates: _*)))
+    QueryPlan(Selection(predicates, left.plan), left.solved.updateTailOrSelf(_.updateGraph(_.addPredicates(predicates: _*))))
 
   def planSelectOrAntiSemiApply(outer: QueryPlan, inner: QueryPlan, expr: Expression, solved: Expression) =
     QueryPlan(

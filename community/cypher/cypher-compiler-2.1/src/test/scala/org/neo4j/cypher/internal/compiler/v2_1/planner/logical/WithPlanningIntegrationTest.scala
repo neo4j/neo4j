@@ -20,12 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{UnsignedIntegerLiteral, Expression, Identifier, SignedIntegerLiteral}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.UnsignedIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.mockito.Mockito
 
 class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -40,6 +44,66 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     val expected =
       planRegularProjection(
         planTailApply(
+          left = planStarProjection(
+            planLimit(
+              planAllNodesScan("a"),
+              UnsignedIntegerLiteral("1") _
+            ),
+            Map[String, Expression]("a" -> ident("a"))
+          ),
+          right = planSingleRow()
+        ),
+        Map[String, Expression]("b" -> SignedIntegerLiteral("1") _)
+      )
+
+    result should equal(expected)
+  }
+
+  test("should build plans that contain multiple WITH") {
+    implicit val statistics = hardcodedStatistics
+    implicit val planContext = newMockedPlanContext
+    implicit val planner = newPlanner(newMetricsFactory)
+    val rel = PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
+
+    val result = produceQueryPlan("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b LIMIT 1 RETURN b as `b`")
+    val expected =
+      planRegularProjection(
+        planTailApply(
+          planStarProjection(
+            planLimit(
+              planTailApply(
+                planStarProjection(
+                  planLimit(
+                    planAllNodesScan("a"),
+                    UnsignedIntegerLiteral("1") _
+                  ),
+                  Map[String, Expression]("a" -> ident("a"))
+                ),
+                planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
+              ),
+              UnsignedIntegerLiteral("1")_
+            ),
+            Map[String, Expression]("a" -> ident("a"), "b" -> ident("b"), "r1" -> ident("r1"))
+          ),
+          planSingleRow()
+        ),
+        Map[String, Expression]("b" -> ident("b"))
+      )
+
+    result should equal(expected)
+  }
+
+  test("should build plans with WITH and selections") {
+    implicit val statistics = hardcodedStatistics
+    implicit val planContext = newMockedPlanContext
+    Mockito.when(planContext.getOptPropertyKeyId("prop")).thenReturn(None)
+    implicit val planner = newPlanner(newMetricsFactory)
+    val rel = PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
+
+    val result = produceQueryPlan("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1")
+    val expected =
+      planRegularProjection(
+        planTailApply(
           planStarProjection(
             planLimit(
               planAllNodesScan("a"),
@@ -47,9 +111,12 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
             ),
             Map[String, Expression]("a" -> ident("a"))
           ),
-          planSingleRow()
+          planSelection(
+            Seq(Equals(Property(Identifier("r1")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("42")_)_),
+            planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
+          )
         ),
-        Map[String, Expression]("b" -> SignedIntegerLiteral("1") _)
+        Map[String, Expression]("r1" -> ident("r1"))
       )
 
     result should equal(expected)

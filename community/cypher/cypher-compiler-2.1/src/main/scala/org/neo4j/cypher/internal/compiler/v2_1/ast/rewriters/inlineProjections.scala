@@ -41,15 +41,19 @@ object inlineProjections extends (Statement => Statement) {
         def identifierAlreadyInScope(ident: Identifier) = !context.projections.contains(ident)
         def shadows(item: AliasedReturnItem) = identifierAlreadyInScope(item.identifier) && !identifierOnly(item)
 
-        val containsAggregation = items.exists( (item) => containsAggregate(item.expression) )
-        val shadowingProjections = items.collect {
-          case item@AliasedReturnItem(expr, ident) if shadows(item) => item
-      }
+        // Do not remove grouping keys from a WITH with aggregation.
+        val containsAggregation = items.map(_.expression).exists(containsAggregate)
+        val resultProjections = if (containsAggregation) {
+          items
+        } else {
+          items.collect {
+            case item@AliasedReturnItem(expr, ident) if shadows(item) => item
+          }
+        }
 
         val newReturnItems =
-          if (containsAggregation) returnItems
-          else if (shadowingProjections.isEmpty) ReturnAll()(pos)
-          else inlineReturnItems(returnItems.copy(items = shadowingProjections)(pos))
+          if (resultProjections.isEmpty) ReturnAll()(pos)
+          else inlineReturnItems(returnItems.copy(items = resultProjections)(pos))
 
         withClause.copy(
           returnItems = newReturnItems,
