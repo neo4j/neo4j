@@ -26,7 +26,6 @@ import java.util.UUID;
 
 import org.apache.commons.configuration.Configuration;
 import org.apache.commons.io.FileUtils;
-import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.server.NeoServer;
@@ -97,9 +96,6 @@ public class HTTPLoggingDocIT extends ExclusiveServerTestBase
     }
 
     @Test
-    @Ignore( "This test has probably never worked, it fails in an assertion but the test contained a "
-            + "catch Throwable -- printStackTrace and so hid the failure. When the catch was removed"
-            + "the real problem was revealed" )
     public void givenExplicitlyEnabledServerLoggingConfigurationShouldLogAccess() throws Exception
     {
         // given
