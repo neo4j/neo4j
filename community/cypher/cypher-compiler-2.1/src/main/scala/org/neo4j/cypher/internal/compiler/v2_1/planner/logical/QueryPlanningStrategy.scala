@@ -57,12 +57,8 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
   private def planEventHorizon(queryProjection: QueryProjection, plan: QueryPlan)(implicit context: LogicalPlanningContext) = {
     queryProjection match {
       case aggr:AggregationProjection =>
-        if (context.query.projection.skip.nonEmpty ||
-          context.query.projection.sortItems.nonEmpty ||
-          context.query.projection.limit.nonEmpty)
-          throw new CantHandleQueryException
-
-        aggregation(plan, aggr)
+        val aggregationPlan = aggregation(plan, aggr)
+        sortSkipAndLimit(aggregationPlan)
 
       case _ =>
         val sortedAndLimited = sortSkipAndLimit(plan)

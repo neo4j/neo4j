@@ -63,8 +63,9 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
     )).asInstanceOf[Statement]
 
     val statementWithInlinedProjections = inlineProjections(namedStatement)
+    val statementWithAliasedSortSkipAndLimit = statementWithInlinedProjections.rewrite(bottomUp(useAliasesInSortSkipAndLimit))
 
-    statementWithInlinedProjections
+    statementWithAliasedSortSkipAndLimit
   }
 
   def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): QueryPlan = {

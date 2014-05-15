@@ -38,7 +38,7 @@ case class ListedReturnItems(items: Seq[ReturnItem])(val position: InputPosition
   private def ensureProjectedToUniqueIds: SemanticCheck = {
     items.groupBy(_.name).foldLeft(SemanticCheckResult.success) {
        case (acc, (k, items)) if items.size > 1 =>
-        acc chain SemanticError("Cannot project different values to the same column", items.head.position)
+        acc chain SemanticError("Multiple result columns with the same name are not supported", items.head.position)
        case (acc, _) =>
          acc
     }

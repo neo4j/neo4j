@@ -31,7 +31,6 @@ import collection.mutable.{Map => MutableMap}
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
 case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expression], aggregations: Map[String, AggregationExpression])
                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  def oldKeyExpressions: Seq[Expression] = keyExpressions.values.toSeq
 
   val symbols: SymbolTable = createSymbols()
 
@@ -92,7 +91,7 @@ case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expres
   override def executionPlanDescription =
     source.executionPlanDescription
       .andThen(this, "EagerAggregation",
-        "keys" -> SimpleVal.fromIterable(oldKeyExpressions),
+        "keys" -> SimpleVal.fromIterable(keyExpressions.values.toSeq),
         "aggregates" -> SimpleVal.fromIterable(aggregations))
 
   override def isLazy = false

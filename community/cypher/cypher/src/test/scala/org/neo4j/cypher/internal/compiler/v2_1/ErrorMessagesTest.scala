@@ -392,6 +392,13 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
+  test("should forbid using duplicate ids in return/with") {
+    expectError(
+      "return 1, 1",
+      "Multiple result columns with the same name are not supported (line 1, column 8)"
+    )
+  }
+
   def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))
