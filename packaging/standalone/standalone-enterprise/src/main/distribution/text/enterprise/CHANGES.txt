@@ -1,5 +1,4 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
-
 2.1.0-RC1
 ---------
 Kernel:
@@ -21,8 +20,19 @@ o Fixes a bug where slave_only instances could participate in, and win, leader e
 Cluster:
 o Fixes a number of issues when multiple leader elections are in flight concurrently
 
+Cypher:
+o To the new planner, added:
+  - Select or SemiApply
+  - Optional Expand
+  - Outer Hash Join
+  - Aggregation
+  - Skip
+  - Limit
+  - SortLimit
+o New planner is disabled by default
+
 2.1.0-M02
-------------
+---------
 Kernel:
 o Widens recoverable failure scenarios for schema indexes
 o Fix for recovery of schema changes in the case of 2PC transactions
@@ -149,7 +159,7 @@ o Backup no longer differentiates between full and incremental backup, instead a
   to use. This also handles cases where a backup is very old and can no longer be incrementally backed up.
   OnlineBackup#incremental(..) and OnlineBackup.full(..) are now deprecated, and will be removed in the next major
   release (3.0.0).
-o Fixes issue with backup client shutting down the network connection before 
+o Fixes issue with backup client shutting down the network connection before
   the backup complete
 
 2.0.1 (2014-01-04)

@@ -1,3 +1,15 @@
+2.1.0-RC1
+---------
+o To the new planner, added:
+  - Select or SemiApply
+  - Optional Expand
+  - Outer Hash Join
+  - Aggregation
+  - Skip
+  - Limit
+  - SortLimit
+o New planner is disabled by default
+
 2.1.0-M02
 ---------
 o Add a new cost based planner

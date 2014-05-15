@@ -15,9 +15,20 @@ o Fixes a bug where an uncommitted index creation in a transaction could interfe
   of other existing indexes
 o Fixes a bug where old transaction log files could prevent the database from upgrading to a newer version
 
+Cypher:
+o To the new planner, added:
+  - Select or SemiApply
+  - Optional Expand
+  - Outer Hash Join
+  - Aggregation
+  - Skip
+  - Limit
+  - SortLimit
+o New planner is disabled by default
+
 2.1.0-M02
-------------
-Kernel
+---------
+Kernel:
 o Widens recoverable failure scenarios for schema indexes
 o Fix for recovery of schema changes in the case of 2PC transactions
 o Compile on Java8. Fixes #2149
