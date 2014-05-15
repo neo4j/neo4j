@@ -33,8 +33,10 @@ angular.module('neo4jApp.services')
       'Settings'
       'Timer'
       'Utils'
-      ($injector, $q, Collection, Settings, Timer, Utils) ->
+      '$timeout'
+      ($injector, $q, Collection, Settings, Timer, Utils, $timeout) ->
         class Frame
+
           constructor: (data = {})->
             @templateUrl = null
             if angular.isString(data)
@@ -42,11 +44,32 @@ angular.module('neo4jApp.services')
             else
               angular.extend(@, data)
             @id ?= UUID.genV1().toString()
+            @state = "initialized"
 
           toJSON: ->
             {@id, @input}
 
+          commandTimeout: () ->
+            $timeout( =>
+              @state = "expired"
+            , Settings.maxExecutionTime)
+
+
+          abort: ->
+            if @timeout
+              @timeout.resolve()
+            @state = "aborted"
+
+          continue: ->
+            @state = "executing"
+            @commandTimeout()
+
+          block: ->
+            @state = "waiting forever"
+
           exec: ->
+            @state = "executing"
+
             query = Utils.stripComments(@input.trim())
             return unless query
             # Find first matching input interpretator
@@ -65,20 +88,31 @@ angular.module('neo4jApp.services')
             @templateUrl = intr.templateUrl
             timer = Timer.start()
             @startTime = timer.started()
-            $q.when(intrFn(query, $q.defer())).then(
+
+            @timeout = $q.defer()
+
+            @commandTimeout()
+
+            $q.when(intrFn(query, $q.defer(), @timeout.promise)).then(
               (result) =>
+                @state = "success"
                 @isLoading = no
                 @response = result
                 @runTime = timer.stop().time()
               ,
-              (result = {}) =>
+              (reject = {}) =>
+                if (@state is "aborted")
+                  @errorText = "Request #{@state}."
+                else 
+                  @errorText = reject.message or "Unknown error."
+
+                @state = "failure"
                 @isLoading = no
                 @hasErrors = yes
                 @response = null
-                @errorText = result.message or "Unknown error"
-                if result.length > 0 and result[0].code
-                  @errorText = result[0].code
-                  @detailedErrorText = result[0].message if result[0].message
+                if reject.length > 0 and reject[0].code
+                  @errorText = reject[0].code
+                  @detailedErrorText = reject[0].message if reject[0].message
                 @runTime = timer.stop().time()
             )
             @
