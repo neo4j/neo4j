@@ -1,9 +1,13 @@
+
+2.1.0-RC1
+---------
+o Fixes a bug where slave_only instances could participate in, and win, leader elections
+
 2.1.0-M02
 --------------
 o Clarify the error message for when releasing locks claim prior to a master-switch
 o Reduce network overhead of locking in HA
 o Fix of issue with state bookkeeping for reporting instance role
-
 
 2.0.2
 -----
