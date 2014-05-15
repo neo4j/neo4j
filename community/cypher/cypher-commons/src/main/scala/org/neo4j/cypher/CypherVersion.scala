@@ -32,7 +32,7 @@ object CypherVersion {
   case object v1_9 extends CypherVersion("1.9")
   case object v2_0 extends CypherVersion("2.0")
   case object v2_1 extends CypherVersion("2.1")
-  case object experimental extends CypherVersion("experimental")
+  case object experimental extends CypherVersion("2.1.experimental")
 
   def apply(versionName: String) = findVersionByExactName(CypherVersionName.asCanonicalName(versionName)).getOrElse {
     throw new SyntaxException(s"Supported versions are: ${allVersions.map(_.name).mkString(", ")}")

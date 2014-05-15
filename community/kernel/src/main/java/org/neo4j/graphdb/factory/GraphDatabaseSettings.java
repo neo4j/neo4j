@@ -92,7 +92,7 @@ public abstract class GraphDatabaseSettings
     @Description("Enable this to specify a parser other than the default one.")
     public static final Setting<String> cypher_parser_version = setting(
             "cypher_parser_version",
-            options( "1.9", "2.0", "2.1", "experimental" ), NO_DEFAULT );
+            options( "1.9", "2.0", "2.1", "2.1.experimental" ), NO_DEFAULT );
 
     @Description("Used to set the number of Cypher query execution plans that are cached.")
     public static Setting<Integer> query_cache_size = setting( "query_cache_size", INTEGER, "100", min( 0 ) );
