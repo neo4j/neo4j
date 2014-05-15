@@ -33,7 +33,7 @@ class ListedReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppo
     val result = items.semanticCheck(SemanticState.clean)
 
     result.errors should have size 1
-    result.errors.head.msg should startWith("Cannot project different values to the same column")
+    result.errors.head.msg should startWith("Multiple result columns with the same name are not supported")
   }
 
   test("should forbid aliased and unaliased projections collisions, e.g., projecting more than one value to the same id") {
@@ -45,7 +45,7 @@ class ListedReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppo
     val result = items.semanticCheck(SemanticState.clean)
 
     result.errors should have size 1
-    result.errors.head.msg should startWith("Cannot project different values to the same column")
+    result.errors.head.msg should startWith("Multiple result columns with the same name are not supported")
   }
 
   test("should forbid unaliased projections collisions, e.g., projecting more than one value to the same id") {
@@ -56,6 +56,6 @@ class ListedReturnItemsTest extends CypherFunSuite with AstConstructionTestSuppo
     val result = items.semanticCheck(SemanticState.clean)
 
     result.errors should have size 1
-    result.errors.head.msg should startWith("Cannot project different values to the same column")
+    result.errors.head.msg should startWith("Multiple result columns with the same name are not supported")
   }
 }
