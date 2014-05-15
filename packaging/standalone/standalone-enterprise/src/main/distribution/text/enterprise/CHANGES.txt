@@ -15,6 +15,7 @@ o Fixes a bug where an uncommitted index creation in a transaction could interfe
 o Fixes a bug where old transaction log files could prevent the database from upgrading to a newer version
 
 HA:
+o Add support for rolling upgrades from 2.0.1 or greater (2.0 is not supported)
 o Fixes a bug where slave_only instances could participate in, and win, leader elections
 
 Cluster:
