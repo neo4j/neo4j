@@ -34,10 +34,6 @@ import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.tooling.GlobalGraphOperations;
-import org.neo4j.unsafe.impl.batchimport.Configuration;
-import org.neo4j.unsafe.impl.batchimport.BatchImporter;
-import org.neo4j.unsafe.impl.batchimport.ParallellBatchImporter;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeIdMapping;
 import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
@@ -71,8 +67,8 @@ public class ParallellBatchImporterTest
                 Iterables.<KernelExtensionFactory<?>>empty(), new DetailedExecutionMonitor() );
 
         // WHEN
-        long nodeCount = 1_000_000;
-        long relationshipCount = nodeCount*10;
+        int nodeCount = 100_000;
+        int relationshipCount = nodeCount*10;
         inserter.doImport( nodes( nodeCount ), relationships( relationshipCount, nodeCount ), NodeIdMapping.actual );
         inserter.shutdown();
 
@@ -81,17 +77,15 @@ public class ParallellBatchImporterTest
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( directory.getAbsolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
+            Random random = new Random();
+            for ( int i = 0; i < 10; i++ )
             {
-                // Double check 1% of the nodes
-                if ( Math.random() < 0.01d )
+                Node node = db.getNodeById( random.nextInt( nodeCount ) );
+                int count = count( node.getRelationships() );
+                assertEquals( "For node " + node, count, node.getDegree() );
+                for ( String key : node.getPropertyKeys() )
                 {
-                    int count = count( node.getRelationships() );
-                    assertEquals( "For node " + node, count, node.getDegree() );
-                    for ( String key : node.getPropertyKeys() )
-                    {
-                        node.getProperty( key );
-                    }
+                    node.getProperty( key );
                 }
             }
 
@@ -115,10 +109,10 @@ public class ParallellBatchImporterTest
                     private final Random random = new Random( seed );
                     private int cursor = 0;
                     private final Object[] properties = new Object[] {
-//                                    "name", "Nisse " + count,
+                            "name", "Nisse " + count,
                             "age", 10,
-//                                    "long-string", "OK here goes... a long string that will certainly end up in a dynamic record1234567890!@#$%^&*()_|",
-//                                    "array", new long[] { 1234567890123L, 987654321987L, 123456789123L, 987654321987L }
+                            "long-string", "OK here goes... a long string that will certainly end up in a dynamic record1234567890!@#$%^&*()_|",
+                            "array", new long[] { 1234567890123L, 987654321987L, 123456789123L, 987654321987L }
                             };
 
                     @Override
@@ -157,8 +151,8 @@ public class ParallellBatchImporterTest
                     private final Object[] properties = new Object[] {
                             "name", "Nisse " + count,
                             "age", 10,
-                                    "long-string", "OK here goes... a long string that will certainly end up in a dynamic record1234567890!@#$%^&*()_|",
-//                                    "array", new long[] { 1234567890123L, 987654321987L, 123456789123L, 987654321987L }
+                            "long-string", "OK here goes... a long string that will certainly end up in a dynamic record1234567890!@#$%^&*()_|",
+                            "array", new long[] { 1234567890123L, 987654321987L, 123456789123L, 987654321987L }
                             };
                     private final String[] labels = new String[] { "Person", "Guy" };
 
