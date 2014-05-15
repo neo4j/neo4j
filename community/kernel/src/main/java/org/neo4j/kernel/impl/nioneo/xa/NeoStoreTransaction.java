@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.util.Arrays.binarySearch;
+import static java.util.Arrays.copyOf;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.CREATE;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.DELETE;
+import static org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode.UPDATE;
+
 import java.io.IOException;
 import java.io.Serializable;
 import java.util.ArrayList;
@@ -34,6 +41,7 @@ import javax.transaction.xa.XAException;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
@@ -79,12 +87,13 @@ import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
-import org.neo4j.kernel.impl.nioneo.xa.Command.NodeCommand;
-import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
-import org.neo4j.kernel.impl.nioneo.xa.Command.RelationshipGroupCommand;
-import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.nioneo.xa.RecordChanges.RecordChange;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoXaCommandExecutor;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
@@ -92,16 +101,8 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
-import static java.util.Arrays.binarySearch;
-import static java.util.Arrays.copyOf;
-
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.CREATE;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.DELETE;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.Mode.UPDATE;
-
 /**
- * Transaction containing {@link Command commands} reflecting the operations
+ * Transaction containing {@link org.neo4j.kernel.impl.nioneo.xa.command.Command commands} reflecting the operations
  * performed in the transaction.
  *
  * This class currently has a symbiotic relationship with {@link KernelTransaction}, with which it always has a 1-1
@@ -137,6 +138,8 @@ public class NeoStoreTransaction extends XaTransaction
     private final LockService locks;
 
     private final NeoStoreTransactionContext context;
+    private final NeoXaCommandExecutor executor;
+
 
     /**
      * @param lastCommittedTxWhenTransactionStarted is the highest committed transaction id when this transaction
@@ -159,6 +162,7 @@ public class NeoStoreTransaction extends XaTransaction
         super( log, context.getTransactionState() );
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         this.neoStore = neoStore;
+        this.executor = new NeoXaCommandExecutor( neoStore, indexingService );
         this.cacheAccess = cacheAccess;
         this.indexes = indexingService;
         this.labelScanStore = labelScanStore;
@@ -241,17 +245,15 @@ public class NeoStoreTransaction extends XaTransaction
         List<Command> commands = new ArrayList<>( noOfCommands );
         for ( RecordProxy<Integer, LabelTokenRecord, Void> record : context.getLabelTokenRecords().changes() )
         {
-            Command.LabelTokenCommand command =
-                    new Command.LabelTokenCommand(
-                            neoStore.getLabelTokenStore(), record.forReadingLinkage() );
+            Command.LabelTokenCommand command = new Command.LabelTokenCommand();
+            command.init(  record.forReadingLinkage()  );
             context.getLabelTokenCommands().add( command );
             commands.add( command );
         }
         for ( RecordProxy<Integer, RelationshipTypeTokenRecord, Void> record : context.getRelationshipTypeTokenRecords().changes() )
         {
-            Command.RelationshipTypeTokenCommand command =
-                    new Command.RelationshipTypeTokenCommand(
-                            neoStore.getRelationshipTypeStore(), record.forReadingLinkage() );
+            Command.RelationshipTypeTokenCommand command = new Command.RelationshipTypeTokenCommand();
+            command.init( record.forReadingLinkage() );
             context.getRelationshipTypeTokenCommands().add( command );
             commands.add( command );
         }
@@ -259,8 +261,8 @@ public class NeoStoreTransaction extends XaTransaction
         {
             NodeRecord record = change.forReadingLinkage();
             integrityValidator.validateNodeRecord( record );
-            Command.NodeCommand command = new Command.NodeCommand(
-                    neoStore.getNodeStore(), change.getBefore(), record );
+            Command.NodeCommand command = new Command.NodeCommand();
+            command.init( change.getBefore(), record );
             context.getNodeCommands().put( record.getId(), command );
             commands.add( command );
         }
@@ -273,8 +275,8 @@ public class NeoStoreTransaction extends XaTransaction
         }
         for ( RecordProxy<Long, RelationshipRecord, Void> record : context.getRelRecords().changes() )
         {
-            Command.RelationshipCommand command = new Command.RelationshipCommand(
-                    neoStore.getRelationshipStore(), record.forReadingLinkage() );
+            Command.RelationshipCommand command = new Command.RelationshipCommand();
+            command.init(  record.forReadingLinkage()  );
             context.getRelCommands().add( command );
             commands.add( command );
         }
@@ -289,37 +291,30 @@ public class NeoStoreTransaction extends XaTransaction
         for ( RecordProxy<Integer, PropertyKeyTokenRecord, Void> record : context.getPropertyKeyTokenRecords().changes() )
         {
             Command.PropertyKeyTokenCommand command =
-                    new Command.PropertyKeyTokenCommand(
-                            neoStore.getPropertyKeyTokenStore(), record.forReadingLinkage() );
+                    new Command.PropertyKeyTokenCommand();
+            command.init( record.forReadingLinkage() );
             context.getPropertyKeyTokenCommands().add( command );
             commands.add( command );
         }
         for ( RecordChange<Long, PropertyRecord, PrimitiveRecord> change : context.getPropertyRecords().changes() )
         {
-            Command.PropertyCommand command = new Command.PropertyCommand(
-                    neoStore.getPropertyStore(), change.getBefore(), change.forReadingLinkage() );
+            Command.PropertyCommand command = new Command.PropertyCommand();
+            command.init( change.getBefore(), change.forReadingLinkage() );
             context.getPropCommands().add( command );
             commands.add( command );
         }
         for ( RecordChange<Long, Collection<DynamicRecord>, SchemaRule> change : context.getSchemaRuleChanges().changes() )
         {
             integrityValidator.validateSchemaRule( change.getAdditionalData() );
-            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand(
-                    neoStore,
-                    neoStore.getSchemaStore(),
-                    indexes,
-                    change.getBefore(),
-                    change.forChangingData(),
-                    change.getAdditionalData(),
-                    -1 );
+            Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
+            command.init( change.getBefore(), change.forChangingData(), change.getAdditionalData(), -1 );
             context.getSchemaRuleCommands().add( command );
             commands.add( command );
         }
         for ( RecordProxy<Long, RelationshipGroupRecord, Integer> change : context.getRelGroupRecords().changes() )
         {
-            Command.RelationshipGroupCommand command =
-                    new Command.RelationshipGroupCommand( neoStore.getRelationshipGroupStore(),
-                            change.forReadingData() );
+            Command.RelationshipGroupCommand command = new Command.RelationshipGroupCommand();
+            command.init( change.forReadingData() );
             context.getRelGroupCommands().add( command );
             commands.add( command );
         }
@@ -371,7 +366,7 @@ public class NeoStoreTransaction extends XaTransaction
         }
         else if ( xaCommand instanceof Command.NeoStoreCommand )
         {
-            assert context.getNeoStoreCommand() == null;
+            assert context.getNeoStoreCommand().getRecord() == null;
             context.setNeoStoreCommand( (Command.NeoStoreCommand) xaCommand );
         }
         else if ( xaCommand instanceof Command.SchemaRuleCommand )
@@ -623,6 +618,10 @@ public class NeoStoreTransaction extends XaTransaction
                 applyCommit( true );
                 return;
             }
+            catch( IOException e )
+            {
+                throw Exceptions.withCause( new XAException(), e );
+            }
             finally
             {
                 neoStore.setRecoveredStatus( wasInRecovery );
@@ -634,10 +633,17 @@ public class NeoStoreTransaction extends XaTransaction
                                         " not next transaction (" + neoStore.getLastCommittedTx() + ")" );
         }
 
-        applyCommit( false );
+        try
+        {
+            applyCommit( false );
+        }
+        catch( IOException e )
+        {
+            throw Exceptions.withCause( new XAException(), e );
+        }
     }
 
-    private void applyCommit( boolean isRecovered )
+    private void applyCommit( boolean isRecovered ) throws IOException
     {
         try ( LockGroup lockGroup = new LockGroup() )
         {
@@ -649,7 +655,7 @@ public class NeoStoreTransaction extends XaTransaction
                 java.util.Collections.sort( context.getRelationshipTypeTokenCommands(), sorter );
                 for ( Command.RelationshipTypeTokenCommand command : context.getRelationshipTypeTokenCommands() )
                 {
-                    command.execute();
+                    executor.execute( command );
                     if ( isRecovered )
                     {
                         addRelationshipType( (int) command.getKey() );
@@ -662,7 +668,7 @@ public class NeoStoreTransaction extends XaTransaction
                 java.util.Collections.sort( context.getLabelTokenCommands(), sorter );
                 for ( Command.LabelTokenCommand command : context.getLabelTokenCommands() )
                 {
-                    command.execute();
+                    executor.execute( command );
                     if ( isRecovered )
                     {
                         addLabel( (int) command.getKey() );
@@ -675,7 +681,7 @@ public class NeoStoreTransaction extends XaTransaction
                 java.util.Collections.sort( context.getPropertyKeyTokenCommands(), sorter );
                 for ( Command.PropertyKeyTokenCommand command : context.getPropertyKeyTokenCommands() )
                 {
-                    command.execute();
+                    executor.execute( command );
                     if ( isRecovered )
                     {
                         addPropertyKey( (int) command.getKey() );
@@ -720,7 +726,7 @@ public class NeoStoreTransaction extends XaTransaction
             for ( SchemaRuleCommand command : context.getSchemaRuleCommands() )
             {
                 command.setTxId( getCommitTxId() );
-                command.execute();
+                executor.execute( command );
                 switch ( command.getMode() )
                 {
                 case DELETE:
@@ -731,9 +737,9 @@ public class NeoStoreTransaction extends XaTransaction
                 }
             }
 
-            if ( context.getNeoStoreCommand() != null )
+            if ( context.getNeoStoreCommand().getRecord() != null )
             {
-                context.getNeoStoreCommand().execute();
+                executor.execute( context.getNeoStoreCommand() );
                 if ( isRecovered )
                 {
                     removeGraphPropertiesFromCache();
@@ -741,7 +747,6 @@ public class NeoStoreTransaction extends XaTransaction
             }
             if ( !isRecovered )
             {
-
                 context.updateFirstRelationships();
                 context.commitCows(); // updates the cached primitives
             }
@@ -753,11 +758,11 @@ public class NeoStoreTransaction extends XaTransaction
         }
     }
 
-    private Collection<List<PropertyCommand>> groupedNodePropertyCommands( Iterable<PropertyCommand> propCommands )
+    private Collection<List<Command.PropertyCommand>> groupedNodePropertyCommands( Iterable<Command.PropertyCommand> propCommands )
     {
         // A bit too expensive data structure, but don't know off the top of my head how to make it better.
-        Map<Long, List<PropertyCommand>> groups = new HashMap<>();
-        for ( PropertyCommand command : propCommands )
+        Map<Long, List<Command.PropertyCommand>> groups = new HashMap<>();
+        for ( Command.PropertyCommand command : propCommands )
         {
             PropertyRecord record = command.getAfter();
             if ( !record.isNodeSet() )
@@ -766,7 +771,7 @@ public class NeoStoreTransaction extends XaTransaction
             }
 
             long nodeId = command.getAfter().getNodeId();
-            List<PropertyCommand> group = groups.get( nodeId );
+            List<Command.PropertyCommand> group = groups.get( nodeId );
             if ( group == null )
             {
                 groups.put( nodeId, group = new ArrayList<>() );
@@ -819,7 +824,6 @@ public class NeoStoreTransaction extends XaTransaction
 
     public void relationshipCreate( long id, int typeId, long startNodeId, long endNodeId )
     {
-
         context.relationshipCreate( id, typeId, startNodeId, endNodeId );
     }
 
@@ -893,7 +897,7 @@ public class NeoStoreTransaction extends XaTransaction
 
     @SafeVarargs
     private final void executeCreated( LockGroup lockGroup, boolean removeFromCache,
-                                       Collection<? extends Command>... commands )
+                                       Collection<? extends Command>... commands ) throws IOException
     {
         for ( Collection<? extends Command> c : commands )
         {
@@ -902,7 +906,7 @@ public class NeoStoreTransaction extends XaTransaction
                 if ( command.getMode() == CREATE )
                 {
                     lockEntity( lockGroup, command );
-                    command.execute();
+                    executor.execute( command );
                     if ( removeFromCache )
                     {
                         command.applyToCache( cacheAccess );
@@ -914,7 +918,7 @@ public class NeoStoreTransaction extends XaTransaction
 
     @SafeVarargs
     private final void executeModified( LockGroup lockGroup, boolean removeFromCache,
-                                        Collection<? extends Command>... commands )
+                                        Collection<? extends Command>... commands ) throws IOException
     {
         for ( Collection<? extends Command> c : commands )
         {
@@ -923,7 +927,7 @@ public class NeoStoreTransaction extends XaTransaction
                 if ( command.getMode() == UPDATE )
                 {
                     lockEntity( lockGroup, command );
-                    command.execute();
+                    executor.execute( command );
                     if ( removeFromCache )
                     {
                         command.applyToCache( cacheAccess );
@@ -934,7 +938,7 @@ public class NeoStoreTransaction extends XaTransaction
     }
 
     @SafeVarargs
-    private final void executeDeleted( LockGroup lockGroup, Collection<? extends Command>... commands )
+    private final void executeDeleted( LockGroup lockGroup, Collection<? extends Command>... commands ) throws IOException
     {
         for ( Collection<? extends Command> c : commands )
         {
@@ -948,7 +952,7 @@ public class NeoStoreTransaction extends XaTransaction
                  * are in cache).
                  */
                     lockEntity( lockGroup, command );
-                    command.execute();
+                    executor.execute( command );
                     command.applyToCache( cacheAccess );
                 }
             }

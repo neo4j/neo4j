@@ -246,6 +246,18 @@ public class ChannelReusingFileSystemAbstraction extends LifecycleAdapter implem
         }
 
         @Override
+        public void writeAll( ByteBuffer src, long position ) throws IOException
+        {
+            write( src, position );
+        }
+
+        @Override
+        public void writeAll( ByteBuffer src ) throws IOException
+        {
+            write( src );
+        }
+
+        @Override
         public MappedByteBuffer map( MapMode mode, long position, long size ) throws IOException
         {
             return delegate.map( mode, position, size );

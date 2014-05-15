@@ -149,8 +149,8 @@ public class RelationshipRecord extends PrimitiveRecord
                 type ).append( ",sPrev=" ).append( firstPrevRel ).append( ",sNext=" ).append( firstNextRel ).append(
                 ",tPrev=" ).append( secondPrevRel ).append( ",tNext=" ).append( secondNextRel ).append( ",prop=" )
                 .append( getNextProp() )
-                .append( firstInFirstChain ? ",sFirst" : "" )
-                .append( firstInSecondChain ? ",tFirst" : "" )
+                .append( firstInFirstChain ? ",sFirst" : "!sFirst" )
+                .append( firstInSecondChain ? ",tFirst" : "!tFirst" )
                 .append( "]" ).toString();
     }
 

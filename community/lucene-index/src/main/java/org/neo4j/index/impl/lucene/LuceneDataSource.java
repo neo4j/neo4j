@@ -33,7 +33,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
-
 import javax.transaction.TransactionManager;
 
 import org.apache.lucene.analysis.Analyzer;
@@ -60,6 +59,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -85,9 +85,24 @@ import org.neo4j.kernel.impl.index.IndexProviderStore;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.*;
+import org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
+import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
+import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
+import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 
 import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
@@ -251,7 +266,9 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
         };
 
-        XaCommandFactory cf = new LuceneCommandFactory();
+        XaCommandReaderFactory commandReaderFactory = new LuceneCommandReaderFactory( nodeEntityType,
+                relationshipEntityType );
+        XaCommandWriterFactory commandWriterFactory = new LuceneCommandWriterFactory();
         XaTransactionFactory tf = new LuceneTransactionFactory();
         DependencyResolver dummy = new DependencyResolver.Adapter()
         {
@@ -261,9 +278,10 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 return (T) LuceneDataSource.this.config;
             }
         };
-        xaContainer = xaFactory.newXaContainer( this, logBaseName(baseStorePath), cf,
-                InjectedTransactionValidator.ALLOW_ALL, tf, TransactionStateFactory.noStateFactory( null ),
-                new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ), false );
+        xaContainer = xaFactory.newXaContainer( this, logBaseName(baseStorePath), commandReaderFactory,
+                commandWriterFactory, InjectedTransactionValidator.ALLOW_ALL, tf, TransactionStateFactory.noStateFactory( null ),
+                new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ), false,
+                new LuceneLogTranslator() );
         closed = false;
         if ( !isReadOnly )
         {
@@ -382,18 +400,44 @@ public class LuceneDataSource extends LogBackedXaDataSource
                 .getResourceManager(), getBranchId() );
     }
 
-    private class LuceneCommandFactory extends XaCommandFactory
+    public static class LuceneCommandReaderFactory implements XaCommandReaderFactory
     {
-        LuceneCommandFactory()
+        private final EntityType nodeEntityType;
+        private final EntityType relationshipEntityType;
+
+        public LuceneCommandReaderFactory( EntityType nodeEntityType, EntityType relationshipEntityType )
         {
-            super();
+            this.nodeEntityType = nodeEntityType;
+            this.relationshipEntityType = relationshipEntityType;
         }
 
         @Override
-        public XaCommand readCommand( ReadableByteChannel channel,
-                                      ByteBuffer buffer ) throws IOException
+        public XaCommandReader newInstance( byte logEntryVersion, final ByteBuffer scratch )
         {
-            return LuceneCommand.readCommand( channel, buffer, LuceneDataSource.this );
+            return new XaCommandReader()
+            {
+                @Override
+                public XaCommand read( ReadableByteChannel channel ) throws IOException
+                {
+                    return LuceneCommand.readCommand( channel, scratch, nodeEntityType, relationshipEntityType );
+                }
+            };
+        }
+    }
+
+    private static class LuceneCommandWriterFactory implements XaCommandWriterFactory
+    {
+        @Override
+        public XaCommandWriter newInstance()
+        {
+            return new XaCommandWriter()
+            {
+                @Override
+                public void write( XaCommand command, LogBuffer buffer ) throws IOException
+                {
+                    ((LuceneCommand) command).writeToFile( buffer );
+                }
+            };
         }
     }
 
@@ -940,13 +984,14 @@ public class LuceneDataSource extends LogBackedXaDataSource
     @Override
     public LogBufferFactory createLogBufferFactory()
     {
-        return xaContainer.getLogicalLog().createLogWriter( new Function<Config, File>(){
+        return xaContainer.getLogicalLog().createLogWriter( new Function<Config, File>()
+        {
             @Override
             public File apply( Config config )
             {
-                return logBaseName(baseDirectory(config.get( GraphDatabaseSettings.store_dir )));
+                return logBaseName( baseDirectory( config.get( GraphDatabaseSettings.store_dir ) ) );
             }
-        });
+        } );
     }
 
     private void makeSureAllIndexesAreInstantiated()

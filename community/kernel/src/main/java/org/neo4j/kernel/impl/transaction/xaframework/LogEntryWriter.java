@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
-public interface LogApplier
+public interface LogEntryWriter
 {
-    void apply( LogEntry entry ) throws IOException;
+    void writeLogEntry( LogEntry entry, LogBuffer buffer ) throws IOException;
 }

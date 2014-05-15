@@ -79,6 +79,18 @@ public class BreakableFileChannel implements StoreChannel
     }
 
     @Override
+    public void writeAll( ByteBuffer src, long position ) throws IOException
+    {
+        inner.writeAll( src, position );
+    }
+
+    @Override
+    public void writeAll( ByteBuffer src ) throws IOException
+    {
+        inner.writeAll( src );
+    }
+
+    @Override
     public long position() throws IOException
     {
         return inner.position();

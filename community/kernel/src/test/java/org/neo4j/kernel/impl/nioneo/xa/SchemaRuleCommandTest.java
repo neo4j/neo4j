@@ -19,6 +19,17 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.nio.ByteBuffer.allocate;
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
+
 import java.util.Arrays;
 import java.util.Collection;
 
@@ -30,18 +41,12 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.RecordSerializer;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
-import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoXaCommandExecutor;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
-
-import static java.nio.ByteBuffer.allocate;
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.readCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 public class SchemaRuleCommandTest
 {
@@ -52,11 +57,13 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
 
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes,
-                beforeRecords, afterRecords, rule, txId );
+        when( neoStore.getSchemaStore() ).thenReturn( store );
+
+        SchemaRuleCommand command = new SchemaRuleCommand();
+        command.init( beforeRecords, afterRecords, rule, txId );
 
         // WHEN
-        command.execute();
+        executor.execute( command );
 
         // THEN
         verify( store ).updateRecord( first( afterRecords ) );
@@ -70,11 +77,13 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, true, false);
 
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, beforeRecords, afterRecords,
-                uniquenessConstraintRule( id, labelId, propertyKey, 0 ), txId );
+        when( neoStore.getSchemaStore() ).thenReturn( store );
+
+        SchemaRuleCommand command = new SchemaRuleCommand();
+        command.init( beforeRecords, afterRecords, uniquenessConstraintRule( id, labelId, propertyKey, 0 ), txId  );
 
         // WHEN
-        command.execute();
+        executor.execute( command );
 
         // THEN
         verify( store ).updateRecord( first( afterRecords ) );
@@ -88,10 +97,13 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
 
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, beforeRecords, afterRecords, rule, txId );
+        when( neoStore.getSchemaStore() ).thenReturn( store );
+
+        SchemaRuleCommand command = new SchemaRuleCommand();
+        command.init( beforeRecords, afterRecords, rule, txId );
 
         // WHEN
-        command.execute();
+        executor.execute( command );
 
         // THEN
         verify( store ).updateRecord( first( afterRecords ) );
@@ -105,14 +117,15 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, false, false);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, true, true);
 
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, beforeRecords, afterRecords, rule, txId );
+        SchemaRuleCommand command = new SchemaRuleCommand();
+        command.init( beforeRecords, afterRecords, rule, txId );
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
 
         when( neoStore.getSchemaStore() ).thenReturn( store );
 
         // WHEN
-        command.writeToFile( buffer );
-        Command readCommand = readCommand( neoStore, indexes, buffer, allocate( 1000 ) );
+        writer.write( command, buffer );
+        XaCommand readCommand = reader.read( buffer );
 
         // THEN
         assertThat( readCommand, instanceOf( SchemaRuleCommand.class ) );
@@ -128,13 +141,14 @@ public class SchemaRuleCommandTest
         Collection<DynamicRecord> beforeRecords = serialize( rule, id, true, true);
         Collection<DynamicRecord> afterRecords = serialize( rule, id, false, false);
 
-        SchemaRuleCommand command = new SchemaRuleCommand( neoStore, store, indexes, beforeRecords, afterRecords, rule, txId );
+        SchemaRuleCommand command = new SchemaRuleCommand();
+        command.init( beforeRecords, afterRecords, rule, txId );
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
         when( neoStore.getSchemaStore() ).thenReturn( store );
 
         // WHEN
-        command.writeToFile( buffer );
-        Command readCommand = readCommand( neoStore, indexes, buffer, allocate( 1000 ) );
+        writer.write( command, buffer );
+        XaCommand readCommand = reader.read( buffer );
 
         // THEN
         assertThat( readCommand, instanceOf( SchemaRuleCommand.class ) );
@@ -147,6 +161,9 @@ public class SchemaRuleCommandTest
     private final NeoStore neoStore = mock( NeoStore.class );
     private final SchemaStore store = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
+    private final NeoXaCommandExecutor executor = new NeoXaCommandExecutor( neoStore, indexes );
+    private final PhysicalLogNeoXaCommandReaderV1 reader = new PhysicalLogNeoXaCommandReaderV1( allocate( 1000 ) );
+    private final PhysicalLogNeoXaCommandWriter writer = new PhysicalLogNeoXaCommandWriter();
     private final int labelId = 2;
     private final int propertyKey = 8;
     private final long id = 0;

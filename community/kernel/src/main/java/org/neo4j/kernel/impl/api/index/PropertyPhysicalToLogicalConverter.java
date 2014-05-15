@@ -43,9 +43,7 @@ public class PropertyPhysicalToLogicalConverter
     /**
      * Converts physical changes to PropertyRecords for a node into logical updates
      *
-     * @param before the state of affected property records for a particular node in a transaction before the changes.
      * @param labelsBefore labels that node had before the change.
-     * @param after the state of affected property records for a particular node in a transaction after the changes.
      * @param labelsAfter labels that node has after the change.
      * @return logical updates of the physical property record changes.
      */

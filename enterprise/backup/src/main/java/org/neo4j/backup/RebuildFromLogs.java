@@ -31,6 +31,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicLong;
 
 import javax.transaction.xa.Xid;
 
@@ -48,15 +49,20 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
-import org.neo4j.kernel.impl.nioneo.xa.Command;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -82,7 +88,18 @@ class RebuildFromLogs
         LogExtractor extractor = null;
         try
         {
-            extractor = LogExtractor.from( FS, sourceDir, new Monitors().newMonitor( ByteCounterMonitor.class ) );
+            extractor = LogExtractor.from( FS, XaCommandReaderFactory.DEFAULT,
+                    new XaCommandWriterFactory()
+                    {
+                        @Override
+                        public XaCommandWriter newInstance()
+                        {
+                            return new PhysicalLogNeoXaCommandWriter();
+                        }
+                    },
+                    new Monitors().newMonitor( ByteCounterMonitor.class ),
+                    new LogEntryWriterv1(),
+                    sourceDir );
             for ( InMemoryLogBuffer buffer = new InMemoryLogBuffer(); ; buffer.reset() )
             {
                 long txId = extractor.extractNext( buffer );
@@ -221,22 +238,34 @@ class RebuildFromLogs
 
     private static long findLastTransactionId( File storeDir, String logFileName )
     {
-        long txId;
+        final AtomicLong txId = new AtomicLong();
         try
         {
             FileChannel channel = new RandomAccessFile( new File( storeDir, logFileName ), "r" ).getChannel();
             try
             {
                 ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE + Xid.MAXBQUALSIZE * 10 );
-                txId = LogIoUtils.readLogHeader( buffer, channel, true )[1];
-                XaCommandFactory cf = new CommandFactory();
-                for ( LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, cf )) != null; )
+                txId.set( VersionAwareLogEntryReader.readLogHeader( buffer, channel, true )[1] );
+
+                LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
+
+                Cursor<LogEntry, IOException> cursor = deserializer.cursor ( channel );
+
+
+                Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
                 {
-                    if ( entry instanceof LogEntry.Commit )
+                    @Override
+                    public boolean accept( LogEntry entry ) throws IOException
                     {
-                        txId = ((LogEntry.Commit) entry).getTxId();
+                        if ( entry instanceof LogEntry.Commit )
+                        {
+                            txId.set( ((LogEntry.Commit) entry).getTxId() );
+                        }
+                        return true;
                     }
-                }
+                };
+
+                while ( cursor.next( consumer ) );
             }
             finally
             {
@@ -250,7 +279,7 @@ class RebuildFromLogs
         {
             return -1;
         }
-        return txId;
+        return txId.get();
     }
 
     private void checkConsistency() throws ConsistencyCheckIncompleteException
@@ -301,15 +330,6 @@ class RebuildFromLogs
             {
                 level.configure( config );
             }
-        }
-    }
-
-    private static class CommandFactory extends XaCommandFactory
-    {
-        @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
-        {
-            return Command.readCommand( null, null, byteChannel, buffer );
         }
     }
 }

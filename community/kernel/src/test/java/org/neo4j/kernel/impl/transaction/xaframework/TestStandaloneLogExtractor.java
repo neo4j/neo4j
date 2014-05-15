@@ -19,14 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.test.BatchTransaction.beginBatchTx;
+
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -34,10 +40,6 @@ import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.test.BatchTransaction.beginBatchTx;
 
 public class TestStandaloneLogExtractor
 {
@@ -82,8 +84,19 @@ public class TestStandaloneLogExtractor
 
         XaDataSource ds = newDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
                 .getNeoStoreDataSource();
-        LogExtractor extractor = LogExtractor.from( snapshot, new File( storeDir ),
-                new Monitors().newMonitor( ByteCounterMonitor.class ) );
+        LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1();
+        logEntryWriter.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
+        LogExtractor extractor = LogExtractor.from( snapshot, XaCommandReaderFactory.DEFAULT,
+        new XaCommandWriterFactory()
+        {
+            @Override
+            public XaCommandWriter newInstance()
+            {
+                return new PhysicalLogNeoXaCommandWriter();
+            }
+        },
+        new Monitors().newMonitor( ByteCounterMonitor.class ),
+        logEntryWriter, new File( storeDir ) );
         long expectedTxId = 2;
         while ( true )
         {

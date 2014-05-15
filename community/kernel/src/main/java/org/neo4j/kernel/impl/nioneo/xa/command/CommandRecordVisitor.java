@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.xa;
+package org.neo4j.kernel.impl.nioneo.xa.command;
 
 import java.util.Collection;
 
@@ -41,6 +41,8 @@ public interface CommandRecordVisitor
 
     void visitRelationship( RelationshipRecord record );
 
+    void visitRelationshipGroup( RelationshipGroupRecord record );
+
     void visitProperty( PropertyRecord record );
 
     void visitRelationshipTypeToken( RelationshipTypeTokenRecord record );
@@ -52,6 +54,4 @@ public interface CommandRecordVisitor
     void visitNeoStore( NeoStoreRecord record );
 
     void visitSchemaRule( Collection<DynamicRecord> records );
-
-    void visitRelationshipGroup( RelationshipGroupRecord record );
 }

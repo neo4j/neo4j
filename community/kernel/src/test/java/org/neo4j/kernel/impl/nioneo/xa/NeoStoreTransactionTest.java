@@ -19,6 +19,44 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+
+import static java.lang.Integer.parseInt;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.reset;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.IdType.NODE;
+import static org.neo4j.kernel.IdType.RELATIONSHIP;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -37,10 +75,10 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -77,9 +115,11 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.nioneo.xa.Command.PropertyCommand;
-import org.neo4j.kernel.impl.nioneo.xa.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
@@ -87,39 +127,6 @@ import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
-
-import static java.lang.Integer.parseInt;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.*;
-
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.IdType.NODE;
-import static org.neo4j.kernel.IdType.RELATIONSHIP;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.change;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
-import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class NeoStoreTransactionTest
 {
@@ -280,7 +287,7 @@ public class NeoStoreTransactionTest
             {
                 if( element instanceof Command.NodeCommand )
                 {
-                    Command.NodeCommand cmd = (Command.NodeCommand)element;
+                    Command.NodeCommand cmd = (Command.NodeCommand) element;
                     DynamicRecord before = cmd.getBefore().getDynamicLabelRecords().iterator().next();
                     DynamicRecord after = cmd.getAfter().getDynamicLabelRecords().iterator().next();
 
@@ -1015,7 +1022,7 @@ public class NeoStoreTransactionTest
             public boolean visit( XaCommand element ) throws RuntimeException
             {
                 if( element instanceof Command.RelationshipGroupCommand &&
-                        ( (Command.RelationshipGroupCommand) element).getAfter().inUse() )
+                        ( (Command.RelationshipGroupCommand) element).getRecord().inUse() )
                 {
                     if ( !foundRelationshipGroupInUse.get() )
                     {
@@ -1244,8 +1251,10 @@ public class NeoStoreTransactionTest
 
         public VerifyingXaLogicalLog( FileSystemAbstraction fs, Visitor<XaCommand, RuntimeException> verifier )
         {
-            super( new File( "log" ), null, null, null, fs, new Monitors(), new SingleLoggingService( DEV_NULL ),
-                    LogPruneStrategies.NO_PRUNING, null, mock( KernelHealth.class ), 25*1024*1024, ALLOW_ALL );
+            super( new File( "log" ), null, mock( XaCommandReaderFactory.class ), mock( XaCommandWriterFactory.class ),
+                    null, fs, new Monitors(), new SingleLoggingService( DEV_NULL ),
+                    LogPruneStrategies.NO_PRUNING, null, mock( KernelHealth.class ), 25*1024*1024, ALLOW_ALL,
+                    Functions.<List<LogEntry>>identity(), Functions.<List<LogEntry>>identity() );
             this.verifier = verifier;
         }
 

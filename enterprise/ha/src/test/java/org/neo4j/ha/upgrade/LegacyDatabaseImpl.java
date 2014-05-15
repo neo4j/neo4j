@@ -19,10 +19,24 @@
  */
 package org.neo4j.ha.upgrade;
 
+import static java.lang.Integer.parseInt;
+import static java.lang.System.currentTimeMillis;
+import static java.lang.System.getProperty;
+import static java.lang.Thread.sleep;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.Executors.newSingleThreadExecutor;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.fail;
+import static org.neo4j.ha.upgrade.RollingUpgradeIT.type1;
+import static org.neo4j.ha.upgrade.RollingUpgradeIT.type2;
+import static org.neo4j.ha.upgrade.Utils.execJava;
+import static org.neo4j.helpers.Exceptions.launderedException;
+
 import java.io.File;
 import java.rmi.RemoteException;
 import java.rmi.server.UnicastRemoteObject;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Callable;
@@ -31,6 +45,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Args;
@@ -40,20 +55,6 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.shell.impl.RmiLocation;
 import org.neo4j.test.ProcessStreamHandler;
 
-import static java.lang.Integer.parseInt;
-import static java.lang.System.currentTimeMillis;
-import static java.lang.System.getProperty;
-import static java.lang.Thread.sleep;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.Executors.newSingleThreadExecutor;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.fail;
-
-import static org.neo4j.ha.upgrade.Utils.execJava;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.tooling.GlobalGraphOperations.at;
-
 public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDatabase
 {
     // This has to be adapted to the way HA GDB is started in the specific old version it's used for.
@@ -61,7 +62,7 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     {
         Args arguments = new Args( args );
         String storeDir = arguments.orphans().get( 0 );
-        
+
         GraphDatabaseAPI db = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( storeDir )
                 .setConfig( arguments.asMap() )
@@ -159,24 +160,180 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
     }
 
     @Override
-    public long createNode( String name )
+    public long createNode() throws RemoteException
     {
-        Transaction tx = db.beginTx();
-        try
+        long result = -1;
+        try( Transaction tx = db.beginTx() )
         {
-            Node node = db.createNode();
-            node.setProperty( "name", name );
+            result = db.createNode().getId();
             tx.success();
-            return node.getId();
         }
-        finally
+        return result;
+    }
+
+    @Override
+    public long initialize()
+    {
+        long result = -1;
+        try( Transaction tx = db.beginTx() )
         {
-            tx.finish();
+            Node center = db.createNode();
+            result = center.getId();
+
+            long largest = 0;
+            for ( int i = 0; i < 100; i++ )
+            {
+                long current  = center.createRelationshipTo( db.createNode(), type1 ).getId();
+                if ( current > largest )
+                {
+                    largest = current;
+                }
+            }
+
+            for ( int i = 0; i < 100; i++ )
+            {
+                long current  = center.createRelationshipTo( db.createNode(), type2 ).getId();
+                if ( current > largest )
+                {
+                    largest = current;
+                }
+            }
+
+            for ( Relationship rel : center.getRelationships() )
+            {
+                rel.setProperty( "relProp", "relProp"+rel.getId()+"-"+largest );
+                Node other = rel.getEndNode();
+                other.setProperty( "nodeProp", "nodeProp"+other.getId()+"-"+largest );
+            }
+            tx.success();
+        }
+        return result;
+    }
+
+    public void doComplexLoad( long center )
+    {
+        System.out.println("STarting.....");
+        try( Transaction tx = db.beginTx() )
+        {
+            Node central = db.getNodeById( center );
+            System.out.println("got central");
+
+            long[] type1RelId = new long[ 100 ];
+            long[] type2RelId = new long[ 100 ];
+
+            int index = 0;
+            for ( Relationship relationship : central.getRelationships( type1 ) )
+            {
+                type1RelId[index++] = relationship.getId();
+            }
+            index = 0;
+            for ( Relationship relationship : central.getRelationships( type2 ) )
+            {
+                type2RelId[index++] = relationship.getId();
+            }
+
+            // Delete the first half of each type
+            Arrays.sort( type1RelId );
+            Arrays.sort( type2RelId );
+
+            for ( int i = 0; i < type1RelId.length / 2; i++ )
+            {
+                db.getRelationshipById( type1RelId[i] ).delete();
+            }
+            for ( int i = 0; i < type2RelId.length / 2; i++ )
+            {
+                db.getRelationshipById( type2RelId[i] ).delete();
+            }
+
+            System.out.println("deleted half");
+            // Go ahead and create relationships to make up for these deletes
+            for ( int i = 0; i < type1RelId.length / 2; i++ )
+            {
+                central.createRelationshipTo( db.createNode(), type1 );
+            }
+
+            long largestCreated = 0;
+            // The result is the id of the latest created relationship. We'll use that to set the properties
+            for ( int i = 0; i < type2RelId.length / 2; i++ )
+            {
+                long current = central.createRelationshipTo( db.createNode(), type2 ).getId();
+                if ( current > largestCreated )
+                {
+                    largestCreated = current;
+                }
+            }
+
+            for ( Relationship relationship : central.getRelationships() )
+            {
+                relationship.setProperty( "relProp", "relProp" + relationship.getId() + "-" + largestCreated );
+                Node end = relationship.getEndNode();
+                end.setProperty( "nodeProp", "nodeProp" + end.getId() + "-" + largestCreated  );
+            }
+
+            System.out.println("committing");
+            tx.success();
+            System.out.println("-----> Done");
         }
     }
 
     @Override
-    public void verifyNodeExists( long id, String name )
+    public void verifyComplexLoad( long centralNode )
+    {
+        try( Transaction tx = db.beginTx() )
+        {
+            Node center = db.getNodeById( centralNode );
+            long maxRelId = -1;
+            for ( Relationship relationship : center.getRelationships() )
+            {
+                if (relationship.getId() > maxRelId )
+                {
+                    maxRelId = relationship.getId();
+                }
+            }
+
+            int typeCount = 0;
+            for ( Relationship relationship : center.getRelationships( type1 ) )
+            {
+                typeCount++;
+                if ( !relationship.getProperty( "relProp" ).equals( "relProp" +relationship.getId()+"-"+maxRelId) )
+                {
+                    fail( "damn");
+                }
+                Node other = relationship.getEndNode();
+                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp"+other.getId()+"-"+maxRelId ) )
+                {
+                    fail("double damn");
+                }
+            }
+            if ( typeCount != 100 )
+            {
+                fail("tripled damn");
+            }
+
+            typeCount = 0;
+            for ( Relationship relationship : center.getRelationships( type2 ) )
+            {
+                typeCount++;
+                if ( !relationship.getProperty( "relProp" ).equals( "relProp" +relationship.getId()+"-"+maxRelId) )
+                {
+                    fail( "damn2");
+                }
+                Node other = relationship.getEndNode();
+                if ( !other.getProperty( "nodeProp" ).equals( "nodeProp"+other.getId()+"-"+maxRelId ) )
+                {
+                    fail("double damn2");
+                }
+            }
+            if ( typeCount != 100 )
+            {
+                fail("tripled damn2");
+            }
+            tx.success();
+        }
+    }
+
+    @Override
+    public void verifyNodeExists( long id )
     {
         try
         {
@@ -189,16 +346,9 @@ public class LegacyDatabaseImpl extends UnicastRemoteObject implements LegacyDat
         
         try ( Transaction tx = db.beginTx() )
         {
-            for ( Node node : at( db ).getAllNodes() )
-            {
-                if ( name.equals( node.getProperty( "name", null ) ) )
-                {
-                    return;
-                }
-            }
+            db.getNodeById( id );
             tx.success();
         }
-        fail( "Node " + id + " with name '" + name + "' not found" );
     }
     
     @Override

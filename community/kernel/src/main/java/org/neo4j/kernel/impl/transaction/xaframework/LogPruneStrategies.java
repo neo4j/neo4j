@@ -75,7 +75,7 @@ public class LogPruneStrategies
                     // There aren't logs to prune anything. Just return
                     return;
                 
-                if ( fileSystem.getFileSize( file ) > LogIoUtils.LOG_HEADER_SIZE &&
+                if ( fileSystem.getFileSize( file ) > VersionAwareLogEntryReader.LOG_HEADER_SIZE &&
                         threshold.reached( file, upper, source ) )
                 {
                     exceeded = true;

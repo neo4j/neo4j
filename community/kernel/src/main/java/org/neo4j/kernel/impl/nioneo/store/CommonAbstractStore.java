@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.nio.ByteBuffer.wrap;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,12 +42,6 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.FileUtils.FileOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static java.nio.ByteBuffer.wrap;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.UTF8.encode;
-import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
-
 /**
  * Contains common implementation for {@link AbstractStore} and
  * {@link AbstractDynamicStore}.
@@ -60,7 +59,7 @@ public abstract class CommonAbstractStore implements IdSequence
     }
 
     public static final String ALL_STORES_VERSION = "v0.A.3";
-    public static final String UNKNOWN_VERSION = "Uknown";
+    public static final String UNKNOWN_VERSION = "Unknown";
 
     protected Config configuration;
     private final IdGeneratorFactory idGeneratorFactory;

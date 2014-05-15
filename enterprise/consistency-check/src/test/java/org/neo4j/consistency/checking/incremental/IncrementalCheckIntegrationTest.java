@@ -19,6 +19,15 @@
  */
 package org.neo4j.consistency.checking.incremental;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.consistency.checking.full.FullCheckIntegrationTest.serializeRule;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
+
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Map;
@@ -26,7 +35,6 @@ import java.util.Map;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.consistency.ConsistencyCheckingError;
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
@@ -48,17 +56,6 @@ import org.neo4j.kernel.impl.nioneo.store.RecordSerializer;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-
-import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.consistency.checking.full.FullCheckIntegrationTest.serializeRule;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
 
 public class IncrementalCheckIntegrationTest
 {

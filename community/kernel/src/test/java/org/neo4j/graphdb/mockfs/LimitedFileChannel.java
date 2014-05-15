@@ -127,6 +127,20 @@ public class LimitedFileChannel implements StoreChannel
     }
 
     @Override
+    public void writeAll( ByteBuffer src, long position ) throws IOException
+    {
+        fs.ensureHasSpace();
+        inner.writeAll( src, position );
+    }
+
+    @Override
+    public void writeAll( ByteBuffer src ) throws IOException
+    {
+        fs.ensureHasSpace();
+        inner.writeAll( src );
+    }
+
+    @Override
     public MappedByteBuffer map( FileChannel.MapMode mapMode, long l, long l1 ) throws IOException
     {
         return inner.map( mapMode, l, l1 );

@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.neo4j.kernel.impl.nioneo.xa.CommandRecordVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.CommandRecordVisitor;
 
 /**
  * A TransactionInterceptor has the opportunity to perform a check on a

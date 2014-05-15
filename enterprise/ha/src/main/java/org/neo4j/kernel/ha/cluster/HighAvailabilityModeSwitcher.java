@@ -277,7 +277,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     haCommunicationLife = new LifeSupport();
 
                     slaveHaURI = switchToSlave.switchToSlave(haCommunicationLife, me, masterUri);
-                } catch (MismatchingStoreIdException e)
+                } catch ( MismatchingStoreIdException e )
                 {
                     // Try again immediately
                     run();
