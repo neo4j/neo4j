@@ -225,7 +225,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
                 true,   // allow overwrite target files
                 StoreFileType.values() );
         StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
-        LogFiles.move( fileSystem, storeDir, leftOversDir );
+//        LogFiles.move( fileSystem, storeDir, leftOversDir );
     }
 
     @Override
