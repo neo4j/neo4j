@@ -646,25 +646,6 @@
         </dependencies>
       </plugin>
       <plugin>
-        <artifactId>maven-antrun-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>include-javadocs</id>
-            <phase>prepare-package</phase>
-            <configuration>
-              <tasks>
-                <copy todir="${project.build.directory}/html5/javadocs">
-                  <fileset dir="${docs.javadocs}" includes="**/*" />
-                </copy>
-              </tasks>
-            </configuration>
-            <goals>
-              <goal>run</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <groupId>org.neo4j.build.plugins</groupId>
         <artifactId>license-maven-plugin</artifactId>
         <configuration>
