@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 
 case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, toName: String, dir: Direction,
                                types: Seq[String], min: Int, max: Option[Int])(implicit pipeMonitor: PipeMonitor)
@@ -73,8 +74,11 @@ case class VarLengthExpandPipe(source: Pipe, fromName: String, relName: String, 
   def getFromNode(row: ExecutionContext): Any =
     row.getOrElse(fromName, throw new InternalException(s"Expected to find a node at $fromName but found nothing"))
 
-  def executionPlanDescription = source.executionPlanDescription.
-      andThen(this, "Var length expand", "from" -> fromName, "to" -> toName, "relName" -> relName, "min" -> min, "max" -> max)
+  def planDescription = source.planDescription.
+    andThen(this, "Var length expand",
+      IntroducedIdentifier(fromName),
+      IntroducedIdentifier(toName),
+      IntroducedIdentifier(relName))
 
   def symbols = source.symbols.add(toName, CTNode).add(relName, CTRelationship)
 }

@@ -39,10 +39,10 @@ import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
-class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
-                                       var tx: Transaction,
-                                       val isTopLevelTx: Boolean,
-                                       var statement: Statement)
+final class TransactionBoundQueryContext(graph: GraphDatabaseAPI,
+                                         var tx: Transaction,
+                                         val isTopLevelTx: Boolean,
+                                         var statement: Statement)
   extends TransactionBoundTokenContext(statement) with QueryContext {
 
   private var open = true

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.{TwoChildren, PlanDescriptionImpl, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
 case class ApplyPipe(source: Pipe, inner: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -33,8 +33,8 @@ case class ApplyPipe(source: Pipe, inner: Pipe)(implicit pipeMonitor: PipeMonito
         innerResults.map { context => context ++ original }
     }
 
-  def executionPlanDescription = source.executionPlanDescription.
-    andThen(this, "Apply", "inner" -> inner.executionPlanDescription)
+  def planDescription =
+    PlanDescriptionImpl(this, "Apply", TwoChildren(source.planDescription, inner.planDescription), Seq.empty)
 
   def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers)
 }

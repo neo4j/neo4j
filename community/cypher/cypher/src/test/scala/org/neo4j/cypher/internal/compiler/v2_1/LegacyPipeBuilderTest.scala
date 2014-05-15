@@ -225,7 +225,7 @@ class ExplodingPipeBuilder extends PlanBuilder with MockitoSugar {
 
     def symbols: SymbolTable = new SymbolTable()
 
-    def executionPlanDescription: PlanDescription = null
+    def planDescription: PlanDescription = null
 
     def exists(pred: Pipe => Boolean) = ???
 

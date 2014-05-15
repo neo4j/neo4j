@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols.CTNode
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{IntroducedIdentifier, Index}
 
 case class NodeUniqueIndexSeekPipe(ident: String,
                                    label: Either[String, LabelId],
@@ -56,11 +57,18 @@ case class NodeUniqueIndexSeekPipe(ident: String,
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def executionPlanDescription = new PlanDescriptionImpl(this, "NodeUniqueIndexSeek", Seq.empty, Seq(
-    "ident" -> ident,
-    "label" -> label,
-    "propertyKey"-> propertyKey))
+  private def labelName = label match {
+    case Left(name) => name
+    case Right(id) => id.toString
+  }
 
+  private def propertyName = propertyKey match {
+    case Left(name) => name
+    case Right(id) => id.toString
+  }
+
+  def planDescription = new PlanDescriptionImpl(this, "NodeUniqueIndexSeek", NoChildren, Seq(
+    IntroducedIdentifier(ident), Index(labelName, propertyName)))
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 

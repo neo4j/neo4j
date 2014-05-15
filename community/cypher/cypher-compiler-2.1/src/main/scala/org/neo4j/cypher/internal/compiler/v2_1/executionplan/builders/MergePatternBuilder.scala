@@ -51,7 +51,7 @@ case class MergePatternBuilder(matching: Phase) extends PlanBuilder with Collect
 
     def solveMatchQuery(symbols: SymbolTable, patternAction: MergePatternAction)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
       val pipe = new NullPipe(symbols) {
-        override def executionPlanDescription: PlanDescription = plan.pipe.executionPlanDescription
+        override def planDescription: PlanDescription = plan.pipe.planDescription
       }
       val matchQuery = createMatchQueryFor(patternAction.patterns)
       var planInProgress = plan.copy(query = matchQuery, pipe = pipe)

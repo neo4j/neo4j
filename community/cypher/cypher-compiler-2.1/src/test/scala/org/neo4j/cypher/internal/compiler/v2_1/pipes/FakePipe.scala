@@ -32,7 +32,7 @@ class FakePipe(val data: Iterator[Map[String, Any]], identifiers: (String, Cyphe
 
   def internalCreateResults(state: QueryState) = data.map(m => ExecutionContext(collection.mutable.Map(m.toSeq: _*)))
 
-  def executionPlanDescription = PlanDescription(this, "Fake")
+  def planDescription = NullPlanDescription(this)
 
   def exists(pred: Pipe => Boolean) = ???
 

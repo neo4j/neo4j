@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import matching.{PatternGraph, MatchingContext}
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 
 case class MatchPipe(source: Pipe,
                      predicates: Seq[Predicate],
@@ -42,6 +43,6 @@ case class MatchPipe(source: Pipe,
     }
   }
 
-  override def executionPlanDescription =
-    source.executionPlanDescription.andThen(this, matchingContext.builder.name, "g" -> patternGraph)
+  override def planDescription =
+    source.planDescription.andThen(this, matchingContext.builder.name, identifiersInClause.map(IntroducedIdentifier).toSeq:_*)
 }

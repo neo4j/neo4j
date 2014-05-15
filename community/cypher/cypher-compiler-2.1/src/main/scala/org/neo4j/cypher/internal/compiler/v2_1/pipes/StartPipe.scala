@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import data.SimpleVal._
 import symbols._
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 
 abstract class StartPipe[T <: PropertyContainer](source: Pipe,
                                                  name: String,
@@ -41,11 +41,9 @@ abstract class StartPipe[T <: PropertyContainer](source: Pipe,
     })
   }
 
-  override def executionPlanDescription = {
-    val description = createSource.description :+ (("identifier" -> fromStr(name)))
-    source.executionPlanDescription
-      .andThen(this, s"${createSource.producerType}", description: _*)
-  }
+  override def planDescription =
+    source.planDescription
+      .andThen(this, s"${createSource.producerType}", createSource.arguments :+ IntroducedIdentifier(name):_*)
 }
 
 class NodeStartPipe(source: Pipe, name: String, val createSource: EntityProducer[Node])(implicit pipeMonitor: PipeMonitor)

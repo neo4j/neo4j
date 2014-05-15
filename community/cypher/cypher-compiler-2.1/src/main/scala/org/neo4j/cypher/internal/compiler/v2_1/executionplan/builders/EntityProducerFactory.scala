@@ -35,7 +35,8 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
       def apply(m: ExecutionContext, q: QueryState) = f(m, q)
 
       def producerType = startItem.producerType
-      override def description = startItem.description ++ super.description
+
+      def arguments: Seq[Argument] = startItem.arguments
     }
 
   def nodeStartItems: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] =
@@ -182,5 +183,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
     def producerType: String = "NoNodes"
 
     def apply(v1: ExecutionContext, v2: QueryState) = Iterator.empty
+
+    def arguments: Seq[Argument] = Seq.empty
   }
 }

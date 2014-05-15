@@ -19,8 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.{NoChildren, PlanDescriptionImpl, symbols, ExecutionContext}
 import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 
 case class AllNodesScanPipe(ident: String)(implicit pipeMonitor: PipeMonitor) extends Pipe {
 
@@ -29,7 +30,7 @@ case class AllNodesScanPipe(ident: String)(implicit pipeMonitor: PipeMonitor) ex
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def executionPlanDescription = new PlanDescriptionImpl(this, "AllNodesScan", Seq.empty, Seq("ident" -> ident))
+  def planDescription = PlanDescriptionImpl(this, "AllNodesScan", NoChildren, Seq(IntroducedIdentifier(ident)))
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 

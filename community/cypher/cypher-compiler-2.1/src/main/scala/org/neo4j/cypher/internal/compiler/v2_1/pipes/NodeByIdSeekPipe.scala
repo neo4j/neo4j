@@ -19,11 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.{NoChildren, PlanDescriptionImpl, symbols, ExecutionContext}
 import symbols.{SymbolTable, CTNode}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.helpers.CollectionSupport
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 
 case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: Seq[Expression])(implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
 
@@ -34,7 +35,7 @@ case class NodeByIdSeekPipe(ident: String, nodeIdsExpr: Seq[Expression])(implici
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def executionPlanDescription = new PlanDescriptionImpl(this, "NodeByIdSeek", Seq.empty, Seq("ident" -> ident))
+  def planDescription = new PlanDescriptionImpl(this, "NodeByIdSeek", NoChildren, Seq(IntroducedIdentifier(ident)))
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 
