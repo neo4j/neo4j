@@ -33,7 +33,7 @@ object QueryPlanProducer {
     QueryPlan(
       Aggregation(left.plan, grouping, aggregation),
       left.solved.withProjection(
-      AggregationProjection(groupingKeys = grouping, aggregationExpressions = aggregation, Seq.empty, None, None)
+        AggregationProjection(groupingKeys = grouping, aggregationExpressions = aggregation, Seq.empty, None, None)
       )
     )
 

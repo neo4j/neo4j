@@ -253,9 +253,6 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
         case With(false, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
           val (projections, aggregations) = produceProjectionsMap(expressions)
-          if (aggregations.nonEmpty)
-            throw new CantHandleQueryException
-
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
           val (tailQuery: PlannerQuery, tailMap) = produceQueryGraphFromClauses(
             PlannerQuery(QueryGraph(selections = selections)),
@@ -266,16 +263,26 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
           val inputIds = projections.keySet.map(IdName) ++ aggregations.keySet.map(IdName)
           val argumentIds = inputIds intersect tailQuery.graph.coveredIds
 
+          val projection = if (aggregations.isEmpty)
+            QueryProjection(
+              projections = projections,
+              sortItems = produceSortItems(optOrderBy),
+              limit = limit.map(_.expression),
+              skip = skip.map(_.expression)
+            )
+          else
+            AggregationProjection(
+              groupingKeys = projections,
+              aggregationExpressions = aggregations,
+              sortItems = produceSortItems(optOrderBy),
+              limit = limit.map(_.expression),
+              skip = skip.map(_.expression)
+            )
+
           val newQuery =
             querySoFar
-              .withProjection(QueryProjection(
-                projections = projections,
-                sortItems = produceSortItems(optOrderBy),
-                limit = limit.map(_.expression),
-                skip = skip.map(_.expression)
-              ))
+              .withProjection(projection)
               .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
-
 
           (newQuery, tailMap)
 

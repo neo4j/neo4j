@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Return
 
 object reattachAliasedExpressions extends Rewriter {
-  override def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
 
