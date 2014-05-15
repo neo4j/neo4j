@@ -48,10 +48,12 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
     context.alias(identB) should equal(Some(identA))
   }
 
-  test("should spoil identifiers from aggregating WITH") {
+  test("should spoil all the identifiers when WITH has aggregations") {
     val ast = parser.parse("match (a)-[r]->(b) with a as `x1`, count(r) as `x2` return x1, x2")
+
     val context = inliningContextCreator(ast)
+
     context.seenIdentifiers should equal(Set(identX1, identX2, identA, identB, identR))
-    context.projections should equal(Map(identX1 -> identA))
+    context.projections should equal(Map.empty)
   }
 }

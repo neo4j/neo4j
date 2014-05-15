@@ -162,8 +162,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
                                            clauses: Seq[Clause]): (PlannerQuery, Map[PatternExpression, QueryGraph]) =
     clauses match {
         case Return(false, ListedReturnItems(expressions), optOrderBy, skip, limit) :: tl =>
-
-          val (projections, aggregations) = produceProjectionsMap(expressions)
+          val (projections, aggregations) = produceProjectionsMaps(expressions)
 
           val sortItems = produceSortItems(optOrderBy)
 
@@ -181,7 +180,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
               limit = limit.map(_.expression),
               skip = skip.map(_.expression))
 
-    val newQG = querySoFar.withProjection(projection)
+          val newQG = querySoFar.withProjection(projection)
 
           produceQueryGraphFromClauses(newQG, subQueryLookupTable, tl)
 
@@ -252,7 +251,8 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
           (newQuery, tailMap)
 
         case With(false, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
-          val (projections, aggregations) = produceProjectionsMap(expressions)
+          val (projections, aggregations) = produceProjectionsMaps(expressions)
+
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
           val (tailQuery: PlannerQuery, tailMap) = produceQueryGraphFromClauses(
             PlannerQuery(QueryGraph(selections = selections)),
@@ -296,7 +296,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
   private def produceSortItems(optOrderBy: Option[OrderBy]) =
     optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
 
-  private def produceProjectionsMap(expressions: Seq[ReturnItem]): (Map[String, Expression], Map[String, Expression]) = {
+  private def produceProjectionsMaps(expressions: Seq[ReturnItem]): (Map[String, Expression], Map[String, Expression]) = {
     val (aggregatingItems: Seq[ReturnItem], nonAggrItems: Seq[ReturnItem]) =
       expressions.partition(item => IsAggregate(item.expression))
 

@@ -36,7 +36,13 @@ trait PlannerQuery extends Visitable[PlannerQuery] {
   def updateProjections(f: QueryProjection => QueryProjection): PlannerQuery = withProjection(f(projection))
   def updateTail(f: PlannerQuery => PlannerQuery): PlannerQuery
 
-  def updateTailOrSelf(f: PlannerQuery => PlannerQuery): PlannerQuery = if (tail.isEmpty) f(this) else updateTail(f)
+  def updateTailOrSelf(f: PlannerQuery => PlannerQuery): PlannerQuery = tail match {
+    case None            => f(this)
+    case Some(tailQuery) => this.updateTail(_.updateTailOrSelf(f))
+  }
+
+  def exists(f: PlannerQuery => Boolean): Boolean =
+    f(this) || tail.exists(_.exists(f))
 
   def ++(other: PlannerQuery): PlannerQuery =
     PlannerQuery(
