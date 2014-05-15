@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
-
 // TODO: make writeToFile safe (not being able to do anything but write a
 // sequence of bytes that contains the command)
 

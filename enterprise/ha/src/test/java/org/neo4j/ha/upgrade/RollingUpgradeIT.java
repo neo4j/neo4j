@@ -19,25 +19,25 @@
  */
 package org.neo4j.ha.upgrade;
 
-import static org.junit.Assert.fail;
-import static org.neo4j.cluster.ClusterSettings.cluster_server;
-import static org.neo4j.cluster.ClusterSettings.initial_hosts;
-import static org.neo4j.cluster.ClusterSettings.server_id;
-import static org.neo4j.ha.upgrade.Utils.assembleClassPathFromPackage;
-import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
-import static org.neo4j.kernel.ha.HaSettings.ha_server;
-
 import java.io.File;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
+import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Map;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Test;
+
+import org.neo4j.backup.OnlineBackup;
+import org.neo4j.backup.OnlineBackupSettings;
+import org.neo4j.consistency.ConsistencyCheckService;
+import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -47,35 +47,34 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.UpdatePuller;
+import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.cluster.ClusterSettings.cluster_server;
+import static org.neo4j.cluster.ClusterSettings.initial_hosts;
+import static org.neo4j.cluster.ClusterSettings.server_id;
+import static org.neo4j.ha.upgrade.Utils.assembleClassPathFromPackage;
+import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
+import static org.neo4j.kernel.ha.HaSettings.ha_server;
 
 //@Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
 public class RollingUpgradeIT
 {
     private static final String OLD_VERSION = "2.0.1";
 
-    public static final RelationshipType type1 = new RelationshipType()
-    {
-        @Override
-        public String name()
-        {
-            return "type1";
-        }
-    };
-
-    public static final RelationshipType type2 = new RelationshipType()
-    {
-        @Override
-        public String name()
-        {
-            return "type2";
-        }
-    };
+    public static final RelationshipType type1 = DynamicRelationshipType.withName( "type1" );
+    public static final RelationshipType type2 = DynamicRelationshipType.withName( "type2" );
 
     private final TargetDirectory DIR = TargetDirectory.forTest( getClass() );
-//    private final File DBS_DIR = DIR.cleanDirectory( "dbs" );
+    private final File DBS_DIR = DIR.cleanDirectory( "dbs" );
 
     private LegacyDatabase[] legacyDbs;
     private GraphDatabaseAPI[] newDbs;
@@ -100,11 +99,16 @@ public class RollingUpgradeIT
          * 3.2 Do a master switch
          * 3.3 Restart one slave
          * 3.4 Take down the instances and do consistency check */
-        
+
+        /*
+         *
+         */
+
         try
         {
             startOldVersionCluster();
             rollOverToNewVersion();
+            shutdownAndDoConsistencyChecks();
         }
         catch ( Throwable e )
         {
@@ -112,12 +116,29 @@ public class RollingUpgradeIT
             throw e;
         }
     }
-    
+
+    private void shutdownAndDoConsistencyChecks() throws ConsistencyCheckIncompleteException
+    {
+        Collection<String> storeDirs = new ArrayList<>( newDbs.length );
+        for ( GraphDatabaseAPI item : newDbs )
+        {
+            storeDirs.add( item.getStoreDir() );
+            item.shutdown();
+        }
+
+        ConsistencyCheckService service = new ConsistencyCheckService();
+        for ( String storeDir : storeDirs )
+        {
+            service.runFullConsistencyCheck( storeDir, new Config(),
+                    ProgressMonitorFactory.textual( System.out ), StringLogger.SYSTEM );
+        }
+    }
+
     private void debug( String message )
     {
         debug( message, true );
     }
-    
+
     private void debug( String message, boolean enter )
     {
         String string = "RUT " + message;
@@ -130,7 +151,7 @@ public class RollingUpgradeIT
             System.out.print( string );
         }
     }
-    
+
     @After
     public void cleanUp() throws Exception
     {
@@ -163,7 +184,7 @@ public class RollingUpgradeIT
         for ( int i = 0; i < legacyDbFutures.length; i++ )
         {
             legacyDbFutures[i] = LegacyDatabaseImpl.start( classpath,
-                    new File( new File("/Users/chris/Desktop/ru"), "" + i ), config( i ) );
+                    storeDir( i ), config( i ) );
             debug( "  Started " + i );
         }
         legacyDbs = new LegacyDatabase[legacyDbFutures.length];
@@ -171,7 +192,7 @@ public class RollingUpgradeIT
         {
             legacyDbs[i] = (LegacyDatabase) legacyDbFutures[i].get();
         }
-        
+
         for ( LegacyDatabase db : legacyDbs )
         {
             debug( "  Awaiting " + db.getStoreDir() + " to start" );
@@ -191,16 +212,32 @@ public class RollingUpgradeIT
         centralNode = legacyDbs[0].initialize();
     }
 
+    private File storeDir( int serverId )
+    {
+        return new File( DBS_DIR, "" + serverId );
+    }
+
     private Map<String, String> config( int serverId ) throws UnknownHostException
     {
-        String localhost = InetAddress.getLocalHost().getHostAddress();
+        String localhost = localhost();
         Map<String, String> result = MapUtil.stringMap(
                 server_id.name(), "" + serverId,
                 cluster_server.name(), localhost + ":" + (5000 + serverId),
                 ha_server.name(), localhost + ":" + (6000 + serverId),
                 GraphDatabaseSettings.allow_store_upgrade.name(), "true",
+                OnlineBackupSettings.online_backup_server.name(), localhost + ":" + backupPort( serverId ),
                 initial_hosts.name(), localhost + ":" + 5000 + "," + localhost + ":" + 5001 + "," + localhost + ":" + 5002 );
         return result;
+    }
+
+    private String localhost() throws UnknownHostException
+    {
+        return InetAddress.getLocalHost().getHostAddress();
+    }
+
+    private int backupPort( int serverId )
+    {
+        return (6362+serverId);
     }
 
     private void rollOverToNewVersion() throws Exception
@@ -208,6 +245,7 @@ public class RollingUpgradeIT
         debug( "Starting to roll over to current version" );
         Pair<LegacyDatabase, Integer> master = findOutWhoIsMaster();
         newDbs = new GraphDatabaseAPI[legacyDbs.length];
+        int authorativeSlaveId = -1;
         for ( int i = 0; i < legacyDbs.length; i++ )
         {
             LegacyDatabase legacyDb = legacyDbs[i];
@@ -217,13 +255,17 @@ public class RollingUpgradeIT
                 continue;
             }
 
-            rollOver( legacyDb, i );
-//            return;
+            rollOver( legacyDb, i, master.other(), authorativeSlaveId );
+            if ( authorativeSlaveId == -1 )
+            {
+                authorativeSlaveId = i;
+            }
         }
-        rollOver( master.first(), master.other() );
+        rollOver( master.first(), master.other(), master.other(), -2 );
     }
 
-    private void rollOver( LegacyDatabase legacyDb, int i ) throws Exception
+    private void rollOver( LegacyDatabase legacyDb, int i, int masterServerId, int authorativeSlaveId )
+            throws Exception
     {
         String storeDir = legacyDb.getStoreDir();
         if ( i == 0)
@@ -233,7 +275,24 @@ public class RollingUpgradeIT
         stop( i );
         Thread.sleep( 30000 );
 
+        File storeDirFile = new File( storeDir );
         debug( "Starting " + i + " as current version" );
+        switch ( authorativeSlaveId )
+        {
+        case -1:
+            break;
+        case -2:
+            debug( "At last master starting, deleteing store so that it fetches from the new master" );
+            FileUtils.deleteRecursively( storeDirFile );
+            break;
+        default:
+            debug( "Consecutive slave starting, making it so that I will copy store from " + authorativeSlaveId );
+            FileUtils.deleteRecursively( storeDirFile );
+            storeDirFile.mkdirs();
+            backup( authorativeSlaveId, storeDirFile );
+            break;
+        }
+
         // start that db up in this JVM
         newDbs[i] = (GraphDatabaseAPI) new HighlyAvailableGraphDatabaseFactory()
                 .newHighlyAvailableDatabaseBuilder( storeDir )
@@ -243,15 +302,14 @@ public class RollingUpgradeIT
         legacyDbs[i] = null;
 
         // issue transaction and see that it propagates
-        if ( i == 2 || i == 1  )
+        if ( i != masterServerId )
         {
             // if the instance is not the old master, create on the old master
-            legacyDbs[0].doComplexLoad( centralNode );
+            legacyDbs[masterServerId].doComplexLoad( centralNode );
             debug( "Node created on " + i );
         }
         else
         {
-            // TODO figure out the master properly instead of guessing
             doComplexLoad( newDbs[1], centralNode );
         }
         for ( int j = 0; j < legacyDbs.length; j++ )
@@ -270,6 +328,12 @@ public class RollingUpgradeIT
                 debug( "Verified on new db " + j );
             }
         }
+    }
+
+    private void backup( int sourceServerId, File targetDir ) throws UnknownHostException
+    {
+        OnlineBackup backup = OnlineBackup.from( localhost(), backupPort( sourceServerId ) ).backup( targetDir.getPath() );
+        assertTrue( "Something wrong with the backup", backup.isConsistent() );
     }
 
     public void doComplexLoad( GraphDatabaseAPI db, long center )

@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.xa.command;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 
