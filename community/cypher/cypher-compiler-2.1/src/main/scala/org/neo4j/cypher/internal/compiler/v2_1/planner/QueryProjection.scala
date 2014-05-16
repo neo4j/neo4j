@@ -28,6 +28,7 @@ trait QueryProjection {
   def sortItems: Seq[SortItem]
   def limit: Option[Expression]
   def skip: Option[Expression]
+  def keySet = projections.keySet
 
   def withSkip(skip: Option[Expression]): QueryProjection
   def withLimit(limit: Option[Expression]): QueryProjection
@@ -77,9 +78,19 @@ case class QueryProjectionImpl(projections: Map[String, Expression], sortItems: 
   }
 }
 
-case class AggregationProjection(groupingKeys: Map[String, Expression], aggregationExpressions: Map[String, Expression],
-                                 sortItems: Seq[SortItem], limit: Option[Expression], skip: Option[Expression])
+case class AggregationProjection(groupingKeys: Map[String, Expression] = Map.empty,
+                                 aggregationExpressions: Map[String, Expression] = Map.empty,
+                                 sortItems: Seq[SortItem] = Seq.empty,
+                                 limit: Option[Expression] = None,
+                                 skip: Option[Expression] = None)
   extends QueryProjection {
+
+  assert(
+    !(groupingKeys.isEmpty && aggregationExpressions.isEmpty),
+    "Everything can't be empty"
+  )
+
+  override def keySet: Set[String] = groupingKeys.keySet ++ aggregationExpressions.keySet
 
   def withSkip(skip: Option[Expression]) = copy(skip = skip)
   def withLimit(limit: Option[Expression]) = copy(limit = limit)
