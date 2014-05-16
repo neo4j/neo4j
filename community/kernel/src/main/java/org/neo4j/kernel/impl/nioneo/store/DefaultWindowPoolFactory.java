@@ -35,7 +35,7 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
 {
     @Override
     public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel, Config configuration,
-                              StringLogger log )
+                              StringLogger log, int numberOfReservedLowIds )
     {
 
         return new PersistenceWindowPool( storageFileName, recordSize, fileChannel,

@@ -27,8 +27,6 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 import org.junit.After;
 import org.junit.Before;
@@ -93,7 +91,7 @@ public class TestCommunication
     public void makeSureClientStoreIdsMustMatch() throws Throwable
     {
         MadeUpServer server = builder.server();
-        MadeUpClient client = builder.storeId( new StoreId( 10, 10, versionStringToLong( ALL_STORES_VERSION ) ) ).client();
+        MadeUpClient client = builder.storeId( new StoreId( 10, 10 ) ).client();
         life.add( server );
         life.add( client );
         life.start();
@@ -104,7 +102,7 @@ public class TestCommunication
     @Test( expected = MismatchingStoreIdException.class )
     public void makeSureServerStoreIdsMustMatch() throws Throwable
     {
-        MadeUpServer server = builder.storeId( new StoreId( 10, 10, versionStringToLong( ALL_STORES_VERSION ) ) ).server();
+        MadeUpServer server = builder.storeId( new StoreId( 10, 10 ) ).server();
         MadeUpClient client = builder.client();
         life.add( server );
         life.add( client );
@@ -455,8 +453,7 @@ public class TestCommunication
         public ServerInterface serverInOtherJvm()
         {
             ServerInterface server = new MadeUpServerProcess().start( new StartupData(
-                    storeId.getCreationTime(), storeId.getRandomId(),
-                    storeId.getStoreVersion(), internalProtocolVersion,
+                    storeId.getCreationTime(), storeId.getRandomId(), internalProtocolVersion,
                     applicationProtocolVersion, chunkSize ) );
             server.awaitStarted();
             return server;

@@ -35,6 +35,7 @@ import static java.lang.String.format;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
 import static org.hamcrest.core.IsNot.not;
 import static org.hamcrest.core.IsNull.nullValue;
 import static org.junit.Assert.assertEquals;
@@ -48,6 +49,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.getConstraints;
 import static org.neo4j.graphdb.Neo4jMatchers.getIndexes;
 import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
 import static org.neo4j.graphdb.Neo4jMatchers.waitForIndex;
+import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class SchemaAcceptanceTest
@@ -479,7 +481,7 @@ public class SchemaAcceptanceTest
         // WHEN
         try
         {
-            createIndex( db, label , propertyKey );
+            createIndex( db, label, propertyKey );
             fail( "Expected exception to be thrown" );
         }
         catch ( ConstraintViolationException e )
@@ -506,6 +508,25 @@ public class SchemaAcceptanceTest
         {
             assertEquals( "There already exists an index for label 'MY_LABEL' on property 'my_property_key'.",
                           e.getMessage() );
+        }
+    }
+
+    @Test
+    public void addedUncommittedIndexesShouldBeVisibleWithinTheTransaction()
+    {
+        // GIVEN
+        IndexDefinition indexA = createIndex( db, label, "a" );
+        createConstraint( label, "b" );
+
+        // WHEN
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertThat( count( db.schema().getIndexes( label ) ), is( 2L ) );
+            IndexDefinition indexC = db.schema().indexFor( label ).on( "c" ).create();
+            // THEN
+            assertThat( count( db.schema().getIndexes( label ) ), is( 3L ) );
+            assertThat( db.schema().getIndexState( indexA ), is( Schema.IndexState.ONLINE ) );
+            assertThat( db.schema().getIndexState( indexC ), is( Schema.IndexState.POPULATING ) );
         }
     }
 

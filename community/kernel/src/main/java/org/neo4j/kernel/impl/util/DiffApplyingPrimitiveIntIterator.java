@@ -24,8 +24,14 @@ import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections.PrimitiveIntBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.graphdb.Resource;
 
-public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIterator
+/**
+ * Please dedup with {@link DiffApplyingPrimitiveLongIterator}
+ * Applies a diffset to the given source PrimitiveIntIterator.
+ * If the given source is a Resource, then so is this DiffApplyingPrimitiveIntIterator.
+ */
+public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIterator implements Resource
 {
     private enum Phase
     {
@@ -103,5 +109,14 @@ public final class DiffApplyingPrimitiveIntIterator extends PrimitiveIntBaseIter
     private boolean computeNextFromAddedElements()
     {
         return addedElementsIterator.hasNext() ? next( (Integer) addedElementsIterator.next() ) : false;
+    }
+
+    @Override
+    public void close()
+    {
+        if ( source instanceof Resource )
+        {
+            ((Resource) source).close();
+        }
     }
 }

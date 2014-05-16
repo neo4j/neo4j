@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-
-case class SingleRow(override val coveredIds: Set[IdName] = Set.empty) extends LogicalLeafPlan {
-  val solved = QueryGraph(argumentIds = coveredIds)
+case class SingleRow(coveredIds: Set[IdName])
+                    (val typeInfo: Map[String, CypherType] = coveredIds.map( id => id.name -> CTNode).toMap) extends LogicalLeafPlan {
+  def availableSymbols = coveredIds
 }

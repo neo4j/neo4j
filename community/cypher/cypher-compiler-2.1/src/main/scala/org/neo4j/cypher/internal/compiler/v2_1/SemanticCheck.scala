@@ -36,7 +36,7 @@ trait SemanticChecking {
 
   private val scopeState: SemanticCheck = state => SemanticCheckResult.success(state.newScope)
   private val popStateScope: SemanticCheck = state => SemanticCheckResult.success(state.popScope)
-  protected def withScopedState(check: => SemanticCheck): SemanticCheck = scopeState then check then popStateScope
+  protected def withScopedState(check: => SemanticCheck): SemanticCheck = scopeState chain check chain popStateScope
 }
 
 
@@ -56,13 +56,13 @@ class TraversableOnceSemanticChecking[A](val traversable: TraversableOnce[A]) ex
 
 
 class ChainableSemanticCheck(val check: SemanticCheck) extends AnyVal {
-  def then(next: SemanticCheck): SemanticCheck = state => {
+  def chain(next: SemanticCheck): SemanticCheck = state => {
     val r1 = check(state)
     val r2 = next(r1.state)
     SemanticCheckResult(r2.state, r1.errors ++ r2.errors)
   }
 
-  def ifOkThen(next: => SemanticCheck): SemanticCheck = state => {
+  def ifOkChain(next: => SemanticCheck): SemanticCheck = state => {
     val r1 = check(state)
     if (r1.errors.nonEmpty)
       r1

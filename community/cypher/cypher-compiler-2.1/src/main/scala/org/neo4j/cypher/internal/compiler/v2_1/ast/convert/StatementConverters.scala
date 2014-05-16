@@ -79,6 +79,7 @@ object StatementConverters {
             case c: ast.LoadCSV      => c.addToQueryBuilder(b)
             case c: ast.Start        => c.addToQueryBuilder(b)
             case c: ast.Match        => c.addToQueryBuilder(b)
+            case c: ast.Unwind       => c.addToQueryBuilder(b)
             case c: ast.Merge        => c.addToQueryBuilder(b)
             case c: ast.Create       => c.addToQueryBuilder(b)
             case c: ast.CreateUnique => c.addToQueryBuilder(b)
@@ -136,6 +137,13 @@ object StatementConverters {
         inner.identifier.name,
         inner.fieldTerminator.map(_.value)
       )
+      builder.startItems(items: _*)
+    }
+  }
+
+  implicit class UnwindConverter(inner: ast.Unwind) {
+    def addToQueryBuilder(builder: commands.QueryBuilder) = {
+      val items: Seq[StartItem] = builder.startItems :+ commands.Unwind(inner.expression.asCommandExpression,inner.identifier.name)
       builder.startItems(items: _*)
     }
   }
@@ -315,10 +323,10 @@ object StatementConverters {
     private def returnColumns = clause.returnItems match {
       case ast.ListedReturnItems(items) =>
         items.map {
-          case i: ast.UnaliasedReturnItem =>
-            commands.ReturnItem(i.expression.asCommandExpression, i.name, renamed = false)
-          case i: ast.AliasedReturnItem =>
-            commands.ReturnItem(i.expression.asCommandExpression, i.name, renamed = true)
+          case ast.AliasedReturnItem(expr, identifier) =>
+            commands.ReturnItem(expr.asCommandExpression, identifier.name)
+          case ast.UnaliasedReturnItem(expr, identifier) =>
+            commands.ReturnItem(expr.asCommandExpression, identifier)
         }
       case _: ast.ReturnAll =>
         Seq(commands.AllIdentifiers())
@@ -350,7 +358,7 @@ object StatementConverters {
 
     private def extractAggregationExpressions(items: Seq[commands.ReturnColumn]) = {
       val aggregationExpressions = items.collect {
-        case commands.ReturnItem(expression, _, _) => (expression.subExpressions :+ expression).collect {
+        case commands.ReturnItem(expression, _) => (expression.subExpressions :+ expression).collect {
           case agg: commandexpressions.AggregationExpression => agg
         }
       }.flatten

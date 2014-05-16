@@ -6,8 +6,7 @@
 
 <!-- favicon -->
 
-<link rel="shortcut icon" href="http://neo4j.org/favicon.ico" type="image/vnd.microsoft.icon" />
-<link rel="icon" href="http://neo4j.org/favicon.ico" type="image/x-icon" />
+<link rel="shortcut icon" href="common/images/favicon.ico" />
 
 <!-- fonts -->
 
@@ -54,7 +53,7 @@
      $( '#content' ).addClass( 'internet-explorer' );
      @*/
 </script>
- 
+
 ]]>
 </xsl:text>
 

@@ -40,19 +40,19 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     public static abstract class Configuration
         extends AbstractStore.Configuration
     {
-        
+
     }
-    
+
     private DynamicStringStore nameStore;
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
     public TokenStore( File fileName, Config configuration, IdType idType,
                        IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                        FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                       DynamicStringStore nameStore )
+                       DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger );
+                fileSystemAbstraction, stringLogger, versionMismatchHandler );
         this.nameStore = nameStore;
     }
 
@@ -68,14 +68,14 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     }
 
     @Override
-    protected void setRecovered()
+    public void setRecovered()
     {
         super.setRecovered();
         nameStore.setRecovered();
     }
 
     @Override
-    protected void unsetRecovered()
+    public void unsetRecovered()
     {
         super.unsetRecovered();
         nameStore.unsetRecovered();
@@ -229,7 +229,9 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
     public Collection<DynamicRecord> allocateNameRecords( byte[] chars )
     {
-        return nameStore.allocateRecordsFromBytes( chars );
+        Collection<DynamicRecord> records = new ArrayList<>();
+        nameStore.allocateRecordsFromBytes( records, chars );
+        return records;
     }
 
     public T getLightRecord( int id )
@@ -344,7 +346,9 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     public void ensureHeavy( T record )
     {
         if (!record.isLight())
+        {
             return;
+        }
 
         record.setIsLight( false );
         record.addNameRecords( nameStore.getRecords( record.getNameId() ) );

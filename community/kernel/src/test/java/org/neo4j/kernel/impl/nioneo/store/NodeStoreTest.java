@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
@@ -54,7 +55,7 @@ public class NodeStoreTest
         long[] ids = new long[] { expectedId, 23l, 42l };
         DynamicRecord firstRecord = new DynamicRecord( 0l );
         List<DynamicRecord> dynamicRecords = asList( firstRecord );
-        allocateFromNumbers( ids, dynamicRecords.iterator(), new PreAllocatedRecords( 60 ) );
+        allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(), new PreAllocatedRecords( 60 ) );
 
         // WHEN
         Long firstId = readOwnerFromDynamicLabelsRecord( firstRecord );
@@ -71,7 +72,7 @@ public class NodeStoreTest
         long[] ids = new long[] { };
         DynamicRecord firstRecord = new DynamicRecord( 0l );
         List<DynamicRecord> dynamicRecords = asList( firstRecord );
-        allocateFromNumbers( ids, dynamicRecords.iterator(), new PreAllocatedRecords( 60 ) );
+        allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(), new PreAllocatedRecords( 60 ) );
 
         // WHEN
         Long firstId = readOwnerFromDynamicLabelsRecord( firstRecord );
@@ -88,7 +89,7 @@ public class NodeStoreTest
         long[] ids = new long[] { expectedId, 1l, 2l, 3l, 4l, 5l, 6l, 7l, 8l, 9l, 10l, 11l };
         DynamicRecord firstRecord = new DynamicRecord( 0l );
         List<DynamicRecord> dynamicRecords = asList( firstRecord, new DynamicRecord( 1l ) );
-        allocateFromNumbers( ids, dynamicRecords.iterator(), new PreAllocatedRecords( 8 ) );
+        allocateFromNumbers( new ArrayList<DynamicRecord>(), ids, dynamicRecords.iterator(), new PreAllocatedRecords( 8 ) );
 
         // WHEN
         Long firstId = readOwnerFromDynamicLabelsRecord( firstRecord );

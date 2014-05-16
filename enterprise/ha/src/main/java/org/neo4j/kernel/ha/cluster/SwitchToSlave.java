@@ -19,15 +19,20 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
+
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
@@ -36,6 +41,7 @@ import org.neo4j.com.ServerUtil;
 import org.neo4j.com.storecopy.RemoteStoreCopier;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -49,6 +55,7 @@ import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
+import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -60,6 +67,7 @@ import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.ha.transaction.DenseNodeTransactionTranslator;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
@@ -72,13 +80,16 @@ import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
@@ -90,9 +101,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 public class SwitchToSlave
 {
@@ -139,6 +147,12 @@ public class SwitchToSlave
         this.kernelExtensions = kernelExtensions;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
+
+        this.masterClientResolver = new MasterClientResolver( logging,
+                config.get( HaSettings.read_timeout ).intValue(),
+                config.get( HaSettings.lock_read_timeout ).intValue(),
+                config.get( HaSettings.max_concurrent_channels_per_slave ).intValue(),
+                config.get( HaSettings.com_chunk_size ).intValue()  );
     }
 
     public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri ) throws Throwable
@@ -147,13 +161,6 @@ public class SwitchToSlave
                 masterUri );
 
         assert masterUri != null; // since we are here it must already have been set from outside
-
-        this.masterClientResolver = new MasterClientResolver( logging,
-                config.get( HaSettings.read_timeout ).intValue(),
-                config.get( HaSettings.lock_read_timeout ).intValue(),
-                config.get( HaSettings.max_concurrent_channels_per_slave ).intValue(),
-                config.get( HaSettings.com_chunk_size ).intValue()  );
-
 
         HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency(
                 HaXaDataSourceManager.class );
@@ -165,12 +172,10 @@ public class SwitchToSlave
                 copyStoreFromMaster( masterUri );
             }
 
-                            /*
-                             * We get here either with a fresh store from the master copy above so we need to
-                             * start the ds
-                             * or we already had a store, so we have already started the ds. Either way,
-                             * make sure it's there.
-                             */
+            /*
+             * We get here either with a fresh store from the master copy above so we need to start the ds
+             * or we already had a store, so we have already started the ds. Either way, make sure it's there.
+             */
             NeoStoreXaDataSource nioneoDataSource = ensureDataSourceStarted( xaDataSourceManager, resolver );
             checkDataConsistency( xaDataSourceManager, resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
 
@@ -252,7 +257,7 @@ public class SwitchToSlave
         MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), haCommunicationLife );
 
         Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
-                new RequestContextFactory( getServerId( masterUri ), xaDataSourceManager,
+                new RequestContextFactory( getServerId( masterUri ).toIntegerIndex(), xaDataSourceManager,
                         resolver ), xaDataSourceManager );
 
         SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging,
@@ -305,7 +310,7 @@ public class SwitchToSlave
     {
         String hostString = ServerUtil.getHostString( server.getSocketAddress() );
         int port = server.getSocketAddress().getPort();
-        Integer serverId = config.get( ClusterSettings.server_id );
+        InstanceId serverId = config.get( ClusterSettings.server_id );
         String host = hostString.contains( HighAvailabilityModeSwitcher.INADDR_ANY ) ? me.getHost() : hostString;
         return URI.create( "ha://" + host + ":" + port + "?serverId=" + serverId );
     }
@@ -332,7 +337,7 @@ public class SwitchToSlave
                 public Response<?> copyStore( StoreWriter writer )
                 {
                     return copyMaster.copyStore( new RequestContext( 0,
-                            config.get( ClusterSettings.server_id ), 0, new RequestContext.Tx[0], 0, 0 ), writer );
+                            config.get( ClusterSettings.server_id ).toIntegerIndex(), 0, new RequestContext.Tx[0], 0, 0 ), writer );
                 }
 
                 @Override
@@ -352,8 +357,13 @@ public class SwitchToSlave
 
     private MasterClient newMasterClient( URI masterUri, StoreId storeId, LifeSupport life )
     {
-        return masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(),
+        MasterClient masterClient = masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(),
                 resolver.resolveDependency( Monitors.class ), storeId, life );
+        if ( !(masterClient instanceof MasterClient210 ))
+        {
+            idGeneratorFactory.doTheThing();
+        }
+        return masterClient;
     }
 
     private void startServicesAgain() throws Throwable
@@ -458,6 +468,17 @@ public class SwitchToSlave
                 NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         if ( nioneoDataSource == null )
         {
+            Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> thing = new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
+
+            {
+                @Override
+                public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
+                {
+                    return new DenseNodeTransactionTranslator( neoStore );
+                }
+            };
+
+
             nioneoDataSource = new NeoStoreXaDataSource( config,
                     resolver.resolveDependency( StoreFactory.class ),
                     resolver.resolveDependency( StringLogger.class ),
@@ -480,7 +501,9 @@ public class SwitchToSlave
                     resolver.resolveDependency( SchemaWriteGuard.class ),
                     resolver.resolveDependency( TransactionEventHandlers.class ),
                     monitors.newMonitor( IndexingService.Monitor.class ),
-                    resolver.resolveDependency( FileSystemAbstraction.class ));
+                    resolver.resolveDependency( FileSystemAbstraction.class ),
+                    thing,
+                    resolver.resolveDependency( StoreUpgrader.class ));
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential

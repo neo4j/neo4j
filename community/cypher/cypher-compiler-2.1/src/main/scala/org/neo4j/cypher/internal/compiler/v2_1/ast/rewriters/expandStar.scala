@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator
 
 
 object expandStar extends Rewriter {
@@ -31,10 +31,12 @@ object expandStar extends Rewriter {
   private val instance: Rewriter = Rewriter.lift {
     case x: ReturnAll if x.seenIdentifiers.nonEmpty =>
 
-      val identifiers = x.seenIdentifiers.get.filter(isNamed).toSeq.sorted
+      val identifiers = x.seenIdentifiers.get.filter(UnNamedNameGenerator.isNamed).toSeq.sorted
 
       val returnItems: Seq[ReturnItem] = identifiers.map {
-        id => UnaliasedReturnItem(Identifier(id)(x.position), id)(x.position)
+        id =>
+          val ident = Identifier(id)(x.position)
+          AliasedReturnItem(ident, ident)(x.position)
       }.toSeq
 
       ListedReturnItems(returnItems)(x.position)

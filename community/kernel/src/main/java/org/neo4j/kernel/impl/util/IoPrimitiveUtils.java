@@ -120,10 +120,14 @@ public abstract class IoPrimitiveUtils
     {
         buffer.clear();
         buffer.limit( bytes );
-        int read = channel.read( buffer );
-        if ( read < bytes )
+        while ( buffer.hasRemaining())
         {
-            return false;
+            int read = channel.read( buffer );
+
+            if ( read == -1 )
+            {
+                return false;
+            }
         }
         buffer.flip();
         return true;

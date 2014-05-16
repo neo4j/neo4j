@@ -21,8 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.expressions.{CachedExpression, Identifier, Expression}
-import data.SimpleVal
 import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.KeyNames
 
 object ExtractPipe {
   def apply(source: Pipe, expressions: Map[String, Expression])(implicit pipeMonitor: PipeMonitor): ExtractPipe = source match {
@@ -83,10 +83,10 @@ case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState) =
     input.map( ctx => applyExpressions(ctx, state) )
 
-  override def executionPlanDescription =
-    source.executionPlanDescription
-      .andThen(this, "Extract",
-        "symKeys" -> SimpleVal.fromIterable(source.symbols.keys),
-        "exprKeys" -> SimpleVal.fromIterable(expressions.keys))
+  override def planDescription = {
+    val arguments = expressions.map(_._1).toSeq
+
+    new PlanDescriptionImpl(this, "Extract", SingleChild(source.planDescription), Seq(KeyNames(arguments)))
+  }
 }
 

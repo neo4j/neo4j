@@ -64,6 +64,35 @@ public class StoreFileChannel implements StoreChannel
     }
 
     @Override
+    public void writeAll( ByteBuffer src, long position ) throws IOException
+    {
+        long bufferStartPosition = position;
+        long expectedEndPosition = src.limit() - src.position();
+        int bytesWritten;
+        while((bufferStartPosition += (bytesWritten = write( src, bufferStartPosition ))) < expectedEndPosition)
+        {
+            if( bytesWritten <= 0 )
+            {
+                throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
+            }
+        }
+    }
+
+    @Override
+    public void writeAll( ByteBuffer src ) throws IOException
+    {
+        long bytesToWrite = src.limit() - src.position();
+        int bytesWritten;
+        while((bytesToWrite -= (bytesWritten = write( src ))) > 0)
+        {
+            if( bytesWritten <= 0 )
+            {
+                throw new IOException( "Unable to write to disk, reported bytes written was " + bytesWritten );
+            }
+        }
+    }
+
+    @Override
     public StoreFileChannel truncate( long size ) throws IOException
     {
         channel.truncate( size );

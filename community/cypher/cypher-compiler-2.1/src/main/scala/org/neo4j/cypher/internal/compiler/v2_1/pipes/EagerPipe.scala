@@ -25,7 +25,7 @@ import symbols._
 case class EagerPipe(src: Pipe)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(src, pipeMonitor) {
   def symbols: SymbolTable = src.symbols
 
-  def executionPlanDescription: PlanDescription = src.executionPlanDescription.andThen(this, "Eager")
+  def planDescription = src.planDescription.andThen(this, "Eager")
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
     input.toList.toIterator

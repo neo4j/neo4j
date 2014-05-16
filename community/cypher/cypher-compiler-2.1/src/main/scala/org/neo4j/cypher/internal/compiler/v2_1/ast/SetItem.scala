@@ -26,31 +26,31 @@ sealed trait SetItem extends ASTNode with SemanticCheckable
 
 case class SetPropertyItem(property: Property, expression: Expression)(val position: InputPosition) extends SetItem {
   def semanticCheck =
-    property.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    property.semanticCheck(Expression.SemanticContext.Simple) chain
+    expression.semanticCheck(Expression.SemanticContext.Simple) chain
     property.map.expectType(CTNode.covariant | CTRelationship.covariant)
 }
 
 case class SetLabelItem(expression: Expression, labels: Seq[LabelName])(val position: InputPosition) extends SetItem {
   def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    expression.semanticCheck(Expression.SemanticContext.Simple) chain
     expression.expectType(CTNode.covariant)
 }
 
 case class SetExactPropertiesFromMapItem(identifier: Identifier, expression: Expression)
                                         (val position: InputPosition) extends SetItem {
   def semanticCheck =
-    identifier.semanticCheck(Expression.SemanticContext.Simple) then
-    identifier.expectType(CTNode.covariant | CTRelationship.covariant) then
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    identifier.semanticCheck(Expression.SemanticContext.Simple) chain
+    identifier.expectType(CTNode.covariant | CTRelationship.covariant) chain
+    expression.semanticCheck(Expression.SemanticContext.Simple) chain
     expression.expectType(CTMap.covariant)
 }
 
 case class SetIncludingPropertiesFromMapItem(identifier: Identifier, expression: Expression)
                                         (val position: InputPosition) extends SetItem {
   def semanticCheck =
-    identifier.semanticCheck(Expression.SemanticContext.Simple) then
-    identifier.expectType(CTNode.covariant | CTRelationship.covariant) then
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
+    identifier.semanticCheck(Expression.SemanticContext.Simple) chain
+    identifier.expectType(CTNode.covariant | CTRelationship.covariant) chain
+    expression.semanticCheck(Expression.SemanticContext.Simple) chain
     expression.expectType(CTMap.covariant)
 }

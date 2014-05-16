@@ -19,59 +19,69 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Exists
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Or, Not}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 case class selectPatternPredicates(simpleSelection: PlanTransformer) extends PlanTransformer {
   private object candidateListProducer extends CandidateGenerator[PlanTable] {
-    def apply(planTable: PlanTable)(implicit context: LogicalPlanContext): CandidateList = {
+    def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
+      val queryGraph = context.queryGraph
       val applyCandidates =
-        for (pattern <- context.queryGraph.patternPredicates;
-             lhs <- planTable.plans if applicable(lhs, pattern))
+        for (
+          lhs <- planTable.plans;
+          pattern <- queryGraph.selections.patternPredicatesGiven(lhs.availableSymbols)
+          if applicable(lhs, queryGraph, pattern))
         yield {
-          val rhs = context.strategy.plan(context.copy(queryGraph = pattern.queryGraph))
           pattern match {
-            case p: Exists =>
-              p.predicate.exp match {
-                case _: Not =>
-                  AntiSemiApply(lhs, rhs)(p)
-                case Or(_:Not, expression) =>
-                  SelectOrAntiSemiApply(lhs, rhs, expression)(p)
-                case Or(_, expression) =>
-                  SelectOrSemiApply(lhs, rhs, expression)(p)
-                case _ =>
-                  SemiApply (lhs, rhs) (p)
-              }
+            case p@Not(patternExpression: PatternExpression) =>
+              val rhs = rhsPlan(context, patternExpression)
+              planAntiSemiApply(lhs, rhs, patternExpression, p)
+            case p@Ors(Not(patternExpression: PatternExpression) :: tail) if doesNotContainPatterns(tail) =>
+              val rhs = rhsPlan(context, patternExpression)
+              planSelectOrAntiSemiApply(lhs, rhs, onePredicate(tail), pattern)
+            case p@Ors((patternExpression: PatternExpression) :: tail) if doesNotContainPatterns(tail) =>
+              val rhs = rhsPlan(context, patternExpression)
+              planSelectOrSemiApply(lhs, rhs, onePredicate(tail), pattern)
+            case patternExpression: PatternExpression =>
+              val rhs = rhsPlan(context, patternExpression)
+              planSemiApply(lhs, rhs, patternExpression)
           }
         }
 
       CandidateList(applyCandidates)
     }
 
-    private def applicable(outerPlan: LogicalPlan, inner: SubQuery) = {
-      inner match {
-        case e: Exists => {
-          val providedIds = outerPlan.coveredIds
-          val hasDependencies = inner.queryGraph.argumentIds.forall(providedIds.contains)
-          val isSolved = outerPlan.solved.selections.contains(e.predicate.exp)
-          hasDependencies && !isSolved
-        }
-      }
+    private def rhsPlan(context: QueryGraphSolvingContext, pattern: PatternExpression) = {
+      val qg = context.subQueriesLookupTable.getOrElse(pattern,
+        throw new ThisShouldNotHappenError("Davide/Stefan", s"Did not find QueryGraph for pattern expression $pattern")
+      )
+      context.strategy.plan(context.copy(queryGraph = qg))
+    }
+
+    private def doesNotContainPatterns(e: Seq[Expression]) = !e.exists(_.exists { case e: PatternExpression => true })
+
+    private def onePredicate(expressions: Seq[Expression]): Expression = expressions.toList match {
+      case e :: Nil => e
+      case predicates => Ors(predicates)(predicates.head.position)
+    }
+
+    private def applicable(outerPlan: QueryPlan, qg: QueryGraph, expression: Expression) = {
+      val symbolsAvailable = qg.argumentIds.subsetOf(outerPlan.availableSymbols)
+      val isSolved = outerPlan.solved.graph.selections.contains(expression)
+      symbolsAvailable && !isSolved
     }
   }
 
-  def apply(input: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
+  def apply(input: QueryPlan)(implicit context: QueryGraphSolvingContext): QueryPlan = {
     val plan = simpleSelection(input)
 
-    def findBestPlanForPatternPredicates(plan: LogicalPlan): LogicalPlan = {
-      val secretPlanTable = PlanTable(Map(plan.coveredIds -> plan))
+    def findBestPlanForPatternPredicates(plan: QueryPlan): QueryPlan = {
+      val secretPlanTable = PlanTable(Map(plan.availableSymbols -> plan))
       val result: CandidateList = candidateListProducer(secretPlanTable)
       result.bestPlan(context.cost).getOrElse(plan)
     }

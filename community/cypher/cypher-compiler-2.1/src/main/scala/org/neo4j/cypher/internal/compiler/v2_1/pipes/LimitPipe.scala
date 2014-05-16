@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{NumericHelper, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.LegacyExpression
 
 case class LimitPipe(source: Pipe, exp: Expression)(implicit pipeMonitor: PipeMonitor)
   extends PipeWithSource(source, pipeMonitor) with NumericHelper {
@@ -39,9 +40,9 @@ case class LimitPipe(source: Pipe, exp: Expression)(implicit pipeMonitor: PipeMo
   }
 
 
-  override def executionPlanDescription = source
-    .executionPlanDescription
-    .andThen(this, "Limit", "limit" -> exp)
+  override def planDescription = source
+    .planDescription
+    .andThen(this, "Limit", LegacyExpression(exp))
 
 
   def symbols: SymbolTable = source.symbols

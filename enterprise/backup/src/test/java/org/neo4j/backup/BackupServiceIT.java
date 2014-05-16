@@ -20,6 +20,7 @@
 package org.neo4j.backup;
 
 import java.io.File;
+import java.io.FileFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -56,6 +57,7 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.DbRepresentation;
+import org.neo4j.test.Mute;
 import org.neo4j.test.TargetDirectory;
 
 import static junit.framework.Assert.assertNotNull;
@@ -74,6 +76,9 @@ public class BackupServiceIT
     private static final String RELATIONSHIP_STORE = "neostore.relationshipstore.db";
     @Rule
     public TargetDirectory.TestDirectory testDirectory = target.testDirectory();
+
+    @Rule
+    public Mute mute = Mute.muteAll();
 
     public static final String BACKUP_HOST = "localhost";
     private FileSystemAbstraction fileSystem;
@@ -271,6 +276,55 @@ public class BackupServiceIT
         // Then
         db.shutdown();
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+    }
+
+    @Test
+    public void shouldHandleBackupWhenLogFilesHaveBeenDeleted() throws Exception
+    {
+        // Given
+        Map<String, String> config = defaultBackupPortHostParams();
+        config.put( GraphDatabaseSettings.keep_logical_logs.name(), "false" );
+        GraphDatabaseAPI db = createDb( storeDir, config );
+        BackupService backupService = new BackupService( fileSystem );
+
+        createAndIndexNode( db, 1 );
+
+        // A full backup
+        backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
+                new Config( defaultBackupPortHostParams() ) );
+
+        // And the log the backup uses is rotated out
+        createAndIndexNode( db, 2 );
+        db = deleteLogFilesAndRestart( config, db );
+
+        createAndIndexNode( db, 3 );
+        db = deleteLogFilesAndRestart( config, db );
+
+        // when
+        backupService.doIncrementalBackupOrFallbackToFull( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(),
+                false, new Config( defaultBackupPortHostParams() ) );
+
+        // Then
+        db.shutdown();
+        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
+    }
+
+    private GraphDatabaseAPI deleteLogFilesAndRestart( Map<String, String> config, GraphDatabaseAPI db )
+    {
+        db.shutdown();
+        for ( File logFile : storeDir.listFiles( new FileFilter()
+        {
+            @Override
+            public boolean accept( File pathname )
+            {
+                return pathname.getName().contains( "logical" );
+            }
+        } ) )
+        {
+            logFile.delete();
+        }
+        db = createDb( storeDir, config );
+        return db;
     }
 
     @Test

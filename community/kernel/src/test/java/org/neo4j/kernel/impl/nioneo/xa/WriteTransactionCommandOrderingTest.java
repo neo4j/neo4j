@@ -19,19 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
@@ -45,7 +39,15 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.RETURNS_MOCKS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class WriteTransactionCommandOrderingTest
 {
@@ -91,15 +93,35 @@ public class WriteTransactionCommandOrderingTest
 
     private void injectAllPossibleCommands( NeoStoreTransaction tx )
     {
-        tx.injectCommand( new Command.NodeCommand( nodeStore, inUseNode(), inUseNode() ) ); // update
-        tx.injectCommand( new Command.NodeCommand( nodeStore, inUseNode(), missingNode() ) ); // delete
-        tx.injectCommand( new Command.NodeCommand( nodeStore, missingNode(), createdNode() ) ); // create
-        tx.injectCommand( new Command.PropertyCommand( propertyStore, inUseProperty(), inUseProperty() ) ); // update
-        tx.injectCommand( new Command.PropertyCommand( propertyStore, inUseProperty(), missingProperty() ) ); // delete
-        tx.injectCommand( new Command.PropertyCommand( propertyStore, missingProperty(), createdProperty() ) ); // create
-        tx.injectCommand( new Command.RelationshipCommand( relationshipStore, inUseRelationship() ) ); // update
-        tx.injectCommand( new Command.RelationshipCommand( relationshipStore, missingRelationship() ) ); // delete
-        tx.injectCommand( new Command.RelationshipCommand( relationshipStore, createdRelationship() ) ); // create
+        Command.NodeCommand updatedNode = new Command.NodeCommand();
+        updatedNode.init( inUseNode(), inUseNode() );
+        tx.injectCommand( updatedNode );
+        Command.NodeCommand deletedNode = new Command.NodeCommand();
+        deletedNode.init( inUseNode(), missingNode() );
+        tx.injectCommand( deletedNode );
+        Command.NodeCommand createdNode = new Command.NodeCommand();
+        createdNode.init( missingNode(), createdNode() );
+        tx.injectCommand( createdNode );
+
+        Command.PropertyCommand updatedProp = new Command.PropertyCommand();
+        updatedProp.init( inUseProperty(), inUseProperty() );
+        tx.injectCommand( updatedProp );
+        Command.PropertyCommand deletedProp = new Command.PropertyCommand();
+        deletedProp.init( inUseProperty(), missingProperty() );
+        tx.injectCommand( deletedProp );
+        Command.PropertyCommand createdProp = new Command.PropertyCommand();
+        createdProp.init( missingProperty(), createdProperty() );
+        tx.injectCommand( createdProp );
+
+        Command.RelationshipCommand updatedRel = new Command.RelationshipCommand();
+        updatedRel.init( inUseRelationship() );
+        tx.injectCommand( updatedRel );
+        Command.RelationshipCommand deletedRel =new Command.RelationshipCommand();
+        deletedRel.init( missingRelationship() );
+        tx.injectCommand( deletedRel );
+        Command.RelationshipCommand createdRel = new Command.RelationshipCommand();
+        createdRel.init( createdRelationship() );
+        tx.injectCommand( createdRel );
     }
 
     private static RelationshipRecord missingRelationship()
@@ -195,7 +217,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, null, null, null, null, null, null, null, null );
+            super( null, null, null, null, null, null, null, null, null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -223,7 +245,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, null, null, null, null, null, null );
+            super( null, null, null, null, null, null, null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -258,7 +280,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, null, null, null, null, null );
+            super( null, null, null, null, null, null, null );
             this.currentRecording = currentRecording;
         }
 

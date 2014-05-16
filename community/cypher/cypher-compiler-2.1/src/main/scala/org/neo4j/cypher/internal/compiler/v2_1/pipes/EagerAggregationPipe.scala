@@ -22,16 +22,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import aggregation.AggregationFunction
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.expressions.{Expression, AggregationExpression}
-import data.SimpleVal
 import symbols._
 import collection.mutable.{Map => MutableMap}
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
 
 // Eager aggregation means that this pipe will eagerly load the whole resulting sub graphs before starting
 // to emit aggregated results.
 // Cypher is lazy until it can't - this pipe will eagerly load the full match
-class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Expression], aggregations: Map[String, AggregationExpression])
+case class EagerAggregationPipe(source: Pipe, keyExpressions: Map[String, Expression], aggregations: Map[String, AggregationExpression])
                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
-  def oldKeyExpressions: Seq[Expression] = keyExpressions.values.toSeq
 
   val symbols: SymbolTable = createSymbols()
 
@@ -89,11 +88,7 @@ class EagerAggregationPipe(source: Pipe, val keyExpressions: Map[String, Express
     }
   }
 
-  override def executionPlanDescription =
-    source.executionPlanDescription
-      .andThen(this, "EagerAggregation",
-        "keys" -> SimpleVal.fromIterable(oldKeyExpressions),
-        "aggregates" -> SimpleVal.fromIterable(aggregations))
+  def planDescription = source.planDescription.andThen(this, "EagerAggregation", Arguments.KeyNames(keyExpressions.keys.toSeq))
 
   override def isLazy = false
 }

@@ -21,9 +21,9 @@ package org.neo4j.kernel.ha.transaction;
 
 import java.io.File;
 
-import org.neo4j.kernel.ha.NeoStoreUtil;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 
 public class OnDiskLastTxIdGetter implements LastTxIdGetter
 {
@@ -39,7 +39,7 @@ public class OnDiskLastTxIdGetter implements LastTxIdGetter
     {
         if ( new File(storeDirectory, NeoStore.DEFAULT_NAME).exists() )
         {
-            return new NeoStoreUtil(storeDirectory).getLastCommittedTx();
+            return new NeoStoreUtil( storeDirectory ).getLastCommittedTx();
         }
         else
         {

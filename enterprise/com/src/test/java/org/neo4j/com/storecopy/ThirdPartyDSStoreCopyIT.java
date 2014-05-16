@@ -192,7 +192,7 @@ public class ThirdPartyDSStoreCopyIT
             when(logPositionCache.positionOf( 1338l )).thenReturn( new LogExtractor.TxPosition( 1, -1, 1, 0, 0 ) );
             when(logPositionCache.positionOf( 1339l )).thenReturn( new LogExtractor.TxPosition( 1, -1, 1, 10, 0 ) );
 
-            return new LogExtractor( logPositionCache, logLoader, null, startTxId, endTxIdHint ){
+            return new LogExtractor( logPositionCache, logLoader, null, null, null, startTxId, endTxIdHint ){
 
                 long txCounter = 1338l;
 

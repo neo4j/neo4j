@@ -21,17 +21,17 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.util.Arrays.asList;
 
 import static org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind.deserialize;
 
@@ -41,13 +41,14 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     public static final String TYPE_DESCRIPTOR = "SchemaStore";
     public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
     public static final int BLOCK_SIZE = 56; // + BLOCK_HEADER_SIZE == 64
-    
+
     @SuppressWarnings("deprecation")
     public SchemaStore( File fileName, Config conf, IdType idType, IdGeneratorFactory idGeneratorFactory,
             WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger )
+            StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger );
+        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+                stringLogger, versionMismatchHandler );
     }
 
     @Override
@@ -61,15 +62,17 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     {
         return TYPE_DESCRIPTOR;
     }
-    
+
     public Collection<DynamicRecord> allocateFrom( SchemaRule rule )
     {
         RecordSerializer serializer = new RecordSerializer();
         serializer = serializer.append( rule );
-        return allocateRecordsFromBytes( serializer.serialize(), asList( forceGetRecord( rule.getId() ) ).iterator(),
-                recordAllocator );
+        Collection<DynamicRecord> records = new ArrayList<>();
+        allocateRecordsFromBytes( records, serializer.serialize(),
+                IteratorUtil.iterator( forceGetRecord( rule.getId() ) ), this );
+        return records;
     }
-    
+
     public Iterator<SchemaRule> loadAllSchemaRules()
     {
         return new SchemaStorage( this ).loadAllSchemaRules();

@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.graphdb.Relationship
 import collection.Seq
 import GetGraphElements.getElements
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
 
 class RelationshipByIdBuilder extends PlanBuilder {
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor) = {
@@ -36,9 +37,10 @@ class RelationshipByIdBuilder extends PlanBuilder {
     val Unsolved(RelationshipById(key, expression)) = startItemToken
 
     val pipe = new RelationshipStartPipe(p, key,
-      EntityProducer[Relationship]("Rels(RelationshipById)") { (ctx: ExecutionContext, state: QueryState) =>
-        getElements[Relationship](expression(ctx)(state), key, (id) => state.query.relationshipOps.getById(id))
-    } )
+      EntityProducer[Relationship]("Rels(RelationshipById)", Arguments.LegacyExpression(expression)) {
+        (ctx: ExecutionContext, state: QueryState) =>
+          getElements[Relationship](expression(ctx)(state), key, (id) => state.query.relationshipOps.getById(id))
+      })
 
     val remainingQ: Seq[QueryToken[StartItem]] = q.start.filterNot(_ == startItemToken) :+ startItemToken.solve
 

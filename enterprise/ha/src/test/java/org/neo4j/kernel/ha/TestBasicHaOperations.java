@@ -137,7 +137,7 @@ public class TestBasicHaOperations
 
         cluster.await( ClusterManager.allSeesAllAsAvailable() );
 
-        long nodeId = 0;
+        long nodeId = 4;
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         try ( Transaction tx = master.beginTx() )
         {
@@ -147,6 +147,7 @@ public class TestBasicHaOperations
 
             tx.success();
         }
+
 
         // No need to wait, the push factor is 2
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();

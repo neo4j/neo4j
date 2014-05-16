@@ -125,6 +125,6 @@ class StartPipePlanDescriptionTest extends MockitoSugar {
   private def createPlanDescription(startItem: StartItem): PlanDescription = {
     val producer = factory.nodeStartItems((planContext, startItem))
     val pipe = new NodeStartPipe(NullPipe(), "n", producer)
-    pipe.executionPlanDescription
+    pipe.planDescription
   }
 }

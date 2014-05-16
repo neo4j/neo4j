@@ -38,9 +38,10 @@ import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -52,6 +53,13 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class LogicalLogSeeder
 {
+    private final StringLogger logger;
+
+    public LogicalLogSeeder( StringLogger logger )
+    {
+        this.logger = logger;
+    }
+
     public void ensureAtLeastOneLogicalLogPresent( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb )
     {
         // Then go over all datasources, try to extract the latest tx
@@ -75,6 +83,7 @@ public class LogicalLogSeeder
                 throw new RuntimeException( e );
             }
         }
+
         if ( !noTxPresent.isEmpty() )
         {
                     /*
@@ -113,7 +122,7 @@ public class LogicalLogSeeder
                     long logVersion = ds.getCurrentLogVersion() - 1;
                     FileChannel newLog = new RandomAccessFile( ds.getFileName( logVersion ), "rw" ).getChannel();
                     newLog.truncate( 0 );
-                    LogIoUtils.writeLogHeader( scratch, logVersion, -1 );
+                    VersionAwareLogEntryReader.writeLogHeader( scratch, logVersion, -1 );
                     // scratch buffer is flipped by writeLogHeader
                     newLog.write( scratch );
                     ReadableByteChannel received = tx.third().extract();
@@ -127,6 +136,21 @@ public class LogicalLogSeeder
                     newLog.force( false );
                     newLog.close();
                     received.close();
+                }
+            }
+            catch( RuntimeException e)
+            {
+                if(e.getCause() != null && e.getCause() instanceof NoSuchLogVersionException)
+                {
+                    logger.warn( "Important: There are no available transaction logs on the target database, which " +
+                            "means the backup could not save a point-in-time reference. This means you cannot use this " +
+                            "backup for incremental backups, and it means you cannot use it directly to seed an HA " +
+                            "cluster. The next time you perform a backup, a full backup will be done. If you wish to " +
+                            "use this backup as a seed for a cluster, you need to start a stand-alone database on " +
+                            "it, and commit one write transaction, to create the transaction log needed to seed the " +
+                            "cluster. To avoid this happening, make sure you never manually delete transaction log " +
+                            "files (nioneo_logical.log.vXXX), and that you configure the database to keep at least a " +
+                            "few days worth of transaction logs." );
                 }
             }
             catch ( IOException e )

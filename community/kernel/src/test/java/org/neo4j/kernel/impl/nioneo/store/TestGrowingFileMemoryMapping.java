@@ -19,21 +19,24 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.nodestore_mapped_memory_size;
-import static org.neo4j.helpers.Settings.osIsWindows;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.nodestore_mapped_memory_size;
+import static org.neo4j.helpers.Settings.osIsWindows;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestGrowingFileMemoryMapping
 {
@@ -51,8 +54,8 @@ public class TestGrowingFileMemoryMapping
         File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
         Config config = new Config( stringMap(
                 nodestore_mapped_memory_size.name(), mmapSize( NUMBER_OF_RECORDS, NodeStore.RECORD_SIZE ),
-                NodeStore.Configuration.use_memory_mapped_buffers.name(), "true",
-                NodeStore.Configuration.store_dir.name(), storeDir.getPath() ), NodeStore.Configuration.class );
+                Configuration.use_memory_mapped_buffers.name(), "true",
+                Configuration.store_dir.name(), storeDir.getPath() ), NodeStore.Configuration.class );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory,
                 new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL,
@@ -63,7 +66,7 @@ public class TestGrowingFileMemoryMapping
                 NodeStore.TYPE_DESCRIPTOR ) );
 
         NodeStore nodeStore = new NodeStore( fileName, config, idGeneratorFactory, new DefaultWindowPoolFactory(),
-                new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, null );
+                new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, null, StoreVersionMismatchHandler.THROW_EXCEPTION );
 
         // when
         for ( int i = 0; i < 2 * NUMBER_OF_RECORDS; i++ )

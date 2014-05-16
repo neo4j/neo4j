@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LeafPlanner, CandidateList, LogicalPlanContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.QueryGraphSolvingContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+
 
 object allNodesLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: LogicalPlanContext) =
+  def apply(qg: QueryGraph)(implicit context: QueryGraphSolvingContext) =
     CandidateList(
-      context.queryGraph.patternNodes.toSeq.map {
-        case idName => AllNodesScan(idName)
-      }
+      context.queryGraph.patternNodes.map(planAllNodesScan).toSeq
     )
 }

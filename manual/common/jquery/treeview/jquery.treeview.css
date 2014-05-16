@@ -61,7 +61,7 @@
 .treeview-famfamfam .hitarea, .treeview-famfamfam li.lastCollapsable, .treeview-famfamfam li.lastExpandable { background-image: url(images/treeview-famfamfam.gif); } 
 
 .treeview .placeholder {
-	background: url(images/ajax-loader.gif) 0 0 no-repeat;
+	/*background: url(images/ajax-loader.gif) 0 0 no-repeat;*/
 	height: 16px;
 	width: 16px;
 	display: block;

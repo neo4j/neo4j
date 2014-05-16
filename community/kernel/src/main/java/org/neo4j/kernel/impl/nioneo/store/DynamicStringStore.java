@@ -38,14 +38,16 @@ public class DynamicStringStore extends AbstractDynamicStore
 
     public DynamicStringStore( File fileName, Config configuration, IdType idType,
                                IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                               FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger)
+                               FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                               StoreVersionMismatchHandler versionMismatchHandler )
     {
         super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger);
+                fileSystemAbstraction, stringLogger, versionMismatchHandler );
     }
-    
+
     @Override
-    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record ) throws FAILURE
+    public <FAILURE extends Exception> void accept( RecordStore.Processor<FAILURE> processor, DynamicRecord record )
+            throws FAILURE
     {
         processor.processString( this, record, idType );
     }

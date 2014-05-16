@@ -21,38 +21,37 @@ package org.neo4j.cypher
 
 import org.neo4j.graphdb.Node
 
-class AggregationAcceptanceTest extends ExecutionEngineFunSuite {
+class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   test("should handle aggregates inside non aggregate expressions") {
-    execute(
+    executeWithNewPlanner(
       "MATCH (a { name: 'Andres' })<-[:FATHER]-(child) RETURN {foo:a.name='Andres',kids:collect(child.name)}"
     ).toList
   }
 
   test ("should be able to count nodes") {
-    val a = createNode()
-    val b1 = createNode() //start a = (0) match (a) --> (b) return a, count(*)
+    val a = createLabeledNode("Start")
+    val b1 = createNode()
     val b2 = createNode()
     relate(a, b1, "A")
     relate(a, b2, "A")
 
-    val result = execute(
-      s"start a=node(${a.getId}) match (a)-[rel]->(b) return a, count(*)"
+    val result = executeWithNewPlanner(
+      s"match (a:Start)-[rel]->(b) return a, count(*)"
     )
 
     result.toList should equal(List(Map("a" -> a, "count(*)" -> 2)))
   }
 
   test("should sort on aggregated function and normal property") {
-    val n1 = createNode(Map("name" -> "andres", "division" -> "Sweden"))
-    val n2 = createNode(Map("name" -> "michael", "division" -> "Germany"))
-    val n3 = createNode(Map("name" -> "jim", "division" -> "England"))
-    val n4 = createNode(Map("name" -> "mattias", "division" -> "Sweden"))
+    createNode(Map("name" -> "andres", "division" -> "Sweden"))
+    createNode(Map("name" -> "michael", "division" -> "Germany"))
+    createNode(Map("name" -> "jim", "division" -> "England"))
+    createNode(Map("name" -> "mattias", "division" -> "Sweden"))
 
-    val result = execute(
-      s"start n=node(${n1.getId}, ${n2.getId}, ${n3.getId}, ${n4.getId})" +
-        """return n.division, count(*)
-        order by count(*) DESC, n.division ASC
-        """
+    val result = executeWithNewPlanner(
+      """match n
+        |return n.division, count(*)
+        |order by count(*) DESC, n.division ASC""".stripMargin
     )
     result.toList should equal(List(
       Map("n.division" -> "Sweden", "count(*)" -> 2),
@@ -61,13 +60,11 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite {
   }
 
   test("should aggregate on properties") {
-    val n1 = createNode(Map("x" -> 33))
-    val n2 = createNode(Map("x" -> 33))
-    val n3 = createNode(Map("x" -> 42))
+    createNode(Map("x" -> 33))
+    createNode(Map("x" -> 33))
+    createNode(Map("x" -> 42))
 
-    val result = execute(
-      s"start n=node(${n1.getId}, ${n2.getId}, ${n3.getId}) return n.x, count(*)"
-    )
+    val result = executeWithNewPlanner("match n return n.x, count(*)")
 
     result.toList should equal(List(Map("n.x" -> 42, "count(*)" -> 1), Map("n.x" -> 33, "count(*)" -> 2)))
   }
@@ -77,7 +74,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite {
     createNode(Map("y" -> "a"))
     createNode(Map("y" -> "b", "x" -> 42))
 
-    val result = execute("start n=node(0,1,2) return n.y, count(n.x)")
+    val result = executeWithNewPlanner("match n return n.y, count(n.x)")
 
     result.toSet should equal(Set(Map("n.y" -> "a", "count(n.x)" -> 1), Map("n.y" -> "b", "count(n.x)" -> 1)))
   }
@@ -87,37 +84,34 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite {
     createNode(Map("y" -> "a"))
     createNode(Map("y" -> "a", "x" -> 42))
 
-    val result = execute("start n = node(0,1,2) return n.y, sum(n.x)")
+    val result = executeWithNewPlanner("match n return n.y, sum(n.x)")
 
     result.toList should contain(Map("n.y" -> "a", "sum(n.x)" -> 75))
   }
 
   test("should handle aggregation on functions") {
-    val a = createNode("A")
-    val b = createNode("B")
-    val c = createNode("C")
-    relate(a, b, "X")
-    relate(a, c, "X")
+    val a = createLabeledNode("Start")
+    val b = createNode()
+    val c = createNode()
+    relate(a, b)
+    relate(a, c)
 
-    val result = execute( """
-start a  = node(0)
-match p = a -[*]-> b
-return b, avg(length(p))""")
+    val result = executeWithNewPlanner(
+      """match p = (a:Start)-[*]-> (b)
+        |return b, avg(length(p))""".stripMargin)
 
     result.columnAs[Node]("b").toSet should equal (Set(b, c))
   }
 
   test("should be able to do distinct on unbound node") {
-    createNode()
-
-    val result = execute("start a=node(0) optional match a-->b return count(distinct b)")
-    result.toList should equal (List(Map("count(distinct b)" -> 0)))
+    val result = executeWithNewPlanner("optional match a return count(distinct a)")
+    result.toList should equal (List(Map("count(distinct a)" -> 0)))
   }
 
   test("shouldBeAbleToDoDistinctOnNull") {
     createNode()
 
-    val result = execute("start a=node(0) return count(distinct a.foo)")
+    val result = executeWithNewPlanner("match a return count(distinct a.foo)")
     result.toList should equal (List(Map("count(distinct a.foo)" -> 0)))
   }
 
@@ -126,7 +120,7 @@ return b, avg(length(p))""")
     createNode("color" -> Array("blue"))
     createNode("color" -> Array("red"))
 
-    val result = execute("start a=node(0,1,2) return distinct a.color, count(*)").toList
+    val result = execute("match a return distinct a.color, count(*)").toList
     result.foreach { x =>
       val c = x("a.color").asInstanceOf[Array[_]]
 
@@ -141,32 +135,46 @@ return b, avg(length(p))""")
   test("aggregates in aggregates should fail") {
     createNode()
 
-    intercept[SyntaxException](execute("start a=node(0) return count(count(*))").toList)
+    intercept[SyntaxException](executeWithNewPlanner("match a return count(count(*))").toList)
   }
 
   test("aggregates should be possible to use with arithmetics") {
     createNode()
 
-    val result = execute("start a=node(0) return count(*) * 10").toList
+    val result = executeWithNewPlanner("match a return count(*) * 10").toList
     result should equal (List(Map("count(*) * 10" -> 10)))
   }
 
   test("aggregates should be possible to order by arithmetics") {
-    createNode()
-    createNode()
-    createNode()
+    createLabeledNode("A")
+    createLabeledNode("X")
+    createLabeledNode("X")
 
-    val result = execute("start a=node(0),b=node(1,2) return count(a) * 10 + count(b) * 5 as X order by X").toList
+    val result = executeWithNewPlanner("match (a:A), (b:X) return count(a) * 10 + count(b) * 5 as X order by X").toList
     result should equal (List(Map("X" -> 30)))
   }
 
   test("should handle multiple aggregates on the same node") {
     //WHEN
     val a = createNode()
-    val result = execute("start n=node(*) return count(n), collect(n)")
+    val result = executeWithNewPlanner("match n return count(n), collect(n)")
 
     //THEN
     result.toList should equal (List(Map("count(n)" -> 1, "collect(n)" -> Seq(a))))
   }
 
+  test("simple counting of nodes works as expected") {
+
+    graph.inTx {
+      (1 to 100).foreach {
+        x => createNode()
+      }
+    }
+
+    //WHEN
+    val result = executeWithNewPlanner("match n return count(*)")
+
+    //THEN
+    result.toList should equal (List(Map("count(*)" -> 100)))
+  }
 }

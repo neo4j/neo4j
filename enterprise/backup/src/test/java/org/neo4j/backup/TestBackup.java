@@ -302,8 +302,9 @@ public class TestBackup
             backup.incremental( backupPath.getPath() );
             fail( "Shouldn't work" );
         }
-        catch ( MismatchingStoreIdException e )
-        { // Good
+        catch ( RuntimeException e )
+        {
+            assertThat(e.getCause(), instanceOf(MismatchingStoreIdException.class));
         }
         shutdownServer( server );
         // Just make sure incremental backup can be received properly from

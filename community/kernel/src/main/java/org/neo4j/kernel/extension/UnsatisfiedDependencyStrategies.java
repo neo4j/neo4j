@@ -19,7 +19,8 @@
  */
 package org.neo4j.kernel.extension;
 
-import org.neo4j.kernel.extension.KernelExtensions.UnsatisfiedDepencyException;
+import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
+
 
 public class UnsatisfiedDependencyStrategies
 {
@@ -28,7 +29,7 @@ public class UnsatisfiedDependencyStrategies
         return new UnsatisfiedDependencyStrategy()
         {
             @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDepencyException e )
+            public void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e )
             {
                 throw e;
             }
@@ -40,7 +41,7 @@ public class UnsatisfiedDependencyStrategies
         return new UnsatisfiedDependencyStrategy()
         {
             @Override
-            public void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDepencyException e )
+            public void handle( KernelExtensionFactory kernelExtensionFactory, UnsatisfiedDependencyException e )
             {
             }
         };

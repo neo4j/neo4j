@@ -22,16 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.commands
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_1.mutation._
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.data.SimpleVal
-import org.neo4j.cypher.internal.helpers.Materialized
-import org.neo4j.cypher.internal.compiler.v2_1.data.SimpleVal._
-import org.neo4j.cypher.internal.compiler.v2_1.mutation.MergeNodeAction
-import org.neo4j.cypher.internal.compiler.v2_1.mutation.CreateUniqueAction
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v2_1.mutation.CreateNode
-import org.neo4j.cypher.internal.compiler.v2_1.data.SeqVal
-import org.neo4j.cypher.internal.compiler.v2_1.mutation.CreateRelationship
-import java.net.URL
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v2_1.Argument
 
 trait NodeStartItemIdentifiers extends StartItem {
   def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> CTNode)
@@ -41,20 +33,12 @@ trait RelationshipStartItemIdentifiers extends StartItem {
   def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> CTRelationship)
 }
 
-abstract class StartItem(val identifierName: String, val args: Map[String, String])
+abstract class StartItem(val identifierName: String, val args: Seq[Argument])
   extends TypeSafe with AstNode[StartItem] {
   def mutating: Boolean
   def producerType: String = getClass.getSimpleName
   def identifiers: Seq[(String, CypherType)]
-
-  def description: Seq[(String, SimpleVal)] = {
-    val argValues = Materialized.mapValues(args, fromStr).toSeq
-    val otherValues = Seq(
-      "producer" -> SimpleVal.fromStr(producerType),
-      "identifiers" -> SeqVal(identifiers.toMap.keys.map(SimpleVal.fromStr).toSeq)
-    )
-    argValues ++ otherValues
-  }
+  def arguments: Seq[Argument] = args ++ identifiers.map(x => Arguments.IntroducedIdentifier(x._1))
 }
 
 trait ReadOnlyStartItem {
@@ -67,22 +51,32 @@ trait ReadOnlyStartItem {
 }
 
 case class RelationshipById(varName: String, expression: Expression)
-  extends StartItem(varName, Map.empty) with ReadOnlyStartItem with RelationshipStartItemIdentifiers
+  extends StartItem(varName, Seq(Arguments.LegacyExpression(expression))) with ReadOnlyStartItem with RelationshipStartItemIdentifiers
 
 case class RelationshipByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
-  extends StartItem(varName, Map("idxName" -> idxName, "key" -> key.toString(), "expr" -> expression.toString()))
+  extends StartItem(varName, Seq(
+    Arguments.LegacyExpression(expression),
+    Arguments.LegacyIndex(idxName),
+    Arguments.LegacyExpression(key)))
   with ReadOnlyStartItem with RelationshipStartItemIdentifiers
 
 case class RelationshipByIndexQuery(varName: String, idxName: String, query: Expression)
-  extends StartItem(varName, Map("idxName" -> idxName, "query" -> query.toString()))
+  extends StartItem(varName, Seq(
+    Arguments.LegacyIndex(idxName),
+    Arguments.LegacyExpression(query)))
   with ReadOnlyStartItem with RelationshipStartItemIdentifiers
 
 case class NodeByIndex(varName: String, idxName: String, key: Expression, expression: Expression)
-  extends StartItem(varName, Map("idxName" -> idxName, "key" -> key.toString(), "expr" -> expression.toString()))
+  extends StartItem(varName, Seq(
+    Arguments.LegacyExpression(expression),
+    Arguments.LegacyIndex(idxName),
+    Arguments.LegacyExpression(key)))
   with ReadOnlyStartItem with NodeStartItemIdentifiers
 
 case class NodeByIndexQuery(varName: String, idxName: String, query: Expression)
-  extends StartItem(varName, Map("idxName" -> idxName, "query" -> query.toString()))
+  extends StartItem(varName, Seq(
+    Arguments.LegacyExpression(query),
+    Arguments.LegacyIndex(idxName)))
   with ReadOnlyStartItem with NodeStartItemIdentifiers
 
 trait Hint
@@ -93,34 +87,39 @@ case object AnyIndex extends SchemaIndexKind
 case object UniqueIndex extends SchemaIndexKind
 
 case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[Expression])
-  extends StartItem(identifier, Map("label" -> label, "property" -> property) ++ query.map("query" -> _.toString()))
+  extends StartItem(identifier, query.map(Arguments.LegacyExpression).toSeq :+ Arguments.Index(label, property))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers
 
 case class NodeById(varName: String, expression: Expression)
-  extends StartItem(varName, Map("name" -> expression.toString()))
+  extends StartItem(varName, Seq(Arguments.LegacyExpression(expression)))
   with ReadOnlyStartItem with NodeStartItemIdentifiers
 
 case class NodeByIdOrEmpty(varName: String, expression: Expression)
-  extends StartItem(varName, Map("name" -> expression.toString()))
+  extends StartItem(varName, Seq(Arguments.LegacyExpression(expression)))
   with ReadOnlyStartItem with NodeStartItemIdentifiers
 
 case class NodeByLabel(varName: String, label: String)
-  extends StartItem(varName, Map("label" -> label.toString))
+  extends StartItem(varName, Seq(Arguments.LabelName(label)))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers
 
-case class AllNodes(columnName: String) extends StartItem(columnName, Map.empty)
+case class AllNodes(columnName: String) extends StartItem(columnName, Seq.empty)
   with ReadOnlyStartItem with NodeStartItemIdentifiers
 
-case class AllRelationships(columnName: String) extends StartItem(columnName, Map.empty)
+case class AllRelationships(columnName: String) extends StartItem(columnName, Seq.empty)
   with ReadOnlyStartItem with RelationshipStartItemIdentifiers
 
-case class LoadCSV(withHeaders: Boolean, url: Expression, identifier: String, fieldTerminator: Option[String]) extends StartItem(identifier, Map.empty)
+case class LoadCSV(withHeaders: Boolean, url: Expression, identifier: String, fieldTerminator: Option[String]) extends StartItem(identifier, Seq.empty)
   with ReadOnlyStartItem {
   def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> (if (withHeaders) CTMap else CTCollection(CTAny)))
 }
 
+case class Unwind(expression: Expression, identifier: String) extends StartItem(identifier, Seq(Arguments.IntroducedIdentifier(identifier)))
+  with ReadOnlyStartItem {
+  def identifiers: Seq[(String, CypherType)] = Seq(identifierName -> CTAny)
+}
+
 //We need to wrap the inner classes to be able to have two different rewrite methods
-abstract class UpdatingStartItem(val updateAction: UpdateAction, name: String) extends StartItem(name, Map.empty) {
+abstract class UpdatingStartItem(val updateAction: UpdateAction, name: String) extends StartItem(name, Seq(Arguments.UpdateActionName(name))) {
 
   override def mutating = true
   override def children = Seq(updateAction)

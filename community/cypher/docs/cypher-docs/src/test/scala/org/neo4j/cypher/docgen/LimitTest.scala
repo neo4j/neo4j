@@ -34,12 +34,12 @@ class LimitTest extends DocumentingTestBase {
   def section: String = "Limit"
 
   @Test def returnFirstThree() {
-    testQuery(
-      title = "Return first part",
-      text = "To return a subset of the result, starting from the top, use this syntax:",
-      queryText = "match (n) return n limit 3",
-      optionalResultExplanation = "The top three items are returned by the example query.",
-      assertions = (p) => assertEquals(List(node("D"), node("E"), node("A")), p.columnAs[Node]("n").toList))
-  }
+      testQuery(
+        title = "Return first part",
+        text = "To return a subset of the result, starting from the top, use this syntax:",
+        queryText = "match (n) return n order by n.name limit 3",
+        optionalResultExplanation = "The top three items are returned by the example query.",
+        assertions = (p) => assertEquals(List(node("A"), node("B"), node("C")), p.columnAs[Node]("n").toList))
+    }
 }
 

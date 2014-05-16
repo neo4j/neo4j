@@ -38,27 +38,19 @@
 */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, Selection}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, LogicalPlanContext}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, QueryGraphSolvingContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object selectCovered extends PlanTransformer {
-  def apply(plan: LogicalPlan)(implicit context: LogicalPlanContext): LogicalPlan = {
-    val qg = context.queryGraph
-    val coveredIds = plan.coveredIds
-
-    val predicates: Seq[Expression] = qg.selections.predicatesGiven(coveredIds).filter {
-      case predicate => !plan.solved.selections.contains(predicate) && !containsPatternPredicates(predicate)
-    }
-
-    if (predicates.isEmpty)
+  def apply(plan: QueryPlan)(implicit context: QueryGraphSolvingContext): QueryPlan = {
+    val unsolvedPredicates = context.queryGraph.selections
+      .scalarPredicatesGiven(plan.availableSymbols)
+      .filterNot(predicate => plan.solved.exists(_.graph.selections.contains(predicate)))
+    if (unsolvedPredicates.isEmpty)
       plan
     else {
-      Selection(predicates, plan)
+      planSelection(unsolvedPredicates, plan)
     }
-  }
-
-  private def containsPatternPredicates(e:Expression) = e.exists {
-    case _:PatternExpression => true
   }
 }

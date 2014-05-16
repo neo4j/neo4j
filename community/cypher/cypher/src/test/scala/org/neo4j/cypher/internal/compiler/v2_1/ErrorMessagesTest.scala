@@ -114,7 +114,7 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     expectSyntaxError(
       "start p=node(2) match p[:likes]->dude return dude.name",
       "Invalid input '[': expected an identifier character, whitespace, '=', node labels, a property map, " +
-        "a relationship pattern, ',', USING, WHERE, LOAD CSV, START, MATCH, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, " +
+        "a relationship pattern, ',', USING, WHERE, LOAD CSV, START, MATCH, UNWIND, MERGE, CREATE, SET, DELETE, REMOVE, FOREACH, WITH, " +
         "RETURN, UNION, ';' or end of input (line 1, column 24)",
       23
     )
@@ -369,6 +369,34 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
 
   test("should forbid using same introduced relationship twice in one MATCH pattern") {
     expectError("match (a)-[r]->(b)-[r]-(c) return r", "Cannot use the same relationship identifier 'r' for multiple patterns (line 1, column 21)")
+  }
+
+  test("should forbid to match properties or labels on already bound identifiers") {
+    expectError(
+      "match a with a match (a {name: 'foo'})-->(b) return a",
+      "Cannot add labels or properties on a node which is already bound (line 1, column 22)"
+    )
+  }
+
+  test("should forbid to match a node using an identifier which is already bound") {
+    expectError(
+      "match a with a match a return a",
+      "Cannot match on a pattern containing only already bound identifiers (line 1, column 16)"
+    )
+  }
+
+  test("should not allow binding a path name that is already bound") {
+    expectError(
+      "match p = a with p,a match p = a-->b return a",
+      "p already declared (line 1, column 28)\n\"match p = a with p,a match p = a-->b return a"
+    )
+  }
+
+  test("should forbid using duplicate ids in return/with") {
+    expectError(
+      "return 1, 1",
+      "Multiple result columns with the same name are not supported (line 1, column 8)"
+    )
   }
 
   def expectError(query: String, expectedError: String) {

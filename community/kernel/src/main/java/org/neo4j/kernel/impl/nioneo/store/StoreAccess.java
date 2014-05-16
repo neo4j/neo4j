@@ -119,7 +119,7 @@ public class StoreAccess
                                 new DefaultIdGeneratorFactory(),
                                 new DefaultWindowPoolFactory(),
                                 fileSystem, StringLogger.DEV_NULL,
-                                new DefaultTxHook() ).attemptNewNeoStore( new File( path, "neostore" ) ) );
+                                new DefaultTxHook() ).newNeoStore( new File( path, "neostore" ) ) );
         this.closeable = true;
     }
 

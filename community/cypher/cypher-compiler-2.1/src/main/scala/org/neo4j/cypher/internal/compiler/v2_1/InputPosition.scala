@@ -37,4 +37,6 @@ object InputPosition {
     def compare(p1: InputPosition, p2: InputPosition) =
       p1.offset.compare(p2.offset)
   }
+
+  val NONE = null
 }

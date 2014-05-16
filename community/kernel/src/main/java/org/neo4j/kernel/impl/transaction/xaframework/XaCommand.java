@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.IOException;
-
 // TODO: make writeToFile safe (not being able to do anything but write a
 // sequence of bytes that contains the command)
 
@@ -83,7 +81,7 @@ public abstract class XaCommand
      * any protests about this command not being able to execute should be done
      * before execution of any command within the transaction.
      */
-    public abstract void execute();
+//    public abstract void execute();
 
     /**
      * When a command is added to a transaction (usually when it is created) it
@@ -93,7 +91,7 @@ public abstract class XaCommand
      * <p>
      * Write the data to the <CODE>fileChannel</CODE>, you can use the 
      * <CODE>buffer</CODE> supplied or create your own buffer since its capacity
-     * is very small (137 bytes or something). Acccess to writing commands is 
+     * is very small (137 bytes or something). Access to writing commands is
      * synchronized, only one command will be written at a time so if you need 
      * to write larger data sets the commands can share the same buffer.
      * <p>
@@ -102,17 +100,13 @@ public abstract class XaCommand
      * real IO failure. If something is wrong with this command it should have
      * been detected when it was created.
      * <p>
-     * Don't <CODE>force</CODE>, <CODE>position</CODE> or anything except
-     * normal forward <CODE>write</CODE> with the file channel.
-     * 
-     * @param fileChannel
-     *            The channel to the {@link XaLogicalLog}
+     *
      * @param buffer
      *            A small byte buffer that can be used to write command data
      * @throws IOException
      *             In case of *real* IO failure
      */
-    public abstract void writeToFile( LogBuffer buffer ) throws IOException;
+//    public abstract void writeToFile( LogBuffer buffer ) throws IOException;
 
     /**
      * If this command is created by the command factory during a recovery scan

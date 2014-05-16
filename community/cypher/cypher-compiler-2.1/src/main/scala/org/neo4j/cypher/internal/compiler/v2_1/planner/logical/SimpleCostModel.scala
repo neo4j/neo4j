@@ -72,16 +72,16 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       cost(cartesian.left) + cardinality(cartesian.left) * cost(cartesian.right)
 
     case applyOp: Apply =>
-      applyCost(outer = applyOp.outer, inner = applyOp.inner)
+      applyCost(outer = applyOp.left, inner = applyOp.right)
 
     case applyOp: SemiApply =>
-      applyCost(outer = applyOp.outer, inner = applyOp.inner)
+      applyCost(outer = applyOp.left, inner = applyOp.right)
 
     case applyOp: AntiSemiApply =>
-      applyCost(outer = applyOp.outer, inner = applyOp.inner)
+      applyCost(outer = applyOp.left, inner = applyOp.right)
 
     case applyOp: SelectOrSemiApply =>
-      selectOrSemiApplyCost(outer = applyOp.outer, inner = applyOp.inner)
+      selectOrSemiApplyCost(outer = applyOp.left, inner = applyOp.right)
 
     case applyOp: SelectOrAntiSemiApply =>
       selectOrSemiApplyCost(outer = applyOp.outer, inner = applyOp.inner)

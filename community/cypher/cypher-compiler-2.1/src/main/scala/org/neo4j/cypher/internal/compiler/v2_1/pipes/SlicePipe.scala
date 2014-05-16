@@ -21,10 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.expressions.Expression
-import data.SimpleVal
-import symbols._
-import org.neo4j.cypher.internal.helpers._
 import org.neo4j.helpers.ThisShouldNotHappenError
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.LegacyExpression
 
 class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression])
                (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -56,7 +54,7 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression])
     }
   }
 
-  override def executionPlanDescription = {
+  override def planDescription = {
 
     val args: Seq[(String, Expression)] = (skip, limit) match {
       case (None, Some(l)) => Seq("limit" -> l)
@@ -65,8 +63,8 @@ class SlicePipe(source:Pipe, skip:Option[Expression], limit:Option[Expression])
       case (None, None)=>throw new ThisShouldNotHappenError("Andres Taylor", "A slice pipe that doesn't slice should never exist.")
     }
     source
-      .executionPlanDescription
-      .andThen(this, "Slice", Materialized.mapValues(args.toMap, SimpleVal.fromStr).toSeq: _*)
+      .planDescription
+      .andThen(this, "Slice", skip.map(LegacyExpression).toSeq ++ limit.map(LegacyExpression).toSeq:_*)
   }
 }
 

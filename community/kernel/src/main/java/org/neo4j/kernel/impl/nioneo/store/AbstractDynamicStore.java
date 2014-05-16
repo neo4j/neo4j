@@ -23,7 +23,6 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Collection;
-import java.util.Collections;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
@@ -32,6 +31,7 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -57,7 +57,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
  * about the store.
  */
 public abstract class AbstractDynamicStore extends CommonAbstractStore implements Store, RecordStore<DynamicRecord>,
-        DynamicBlockSize
+        DynamicBlockSize, DynamicRecordAllocator
 {
     public static abstract class Configuration
         extends CommonAbstractStore.Configuration
@@ -69,15 +69,42 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
 
     private final Config conf;
     private int blockSize;
-    protected final DynamicRecordAllocator recordAllocator;
 
     public AbstractDynamicStore( File fileName, Config conf, IdType idType,
                                  IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                                 FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
+                                 FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                                 StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger );
+        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
+                versionMismatchHandler );
         this.conf = conf;
-        this.recordAllocator = new ExistingThenNewRecordAllocator( this, this );
+    }
+
+    @Override
+    public DynamicRecord nextUsedRecordOrNew( Iterator<DynamicRecord> recordsToUseFirst )
+    {
+        DynamicRecord record;
+        if ( recordsToUseFirst.hasNext() )
+        {
+            record = recordsToUseFirst.next();
+            if ( !record.inUse() )
+            {
+                record.setCreated();
+            }
+        }
+        else
+        {
+            record = new DynamicRecord( nextId() );
+            record.setCreated();
+        }
+        record.setInUse( true );
+        return record;
+    }
+
+    @Override
+    public int dataSize()
+    {
+        return getBlockSize() - AbstractDynamicStore.BLOCK_HEADER_SIZE;
     }
 
     @Override
@@ -222,18 +249,16 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
 
     // [next][type][data]
 
-    protected Collection<DynamicRecord> allocateRecordsFromBytes( byte src[] )
+    protected void allocateRecordsFromBytes( Collection<DynamicRecord> target, byte src[] )
     {
-        return allocateRecordsFromBytes( src, Collections.<DynamicRecord>emptyList().iterator(),
-                recordAllocator );
+        allocateRecordsFromBytes( target, src, IteratorUtil.<DynamicRecord>emptyIterator(), this );
     }
 
-    public static Collection<DynamicRecord> allocateRecordsFromBytes(
-            byte src[], Iterator<DynamicRecord> recordsToUseFirst,
+    public static void allocateRecordsFromBytes(
+            Collection<DynamicRecord> recordList, byte src[], Iterator<DynamicRecord> recordsToUseFirst,
             DynamicRecordAllocator dynamicRecordAllocator )
     {
         assert src != null : "Null src argument";
-        List<DynamicRecord> recordList = new LinkedList<>();
         DynamicRecord nextRecord = dynamicRecordAllocator.nextUsedRecordOrNew( recordsToUseFirst );
         int srcOffset = 0;
         int dataSize = dynamicRecordAllocator.dataSize();
@@ -263,7 +288,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             assert record.getData() != null;
         }
         while ( nextRecord != null );
-        return recordList;
     }
 
     public Collection<DynamicRecord> getLightRecords( long startBlockId )

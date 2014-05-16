@@ -19,117 +19,113 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.spi
 
-import org.neo4j.graphdb.{PropertyContainer, Direction, Node}
+import org.neo4j.graphdb.{Relationship, PropertyContainer, Direction, Node}
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.kernel.InternalAbstractGraphDatabase
 import org.neo4j.graphdb.factory.GraphDatabaseSettings
 
-
 class DelegatingQueryContext(inner: QueryContext) extends QueryContext {
+
+  protected def singleDbHit[A](value: A): A = value
+  protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
 
   def isOpen: Boolean = inner.isOpen
 
   def isTopLevelTx: Boolean = inner.isTopLevelTx
 
-  def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int = {
-    inner.setLabelsOnNode(node, labelIds)
-  }
+  def setLabelsOnNode(node: Long, labelIds: Iterator[Int]): Int =
+    singleDbHit(inner.setLabelsOnNode(node, labelIds))
 
   def close(success: Boolean) {
     inner.close(success)
   }
 
-  def createNode() = inner.createNode()
+  def createNode(): Node = singleDbHit(inner.createNode())
 
-  def createRelationship(start: Node, end: Node, relType: String) = inner.createRelationship(start, end, relType)
+  def createRelationship(start: Node, end: Node, relType: String): Relationship = singleDbHit(inner.createRelationship(start, end, relType))
 
-  def getLabelsForNode(node: Long) = inner.getLabelsForNode(node)
+  def getLabelsForNode(node: Long): Iterator[Int] = singleDbHit(inner.getLabelsForNode(node))
 
-  def getLabelName(id: Int) = inner.getLabelName(id)
+  def getLabelName(id: Int): String = singleDbHit(inner.getLabelName(id))
 
-  def getOptLabelId(labelName: String): Option[Int] = inner.getOptLabelId(labelName)
+  def getOptLabelId(labelName: String): Option[Int] = singleDbHit(inner.getOptLabelId(labelName))
 
-  def getLabelId(labelName: String): Int = inner.getLabelId(labelName)
+  def getLabelId(labelName: String): Int = singleDbHit(inner.getLabelId(labelName))
 
-  def getOrCreateLabelId(labelName: String) = inner.getOrCreateLabelId(labelName)
+  def getOrCreateLabelId(labelName: String): Int = singleDbHit(inner.getOrCreateLabelId(labelName))
 
-  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]) = inner.getRelationshipsFor(node, dir, types)
+  def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] = manyDbHits(inner.getRelationshipsFor(node, dir, types))
 
   def nodeOps = inner.nodeOps
 
   def relationshipOps = inner.relationshipOps
 
-  def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int = {
-    inner.removeLabelsFromNode(node, labelIds)
-  }
+  def removeLabelsFromNode(node: Long, labelIds: Iterator[Int]): Int =
+    singleDbHit(inner.removeLabelsFromNode(node, labelIds))
 
-  def getPropertyKeyName(propertyKeyId: Int): String = inner.getPropertyKeyName(propertyKeyId)
+  def getPropertyKeyName(propertyKeyId: Int): String = singleDbHit(inner.getPropertyKeyName(propertyKeyId))
 
-  def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = inner.getOptPropertyKeyId(propertyKeyName)
+  def getOptPropertyKeyId(propertyKeyName: String): Option[Int] = singleDbHit(inner.getOptPropertyKeyId(propertyKeyName))
 
-  def getPropertyKeyId(propertyKey: String) = inner.getPropertyKeyId(propertyKey)
+  def getPropertyKeyId(propertyKey: String) = singleDbHit(inner.getPropertyKeyId(propertyKey))
 
-  def getOrCreatePropertyKeyId(propertyKey: String) = inner.getOrCreatePropertyKeyId(propertyKey)
+  def getOrCreatePropertyKeyId(propertyKey: String) = singleDbHit(inner.getOrCreatePropertyKeyId(propertyKey))
 
-  def addIndexRule(labelId: Int, propertyKeyId: Int) = inner.addIndexRule(labelId, propertyKeyId)
+  def addIndexRule(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.addIndexRule(labelId, propertyKeyId))
 
-  def dropIndexRule(labelId: Int, propertyKeyId: Int) { inner.dropIndexRule(labelId, propertyKeyId) }
+  def dropIndexRule(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropIndexRule(labelId, propertyKeyId))
 
-  def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = inner.exactIndexSearch(index, value)
+  def exactIndexSearch(index: IndexDescriptor, value: Any): Iterator[Node] = manyDbHits(inner.exactIndexSearch(index, value))
 
-  def getNodesByLabel(id: Int): Iterator[Node] = inner.getNodesByLabel(id)
+  def getNodesByLabel(id: Int): Iterator[Node] = manyDbHits(inner.getNodesByLabel(id))
 
   def upgrade(context: QueryContext): LockingQueryContext = inner.upgrade(context)
 
-  def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = inner.getOrCreateFromSchemaState(key, creator)
+  def getOrCreateFromSchemaState[K, V](key: K, creator: => V): V = singleDbHit(inner.getOrCreateFromSchemaState(key, creator))
 
-  def createUniqueConstraint(labelId: Int, propertyKeyId: Int) = inner.createUniqueConstraint(labelId, propertyKeyId)
+  def createUniqueConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.createUniqueConstraint(labelId, propertyKeyId))
 
-  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) {
-    inner.dropUniqueConstraint(labelId, propertyKeyId)
-  }
+  def dropUniqueConstraint(labelId: Int, propertyKeyId: Int) = singleDbHit(inner.dropUniqueConstraint(labelId, propertyKeyId))
 
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T = inner.withAnyOpenQueryContext(work)
 
-  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = inner.exactUniqueIndexSearch(index, value)
+  def exactUniqueIndexSearch(index: IndexDescriptor, value: Any): Option[Node] = singleDbHit(inner.exactUniqueIndexSearch(index, value))
 
   override def commitAndRestartTx() {
     inner.commitAndRestartTx()
   }
 
-  def getRelTypeId(relType: String): Int = inner.getRelTypeId(relType)
+  def getRelTypeId(relType: String): Int = singleDbHit(inner.getRelTypeId(relType))
 
-  def getOptRelTypeId(relType: String): Option[Int] = inner.getOptRelTypeId(relType)
+  def getOptRelTypeId(relType: String): Option[Int] = singleDbHit(inner.getOptRelTypeId(relType))
 
-  def getRelTypeName(id: Int): String = inner.getRelTypeName(id)
+  def getRelTypeName(id: Int): String = singleDbHit(inner.getRelTypeName(id))
 
   override def hasLocalFileAccess: Boolean = inner.hasLocalFileAccess
 }
 
 class DelegatingOperations[T <: PropertyContainer](protected val inner: Operations[T]) extends Operations[T] {
-  def delete(obj: T) {
-    inner.delete(obj)
-  }
 
-  def setProperty(obj: Long, propertyKey: Int, value: Any) {
-    inner.setProperty(obj, propertyKey, value)
-  }
+  protected def singleDbHit[A](value: A): A = value
+  protected def manyDbHits[A](value: Iterator[A]): Iterator[A] = value
 
-  def getById(id: Long) = inner.getById(id)
+  def delete(obj: T): Unit = singleDbHit(inner.delete(obj))
 
-  def getProperty(obj: Long, propertyKeyId: Int) = inner.getProperty(obj, propertyKeyId)
+  def setProperty(obj: Long, propertyKey: Int, value: Any): Unit = singleDbHit(inner.setProperty(obj, propertyKey, value))
 
-  def hasProperty(obj: Long, propertyKeyId: Int) = inner.hasProperty(obj, propertyKeyId)
+  def getById(id: Long): T = singleDbHit(inner.getById(id))
 
-  def propertyKeyIds(obj: Long) = inner.propertyKeyIds(obj)
+  def getProperty(obj: Long, propertyKeyId: Int): Any = singleDbHit(inner.getProperty(obj, propertyKeyId))
 
-  def removeProperty(obj: Long, propertyKeyId: Int) {
-    inner.removeProperty(obj, propertyKeyId)
-  }
+  def hasProperty(obj: Long, propertyKeyId: Int): Boolean = singleDbHit(inner.hasProperty(obj, propertyKeyId))
 
-  def indexGet(name: String, key: String, value: Any): Iterator[T] = inner.indexGet(name, key, value)
+  def propertyKeyIds(obj: Long): Iterator[Int] = singleDbHit(inner.propertyKeyIds(obj))
 
-  def indexQuery(name: String, query: Any): Iterator[T] = inner.indexQuery(name, query)
+  def removeProperty(obj: Long, propertyKeyId: Int): Unit = singleDbHit(inner.removeProperty(obj, propertyKeyId))
 
-  def all: Iterator[T] = inner.all
+  def indexGet(name: String, key: String, value: Any): Iterator[T] = manyDbHits(inner.indexGet(name, key, value))
+
+  def indexQuery(name: String, query: Any): Iterator[T] = manyDbHits(inner.indexQuery(name, query))
+
+  def all: Iterator[T] = manyDbHits(inner.all)
 }

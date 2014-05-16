@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -46,10 +47,10 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     public RelationshipTypeTokenStore( File fileName, Config config,
                                        IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                                        FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                                       DynamicStringStore nameStore )
+                                       DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super(fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, nameStore);
+        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, windowPoolFactory,
+                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler );
     }
 
     @Override

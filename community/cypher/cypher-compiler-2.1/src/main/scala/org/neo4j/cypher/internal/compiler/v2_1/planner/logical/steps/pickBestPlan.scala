@@ -19,10 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, LogicalPlanContext, CandidateSelector}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, QueryGraphSolvingContext, CandidateSelector}
 
 object pickBestPlan extends CandidateSelector {
-  def apply(candidateList: CandidateList)(implicit context: LogicalPlanContext): Option[LogicalPlan] =
+  def apply(candidateList: CandidateList)(implicit context: QueryGraphSolvingContext): Option[QueryPlan] =
     candidateList.bestPlan(context.cost)
 }

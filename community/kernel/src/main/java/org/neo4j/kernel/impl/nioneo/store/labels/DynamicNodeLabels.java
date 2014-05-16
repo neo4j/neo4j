@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Set;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 
@@ -75,7 +76,7 @@ public class DynamicNodeLabels implements NodeLabels
     }
 
     @Override
-    public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore )
+    public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator )
     {
         long existingLabelsField = node.getLabelField();
         long existingLabelsBits = parseLabelsBody( existingLabelsField );
@@ -94,8 +95,8 @@ public class DynamicNodeLabels implements NodeLabels
         {
             Set<DynamicRecord> allRecords = new HashSet<>( changedDynamicRecords );
             Collection<DynamicRecord> allocatedRecords =
-                    nodeStore.allocateRecordsForDynamicLabels( node.getId(), labelIds,
-                                                               changedDynamicRecords.iterator() );
+                    NodeStore.allocateRecordsForDynamicLabels( node.getId(), labelIds,
+                            changedDynamicRecords.iterator(), allocator );
             allRecords.addAll( allocatedRecords );
             node.setLabelField( dynamicPointer( allocatedRecords ), allocatedRecords );
             changedDynamicRecords = allRecords;
@@ -105,14 +106,14 @@ public class DynamicNodeLabels implements NodeLabels
     }
 
     @Override
-    public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore )
+    public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator )
     {
         nodeStore.ensureHeavy( node, parseLabelsBody( labelField ) );
         Collection<DynamicRecord> existingRecords = node.getDynamicLabelRecords();
         long[] existingLabelIds = nodeStore.getDynamicLabelsArray( existingRecords );
         long[] newLabelIds = LabelIdArray.concatAndSort( existingLabelIds, labelId );
         Collection<DynamicRecord> changedDynamicRecords =
-                nodeStore.allocateRecordsForDynamicLabels( node.getId(), newLabelIds, existingRecords.iterator() );
+                NodeStore.allocateRecordsForDynamicLabels( node.getId(), newLabelIds, existingRecords.iterator(), allocator );
         node.setLabelField( dynamicPointer( changedDynamicRecords ), changedDynamicRecords );
         return changedDynamicRecords;
     }

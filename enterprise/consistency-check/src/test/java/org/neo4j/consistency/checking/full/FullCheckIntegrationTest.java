@@ -19,6 +19,30 @@
  */
 package org.neo4j.consistency.checking.full;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
+import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
+import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
+import static org.neo4j.consistency.checking.schema.IndexRules.loadAllIndexRules;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
+import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
+import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
+import static org.neo4j.kernel.impl.nioneo.store.PropertyType.ARRAY;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
+import static org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray.prependNodeId;
+import static org.neo4j.kernel.impl.util.Bits.bits;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
+
 import java.io.IOException;
 import java.io.StringWriter;
 import java.util.ArrayList;
@@ -31,7 +55,6 @@ import java.util.List;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.consistency.RecordType;
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.consistency.report.ConsistencySummaryStatistics;
@@ -75,32 +98,6 @@ import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
-
-import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.consistency.checking.RecordCheckTestBase.inUse;
-import static org.neo4j.consistency.checking.RecordCheckTestBase.notInUse;
-import static org.neo4j.consistency.checking.full.ExecutionOrderIntegrationTest.config;
-import static org.neo4j.consistency.checking.schema.IndexRules.loadAllIndexRules;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.helpers.collection.IteratorUtil.asIterable;
-import static org.neo4j.helpers.collection.IteratorUtil.iterator;
-import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
-import static org.neo4j.kernel.impl.nioneo.store.PropertyType.ARRAY;
-import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
-import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
-import static org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray.prependNodeId;
-import static org.neo4j.kernel.impl.util.Bits.bits;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
 
 public class FullCheckIntegrationTest
 {
@@ -232,7 +229,7 @@ public class FullCheckIntegrationTest
                                             GraphStoreFixture.IdGenerator next )
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
-                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null );
+                NodeLabelsField.parseLabelsField( nodeRecord ).add( 10, null, null );
                 tx.create( nodeRecord );
             }
         } );
@@ -256,8 +253,8 @@ public class FullCheckIntegrationTest
             {
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
-                Collection<DynamicRecord> newRecords = allocateFromNumbers( prependNodeId( nodeRecord.getLongId(),
-                        new long[]{42l} ),
+                Collection<DynamicRecord> newRecords = new ArrayList<>();
+                allocateFromNumbers( newRecords, prependNodeId( nodeRecord.getLongId(), new long[]{42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
@@ -301,7 +298,8 @@ public class FullCheckIntegrationTest
                 DynamicRecord record2 = notInUse( new DynamicRecord( chain.get( 1 ).getId() ) );
                 long[] data = (long[]) getRightArray( readFullByteArrayFromHeavyRecords( chain, ARRAY ) );
                 PreAllocatedRecords allocator = new PreAllocatedRecords( 60 );
-                allocateFromNumbers( Arrays.copyOf( data, 11 ), iterator( record1 ), allocator );
+                allocateFromNumbers( new ArrayList<DynamicRecord>(), Arrays.copyOf( data, 11 ),
+                        iterator( record1 ), allocator );
 
                 NodeRecord before = inUse( new NodeRecord( data[0], false, -1, -1 ) );
                 NodeRecord after = inUse( new NodeRecord( data[0], false, -1, -1 ) );
@@ -592,8 +590,7 @@ public class FullCheckIntegrationTest
                 DynamicRecord record3 = inUse( new DynamicRecord( next.nodeLabel() ) );
                 labels[0] = nodeRecord.getLongId(); // the first id should not be a label id, but the id of the node
                 PreAllocatedRecords allocator = new PreAllocatedRecords( 60 );
-                chain.addAll( allocateFromNumbers(
-                        labels, iterator( record1, record2, record3 ), allocator ) );
+                allocateFromNumbers( chain, labels, iterator( record1, record2, record3 ), allocator );
 
                 nodeRecord.setLabelField( dynamicPointer( chain ), chain );
 
@@ -617,7 +614,8 @@ public class FullCheckIntegrationTest
 
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
-                Collection<DynamicRecord> newRecords = allocateFromNumbers(
+                Collection<DynamicRecord> newRecords = new ArrayList<>();
+                allocateFromNumbers( newRecords,
                         prependNodeId( nodeRecord.getLongId(), new long[]{42l, 42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
@@ -647,7 +645,8 @@ public class FullCheckIntegrationTest
 
                 NodeRecord nodeRecord = new NodeRecord( next.node(), false, -1, -1 );
                 DynamicRecord record = inUse( new DynamicRecord( next.nodeLabel() ) );
-                Collection<DynamicRecord> newRecords = allocateFromNumbers( prependNodeId( next.node(), new long[]{42l} ),
+                Collection<DynamicRecord> newRecords = new ArrayList<>();
+                allocateFromNumbers( newRecords, prependNodeId( next.node(), new long[]{42l} ),
                         iterator( record ), new PreAllocatedRecords( 60 ) );
                 nodeRecord.setLabelField( dynamicPointer( newRecords ), newRecords );
 
@@ -879,7 +878,9 @@ public class FullCheckIntegrationTest
 
         byte[] data = serializer.serialize();
         PreAllocatedRecords dynamicRecordAllocator = new PreAllocatedRecords( data.length );
-        return AbstractDynamicStore.allocateRecordsFromBytes( data, records.iterator(), dynamicRecordAllocator );
+        Collection<DynamicRecord> result = new ArrayList<>();
+        AbstractDynamicStore.allocateRecordsFromBytes( result, data, records.iterator(), dynamicRecordAllocator );
+        return result;
     }
 
     @Test

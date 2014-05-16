@@ -21,7 +21,7 @@ package org.neo4j.backup;
 
 public class IncrementalBackupNotPossibleException extends RuntimeException
 {
-    public IncrementalBackupNotPossibleException( String msg, Exception cause )
+    public IncrementalBackupNotPossibleException( String msg, Throwable cause )
     {
         super(msg, cause);
     }

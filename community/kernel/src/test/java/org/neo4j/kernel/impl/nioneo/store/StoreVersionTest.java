@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.URL;
@@ -34,6 +28,7 @@ import java.util.Map;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
@@ -41,6 +36,12 @@ import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
+
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class StoreVersionTest
 {
@@ -65,7 +66,7 @@ public class StoreVersionTest
                 neoStore.getRelationshipStore(),
                 neoStore.getRelationshipTypeStore(),
                 neoStore.getPropertyStore(),
-                neoStore.getPropertyStore().getPropertyKeyTokenStore()
+                neoStore.getPropertyKeyTokenStore()
         };
 
         for ( CommonAbstractStore store : stores )
@@ -91,7 +92,8 @@ public class StoreVersionTest
         try
         {
             new NodeStore( workingFile, config, new DefaultIdGeneratorFactory(),
-                    new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, null );
+                    new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, null,
+                    StoreVersionMismatchHandler.THROW_EXCEPTION );
             fail( "Should have thrown exception" );
         }
         catch ( NotCurrentStoreVersionException e )
@@ -136,6 +138,6 @@ public class StoreVersionTest
                     NeoStore.versionLongToString( NeoStore.versionStringToLong( string ) ) );
         }
     }
-    
+
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }

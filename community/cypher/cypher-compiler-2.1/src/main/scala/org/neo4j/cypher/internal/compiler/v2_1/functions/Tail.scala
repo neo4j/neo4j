@@ -28,8 +28,8 @@ case object Tail extends Function {
   def name = "tail"
 
   def semanticCheck(ctx: ast.Expression.SemanticContext, invocation: ast.FunctionInvocation): SemanticCheck =
-    checkArgs(invocation, 1) ifOkThen {
-      invocation.arguments(0).expectType(CTCollection(CTAny).covariant) then
+    checkArgs(invocation, 1) ifOkChain {
+      invocation.arguments(0).expectType(CTCollection(CTAny).covariant) chain
       invocation.specifyType(invocation.arguments(0).types)
     }
 

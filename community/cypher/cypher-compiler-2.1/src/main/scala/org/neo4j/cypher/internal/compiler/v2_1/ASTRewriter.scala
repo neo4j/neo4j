@@ -37,11 +37,15 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
 
     rewriters += nameMatchPatternElements
     rewriters += normalizeMatchPredicates
+    rewriters += normalizeNotEquals
     rewriters += normalizeEqualsArgumentOrder
     rewriters += reattachAliasedExpressions
     rewriters += addUniquenessPredicates
+    rewriters += CNFNormalizer // <- do not add any new predicates after this rewriter!
+    rewriters += orExpressionReordering
     rewriters += expandStar
     rewriters += isolateAggregation
+    rewriters += aliasReturnItems
 
     val rewriter = bottomUp(inSequence(rewriters.result(): _*))
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]

@@ -1,8 +1,34 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.1.0-RC1
+---------
+Kernel:
+o The traversal framework can now take Iterable<Node> as starting points
+o The Iterable returned from getRelationships(...) can now be iterated more than once
+o Improve the performance of the server by reducing the overhead of logging
+o Further performance improvements for the upgrade process
+o Improve performance by producing less work for the GC in various places
+o Fixes a bug where the transaction log could get duplicate entries, making it unusable for recovery
+o Fixes a bug where the database could leak memory after a mode switch in HA
+o Fixes a bug where file descriptors would leak if more than one MERGE statement was executed in a transaction
+o Fixes a bug where an uncommitted index creation in a transaction could interfer with observing the state
+  of other existing indexes
+o Fixes a bug where old transaction log files could prevent the database from upgrading to a newer version
+
+Cypher:
+o To the new planner, added:
+  - Select or SemiApply
+  - Optional Expand
+  - Outer Hash Join
+  - Aggregation
+  - Skip
+  - Limit
+  - SortLimit
+o New planner is disabled by default
+
 2.1.0-M02
-------------
-Kernel
+---------
+Kernel:
 o Widens recoverable failure scenarios for schema indexes
 o Fix for recovery of schema changes in the case of 2PC transactions
 o Compile on Java8. Fixes #2149
@@ -45,8 +71,21 @@ o Relationship chains are now split by type and direction. Disk storage format c
 o Fixes an issue with tx log reading in damaged log files
 o Adds support for labels in transaction event handlers
 
-2.0.2 (Unreleased)
----------------------------
+2.0.3
+-----
+Cypher:
+o MERGE must fail when trying to create 2 nodes with same id but different labels (e.g., MERGE (a: Foo)-[r:KNOWS]->(a: Bar))
+o Allow Cypher split() with empty separator
+o Ensure Cypher range() works with negative step values
+
+Kernel:
+o Fixes a deadlock issue in the page cache
+o Fix a transaction log issue where the log could be written to after
+  tx manager marked as NOT_OK.
+o Performance improvements for concurrent reads
+
+2.0.2
+-----
 Cypher:
 o Fixes #1897 - goes into never ending loop for some aggregate queries
 o Add the functions toInt(...) and toFloat(...)
@@ -208,6 +247,9 @@ o Introduced a new experimental and fast PEG parser
 o BREAKING CHANGE: Escaped identifiers in the RETURN clause are kept as the user entered them
 o BREAKING CHANGE: No longer possible to use expressions and params to identify nodes in patterns
 o BREAKING CHANGE: Use "|" in favor of ":" in FOREACH, EXTRACT and REDUCE to avoid disambiguity with label syntax
+
+Cypher:
+o Fixes a concurrency problem in query parser
 
 Server:
 o Added support for extracting and returning the graph structure from the result of a Cypher query executed via the transactional endpoint

@@ -36,7 +36,7 @@ import org.neo4j.graphdb.traversal.Paths;
 
 public class CalculateShortestPath
 {
-    private static final String DB_PATH = "neo4j-shortest-path";
+    private static final String DB_PATH = "target/neo4j-shortest-path";
     private static final String NAME_KEY = "name";
     private static RelationshipType KNOWS = DynamicRelationshipType.withName( "KNOWS" );
 

@@ -54,13 +54,6 @@ terms of the relevant Commercial Agreement.
     </license>
   </licenses>
 
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
-
   <profiles>
     <profile>
       <id>freeze</id>
@@ -98,6 +91,12 @@ terms of the relevant Commercial Agreement.
         <dependency>
           <groupId>org.neo4j.doc</groupId>
           <artifactId>neo4j-manual</artifactId>
+          <version>${project.version}</version>
+          <type>pom</type>
+        </dependency>
+        <dependency>
+          <groupId>org.neo4j.doc</groupId>
+          <artifactId>neo4j-javadocs</artifactId>
           <version>${project.version}</version>
           <type>pom</type>
         </dependency>

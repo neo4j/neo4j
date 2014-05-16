@@ -268,4 +268,16 @@ public interface TraversalDescription
      * results from.
      */
     Traverser traverse( Node... startNodes );
+
+    /**
+     * Traverse from a iterable of start nodes based on all the rules and behavior
+     * in this description. A {@link Traverser} is returned which is
+     * used to step through the graph and getting results back. The traversal
+     * is not guaranteed to start before the Traverser is used.
+     *
+     * @param iterableStartNodes {@link Node}s to start traversing from.
+     * @return a {@link Traverser} used to step through the graph and to get
+     * results from.
+     */
+    Traverser traverse( final Iterable<Node> iterableStartNodes );
 }

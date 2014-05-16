@@ -33,7 +33,7 @@ class SingleRowPlanningIntegrationTest extends CypherFunSuite with LogicalPlanni
 
     produceLogicalPlan("RETURN 42") should equal(
       Projection(
-        SingleRow(), expressions = Map("42" -> SignedIntegerLiteral("42")_)
+        SingleRow(Set.empty)(), expressions = Map("42" -> SignedIntegerLiteral("42")_)
       )
     )
   }

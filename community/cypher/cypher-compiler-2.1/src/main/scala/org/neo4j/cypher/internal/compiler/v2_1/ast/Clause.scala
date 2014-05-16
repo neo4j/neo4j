@@ -37,13 +37,13 @@ sealed trait ClosingClause extends Clause {
   def limit: Option[Limit]
 
   def semanticCheck =
-    returnItems.semanticCheck then
-    checkSortItems then
+    returnItems.semanticCheck chain
+    checkSortItems chain
     checkSkipLimit
 
   // use a scoped state containing the aliased return items for the sort expressions
   private def checkSortItems: SemanticCheck = s => {
-    val result = (returnItems.declareIdentifiers(s) then orderBy.semanticCheck)(s.newScope)
+    val result = (returnItems.declareIdentifiers(s) chain orderBy.semanticCheck)(s.newScope)
     SemanticCheckResult(result.state.popScope, result.errors)
   }
 
@@ -56,9 +56,9 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Iden
   val name = "LOAD CSV"
 
   def semanticCheck: SemanticCheck =
-    urlString.semanticCheck(Expression.SemanticContext.Simple) then
-    urlString.expectType(CTString.covariant) then
-    checkFieldTerminator then
+    urlString.semanticCheck(Expression.SemanticContext.Simple) chain
+    urlString.expectType(CTString.covariant) chain
+    checkFieldTerminator chain
     typeCheck
 
   private def checkFieldTerminator: SemanticCheck = {
@@ -82,7 +82,7 @@ case class LoadCSV(withHeaders: Boolean, urlString: Expression, identifier: Iden
 case class Start(items: Seq[StartItem], where: Option[Where])(val position: InputPosition) extends Clause {
   val name = "START"
 
-  def semanticCheck = items.semanticCheck then where.semanticCheck
+  def semanticCheck = items.semanticCheck chain where.semanticCheck
 }
 
 
@@ -90,9 +90,11 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
   def name = "MATCH"
 
   def semanticCheck =
-    pattern.semanticCheck(Pattern.SemanticContext.Match) then
-    hints.semanticCheck then
-    where.semanticCheck then
+    ensureFreshIdsInPattern chain
+    checkUsageBoundIds chain
+    pattern.semanticCheck(Pattern.SemanticContext.Match) chain
+    hints.semanticCheck chain
+    where.semanticCheck chain
     checkHints
 
   def checkHints: SemanticCheck = {
@@ -114,6 +116,36 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
              | top-level AND). Note that the label must be specified on a non-optional node""".stripLinesAndMargins, hint.position)
     }
     error.getOrElse(SemanticCheckResult.success)
+  }
+
+  def ensureFreshIdsInPattern: SemanticCheck = (state) => {
+    val optIds = pattern.elements.map {
+      case Left(RelationshipPattern(id, _, _, _, _, _)) => id
+      case Right(n@NodePattern(id, _, _, _)) => id
+    }
+
+    val ids: Seq[Identifier] = optIds.flatten
+    if (ids.size == optIds.size) {
+      val freshIds = ids.filterNot(id => state.hasSymbol(id.name))
+      if (freshIds.nonEmpty)
+        SemanticCheckResult.success(state)
+      else
+        SemanticCheckResult.error(state, SemanticError("Cannot match on a pattern containing only already bound identifiers", position))
+    } else
+      SemanticCheckResult.success(state)
+  }
+
+  def checkUsageBoundIds: SemanticState => Seq[SemanticError] = (state) => {
+    pattern.elements.collect {
+      case Left(r @ RelationshipPattern(Some(id), _, types, _, props, _))
+        if state.hasSymbol(id.name) && (types.nonEmpty || props.isDefined) =>
+
+        SemanticError("Cannot add types or properties on a relationship which is already bound", r.position)
+      case Right(n @ NodePattern(Some(id), labels, props, _))
+        if state.hasSymbol(id.name) && (labels.nonEmpty || props.isDefined) =>
+
+        SemanticError("Cannot add labels or properties on a node which is already bound", n.position)
+    }
   }
 
   def containsPropertyPredicate(identifier: String, property: String): Boolean = {
@@ -157,7 +189,7 @@ case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: Inpu
   def name = "MERGE"
 
   def semanticCheck =
-    pattern.semanticCheck(Pattern.SemanticContext.Merge) then
+    pattern.semanticCheck(Pattern.SemanticContext.Merge) chain
     actions.semanticCheck
 }
 
@@ -183,8 +215,8 @@ case class Delete(expressions: Seq[Expression])(val position: InputPosition) ext
   def name = "DELETE"
 
   def semanticCheck =
-    expressions.semanticCheck(Expression.SemanticContext.Simple) then
-    warnAboutDeletingLabels then
+    expressions.semanticCheck(Expression.SemanticContext.Simple) chain
+    warnAboutDeletingLabels chain
     expressions.expectType(CTNode.covariant | CTRelationship.covariant | CTPath.covariant)
 
   def warnAboutDeletingLabels =
@@ -203,12 +235,12 @@ case class Foreach(identifier: Identifier, expression: Expression, updates: Seq[
   def name = "FOREACH"
 
   def semanticCheck =
-    expression.semanticCheck(Expression.SemanticContext.Simple) then
-    expression.expectType(CTCollection(CTAny).covariant) then
-    updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkThen
+    expression.semanticCheck(Expression.SemanticContext.Simple) chain
+    expression.expectType(CTCollection(CTAny).covariant) chain
+    updates.filter(!_.isInstanceOf[UpdateClause]).map(c => SemanticError(s"Invalid use of ${c.name} inside FOREACH", c.position)) ifOkChain
     withScopedState {
       val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
-      identifier.declare(possibleInnerTypes) then updates.semanticCheck
+      identifier.declare(possibleInnerTypes) chain updates.semanticCheck
     }
 }
 
@@ -223,13 +255,24 @@ case class With(
   def name = "WITH"
 
   override def semanticCheck =
-    super.semanticCheck then
+    super.semanticCheck chain
     checkAliasedReturnItems
 
   private def checkAliasedReturnItems: SemanticState => Seq[SemanticError] = state => returnItems match {
     case li: ListedReturnItems => li.items.filter(!_.alias.isDefined).map(i => SemanticError("Expression in WITH must be aliased (use AS)", i.position))
     case _                     => Seq()
   }
+}
+
+case class Unwind(expression: Expression, identifier: Identifier)(val position: InputPosition) extends Clause {
+  def name = "UNWIND"
+
+  override def semanticCheck =
+    expression.semanticCheck(Expression.SemanticContext.Results) chain
+      expression.expectType(CTCollection(CTAny).covariant) ifOkChain {
+      val possibleInnerTypes: TypeGenerator = expression.types(_).unwrapCollections
+      identifier.declare(possibleInnerTypes)
+    }
 }
 
 case class Return(

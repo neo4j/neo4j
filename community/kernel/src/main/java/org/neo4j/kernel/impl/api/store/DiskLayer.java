@@ -104,6 +104,22 @@ public class DiskLayer
     private final SchemaStorage schemaStorage;
     private final Provider<PropertyStore> propertyStoreProvider;
 
+    private static class PropertyStoreProvider implements Provider<PropertyStore>
+    {
+        private final Provider<NeoStore> neoStoreProvider;
+
+        public PropertyStoreProvider( Provider<NeoStore> neoStoreProvider )
+        {
+            this.neoStoreProvider = neoStoreProvider;
+        }
+
+        @Override
+        public PropertyStore instance()
+        {
+            return neoStoreProvider.instance().getPropertyStore();
+        }
+    }
+
     /**
      * A note on this taking Provider<NeoStore> rather than just neo store: This is a workaround until the cache is
      * removed. Because the neostore may be restarted while the database is running, and because lazy properties keep
@@ -113,28 +129,19 @@ public class DiskLayer
      */
     public DiskLayer( PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                       RelationshipTypeTokenHolder relationshipTokenHolder, SchemaStorage schemaStorage,
-                      final Provider<NeoStore> neoStore, IndexingService indexService )
+                      final Provider<NeoStore> neoStoreProvider, IndexingService indexService )
     {
-        assert neoStore != null : "No neoStore provided";
-
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
 
         this.indexService = indexService;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
-        this.neoStore = neoStore.instance();
+        this.neoStore = neoStoreProvider.instance();
         this.nodeStore = this.neoStore.getNodeStore();
         this.relationshipStore = this.neoStore.getRelationshipStore();
         this.propertyStore = this.neoStore.getPropertyStore();
-        this.propertyStoreProvider = new Provider<PropertyStore>()
-        {
-            @Override
-            public PropertyStore instance()
-            {
-                return neoStore.instance().getPropertyStore();
-            }
-        };
+        this.propertyStoreProvider = new PropertyStoreProvider(neoStoreProvider);
     }
 
     public int labelGetOrCreateForName( String label ) throws TooManyLabelsException

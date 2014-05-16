@@ -75,9 +75,11 @@ public abstract class AbstractStore extends CommonAbstractStore
 
     public AbstractStore( File fileName, Config conf, IdType idType,
                           IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                          FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
+                          FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                          StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger );
+        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
+                versionMismatchHandler );
         this.conf = conf;
     }
 

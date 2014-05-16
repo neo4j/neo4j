@@ -22,8 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import matching.{Trail, TraversalMatcher}
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import data.SimpleVal
 import collection.JavaConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.KeyNames
 
 class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail)
                         (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -45,9 +45,6 @@ class TraversalMatchPipe(source: Pipe, matcher: TraversalMatcher, trail: Trail)
 
   def symbols = trail.symbols(source.symbols)
 
-  def executionPlanDescription ={
-    val description = matcher.description :+ ("trail" -> SimpleVal.fromStr(trail))
-    source.executionPlanDescription.andThen(this, "TraversalMatcher", description:_*)
-  }
-
+  def planDescription =
+    source.planDescription.andThen(this, "TraversalMatcher", KeyNames(trail.pathDescription))
 }

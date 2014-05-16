@@ -20,25 +20,25 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, LabelName, Identifier, HasLabels}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Predicate, LogicalPlanningTestSupport, QueryGraph, Selections}
-import org.mockito.Matchers._
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.labelScanLeafPlanner
-import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.mockito.Mockito._
+import org.mockito.Matchers._
+import collection.mutable
 
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
-  val statistics = newMockedStatistics
+  val statistics = hardcodedStatistics
 
   test("simple label scan without compile-time label id") {
     // given
     val idName = IdName("n")
-    val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
-      projections = projections,
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
@@ -51,28 +51,26 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val semanticTable = newMockedSemanticTable
     when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map.empty[String, LabelId])
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
 
     // when
-    val resultPlans = labelScanLeafPlanner(qg).plans
+    val resultPlans = labelScanLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(NodeByLabelScan(idName, Left("Awesome"))()))
+    resultPlans should equal(Candidates(planNodeByLabelScan(idName, Left("Awesome"), Seq(hasLabels))))
   }
 
   test("simple label scan with a compile-time label ID") {
     // given
     val idName = IdName("n")
-    val projections: Map[String, Expression] = Map("n" -> Identifier("n")_)
     val labelId = LabelId(12)
     val hasLabels = HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_
     val qg = QueryGraph(
-      projections = projections,
       selections = Selections(Set(Predicate(Set(idName), hasLabels))),
       patternNodes = Set(idName))
 
@@ -85,18 +83,18 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
     val semanticTable = newMockedSemanticTable
     when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> labelId))
 
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      queryGraph = qg,
+      query = qg,
       metrics = factory.newMetrics(statistics, semanticTable)
     )
     when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)
 
     // when
-    val resultPlans = labelScanLeafPlanner(qg).plans
+    val resultPlans = labelScanLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Seq(NodeByLabelScan(idName, Right(labelId))()))
+    resultPlans should equal(Candidates(planNodeByLabelScan(idName, Right(labelId), Seq(hasLabels))))
   }
 }

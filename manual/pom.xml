@@ -19,6 +19,7 @@
   <properties>
     <short-name>manual</short-name>
     <docs.sources>${project.build.directory}/docs</docs.sources>
+    <docs.javadocs>${project.build.directory}/javadoc</docs.javadocs>
     <docs.sourcecode>${project.build.directory}/sources</docs.sourcecode>
     <docs.test-sources>${project.build.directory}/test-sources</docs.test-sources>
     <docs.images>${project.build.outputDirectory}/images</docs.images>
@@ -30,6 +31,10 @@
     <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
   
+  <modules>
+    <module>javadocs</module>
+  </modules>
+
   <scm>
     <connection>scm:git:git://github.com/neo4j/neo4j.git</connection>
     <developerConnection>scm:git:git@github.com:neo4j/neo4j.git</developerConnection>
@@ -49,6 +54,13 @@
       <artifactId>neo4j</artifactId>
       <version>${neo4j.version}</version>
       <classifier>docs</classifier>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j.doc</groupId>
+      <artifactId>neo4j-javadocs</artifactId>
+      <version>${neo4j.version}</version>
+      <classifier>javadoc</classifier>
       <scope>provided</scope>
     </dependency>
     <dependency>
@@ -303,6 +315,23 @@
             </configuration>
           </execution>
           <execution>
+            <id>unpack-javadoc</id>
+            <phase>generate-sources</phase>
+            <goals>
+              <goal>unpack-dependencies</goal>
+            </goals>
+            <configuration>
+              <classifier>javadoc</classifier>
+              <includeClassifiers>javadoc</includeClassifiers>
+              <excludeTransitive>true</excludeTransitive>
+              <useSubDirectoryPerArtifact>false</useSubDirectoryPerArtifact>
+              <stripVersion>true</stripVersion>
+              <excludes>META-INF,META-INF/**</excludes>
+              <type>jar</type>
+              <outputDirectory>${docs.javadocs}</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>unpack-test-sources</id>
             <phase>generate-sources</phase>
             <goals>
@@ -548,6 +577,21 @@
                 <copy todir="${project.build.directory}/docbkx/webhelp/js" overwrite="true">
                   <fileset dir="${project.build.directory}/src/js"/>
                 </copy>
+                <copy todir="${project.build.directory}/docbkx/webhelp/javadocs" overwrite="true">
+                  <fileset dir="${docs.javadocs}"/>
+                </copy>
+                <!-- source code used by the manual.
+                <copy todir="${project.build.directory}/docbkx/webhelp/code" overwrite="true">
+                  <fileset dir="${docs.sourcecode}/neo4j-examples-sources-jar" />
+                  <fileset dir="${docs.sourcecode}/neo4j-server-examples-sources-jar" />
+                  <fileset dir="${docs.test-sources}/neo4j-backup-test-sources-jar" />
+                  <fileset dir="${docs.test-sources}/neo4j-cypher-docs-test-sources-jar" />
+                  <fileset dir="${docs.test-sources}/neo4j-examples-test-sources-jar" />
+                  <fileset dir="${docs.test-sources}/neo4j-kernel-test-sources-jar" />
+                  <fileset dir="${docs.test-sources}/neo4j-lucene-index-test-sources-jar" />
+                  <fileset dir="${docs.test-sources}/neo4j-server-test-sources-jar" />
+                </copy>
+                 -->
               </postProcess>
             </configuration>
           </execution>
@@ -783,13 +827,6 @@
       </build>
     </profile>
   </profiles>
-
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
 
 	<repositories>
 		<repository>

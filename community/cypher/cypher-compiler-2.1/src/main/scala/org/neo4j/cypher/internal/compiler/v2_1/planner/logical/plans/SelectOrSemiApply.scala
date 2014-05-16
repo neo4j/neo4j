@@ -19,18 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Exists, Selections}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
-case class SelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: Exists) extends AbstractSelectOrSemiApply(outer, inner, predicate, exists)
-case class SelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression)(exists: Exists) extends AbstractSelectOrSemiApply(outer, inner, predicate, exists)
+case class SelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression) extends AbstractSelectOrSemiApply(left, right, expr)
+case class SelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression) extends AbstractSelectOrSemiApply(outer, inner, expr)
 
-abstract class AbstractSelectOrSemiApply(outer: LogicalPlan, inner: LogicalPlan, predicate: Expression, exists: Exists) extends LogicalPlan {
-  val lhs = Some(outer)
-  val rhs = Some(inner)
+abstract class AbstractSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression) extends LogicalPlan {
+  val lhs = Some(left)
+  val rhs = Some(right)
 
-  val solved = {
-    val newSelections = Selections(outer.solved.selections.predicates + exists.predicate)
-    outer.solved.copy(subQueries = outer.solved.subQueries :+ exists, selections = newSelections)
-  }
+  def availableSymbols = left.availableSymbols
 }

@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
@@ -86,15 +84,16 @@ import org.neo4j.kernel.impl.nioneo.store.Store;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBackedXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
@@ -183,6 +182,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     private LabelScanStore labelScanStore;
     private final IndexingService.Monitor indexingServiceMonitor;
     private final FileSystemAbstraction fs;
+    private Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory;
+    private final StoreUpgrader storeMigrationProcess;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -279,7 +280,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  RelationshipTypeTokenHolder relationshipTypeTokens,
                                  PersistenceManager persistenceManager, Locks lockManager,
                                  SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
-                                 IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs )
+                                 IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs, Function
+            <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory, StoreUpgrader storeMigrationProcess )
     {
         super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
@@ -299,6 +301,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         this.transactionEventHandlers = transactionEventHandlers;
         this.indexingServiceMonitor = indexingServiceMonitor;
         this.fs = fs;
+        this.translatorFactory = translatorFactory;
+        this.storeMigrationProcess = storeMigrationProcess;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -335,6 +339,16 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         {
             tf = new TransactionFactory();
         }
+
+        indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
+                SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
+        storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant() );
+
+        // TODO: Build a real provider map
+        DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
+
+        storeMigrationProcess.migrateIfNeeded( store.getParentFile() );
+
         neoStore = storeFactory.newNeoStore( store );
 
         neoStoreTransactionContextSupplier = new NeoStoreTransactionContextSupplier( neoStore );
@@ -357,12 +371,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
         try
         {
-            indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
-                    SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
-
-            // TODO: Build a real provider map
-            DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
-
             indexingService = life.add(
                     new IndexingService(
                             scheduler,
@@ -374,9 +382,17 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
             integrityValidator = new IntegrityValidator( neoStore, indexingService );
 
             xaContainer = xaFactory.newXaContainer(this, config.get( Configuration.logical_log ),
-                    new CommandFactory( neoStore, indexingService ),
-                    new NeoStoreInjectedTransactionValidator(integrityValidator), tf,
-                    stateFactory, providers, readOnly  );
+                    XaCommandReaderFactory.DEFAULT,
+                    new XaCommandWriterFactory()
+                    {
+                        @Override
+                        public XaCommandWriter newInstance()
+                        {
+                            return new PhysicalLogNeoXaCommandWriter();
+                        }
+                    },
+                    new NeoStoreInjectedTransactionValidator( integrityValidator ), tf,
+                    stateFactory, providers, readOnly, translatorFactory.apply( neoStore )  );
 
             labelScanStore = life.add( dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                     LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
@@ -435,8 +451,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
             this.idGenerators.put( RelationshipType.class, neoStore.getRelationshipTypeStore() );
             this.idGenerators.put( Label.class, neoStore.getLabelTokenStore() );
             this.idGenerators.put( PropertyStore.class, neoStore.getPropertyStore() );
-            this.idGenerators.put( PropertyKeyTokenRecord.class,
-                    neoStore.getPropertyStore().getPropertyKeyTokenStore() );
+            this.idGenerators.put( PropertyKeyTokenRecord.class, neoStore.getPropertyKeyTokenStore() );
             setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
 
             // TODO Problem here is that we don't know if recovery has been performed at this point
@@ -527,25 +542,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     {
         return new NeoStoreXaConnection( neoStore,
             xaContainer.getResourceManager(), getBranchId() );
-    }
-
-    private static class CommandFactory extends XaCommandFactory
-    {
-        private final NeoStore neoStore;
-        private final IndexingService indexingService;
-
-        CommandFactory( NeoStore neoStore, IndexingService indexingService )
-        {
-            this.neoStore = neoStore;
-            this.indexingService = indexingService;
-        }
-
-        @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel,
-            ByteBuffer buffer ) throws IOException
-        {
-            return Command.readCommand( neoStore, indexingService, byteChannel, buffer );
-        }
     }
 
     private class TransactionFactory extends XaTransactionFactory
@@ -770,6 +766,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         indexingService.startIndexes();
     }
 
+    @Override
     public LogBufferFactory createLogBufferFactory()
     {
         return xaContainer.getLogicalLog().createLogWriter( new Function<Config, File>()

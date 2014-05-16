@@ -19,35 +19,8 @@
  */
 package org.neo4j.cypher.internal.spi.v2_1
 
-import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
-import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
-import org.neo4j.graphdb.Direction
 
-class HardcodedGraphStatistics extends GraphStatistics
-{
-  val NODES_CARDINALITY: Double = 10000.0
-  val NODES_WITH_LABEL_CARDINALITY: Double = 2000.0
-  val NODES_WITH_LABEL_SELECTIVITY: Double = 0.2
-  val RELATIONSHIPS_WITH_TYPE_SELECTIVITY: Double = 0.2
-  val DEGREE_BY_RELATIONSHIP_TYPE_AND_DIRECTION: Double = 5.0
-  val DEGREE_BY_LABEL_RELATIONSHIP_TYPE_AND_DIRECTION: Double = 5.0
-
-  def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId,
-                                                         direction: Direction): Double =
-    DEGREE_BY_LABEL_RELATIONSHIP_TYPE_AND_DIRECTION
-
-  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Double =
-    DEGREE_BY_RELATIONSHIP_TYPE_AND_DIRECTION
-
-  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Double =
-    RELATIONSHIPS_WITH_TYPE_SELECTIVITY
-
-  def nodesWithLabelSelectivity(labelId: LabelId): Double =
-    NODES_WITH_LABEL_SELECTIVITY
-
-  def nodesWithLabelCardinality(labelId: LabelId): Double =
-    NODES_WITH_LABEL_CARDINALITY
-
-  def nodesCardinality: Double =
-    NODES_CARDINALITY
-}
+//This class should live here, but until we have to touch
+//disk, let's have it in the compiler. Convenient.
+case object HardcodedGraphStatistics
+  extends org.neo4j.cypher.internal.compiler.v2_1.HardcodedGraphStatisticsValues

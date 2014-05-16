@@ -71,12 +71,13 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     private DynamicArrayStore dynamicLabelStore;
 
-    public NodeStore(File fileName, Config config,
+    public NodeStore( File fileName, Config config,
                      IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                      FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                     DynamicArrayStore dynamicLabelStore )
+                     DynamicArrayStore dynamicLabelStore, StoreVersionMismatchHandler versionMismatchHandler )
     {
-        super(fileName, config, IdType.NODE, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger);
+        super( fileName, config, IdType.NODE, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+                stringLogger, versionMismatchHandler );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 
@@ -123,10 +124,15 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     @Override
     public NodeRecord getRecord( long id )
     {
+        return getRecord( id, new NodeRecord( id ) );
+    }
+
+    public NodeRecord getRecord( long id, NodeRecord record )
+    {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            return getRecord( id, window, RecordLoad.NORMAL );
+            return getRecord( id, window, RecordLoad.NORMAL, record );
         }
         finally
         {
@@ -150,7 +156,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
         try
         {
-            return getRecord( id, window, RecordLoad.FORCE );
+            return getRecord( id, window, RecordLoad.FORCE, new NodeRecord( id ) );
         }
         finally
         {
@@ -215,7 +221,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
         try
         {
-            return getRecord( id, window, RecordLoad.CHECK );
+            return getRecord( id, window, RecordLoad.CHECK, new NodeRecord( id ) );
         }
         finally
         {
@@ -247,7 +253,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     }
 
     private NodeRecord getRecord( long id, PersistenceWindow window,
-        RecordLoad load  )
+        RecordLoad load, NodeRecord record )
     {
         Buffer buffer = window.getOffsettedBuffer( id );
 
@@ -282,12 +288,14 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         byte extra = buffer.get();
         boolean dense = (extra & 0x1) > 0;
 
-        NodeRecord nodeRecord = new NodeRecord( id, dense, longFromIntAndMod( nextRel, relModifier ),
-                longFromIntAndMod( nextProp, propModifier ) );
-        nodeRecord.setInUse( inUse );
-        nodeRecord.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
+        record.setId( id );
+        record.setDense( dense );
+        record.setNextRel( longFromIntAndMod( nextRel, relModifier ) );
+        record.setNextProp( longFromIntAndMod( nextProp, propModifier ) );
+        record.setInUse( inUse );
+        record.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
 
-        return nodeRecord;
+        return record;
     }
 
     private void updateRecord( NodeRecord record, PersistenceWindow window, boolean force )
@@ -308,7 +316,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
             // [xxxx,    ] higher bits for prop id
             short inUseUnsignedByte = ( record.inUse() ? Record.IN_USE : Record.NOT_IN_USE ).byteValue();
             inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
-            
+
             buffer.put( (byte) inUseUnsignedByte ).putInt( (int) nextRel ).putInt( (int) nextProp );
 
             // lsb of labels
@@ -316,7 +324,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
             buffer.putInt( (int) labelField );
             // msb of labels
             buffer.put( (byte) ((labelField&0xFF00000000L) >> 32) );
-            
+
             byte extra = record.isDense() ? (byte)1 : (byte)0;
             buffer.put( extra );
         }
@@ -353,16 +361,19 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         }
     }
 
-    public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels )
+    public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
+            Iterator<DynamicRecord> useFirst )
     {
-        return allocateRecordsForDynamicLabels( nodeId, labels, Collections.<DynamicRecord>emptyList().iterator() );
+        return allocateRecordsForDynamicLabels( nodeId, labels, useFirst, dynamicLabelStore );
     }
 
-    public Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
-                                                                      Iterator<DynamicRecord> useFirst )
+    public static Collection<DynamicRecord> allocateRecordsForDynamicLabels( long nodeId, long[] labels,
+            Iterator<DynamicRecord> useFirst, DynamicRecordAllocator allocator )
     {
         long[] storedLongs = LabelIdArray.prependNodeId( nodeId, labels );
-        return dynamicLabelStore.allocateRecords( storedLongs, useFirst );
+        Collection<DynamicRecord> records = new ArrayList<>();
+        DynamicArrayStore.allocateRecords( records, storedLongs, useFirst, allocator );
+        return records;
     }
 
     public long[] getDynamicLabelsArray( Iterable<DynamicRecord> records )

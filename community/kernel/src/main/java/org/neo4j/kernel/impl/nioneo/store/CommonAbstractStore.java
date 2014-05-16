@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.nio.ByteBuffer.wrap;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,12 +42,6 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.FileUtils.FileOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static java.nio.ByteBuffer.wrap;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.UTF8.encode;
-import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
-
 /**
  * Contains common implementation for {@link AbstractStore} and
  * {@link AbstractDynamicStore}.
@@ -60,7 +59,7 @@ public abstract class CommonAbstractStore implements IdSequence
     }
 
     public static final String ALL_STORES_VERSION = "v0.A.3";
-    public static final String UNKNOWN_VERSION = "Uknown";
+    public static final String UNKNOWN_VERSION = "Unknown";
 
     protected Config configuration;
     private final IdGeneratorFactory idGeneratorFactory;
@@ -80,6 +79,7 @@ public abstract class CommonAbstractStore implements IdSequence
     private boolean readOnly = false;
     private boolean backupSlave = false;
     private long highestUpdateRecordId = -1;
+    private final StoreVersionMismatchHandler versionMismatchHandler;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -98,7 +98,8 @@ public abstract class CommonAbstractStore implements IdSequence
      */
     public CommonAbstractStore( File fileName, Config configuration, IdType idType,
                                 IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                                FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
+                                FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+                                StoreVersionMismatchHandler versionMismatchHandler )
     {
         this.storageFileName = fileName;
         this.configuration = configuration;
@@ -107,6 +108,7 @@ public abstract class CommonAbstractStore implements IdSequence
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.idType = idType;
         this.stringLogger = stringLogger;
+        this.versionMismatchHandler = versionMismatchHandler;
 
         try
         {
@@ -208,7 +210,7 @@ public abstract class CommonAbstractStore implements IdSequence
         loadIdGenerator();
 
         this.windowPool = windowPoolFactory.create( getStorageFileName(), getEffectiveRecordSize(),
-                                                    getFileChannel(), configuration, stringLogger );
+                getFileChannel(), configuration, stringLogger, getNumberOfReservedLowIds() );
     }
 
     protected abstract int getEffectiveRecordSize();
@@ -270,8 +272,7 @@ public abstract class CommonAbstractStore implements IdSequence
         {
             if ( foundTypeDescriptorAndVersion.startsWith( getTypeDescriptor() ) )
             {
-                throw new NotCurrentStoreVersionException( ALL_STORES_VERSION, foundTypeDescriptorAndVersion, "",
-                                                           false );
+                versionMismatchHandler.mismatch( ALL_STORES_VERSION, foundTypeDescriptorAndVersion );
             }
             else
             {
@@ -688,5 +689,10 @@ public abstract class CommonAbstractStore implements IdSequence
     public String toString()
     {
         return getClass().getSimpleName();
+    }
+
+    public int getNumberOfReservedLowIds()
+    {
+        return 0;
     }
 }

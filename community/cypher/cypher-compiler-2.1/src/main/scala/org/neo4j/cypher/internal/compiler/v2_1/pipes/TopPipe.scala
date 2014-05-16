@@ -22,10 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.SortItem
 import commands.expressions.Expression
-import data.SimpleVal
-
 import scala.math._
 import java.util.Comparator
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{KeyExpressions, LegacyExpression}
 
 /*
  * TopPipe is used when a query does a ORDER BY ... LIMIT query. Instead of ordering the whole result set and then
@@ -106,11 +105,9 @@ case class TopPipe(source: Pipe, sortDescription: List[SortItem], countExpressio
     }
   }
 
-  def executionPlanDescription =
-    source.executionPlanDescription
-      .andThen(this, "Top",
-        "orderBy" -> SimpleVal.fromIterable(sortDescription),
-        "limit" -> SimpleVal.fromStr(countExpression))
+  def planDescription =
+    source.planDescription
+      .andThen(this, "Top", LegacyExpression(countExpression), KeyExpressions(sortDescription.map(_.expression)))
 
   def symbols = source.symbols
 

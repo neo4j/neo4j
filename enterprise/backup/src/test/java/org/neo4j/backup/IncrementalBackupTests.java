@@ -19,13 +19,15 @@
  */
 package org.neo4j.backup;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.File;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -37,8 +39,6 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.assertEquals;
-
 public class IncrementalBackupTests
 {
     private File serverPath;
@@ -46,6 +46,8 @@ public class IncrementalBackupTests
 
     @Rule
     public TestName testName = new TestName();
+    private ServerInterface server;
+    private GraphDatabaseService db;
 
     @Before
     public void before() throws Exception
@@ -55,11 +57,26 @@ public class IncrementalBackupTests
         backupPath = new File( base, "backup" );
     }
 
+    @After
+    public void shutItDown() throws Exception
+    {
+        if ( server != null )
+        {
+            shutdownServer( server );
+            server = null;
+        }
+        if ( db != null )
+        {
+            db.shutdown();
+            db = null;
+        }
+    }
+
     @Test
     public void shouldDoIncrementalBackup() throws Exception
     {
         DbRepresentation initialDataSetRepresentation = createInitialDataSet2( serverPath );
-        ServerInterface server = startServer( serverPath, "127.0.0.1:6362" );
+        server = startServer( serverPath, "127.0.0.1:6362" );
 
         // START SNIPPET: onlineBackup
         OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
@@ -80,7 +97,7 @@ public class IncrementalBackupTests
 
     private DbRepresentation createInitialDataSet2( File path )
     {
-        GraphDatabaseService db = startGraphDatabase( path );
+        db = startGraphDatabase( path );
         Transaction tx = db.beginTx();
         db.createNode().setProperty( "name", "Goofy" );
         Node donald = db.createNode();
@@ -99,7 +116,7 @@ public class IncrementalBackupTests
 
     private DbRepresentation addMoreData2( File path )
     {
-        GraphDatabaseService db = startGraphDatabase( path );
+        db = startGraphDatabase( path );
         Transaction tx = db.beginTx();
         Node donald = db.getNodeById( 2 );
         Node gladstone = db.createNode();

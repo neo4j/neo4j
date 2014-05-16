@@ -97,7 +97,7 @@ public class ScanResistantWindowPoolFactory implements WindowPoolFactory
 
     @Override
     public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel,
-                              Config configuration, StringLogger log )
+                              Config configuration, StringLogger log, int numberOfReservedLowIds )
     {
         try
         {

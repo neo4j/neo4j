@@ -33,7 +33,11 @@ public class Unzip
 {
     public static File unzip( Class<?> testClass, String resource ) throws IOException
     {
-        File dir = TargetDirectory.forTest( testClass ).makeGraphDbDir();
+        return unzip( testClass, resource, TargetDirectory.forTest( testClass ).makeGraphDbDir() );
+    }
+
+    public static File unzip( Class<?> testClass, String resource, File targetDirectory ) throws IOException
+    {
         InputStream source = testClass.getResourceAsStream( resource );
         if ( source == null )
         {
@@ -49,12 +53,12 @@ public class Unzip
             {
                 if ( entry.isDirectory() )
                 {
-                    new File( dir, entry.getName() ).mkdirs();
+                    new File( targetDirectory, entry.getName() ).mkdirs();
                 }
                 else
                 {
                     OutputStream file = new BufferedOutputStream(
-                            new FileOutputStream( new File( dir, entry.getName() ) ) );
+                            new FileOutputStream( new File( targetDirectory, entry.getName() ) ) );
                     try
                     {
                         long toCopy = entry.getSize();
@@ -77,6 +81,6 @@ public class Unzip
         {
             source.close();
         }
-        return dir;
+        return targetDirectory;
     }
 }

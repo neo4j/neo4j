@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
 import commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.NameSupport.isNamed
-import data.SimpleVal
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
 import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
 
 class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -39,20 +39,17 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
       val newMap = MutableMaps.create(ctx.size)
 
       returnItems.foreach {
-        case ReturnItem(Identifier(oldName), newName, _) if isNamed(newName) => newMap.put(newName, ctx(oldName))
-        case ReturnItem(CachedExpression(oldName, _), newName, _)            => newMap.put(newName, ctx(oldName))
-        case ReturnItem(_, name, _)                                          => newMap.put(name, ctx(name))
+        case ReturnItem(Identifier(oldName), newName) if isNamed(newName) => newMap.put(newName, ctx(oldName))
+        case ReturnItem(CachedExpression(oldName, _), newName)            => newMap.put(newName, ctx(oldName))
+        case ReturnItem(_, name)                                          => newMap.put(name, ctx(name))
       }
 
       ctx.newFrom( newMap )
     })
   }
 
-  override def executionPlanDescription =
-    source.executionPlanDescription
-      .andThen(this, "ColumnFilter",
-        "symKeys" -> SimpleVal.fromIterable(source.symbols.keys),
-        "returnItemNames" -> SimpleVal.fromIterable(returnItemNames))
+  def planDescription =
+    new PlanDescriptionImpl(this, "ColumnFilter", SingleChild(source.planDescription), Seq(Arguments.ColumnsLeft(returnItemNames.toList)))
 
   def dependencies = Seq()
 }

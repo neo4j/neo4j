@@ -1,3 +1,8 @@
+
+2.1.0-RC1
+---------
+o Fixes a number of issues when multiple leader elections are in flight concurrently
+
 2.1.0-M02
 ---------
 o Throttles debug output of clustering code in messages.log
@@ -8,6 +13,10 @@ o Fix issue with cluster bricking if specific message lost when master leaves
 o Solves issue with join denied when restarting a failed instance before it times out on the master.
 o Instances will now not form clusters on startup unless they managed to contact
   every other instance in initial_hosts setting.
+
+2.0.3
+-----
+o Fixes issue where an instance could revert into SLAVE mode while shutting down.
 
 2.0.2
 -----

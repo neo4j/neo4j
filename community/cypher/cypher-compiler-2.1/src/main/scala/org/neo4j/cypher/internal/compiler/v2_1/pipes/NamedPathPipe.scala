@@ -20,11 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import data.SimpleVal
 import symbols._
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.{Path, PropertyContainer}
 import collection.JavaConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 
 case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractPattern])
                         (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -75,10 +75,6 @@ case class NamedPathPipe(source: Pipe, pathName: String, entities: Seq[AbstractP
 
   val symbols = source.symbols.add(pathName, CTPath)
 
-  override def executionPlanDescription = {
-    val name = SimpleVal.fromStr(pathName)
-    val pats = SimpleVal.fromIterable(entities)
-
-    source.executionPlanDescription.andThen(this, "ExtractPath",  "name" -> name, "patterns" -> pats)
-  }
+  override def planDescription =
+    source.planDescription.andThen(this, "ExtractPath",  IntroducedIdentifier(pathName))
 }

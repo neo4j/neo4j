@@ -42,7 +42,7 @@ sealed abstract class IntegerLiteral(stringVal: String) extends NumberLiteral wi
       case e:java.lang.NumberFormatException => false
     })) {
       SemanticError("integer is too large", position)
-    } then super.semanticCheck(ctx)
+    } chain super.semanticCheck(ctx)
 }
 
 case class SignedIntegerLiteral(stringVal: String)(val position: InputPosition) extends IntegerLiteral(stringVal)
@@ -56,7 +56,7 @@ case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends
   override def semanticCheck(ctx: SemanticContext): SemanticCheck =
     when(value.isInfinite) {
       SemanticError("floating point number is too large", position)
-    } then super.semanticCheck(ctx)
+    } chain super.semanticCheck(ctx)
 }
 
 case class StringLiteral(value: String)(val position: InputPosition) extends Literal with SimpleTyping {

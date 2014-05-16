@@ -497,7 +497,7 @@ return coalesce(a.title, a.name)""")
 
   test("should not get into a neverending loop") {
     val n = createNode("id" -> 42)
-    val result = execute("MATCH n RETURN n, count(n) + 3")
+    val result = executeWithNewPlanner("MATCH n RETURN n, count(n) + 3")
     result.toList should equal(List(Map("n" -> n, "count(n) + 3" -> 4)))
   }
 }

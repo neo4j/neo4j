@@ -61,6 +61,9 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case NodeHashJoin(_, left, right) =>
       math.min(cardinality(left), cardinality(right))
 
+    case OuterHashJoin(_, left, right) =>
+      math.min(cardinality(left), cardinality(right))
+
     case expand @ Expand(left, _, dir, types, _, _, length) =>
       val degree = degreeByRelationshipTypesAndDirection(types, dir)
       cardinality(left) * math.pow(degree, averagePathLength(length))
@@ -69,7 +72,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       val degree = degreeByRelationshipTypesAndDirection(types, dir)
       cardinality(left) * math.pow(degree, averagePathLength(length)) * predicateSelectivity(predicates)
 
-    case Selection(predicates, left, _) =>
+    case Selection(predicates, left) =>
       cardinality(left) * predicateSelectivity(predicates)
 
     case CartesianProduct(left, right) =>
@@ -79,10 +82,12 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       cardinality(outer) * cardinality(inner)
 
     case semiApply @ SemiApply(outer, inner) =>
-      semiApplyCardinality(outer, semiApply.subQuery.predicate.exp)
+      cardinality(outer) // TODO: This is not true. We should calculate cardinality on QG and not LP
 
     case semiApply @ AntiSemiApply(outer, inner) =>
-      semiApplyCardinality(outer, semiApply.subQuery.predicate.exp)
+      cardinality(outer)
+      // TODO: This is not true. We should calculate cardinality on QG and not LP
+//    private def semiApplyCardinality(outer: LogicalPlan, exp: ast.Expression) = cardinality(outer) * predicateSelectivity(Seq(exp))
 
     case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
       relIds.size
@@ -90,10 +95,10 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case UndirectedRelationshipByIdSeek(_, relIds, _, _) =>
       relIds.size * 2
 
-    case Projection(left, _, _) =>
+    case Projection(left, _) =>
       cardinality(left)
 
-    case Optional(_, input) =>
+    case Optional(input) =>
       cardinality(input)
 
     case SingleRow(_) =>
@@ -121,9 +126,6 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       cardinality(input)
 
   }
-
-  private def semiApplyCardinality(outer: LogicalPlan, exp: ast.Expression) =
-    cardinality(outer) * predicateSelectivity(Seq(exp))
 
   def averagePathLength(length:PatternLength) = length match {
     case SimplePatternLength              => 1

@@ -20,19 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import data.SimpleVal
 import org.neo4j.graphdb.PropertyContainer
 
 trait EntityProducer[T <: PropertyContainer] extends ((ExecutionContext, QueryState) => Iterator[T]) {
   def producerType: String
-  def description: Seq[(String, SimpleVal)] = Seq("producer" -> SimpleVal.fromStr(producerType))
+  def arguments: Seq[Argument]
 }
 
 object EntityProducer {
-  def apply[T <: PropertyContainer](nameStr: String, args: (String, SimpleVal)*)(f:(ExecutionContext, QueryState) => Iterator[T]) =
+  def apply[T <: PropertyContainer](nameStr: String, argument: Argument)(f:(ExecutionContext, QueryState) => Iterator[T]) =
     new EntityProducer[T] {
       def producerType = nameStr
-      override def description = args ++ super.description
+      def arguments: Seq[Argument] = Seq(argument)
       def apply(m: ExecutionContext, q: QueryState) = f(m, q)
     }
 }

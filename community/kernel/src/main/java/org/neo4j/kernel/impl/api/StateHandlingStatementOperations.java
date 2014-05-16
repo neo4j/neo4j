@@ -64,12 +64,14 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.util.DiffSets;
+import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.Collections.emptyList;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.singleOrNull;
 import static org.neo4j.kernel.api.StatementConstants.NO_SUCH_NODE;
 
@@ -395,9 +397,10 @@ public class StateHandlingStatementOperations implements
         }
         DiffSets<IndexDescriptor> ruleDiffSet = state.txState().indexDiffSetsByLabel( labelId );
 
-        Iterator<IndexDescriptor> rules =
-                state.hasTxStateWithChanges() ? ruleDiffSet.apply( committedRules.iterator() ) : committedRules
-                        .iterator();
+        boolean hasTxStateWithChanges = state.hasTxStateWithChanges();
+        Iterator<IndexDescriptor> rules = hasTxStateWithChanges ?
+                filterByPropertyKeyId( ruleDiffSet.apply( committedRules.iterator() ), propertyKey ) :
+                committedRules.iterator();
         IndexDescriptor single = singleOrNull( rules );
         if ( single == null )
         {
@@ -405,6 +408,21 @@ public class StateHandlingStatementOperations implements
                     propertyKey + " not found" );
         }
         return single;
+    }
+
+    private Iterator<IndexDescriptor> filterByPropertyKeyId(
+            Iterator<IndexDescriptor> descriptorIterator,
+            final int propertyKey )
+    {
+        Predicate<IndexDescriptor> predicate = new Predicate<IndexDescriptor>()
+        {
+            @Override
+            public boolean accept( IndexDescriptor item )
+            {
+                return item.getPropertyKeyId() == propertyKey;
+            }
+        };
+        return filter( predicate, descriptorIterator );
     }
 
     @Override
@@ -499,9 +517,10 @@ public class StateHandlingStatementOperations implements
             Object value )
             throws IndexNotFoundKernelException, IndexBrokenKernelException
     {
-        PrimitiveLongIterator committed = storeLayer.nodeGetUniqueFromIndexLookup( state, index, value );
+        PrimitiveLongResourceIterator committed = storeLayer.nodeGetUniqueFromIndexLookup( state, index, value );
         PrimitiveLongIterator exactMatches = filterExactIndexMatches( state, index, value, committed );
-        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, exactMatches );
+        PrimitiveLongIterator exactMatchesResource = resourceIterator( exactMatches, committed );
+        PrimitiveLongIterator changeFilteredMatches = filterIndexStateChanges( state, index, value, exactMatchesResource );
         return single( changeFilteredMatches, NO_SUCH_NODE );
     }
 

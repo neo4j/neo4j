@@ -89,13 +89,27 @@ class ExpandPipeTest extends CypherFunSuite {
   test("given empty input, should return empty output") {
     // given
     mockRelationships()
-    val left = newMockedPipe("a")
+    val left = newMockedPipe("a", row("a" -> null))
 
     // when
     val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty).createResults(queryState).toList
 
     // then
-    result shouldBe 'empty
+    result should be (empty)
+  }
+
+  test("given a null start point, returns an empty iterator") {
+    // given
+    mockRelationships(relationship1)
+    val left = newMockedPipe("a",
+      row("a" -> startNode))
+
+    // when
+    val result = ExpandPipe(left, "a", "r", "b", Direction.OUTGOING, Seq.empty).createResults(queryState).toList
+
+    // then
+    val (single :: Nil) = result
+    single.m should equal(Map("a" -> startNode, "r" -> relationship1, "b" -> endNode1))
   }
 
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)

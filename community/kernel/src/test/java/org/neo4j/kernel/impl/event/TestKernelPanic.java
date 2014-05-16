@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.event;
 
+import static java.lang.Boolean.TRUE;
+import static java.util.Arrays.asList;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
@@ -29,7 +36,6 @@ import javax.transaction.TransactionManager;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
@@ -60,14 +66,6 @@ import org.neo4j.kernel.logging.BufferingLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static java.lang.Boolean.TRUE;
-import static java.util.Arrays.asList;
-
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class TestKernelPanic
 {

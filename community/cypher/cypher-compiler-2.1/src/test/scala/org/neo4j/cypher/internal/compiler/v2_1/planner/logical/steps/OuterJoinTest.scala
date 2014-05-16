@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.mockito.Mockito._
 import org.mockito.Matchers._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -43,11 +44,15 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("does not try to join anything if optional pattern is not present") {
     // MATCH (a)-->(b)
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = QueryGraph(patternNodes = Set(aNode, bNode), patternRelationships = Set(r1Rel))
+      query =
+        QueryGraph(
+          patternNodes = Set(aNode, bNode),
+          patternRelationships = Set(r1Rel)
+        )
     )
-    val left: LogicalPlan = newMockedLogicalPlanWithPatterns(Set(aNode, bNode))
+    val left = newMockedQueryPlan(Set(aNode, bNode))
     val planTable = PlanTable(Map(Set(aNode, bNode) -> left))
 
     outerJoin(planTable) should equal(CandidateList(Seq.empty))
@@ -55,8 +60,9 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("solve optional match with outer join") {
     // MATCH a OPTIONAL MATCH a-->b
-    val optionalQg = QueryGraph(patternNodes = Set(aNode, bNode), patternRelationships = Set(r1Rel)).
-      addCoveredIdsAsProjections()
+    val optionalQg = QueryGraph(
+      patternNodes = Set(aNode, bNode),
+      patternRelationships = Set(r1Rel))
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
@@ -64,22 +70,21 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       case _                         => 1000.0
     })
 
-    implicit val context = newMockedLogicalPlanContext(
+    val innerPlan = newMockedQueryPlan("b")
+
+    val query = QueryGraph(patternNodes = Set(aNode)).withAddedOptionalMatch(optionalQg)
+
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
-      queryGraph = QueryGraph(patternNodes = Set(aNode)).withAddedOptionalMatch(optionalQg),
-      metrics = factory.newMetrics(newMockedStatistics, newMockedSemanticTable)
+      query = query,
+      strategy = newMockedStrategy(innerPlan),
+      metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
-    val left: LogicalPlan = newMockedLogicalPlanWithPatterns(Set(aNode))
+    val left = newMockedQueryPlanWithPatterns(Set(aNode))
     val planTable = PlanTable(Map(Set(aNode) -> left))
 
-    val expectedPlan = OuterHashJoin(aNode,
-      left,
-      Expand(
-        AllNodesScan(bNode), bNode, Direction.INCOMING, Seq.empty, aNode, r1Name, SimplePatternLength
-      )(r1Rel),
-      Set(bNode, r1Name)
-    )
+    val expectedPlan = planOuterHashJoin(aNode, left, innerPlan)
 
-    outerJoin(planTable) should equal(CandidateList(Seq(expectedPlan)))
+    outerJoin(planTable).plans.head should equal(expectedPlan)
   }
 }

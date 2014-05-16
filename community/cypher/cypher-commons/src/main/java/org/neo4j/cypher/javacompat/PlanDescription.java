@@ -49,21 +49,6 @@ public interface PlanDescription
     public Map<String, Object> getArguments();
 
     /**
-     * Starting from this PlanDescription, retrieve children by successive calls to getChild() and
-     * return the final PlanDescription thus found
-     *
-     * @return PlanDescription of the final child retrieved
-     * @throws NoSuchElementException if no child could be retrieved
-     */
-    public PlanDescription cd(String... names) throws NoSuchElementException;
-
-    /**
-     * @return first child PlanDescription found by searching all children that have the given name
-     * @throws java.util.NoSuchElementException if no matching child is found
-     */
-    public PlanDescription getChild(String name) throws NoSuchElementException;
-
-    /**
      * @return list of previous (child) execution step descriptions
      */
     public List<PlanDescription> getChildren();

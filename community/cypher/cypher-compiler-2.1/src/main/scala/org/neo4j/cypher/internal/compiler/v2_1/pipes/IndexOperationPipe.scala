@@ -54,7 +54,7 @@ class IndexOperationPipe(indexOp: IndexOperation)(implicit val monitor: PipeMoni
 
   def symbols = new SymbolTable()
 
-  def executionPlanDescription = PlanDescription(this, indexOp.toString)
+  def planDescription = PlanDescriptionImpl(this, indexOp.toString, NoChildren, Seq.empty)
 
   def exists(pred: Pipe => Boolean) = pred(this)
 }

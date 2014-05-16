@@ -21,80 +21,63 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, LogicalPlanningTestSupport}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan, IdName}
 import org.mockito.Matchers._
 import org.mockito.Mockito._
 
 class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
   implicit val semanticTable = newMockedSemanticTable
   implicit val planContext = newMockedPlanContext
-  implicit val context = newMockedLogicalPlanContext(planContext)
+  implicit val context = newMockedQueryGraphSolvingContext(planContext)
 
-  val x = newMockedLogicalPlan("x")
-  val y = newMockedLogicalPlan("y")
-  val xAndY = newMockedLogicalPlan("x", "y")
-
-  test("prune with no overlaps returns the same candidates") {
-    val candidates = CandidateList(Seq(x, y))
-    candidates.pruned should equal(candidates)
-  }
-
-  test("prune with overlaps returns the first ones") {
-    val candidates = CandidateList(Seq(x, xAndY))
-
-    candidates.pruned should equal(CandidateList(Seq(x)))
-  }
-
-  test("empty prune is legal") {
-    val candidates = CandidateList(Seq())
-
-    candidates.pruned should equal(CandidateList(Seq()))
-  }
+  val x = newMockedQueryPlan("x")
+  val y = newMockedQueryPlan("y")
+  val xAndY = newMockedQueryPlan("x", "y")
 
   test("picks the right plan by cost, no matter the cardinality") {
-    val a = newMockedLogicalPlan("a")
-    val b = newMockedLogicalPlan("b")
+    val a = newMockedQueryPlanWithProjections("a")
+    val b = newMockedQueryPlanWithProjections("b")
 
     val factory = newMockedMetricsFactory
     when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
-      case `a` => 100
-      case `b` => 50
-      case _   => Double.MaxValue
+      case p if p eq a.plan => 100
+      case p if p eq b.plan => 50
+      case _                => Double.MaxValue
     })
 
     assertTopPlan(winner = b, a, b)(factory)
   }
 
   test("picks the right plan by cost, no matter the size of the covered ids") {
-    val ab = newMockedLogicalPlanWithPatterns(Set(IdName("a"), IdName("b")))
-    val b = newMockedLogicalPlan("b")
+    val ab = QueryPlan( newMockedLogicalPlan(Set(IdName("a"), IdName("b"))), PlannerQuery.empty )
+    val b = newMockedQueryPlanWithProjections("b")
 
     val factory = newMockedMetricsFactory
     when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
-      case `ab` => 100
-      case `b`  => 50
-      case _    => Double.MaxValue
+      case p if p eq ab.plan => 100
+      case p if p eq b.plan  => 50
+      case _                 => Double.MaxValue
     })
 
     assertTopPlan(winner = b, ab, b)(factory)
   }
 
   test("picks the right plan by cost and secondly by the covered ids") {
-    val ab = newMockedLogicalPlanWithPatterns(Set(IdName("a"), IdName("b")))
-    val c = newMockedLogicalPlan("c")
+    val ab = newMockedQueryPlan("a", "b")
+    val c = newMockedQueryPlanWithProjections("c")
 
     val factory = newMockedMetricsFactory
     when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
-      case `ab` => 50
-      case `c`  => 50
-      case _    => Double.MaxValue
+      case p if p eq ab.plan => 50
+      case p if p eq c.plan  => 50
+      case _                 => Double.MaxValue
     })
 
     assertTopPlan(winner = ab, ab, c)(factory)
   }
 
-  private def assertTopPlan(winner: LogicalPlan, candidates: LogicalPlan*)(metrics: MetricsFactory) {
+  private def assertTopPlan(winner: QueryPlan, candidates: QueryPlan*)(metrics: MetricsFactory) {
     val costs = metrics.newMetrics(context.statistics, semanticTable).cost
     CandidateList(candidates).bestPlan(costs) should equal(Some(winner))
     CandidateList(candidates.reverse).bestPlan(costs) should equal(Some(winner))

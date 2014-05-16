@@ -19,9 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
-
-
 case class AllNodesScan(idName: IdName) extends LogicalLeafPlan {
-  val solved = QueryGraph.empty.addPatternNode(idName)
+  def availableSymbols = Set(idName)
 }

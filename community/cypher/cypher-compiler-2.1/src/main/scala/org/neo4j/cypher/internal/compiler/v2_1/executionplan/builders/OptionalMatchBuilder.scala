@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, PlanBuilder, Phase}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescription, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.{TwoChildren, PlanDescriptionImpl, PlanDescription, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
@@ -34,7 +34,7 @@ case class OptionalMatchBuilder(solveMatch: Phase) extends PlanBuilder {
 
   def apply(in: ExecutionPlanInProgress, context: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
     val listeningPipe = new NullPipe(in.pipe.symbols) {
-      override def executionPlanDescription: PlanDescription = in.pipe.executionPlanDescription
+      override def planDescription: PlanDescription = in.pipe.planDescription
     }
     val nonOptionalQuery = in.query.copy(optional = false)
     val postMatchPlan = solveMatch(in.copy(pipe = listeningPipe, query = nonOptionalQuery), context)
@@ -61,8 +61,8 @@ case class OptionalMatchBuilder(solveMatch: Phase) extends PlanBuilder {
                          finallyClause = () => state.initialContext = None)
     }
 
-    def executionPlanDescription: PlanDescription =
-      source.executionPlanDescription.andThenWrap(this, "NullableMatch", matchPipe.executionPlanDescription)
+    def planDescription: PlanDescription =
+    PlanDescriptionImpl(this, "OptionalMatch", TwoChildren(source.planDescription, matchPipe.planDescription), Seq.empty)
 
     val identifiersBeforeMatch = matchPipe.symbols.identifiers.map(_._1).toSet
     val identifiersAfterMatch = source.symbols.identifiers.map(_._1).toSet

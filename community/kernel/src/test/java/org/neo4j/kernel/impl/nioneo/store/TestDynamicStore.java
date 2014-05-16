@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -38,6 +33,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -46,6 +42,12 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 public class TestDynamicStore
 {
@@ -124,7 +126,7 @@ public class TestDynamicStore
     private DynamicArrayStore newStore()
     {
         return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY,
-                WINDOW_POOL_FACTORY, fs.get(), StringLogger.DEV_NULL );
+                WINDOW_POOL_FACTORY, fs.get(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.THROW_EXCEPTION );
     }
 
     private void deleteBothFiles()
@@ -174,7 +176,8 @@ public class TestDynamicStore
         {
             createEmptyStore( dynamicStoreFile(), 30 );
             DynamicArrayStore store = newStore();
-            Collection<DynamicRecord> records = store.allocateRecordsFromBytes( new byte[10] );
+            Collection<DynamicRecord> records = new ArrayList<>();
+            store.allocateRecordsFromBytes( records, new byte[10] );
             long blockId = first( records ).getId();
             for ( DynamicRecord record : records )
             {
@@ -219,7 +222,8 @@ public class TestDynamicStore
             DynamicArrayStore store = newStore();
             char[] chars = new char[STR.length()];
             STR.getChars( 0, STR.length(), chars, 0 );
-            Collection<DynamicRecord> records = store.allocateRecords( chars );
+            Collection<DynamicRecord> records = new ArrayList<>();
+            store.allocateRecords( records, chars, IteratorUtil.<DynamicRecord>emptyIterator() );
             for ( DynamicRecord record : records )
             {
                 store.updateRecord( record );
@@ -271,7 +275,8 @@ public class TestDynamicStore
                 else
                 {
                     byte bytes[] = createRandomBytes( random );
-                    Collection<DynamicRecord> records = store.allocateRecords( bytes );
+                    Collection<DynamicRecord> records = new ArrayList<>();
+                    store.allocateRecords( records, bytes, IteratorUtil.<DynamicRecord>emptyIterator() );
                     for ( DynamicRecord record : records )
                     {
                         assert !set.contains( record.getId() );
@@ -357,7 +362,8 @@ public class TestDynamicStore
 
     private long create( DynamicArrayStore store, Object arrayToStore )
     {
-        Collection<DynamicRecord> records = store.allocateRecords( arrayToStore );
+        Collection<DynamicRecord> records = new ArrayList<>();
+        store.allocateRecords( records, arrayToStore, IteratorUtil.<DynamicRecord>emptyIterator() );
         for ( DynamicRecord record : records )
         {
             store.updateRecord( record );

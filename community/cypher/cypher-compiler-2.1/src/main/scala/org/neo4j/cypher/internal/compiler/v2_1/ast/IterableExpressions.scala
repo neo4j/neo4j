@@ -23,16 +23,15 @@ import Expression.SemanticContext
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 
-trait FilteringExpression extends Expression {
+trait FilteringExpression extends ScopeIntroducingExpression {
   def name: String
-  def identifier: Identifier
   def expression: Expression
   def innerPredicate: Option[Expression]
   override def arguments = Seq(expression)
 
   def semanticCheck(ctx: SemanticContext) =
-    expression.semanticCheck(ctx) then
-    expression.expectType(CTCollection(CTAny).covariant) then
+    expression.semanticCheck(ctx) chain
+    expression.expectType(CTCollection(CTAny).covariant) chain
     checkInnerPredicate
 
   protected def checkPredicateDefined =
@@ -50,7 +49,7 @@ trait FilteringExpression extends Expression {
 
   private def checkInnerPredicate: SemanticCheck = innerPredicate match {
     case Some(e) => withScopedState {
-      identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
+      identifier.declare(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
     }
     case None    => SemanticCheckResult.success
   }
@@ -61,8 +60,8 @@ case class FilterExpression(identifier: Identifier, expression: Expression, inne
   val name = "filter"
 
   override def semanticCheck(ctx: SemanticContext) =
-    checkPredicateDefined then
-    super.semanticCheck(ctx) then
+    checkPredicateDefined chain
+    super.semanticCheck(ctx) chain
     this.specifyType(expression.types)
 }
 
@@ -76,9 +75,9 @@ case class ExtractExpression(
   val name = "extract"
 
   override def semanticCheck(ctx: SemanticContext) =
-    checkPredicateNotDefined then
-    checkExtractExpressionDefined then
-    super.semanticCheck(ctx) then
+    checkPredicateNotDefined chain
+    checkExtractExpressionDefined chain
+    super.semanticCheck(ctx) chain
     checkInnerExpression
 
   private def checkExtractExpressionDefined =
@@ -89,8 +88,8 @@ case class ExtractExpression(
   private def checkInnerExpression: SemanticCheck =
     extractExpression.fold(SemanticCheckResult.success) {
       e => withScopedState {
-        identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
-      } then {
+        identifier.declare(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
+      } chain {
         val outerTypes: TypeGenerator = e.types(_).wrapInCollection
         this.specifyType(outerTypes)
       }
@@ -106,13 +105,13 @@ case class ListComprehension(
 {
   val name = "[...]"
 
-  override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) then checkInnerExpression
+  override def semanticCheck(ctx: SemanticContext) = super.semanticCheck(ctx) chain checkInnerExpression
 
   private def checkInnerExpression: SemanticCheck = extractExpression match {
     case Some(e) =>
       withScopedState {
-        identifier.declare(possibleInnerTypes) then e.semanticCheck(SemanticContext.Simple)
-      } then {
+        identifier.declare(possibleInnerTypes) chain e.semanticCheck(SemanticContext.Simple)
+      } chain {
         val outerTypes: TypeGenerator = e.types(_).wrapInCollection
         this.specifyType(outerTypes)
       }
@@ -123,8 +122,8 @@ case class ListComprehension(
 
 sealed trait IterablePredicateExpression extends FilteringExpression {
   override def semanticCheck(ctx: SemanticContext) =
-    checkPredicateDefined then
-    super.semanticCheck(ctx) then
+    checkPredicateDefined chain
+    super.semanticCheck(ctx) chain
     this.specifyType(CTBoolean)
 }
 
@@ -144,19 +143,19 @@ case class SingleIterablePredicate(identifier: Identifier, expression: Expressio
   val name = "single"
 }
 
-case class ReduceExpression(accumulator: Identifier, init: Expression, identifier: Identifier, collection: Expression, expression: Expression)(val position: InputPosition) extends Expression {
+case class ReduceExpression(accumulator: Identifier, init: Expression, identifier: Identifier, collection: Expression, expression: Expression)(val position: InputPosition) extends ScopeIntroducingExpression {
   def semanticCheck(ctx: SemanticContext): SemanticCheck =
-    init.semanticCheck(ctx) then
-    collection.semanticCheck(ctx) then
-    collection.expectType(CTCollection(CTAny).covariant) then
+    init.semanticCheck(ctx) chain
+    collection.semanticCheck(ctx) chain
+    collection.expectType(CTCollection(CTAny).covariant) chain
     withScopedState {
       val indexType: TypeGenerator = s =>
         (collection.types(s) constrain CTCollection(CTAny)).unwrapCollections
       val accType: TypeGenerator = init.types
 
-      identifier.declare(indexType) then
-      accumulator.declare(accType) then
+      identifier.declare(indexType) chain
+      accumulator.declare(accType) chain
       expression.semanticCheck(SemanticContext.Simple)
-    } then expression.expectType(init.types) then
+    } chain expression.expectType(init.types) chain
     this.specifyType(s => init.types(s) mergeUp expression.types(s))
 }

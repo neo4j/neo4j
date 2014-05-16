@@ -23,19 +23,21 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.InternalException
 import org.neo4j.graphdb.{Relationship, Direction, Node}
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 
 case class ExpandPipe(source: Pipe, from: String, relName: String, to: String, dir: Direction, types: Seq[String])
                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap {
       row =>
-        val fromNode = getFromNode(row)
-        fromNode match {
+        getFromNode(row) match {
           case n: Node =>
             val relationships: Iterator[Relationship] = state.query.getRelationshipsFor(n, dir, types)
             relationships.map {
               case r => row.newWith(Seq(relName -> r, to -> r.getOtherNode(n)))
             }
+
+          case null => None
 
           case value => throw new InternalException(s"Expected to find a node at $from but found $value instead")
         }
@@ -45,9 +47,10 @@ case class ExpandPipe(source: Pipe, from: String, relName: String, to: String, d
   def getFromNode(row: ExecutionContext): Any =
     row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))
 
-  def executionPlanDescription =
-    source.executionPlanDescription.
-      andThen(this, "Expand", "from" -> from, "to" -> to, "relName" -> relName)
+  def planDescription = {
+    val arguments = Seq(IntroducedIdentifier(relName), IntroducedIdentifier(to))
+    source.planDescription.andThen(this, "Expand", arguments:_*)
+  }
 
-  def symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
+  val symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
 }

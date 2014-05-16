@@ -19,31 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.CostModel
 
-case class CandidateList(plans: Seq[LogicalPlan] = Seq.empty) {
-  def pruned: CandidateList = {
-    def overlap(a: Set[IdName], b: Set[IdName]) = !a.intersect(b).isEmpty
-
-    val (_, result: Seq[LogicalPlan]) = plans.foldLeft(Set.empty[IdName] -> Seq.empty[LogicalPlan]) {
-      case ((covered, partial), plan) =>
-        if (overlap(covered, plan.coveredIds))
-          (covered, partial)
-        else
-          (covered ++ plan.coveredIds, partial :+ plan)
-    }
-    CandidateList(result)
-  }
-
-  private def sorted(cost: CostModel) =
-    CandidateList(plans.sortBy[(Double, Int)](c => (cost(c), -c.coveredIds.size)))
+case class CandidateList(plans: Seq[QueryPlan] = Seq.empty) {
 
   def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
 
-  def +(plan: LogicalPlan) = copy(plans :+ plan)
+  def +(plan: QueryPlan) = copy(plans :+ plan)
 
-  def bestPlan(costs: CostModel): Option[LogicalPlan] = sorted(costs).pruned.plans.headOption
+  def bestPlan(costs: CostModel): Option[QueryPlan] = {
+    val sortedPlans = plans.sortBy[(Double, Int)](c => (costs(c.plan), -c.availableSymbols.size))
+    sortedPlans.headOption
+  }
 
-  def map(f: LogicalPlan => LogicalPlan): CandidateList = copy(plans = plans.map(f))
+  def map(f: QueryPlan => QueryPlan): CandidateList = copy(plans = plans.map(f))
+}
+
+object Candidates {
+  def apply(plans: QueryPlan*): CandidateList = CandidateList(plans)
 }

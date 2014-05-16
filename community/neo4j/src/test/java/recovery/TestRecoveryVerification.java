@@ -19,36 +19,35 @@
  */
 package recovery;
 
+import static java.nio.ByteBuffer.allocate;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
+import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
+
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.TwoPhaseCommit;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerificationException;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInfo;
-import org.neo4j.kernel.impl.util.DumpLogicalLog.CommandFactory;
-
-import static java.nio.ByteBuffer.allocate;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static recovery.CreateTransactionsAndDie.produceNonCleanDbWhichWillRecover2PCsOnStartup;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readEntry;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils.readLogHeader;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
 
 public class TestRecoveryVerification
 {
@@ -120,28 +119,40 @@ public class TestRecoveryVerification
     {
         /* Look in the .v0 log for the 2PC records and that they are ordered by txId */
         RandomAccessFile file = new RandomAccessFile( new File( storeDir, "nioneo_logical.log.v0" ), "r" );
-        CommandFactory cf = new CommandFactory();
+        ByteBuffer buffer = allocate( 10000 );
         try
         {
             FileChannel channel = file.getChannel();
-            ByteBuffer buffer = allocate( 10000 );
             readLogHeader( buffer, channel, true );
-            long lastOne = -1;
-            int counted = 0;
-            for ( LogEntry entry; (entry = readEntry( buffer, channel, cf )) != null; )
+            final AtomicInteger counted = new AtomicInteger(  );
+            LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
+
+
+            Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
             {
-                if ( entry instanceof TwoPhaseCommit )
+                long lastOne = -1;
+
+                @Override
+                public boolean accept( LogEntry entry ) throws IOException
                 {
-                    long txId = ((TwoPhaseCommit) entry).getTxId();
-                    if ( lastOne != -1 )
+                    if ( entry instanceof LogEntry.TwoPhaseCommit )
                     {
-                        assertEquals( lastOne + 1, txId );
+                        long txId = ((LogEntry.TwoPhaseCommit) entry).getTxId();
+                        if ( lastOne != -1 )
+                        {
+                            assertEquals( lastOne + 1, txId );
+                        }
+                        lastOne = txId;
+                        counted.incrementAndGet();
                     }
-                    lastOne = txId;
-                    counted++;
+                    return true;
                 }
-            }
-            assertEquals( expectedCount, counted );
+            };
+
+            Cursor<LogEntry, IOException> c = deserializer.cursor( channel );
+            while ( c.next( consumer ) );
+
+            assertEquals( expectedCount, counted.get() );
         }
         finally
         {

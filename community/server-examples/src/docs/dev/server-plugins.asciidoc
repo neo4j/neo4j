@@ -31,7 +31,7 @@ For Maven projects, add the Server API dependencies in your +pom.xml+ like this:
 
 _Where $\{neo4j-version} is the intended version._
 
-To create a plugin, your code must inherit from the http://components.neo4j.org/server-api/{neo4j-version}/apidocs/org/neo4j/server/plugins/ServerPlugin.html[ServerPlugin] class.
+To create a plugin, your code must inherit from the link:javadocs/org/neo4j/server/plugins/ServerPlugin.html[ServerPlugin] class.
 Your plugin should also:
 
 * ensure that it can produce an (Iterable of) `Node`, `Relationship` or `Path`, any Java primitive or `String` or an instance of a `org.neo4j.server.rest.repr.Representation`

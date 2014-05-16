@@ -129,7 +129,7 @@ public class NodeInUseWithCorrectLabelsCheckTest
 
     private NodeRecord withInlineLabels( NodeRecord nodeRecord, long... labelIds )
     {
-        new InlineNodeLabels( nodeRecord.getLabelField(), nodeRecord ).put( labelIds, null );
+        new InlineNodeLabels( nodeRecord.getLabelField(), nodeRecord ).put( labelIds, null, null );
         return nodeRecord;
     }
 
@@ -140,9 +140,9 @@ public class NodeInUseWithCorrectLabelsCheckTest
         {
             preAllocatedRecords.add( inUse( new DynamicRecord( i ) ) );
         }
-        Collection<DynamicRecord> dynamicRecords =
-                DynamicArrayStore.allocateFromNumbers( prependNodeId( nodeRecord.getId(), labelIds ),
-                        preAllocatedRecords.iterator(), new PreAllocatedRecords( 4 ) );
+        Collection<DynamicRecord> dynamicRecords = new ArrayList<>();
+        DynamicArrayStore.allocateFromNumbers( dynamicRecords, prependNodeId( nodeRecord.getId(), labelIds ),
+                preAllocatedRecords.iterator(), new PreAllocatedRecords( 4 ) );
         for ( DynamicRecord dynamicRecord : dynamicRecords )
         {
             recordAccess.addNodeDynamicLabels( dynamicRecord );

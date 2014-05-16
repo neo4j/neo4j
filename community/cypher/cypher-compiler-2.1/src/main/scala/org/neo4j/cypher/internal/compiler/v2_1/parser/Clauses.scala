@@ -86,6 +86,10 @@ trait Clauses extends Parser
     | group(keyword("WITH") ~~ ReturnBody ~~ optional(Where)) ~~>> (ast.With(distinct = false, _, _, _, _, _))
   )
 
+  def Unwind: Rule1[ast.Unwind] = rule("UNWIND") (
+    group(keyword("UNWIND") ~~ Expression ~~ keyword("AS") ~~ Identifier) ~~>> (ast.Unwind(_,_))
+  )
+
   def Return: Rule1[ast.Return] = rule("RETURN") (
       group(keyword("RETURN DISTINCT") ~~ ReturnBody) ~~>> (ast.Return(distinct = true, _, _, _, _))
     | group(keyword("RETURN") ~~ ReturnBody) ~~>> (ast.Return(distinct = false, _, _, _, _))

@@ -19,16 +19,24 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.helpers.collection.Iterables.iterable;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
+
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
+
 import javax.transaction.Transaction;
 
-import ch.qos.logback.classic.LoggerContext;
 import org.jboss.netty.logging.InternalLoggerFactory;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -47,9 +55,10 @@ import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvid
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Clock;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -80,6 +89,7 @@ import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
+import org.neo4j.kernel.ha.transaction.DenseNodeTransactionTranslator;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TxHookModeSwitcher;
 import org.neo4j.kernel.ha.transaction.TxIdGeneratorModeSwitcher;
@@ -88,13 +98,15 @@ import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
-import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -102,14 +114,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.collection.Iterables.iterable;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
@@ -191,6 +195,19 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // Skip this, it's done manually in create() to ensure it is as late as possible
     }
 
+    protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
+    {
+        return new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
+
+        {
+            @Override
+            public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
+            {
+                return new DenseNodeTransactionTranslator( neoStore );
+            }
+        };
+    }
+
     public void start()
     {
         life.start();
@@ -204,7 +221,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected org.neo4j.graphdb.Transaction beginTx( ForceMode forceMode )
     {
-        if (!availabilityGuard.isAvailable( stateSwitchTimeoutMillis ))
+        if ( !availabilityGuard.isAvailable( stateSwitchTimeoutMillis ) )
         {
             throw new TransactionFailureException( "Timeout waiting for database to allow new transactions. "
                     + availabilityGuard.describeWhoIsBlocking() );
@@ -216,7 +233,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     public IndexManager index()
     {
-        if (!availabilityGuard.isAvailable( stateSwitchTimeoutMillis ))
+        if ( !availabilityGuard.isAvailable( stateSwitchTimeoutMillis ) )
         {
             throw new TransactionFailureException( "Timeout waiting for database to allow new transactions. "
                     + availabilityGuard.describeWhoIsBlocking() );
@@ -227,7 +244,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     @Override
     protected Logging createLogging()
     {
-        Logging loggingService = life.add( new LogbackWeakDependency().tryLoadLogbackService( config, NEW_LOGGER_CONTEXT,
+        Logging loggingService = life.add( new LogbackWeakDependency().tryLoadLogbackService( config,
+                NEW_LOGGER_CONTEXT,
                 DEFAULT_TO_CLASSIC ) );
 
         // Set Netty logger
@@ -271,8 +289,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
         XaDataSourceManager toReturn = new HaXaDataSourceManager( logging.getMessagesLog( HaXaDataSourceManager.class
         ) );
-        requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ), toReturn,
-                dependencyResolver );
+        requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ).toIntegerIndex(),
+                toReturn, dependencyResolver );
         return toReturn;
     }
 
@@ -281,7 +299,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
         clusterEventsDelegateInvocationHandler = new DelegateInvocationHandler( ClusterMemberEvents.class );
         memberContextDelegateInvocationHandler = new DelegateInvocationHandler( HighAvailabilityMemberContext.class );
-        clusterMemberAvailabilityDelegateInvocationHandler = new DelegateInvocationHandler( ClusterMemberAvailability.class );
+        clusterMemberAvailabilityDelegateInvocationHandler = new DelegateInvocationHandler( ClusterMemberAvailability
+                .class );
 
         clusterEvents = (ClusterMemberEvents) Proxy.newProxyInstance( ClusterMemberEvents.class.getClassLoader(),
                 new Class[]{ClusterMemberEvents.class, Lifecycle.class}, clusterEventsDelegateInvocationHandler );
@@ -302,7 +321,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     {
                         return memberStateMachine.getCurrentState();
                     }
-                } );
+                }
+                );
 
 
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
@@ -320,19 +340,21 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 {
                     if ( member.getRoleUri().getScheme().equals( "ha" ) )
                     {
-                        if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ) ==
-                                config.get( ClusterSettings.server_id ) )
+                        if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ).equals(
+                                config.get( ClusterSettings.server_id ) ) )
                         {
                             msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not " +
-                                    "join this cluster",
-                                    member.getRoleUri(), config.get( ClusterSettings.server_id ) ) );
+                                            "join this cluster",
+                                    member.getRoleUri(), config.get( ClusterSettings.server_id )
+                            ) );
                             return true;
                         }
                     }
                 }
                 return true;
             }
-        }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory );
+        }, new HANewSnapshotFunction(), objectStreamFactory, objectStreamFactory
+        );
 
         // Force a reelection after we enter the cluster
         // and when that election is finished refresh the snapshot
@@ -358,7 +380,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         } );
 
         HighAvailabilityMemberContext localMemberContext = new SimpleHighAvailabilityMemberContext( clusterClient
-                .getServerId() );
+                .getServerId(), config.get( HaSettings.slave_only ) );
         PaxosClusterMemberAvailability localClusterMemberAvailability = new PaxosClusterMemberAvailability(
                 clusterClient.getServerId(), clusterClient, clusterClient, logging, objectStreamFactory,
                 objectStreamFactory );
@@ -368,14 +390,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         clusterMemberAvailabilityDelegateInvocationHandler.setDelegate( localClusterMemberAvailability );
 
         members = new ClusterMembers( clusterClient, clusterClient, clusterEvents,
-                new InstanceId( config.get( ClusterSettings.server_id ) ) );
+                config.get( ClusterSettings.server_id ) );
         memberStateMachine = new HighAvailabilityMemberStateMachine( memberContext, availabilityGuard, members,
                 clusterEvents,
                 clusterClient, logging.getMessagesLog( HighAvailabilityMemberStateMachine.class ) );
 
         HighAvailabilityConsoleLogger highAvailabilityConsoleLogger = new HighAvailabilityConsoleLogger( logging
-                .getConsoleLog( HighAvailabilityConsoleLogger.class ), new InstanceId( config.get( ClusterSettings
-                .server_id ) ) );
+                .getConsoleLog( HighAvailabilityConsoleLogger.class ), config.get( ClusterSettings
+                .server_id ) );
         availabilityGuard.addListener( highAvailabilityConsoleLogger );
         clusterEvents.addClusterMemberListener( highAvailabilityConsoleLogger );
         clusterClient.addClusterListener( highAvailabilityConsoleLogger );
@@ -386,7 +408,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         paxosLife.add( localClusterMemberAvailability );
 
         DelegateInvocationHandler<RemoteTxHook> txHookDelegate = new DelegateInvocationHandler<>( RemoteTxHook.class );
-        RemoteTxHook txHook = (RemoteTxHook) Proxy.newProxyInstance( RemoteTxHook.class.getClassLoader(), new Class[]{RemoteTxHook.class},
+        RemoteTxHook txHook = (RemoteTxHook) Proxy.newProxyInstance( RemoteTxHook.class.getClassLoader(),
+                new Class[]{RemoteTxHook.class},
                 txHookDelegate );
         new TxHookModeSwitcher( memberStateMachine, txHookDelegate,
                 masterDelegateInvocationHandler, new TxHookModeSwitcher.RequestContextFactoryResolver()
@@ -396,18 +419,20 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 return requestContextFactory;
             }
-        }, logging.getMessagesLog( TxHookModeSwitcher.class ), dependencyResolver );
+        }, logging.getMessagesLog( TxHookModeSwitcher.class ), dependencyResolver
+        );
         return txHook;
     }
 
     @Override
     public void assertSchemaWritesAllowed() throws InvalidTransactionTypeKernelException
     {
-        if (!isMaster())
+        if ( !isMaster() )
         {
             throw new InvalidTransactionTypeKernelException(
                     "Modifying the database schema can only be done on the master server, " +
-                            "this server is a slave. Please issue schema modification commands directly to the master." );
+                            "this server is a slave. Please issue schema modification commands directly to the master."
+            );
         }
     }
 
@@ -434,11 +459,17 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
         highAvailabilityModeSwitcher =
-                new HighAvailabilityModeSwitcher( new SwitchToSlave(logging.getConsoleLog( HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(), (HaIdGeneratorFactory) idGeneratorFactory,
-                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory, updateableSchemaState, monitors, kernelExtensions.listFactories() ),
+                new HighAvailabilityModeSwitcher( new SwitchToSlave( logging.getConsoleLog(
+                        HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
+                        (HaIdGeneratorFactory) idGeneratorFactory,
+                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
+                        updateableSchemaState, monitors, kernelExtensions.listFactories() ),
                         new SwitchToMaster( logging, msgLog, this,
-                        (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(), masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
-                        clusterClient, clusterMemberAvailability, logging.getMessagesLog( HighAvailabilityModeSwitcher.class ));
+                                (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
+                                masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
+                        clusterClient, clusterMemberAvailability,
+                        logging.getMessagesLog( HighAvailabilityModeSwitcher.class )
+                );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
         memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );
@@ -532,13 +563,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         this.lastUpdateTime = new LastUpdateTime();
         return new HighlyAvailableKernelData( this, members,
                 new ClusterDatabaseInfoProvider( members, new OnDiskLastTxIdGetter( new File( getStoreDir() ) ),
-                        lastUpdateTime ) );
+                        lastUpdateTime )
+        );
     }
 
     @Override
     protected Factory<byte[]> createXidGlobalIdFactory()
     {
-        final int serverId = config.get( ClusterSettings.server_id );
+        final int serverId = config.get( ClusterSettings.server_id ).toIntegerIndex();
         return new Factory<byte[]>()
         {
             @Override

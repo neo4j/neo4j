@@ -28,17 +28,21 @@ import java.util.Set;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.CommandSet;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 public class NeoStoreTransactionContext
@@ -56,13 +60,15 @@ public class NeoStoreTransactionContext
 
     private final RecordChangeSet recordChangeSet;
     private final CommandSet commandSet;
+    private final NeoStore neoStore;
 
     public NeoStoreTransactionContext( NeoStoreTransactionContextSupplier supplier, NeoStore neoStore )
     {
         this.supplier = supplier;
+        this.neoStore = neoStore;
 
         recordChangeSet = new RecordChangeSet( neoStore );
-        commandSet = new CommandSet( neoStore );
+        commandSet = new CommandSet();
 
         locker = new TransactionalRelationshipLocker();
         relationshipGroupGetter = new RelationshipGroupGetter( neoStore.getRelationshipGroupStore() );
@@ -70,7 +76,7 @@ public class NeoStoreTransactionContext
         propertyCreator = new PropertyCreator( neoStore.getPropertyStore(), propertyTraverser );
         propertyDeleter = new PropertyDeleter( neoStore.getPropertyStore(), propertyTraverser );
         relationshipCreator = new RelationshipCreator( locker, relationshipGroupGetter, neoStore.getDenseNodeThreshold() );
-        relationshipDeleter = new RelationshipDeleter( locker, relationshipGroupGetter, propertyDeleter);
+        relationshipDeleter = new RelationshipDeleter( locker, relationshipGroupGetter, propertyDeleter );
     }
 
     public ArrayMap<Integer, DefinedProperty> relationshipDelete( long relId )
@@ -125,6 +131,27 @@ public class NeoStoreTransactionContext
         propertyCreator.primitiveAddProperty( primitive, propertyKey, value, getPropertyRecords() );
     }
 
+    public void createPropertyKeyToken( String name, int id )
+    {
+        TokenCreator<PropertyKeyTokenRecord> creator =
+                new TokenCreator<>( neoStore.getPropertyKeyTokenStore() );
+        creator.createToken( name, id, getPropertyKeyTokenRecords() );
+    }
+
+    public void createLabelToken( String name, int id )
+    {
+        TokenCreator<LabelTokenRecord> creator =
+                new TokenCreator<>( neoStore.getLabelTokenStore() );
+        creator.createToken( name, id, getLabelTokenRecords() );
+    }
+
+    public void createRelationshipTypeToken( String name, int id )
+    {
+        TokenCreator<RelationshipTypeTokenRecord> creator =
+                new TokenCreator<>( neoStore.getRelationshipTypeStore() );
+        creator.createToken( name, id, getRelationshipTypeTokenRecords() );
+    }
+
     public void bind( TransactionState txState )
     {
         this.txState = txState;
@@ -141,37 +168,37 @@ public class NeoStoreTransactionContext
         supplier.release( this );
     }
 
-    public Map<Long, Command.NodeCommand> getNodeCommands()
+    public Map<Long, org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand> getNodeCommands()
     {
         return commandSet.getNodeCommands();
     }
 
-    public ArrayList<Command.PropertyCommand> getPropCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand> getPropCommands()
     {
         return commandSet.getPropCommands();
     }
 
-    public ArrayList<Command.RelationshipCommand> getRelCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand> getRelCommands()
     {
         return commandSet.getRelCommands();
     }
 
-    public ArrayList<Command.SchemaRuleCommand> getSchemaRuleCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand> getSchemaRuleCommands()
     {
         return commandSet.getSchemaRuleCommands();
     }
 
-    public ArrayList<Command.RelationshipTypeTokenCommand> getRelationshipTypeTokenCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand> getRelationshipTypeTokenCommands()
     {
         return commandSet.getRelationshipTypeTokenCommands();
     }
 
-    public ArrayList<Command.LabelTokenCommand> getLabelTokenCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.LabelTokenCommand> getLabelTokenCommands()
     {
         return commandSet.getLabelTokenCommands();
     }
 
-    public ArrayList<Command.PropertyKeyTokenCommand> getPropertyKeyTokenCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand> getPropertyKeyTokenCommands()
     {
         return commandSet.getPropertyKeyTokenCommands();
     }
@@ -201,28 +228,42 @@ public class NeoStoreTransactionContext
         return recordChangeSet.getRelGroupRecords();
     }
 
+    public RecordChanges<Integer,PropertyKeyTokenRecord,Void> getPropertyKeyTokenRecords()
+    {
+        return recordChangeSet.getPropertyKeyTokenChanges();
+    }
+
+    public RecordChanges<Integer,LabelTokenRecord,Void> getLabelTokenRecords()
+    {
+        return recordChangeSet.getLabelTokenChanges();
+    }
+
+    public RecordChanges<Integer,RelationshipTypeTokenRecord,Void> getRelationshipTypeTokenRecords()
+    {
+        return recordChangeSet.getRelationshipTypeTokenChanges();
+    }
+
     public void generateNeoStoreCommand( NeoStoreRecord neoStoreRecord )
     {
         commandSet.generateNeoStoreCommand( neoStoreRecord );
     }
 
-    public XaCommand getNeoStoreCommand()
+    public Command.NeoStoreCommand getNeoStoreCommand()
     {
         return commandSet.getNeoStoreCommand();
     }
 
-    public ArrayList<Command.RelationshipGroupCommand> getRelGroupCommands()
+    public ArrayList<org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand> getRelGroupCommands()
     {
         return commandSet.getRelGroupCommands();
     }
 
     public void setNeoStoreCommand( Command.NeoStoreCommand xaCommand )
     {
-        commandSet.setNeoStoreCommand( xaCommand );
+        commandSet.getNeoStoreCommand().init( xaCommand.getRecord() );
     }
 
-    public RecordProxy<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node,
-                                                                                                    int type )
+    public RecordProxy<Long, RelationshipGroupRecord, Integer> getRelationshipGroup( NodeRecord node, int type )
     {
         long groupId = node.getNextRel();
         long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();

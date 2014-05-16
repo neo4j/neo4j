@@ -81,6 +81,18 @@ public final class Functions
         };
     }
 
+    public static <T> Function<T, T> identity()
+    {
+        return new Function<T, T>()
+        {
+            @Override
+            public T apply( T from )
+            {
+                return from;
+            }
+        };
+    }
+
     public static <From, From2, To> Function2<Function<From, From2>, Function<From2, To>, Function<From, To>> compose()
     {
         return new Function2<Function<From, From2>, Function<From2, To>, Function<From, To>>()
@@ -126,9 +138,13 @@ public final class Functions
         public String apply( Object from )
         {
             if (from != null)
+            {
                 return from.toString();
+            }
             else
+            {
                 return "";
+            }
         }
     };
 

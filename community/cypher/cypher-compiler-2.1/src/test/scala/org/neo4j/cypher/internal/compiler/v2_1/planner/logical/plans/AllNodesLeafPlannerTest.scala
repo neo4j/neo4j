@@ -20,28 +20,29 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.allNodesLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
-class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
+class AllNodesLeafPlannerTest
+  extends CypherFunSuite
+  with LogicalPlanningTestSupport {
 
   test("simple all nodes scan") {
     // given
-    val qg = QueryGraph(projections = Map("n" -> Identifier("n")_), patternNodes = Set(IdName("n")))
+    val queryGraph = QueryGraph(patternNodes = Set(IdName("n")))
 
     implicit val planContext = newMockedPlanContext
-    implicit val context = newMockedLogicalPlanContext(
+    implicit val context = newMockedQueryGraphSolvingContext(
       planContext = planContext,
-      queryGraph = qg,
-      metrics = newMockedMetricsFactory.newMetrics(newMockedStatistics, newMockedSemanticTable))
+      query = queryGraph,
+      metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, newMockedSemanticTable))
 
     // when
-    val resultPlans = allNodesLeafPlanner(context.queryGraph)
+    val resultPlans = allNodesLeafPlanner(queryGraph)
 
     // then
-    resultPlans should equal(CandidateList(Seq(AllNodesScan(IdName("n")))))
+    resultPlans should equal(Candidates(planAllNodesScan(IdName("n"))))
   }
 }

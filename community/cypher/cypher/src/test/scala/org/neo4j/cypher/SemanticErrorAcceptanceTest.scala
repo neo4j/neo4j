@@ -125,12 +125,13 @@ class SemanticErrorAcceptanceTest extends ExecutionEngineFunSuite {
 
   test("should complain if shortest path has no relationship") {
     executeAndEnsureError(
-      "start n=node(0) match p=shortestPath(n) return p",
-      "shortestPath(...) requires a pattern containing a single relationship (line 1, column 25)"
+      "match p=shortestPath(n) return p",
+      "shortestPath(...) requires a pattern containing a single relationship (line 1, column 9)"
     )
+
     executeAndEnsureError(
-      "start n=node(0) match p=allShortestPaths(n) return p",
-      "allShortestPaths(...) requires a pattern containing a single relationship (line 1, column 25)"
+      "match p=allShortestPaths(n) return p",
+      "allShortestPaths(...) requires a pattern containing a single relationship (line 1, column 9)"
     )
   }
 

@@ -23,10 +23,12 @@ import java.util.ArrayList;
 import java.util.Collection;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -34,8 +36,10 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
+import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.Loader;
 
 public class Loaders
@@ -73,7 +77,7 @@ public class Loaders
 
     public static Loader<Long,PropertyRecord,PrimitiveRecord> propertyLoader( final PropertyStore store )
     {
-        return new RecordChanges.Loader<Long,PropertyRecord,PrimitiveRecord>()
+        return new Loader<Long,PropertyRecord,PrimitiveRecord>()
         {
             @Override
             public PropertyRecord newUnused( Long key, PrimitiveRecord additionalData )
@@ -118,7 +122,7 @@ public class Loaders
 
     public static Loader<Long,RelationshipRecord,Void> relationshipLoader( final RelationshipStore store )
     {
-        return new RecordChanges.Loader<Long, RelationshipRecord, Void>()
+        return new Loader<Long, RelationshipRecord, Void>()
         {
             @Override
             public RelationshipRecord newUnused( Long key, Void additionalData )
@@ -148,7 +152,7 @@ public class Loaders
     public static Loader<Long,RelationshipGroupRecord,Integer> relationshipGroupLoader(
             final RelationshipGroupStore store )
     {
-        return new RecordChanges.Loader<Long, RelationshipGroupRecord, Integer>()
+        return new Loader<Long, RelationshipGroupRecord, Integer>()
         {
             @Override
             public RelationshipGroupRecord newUnused( Long key, Integer type )
@@ -177,7 +181,7 @@ public class Loaders
 
     public static Loader<Long,Collection<DynamicRecord>,SchemaRule> schemaRuleLoader( final SchemaStore store )
     {
-        return new RecordChanges.Loader<Long, Collection<DynamicRecord>, SchemaRule>()
+        return new Loader<Long, Collection<DynamicRecord>, SchemaRule>()
         {
             @Override
             public Collection<DynamicRecord> newUnused(Long key, SchemaRule additionalData)
@@ -208,6 +212,99 @@ public class Loaders
                     list.add( record.clone() );
                 }
                 return list;
+            }
+        };
+    }
+
+    public static Loader<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenLoader(
+            final TokenStore<PropertyKeyTokenRecord> store )
+    {
+        return new Loader<Integer, PropertyKeyTokenRecord, Void>()
+        {
+            @Override
+            public PropertyKeyTokenRecord newUnused( Integer key, Void additionalData )
+            {
+                return new PropertyKeyTokenRecord( key );
+            }
+
+            @Override
+            public PropertyKeyTokenRecord load( Integer key, Void additionalData )
+            {
+                return store.getRecord( key );
+            }
+
+            @Override
+            public void ensureHeavy( PropertyKeyTokenRecord record )
+            {
+                store.ensureHeavy( record );
+            }
+
+            @Override
+            public PropertyKeyTokenRecord clone( PropertyKeyTokenRecord record )
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
+    public static Loader<Integer,LabelTokenRecord,Void> labelTokenLoader(
+            final TokenStore<LabelTokenRecord> store )
+    {
+        return new Loader<Integer, LabelTokenRecord, Void>()
+        {
+            @Override
+            public LabelTokenRecord newUnused( Integer key, Void additionalData )
+            {
+                return new LabelTokenRecord( key );
+            }
+
+            @Override
+            public LabelTokenRecord load( Integer key, Void additionalData )
+            {
+                return store.getRecord( key );
+            }
+
+            @Override
+            public void ensureHeavy( LabelTokenRecord record )
+            {
+                store.ensureHeavy( record );
+            }
+
+            @Override
+            public LabelTokenRecord clone( LabelTokenRecord record )
+            {
+                throw new UnsupportedOperationException();
+            }
+        };
+    }
+
+    public static Loader<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenLoader(
+            final TokenStore<RelationshipTypeTokenRecord> store )
+    {
+        return new Loader<Integer, RelationshipTypeTokenRecord, Void>()
+        {
+            @Override
+            public RelationshipTypeTokenRecord newUnused( Integer key, Void additionalData )
+            {
+                return new RelationshipTypeTokenRecord( key );
+            }
+
+            @Override
+            public RelationshipTypeTokenRecord load( Integer key, Void additionalData )
+            {
+                return store.getRecord( key );
+            }
+
+            @Override
+            public void ensureHeavy( RelationshipTypeTokenRecord record )
+            {
+                store.ensureHeavy( record );
+            }
+
+            @Override
+            public RelationshipTypeTokenRecord clone( RelationshipTypeTokenRecord record )
+            {
+                throw new UnsupportedOperationException();
             }
         };
     }

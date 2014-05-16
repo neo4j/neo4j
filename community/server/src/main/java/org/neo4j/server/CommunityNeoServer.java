@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 
+import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.database.Database;
@@ -69,7 +70,7 @@ public class CommunityNeoServer extends AbstractNeoServer
 				//new EnsureNeo4jPropertiesExist(configurator.configuration()),
 				new EnsurePreparedForHttpLogging(configurator.configuration()),
 				new PerformUpgradeIfNecessary(getConfiguration(),
-						configurator.getDatabaseTuningProperties(), System.out, logging),
+						configurator.getDatabaseTuningProperties(), logging, StoreUpgrader.NO_MONITOR),
 				new PerformRecoveryIfNecessary(getConfiguration(),
 						configurator.getDatabaseTuningProperties(), System.out, logging));
 	}

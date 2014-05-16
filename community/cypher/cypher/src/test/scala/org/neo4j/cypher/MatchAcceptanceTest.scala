@@ -404,7 +404,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = execute("MATCH (a {name:'A'}),(c {name:'C'}) match a-->b return a,b,c").toList
+    val result = executeWithNewPlanner("MATCH (a {name:'A'}),(c {name:'C'}) match a-->b return a,b,c").toList
 
     result should equal (List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))))
   }
@@ -460,7 +460,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(b, x1, "REL", "BX1")
     relate(b, x2, "REL", "BX2")
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 MATCH (a {name:'A'}), (b {name:'B'})
 MATCH a-[rA]->x<-[rB]->b
 return x""")
@@ -484,7 +484,7 @@ return x""")
     relate(c, x1, "REL", "CX1")
     relate(c, x2, "REL", "CX2")
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 MATCH (a {name:'A'}), (b {name:'B'}), (c {name:'C'})
 match a-[rA]->x, b-[rB]->x, c-[rC]->x
 return x""")
@@ -523,7 +523,7 @@ return x""")
     relate(c, g)
     relate(c, j)
 
-    val result = execute( """
+    val result = executeWithNewPlanner( """
 MATCH (a {name:'a'}), (b {name:'b'}), (c {name:'c'})
 match a-->x, b-->x, c-->x
 return x""")
@@ -879,7 +879,7 @@ RETURN a.name""")
 
   test("empty collect should not contain null") {
     val n = createNode()
-    val result = execute("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, collect(x)")
+    val result = executeWithNewPlanner("MATCH n OPTIONAL MATCH n-[:NOT_EXIST]->x RETURN n, collect(x)")
 
     result.toList should equal (List(Map("n" -> n, "collect(x)" -> List())))
   }
@@ -930,23 +930,6 @@ RETURN a.name""")
     // THEN
     result.toList should equal (List(Map("b" -> b1)))
   }
-
-  test("should filter nodes by label given in match even if nodes are start nodes") {
-    // GIVEN
-    val a1 = createLabeledNode("bar")
-    val a2 = createLabeledNode("baz")
-    val b = createLabeledNode("foo")
-
-    relate(a1, b)
-    relate(a2, b)
-
-    // WHEN
-    val result = execute("START a=node(0,1), b=node(2) MATCH (a:bar) --> (b:foo) RETURN a")
-
-    // THEN
-    result.toList should equal (List(Map("a" -> a1)))
-  }
-
 
   test("should use predicates in the correct place") {
     //GIVEN
@@ -1031,7 +1014,7 @@ RETURN a.name""")
     relate(a, c)
 
     // when asked for a cartesian product of the same match twice
-    val result = execute("match a-->b match c-->d return a,b,c,d")
+    val result = executeWithNewPlanner("match a-->b match c-->d return a,b,c,d")
 
     // then we should find 2 x 2 = 4 result matches
 
@@ -1189,7 +1172,20 @@ RETURN a.name""")
     val result = execute("optional match (a) with a match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
-    result shouldBe empty
+    result.toList should be(empty)
+  }
+
+  test("should not find node in the match if there is a filter on the optional match") {
+    // Given
+    val a = createNode()
+    val b = createNode()
+    relate(a, b)
+
+    // when
+    val result = execute("optional match (a:Person) with a match (a)-->(b) return b").columnAs[Node]("b")
+
+    // should give us a number in the middle, not all or nothing
+    result.toList should be(empty)
   }
 
   test("optional match starting from a null node returns null") {

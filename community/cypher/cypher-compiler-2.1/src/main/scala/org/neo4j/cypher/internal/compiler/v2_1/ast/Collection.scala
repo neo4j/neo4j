@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 
 case class Collection(expressions: Seq[Expression])(val position: InputPosition) extends Expression {
-  def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) then specifyType(possibleTypes)
+  def semanticCheck(ctx: SemanticContext) = expressions.semanticCheck(ctx) chain specifyType(possibleTypes)
 
   private def possibleTypes: TypeGenerator = state => expressions match {
     case Seq() => CTCollection(CTAny).covariant
@@ -36,15 +36,15 @@ case class CollectionSlice(collection: Expression, from: Option[Expression], to:
   extends Expression {
 
   override def semanticCheck(ctx: SemanticContext) =
-    collection.semanticCheck(ctx) then
-    collection.expectType(CTCollection(CTAny).covariant) then
+    collection.semanticCheck(ctx) chain
+    collection.expectType(CTCollection(CTAny).covariant) chain
     when(from.isEmpty && to.isEmpty) {
       SemanticError("The start or end (or both) is required for a collection slice", position)
-    } then
-    from.semanticCheck(ctx) then
-    from.expectType(CTInteger.covariant) then
-    to.semanticCheck(ctx) then
-    to.expectType(CTInteger.covariant) then
+    } chain
+    from.semanticCheck(ctx) chain
+    from.expectType(CTInteger.covariant) chain
+    to.semanticCheck(ctx) chain
+    to.expectType(CTInteger.covariant) chain
     specifyType(collection.types)
 }
 
@@ -52,9 +52,9 @@ case class CollectionIndex(collection: Expression, idx: Expression)(val position
   extends Expression {
 
   override def semanticCheck(ctx: SemanticContext) =
-    collection.semanticCheck(ctx) then
-    collection.expectType(CTCollection(CTAny).covariant) then
-    idx.semanticCheck(ctx) then
-    idx.expectType(CTInteger.covariant) then
+    collection.semanticCheck(ctx) chain
+    collection.expectType(CTCollection(CTAny).covariant) chain
+    idx.semanticCheck(ctx) chain
+    idx.expectType(CTInteger.covariant) chain
     specifyType(collection.types(_).unwrapCollections)
 }

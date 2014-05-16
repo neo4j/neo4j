@@ -122,7 +122,8 @@ public class CypherResultRepresentation extends MappingRepresentation
                 final PlanDescription planDescription = getPlan.apply( null );
 
                 mappingSerializer.putString( "name", planDescription.getName() );
-                MappingRepresentation argsRepresentation = getMapRepresentation( (Map) planDescription.getArguments() );
+                Map<String, Object> arguments = planDescription.getArguments();
+                MappingRepresentation argsRepresentation = getMapRepresentation( arguments );
                 mappingSerializer.putMapping( "args", argsRepresentation );
 
                 if ( planDescription.hasProfilerStatistics() )

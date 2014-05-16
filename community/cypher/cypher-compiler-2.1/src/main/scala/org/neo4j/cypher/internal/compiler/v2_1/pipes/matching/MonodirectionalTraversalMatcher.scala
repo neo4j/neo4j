@@ -26,7 +26,6 @@ import org.neo4j.graphdb.{Path, Node}
 import org.neo4j.graphdb.traversal._
 import collection.JavaConverters._
 import org.neo4j.helpers.ThisShouldNotHappenError
-import org.neo4j.cypher.internal.compiler.v2_1.data.SimpleVal
 
 class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer[Node])
   extends TraversalMatcher {
@@ -48,14 +47,13 @@ class MonoDirectionalTraversalMatcher(steps: ExpanderStep, start: EntityProducer
     baseTraversal(context, state).traverse(arr: _*).iterator().asScala
   }
 
-
   class ExpanderEvaluator extends PathEvaluator[Option[ExpanderStep]] {
     def evaluate(path: Path, state: BranchState[Option[ExpanderStep]]) = Evaluation.ofIncludes(state.getState.isEmpty)
 
     def evaluate(path: Path) = Evaluation.INCLUDE_AND_CONTINUE
   }
 
-  def description: Seq[(String, SimpleVal)] = Seq("start" -> SimpleVal.fromMap(start.description.toMap))
+  def arguments: Seq[Argument] = start.arguments
 }
 
 class MyEvaluator extends PathEvaluator[Option[ExpanderStep]] {
