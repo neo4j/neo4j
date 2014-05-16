@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import scala.collection.immutable
+import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.{quoteString, quoteChar}
 
 object ScalaDocGenerator {
 
@@ -31,81 +33,42 @@ object ScalaDocGenerator {
       text(productPrefix(p))
 
     case p: Product => (inner: DocGenerator[Any]) =>
-      val innerDocs = p.productIterator.map(inner).toList
-
-      group(list(List(
-        text(productPrefix(p)),
-        text("("),
-        nest(group(cons(pageBreak, sepList(innerDocs)))),
-        pageBreak,
-        text(")")
-      )))
+      scalaGroup(productPrefix(p))(p.productIterator.map(inner).toList)
   }
-
-  private def productPrefix(p: Product) = {
-    val prefix = p.productPrefix
-    if (prefix.startsWith("Tuple")) "" else prefix
-  }
-
 
   val forNestedMaps: RecursiveDocGenerator[Any] =  {
-    case m: Map[_, _] => (inner: DocGenerator[Any]) =>
+    case m: mutable.Map[_, _] => (inner: DocGenerator[Any]) =>
+      val mapType = m.getClass.getSimpleName
       val innerDocs = m.map { case (k, v) => nest(group(breakCons(inner(k), cons(text("→ "), cons(inner(v)))))) }.toList
+      scalaGroup(mapType)(innerDocs)
 
-      group(list(List(
-        text("Map("),
-        nest(group(cons(pageBreak, sepList(innerDocs)))),
-        pageBreak,
-        text(")")
-      )))
+    case m: immutable.Map[_, _] => (inner: DocGenerator[Any]) =>
+      val innerDocs = m.map { case (k, v) => nest(group(breakCons(inner(k), cons(text("→ "), cons(inner(v)))))) }.toList
+      scalaGroup("Map")(innerDocs)
   }
 
   val forNestedSets: RecursiveDocGenerator[Any] = {
-    case s: collection.mutable.Set[_] => (inner: DocGenerator[Any]) =>
+    case s: mutable.Set[_] => (inner: DocGenerator[Any]) =>
+      val setType = s.getClass.getSimpleName
       val innerDocs = s.map(inner).toList
-      val setType =  s.getClass.getSimpleName
-
-      group(list(List(
-        text(s"$setType("),
-        nest(group(cons(pageBreak, sepList(innerDocs)))),
-        pageBreak,
-        text(")")
-      )))
+      scalaGroup(setType)(innerDocs)
 
     case s: immutable.Set[_] => (inner: DocGenerator[Any]) =>
       val innerDocs = s.map(inner).toList
-
-      group(list(List(
-        text("Set("),
-        nest(group(cons(pageBreak, sepList(innerDocs)))),
-        pageBreak,
-        text(")")
-      )))
+      scalaGroup("Set")(innerDocs)
   }
 
   val forNestedSequences: RecursiveDocGenerator[Any] = {
     case s: Seq[_] => (inner: DocGenerator[Any]) =>
-      val innerDocs = s.map(inner).toList
       val seqType = s.getClass.getSimpleName
-
-      group(list(List(
-        text(s"$seqType("),
-        nest(group(cons(pageBreak, sepList(innerDocs)))),
-        pageBreak,
-        text(")")
-      )))
+      val innerDocs = s.map(inner).toList
+      scalaGroup(seqType)(innerDocs)
   }
 
   val forNestedArrays: RecursiveDocGenerator[Any] = {
     case a: Array[_] => (inner: DocGenerator[Any]) =>
       val innerDocs = a.map(inner).toList
-
-      group(list(List(
-        text("Array("),
-        nest(group(cons(pageBreak, sepList(innerDocs)))),
-        pageBreak,
-        text(")")
-      )))
+      scalaGroup("Array")(innerDocs)
   }
 
   val forNestedLists: RecursiveDocGenerator[Any] = {
@@ -115,33 +78,10 @@ object ScalaDocGenerator {
 
   val forNestedPrimitiveValues: RecursiveDocGenerator[Any] = {
     case v: String => (inner: DocGenerator[Any]) =>
-      val builder = new StringBuilder
-      builder += '\"'
-      var i = 0
-      while (i < v.length) {
-        v.charAt(i) match {
-          case '\"' => builder += '\\' += '\"'
-          case '\t' => builder += '\\' += 't'
-          case '\b' => builder += '\\' += 'b'
-          case '\n' => builder += '\\' += 'n'
-          case '\r' => builder += '\\' += 'r'
-          case '\\' => builder += '\\' += '\\'
-          case ch   => builder += ch
-        }
-        i += 1
-      }
-      builder += '\"'
-      text(builder.result())
+      text(quoteString(v))
 
     case ch: Char => (inner: DocGenerator[Any]) =>
-      ch match {
-        case '\'' => text("'\\''")
-        case '\t' => text("'\\t'")
-        case '\b' => text("'\\b'")
-        case '\n' => text("'\\n'")
-        case '\r' => text("'\\r'")
-        case _    => text(s"'$ch'")
-      }
+      text(quoteChar(ch))
   }
 
   val forNestedValues: RecursiveDocGenerator[Any] =
@@ -152,4 +92,18 @@ object ScalaDocGenerator {
     forNestedSets orElse
     forNestedSequences orElse
     forNestedProducts
+
+  private def productPrefix(p: Product) = {
+    val prefix = p.productPrefix
+    if (prefix.startsWith("Tuple")) "" else prefix
+  }
+
+  private def scalaGroup(name: String)(innerDocs: List[Doc]) =
+    group(list(List(
+      text(s"$name("),
+      nest(group(cons(pageBreak, sepList(innerDocs)))),
+      pageBreak,
+      text(")")
+    )))
 }
+
