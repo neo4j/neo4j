@@ -78,7 +78,7 @@ object renderDetails extends (PlanDescription => String) {
     }
 
     def newLine() {
-      builder.append("\n")
+      builder.append(System.lineSeparator())
     }
 
     addHorizontalLine()
