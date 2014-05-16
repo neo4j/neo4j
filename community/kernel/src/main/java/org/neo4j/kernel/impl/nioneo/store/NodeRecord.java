@@ -19,20 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.util.Collections.emptyList;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 
 import org.neo4j.helpers.Predicate;
 
-import static java.util.Collections.emptyList;
-
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-
 public class NodeRecord extends PrimitiveRecord
 {
-    private final long committedNextRel;
     private long nextRel;
     private long labels;
     private Collection<DynamicRecord> dynamicLabelRecords = emptyList();
@@ -40,10 +38,16 @@ public class NodeRecord extends PrimitiveRecord
     private final boolean committedDense;
     private boolean dense;
 
+    public NodeRecord( long id )
+    {
+        super( id, Record.NO_NEXT_PROPERTY.intValue() );
+        this.committedDense = false;
+    }
+
     public NodeRecord( long id, boolean dense, long nextRel, long nextProp )
     {
         super( id, nextProp );
-        this.committedNextRel = this.nextRel = nextRel;
+        this.nextRel = nextRel;
         this.committedDense = this.dense = dense;
     }
 
@@ -55,11 +59,6 @@ public class NodeRecord extends PrimitiveRecord
     public void setNextRel( long nextRel )
     {
         this.nextRel = nextRel;
-    }
-
-    public long getCommittedNextRel()
-    {
-        return isCreated() ? Record.NO_NEXT_RELATIONSHIP.intValue() : committedNextRel;
     }
 
     /**
@@ -99,12 +98,12 @@ public class NodeRecord extends PrimitiveRecord
     {
         return filter( RECORD_IN_USE, dynamicLabelRecords );
     }
-    
+
     public boolean isDense()
     {
         return dense;
     }
-    
+
     public boolean isCommittedDense()
     {
         return committedDense;
@@ -140,9 +139,7 @@ public class NodeRecord extends PrimitiveRecord
     @Override
     public NodeRecord clone()
     {
-        NodeRecord clone = new NodeRecord( getId(), committedDense, getCommittedNextRel(), getCommittedNextProp() );
-        clone.setNextProp( getNextProp() );
-        clone.nextRel = nextRel;
+        NodeRecord clone = new NodeRecord( getId(), committedDense, nextRel, getNextProp() );
         clone.labels = labels;
         clone.isLight = isLight;
         clone.setInUse( inUse() );
@@ -167,4 +164,13 @@ public class NodeRecord extends PrimitiveRecord
             return item.inUse();
         }
     };
+
+    public void copyFrom( NodeRecord from )
+    {
+        this.nextRel = from.nextRel;
+        this.labels = from.labels;
+        this.isLight = from.isLight;
+        this.dense = from.dense;
+        this.setNextProp( from.getNextProp() );
+    }
 }

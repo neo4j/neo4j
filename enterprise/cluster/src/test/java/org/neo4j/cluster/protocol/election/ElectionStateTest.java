@@ -19,18 +19,23 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.verifyZeroInteractions;
 import static org.mockito.Mockito.when;
 import static org.neo4j.cluster.protocol.election.ElectionMessage.demote;
 import static org.neo4j.cluster.protocol.election.ElectionMessage.performRoleElections;
+import static org.neo4j.cluster.protocol.election.ElectionMessage.voted;
 import static org.neo4j.cluster.protocol.election.ElectionState.election;
 
 import java.net.URI;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
@@ -39,6 +44,7 @@ import org.mockito.Mockito;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
+import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 import org.neo4j.cluster.protocol.omega.MessageArgumentMatcher;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -126,5 +132,152 @@ public class ElectionStateTest
         verify( holder, times(1) ).offer( Matchers.argThat( new MessageArgumentMatcher<ElectionMessage>()
                 .onMessageType( ElectionMessage.vote ).withPayload( role ) ) );
         verify( context, times( 0 ) ).setTimeout( Matchers.<String>any(), Matchers.<Message>any() );
+    }
+
+    @Test
+    public void delayedVoteFromPreviousElectionMustNotCauseCurrentElectionToComplete() throws Throwable
+    {
+        // Given
+        ElectionContext context = mock( ElectionContext.class );
+        MessageHolder holder = mock( MessageHolder.class );
+
+        when( context.getLogger( Mockito.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+
+        final String role = "master";
+        final InstanceId voter = new InstanceId( 2 );
+
+        Comparable<Object> voteCredentialComparable = new Comparable<Object>()
+        {
+            @Override
+            public int compareTo( Object o )
+            {
+                return 0;
+            }
+        };
+        Message vote = Message.internal( voted, new ElectionMessage.VersionedVotedData( role, voter,
+                voteCredentialComparable
+        , 4 ) );
+
+        when( context.voted( role, voter, voteCredentialComparable, 4 ) ).thenReturn( false );
+
+        // When
+        election.handle( context, vote, holder );
+
+        verify( context ).getLogger( Matchers.<Class>any() );
+        verify( context ).voted( role, voter, voteCredentialComparable, 4 );
+
+        // Then
+        verifyNoMoreInteractions( context, holder );
+    }
+    
+    @Test
+    public void timeoutMakesElectionBeForgotten() throws Throwable
+    {
+        // Given
+        String coordinatorRole = "coordinator";
+
+        ElectionContext context = mock( ElectionContext.class );
+        when( context.getLogger( Mockito.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+
+        MessageHolder holder = mock( MessageHolder.class );
+
+        Message timeout = Message.timeout( ElectionMessage.electionTimeout,
+                Message.internal( performRoleElections ),
+                new ElectionState.ElectionTimeoutData( coordinatorRole, null ) );
+
+        // When
+        election.handle( context, timeout, holder );
+
+        // Then
+        verify( context, times( 1 ) ).forgetElection( coordinatorRole );
+    }
+
+    @Test
+    public void electionCompletingMakesItBeForgotten() throws Throwable
+    {
+        // Given
+        String coordinatorRole = "coordinator";
+        InstanceId votingInstance = new InstanceId( 2 );
+        Comparable<Object> voteCredentialComparable = new Comparable<Object>()
+        {
+            @Override
+            public int compareTo( Object o )
+            {
+                return 0;
+            }
+        };
+
+        ElectionContext context = mock( ElectionContext.class );
+        when( context.getLogger( Mockito.<Class>any() ) ).thenReturn( mock( StringLogger.class ) );
+        when( context.getNeededVoteCount() ).thenReturn( 3 );
+        when( context.getVoteCount( coordinatorRole ) ).thenReturn( 3 );
+        when( context.voted( coordinatorRole, votingInstance, voteCredentialComparable, 4 ) ).thenReturn( true );
+        MessageHolder holder = mock( MessageHolder.class );
+
+        Message vote = Message.to( ElectionMessage.voted, URI.create( "cluster://elector" ),
+                new ElectionMessage.VersionedVotedData( coordinatorRole, votingInstance, voteCredentialComparable, 4 ) );
+
+        // When
+        election.handle( context, vote, holder );
+
+        // Then
+        verify( context, times( 1 ) ).forgetElection( coordinatorRole );
+    }
+
+    @Test
+    public void voteResponseShouldHaveSameVersionAsVoteRequest() throws Throwable
+    {
+        final List<Message> messages = new ArrayList<Message>( 1 );
+        MessageHolder holder = new MessageHolder()
+        {
+            @Override
+            public void offer( Message<? extends MessageType> message )
+            {
+                messages.add( message );
+            }
+        };
+
+        ElectionContext context = mock( ElectionContext.class );
+
+        final int version = 14;
+        Message voteRequest = Message.to( ElectionMessage.vote, URI.create( "some://instance" ),
+                new ElectionContext.VoteRequest( "coordinator", version )
+        );
+        voteRequest.setHeader( Message.FROM, "some://other" );
+
+        election.handle( context, voteRequest, holder );
+
+        assertEquals( 1, messages.size() );
+        Message response = messages.get( 0 );
+        assertEquals( ElectionMessage.voted, response.getMessageType() );
+        ElectionMessage.VersionedVotedData payload = (ElectionMessage.VersionedVotedData) response.getPayload();
+        assertEquals( version, payload.getVersion() );
+    }
+
+    @Test
+    public void voteResponseShouldBeBackwardsCompatible() throws Throwable
+    {
+        final List<Message> messages = new ArrayList<Message>( 1 );
+        MessageHolder holder = new MessageHolder()
+        {
+            @Override
+            public void offer( Message<? extends MessageType> message )
+            {
+                messages.add( message );
+            }
+        };
+
+        ElectionContext context = mock( ElectionContext.class );
+
+        Message voteRequest = Message.to( ElectionMessage.vote, URI.create( "some://instance" ),
+                "coordinator" );
+        voteRequest.setHeader( Message.FROM, "some://other" );
+
+        election.handle( context, voteRequest, holder );
+
+        assertEquals( 1, messages.size() );
+        Message response = messages.get( 0 );
+        assertEquals( ElectionMessage.voted, response.getMessageType() );
+        assertEquals( ElectionMessage.VotedData.class, response.getPayload().getClass() );
     }
 }

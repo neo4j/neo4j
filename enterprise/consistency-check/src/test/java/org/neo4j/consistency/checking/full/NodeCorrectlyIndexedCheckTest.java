@@ -158,7 +158,7 @@ public class NodeCorrectlyIndexedCheckTest
     private NodeRecord nodeWithLabels( long... labelIds )
     {
         NodeRecord nodeRecord = new NodeRecord( 0, false, 0, 0 );
-        NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds, null );
+        NodeLabelsField.parseLabelsField( nodeRecord ).put( labelIds, null, null );
         return nodeRecord;
     }
 

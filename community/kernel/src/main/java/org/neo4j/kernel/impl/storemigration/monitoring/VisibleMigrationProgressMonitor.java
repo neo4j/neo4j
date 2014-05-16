@@ -48,18 +48,18 @@ public class VisibleMigrationProgressMonitor implements MigrationProgressMonitor
     public void percentComplete( int percent )
     {
         out.print( "." );
-        out.flush();
         if (percent % 10 == 0)
         {
             logger.logMessage( format( "Store upgrade %d%% complete", percent ), true );
+            out.println( " " + percent + "%" );
         }
+        out.flush();
     }
 
     @Override
     public void finished()
     {
         String message = "Finished upgrade of database store files";
-        out.println();
         out.println( message );
         logger.logMessage( message, true );
     }

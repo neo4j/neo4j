@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.String.format;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,8 +38,6 @@ import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
-import static java.lang.String.format;
-
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
  * PropertyStore and RelationshipTypeStore". NeoStore doesn't actually "store"
@@ -46,6 +46,11 @@ import static java.lang.String.format;
  */
 public class NeoStore extends AbstractStore
 {
+    public RelationshipTypeTokenStore getRelationshipTypeTokenStore()
+    {
+        return relTypeStore;
+    }
+
     public static abstract class Configuration
         extends AbstractStore.Configuration
     {
@@ -395,7 +400,7 @@ public class NeoStore extends AbstractStore
 
     public StoreId getStoreId()
     {
-        return new StoreId( getCreationTime(), getRandomNumber(), getStoreVersion() );
+        return new StoreId( getCreationTime(), getRandomNumber() );
     }
 
     public long getCreationTime()
@@ -615,6 +620,17 @@ public class NeoStore extends AbstractStore
         return propStore;
     }
 
+    /**
+     * @return the {@link PropertyKeyTokenStore}
+     */
+    public PropertyKeyTokenStore getPropertyKeyTokenStore()
+    {
+        return propStore.getPropertyKeyTokenStore();
+    }
+
+    /**
+     * @return the {@link RelationshipGroupStore}
+     */
     public RelationshipGroupStore getRelationshipGroupStore()
     {
         return relGroupStore;

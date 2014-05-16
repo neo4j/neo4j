@@ -19,6 +19,18 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.Functions.identity;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -59,6 +71,7 @@ import org.neo4j.graphdb.traversal.TraversalDescription;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.helpers.Factory;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
@@ -124,6 +137,7 @@ import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
@@ -145,6 +159,7 @@ import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
@@ -168,18 +183,6 @@ import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static java.lang.String.format;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -537,7 +540,7 @@ public abstract class InternalAbstractGraphDatabase
 
         storeMigrationProcess.addParticipant( new StoreMigrator(
                 new VisibleMigrationProgressMonitor( logging.getMessagesLog( StoreMigrator.class ), System.out ),
-                new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), idGeneratorFactory, config ) );
+                new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ), config ) );
 
         persistenceSource = life.add( new NioNeoDbPersistenceSource( xaDataSourceManager ) );
 
@@ -966,14 +969,29 @@ public abstract class InternalAbstractGraphDatabase
     protected void createNeoDataSource()
     {
         // Create DataSource
+
         neoDataSource = new NeoStoreXaDataSource( config,
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
                 updateableSchemaState, new NonTransactionalTokenNameLookup( labelTokenHolder, propertyKeyTokenHolder ),
                 dependencyResolver, txManager, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 persistenceManager, lockManager, this, transactionEventHandlers,
-                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, storeMigrationProcess );
+                monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(), storeMigrationProcess );
         xaDataSourceManager.registerDataSource( neoDataSource );
+    }
+
+    protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
+    {
+        return
+                new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
+                {
+                    @Override
+                    public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
+                    {
+                        return identity();
+                    }
+                };
+
     }
 
     @Override

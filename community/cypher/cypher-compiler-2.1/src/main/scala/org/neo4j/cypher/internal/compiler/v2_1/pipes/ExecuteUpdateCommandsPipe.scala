@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.data.{MapVal, SeqVal}
 import mutation._
 import symbols._
 import org.neo4j.cypher.{SyntaxException, ParameterWrongTypeException, InternalException}
@@ -63,10 +62,7 @@ case class ExecuteUpdateCommandsPipe(source: Pipe, commands: Seq[UpdateAction])(
     }
   }
 
-  override def executionPlanDescription =
-    source.executionPlanDescription.andThen(this, "UpdateGraph",
-      "commands" -> SeqVal(commands.map(command => MapVal(command.description.toMap)))
-    )
+  def planDescription = source.planDescription.andThen(this, "UpdateGraph", commands.flatMap(_.arguments):_*)
 
   def symbols = source.symbols.add(commands.flatMap(_.identifiers).toMap)
 

@@ -19,6 +19,11 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
+import static org.neo4j.cluster.util.Quorums.isQuorum;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.map;
+import static org.neo4j.helpers.collection.Iterables.toList;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -29,24 +34,21 @@ import java.util.Set;
 
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
+import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.cluster.protocol.election.ElectionContext;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentials;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatContext;
+import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.cluster.util.Quorums.isQuorum;
-import static org.neo4j.helpers.collection.Iterables.map;
-import static org.neo4j.helpers.collection.Iterables.toList;
 
 class ElectionContextImpl
     extends AbstractContextImpl
-    implements ElectionContext
+    implements ElectionContext, HeartbeatListener
 {
     private final ClusterContext clusterContext;
     private final HeartbeatContext heartbeatContext;
@@ -66,6 +68,8 @@ class ElectionContextImpl
         this.elections = new HashMap<>();
         this.clusterContext = clusterContext;
         this.heartbeatContext = heartbeatContext;
+
+        heartbeatContext.addHeartbeatListener( this );
     }
 
     ElectionContextImpl( InstanceId me, CommonContextState commonState, Logging logging, Timeouts timeouts,
@@ -78,6 +82,8 @@ class ElectionContextImpl
         this.roles = roles;
         this.elections = elections;
         this.electionCredentialsProvider = electionCredentialsProvider;
+
+        heartbeatContext.addHeartbeatListener( this );
     }
 
     @Override
@@ -86,7 +92,7 @@ class ElectionContextImpl
         for ( ElectionRole role : roles )
         {
             // Elect myself for all roles
-            clusterContext.elected( role.getName(), clusterContext.getMyId() );
+            clusterContext.elected( role.getName(), clusterContext.getMyId(), clusterContext.getMyId(), 1 );
         }
     }
 
@@ -169,17 +175,21 @@ class ElectionContextImpl
     @Override
     public void startPromotionProcess( String role, final org.neo4j.cluster.InstanceId promoteNode )
     {
-        elections.put( role, new Election( new BiasedWinnerStrategy( promoteNode, true /*promotion*/ ) ) );
+        elections.put( role, new Election( new BiasedWinnerStrategy( promoteNode, true /*promote*/ ) ) );
     }
 
     @Override
-    public void voted( String role, org.neo4j.cluster.InstanceId suggestedNode, Comparable<Object> suggestionCredentials )
+    public boolean voted( String role, org.neo4j.cluster.InstanceId suggestedNode,
+                          Comparable<Object> suggestionCredentials, long electionVersion )
     {
-        if ( isElectionProcessInProgress( role ) )
+        if ( !isElectionProcessInProgress( role ) ||
+                (electionVersion != -1 && electionVersion < clusterContext.getLastElectorVersion() ) )
         {
-            Map<org.neo4j.cluster.InstanceId, Vote> votes = elections.get( role ).getVotes();
-            votes.put( suggestedNode, new Vote( suggestedNode, suggestionCredentials ) );
+            return false;
         }
+        Map<org.neo4j.cluster.InstanceId, Vote> votes = elections.get( role ).getVotes();
+        votes.put( suggestedNode, new Vote( suggestedNode, suggestionCredentials ) );
+        return true;
     }
 
     @Override
@@ -229,15 +239,16 @@ class ElectionContextImpl
     }
 
     @Override
-    public void cancelElection( String role )
+    public void forgetElection( String role )
     {
         elections.remove( role );
+        clusterContext.setLastElectorVersion( clusterContext.getLastElectorVersion() + 1 );
     }
 
     @Override
     public Iterable<String> getRolesRequiringElection()
     {
-        return Iterables.filter( new Predicate<String>() // Only include roles that are not elected
+        return filter( new Predicate<String>() // Only include roles that are not elected
         {
             @Override
             public boolean accept( String role )
@@ -259,7 +270,7 @@ class ElectionContextImpl
     {
         int total = clusterContext.getConfiguration().getMembers().size();
         int available = total - heartbeatContext.getFailed().size();
-        return isQuorum(available, total);
+        return isQuorum( available, total );
     }
 
     @Override
@@ -304,7 +315,8 @@ class ElectionContextImpl
     @Override
     public boolean hasCurrentlyElectedVoted( String role, org.neo4j.cluster.InstanceId currentElected )
     {
-        return elections.containsKey( role ) && elections.get(role).getVotes().containsKey( currentElected );
+        return elections.containsKey( role )
+                && elections.get( role ).getVotes().containsKey( currentElected );
     }
 
     @Override
@@ -406,7 +418,7 @@ class ElectionContextImpl
         private Election( WinnerStrategy winnerStrategy )
         {
             this.winnerStrategy = winnerStrategy;
-            this.votes = new HashMap<org.neo4j.cluster.InstanceId, Vote>();
+            this.votes = new HashMap<InstanceId, Vote>();
         }
 
         private Election( WinnerStrategy winnerStrategy, HashMap<InstanceId, Vote> votes )
@@ -415,12 +427,12 @@ class ElectionContextImpl
             this.winnerStrategy = winnerStrategy;
         }
 
-        public Map<org.neo4j.cluster.InstanceId, Vote> getVotes()
+        public Map<InstanceId, Vote> getVotes()
         {
             return votes;
         }
 
-        public org.neo4j.cluster.InstanceId pickWinner()
+        public InstanceId pickWinner()
         {
             return winnerStrategy.pickWinner( votes.values() );
         }
@@ -431,9 +443,25 @@ class ElectionContextImpl
         }
     }
 
+    @Override
+    public ClusterMessage.VersionedConfigurationStateChange newConfigurationStateChange()
+    {
+        ClusterMessage.VersionedConfigurationStateChange result = new ClusterMessage
+                .VersionedConfigurationStateChange();
+        result.setElector( clusterContext.getMyId() );
+        result.setVersion( clusterContext.getLastElectorVersion() );
+        return result;
+    }
+
+    @Override
+    public VoteRequest voteRequestForRole( ElectionRole role )
+    {
+        return new VoteRequest( role.getName(), clusterContext.getLastElectorVersion() );
+    }
+
     interface WinnerStrategy
     {
-        org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> votes );
+        InstanceId pickWinner( Collection<Vote> votes );
     }
 
     @Override
@@ -472,17 +500,17 @@ class ElectionContextImpl
     
     private class BiasedWinnerStrategy implements WinnerStrategy
     {
-        private final org.neo4j.cluster.InstanceId biasedNode;
+        private final InstanceId biasedNode;
         private final boolean positiveSuggestion;
 
-        public BiasedWinnerStrategy( org.neo4j.cluster.InstanceId biasedNode, boolean positiveSuggestion )
+        public BiasedWinnerStrategy( InstanceId biasedNode, boolean positiveSuggestion )
         {
             this.biasedNode = biasedNode;
             this.positiveSuggestion = positiveSuggestion;
         }
 
         @Override
-        public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> voteList )
+        public InstanceId pickWinner( Collection<Vote> voteList )
         {
             // Remove blank votes
             List<Vote> filteredVoteList = removeBlankVotes( voteList );
@@ -510,9 +538,25 @@ class ElectionContextImpl
         }
     }
 
+    @Override
+    public void failed( org.neo4j.cluster.InstanceId server )
+    {
+        for ( Map.Entry<String, Election> ongoingElection : elections.entrySet() )
+        {
+            ongoingElection.getValue().getVotes().remove( server );
+        }
+    }
+
+    @Override
+    public void alive( org.neo4j.cluster.InstanceId server )
+    {
+        // Not needed
+    }
+
+
     private static List<Vote> removeBlankVotes( Collection<Vote> voteList )
     {
-        return toList( Iterables.filter( new Predicate<Vote>()
+        return toList( filter( new Predicate<Vote>()
         {
             @Override
             public boolean accept( Vote item )

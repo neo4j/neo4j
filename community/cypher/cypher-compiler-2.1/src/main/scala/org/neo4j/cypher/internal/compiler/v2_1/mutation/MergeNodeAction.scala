@@ -23,7 +23,6 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.expressions.Expression
 import commands.Predicate
 import commands.values.KeyToken
-import org.neo4j.cypher.internal.compiler.v2_1.data.{SeqVal, MapVal, SimpleVal}
 import pipes.{QueryState, EntityProducer}
 import symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
@@ -33,21 +32,21 @@ import org.neo4j.cypher.internal.compiler.v2_1.helpers.PropertySupport
 
 final case class IndexNodeProducer(label: KeyToken, propertyKey: KeyToken, producer: EntityProducer[Node]) extends EntityProducer[Node] {
   def producerType: String = s"IndexNodProducer(${producer.producerType})"
-  override def description: Seq[(String, SimpleVal)] = producer.description ++ super.description
+  def arguments = producer.arguments
   def apply(ctx: ExecutionContext, state: QueryState) : Iterator[Node] = producer(ctx, state)
   override def toString() = s":${label.name}.${propertyKey.name}" //":Person.name"
 }
 
 sealed abstract class MergeNodeProducer {
-  def producerDescriptions: Seq[SimpleVal]
+  def arguments: Seq[Argument]
 }
 
 final case class PlainMergeNodeProducer(nodeProducer: EntityProducer[Node]) extends MergeNodeProducer {
-  def producerDescriptions = Seq(MapVal(nodeProducer.description.toMap))
+  def arguments = nodeProducer.arguments
 }
 
 final case class UniqueMergeNodeProducers(nodeProducers: Seq[IndexNodeProducer]) extends MergeNodeProducer {
-  def producerDescriptions = nodeProducers.map(producer => MapVal(producer.description.toMap))
+  def arguments: Seq[Argument] = nodeProducers.flatMap(_.arguments)
 }
 
 case class MergeNodeAction(identifier: String,
@@ -99,9 +98,9 @@ case class MergeNodeAction(identifier: String,
     }
   }
 
-  override def description: Seq[(String, SimpleVal)] = {
-    val producers = maybeNodeProducer.map(producer => Seq("producers" -> SeqVal(producer.producerDescriptions))).toSeq.flatten
-    super.description ++ producers
+  override def arguments: Seq[Argument] = {
+    val producers: Seq[Argument] = maybeNodeProducer.map(_.arguments).toSeq.flatten
+    super.arguments ++ producers
   }
 
   def findNodes(context: ExecutionContext)(implicit state: QueryState): Iterator[ExecutionContext] = definedProducer match {

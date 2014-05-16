@@ -52,6 +52,16 @@ angular.module('neo4jApp.services')
         #
         # Basic HTTP methods
         #
+        options: (path = '', options = {}) ->
+          path = Settings.host + path unless path.indexOf(Settings.host) is 0
+          options.method = 'OPTIONS'
+          options.url = path
+          $http(options)
+
+        head: (path = '', options) ->
+          path = Settings.host + path unless path.indexOf(Settings.host) is 0
+          $http.head(path, options or httpOptions)
+
         delete: (path = '', data = null) ->
           path = Settings.host + path unless path.indexOf(Settings.host) is 0
           $http.delete(path, httpOptions)
@@ -113,7 +123,7 @@ angular.module('neo4jApp.services')
         status: (params = '')->
           # User a smaller timeout for status requests so IE10 detects when the
           # server goes down faster.
-          @get '/db/manage/server/monitor/fetch' + params, {timeout: 3000}
+          @options '/db/data', { timeout: Settings.heartbeat }
 
         log: (path) ->
           @get(path).then((r)-> console.log (r))

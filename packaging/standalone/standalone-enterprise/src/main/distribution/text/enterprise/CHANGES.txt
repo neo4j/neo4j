@@ -1,8 +1,40 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
+2.1.0-RC1
+---------
+Kernel:
+o The traversal framework can now take Iterable<Node> as starting points
+o The Iterable returned from getRelationships(...) can now be iterated more than once
+o Improve the performance of the server by reducing the overhead of logging
+o Further performance improvements for the upgrade process
+o Improve performance by producing less work for the GC in various places
+o Fixes a bug where the transaction log could get duplicate entries, making it unusable for recovery
+o Fixes a bug where the database could leak memory after a mode switch in HA
+o Fixes a bug where file descriptors would leak if more than one MERGE statement was executed in a transaction
+o Fixes a bug where an uncommitted index creation in a transaction could interfer with observing the state
+  of other existing indexes
+o Fixes a bug where old transaction log files could prevent the database from upgrading to a newer version
+
+HA:
+o Add support for rolling upgrades from 2.0.1 or greater (2.0 is not supported)
+o Fixes a bug where slave_only instances could participate in, and win, leader elections
+
+Cluster:
+o Fixes a number of issues when multiple leader elections are in flight concurrently
+
+Cypher:
+o To the new planner, added:
+  - Select or SemiApply
+  - Optional Expand
+  - Outer Hash Join
+  - Aggregation
+  - Skip
+  - Limit
+  - SortLimit
+o New planner is disabled by default
 
 2.1.0-M02
-------------
-Kernel
+---------
+Kernel:
 o Widens recoverable failure scenarios for schema indexes
 o Fix for recovery of schema changes in the case of 2PC transactions
 o Compile on Java8. Fixes #2149
@@ -11,12 +43,12 @@ o Made transaction service more resilient to user code leaking transactions.
 o Performance improvements for upgrade process.
 o Introduce new Locks API, and the Forseti lock manager
 
-HA
+HA:
 o Clarify the error message for when releasing locks claim prior to a master-switch
 o Reduce network overhead of locking in HA
 o Fix of issue with state bookkeeping for reporting instance role
 
-Cluster
+Cluster:
 o Throttles debug output of clustering code in messages.log
 o Fix issue with cluster bricking if specific message lost when master leaves
 
@@ -128,7 +160,7 @@ o Backup no longer differentiates between full and incremental backup, instead a
   to use. This also handles cases where a backup is very old and can no longer be incrementally backed up.
   OnlineBackup#incremental(..) and OnlineBackup.full(..) are now deprecated, and will be removed in the next major
   release (3.0.0).
-o Fixes issue with backup client shutting down the network connection before 
+o Fixes issue with backup client shutting down the network connection before
   the backup complete
 
 2.0.1 (2014-01-04)

@@ -23,7 +23,7 @@ import org.neo4j.graphdb.Node
 
 class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
   test("should handle aggregates inside non aggregate expressions") {
-    execute(
+    executeWithNewPlanner(
       "MATCH (a { name: 'Andres' })<-[:FATHER]-(child) RETURN {foo:a.name='Andres',kids:collect(child.name)}"
     ).toList
   }
@@ -48,7 +48,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     createNode(Map("name" -> "jim", "division" -> "England"))
     createNode(Map("name" -> "mattias", "division" -> "Sweden"))
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       """match n
         |return n.division, count(*)
         |order by count(*) DESC, n.division ASC""".stripMargin
@@ -97,7 +97,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     relate(a, c)
 
     val result = executeWithNewPlanner(
-      """match p = (a:Start) -[*]-> (b)
+      """match p = (a:Start)-[*]-> (b)
         |return b, avg(length(p))""".stripMargin)
 
     result.columnAs[Node]("b").toSet should equal (Set(b, c))
@@ -141,7 +141,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
   test("aggregates should be possible to use with arithmetics") {
     createNode()
 
-    val result = execute("match a return count(*) * 10").toList
+    val result = executeWithNewPlanner("match a return count(*) * 10").toList
     result should equal (List(Map("count(*) * 10" -> 10)))
   }
 
@@ -150,7 +150,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     createLabeledNode("X")
     createLabeledNode("X")
 
-    val result = execute("match (a:A), (b:X) return count(a) * 10 + count(b) * 5 as X order by X").toList
+    val result = executeWithNewPlanner("match (a:A), (b:X) return count(a) * 10 + count(b) * 5 as X order by X").toList
     result should equal (List(Map("X" -> 30)))
   }
 

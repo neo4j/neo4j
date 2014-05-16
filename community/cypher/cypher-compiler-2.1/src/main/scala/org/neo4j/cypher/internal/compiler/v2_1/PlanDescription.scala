@@ -19,194 +19,180 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import data.{MapVal, SimpleVal}
-import pipes.{NullPipe, Pipe}
-import org.neo4j.cypher.internal.helpers._
+import pipes.Pipe
 import org.neo4j.cypher
 import org.neo4j.cypher.javacompat.{PlanDescription => JPlanDescription, ProfilerStatistics}
-import org.neo4j.cypher.ProfilerStatisticsNotReadyException
-import scala.collection.JavaConverters._
 import java.util
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{Rows, DbHits}
+import org.neo4j.cypher.InternalException
+import collection.JavaConverters._
 
 /**
  * Abstract description of an execution plan
  */
-trait PlanDescription extends cypher.PlanDescription {
-
-  def arguments: Map[String, SimpleVal] = args.toMap
-
-  def cd(name: String): PlanDescription = children.find(_.name == name).get
-
+sealed trait PlanDescription extends cypher.PlanDescription {
+  def arguments: Seq[Argument]
+  def cd(name: String): PlanDescription = children.find(name).head
   def pipe: Pipe
-
-  def args: Seq[(String, SimpleVal)]
-
-  def children: Seq[PlanDescription]
-
-  /**
-   * @param pipe the pipe on which this PlanDescription is based on
-   * @param name descriptive name of type of step
-   * @param args optional arguments
-   * @return a new PlanDescription that uses this as optional predecessor step description
-   */
-  def andThen(pipe: Pipe, name: String, args: (String, SimpleVal)*): PlanDescription
-
-  def andThenWrap(pipe: Pipe, name: String, inner: PlanDescription, args: (String, SimpleVal)*): PlanDescription
-
-  def mapArgs(f: (PlanDescription => Seq[(String, SimpleVal)])): PlanDescription
-
-  def find(name: String): Option[PlanDescription]
+  def children: Children
+  def map(f: PlanDescription => PlanDescription): PlanDescription
+  def find(name: String): Seq[PlanDescription]
+  def addArgument(arg: Argument): PlanDescription
+  def andThen(pipe: Pipe, name: String, arguments: Argument*) = PlanDescriptionImpl(pipe, name, SingleChild(this), arguments)
+  def toSeq: Seq[PlanDescription]
 }
 
-class PlanDescriptionImpl(val pipe: Pipe,
-                          val name: String,
-                          val children: Seq[PlanDescription],
-                          val args: Seq[(String, SimpleVal)]) extends PlanDescription with StringRenderingSupport {
+sealed abstract class Argument extends Product {
+  def value: Any
+  def name = productPrefix
 
-  lazy val argsMap: MapVal = MapVal(args.toMap)
+  // values returned from calling serializableValue must be serializable to JSON by REST server
 
-  def mapArgs(f: (PlanDescription => Seq[(String, SimpleVal)])): PlanDescription =
-    new PlanDescriptionImpl(pipe, name, children.map(_.mapArgs(f)), f(this))
+  def serializableValue: AnyRef
+}
 
-  def andThen(pipe: Pipe, name: String, args: (String, SimpleVal)*): PlanDescription =
-    new PlanDescriptionImpl(pipe, name, Seq(this), args)
+sealed abstract class LongArgument extends Argument {
+  override def value: Long
+  def serializableValue: AnyRef = Long.box(value)
+}
 
-  def andThenWrap(pipe: Pipe, name: String,
-                  inner: PlanDescription, args: (String, SimpleVal)*): PlanDescription =
-    new PlanDescriptionImpl(pipe, name, Seq(inner), args)
+sealed abstract class ToStringArgument extends Argument {
+ override def serializableValue: String = value.toString
+}
 
-  def withChildren(kids: PlanDescription*) =
-    new PlanDescriptionImpl(pipe, name, kids, args)
+sealed abstract class StringSeqArgument extends Argument {
+  override def value: Seq[String]
+  override def serializableValue: Array[String] = value.toArray
+}
 
-  final override def render(builder: StringBuilder) {
-    render(builder, "\n", "  ")
-  }
-
-  def render(builder: StringBuilder, separator: String, levelSuffix: String) {
-    renderThis(builder)
-    renderPrev(builder, separator, levelSuffix)
-  }
-
-  private def renderThis(builder: StringBuilder) {
-    builder ++= name
-    argsMap.render(builder, "(", ")", "()", escKey = false)
-  }
-
-  protected def renderPrev(builder: StringBuilder, separator: String, levelSuffix: String) {
-    if (! children.isEmpty) {
-      val newSeparator = separator + levelSuffix
-      builder.append(separator)
-      children.head.render(builder, newSeparator, levelSuffix)
-      for (child <- children.tail) {
-          builder.append(separator)
-          child.render(builder, newSeparator, levelSuffix)
-      }
-    }
-  }
-
-  /**
-   * Java-side PlanDescription implementation
-   */
-  private class PlanDescriptionConverter extends JPlanDescription {
-
-    val _children: util.List[JPlanDescription] = children.map(_.asJava).toList.asJava
-
-    val _args: util.Map[String, Object] = argsMap.asJava.asInstanceOf[java.util.Map[String, Object]]
-
-    def cd(names: String*) = {
-      var planDescription: JPlanDescription = this
-      for (name <- names)
-        planDescription = planDescription.getChild(name)
-      planDescription
-    }
-
-    def getChild(name: String): JPlanDescription = {
-      val iter = _children.iterator()
-      while (iter.hasNext) {
-        val child: JPlanDescription = iter.next()
-        if (name.equals(child.getName))
-          return child
-      }
-      throw new NoSuchElementException(name)
-    }
-
-    def getChildren = _children
-
-    override val getName = name
-
-    override val getArguments = _args
-
-    val hasProfilerStatistics = hasLongArg("_rows") && hasLongArg("_db_hits")
-
-    override lazy val getProfilerStatistics =
-      if (hasProfilerStatistics) planStatisticsConverter else throw new ProfilerStatisticsNotReadyException()
-
-    override def equals(obj: Any) = obj match {
-      case obj: PlanDescriptionConverter if obj != null => PlanDescriptionImpl.this.equals(obj.asScala)
-      case _ => false
-    }
-
-    override def toString = PlanDescriptionImpl.this.toString
-
-    override def hashCode = PlanDescriptionImpl.this.hashCode()
-
-    private def asScala = PlanDescriptionImpl.this
-
-    private def hasLongArg(name: String) = _args.containsKey(name) && _args.get(name).isInstanceOf[Long]
-  }
-
-  private object planStatisticsConverter extends ProfilerStatistics {
-    def getPlanDescription = PlanDescriptionImpl.this.asJava
-
-    def getRows = getNamedLongStat("_rows")
-
-    def getDbHits = getNamedLongStat("_db_hits")
-
-    private def getNamedLongStat(name: String) =
-     argsMap.v.get(name).getOrElse(throw new ProfilerStatisticsNotReadyException()).asJava.asInstanceOf[Long]
-  }
-
-  def find(name: String): Option[PlanDescription] =
-    if (this.name == name)
-      Some(this)
-    else {
-      children.head.find(name)
-    }
-
-  lazy val asJava: JPlanDescription = new PlanDescriptionConverter
+sealed abstract class ExpressionSeqArgument extends Argument {
+  override def value: Seq[commands.expressions.Expression]
+  override def serializableValue: Array[String] = value.map(_.toString).toArray
 }
 
 object PlanDescription {
-  /**
-   * @param pipe pipe of this description
-   * @param name desciptive name of type of step
-   * @param args optional arguments
-   * @return a new PlanDescription without an optional predecessor step description
-   */
-  def apply(pipe: Pipe, name: String, args: (String, SimpleVal)*) = new PlanDescriptionImpl(pipe, name, Seq.empty, args)
+  object Arguments {
+    case class Rows(value: Long) extends LongArgument
+    case class DbHits(value: Long) extends LongArgument
+    case class IntroducedIdentifier(value: String) extends ToStringArgument
+    case class ColumnsLeft(value: Seq[String]) extends StringSeqArgument
+    case class Expression(value: ast.Expression) extends ToStringArgument
+    case class LegacyExpression(value: commands.expressions.Expression) extends ToStringArgument
+    case class UpdateActionName(value: String) extends ToStringArgument
+    case class LegacyIndex(value: String) extends ToStringArgument
+    case class Index(value: String, property: String) extends Argument {
+      override def serializableValue = s".$property = $value"
+    }
+    case class LabelName(value: String) extends ToStringArgument
+    case class KeyNames(value: Seq[String]) extends StringSeqArgument
+    case class KeyExpressions(value: Seq[commands.expressions.Expression]) extends ExpressionSeqArgument
+    case class LimitCount(value: Long) extends LongArgument
+  }
 }
 
-class NullPlanDescription(val pipe:Pipe) extends PlanDescription {
-  def andThen(pipe: Pipe, name: String, args: (String, SimpleVal)*) = PlanDescription(pipe, name, args: _*)
+sealed trait Children {
+  def isEmpty = children.isEmpty
+  def tail = children.tail
+  def head = children.head
+  protected def children: Seq[PlanDescription]
+  def find(name: String): Seq[PlanDescription] = children.flatMap(_.find(name))
+  def map(f: PlanDescription => PlanDescription): Children
+  def foreach(f:PlanDescription=>Unit) {
+    children.foreach(f)
+  }
+  def toSeq:Seq[PlanDescription]
+}
 
-  def args = ???
+case object NoChildren extends Children {
+  protected def children = Seq.empty
+  def map(f: PlanDescription => PlanDescription) = NoChildren
+
+  def toSeq: Seq[PlanDescription] = Seq.empty
+}
+
+final case class SingleChild(child: PlanDescription) extends Children {
+  protected def children = Seq(child)
+  def map(f: PlanDescription => PlanDescription) = SingleChild(child.map(f))
+
+  def toSeq: Seq[PlanDescription] = child.toSeq
+}
+
+final case class TwoChildren(lhs: PlanDescription, rhs: PlanDescription) extends Children {
+  protected def children = Seq(lhs, rhs)
+
+  def toSeq: Seq[PlanDescription] = lhs.toSeq ++ rhs.toSeq
+
+  def map(f: PlanDescription => PlanDescription) = TwoChildren(lhs = lhs.map(f), rhs = rhs.map(f))
+}
+
+final case class PlanDescriptionImpl(pipe: Pipe,
+                                     name: String,
+                                     children: Children,
+                                     arguments: Seq[Argument]) extends PlanDescription {
+
+  def find(name: String): Seq[PlanDescription] =
+    children.find(name) ++ (if (this.name == name)
+      Some(this)
+    else {
+      None
+    })
+
+  val self = this
+
+  lazy val asJava: JPlanDescription = new JPlanDescription {
+    def getChildren: util.List[JPlanDescription] = children.toSeq.toList.map(_.asJava).asJava
+    def getArguments: util.Map[String, AnyRef] = arguments.map(arg => arg.name -> arg.serializableValue).toMap.asJava
+
+    def hasProfilerStatistics: Boolean = arguments.exists(_.isInstanceOf[DbHits])
+
+    def getName: String = name
+
+    def getProfilerStatistics: ProfilerStatistics = new ProfilerStatistics {
+      def getDbHits: Long = arguments.collectFirst { case DbHits(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
+      def getRows: Long = arguments.collectFirst { case Rows(count) => count }.getOrElse(throw new InternalException("Don't have profiler stats"))
+    }
+
+    override def toString = self.toString
+  }
+
+  def addArgument(argument: Argument): PlanDescription = copy(arguments = arguments :+ argument)
+
+  def map(f: PlanDescription => PlanDescription): PlanDescription = f(copy(children = children.map(f)))
+
+  def toSeq: Seq[PlanDescription] = this +: children.toSeq
+
+  override def toString = {
+    val treeString = renderAsTree(this)
+    val details = renderDetails(this)
+    "%s%n%n%s".format(treeString, details)
+  }
+
+}
+
+final case class NullPlanDescription(pipe:Pipe) extends PlanDescription {
+  override def andThen(pipe: Pipe, name: String, arguments: Argument*) = new PlanDescriptionImpl(pipe, name, NoChildren, arguments)
+
+  def args = Seq.empty
 
   def asJava = ???
 
-  def children = ???
+  def children = NoChildren
 
-  def find(name: String) = ???
+  def find(searchedName: String) = if (searchedName == name) Seq(this) else Seq.empty
 
-  def mapArgs(f: (PlanDescription) => Seq[(String, SimpleVal)]) = ???
-
-  def name = ???
+  def name = "Null"
 
   def render(builder: StringBuilder) {}
 
   def render(builder: StringBuilder, separator: String, levelSuffix: String) {}
 
-  def andThen(inner: PlanDescription): PlanDescription = inner
+  def addArgument(arg: Argument): PlanDescription =
+    throw new UnsupportedOperationException("Cannot add arguments to NullPipe")
 
-  def andThenWrap(pipe: Pipe, name: String, inner: PlanDescription, args: (String, SimpleVal)*): PlanDescription =
-    new PlanDescriptionImpl(pipe, name, Seq(inner), args)
+  // We do not map over this since we don't have profiler statistics for it
+  def map(f: (PlanDescription) => PlanDescription): PlanDescription = this
+
+  def arguments: Seq[Argument] = Seq.empty
+
+  def toSeq: Seq[PlanDescription] = Seq(this)
 }

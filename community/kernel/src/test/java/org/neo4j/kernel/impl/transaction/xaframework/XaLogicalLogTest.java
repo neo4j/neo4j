@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.number.OrderingComparison.lessThan;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -31,6 +32,7 @@ import static org.mockito.Mockito.withSettings;
 import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
 import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
 
 import java.io.File;
@@ -38,6 +40,7 @@ import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.List;
 
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
@@ -49,6 +52,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
 import org.mockito.stubbing.Answer;
+import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.TransactionState;
@@ -56,6 +60,10 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
@@ -69,9 +77,6 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 
 public class XaLogicalLogTest
 {
@@ -117,7 +122,8 @@ public class XaLogicalLogTest
         } );
         XaLogicalLog xaLogicalLog = new XaLogicalLog( new File( dir, "logical.log" ),
                                                       mock( XaResourceManager.class ),
-                                                      mock( XaCommandFactory.class ),
+                                                      mock( XaCommandReaderFactory.class ),
+                                                      mock( XaCommandWriterFactory.class),
                                                       xaTf,
                                                       fs,
                                                       new Monitors(),
@@ -126,7 +132,8 @@ public class XaLogicalLogTest
                                                       mock( TransactionStateFactory.class ),
                                                       mock( KernelHealth.class ),
                                                       25 * 1024 * 1024,
-                                                      ALLOW_ALL );
+                                                      ALLOW_ALL, Functions.<List<LogEntry>>identity(),
+                                                      Functions.<List<LogEntry>>identity());
         xaLogicalLog.open();
         // -- set the log up with 10 transactions (with no commands, just start and commit)
         for ( int txId = 1; txId <= 10; txId++ )
@@ -152,7 +159,15 @@ public class XaLogicalLogTest
         ephemeralFs.get().mkdir( new File("asd") );
         XaLogicalLog log = new XaLogicalLog( new File( "asd/log" ),
                 mock( XaResourceManager.class ),
-                new FixedSizeXaCommandFactory(),
+                XaCommandReaderFactory.DEFAULT,
+                new XaCommandWriterFactory()
+                {
+                    @Override
+                    public XaCommandWriter newInstance()
+                    {
+                        return new FixedSizeXaCommandWriter();
+                    }
+                },
                 new VersionRespectingXaTransactionFactory(),
                 ephemeralFs.get(),
                 new Monitors(),
@@ -161,7 +176,7 @@ public class XaLogicalLogTest
                 mock( TransactionStateFactory.class ),
                 mock( KernelHealth.class ),
                 maxSize,
-                ALLOW_ALL );
+                ALLOW_ALL, Functions.<List<LogEntry>>identity(), Functions.<List<LogEntry>>identity() );
         log.open();
         long initialLogVersion = log.getHighestLogVersion();
 
@@ -192,7 +207,7 @@ public class XaLogicalLogTest
 
         StoreChannel active = fs.create( new File( dir, "log.1" ) );
         ByteBuffer buff = ByteBuffer.allocate( 128 );
-        LogIoUtils.writeLogHeader( buff, lowAndIncorrectLogVersion, 0 );
+        VersionAwareLogEntryReader.writeLogHeader( buff, lowAndIncorrectLogVersion, 0 );
         active.write( buff );
         active.force( false );
         active.close();
@@ -200,16 +215,22 @@ public class XaLogicalLogTest
         // When
         XaLogicalLog log = new XaLogicalLog( new File( dir, "log" ),
                 mock( XaResourceManager.class ),
-                new FixedSizeXaCommandFactory(),
+                XaCommandReaderFactory.DEFAULT,
+                new XaCommandWriterFactory()
+                {
+                    @Override
+                    public XaCommandWriter newInstance()
+                    {
+                        return new FixedSizeXaCommandWriter();
+                    }
+                },
                 new VersionRespectingXaTransactionFactory(),
                 ephemeralFs.get(),
                 new Monitors(),
                 new DevNullLoggingService(),
                 NO_PRUNING,
-                mock( TransactionStateFactory.class ),
-                mock( KernelHealth.class ),
-                10,
-                ALLOW_ALL );
+                mock( TransactionStateFactory.class ), mock( KernelHealth.class ), 10,
+                ALLOW_ALL, Functions.<List<LogEntry>>identity(), Functions.<List<LogEntry>>identity());
         log.open();
         log.rotate();
 
@@ -236,13 +257,22 @@ public class XaLogicalLogTest
             forCheckingSize = new RandomAccessFile( logFile, "rw" );
             log = new XaLogicalLog( logFile,
                     mock( XaResourceManager.class ),
-                    new FixedSizeXaCommandFactory(),
+                    XaCommandReaderFactory.DEFAULT,
+                    new XaCommandWriterFactory()
+                    {
+                        @Override
+                        public XaCommandWriter newInstance()
+                        {
+                            return new FixedSizeXaCommandWriter();
+                        }
+                    },
                     new VersionRespectingXaTransactionFactory(),
                     new DefaultFileSystemAbstraction(),
                     new Monitors(),
                     new DevNullLoggingService(),
                     NO_PRUNING,
-                    mock( TransactionStateFactory.class ), health, maxSize, ALLOW_ALL );
+                    mock( TransactionStateFactory.class ), health, maxSize, ALLOW_ALL,
+                    Functions.<List<LogEntry>>identity(), Functions.<List<LogEntry>>identity() );
             log.open();
 
             // When
@@ -295,13 +325,22 @@ public class XaLogicalLogTest
             forCheckingSize = new RandomAccessFile( logFile, "rw" );
             log = new XaLogicalLog( logFile,
                     mock( XaResourceManager.class ),
-                    new FixedSizeXaCommandFactory(),
+                    XaCommandReaderFactory.DEFAULT,
+                    new XaCommandWriterFactory()
+                    {
+                        @Override
+                        public XaCommandWriter newInstance()
+                        {
+                            return new FixedSizeXaCommandWriter();
+                        }
+                    },
                     new VersionRespectingXaTransactionFactory(),
                     new DefaultFileSystemAbstraction(),
                     new Monitors(),
                     new DevNullLoggingService(),
                     NO_PRUNING,
-                    mock( TransactionStateFactory.class ), health, maxSize, ALLOW_ALL );
+                    mock( TransactionStateFactory.class ), health, maxSize, ALLOW_ALL,
+                    Functions.<List<LogEntry>>identity(), Functions.<List<LogEntry>>identity()  );
             log.open();
 
             // When
@@ -354,13 +393,22 @@ public class XaLogicalLogTest
             forCheckingSize = new RandomAccessFile( logFile, "rw" );
             log = new XaLogicalLog( logFile,
                     mock( XaResourceManager.class ),
-                    new FixedSizeXaCommandFactory(),
+                    XaCommandReaderFactory.DEFAULT,
+                    new XaCommandWriterFactory()
+                    {
+                        @Override
+                        public XaCommandWriter newInstance()
+                        {
+                            return new FixedSizeXaCommandWriter();
+                        }
+                    },
                     new VersionRespectingXaTransactionFactory(),
                     new DefaultFileSystemAbstraction(),
                     new Monitors(),
                     new DevNullLoggingService(),
                     NO_PRUNING,
-                    mock( TransactionStateFactory.class ), health, maxSize, ALLOW_ALL );
+                    mock( TransactionStateFactory.class ), health, maxSize, ALLOW_ALL,
+                    Functions.<List<LogEntry>>identity(), Functions.<List<LogEntry>>identity()  );
             log.open();
 
             // When
@@ -403,27 +451,39 @@ public class XaLogicalLogTest
             this.data = new byte[payloadSize-2/*2 bytes for describing which size will follow*/];
         }
 
-        @Override
-        public void execute()
-        {   // There's nothing to execute
-        }
-
-        @Override
-        public void writeToFile( LogBuffer buffer ) throws IOException
+        public byte[] getData()
         {
-            buffer.putShort( (short) (data.length+2) );
-            buffer.put( data );
+            return data;
         }
     }
 
-    private static class FixedSizeXaCommandFactory extends XaCommandFactory
+    private static class FixedSizeXaCommandReader implements XaCommandReader
     {
+        private ByteBuffer buffer;
+
+        private FixedSizeXaCommandReader( ByteBuffer buffer )
+        {
+            this.buffer = buffer;
+        }
+
         @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
+        public XaCommand read( ReadableByteChannel byteChannel ) throws IOException
         {
             short dataSize = IoPrimitiveUtils.readShort( byteChannel, buffer );
             IoPrimitiveUtils.readBytes( byteChannel, new byte[dataSize] );
             return new FixedSizeXaCommand( dataSize );
+        }
+    }
+
+    private static class FixedSizeXaCommandWriter implements XaCommandWriter
+    {
+
+        @Override
+        public void write( XaCommand command, LogBuffer buffer ) throws IOException
+        {
+            FixedSizeXaCommand fixed = (FixedSizeXaCommand) command;
+            buffer.putShort( (short) (fixed.getData().length + 2) );
+            buffer.put( fixed.getData() );
         }
     }
 

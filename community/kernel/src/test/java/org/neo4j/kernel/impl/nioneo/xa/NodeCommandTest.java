@@ -19,6 +19,16 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.nio.ByteBuffer.allocate;
+import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
+import static org.neo4j.kernel.impl.nioneo.store.ShortArray.LONG;
+import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -29,7 +39,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
@@ -39,26 +48,18 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 
-import static java.nio.ByteBuffer.allocate;
-import static java.util.Arrays.asList;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-
-import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
-import static org.neo4j.kernel.impl.nioneo.store.ShortArray.LONG;
-import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.nioneo.xa.Command.readCommand;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
-
 public class NodeCommandTest
 {
     private NodeStore nodeStore;
+    private XaCommandReader commandReader = new PhysicalLogNeoXaCommandReaderV1( allocate( 64 ));
+    private XaCommandWriter commandWriter = new PhysicalLogNeoXaCommandWriter();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
@@ -70,7 +71,9 @@ public class NodeCommandTest
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
 
         // When
-        assertSerializationWorksFor( new Command.NodeCommand( null, before, after ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand();
+        nodeCommand.init( before, after );
+        assertSerializationWorksFor( nodeCommand );
     }
 
     @Test
@@ -83,7 +86,9 @@ public class NodeCommandTest
         after.setInUse( true );
 
         // When
-        assertSerializationWorksFor( new Command.NodeCommand( null, before, after ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand();
+        nodeCommand.init( before, after );
+        assertSerializationWorksFor( nodeCommand );
     }
 
     @Test
@@ -96,7 +101,9 @@ public class NodeCommandTest
         after.setInUse( true );
 
         // When
-        assertSerializationWorksFor( new Command.NodeCommand( null, before, after ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand();
+        nodeCommand.init( before, after );
+        assertSerializationWorksFor( nodeCommand );
     }
 
     @Test
@@ -109,10 +116,12 @@ public class NodeCommandTest
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
-        nodeLabels.add( 1337, nodeStore );
+        nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore() );
 
         // When
-        assertSerializationWorksFor( new Command.NodeCommand( null, before, after ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand();
+        nodeCommand.init( before, after );
+        assertSerializationWorksFor( nodeCommand );
     }
 
     @Test
@@ -127,11 +136,13 @@ public class NodeCommandTest
         NodeLabels nodeLabels = parseLabelsField( after );
         for ( int i = 10; i < 100; i++ )
         {
-            nodeLabels.add( i, nodeStore );
+            nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore() );
         }
 
         // When
-        assertSerializationWorksFor( new Command.NodeCommand( null, before, after ) );
+        Command.NodeCommand nodeCommand = new Command.NodeCommand();
+        nodeCommand.init( before, after );
+        assertSerializationWorksFor( nodeCommand );
     }
 
     @Test
@@ -149,10 +160,11 @@ public class NodeCommandTest
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
 
         // When
-        Command.NodeCommand cmd = new Command.NodeCommand( null, before, after );
+        Command.NodeCommand cmd = new Command.NodeCommand();
+        cmd.init( before, after );
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-        cmd.writeToFile( buffer );
-        Command.NodeCommand result = (Command.NodeCommand) readCommand( null, null, buffer, allocate( 64 ) );
+        commandWriter.write( cmd, buffer );
+        Command.NodeCommand result = (Command.NodeCommand) commandReader.read( buffer );
 
         // Then
         assertThat( result, equalTo( cmd ) );
@@ -165,11 +177,11 @@ public class NodeCommandTest
         assertThat( result.getAfter().getDynamicLabelRecords(), equalTo( cmd.getAfter().getDynamicLabelRecords() ) );
     }
 
-    private void assertSerializationWorksFor( Command.NodeCommand cmd ) throws IOException
+    private void assertSerializationWorksFor( org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand cmd ) throws IOException
     {
         InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-        cmd.writeToFile( buffer );
-        Command.NodeCommand result = (Command.NodeCommand) readCommand( null, null, buffer, allocate( 64 ) );
+        commandWriter.write( cmd, buffer );
+        Command.NodeCommand result = (Command.NodeCommand) commandReader.read( buffer );
 
         // Then
         assertThat( result, equalTo( cmd ) );

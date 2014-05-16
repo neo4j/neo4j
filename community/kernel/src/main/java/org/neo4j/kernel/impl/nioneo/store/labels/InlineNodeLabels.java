@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecordAllocator;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.util.Bits;
@@ -63,7 +64,7 @@ public class InlineNodeLabels implements NodeLabels
     }
 
     @Override
-    public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore )
+    public Collection<DynamicRecord> put( long[] labelIds, NodeStore nodeStore, DynamicRecordAllocator allocator )
     {
         if ( tryInlineInNodeRecord( labelIds, node.getDynamicLabelRecords() ) )
         {
@@ -71,17 +72,17 @@ public class InlineNodeLabels implements NodeLabels
         }
         else
         {
-            return new DynamicNodeLabels( 0, node ).put( labelIds, nodeStore );
+            return new DynamicNodeLabels( 0, node ).put( labelIds, nodeStore, allocator );
         }
     }
 
     @Override
-    public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore )
+    public Collection<DynamicRecord> add( long labelId, NodeStore nodeStore, DynamicRecordAllocator allocator )
     {
         long[] augmentedLabelIds = labelCount( labelField ) == 0 ? new long[]{labelId} :
                                    concatAndSort( parseInlined( labelField ), labelId );
 
-        return put( augmentedLabelIds, nodeStore );
+        return put( augmentedLabelIds, nodeStore, allocator );
     }
 
     @Override

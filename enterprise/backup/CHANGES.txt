@@ -1,3 +1,4 @@
+
 2.0.2
 -----
 o Backup no longer differentiates between full and incremental backup, instead automatically chooses the best option

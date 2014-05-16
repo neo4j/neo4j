@@ -37,7 +37,8 @@ trait QueryGraph {
   def addSelections(selections: Selections): QueryGraph
   def addPredicates(predicates: Expression*): QueryGraph
 
-  def withoutArguments(): QueryGraph
+  def withoutArguments(): QueryGraph = withArgumentIds(Set.empty)
+  def withArgumentIds(argumentIds: Set[IdName]): QueryGraph
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph
   def withSelections(selections: Selections): QueryGraph
@@ -121,7 +122,8 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
 
   def addArgumentId(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
 
-  def withoutArguments(): QueryGraph = copy(argumentIds = Set.empty)
+  def withArgumentIds(newArgumentIds: Set[IdName]): QueryGraph =
+    copy(argumentIds = newArgumentIds)
 
   def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
 

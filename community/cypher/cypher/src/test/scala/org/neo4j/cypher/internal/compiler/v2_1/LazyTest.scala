@@ -86,7 +86,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val monitoredNode = new MonitoredNode(aNode, limiter.monitor)
 
     val step = SingleStep(0, Seq(), Direction.OUTGOING, None, True(), True())
-    val producer = EntityProducer[Node]("test") { (ctx, state) => Iterator(monitoredNode) }
+    val producer = EntityProducer[Node]("test", mock[Argument]) { (ctx, state) => Iterator(monitoredNode) }
     val matcher = new MonoDirectionalTraversalMatcher(step, producer)
     val ctx = ExecutionContext().newWith("a" -> monitoredNode)
 
@@ -257,7 +257,7 @@ class LazyTest extends ExecutionEngineFunSuite {
     val end = EndPoint("b")
     val trail = SingleStepTrail(end, Direction.OUTGOING, "r", Seq(), "a", True(), True(), null, Seq())
     val step = trail.toSteps(0).get
-    val producer = EntityProducer[Node]("test") { (ctx, state) => Iterator(monitoredNode) }
+    val producer = EntityProducer[Node]("test", mock[Argument]) { (ctx, state) => Iterator(monitoredNode) }
     val matcher = new MonoDirectionalTraversalMatcher(step, producer)
     new TraversalMatchPipe(NullPipe(), matcher, trail)
   }

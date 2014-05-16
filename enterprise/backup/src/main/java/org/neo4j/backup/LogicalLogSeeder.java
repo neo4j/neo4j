@@ -38,8 +38,8 @@ import org.neo4j.com.TxExtractor;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -122,7 +122,7 @@ public class LogicalLogSeeder
                     long logVersion = ds.getCurrentLogVersion() - 1;
                     FileChannel newLog = new RandomAccessFile( ds.getFileName( logVersion ), "rw" ).getChannel();
                     newLog.truncate( 0 );
-                    LogIoUtils.writeLogHeader( scratch, logVersion, -1 );
+                    VersionAwareLogEntryReader.writeLogHeader( scratch, logVersion, -1 );
                     // scratch buffer is flipped by writeLogHeader
                     newLog.write( scratch );
                     ReadableByteChannel received = tx.third().extract();

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.SortItem
 import scala.math.signum
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.LegacyExpression
 
 case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
               (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) with ExecutionContextComparer {
@@ -31,7 +32,8 @@ case class LegacySortPipe(source: Pipe, sortDescription: List[SortItem])
     input.toList.
       sortWith((a, b) => compareBy(a, b, sortDescription)(state)).iterator
 
-  override def executionPlanDescription = source.executionPlanDescription.andThen(this, "Sort", "descr" -> sortDescription)
+  def planDescription =
+    source.planDescription.andThen(this, "Sort", sortDescription.map(item => LegacyExpression(item.expression)):_*)
 
   override def isLazy = false
 }

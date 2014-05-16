@@ -19,6 +19,17 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
+
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -31,7 +42,6 @@ import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException;
@@ -43,18 +53,6 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class SchemaTransactionStateTest
 {
@@ -140,6 +138,48 @@ public class SchemaTransactionStateTest
         IndexDescriptor expectedRule = new IndexDescriptor( labelId1, key1 );
         assertEquals( expectedRule, rule );
         assertEquals( asSet( expectedRule ), asSet( labelRules ) );
+    }
+
+    @Test
+    public void shouldReturnNonExistentRuleAddedInTransactionFromLookup() throws Exception
+    {
+        // GIVEN
+        // -- the store already have an index on the label and a different property
+        IndexDescriptor existingRule1 = new IndexDescriptor( labelId1, key1 );
+        when( store.indexesGetForLabelAndPropertyKey( labelId1, key1 ) ).thenReturn( existingRule1 );
+        // -- the store already have an index on a different label with the same property
+        IndexDescriptor existingRule2 = new IndexDescriptor( labelId2, key2 );
+        when( store.indexesGetForLabelAndPropertyKey( labelId2, key2 ) ).thenReturn( existingRule2 );
+        // -- a non-existent rule has been added in the transaction
+        txContext.indexCreate( state, labelId1, key2 );
+
+        // WHEN
+        IndexDescriptor rule = txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key2 );
+
+        // THEN
+        assertEquals( new IndexDescriptor( labelId1, key2 ), rule );
+    }
+
+    @Test
+    public void shouldNotReturnRulesAddedInTransactionWithDifferentLabelOrPropertyFromLookup() throws Exception
+    {
+        // GIVEN
+        // -- the store already have an index on the label and a different property
+        IndexDescriptor existingRule1 = new IndexDescriptor( labelId1, key1 );
+        when( store.indexesGetForLabelAndPropertyKey( labelId1, key1 ) ).thenReturn( existingRule1 );
+        // -- the store already have an index on a different label with the same property
+        IndexDescriptor existingRule2 = new IndexDescriptor( labelId2, key2 );
+        when( store.indexesGetForLabelAndPropertyKey( labelId2, key2 ) ).thenReturn( existingRule2 );
+        // -- a non-existent rule has been added in the transaction
+        txContext.indexCreate( state, labelId1, key2 );
+
+        // WHEN
+        IndexDescriptor lookupRule1 = txContext.indexesGetForLabelAndPropertyKey( state, labelId1, key1 );
+        IndexDescriptor lookupRule2 = txContext.indexesGetForLabelAndPropertyKey( state, labelId2, key2 );
+
+        // THEN
+        assertEquals( existingRule1, lookupRule1 );
+        assertEquals( existingRule2, lookupRule2 );
     }
 
     @Test

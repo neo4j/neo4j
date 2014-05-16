@@ -71,7 +71,7 @@ public class IndexRule extends AbstractSchemaRule
                               owningConstraint == null ? NO_OWNING_CONSTRAINT : owningConstraint );
     }
 
-    private IndexRule( long id, int label, int propertyKey, SchemaIndexProvider.Descriptor providerDescriptor,
+    public IndexRule( long id, int label, int propertyKey, SchemaIndexProvider.Descriptor providerDescriptor,
                        Long owningConstraint )
     {
         super( id, label, indexKind( owningConstraint ) );

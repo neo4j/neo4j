@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, symbols, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.{NoChildren, PlanDescriptionImpl, symbols, ExecutionContext}
 import symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.graphdb.Relationship
 import org.neo4j.cypher.internal.helpers.CollectionSupport
 import org.neo4j.cypher.InternalException
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 
 case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expression], toNode: String, fromNode: String)
                                              (implicit pipeMonitor: PipeMonitor) extends Pipe with CollectionSupport {
@@ -35,7 +36,7 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expr
       ctx =>
         val r = ctx(ident) match {
           case r: Relationship => r
-          case x => throw new InternalException(s"Expected a relationship, got ${x}")
+          case x => throw new InternalException(s"Expected a relationship, got $x")
         }
 
         val s = r.getStartNode
@@ -50,7 +51,11 @@ case class UndirectedRelationshipByIdSeekPipe(ident: String, relIdExpr: Seq[Expr
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def executionPlanDescription = new PlanDescriptionImpl(this, "DirectedRelationshipByIdSeekPipe", Seq.empty, Seq("ident" -> ident))
+  def planDescription = new PlanDescriptionImpl(this, "UndirectedRelationshipByIdSeek", NoChildren, Seq(
+    IntroducedIdentifier(ident),
+    IntroducedIdentifier(toNode),
+    IntroducedIdentifier(fromNode)
+  ))
 
   def symbols = new SymbolTable(Map(ident -> CTRelationship, toNode -> CTNode, fromNode -> CTNode))
 

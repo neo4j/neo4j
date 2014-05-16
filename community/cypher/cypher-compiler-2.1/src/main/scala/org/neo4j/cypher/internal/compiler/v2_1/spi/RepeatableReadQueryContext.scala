@@ -29,7 +29,7 @@ trait Locker {
   def releaseAllLocks()
 }
 
-class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends DelegatingQueryContext(inner) with LockingQueryContext {
+final class RepeatableReadQueryContext(inner: QueryContext, locker: Locker) extends DelegatingQueryContext(inner) with LockingQueryContext {
 
   override def getRelationshipsFor(node: Node, dir: Direction, types: Seq[String]): Iterator[Relationship] = {
     locker.acquireLock(node)

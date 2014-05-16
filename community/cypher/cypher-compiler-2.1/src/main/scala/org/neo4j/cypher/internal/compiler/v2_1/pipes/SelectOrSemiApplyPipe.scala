@@ -20,8 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.{TwoChildren, PlanDescriptionImpl, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.LegacyExpression
 
 case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate, negated: Boolean)(implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
   def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
@@ -37,8 +38,11 @@ case class SelectOrSemiApplyPipe(source: Pipe, inner: Pipe, predicate: Predicate
 
   private def name = if (negated) "SelectOrAntiSemiApply" else "SelectOrSemiApply"
 
-  def executionPlanDescription = source.executionPlanDescription.
-    andThen(this, name, "inner" -> inner.executionPlanDescription, "predicate" -> predicate.toString)
+  def planDescription = PlanDescriptionImpl(
+    pipe = this,
+    name = name,
+    children = TwoChildren(source.planDescription, inner.planDescription),
+    arguments = Seq(LegacyExpression(predicate)))
 
   def symbols: SymbolTable = source.symbols
 }

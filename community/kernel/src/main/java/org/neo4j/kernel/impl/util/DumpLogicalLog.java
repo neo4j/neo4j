@@ -19,13 +19,15 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static java.util.TimeZone.getTimeZone;
+import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.io.PrintStream;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.TimeZone;
@@ -36,16 +38,11 @@ import org.neo4j.helpers.Args;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
-
-import static java.util.TimeZone.getTimeZone;
-
-import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 
 public class DumpLogicalLog
 {
@@ -69,26 +66,28 @@ public class DumpLogicalLog
             long logVersion, prevLastCommittedTx;
             try
             {
-                long[] header = LogIoUtils.readLogHeader( buffer, fileChannel, true );
+                long[] header = VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, false );
                 logVersion = header[0];
                 prevLastCommittedTx = header[1];
             }
             catch ( IOException ex )
             {
-                out.println( "Unable to read timestamp information, "
-                    + "no records in logical log." );
+                out.println( "Unable to read timestamp information, no records in logical log." );
                 out.println( ex.getMessage() );
                 fileChannel.close();
                 throw ex;
             }
             out.println( "Logical log version: " + logVersion + " with prev committed tx[" +
                 prevLastCommittedTx + "]" );
-            XaCommandFactory cf = instantiateCommandFactory();
-            while ( readAndPrintEntry( fileChannel, buffer, cf, out, timeZone ) )
+
+            LogDeserializer deserializer =
+                    new LogDeserializer( buffer, instantiateCommandReaderFactory() );
+            PrintingConsumer consumer = new PrintingConsumer( out, timeZone );
+
+            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
             {
-                ;
+                while( cursor.next( consumer ) );
             }
-            fileChannel.close();
         }
         return logsFound;
     }
@@ -99,21 +98,9 @@ public class DumpLogicalLog
         return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
     }
 
-    protected boolean readAndPrintEntry( StoreChannel fileChannel, ByteBuffer buffer, XaCommandFactory cf,
-            PrintStream out, TimeZone timeZone ) throws IOException
+    protected XaCommandReaderFactory instantiateCommandReaderFactory()
     {
-        LogEntry entry = LogIoUtils.readEntry( buffer, fileChannel, cf );
-        if ( entry != null )
-        {
-            out.println( entry.toString( timeZone ) );
-            return true;
-        }
-        return false;
-    }
-
-    protected XaCommandFactory instantiateCommandFactory()
-    {
-        return new CommandFactory();
+        return XaCommandReaderFactory.DEFAULT;
     }
 
     protected String getLogPrefix()
@@ -254,13 +241,23 @@ public class DumpLogicalLog
         };
     }
 
-    public static class CommandFactory extends XaCommandFactory
+    private class PrintingConsumer implements Consumer<LogEntry, IOException>
     {
-        @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel,
-                ByteBuffer buffer ) throws IOException
+
+        private final PrintStream out;
+        private final TimeZone timeZone;
+
+        private PrintingConsumer( PrintStream out, TimeZone timeZone )
         {
-            return Command.readCommand( null, null, byteChannel, buffer );
+            this.out = out;
+            this.timeZone = timeZone;
+        }
+
+        @Override
+        public boolean accept( LogEntry entry ) throws IOException
+        {
+            out.println( entry.toString( timeZone ) );
+            return true;
         }
     }
 }

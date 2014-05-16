@@ -25,24 +25,32 @@ import java.util.Random;
 
 public final class StoreId
 {
+    public static final int SIZE_IN_BYTES = 8 + 8 + 8; // creation time + random + store version (fixed value)
+
+    /*
+     * This field represents the store version of the last Neo4j version which had the store version as part of
+     * the StoreId (2.0.1). This field is now deprecated but is not removed. Fixing it to this value ensures
+     * rolling upgrades can happen.
+     * // TODO use NeoStore.versionStringToLong() to do the translation - currently does not work as expected
+     */
+    private static final long storeVersionAsLong = 13843131341501958l;
+
     private static final Random r = new SecureRandom();
+
     private final long creationTime;
     private final long randomId;
-    private final long storeVersion;
 
     public StoreId()
     {
         this(
-                System.currentTimeMillis(),
-                r.nextLong(),
-                NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
+            System.currentTimeMillis(),
+            r.nextLong() );
     }
 
-    public StoreId( long creationTime, long randomId, long storeVersion )
+    public StoreId( long creationTime, long randomId )
     {
         this.creationTime = creationTime;
         this.randomId = randomId;
-        this.storeVersion = storeVersion;
     }
 
     public long getCreationTime()
@@ -55,18 +63,13 @@ public final class StoreId
         return randomId;
     }
 
-    public long getStoreVersion()
-    {
-        return storeVersion;
-    }
-
     @Override
     public boolean equals( Object obj )
     {
         if ( obj instanceof StoreId )
         {
             StoreId that = (StoreId) obj;
-            return that.creationTime == this.creationTime && that.randomId == this.randomId && that.storeVersion == this.storeVersion;
+            return that.creationTime == this.creationTime && that.randomId == this.randomId;
         }
         return false;
     }
@@ -74,18 +77,22 @@ public final class StoreId
     @Override
     public int hashCode()
     {
-        return (int) (( creationTime ^ randomId ) ^ storeVersion);
+        return (int) (( creationTime ^ randomId ) );
     }
 
     public byte[] serialize()
     {
-        return ByteBuffer.wrap( new byte[8+8+8] ).putLong( creationTime ).putLong( randomId ).putLong(storeVersion).array();
+        return ByteBuffer.wrap( new byte[8+8+8] )
+                .putLong( creationTime )
+                .putLong( randomId )
+                .putLong( storeVersionAsLong )
+                .array();
     }
 
     @Override
     public String toString()
     {
-        return "StoreId[time:" + creationTime + ", id:" + randomId + ", store version: " + storeVersion + "]";
+        return "StoreId[time:" + creationTime + ", id:" + randomId + ", store version: " + -2 + "]";
     }
 
     public static StoreId deserialize( byte[] data )
@@ -99,7 +106,7 @@ public final class StoreId
     {
         long creationTime = buffer.getLong();
         long randomId = buffer.getLong();
-        long storeVersion = buffer.getLong();
-        return new StoreId( creationTime, randomId, storeVersion );
+        buffer.getLong(); // consume fixed 8 bytes
+        return new StoreId( creationTime, randomId );
     }
 }

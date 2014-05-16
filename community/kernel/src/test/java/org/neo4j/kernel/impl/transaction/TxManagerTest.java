@@ -19,6 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.doNothing;
+import static org.mockito.Mockito.doThrow;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+import static org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier.ALWAYS_VALID;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 import java.io.File;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -27,7 +41,6 @@ import javax.transaction.SystemException;
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.KernelEventHandlers;
@@ -45,21 +58,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.BufferingLogging;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
-
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.doNothing;
-import static org.mockito.Mockito.doThrow;
-import static org.mockito.Mockito.mock;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
-import static org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier.ALWAYS_VALID;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class TxManagerTest
 {

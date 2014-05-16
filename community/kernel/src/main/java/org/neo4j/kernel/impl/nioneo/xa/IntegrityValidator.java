@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.lang.String.format;
+
 import javax.transaction.xa.XAException;
 
 import org.neo4j.graphdb.ConstraintViolationException;
@@ -32,8 +34,6 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
-
-import static java.lang.String.format;
 
 /**
  * Validates data integrity during the prepare phase of {@link NeoStoreTransaction}.
@@ -73,7 +73,7 @@ public class IntegrityValidator
             // For now, we just kill these transactions.
             throw Exceptions.withCause( new XAException( XAException.XA_RBINTEGRITY ),
                     new ConstraintViolationException( format(
-                            "Database constraints have changed (txId=%d) after this transaction (txId%d) started, " +
+                            "Database constraints have changed (txId=%d) after this transaction (txId=%d) started, " +
                             "which is not yet supported. Please retry your transaction to ensure all " +
                             "constraints are executed.", latestConstraintIntroducingTx,
                             lastCommittedTxWhenTransactionStarted ) ) );

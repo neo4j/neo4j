@@ -37,9 +37,9 @@ public class CommandMatchers
                 if( entry != null
                         && entry.getIdentifier() == identifier
                         && entry.getXaCommand() != null
-                        && entry.getXaCommand() instanceof Command.NodeCommand)
+                        && entry.getXaCommand() instanceof org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand)
                 {
-                    Command.NodeCommand cmd = (Command.NodeCommand) entry.getXaCommand();
+                    org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand cmd = (org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand) entry.getXaCommand();
 
                     return cmd.getKey() == nodeId;
                 }

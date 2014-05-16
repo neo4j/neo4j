@@ -29,7 +29,7 @@ import org.neo4j.kernel.api.exceptions.schema.SchemaRuleNotFoundException
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
 import collection.JavaConverters._
 
-class TransactionBoundPlanContext(statement: Statement, kernelAPI: KernelAPI, gdb: GraphDatabaseService)
+final class TransactionBoundPlanContext(statement: Statement, kernelAPI: KernelAPI, gdb: GraphDatabaseService)
   extends TransactionBoundTokenContext(statement) with PlanContext {
 
   def indexesGetForLabel(labelId: Int): Iterator[IndexDescriptor] =

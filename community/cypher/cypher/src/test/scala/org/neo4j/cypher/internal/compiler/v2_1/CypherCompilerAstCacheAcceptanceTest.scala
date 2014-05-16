@@ -43,7 +43,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should monitor cache misses") {
-    val compiler = newCurrentCompiler.compiler2_1
+    val compiler = newCurrentCompiler.ronjaCompiler2_1
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
@@ -53,7 +53,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should monitor cache hits") {
-    val compiler = newCurrentCompiler.compiler2_1
+    val compiler = newCurrentCompiler.ronjaCompiler2_1
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 
@@ -64,7 +64,7 @@ class CypherCompilerAstCacheAcceptanceTest extends CypherFunSuite with GraphData
   }
 
   test("should monitor cache flushes") {
-    val compiler = newCurrentCompiler.compiler2_1
+    val compiler = newCurrentCompiler.ronjaCompiler2_1
     val counter = new CacheCounter()
     compiler.monitors.addMonitorListener(counter)
 

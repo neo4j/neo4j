@@ -58,7 +58,7 @@ public class ManyPropertyKeysIT
         assertEquals( countBefore, propertyKeyCount( db ) );
         db.shutdown();
     }
-    
+
     @Test
     public void concurrently_creating_same_property_key_in_different_transactions_should_end_up_with_same_key_id() throws Exception
     {
@@ -82,9 +82,8 @@ public class ManyPropertyKeysIT
         assertEquals( 1, propertyKeyCount( db ) );
         db.shutdown();
     }
-    
     private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
-    
+
     private GraphDatabaseAPI database()
     {
         return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
@@ -97,12 +96,14 @@ public class ManyPropertyKeysIT
         {
             Node node = db.createNode();
             for ( int i = 0; i < propertyKeyCount; i++ )
+            {
                 node.setProperty( key( i ), true );
+            }
             tx.success();
             return db;
         }
     }
-    
+
     private String key( int i )
     {
         return "key" + i;
@@ -122,20 +123,20 @@ public class ManyPropertyKeysIT
     private int propertyKeyCount( GraphDatabaseAPI db )
     {
         return (int) db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                .getNeoStoreDataSource().getNeoStore().getPropertyStore().getPropertyKeyTokenStore().getHighId();
+                .getNeoStoreDataSource().getNeoStore().getPropertyKeyTokenStore().getHighId();
     }
-    
+
     private static class WorkerState
     {
         protected final GraphDatabaseService db;
         protected Transaction tx;
-        
+
         WorkerState( GraphDatabaseService db )
         {
             this.db = db;
         }
     }
-    
+
     private static class BeginTx implements WorkerCommand<WorkerState, Void>
     {
         @Override
@@ -145,7 +146,7 @@ public class ManyPropertyKeysIT
             return null;
         }
     }
-    
+
     private static class CreateNodeAndSetProperty implements WorkerCommand<WorkerState, Void>
     {
         private final String key;
@@ -154,7 +155,7 @@ public class ManyPropertyKeysIT
         {
             this.key = key;
         }
-        
+
         @Override
         public Void doWork( WorkerState state )
         {
@@ -163,7 +164,7 @@ public class ManyPropertyKeysIT
             return null;
         }
     }
-    
+
     private static class FinishTx implements WorkerCommand<WorkerState, Void>
     {
         @Override

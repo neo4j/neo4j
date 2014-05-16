@@ -68,14 +68,14 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     }
 
     @Override
-    protected void setRecovered()
+    public void setRecovered()
     {
         super.setRecovered();
         nameStore.setRecovered();
     }
 
     @Override
-    protected void unsetRecovered()
+    public void unsetRecovered()
     {
         super.unsetRecovered();
         nameStore.unsetRecovered();
@@ -229,7 +229,9 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
     public Collection<DynamicRecord> allocateNameRecords( byte[] chars )
     {
-        return nameStore.allocateRecordsFromBytes( chars );
+        Collection<DynamicRecord> records = new ArrayList<>();
+        nameStore.allocateRecordsFromBytes( records, chars );
+        return records;
     }
 
     public T getLightRecord( int id )

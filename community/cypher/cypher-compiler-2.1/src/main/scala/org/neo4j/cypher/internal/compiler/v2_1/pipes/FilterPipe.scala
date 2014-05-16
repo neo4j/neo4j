@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands.Predicate
-import data.SimpleVal
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.LegacyExpression
 
 case class FilterPipe(source: Pipe, predicate: Predicate)
                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -30,6 +30,5 @@ case class FilterPipe(source: Pipe, predicate: Predicate)
   protected def internalCreateResults(input: Iterator[ExecutionContext],state: QueryState) =
     input.filter(ctx => predicate.isTrue(ctx)(state))
 
-  def executionPlanDescription =
-    source.executionPlanDescription.andThen(this, "Filter", "pred" -> SimpleVal.fromStr(predicate))
+  def planDescription = source.planDescription.andThen(this, "Filter", LegacyExpression(predicate))
 }

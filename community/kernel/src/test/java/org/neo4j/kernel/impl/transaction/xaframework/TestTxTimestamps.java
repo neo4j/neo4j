@@ -19,30 +19,31 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.xa.Command;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
 
 public class TestTxTimestamps
 {
@@ -85,27 +86,18 @@ public class TestTxTimestamps
                 NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v0" ), "r" );
         try
         {
-            XaCommandFactory commandFactory = new CommandFactory();
-            LogIoUtils.readLogHeader( buffer, channel, true );
-            int foundTxCount = 0;
-            skipFirstTransaction( buffer, channel, commandFactory ); // Since it's the property index transaction
-            for (LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, commandFactory )) != null; )
+            VersionAwareLogEntryReader.readLogHeader( buffer, channel, true );
+
+            AConsumer consumer = new AConsumer( expectedCommitTimestamps, expectedStartTimestamps );
+
+            LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
+
+            try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( channel ) )
             {
-                if ( entry instanceof LogEntry.Start )
-                {
-                    long diff = ((LogEntry.Start) entry).getTimeWritten()-expectedStartTimestamps[foundTxCount];
-                    long exp = expectedCommitTimestamps[foundTxCount] - expectedStartTimestamps[foundTxCount];
-                    assertTrue( diff + " <= " + exp, diff <= exp );
-                }
-                else if ( entry instanceof LogEntry.Commit )
-                {
-                    long diff = ((LogEntry.Commit) entry).getTimeWritten()-expectedCommitTimestamps[foundTxCount];
-                    long exp = expectedCommitTimestamps[foundTxCount] - expectedStartTimestamps[foundTxCount];
-                    assertTrue( diff + " <= " + exp, diff <= exp );
-                    foundTxCount++;
-                }
+                while( cursor.next( consumer ) );
             }
-            assertEquals( expectedCommitTimestamps.length, foundTxCount );
+
+            assertEquals( expectedCommitTimestamps.length, consumer.getFoundTxCount() );
         }
         finally
         {
@@ -113,20 +105,49 @@ public class TestTxTimestamps
         }
     }
 
-    private void skipFirstTransaction( ByteBuffer buffer, StoreChannel channel, XaCommandFactory commandFactory ) throws IOException
+    private class AConsumer implements Consumer<LogEntry, IOException>
     {
-        for (LogEntry entry; (entry = LogIoUtils.readEntry( buffer, channel, commandFactory )) != null; )
-            if ( entry instanceof Commit )
-                break;
-    }
+        private int foundTxCount;
+        private boolean skippedFirstTx = false;
+        private final long[] expectedCommitTimestamps;
+        private final long[] expectedStartTimestamps;
 
-    private static class CommandFactory extends XaCommandFactory
-    {
-        @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel,
-                ByteBuffer buffer ) throws IOException
+        private AConsumer( long[] expectedCommitTimestamps, long[] expectedStartTimestamps )
         {
-            return Command.readCommand( null, null, byteChannel, buffer );
+            this.expectedCommitTimestamps = expectedCommitTimestamps;
+            this.expectedStartTimestamps = expectedStartTimestamps;
+        }
+
+        public int getFoundTxCount()
+        {
+            return foundTxCount;
+        }
+
+        @Override
+        public boolean accept( LogEntry entry ) throws IOException
+        {
+            if ( !skippedFirstTx )
+            {   // Since it's the property index transaction
+                if ( entry instanceof Commit )
+                {
+                    skippedFirstTx = true;
+                }
+                return true;
+            }
+            if ( entry instanceof LogEntry.Start )
+            {
+                long diff = ((LogEntry.Start) entry).getTimeWritten() - expectedStartTimestamps[foundTxCount];
+                long exp = expectedCommitTimestamps[foundTxCount] - expectedStartTimestamps[foundTxCount];
+                assertTrue( diff + " <= " + exp, diff <= exp );
+            }
+            else if ( entry instanceof LogEntry.Commit )
+            {
+                long diff = ((LogEntry.Commit) entry).getTimeWritten()-expectedCommitTimestamps[foundTxCount];
+                long exp = expectedCommitTimestamps[foundTxCount] - expectedStartTimestamps[foundTxCount];
+                assertTrue( diff + " <= " + exp, diff <= exp );
+                foundTxCount++;
+            }
+            return true;
         }
     }
 }

@@ -54,6 +54,20 @@ public class AdversarialFileChannel extends StoreFileChannel
     }
 
     @Override
+    public void writeAll( ByteBuffer src, long position ) throws IOException
+    {
+        adversary.injectFailure( IOException.class );
+        super.writeAll( src, position );
+    }
+
+    @Override
+    public void writeAll( ByteBuffer src ) throws IOException
+    {
+        adversary.injectFailure( IOException.class );
+        super.writeAll( src );
+    }
+
+    @Override
     public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
     {
         adversary.injectFailure( IOException.class );

@@ -19,6 +19,9 @@
  */
 package org.neo4j.consistency.checking;
 
+import static java.util.Collections.singletonMap;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.channels.ReadableByteChannel;
@@ -29,7 +32,6 @@ import java.util.Map;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -56,10 +58,6 @@ import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
-
-import static java.util.Collections.singletonMap;
-
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
 
 public abstract class GraphStoreFixture implements TestRule
 {

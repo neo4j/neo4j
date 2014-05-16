@@ -80,7 +80,7 @@ class BackupService
         {
             return Collections.unmodifiableMap( lastCommittedTxs );
         }
-        
+
         public boolean isConsistent()
         {
             return consistent;

@@ -394,9 +394,10 @@ public class StateHandlingStatementOperations implements
         }
         DiffSets<IndexDescriptor> ruleDiffSet = state.txState().indexDiffSetsByLabel( labelId );
 
-        Iterator<IndexDescriptor> rules =
-                state.hasTxStateWithChanges() ? ruleDiffSet.apply( committedRules.iterator() ) : committedRules
-                        .iterator();
+        boolean hasTxStateWithChanges = state.hasTxStateWithChanges();
+        Iterator<IndexDescriptor> rules = hasTxStateWithChanges ?
+                filterByPropertyKeyId( ruleDiffSet.apply( committedRules.iterator() ), propertyKey ) :
+                committedRules.iterator();
         IndexDescriptor single = singleOrNull( rules );
         if ( single == null )
         {
@@ -404,6 +405,21 @@ public class StateHandlingStatementOperations implements
                     propertyKey + " not found" );
         }
         return single;
+    }
+
+    private Iterator<IndexDescriptor> filterByPropertyKeyId(
+            Iterator<IndexDescriptor> descriptorIterator,
+            final int propertyKey )
+    {
+        Predicate<IndexDescriptor> predicate = new Predicate<IndexDescriptor>()
+        {
+            @Override
+            public boolean accept( IndexDescriptor item )
+            {
+                return item.getPropertyKeyId() == propertyKey;
+            }
+        };
+        return filter( predicate, descriptorIterator );
     }
 
     @Override

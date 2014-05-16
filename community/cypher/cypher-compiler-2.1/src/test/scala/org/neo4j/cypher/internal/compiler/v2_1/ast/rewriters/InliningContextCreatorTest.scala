@@ -24,8 +24,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.AstRewritingTestSupport
 
 class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSupport {
 
-  val identA = ident("a")
-  val identB = ident("b")
+  val identA  = ident("a")
+  val identB  = ident("b")
+  val identR  = ident("r")
+  val identX1 = ident("x1")
+  val identX2 = ident("x2")
 
   test("should not spoil aliased node identifiers") {
     val ast = parser.parse("match (a) with a as b match (b) return b")
@@ -43,5 +46,14 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
 
     context.projections should equal(Map(identB -> identA))
     context.alias(identB) should equal(Some(identA))
+  }
+
+  test("should spoil all the identifiers when WITH has aggregations") {
+    val ast = parser.parse("match (a)-[r]->(b) with a as `x1`, count(r) as `x2` return x1, x2")
+
+    val context = inliningContextCreator(ast)
+
+    context.seenIdentifiers should equal(Set(identX1, identX2, identA, identB, identR))
+    context.projections should equal(Map.empty)
   }
 }

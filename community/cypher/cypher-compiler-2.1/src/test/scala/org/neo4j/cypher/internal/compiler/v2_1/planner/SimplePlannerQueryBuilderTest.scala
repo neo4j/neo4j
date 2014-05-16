@@ -609,14 +609,14 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     evaluating(buildPlannerQuery("optional match (a:Foo) with a match (a)-->() return a", normalize = true)) should produce[CantHandleQueryException]
   }
 
-  ignore("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {
+  test("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {
     val (query, _) = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
     query.tail should not be empty
     query.graph.selections.predicates should equal(Set(
       Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_)
     ))
     query.graph.patternNodes should equal(Set(IdName("a")))
-    query.projection.projections should equal(Map[String, Expression]("a" -> Property(Identifier("a")_, PropertyKeyName("prop")_)_))
+    query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
     query.projection.limit should equal(Some(UnsignedIntegerLiteral("1")(null)))
 
     val tailQg = query.tail.get
@@ -628,6 +628,47 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
         Equals(Property(Identifier("a")_, PropertyKeyName("prop")_)_, FunctionInvocation(FunctionName("id")_, Identifier("b")_)_)_
       )
     ))
+    tailQg.projection.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
+  }
+
+  test("MATCH (a:Start) WITH a.prop AS property MATCH (b) WHERE id(b) = property RETURN b") {
+    val (query, _) = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
+    query.tail should be(empty)
+    query.graph.selections.predicates should equal(Set(
+      Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_),
+      Predicate(
+        Set(IdName("b"), IdName("a")),
+        Equals(Property(Identifier("a")_, PropertyKeyName("prop")_)_, FunctionInvocation(FunctionName("id")_, Identifier("b")_)_)_
+      )
+    ))
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    query.projection.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
+    query.projection.limit should equal(None)
+  }
+
+  test("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b") {
+    val (query, _) = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
+    query.tail should not be empty
+    query.graph.selections.predicates should equal(Set(
+      Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_)
+    ))
+    query.graph.patternNodes should equal(Set(IdName("a")))
+    query.projection should equal(AggregationProjection(
+      Map("property" -> Property(Identifier("a")_, PropertyKeyName("prop")_)_),
+      Map("count" -> CountStar()_),
+      Seq.empty, None, None
+    ))
+
+    val tailQg = query.tail.get
+    tailQg.graph.patternNodes should equal(Set(IdName("b")))
+    tailQg.graph.patternRelationships should be(empty)
+    tailQg.graph.selections.predicates should equal(Set(
+      Predicate(
+        Set(IdName("b"), IdName("property")),
+        Equals(Identifier("property")_, FunctionInvocation(FunctionName("id")_, Identifier("b")_)_)_
+      )
+    ))
+    tailQg.projection.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
   }
 
   test("MATCH n RETURN count(*)") {

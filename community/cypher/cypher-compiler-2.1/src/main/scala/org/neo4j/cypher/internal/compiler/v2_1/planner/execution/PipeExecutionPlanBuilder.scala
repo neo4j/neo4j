@@ -43,8 +43,8 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case Projection(left, expressions) =>
           ProjectionNewPipe(buildPipe(left), toLegacyExpressions(expressions))
 
-        case SingleRow(ids) =>
-          NullPipe(new SymbolTable(ids.map { case IdName(key) => key -> CTAny}.toMap))
+        case sr @ SingleRow(ids) =>
+          NullPipe(new SymbolTable(sr.typeInfo))
 
         case AllNodesScan(IdName(id)) =>
           AllNodesScanPipe(id)

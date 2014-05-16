@@ -39,7 +39,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
 
     relate(a,createNode())
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       "MATCH a WITH a ORDER BY a.name LIMIT 1 MATCH a-->b RETURN a"
     )
     result.toList should equal(List(Map("a" -> a)))
@@ -76,7 +76,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createLabeledNode(Map("prop" -> 3), "End")
     createLabeledNode(Map("prop" -> b.getId), "Start")
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       "MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b"
     )
     result.toSet should equal(Set(Map("b" -> b)))
@@ -87,7 +87,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     createNode("prop" -> "B", "id" -> a.getId)
     createNode("prop" -> "C", "id" -> 0)
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       """MATCH (a)
         |WITH a.prop AS property, a.id as idToUse
         |ORDER BY property
@@ -119,7 +119,7 @@ class WithAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupp
     relate(a, createNode())
     relate(b, createNode())
 
-    val result = execute(
+    val result = executeWithNewPlanner(
       "MATCH (a)-->() WITH a, count(*) as relCount WHERE relCount > 1 RETURN a"
     )
     result.toSet should equal(Set(Map("a" -> a)))

@@ -218,7 +218,7 @@ public class StoreFactory
         return createNeoStore( fileName, new StoreId() );
     }
 
-    public NeoStore createNeoStore(File fileName, StoreId storeId)
+    public NeoStore createNeoStore( File fileName, StoreId storeId )
     {
         createEmptyStore( fileName, buildTypeDescriptorAndVersion( NeoStore.TYPE_DESCRIPTOR ) );
         createNodeStore(new File( fileName.getPath() + NODE_STORE_NAME));
@@ -242,7 +242,7 @@ public class StoreFactory
         neoStore.setRandomNumber( storeId.getRandomId() );
         neoStore.setVersion( 0 );
         neoStore.setLastCommittedTx( 1 );
-        neoStore.setStoreVersion( storeId.getStoreVersion() );
+        neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         neoStore.setGraphNextProp( -1 );
         return neoStore;
     }

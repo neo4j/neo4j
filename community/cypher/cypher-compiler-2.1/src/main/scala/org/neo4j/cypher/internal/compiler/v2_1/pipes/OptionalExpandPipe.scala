@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.InternalException
 import org.neo4j.graphdb.{Relationship, Direction, Node}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.Predicate
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 
 case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: String, dir: Direction, types: Seq[String], predicate: Predicate)
                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -62,9 +63,9 @@ case class OptionalExpandPipe(source: Pipe, from: String, relName: String, to: S
   def getFromNode(row: ExecutionContext): Any =
     row.getOrElse(from, throw new InternalException(s"Expected to find a node at $from but found nothing"))
 
-  def executionPlanDescription =
-    source.executionPlanDescription.
-      andThen(this, "Expand", "from" -> from, "to" -> to, "relName" -> relName)
+  def planDescription =
+    source.planDescription.
+      andThen(this, "Expand", IntroducedIdentifier(relName), IntroducedIdentifier(to))
 
   def symbols = source.symbols.add(to, CTNode).add(relName, CTRelationship)
 }

@@ -19,15 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, PlanDescription, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.{TwoChildren, PlanDescriptionImpl, PlanDescription, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
-case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)(implicit pipeMonitor: PipeMonitor) extends Pipe
-{
+case class CartesianProductPipe(lhs: Pipe, rhs: Pipe)(implicit pipeMonitor: PipeMonitor) extends Pipe {
   def exists(pred: (Pipe) => Boolean): Boolean = lhs.exists(pred) || rhs.exists(pred)
 
-  def executionPlanDescription: PlanDescription =
-    new PlanDescriptionImpl(this, "CartesianProduct", Seq(lhs.executionPlanDescription, rhs.executionPlanDescription), Seq.empty)
+  def planDescription: PlanDescription =
+    new PlanDescriptionImpl(this, "CartesianProduct", TwoChildren(lhs.planDescription, rhs.planDescription), Seq.empty)
 
   def symbols: SymbolTable = lhs.symbols.add(rhs.symbols.identifiers)
 

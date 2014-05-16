@@ -93,6 +93,16 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     result should equal(ast("MATCH ()-[a]->() WITH * MATCH ()-[a]->() RETURN a as `b`"))
   }
 
+  test("should not inline aggregations: MATCH (a)-[r]->() WITH a, count(r) as b RETURN b as `b`") {
+    val result = projectionInlinedAst("MATCH (a)-[r]->() WITH a, count(r) as b RETURN b as `b`")
+    result should equal(ast("MATCH (a)-[r]->() WITH a, count(r) as b RETURN b as `b`"))
+  }
+
+  test("should not inline aggregations: MATCH (a)-[r]->() RETURN a, count(r) as `b`") {
+    val result = projectionInlinedAst("MATCH (a)-[r]->() RETURN a, count(r) as `b`")
+    result should equal(ast("MATCH (a)-[r]->() RETURN a, count(r) as `b`"))
+  }
+
   // FIXME: 2014-4-30 Davide: No inlining due to missing scope information for the identifiers
   test("should not inline identifiers which are reused multiple times: WITH 1 as n WITH 2 AS n RETURN n") {
     val result = projectionInlinedAst("WITH 1 as n WITH 2 AS n RETURN n")
@@ -102,7 +112,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
 
   // FIXME: 2014-4-30 Davide: This is not yet supported by the inline rewriter due to missing scope information for the identifiers
   ignore("should inline same identifier across multiple WITH clauses, case #1: WITH 1 as n WITH n+1 AS n RETURN n => RETURN 1+1 as n") {
-    val result = projectionInlinedAst("WITH * WITH * RETURN 1+1")
+    val result = projectionInlinedAst("WITH 1 as n WITH n+1 AS n RETURN n")
 
     result should equal(ast("WITH * WITH * RETURN 1+1 as `n`"))
   }
@@ -174,6 +184,18 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
     )_
 
     returns should equal(expected: PathExpression)
+  }
+
+  test("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x" ) {
+    val result = projectionInlinedAst("MATCH n WITH n.prop AS x WITH x LIMIT 10 RETURN x")
+
+    result should equal(ast("MATCH n WITH n.prop AS x WITH * LIMIT 10 RETURN x"))
+  }
+
+  test("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b" ) {
+    val result = projectionInlinedAst("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b")
+
+    result should equal(ast("MATCH (a:Start) WITH a.prop AS property, count(*) AS `count` MATCH (b) WHERE id(b) = property RETURN b AS `b`"))
   }
 
   private def parseReturnedExpr(queryText: String) =

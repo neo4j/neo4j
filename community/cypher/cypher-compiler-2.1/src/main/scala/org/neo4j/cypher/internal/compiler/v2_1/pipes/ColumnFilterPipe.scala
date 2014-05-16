@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
 import commands.expressions._
-import symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
-import org.neo4j.cypher.internal.compiler.v2_1.data.SimpleVal
+import symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
 
 class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
                       (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -48,11 +48,8 @@ class ColumnFilterPipe(source: Pipe, val returnItems: Seq[ReturnItem])
     })
   }
 
-  override def executionPlanDescription =
-    source.executionPlanDescription
-      .andThen(this, "ColumnFilter",
-        "symKeys" -> SimpleVal.fromIterable(source.symbols.keys),
-        "returnItemNames" -> SimpleVal.fromIterable(returnItemNames))
+  def planDescription =
+    new PlanDescriptionImpl(this, "ColumnFilter", SingleChild(source.planDescription), Seq(Arguments.ColumnsLeft(returnItemNames.toList)))
 
   def dependencies = Seq()
 }

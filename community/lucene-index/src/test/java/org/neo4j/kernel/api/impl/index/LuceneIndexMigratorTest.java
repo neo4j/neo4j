@@ -38,7 +38,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.api.impl.index.LuceneIndexMigrator.Monitor;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.api.index.ProviderMeta;
@@ -228,8 +227,7 @@ public class LuceneIndexMigratorTest
     private void migrateNeoStore( File storeDir )
     {
         StoreUpgrader upgrader = new StoreUpgrader( ALLOW_UPGRADE, fileSystem, StoreUpgrader.NO_MONITOR );
-        upgrader.addParticipant( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem,
-                idGeneratorFactory ) );
+        upgrader.addParticipant( new StoreMigrator( new SilentMigrationProgressMonitor(), fileSystem ) );
         upgrader.migrateIfNeeded( storeDir );
     }
 
@@ -244,7 +242,6 @@ public class LuceneIndexMigratorTest
     private File storeDir;
     private NeoStore neoStore;
     private final DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-    private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
 
     @Before
     public void before() throws IOException

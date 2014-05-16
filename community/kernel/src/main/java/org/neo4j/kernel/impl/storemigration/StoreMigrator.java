@@ -21,20 +21,23 @@ package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.concurrent.ArrayBlockingQueue;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicLong;
-import java.util.concurrent.atomic.AtomicReference;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Iterator;
+import java.util.List;
 
-import org.neo4j.collection.primitive.Primitive;
-import org.neo4j.collection.primitive.PrimitiveLongObjectMap;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.IteratorWrapper;
+import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
+import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -43,22 +46,25 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreVersionMismatchHandler;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyNodeStoreReader;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader;
-import org.neo4j.kernel.impl.storemigration.legacystore.LegacyRelationshipStoreReader.ReusableRelationship;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
+import org.neo4j.unsafe.impl.batchimport.BatchImporter;
+import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.ParallellBatchImporter;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeIdMapping;
+import org.neo4j.unsafe.impl.batchimport.input.InputNode;
+import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
+import org.neo4j.unsafe.impl.batchimport.staging.CoarseBoundedProgressExecutionMonitor;
+import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 
 /**
  * Migrates a neo4j kernel database from one version to the next.
@@ -70,15 +76,16 @@ import static org.neo4j.kernel.impl.locking.LockService.NO_LOCK_SERVICE;
  *
  * @see StoreUpgrader
  */
-public class StoreMigrator implements StoreMigrationParticipant
+public class StoreMigrator extends StoreMigrationParticipant.Adapter
 {
+    private static final Object[] NO_PROPERTIES = new Object[0];
+
     // Developers: There is a benchmark, storemigrate-benchmark, that generates large stores and benchmarks
     // the upgrade process. Please utilize that when writing upgrade code to ensure the code is fast enough to
     // complete upgrades in a reasonable time period.
 
     private final MigrationProgressMonitor progressMonitor;
     private final UpgradableDatabase upgradableDatabase;
-    private final IdGeneratorFactory idGeneratorFactory;
     private final Config config;
 
     // Dependency satisfaction
@@ -87,19 +94,17 @@ public class StoreMigrator implements StoreMigrationParticipant
 
     // TODO progress meter should be an aspect of StoreUpgrader, not specific to this participant.
 
-    public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem,
-            IdGeneratorFactory idGeneratorFactory )
+    public StoreMigrator( MigrationProgressMonitor progressMonitor, FileSystemAbstraction fileSystem )
     {
         this( progressMonitor, new UpgradableDatabase( new StoreVersionCheck( fileSystem ) ),
-                idGeneratorFactory, new Config() );
+                new Config() );
     }
 
     public StoreMigrator( MigrationProgressMonitor progressMonitor, UpgradableDatabase upgradableDatabase,
-            IdGeneratorFactory idGeneratorFactory, Config config )
+            Config config )
     {
         this.progressMonitor = progressMonitor;
         this.upgradableDatabase = upgradableDatabase;
-        this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
     }
 
@@ -120,40 +125,136 @@ public class StoreMigrator implements StoreMigrationParticipant
     public void migrate( FileSystemAbstraction fileSystem, File storeDir, File migrationDir,
             DependencyResolver dependencyResolver ) throws IOException
     {
-        File upgradeFileName = new File( migrationDir, NeoStore.DEFAULT_NAME );
-        IndividualNeoStores stores = new IndividualNeoStores( fileSystem, upgradeFileName, config, idGeneratorFactory );
         LegacyStore legacyStore = new LegacyStore( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ) );
 
+        ExecutionMonitor executionMonitor = new CoarseBoundedProgressExecutionMonitor(
+                legacyStore.getNodeStoreReader().getMaxId(), legacyStore.getRelStoreReader().getMaxId() )
+        {
+            @Override
+            protected void percent( int percent )
+            {
+                progressMonitor.percentComplete( percent );
+            }
+        };
+        BatchImporter importer = new ParallellBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
+                new Configuration.FromConfig( config ), Collections.<KernelExtensionFactory<?>>emptyList(),
+                executionMonitor );
         progressMonitor.started();
-        new Migration( legacyStore, stores ).migrateNodesAndRelationships();
+        importer.doImport( legacyNodesAsInput( legacyStore ), legacyRelationshipsAsInput( legacyStore ),
+                NodeIdMapping.actual );
         progressMonitor.finished();
 
         // Close
-        stores.close();
+        importer.shutdown();
         legacyStore.close();
+    }
 
-        // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
-        StoreFile.deleteIdFile( fileSystem, migrationDir, StoreFile.NODE_STORE, StoreFile.RELATIONSHIP_STORE );
+    private StoreFile[] allExcept( StoreFile... exceptions )
+    {
+        List<StoreFile> result = new ArrayList<>();
+        result.addAll( Arrays.asList( StoreFile.values() ) );
+        for ( StoreFile except : exceptions )
+        {
+            result.remove( except );
+        }
+        return result.toArray( new StoreFile[result.size()] );
+    }
+
+    private Iterable<InputRelationship> legacyRelationshipsAsInput( LegacyStore legacyStore )
+    {
+        final LegacyRelationshipStoreReader reader = legacyStore.getRelStoreReader();
+        return new Iterable<InputRelationship>()
+        {
+            @Override
+            public Iterator<InputRelationship> iterator()
+            {
+                Iterator<RelationshipRecord> source;
+                try
+                {
+                    source = reader.iterator( 0 );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+
+                return new IteratorWrapper<InputRelationship, RelationshipRecord>( source )
+                {
+                    @Override
+                    protected InputRelationship underlyingObjectToObject( RelationshipRecord record )
+                    {
+                        return new InputRelationship( record.getId(), NO_PROPERTIES, record.getNextProp(),
+                                record.getFirstNode(), record.getSecondNode(), null, record.getType() );
+                    }
+                };
+            }
+        };
+    }
+
+    private Iterable<InputNode> legacyNodesAsInput( LegacyStore legacyStore )
+    {
+        final LegacyNodeStoreReader reader = legacyStore.getNodeStoreReader();
+        final String[] NO_LABELS = new String[0];
+        return new Iterable<InputNode>()
+        {
+            @Override
+            public Iterator<InputNode> iterator()
+            {
+                Iterator<NodeRecord> source;
+                try
+                {
+                    source = reader.iterator();
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+
+                return new IteratorWrapper<InputNode, NodeRecord>( source )
+                {
+                    @Override
+                    protected InputNode underlyingObjectToObject( NodeRecord record )
+                    {
+                        return new InputNode( record.getId(), NO_PROPERTIES, record.getNextProp(),
+                                NO_LABELS, record.getLabelField() );
+                    }
+                };
+            }
+        };
     }
 
     @Override
     public void moveMigratedFiles( FileSystemAbstraction fileSystem, File migrationDir,
             File storeDir, File leftOversDir ) throws IOException
     {
+        // The batch importer will create a whole store. so TODO delete everything except nodestore, relstore, relgroupstore here
+        // Disregard the new and empty node/relationship".id" files, i.e. reuse the existing id files
+        StoreFile.deleteIdFile( fileSystem, migrationDir, allExcept( StoreFile.RELATIONSHIP_GROUP_STORE ) );
+        StoreFile.deleteStoreFile( fileSystem, migrationDir, allExcept( StoreFile.NODE_STORE,
+                StoreFile.RELATIONSHIP_STORE, StoreFile.RELATIONSHIP_GROUP_STORE ) );
+
+        // Move the current ones into the leftovers directory
+        StoreFile.move( fileSystem, storeDir, leftOversDir,
+                IteratorUtil.<StoreFile>asIterable( StoreFile.NODE_STORE, StoreFile.RELATIONSHIP_STORE ),
+                false, false, StoreFileType.STORE );
+
+        // Move the migrated ones into the store directory
         StoreFile.move( fileSystem, migrationDir, storeDir, StoreFile.currentStoreFiles(),
                 true,   // allow skip non existent source files
-                true ); // allow overwrite target files
+                true,   // allow overwrite target files
+                StoreFileType.values() );
         StoreFile.ensureStoreVersion( fileSystem, storeDir, StoreFile.currentStoreFiles() );
-        LogFiles.move( fileSystem, storeDir, leftOversDir );
+//        LogFiles.move( fileSystem, storeDir, leftOversDir );
     }
 
     @Override
     public void satisfyDependenciesDownstream( FileSystemAbstraction fileSystem, File storeDir,
-            File migrationDir, DependencySatisfier dependencySatisfier, boolean participatedInMigration )
+                                               File migrationDir, DependencySatisfier dependencySatisfier, boolean participatedInMigration )
     {
         // Schema cache (schema store not migrated, so grab the current one,
         // but with some flexibility in version checking)
         Config config = StoreFactory.readOnly( this.config );
+        IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         StoreFactory legacyStoreFactory = new StoreFactory( StoreFactory.configForStoreDir( config, storeDir ),
                 idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL,
                 new DefaultTxHook(), StoreVersionMismatchHandler.ACCEPT );
@@ -173,7 +274,7 @@ public class StoreMigrator implements StoreMigrationParticipant
         dependencyPropertyStore = legacyStoreFactory.newPropertyStore( new File( storeDir,
                 NeoStore.DEFAULT_NAME + StoreFactory.PROPERTY_STORE_NAME ) );
         dependencySatisfier.satisfyDependency( PropertyAccessor.class,
-                new NeoStoreIndexStoreView( NO_LOCK_SERVICE, dependencyNodeStore, dependencyPropertyStore ) );
+                new NeoStoreIndexStoreView( LockService.NO_LOCK_SERVICE, dependencyNodeStore, dependencyPropertyStore ) );
     }
 
     @Override
@@ -202,187 +303,5 @@ public class StoreMigrator implements StoreMigrationParticipant
     public String toString()
     {
         return "Kernel StoreMigrator";
-    }
-
-    protected class Migration
-    {
-        private final LegacyStore legacyStore;
-        private final IndividualNeoStores stores;
-        private final long totalEntities;
-        private int percentComplete;
-
-        public Migration( LegacyStore legacyStore, IndividualNeoStores stores )
-        {
-            this.legacyStore = legacyStore;
-            this.stores = stores;
-            totalEntities = legacyStore.getRelStoreReader().getMaxId();
-        }
-
-        private void migrateNodesAndRelationships() throws IOException
-        {
-            final NodeStore nodeStore = stores.createNodeStore();
-            final RelationshipStore relationshipStore = stores.createRelationshipStore();
-            final RelationshipGroupStore relationshipGroupStore = stores.createRelationshipGroupStore();
-            final LegacyNodeStoreReader nodeReader = legacyStore.getNodeStoreReader();
-            final LegacyRelationshipStoreReader relReader = legacyStore.getRelStoreReader();
-            nodeStore.setHighId( nodeReader.getMaxId() );
-            relationshipStore.setHighId( relReader.getMaxId() );
-
-            final ArrayBlockingQueue<RelChainBuilder> chainsToWrite = new ArrayBlockingQueue<>( 1024 );
-            final AtomicReference<Throwable> writerException = new AtomicReference<>();
-
-            Thread writerThread = new RelationshipWriter( chainsToWrite,
-                    relationshipGroupStore.getDenseNodeThreshold(), nodeStore,
-                    relationshipStore, relationshipGroupStore, nodeReader, writerException );
-            writerThread.start();
-
-            try
-            {
-                // Determined through testing to be a reasonable weigh-off between risk/benefit
-                final int maxSimultaneousNodes = (int) (120 * (Runtime.getRuntime().totalMemory() / (1024 * 1024)));
-                final AtomicBoolean morePassesRequired = new AtomicBoolean(false);
-                final AtomicLong firstRelationshipRequiringANewPass = new AtomicLong(0l);
-                final PrimitiveLongObjectMap<RelChainBuilder> relChains = Primitive.longObjectMap();
-                long numberOfPasses = 1;
-                do
-                {
-                    percentComplete = 0;
-                    if(morePassesRequired.get())
-                    {
-                        if(numberOfPasses == 1)
-                        {
-                            System.out.println("\nNote: Was not able to do single-pass upgrade due to highly " +
-                                    "dispersed relationships across the store. Will need to perform multi-pass upgrade.\n" +
-                                    "Note: Dotted line shows progress for each pass, the X in the dotted line shows total progress.\n");
-                        }
-                        else
-                        {
-                            System.out.println( " [MultiPass Upgrade] Finished pass #" + (numberOfPasses-1) );
-                        }
-                        numberOfPasses++;
-                    }
-
-                    relReader.accept( firstRelationshipRequiringANewPass.get(),
-                            new Visitor<ReusableRelationship, RuntimeException>()
-                    {
-                        private final boolean isMultiPass = morePassesRequired.getAndSet( false );
-
-                        @Override
-                        public boolean visit( ReusableRelationship rel )
-                        {
-                            reportProgress( rel.id() );
-                            if ( rel.inUse() )
-                            {
-                                if(appendToRelChain( rel.getFirstNode(), rel.getFirstPrevRel(),
-                                        rel.getFirstNextRel(), rel ))
-                                {
-                                    return true;
-                                }
-
-                                if(appendToRelChain( rel.getSecondNode(), rel.getSecondPrevRel(),
-                                        rel.getSecondNextRel(), rel ))
-                                {
-                                    return true;
-                                }
-                            }
-                            return false;
-                        }
-
-                        private boolean appendToRelChain( long nodeId, long prevRel, long nextRel,
-                                                       ReusableRelationship rel )
-                        {
-                            RelChainBuilder chain = relChains.get( nodeId );
-
-                            if ( chain == null )
-                            {
-                                if ( morePassesRequired.get() || (isMultiPass && nodeStore.inUse( nodeId )) )
-                                {
-                                    // Handled in a previous pass, ignore.
-                                    return false;
-                                }
-
-                                if ( relChains.size() >= maxSimultaneousNodes )
-                                {
-                                    morePassesRequired.set( true );
-                                    firstRelationshipRequiringANewPass.set( rel.id() );
-                                    System.out.print( "X" );
-                                    return false;
-                                }
-
-                                chain = new RelChainBuilder( nodeId );
-                                relChains.put( nodeId, chain );
-                            }
-
-                            chain.append( rel.createRecord(), prevRel, nextRel );
-
-                            if ( chain.isComplete() )
-                            {
-                                assertNoWriterException( writerException );
-                                try
-                                {
-                                    RelChainBuilder remove = relChains.remove( nodeId );
-                                    chainsToWrite.put( remove );
-                                }
-                                catch ( InterruptedException e )
-                                {
-                                    Thread.interrupted();
-                                    throw new RuntimeException( "Interrupted while reading relationships.", e );
-                                }
-                            }
-
-                            return false;
-                        }
-                    } );
-
-                } while(morePassesRequired.get());
-
-                try
-                {
-                    chainsToWrite.put( new RelChainBuilder( -1 ) );
-                    writerThread.join();
-                    assertNoWriterException( writerException );
-                }
-                catch ( InterruptedException e )
-                {
-                    throw new RuntimeException( "Interrupted.", e);
-                }
-
-                // Migrate nodes with no relationships
-                nodeReader.accept(new LegacyNodeStoreReader.Visitor()
-                {
-                    @Override
-                    public void visit( NodeRecord record )
-                    {
-                        if(record.inUse() && record.getNextRel() == Record.NO_NEXT_RELATIONSHIP.intValue())
-                        {
-                            nodeStore.forceUpdateRecord( record );
-                        }
-                    }
-                });
-            }
-            finally
-            {
-                nodeReader.close();
-                relReader.close();
-            }
-        }
-
-        private void assertNoWriterException( AtomicReference<Throwable> writerException )
-        {
-            if(writerException.get() != null)
-            {
-                throw new RuntimeException( writerException.get() );
-            }
-        }
-
-        private void reportProgress( long id )
-        {
-            int newPercent = totalEntities == 0 ? 100 : (int) (id * 100 / (totalEntities));
-            while( newPercent > percentComplete )
-            {
-                percentComplete++;
-                progressMonitor.percentComplete( percentComplete );
-            }
-        }
     }
 }

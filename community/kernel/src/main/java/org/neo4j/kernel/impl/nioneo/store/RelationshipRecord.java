@@ -56,14 +56,29 @@ public class RelationshipRecord extends PrimitiveRecord
         return firstNode;
     }
 
+    public void setFirstNode( long firstNode )
+    {
+        this.firstNode = firstNode;
+    }
+
     public long getSecondNode()
     {
         return secondNode;
     }
 
+    public void setSecondNode( long secondNode )
+    {
+        this.secondNode = secondNode;
+    }
+
     public int getType()
     {
         return type;
+    }
+
+    public void setType( int type )
+    {
+        this.type = type;
     }
 
     public long getFirstPrevRel()
@@ -134,8 +149,8 @@ public class RelationshipRecord extends PrimitiveRecord
                 type ).append( ",sPrev=" ).append( firstPrevRel ).append( ",sNext=" ).append( firstNextRel ).append(
                 ",tPrev=" ).append( secondPrevRel ).append( ",tNext=" ).append( secondNextRel ).append( ",prop=" )
                 .append( getNextProp() )
-                .append( firstInFirstChain ? ",sFirst" : "" )
-                .append( firstInSecondChain ? ",tFirst" : "" )
+                .append( firstInFirstChain ? ",sFirst" : "!sFirst" )
+                .append( firstInSecondChain ? ",tFirst" : "!tFirst" )
                 .append( "]" ).toString();
     }
 

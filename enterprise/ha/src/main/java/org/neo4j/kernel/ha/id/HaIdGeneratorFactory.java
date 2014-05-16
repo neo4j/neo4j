@@ -101,6 +101,11 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
             generator.switchToMaster();
         }
     }
+
+    public void switchRelationshipGroupGeneratorToMaster()
+    {
+        generators.get( IdType.RELATIONSHIP_GROUP ).switchToMaster();
+    }
     
     public void switchToSlave()
     {

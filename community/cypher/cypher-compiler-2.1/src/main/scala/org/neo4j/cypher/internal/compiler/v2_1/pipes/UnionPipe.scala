@@ -25,8 +25,7 @@ import symbols._
 case class UnionPipe(in: Seq[Pipe], columns:List[String])(implicit val monitor: PipeMonitor) extends Pipe {
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = new UnionIterator(in, state)
 
-  def executionPlanDescription: PlanDescription = PlanDescription(this, "Union").
-    withChildren(in.map(_.executionPlanDescription): _*)
+  def planDescription: PlanDescription = PlanDescriptionImpl(this, "Union", NoChildren, Seq.empty) // TODO: This is wrong. Missing children
 
   def symbols: SymbolTable = new SymbolTable(columns.map(k => k -> CTAny).toMap)
 

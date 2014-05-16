@@ -25,11 +25,6 @@ package org.neo4j.cypher.javacompat;
 public interface ProfilerStatistics
 {
     /**
-     * @return PlanDescription for which these ProfilerStatistics have been collected
-     */
-    PlanDescription getPlanDescription();
-
-    /**
      * @return number of rows processed by the associated execution step
      */
     long getRows();
