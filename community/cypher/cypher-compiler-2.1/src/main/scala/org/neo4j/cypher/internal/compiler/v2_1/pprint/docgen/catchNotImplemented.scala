@@ -17,21 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import scala.collection.mutable
-import org.neo4j.cypher.internal.compiler.v2_1.pp.impl.{PageDocFormatter, LineDocFormatter}
-import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
-import org.neo4j.cypher.internal.compiler.v2_1.pp.docgen.{DocStructureDocGenerator, ScalaDocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{Doc, DocGenerator}
 
-/**
- * See pp.Doc
- */
-package object pp {
-  type DocFormatter = Doc => Seq[PrintCommand]
-  type DocGenerator[-T] = PartialFunction[T, Doc]
-  type RecursiveDocGenerator[T] = PartialFunction[T, DocGenerator[T] => Doc]
-  type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
+object catchNotImplemented {
+  def apply[T](docGen: DocGenerator[T]): DocGenerator[T] = new PartialFunction[T, Doc] {
+    def isDefinedAt(v: T) = try { docGen.isDefinedAt(v) } catch { case _: NotImplementedError => true }
+    def apply(v: T) = try { docGen.apply(v) } catch { case _: NotImplementedError => Doc.text("???") }
+  }
 }
-
-

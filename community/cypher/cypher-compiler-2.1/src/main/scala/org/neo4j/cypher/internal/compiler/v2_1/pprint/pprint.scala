@@ -17,13 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-import org.neo4j.cypher.internal.compiler.v2_1.pp.{Doc, DocGenerator}
+object pprint {
+  // Convert value to String by first converting to a doc using the given generator and formatter
+  def format[T](value: T, formatter: DocFormatter = DocFormatter.defaultPageFormatter)
+               (implicit generator: DocGenerator[T] = DocGenerator.forValues): String =
+    printToString(formatter(generator(value)))
 
-object catchNotImplemented {
-  def apply[T](docGen: DocGenerator[T]): DocGenerator[T] = new PartialFunction[T, Doc] {
-    def isDefinedAt(v: T) = try { docGen.isDefinedAt(v) } catch { case _: NotImplementedError => true }
-    def apply(v: T) = try { docGen.apply(v) } catch { case _: NotImplementedError => Doc.text("???") }
-  }
+  def apply[T](value: T, formatter: DocFormatter = DocFormatter.defaultPageFormatter)
+              (implicit generator: DocGenerator[T] = DocGenerator.forValues): Unit =
+    println(format(value, formatter)(generator))
 }

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp
+package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import scala.collection.mutable
@@ -113,7 +113,7 @@ class DocGeneratorTest extends CypherFunSuite {
     implicit val docGen = DocGenerator.forValues
 
     object Fail {
-      override def toString = ???
+      override def toString = throw new NotImplementedError
     }
 
     render(Fail) should equal("???")
@@ -133,5 +133,5 @@ class DocGeneratorTest extends CypherFunSuite {
   }
 
   private def render[T](v: T)(implicit docGen: DocGenerator[T]) =
-    pp.format(v, formatter = DocFormatter.defaultLineFormatter)(docGen)
+    pprint.format(v, formatter = DocFormatter.defaultLineFormatter)(docGen)
 }

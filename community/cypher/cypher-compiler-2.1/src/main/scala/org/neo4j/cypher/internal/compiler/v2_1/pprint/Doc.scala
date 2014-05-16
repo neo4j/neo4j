@@ -17,9 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp
+package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-import org.neo4j.cypher.internal.compiler.v2_1.pp.impl.LineDocFormatter
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.LineDocFormatter
 
 /**
  * Class of pretty-printable documents.
@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.pp.impl.LineDocFormatter
  *
  */
 sealed abstract class Doc {
-  override def toString = pp.format(this, formatter = LineDocFormatter)(DocGenerator.forDocStructure)
+  override def toString = pprint.format(this, formatter = LineDocFormatter)(DocGenerator.forDocStructure)
 }
 
 final case class DocLiteral(doc: Doc)

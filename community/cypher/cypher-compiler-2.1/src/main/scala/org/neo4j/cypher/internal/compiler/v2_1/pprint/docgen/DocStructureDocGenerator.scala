@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pp._
-import org.neo4j.cypher.internal.compiler.v2_1.pp.TextDoc
-import org.neo4j.cypher.internal.compiler.v2_1.pp.NestDoc
-import org.neo4j.cypher.internal.compiler.v2_1.pp.GroupDoc
-import org.neo4j.cypher.internal.compiler.v2_1.pp.ConsDoc
-import org.neo4j.cypher.internal.compiler.v2_1.pp.BreakWith
+import org.neo4j.cypher.internal.compiler.v2_1.pprint._
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.TextDoc
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.NestDoc
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.GroupDoc
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.ConsDoc
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.BreakWith
 import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
 
 object DocStructureDocGenerator {

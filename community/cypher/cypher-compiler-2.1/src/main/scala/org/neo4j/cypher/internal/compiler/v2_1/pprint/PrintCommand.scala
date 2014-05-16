@@ -17,8 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp.impl
+package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-import org.neo4j.cypher.internal.compiler.v2_1.pp.Doc
+sealed abstract class PrintCommand
+case class PrintText(value: String) extends PrintCommand
+case class PrintNewLine(indent: Int) extends PrintCommand
 
-final case class DocIndent(indent: Int, mode: FormatMode, doc: Doc)
+
+
+

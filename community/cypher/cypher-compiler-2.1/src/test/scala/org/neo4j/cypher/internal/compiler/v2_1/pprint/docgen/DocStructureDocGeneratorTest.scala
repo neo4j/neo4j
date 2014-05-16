@@ -17,11 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.pp.impl.LineDocFormatter
-import org.neo4j.cypher.internal.compiler.v2_1.pp._
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.LineDocFormatter
+import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 
 class DocStructureDocGeneratorTest extends CypherFunSuite {
 
@@ -59,5 +59,5 @@ class DocStructureDocGeneratorTest extends CypherFunSuite {
     render(nest(text("a"))) should equal("<\"a\">")
   }
 
-  private def render(doc: Doc) = pp.format(doc, formatter = DocFormatter.defaultLineFormatter)(DocGenerator.forDocStructure)
+  private def render(doc: Doc) = pprint.format(doc, formatter = DocFormatter.defaultLineFormatter)(DocGenerator.forDocStructure)
 }

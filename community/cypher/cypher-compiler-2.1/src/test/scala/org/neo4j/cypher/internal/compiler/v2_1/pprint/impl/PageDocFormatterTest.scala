@@ -17,10 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp.impl
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.impl
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.pp.{PrintNewLine, PrintText, Doc}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{PrintNewLine, PrintText, Doc}
 
 class PageDocFormatterTest extends CypherFunSuite {
 

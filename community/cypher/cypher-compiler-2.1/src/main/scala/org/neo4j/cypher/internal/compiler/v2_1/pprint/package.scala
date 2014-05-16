@@ -17,15 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp
+package org.neo4j.cypher.internal.compiler.v2_1
 
-object pp {
-  // Convert value to String by first converting to a doc using the given generator and formatter
-  def format[T](value: T, formatter: DocFormatter = DocFormatter.defaultPageFormatter)
-               (implicit generator: DocGenerator[T] = DocGenerator.forValues): String =
-    printToString(formatter(generator(value)))
+import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.{PageDocFormatter, LineDocFormatter}
+import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.{DocStructureDocGenerator, ScalaDocGenerator}
 
-  def apply[T](value: T, formatter: DocFormatter = DocFormatter.defaultPageFormatter)
-              (implicit generator: DocGenerator[T] = DocGenerator.forValues): Unit =
-    println(format(value, formatter)(generator))
+/**
+ * See pp.Doc
+ */
+package object pprint {
+  type DocFormatter = Doc => Seq[PrintCommand]
+  type DocGenerator[-T] = PartialFunction[T, Doc]
+  type RecursiveDocGenerator[T] = PartialFunction[T, DocGenerator[T] => Doc]
+  type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
 }
+
+

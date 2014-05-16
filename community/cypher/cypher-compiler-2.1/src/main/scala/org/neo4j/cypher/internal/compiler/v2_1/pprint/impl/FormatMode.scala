@@ -17,37 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pp
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.impl
 
-import scala.collection.mutable
+sealed trait FormatMode
 
-class StringPrintingConverter(var builder: mutable.StringBuilder = new mutable.StringBuilder()) extends PrintingConverter[String] {
-  def clear() {
-    builder.clear()
-  }
+// horizontal formatting ("single line")
+case object LineFormat extends FormatMode
 
-  def result() = builder.result()
+// vertical formatting ("page with newlines and indentation")
+case object PageFormat extends FormatMode
 
-  def +=(elem: PrintCommand) = {
-    elem match {
-      case PrintText(text) =>
-        builder = builder ++= text
-
-      case PrintNewLine(indent) =>
-        builder += '\n'
-        var remaining = indent
-        while (remaining > 0) {
-          builder = builder += ' '
-          remaining  -= 1
-        }
-
-
-    }
-    this
-  }
-}
-
-object printToString extends (Seq[PrintCommand] => String) {
-  def apply(commands: Seq[PrintCommand]) =
-    (new StringPrintingConverter() ++= commands).result()
-}
