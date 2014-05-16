@@ -49,10 +49,26 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
     {
         for ( InputRelationship rel : batch )
         {
-            nodeRelationshipLink.incrementCount( rel.startNode() );
+            try
+            {
+                nodeRelationshipLink.incrementCount( rel.startNode() );
+            }
+            catch ( ArrayIndexOutOfBoundsException e )
+            {
+                throw new RuntimeException( "Input relationship " + rel + " refers to missing start node " +
+                        rel.startNode(), e );
+            }
             if ( !rel.isLoop() )
             {
-                nodeRelationshipLink.incrementCount( rel.endNode() );
+                try
+                {
+                    nodeRelationshipLink.incrementCount( rel.endNode() );
+                }
+                catch ( ArrayIndexOutOfBoundsException e )
+                {
+                    throw new RuntimeException( "Input relationship " + rel + " refers to missing end node " +
+                            rel.endNode(), e );
+                }
             }
 
             highestSeenNodeId = max( highestSeenNodeId, max( rel.startNode(), rel.endNode() ) );

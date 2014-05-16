@@ -44,6 +44,9 @@ import static java.lang.String.valueOf;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.SYNCHRONOUS;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode.APPEND_ONLY;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode.UPDATE;
 
 /**
  * Creator and accessor of {@link NeoStore} with some logic to provide very batch friendly services to the
@@ -97,18 +100,19 @@ public class BatchFriendlyNeoStore implements AutoCloseable
 
     private NeoStore newBatchWritingNeoStore()
     {
-        return newNeoStore( new BatchWritingWindowPoolFactory( config.fileChannelBufferSize(), writeMonitor ) );
+        return newNeoStore( new BatchFriendlyWindowPoolFactory( config.fileChannelBufferSize(),
+                writeMonitor, APPEND_ONLY, SYNCHRONOUS ) );
     }
 
     private NeoStore newReverseUpdatingNeoStore()
     {
-        TailoredWindowPoolFactory factory = new TailoredWindowPoolFactory( new BatchWritingWindowPoolFactory(
-                config.fileChannelBufferSize(), writeMonitor ) );
+        TailoredWindowPoolFactory factory = new TailoredWindowPoolFactory( new BatchFriendlyWindowPoolFactory(
+                config.fileChannelBufferSize(), writeMonitor, APPEND_ONLY, SYNCHRONOUS ) );
 
-        ReverseBatchUpdatingWindowPoolFactory reverseFactory = new ReverseBatchUpdatingWindowPoolFactory(
-                config.fileChannelBufferSize(), writeMonitor );
-        factory.override( StoreFactory.NODE_STORE_NAME, reverseFactory );
-        factory.override( StoreFactory.RELATIONSHIP_STORE_NAME, reverseFactory );
+        WindowPoolFactory batchUpdatingFactory = new BatchFriendlyWindowPoolFactory(
+                config.fileChannelBufferSize(), writeMonitor, UPDATE, SYNCHRONOUS );
+        factory.override( StoreFactory.NODE_STORE_NAME, batchUpdatingFactory );
+        factory.override( StoreFactory.RELATIONSHIP_STORE_NAME, batchUpdatingFactory );
 
         return newNeoStore( factory );
     }

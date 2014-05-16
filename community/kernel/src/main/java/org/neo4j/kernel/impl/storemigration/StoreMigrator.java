@@ -118,7 +118,7 @@ public class StoreMigrator extends StoreMigrationParticipant.Adapter
             }
         };
         BatchImporter importer = new ParallellBatchImporter( migrationDir.getAbsolutePath(), fileSystem,
-                new Configuration.FromConfig( config ), Collections.<KernelExtensionFactory<?>>emptyList(),
+                new Configuration.OverrideFromConfig( config ), Collections.<KernelExtensionFactory<?>>emptyList(),
                 executionMonitor );
         progressMonitor.started();
         importer.doImport( legacyNodesAsInput( legacyStore ), legacyRelationshipsAsInput( legacyStore ),

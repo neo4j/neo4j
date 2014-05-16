@@ -19,6 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.neo4j.helpers.Pair;
+
 /**
  * Represents a node from an input source, for example a .csv file.
  */
@@ -53,5 +58,19 @@ public class InputNode extends InputEntity
     public Long labelField()
     {
         return labelField;
+    }
+
+    @Override
+    protected void toStringFields( Collection<Pair<String, ?>> fields )
+    {
+        super.toStringFields( fields );
+        if ( hasLabelField() )
+        {
+            fields.add( Pair.of( "labelField", labelField ) );
+        }
+        else
+        {
+            fields.add( Pair.of( "labels", Arrays.toString( labels ) ) );
+        }
     }
 }

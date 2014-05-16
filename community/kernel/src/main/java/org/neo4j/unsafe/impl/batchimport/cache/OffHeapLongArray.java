@@ -52,6 +52,10 @@ public class OffHeapLongArray implements LongArray
 
     private long addressOf( long index )
     {
+        if ( index < 0 || index >= length )
+        {
+            throw new ArrayIndexOutOfBoundsException( "Requested index " + index + ", but length is " + length );
+        }
         return address + (index<<3);
     }
 
