@@ -36,21 +36,21 @@ object renderAsTree extends (PlanDescription => String) {
 
         case SingleChild(inner) =>
           result.
-            append("\n").
-            append(prepend).append("  |").append("\n").
+            append(System.lineSeparator()).
+            append(prepend).append("  |").append(System.lineSeparator()).
             append(prepend).append("  +")
           accumulateTree(inner, prepend + "  ")
 
         case TwoChildren(lhs, rhs) =>
           result.
-            append("\n").
-            append(prepend).append("  |").append("\n").
+            append(System.lineSeparator()).
+            append(prepend).append("  |").append(System.lineSeparator()).
             append(prepend).append("  +")
           accumulateTree(lhs, prepend + "  |")
 
           result.
-            append("\n").
-            append(prepend).append("  |").append("\n").
+            append(System.lineSeparator()).
+            append(prepend).append("  |").append(System.lineSeparator()).
             append(prepend).append("  +")
           accumulateTree(rhs, prepend + "   ")
       }
