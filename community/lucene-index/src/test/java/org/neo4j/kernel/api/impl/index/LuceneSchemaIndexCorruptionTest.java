@@ -19,23 +19,27 @@
  */
 package org.neo4j.kernel.api.impl.index;
 
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.io.EOFException;
 import java.io.File;
 import java.io.FileNotFoundException;
 
 import org.apache.lucene.index.CorruptIndexException;
 import org.junit.Test;
+
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.TargetDirectory.forTest;
 
 public class LuceneSchemaIndexCorruptionTest
 {
@@ -49,7 +53,8 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow(new CorruptIndexException( "It's borken." ));
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
+                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) ),
+                fileSystem
         );
 
         // When
@@ -70,7 +75,8 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
+                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) ),
+                fileSystem
         );
 
         // When
@@ -92,7 +98,8 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
+                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) ),
+                fileSystem
         );
 
         // When
@@ -115,7 +122,8 @@ public class LuceneSchemaIndexCorruptionTest
         when(dirFactory.open( any(File.class) )).thenThrow( toThrow );
 
         LuceneSchemaIndexProvider p = new LuceneSchemaIndexProvider( dirFactory,
-                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) )
+                new Config( stringMap( "store_dir", forTest( getClass() ).makeGraphDbDir().getAbsolutePath() ) ),
+                fileSystem
         );
 
         // When
@@ -134,4 +142,6 @@ public class LuceneSchemaIndexCorruptionTest
         }
         assertTrue( exceptionOnOtherIndexThrown );
     }
+
+    private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 }

@@ -19,16 +19,12 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-
 import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.ClusterSettings;
@@ -50,6 +46,7 @@ import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
@@ -102,16 +99,20 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+
 public class SwitchToSlave
 {
     // TODO solve this with lifecycle instance grouping or something
     @SuppressWarnings( "rawtypes" )
-    private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {
-            StoreLockerLifecycleAdapter.class,
-            XaDataSourceManager.class,
-            TransactionManager.class,
-            NodeManager.class,
-            IndexStore.class
+    private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {      //    ^     |
+            StoreLockerLifecycleAdapter.class,                                           //    |     |
+            KernelExtensions.class,                                                      //  stop    |
+            XaDataSourceManager.class,                                                   //    |     |
+            TransactionManager.class,                                                    //    |   start
+            NodeManager.class,                                                           //    |     |
+            IndexStore.class,                                                            //    |     v
     };
 
     private final Logging logging;
@@ -361,7 +362,7 @@ public class SwitchToSlave
                 resolver.resolveDependency( Monitors.class ), storeId, life );
         if ( !(masterClient instanceof MasterClient210 ))
         {
-            idGeneratorFactory.doTheThing();
+            idGeneratorFactory.switchRelationshipGroupGeneratorToMaster();
         }
         return masterClient;
     }
@@ -468,8 +469,8 @@ public class SwitchToSlave
                 NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         if ( nioneoDataSource == null )
         {
-            Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> thing = new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
-
+            Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory =
+                    new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
             {
                 @Override
                 public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
@@ -477,7 +478,6 @@ public class SwitchToSlave
                     return new DenseNodeTransactionTranslator( neoStore );
                 }
             };
-
 
             nioneoDataSource = new NeoStoreXaDataSource( config,
                     resolver.resolveDependency( StoreFactory.class ),
@@ -502,8 +502,8 @@ public class SwitchToSlave
                     resolver.resolveDependency( TransactionEventHandlers.class ),
                     monitors.newMonitor( IndexingService.Monitor.class ),
                     resolver.resolveDependency( FileSystemAbstraction.class ),
-                    thing,
-                    resolver.resolveDependency( StoreUpgrader.class ));
+                    translatorFactory,
+                    resolver.resolveDependency( StoreUpgrader.class ) );
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential

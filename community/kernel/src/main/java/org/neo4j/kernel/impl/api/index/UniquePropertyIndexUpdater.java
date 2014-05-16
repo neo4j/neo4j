@@ -61,7 +61,6 @@ public abstract class UniquePropertyIndexUpdater implements IndexUpdater
     @Override
     public void close() throws IOException, IndexEntryConflictException
     {
-        // flush updates
         flushUpdates( updates );
     }
 

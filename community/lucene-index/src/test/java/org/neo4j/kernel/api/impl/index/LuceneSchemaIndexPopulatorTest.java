@@ -31,6 +31,7 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.RAMDirectory;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.api.index.IndexConfiguration;
@@ -43,6 +44,7 @@ import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.api.index.PropertyAccessor;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.IndexStoreView;
+import org.neo4j.test.EphemeralFileSystemRule;
 
 import static java.lang.Long.parseLong;
 import static java.util.Arrays.asList;
@@ -56,7 +58,6 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LuceneSchemaIndexPopulatorTest
 {
-
     @Test
     public void addingValuesShouldPersistThem() throws Exception
     {
@@ -81,7 +82,7 @@ public class LuceneSchemaIndexPopulatorTest
                 hit( 5F, 7 ),
                 hit( 6D, 8 ) );
     }
-    
+
     @Test
     public void multipleEqualValues() throws Exception
     {
@@ -94,7 +95,7 @@ public class LuceneSchemaIndexPopulatorTest
         assertIndexedValues(
                 hit( "value", 1L, 2L, 3L ) );
     }
-    
+
     @Test
     public void multipleEqualValuesWithUpdateThatRemovesOne() throws Exception
     {
@@ -108,7 +109,7 @@ public class LuceneSchemaIndexPopulatorTest
         assertIndexedValues(
                 hit( "value", 1L, 3L ) );
     }
-    
+
     @Test
     public void changeUpdatesInterleavedWithAdds() throws Exception
     {
@@ -125,7 +126,7 @@ public class LuceneSchemaIndexPopulatorTest
                 hit( "2", 2 ),
                 hit( "3", 3 ) );
     }
-    
+
     @Test
     public void addUpdatesInterleavedWithAdds() throws Exception
     {
@@ -142,7 +143,7 @@ public class LuceneSchemaIndexPopulatorTest
                 hit( "3", 3 ),
                 no( "1" ) );
     }
-    
+
     @Test
     public void removeUpdatesInterleavedWithAdds() throws Exception
     {
@@ -158,7 +159,7 @@ public class LuceneSchemaIndexPopulatorTest
                 no( "2" ),
                 hit( "3", 3 ) );
     }
-    
+
     @Test
     public void multipleInterleaves() throws Exception
     {
@@ -181,22 +182,22 @@ public class LuceneSchemaIndexPopulatorTest
                 no( "4" ),
                 hit( "4a", 4 ) );
     }
-    
+
     private Hit hit( Object value, Long... nodeIds )
     {
         return new Hit( value, nodeIds );
     }
-    
+
     private Hit hit( Object value, long nodeId )
     {
         return new Hit( value, nodeId );
     }
-    
+
     private Hit no( Object value )
     {
         return new Hit( value );
     }
-    
+
     private static class Hit
     {
         private final Object value;
@@ -213,7 +214,7 @@ public class LuceneSchemaIndexPopulatorTest
     {
         return NodePropertyUpdate.add( nodeId, 0, value, new long[0] );
     }
-    
+
     private NodePropertyUpdate change( long nodeId, Object valueBefore, Object valueAfter )
     {
         return NodePropertyUpdate.change( nodeId, 0, valueBefore, new long[0], valueAfter, new long[0] );
@@ -232,9 +233,10 @@ public class LuceneSchemaIndexPopulatorTest
     private IndexReader reader;
     private IndexSearcher searcher;
     private final long indexId = 0;
-    private int propertyKeyId = 666;
+    private final int propertyKeyId = 666;
     private final LuceneDocumentStructure documentLogic = new LuceneDocumentStructure();
-    
+    public final @Rule EphemeralFileSystemRule fsr = new EphemeralFileSystemRule();
+
     @Before
     public void before() throws Exception
     {
@@ -242,7 +244,7 @@ public class LuceneSchemaIndexPopulatorTest
         DirectoryFactory directoryFactory = new DirectoryFactory.Single(
                 new DirectoryFactory.UncloseableDirectory( directory ) );
         provider = new LuceneSchemaIndexProvider( directoryFactory,
-                new Config( stringMap( store_dir.name(), "target/whatever" ) ) );
+                new Config( stringMap( store_dir.name(), "target/whatever" ) ), fsr.get() );
         indexDescriptor = new IndexDescriptor( 42, propertyKeyId );
         indexStoreView = mock( IndexStoreView.class );
         index = provider.getPopulator( indexId, indexDescriptor, new IndexConfiguration( false ) );
@@ -253,14 +255,16 @@ public class LuceneSchemaIndexPopulatorTest
     public void after() throws Exception
     {
         if ( reader != null )
+        {
             reader.close();
+        }
         directory.close();
     }
 
     private void assertIndexedValues( Hit... expectedHits ) throws IOException
     {
         switchToVerification();
-        
+
         for ( Hit hit : expectedHits )
         {
             TopDocs hits = searcher.search( documentLogic.newQuery( hit.value ), 10 );

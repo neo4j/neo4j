@@ -47,7 +47,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
@@ -85,7 +85,7 @@ public class LuceneIndexRecoveryIT
         createIndex( myLabel );
         long node = createNode( myLabel, 12 );
         rotateLogs();
-        
+
         updateNode( node, 13 );
 
         // And Given
@@ -98,7 +98,7 @@ public class LuceneIndexRecoveryIT
         assertEquals( 0, doIndexLookup( myLabel, 12 ).size() );
         assertEquals( 1, doIndexLookup( myLabel, 13 ).size() );
     }
-    
+
     @Test
     public void removeShouldBeIdempotentWhenDoingRecovery() throws Exception
     {
@@ -108,7 +108,7 @@ public class LuceneIndexRecoveryIT
         createIndex( myLabel );
         long node = createNode( myLabel, 12 );
         rotateLogs();
-        
+
         deleteNode( node );
 
         // And Given
@@ -120,7 +120,7 @@ public class LuceneIndexRecoveryIT
         // Then
         assertEquals( 0, doIndexLookup( myLabel, 12 ).size() );
     }
-    
+
     private void deleteNode( long node )
     {
         Transaction tx = db.beginTx();
@@ -332,7 +332,8 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() )
+                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig(),
+                        fs.get() )
                 {
                     @Override
                     public InternalIndexState getInitialState( long indexId )
@@ -354,7 +355,8 @@ public class LuceneIndexRecoveryIT
             public Lifecycle newKernelExtension( LuceneSchemaIndexProviderFactory.Dependencies dependencies )
                     throws Throwable
             {
-                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig() )
+                return new LuceneSchemaIndexProvider( ignoreCloseDirectoryFactory, dependencies.getConfig(),
+                        fs.get() )
                 {
                     @Override
                     public int compareTo( SchemaIndexProvider o )

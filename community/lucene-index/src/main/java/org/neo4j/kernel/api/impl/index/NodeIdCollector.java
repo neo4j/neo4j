@@ -17,18 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.api.impl.index;
 
-import org.junit.Test;
-import static junit.framework.TestCase.assertEquals;
+import java.io.IOException;
 
-public class ArrayEncoderTest
+public abstract class NodeIdCollector extends SimpleCollector
 {
-    @Test
-    public void shouldEncodeArrays() throws Exception
+    private final LuceneDocumentStructure documentStructure;
+
+    public NodeIdCollector( LuceneDocumentStructure documentStructure )
     {
-        assertEquals( "D1.0|2.0|3.0|", ArrayEncoder.encode( new int[]{1, 2, 3} ) );
-        assertEquals( "Ztrue|false|", ArrayEncoder.encode( new boolean[]{true, false} ) );
-        assertEquals( "LYWxp|YXJl|eW91|b2s=|", ArrayEncoder.encode( new String[]{"ali", "are", "you", "ok"} ) );
+        this.documentStructure = documentStructure;
     }
+
+    @Override
+    public void collect( int doc ) throws IOException
+    {
+        collectNodeId( documentStructure.getNodeId( reader.document( doc ) ) );
+    }
+
+    protected abstract void collectNodeId( long nodeId ) throws IOException;
 }

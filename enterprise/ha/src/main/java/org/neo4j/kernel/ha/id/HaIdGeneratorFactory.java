@@ -102,7 +102,7 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         }
     }
 
-    public void doTheThing()
+    public void switchRelationshipGroupGeneratorToMaster()
     {
         generators.get( IdType.RELATIONSHIP_GROUP ).switchToMaster();
     }

@@ -23,7 +23,6 @@ import org.apache.lucene.document.Document;
 import org.apache.lucene.search.TermQuery;
 import org.apache.lucene.util.NumericUtils;
 import org.junit.Test;
-
 import static junit.framework.TestCase.assertEquals;
 
 import static org.neo4j.kernel.api.impl.index.LuceneDocumentStructure.NODE_ID_KEY;
@@ -98,7 +97,6 @@ public class LuceneDocumentStructureTest
         assertEquals( "Characters", query.getTerm().text() );
     }
 
-    @SuppressWarnings("unchecked")
     @Test
     public void shouldBuildQueryRepresentingNumberProperty() throws Exception
     {
@@ -106,7 +104,7 @@ public class LuceneDocumentStructureTest
         TermQuery query = (TermQuery) new LuceneDocumentStructure().newQuery( 12 );
 
         // then
-        assertEquals(  NumericUtils.doubleToPrefixCoded( 12.0 ), query.getTerm().text() );
+        assertEquals( NumericUtils.longToPrefixCoded( 12 ), query.getTerm().text() );
     }
 
     @Test
@@ -116,6 +114,6 @@ public class LuceneDocumentStructureTest
         TermQuery query = (TermQuery) new LuceneDocumentStructure().newQuery( new Integer[] { 1,2,3 } );
 
         // then
-        assertEquals( "D1.0|2.0|3.0|", query.getTerm().text() );
+        assertEquals( "D1|2|3|", query.getTerm().text() );
     }
 }

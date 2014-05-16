@@ -17,18 +17,36 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.index;
+package org.neo4j.kernel.api.impl.index;
 
-import org.junit.Test;
-import static junit.framework.TestCase.assertEquals;
+import java.io.IOException;
 
-public class ArrayEncoderTest
+import org.apache.lucene.index.IndexReader;
+import org.apache.lucene.search.Collector;
+import org.apache.lucene.search.Scorer;
+
+public abstract class SimpleCollector extends Collector
 {
-    @Test
-    public void shouldEncodeArrays() throws Exception
+    protected Scorer scorer;
+    protected IndexReader reader;
+    protected int docBase;
+
+    @Override
+    public void setScorer( Scorer scorer ) throws IOException
     {
-        assertEquals( "D1.0|2.0|3.0|", ArrayEncoder.encode( new int[]{1, 2, 3} ) );
-        assertEquals( "Ztrue|false|", ArrayEncoder.encode( new boolean[]{true, false} ) );
-        assertEquals( "LYWxp|YXJl|eW91|b2s=|", ArrayEncoder.encode( new String[]{"ali", "are", "you", "ok"} ) );
+        this.scorer = scorer;
+    }
+
+    @Override
+    public void setNextReader( IndexReader reader, int docBase ) throws IOException
+    {
+        this.reader = reader;
+        this.docBase = docBase;
+    }
+
+    @Override
+    public boolean acceptsDocsOutOfOrder()
+    {
+        return true;
     }
 }

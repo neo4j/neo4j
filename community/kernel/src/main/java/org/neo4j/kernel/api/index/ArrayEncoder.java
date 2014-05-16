@@ -47,7 +47,14 @@ public class ArrayEncoder
             if ( o instanceof Number )
             {
                 type = "D";
-                builder.append( ((Number) o).doubleValue() );
+                if ( o instanceof Long )
+                {
+                    builder.append( ((Number) o).longValue() );
+                }
+                else
+                {
+                    builder.append( ((Number) o).doubleValue() );
+                }
             }
             else if ( o instanceof Boolean )
             {
@@ -63,5 +70,45 @@ public class ArrayEncoder
             builder.append( "|" );
         }
         return type + builder.toString();
+    }
+
+    public static boolean isFloatingPointValueAndCanCoerceCleanlyIntoLong( Object possiblyFloatingPointValue )
+    {
+        if ( possiblyFloatingPointValue instanceof Float || possiblyFloatingPointValue instanceof Double )
+        {
+            double doubleValue = ((Number)possiblyFloatingPointValue).doubleValue();
+            long intermediaryLong = (long) doubleValue;
+            double doubleAfterRoundTrip = intermediaryLong;
+            return doubleValue == doubleAfterRoundTrip;
+        }
+        return false;
+    }
+
+    public static boolean isIntegerType( Object value )
+    {
+        return value instanceof Long
+                || value instanceof Integer
+                || value instanceof Short
+                || value instanceof Byte;
+    }
+
+    public static long[] asLongArray( Object value )
+    {
+        long[] result = new long[Array.getLength( value )];
+        for ( int i = 0; i < result.length; i++ )
+        {
+            result[i] = ((Number)Array.get( value, i )).longValue();
+        }
+        return result;
+    }
+
+    public static double[] asDoubleArray( Object value )
+    {
+        double[] result = new double[Array.getLength( value )];
+        for ( int i = 0; i < result.length; i++ )
+        {
+            result[i] = ((Number)Array.get( value, i )).doubleValue();
+        }
+        return result;
     }
 }

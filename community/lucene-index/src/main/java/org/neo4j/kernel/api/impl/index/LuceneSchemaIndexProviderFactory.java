@@ -54,6 +54,6 @@ public class LuceneSchemaIndexProviderFactory extends
         Config config = dependencies.getConfig();
         FileSystemAbstraction fileSystem = dependencies.getFileSystem();
         DirectoryFactory directoryFactory = directoryFactory( config, fileSystem );
-        return new LuceneSchemaIndexProvider( directoryFactory, config );
+        return new LuceneSchemaIndexProvider( directoryFactory, config, fileSystem );
     }
 }
