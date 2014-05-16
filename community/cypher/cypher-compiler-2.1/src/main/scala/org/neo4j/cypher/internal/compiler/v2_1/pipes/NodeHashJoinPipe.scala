@@ -31,15 +31,21 @@ case class NodeHashJoinPipe(node: String, source: Pipe, inner: Pipe)
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val table = new mutable.HashMap[Long, mutable.MutableList[ExecutionContext]]
     input.foreach { context =>
-      val joinKey = context(node).asInstanceOf[Node].getId
-      val seq = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
-      seq += context
+      Option(context(node).asInstanceOf[Node]) match {
+        case Some(joinKey) =>
+          val seq = table.getOrElseUpdate(joinKey.getId, mutable.MutableList.empty)
+          seq += context
+        case _ => ()
+      }
     }
 
     inner.createResults(state).flatMap { context =>
-      val joinKey = context(node).asInstanceOf[Node].getId
-      val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
-      seq.map(context ++ _)
+      Option(context(node).asInstanceOf[Node]) match {
+        case Some(joinKey) =>
+          val seq = table.getOrElse(joinKey.getId, mutable.MutableList.empty)
+          seq.map(context ++ _)
+        case _ => Seq.empty
+      }
     }
   }
 

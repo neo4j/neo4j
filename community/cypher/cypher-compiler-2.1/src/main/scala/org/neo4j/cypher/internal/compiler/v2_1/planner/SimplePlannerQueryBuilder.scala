@@ -201,21 +201,19 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         case Match(optional@true, pattern: Pattern, Seq(), optWhere) :: tl =>
           val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+
+          val argumentIds = querySoFar.graph.coveredIds intersect (nodeIds ++ rels.map(_.name)).toSet
           val optionalMatch = QueryGraph(
             selections = selections,
-            patternNodes = nodeIds.toSet,
-            patternRelationships = rels.toSet)
-
-          val newQuery = querySoFar.updateGraph {
-            qg => qg.withAddedOptionalMatch(optionalMatch)
-          }
+            patternNodes = nodeIds.toSet -- argumentIds,
+            patternRelationships = rels.toSet.filter(rel => !argumentIds.contains(rel.name)),
+            argumentIds = argumentIds
+          )
+          val newQuery = querySoFar.updateGraph(_.withAddedOptionalMatch(optionalMatch))
 
           produceQueryGraphFromClauses(newQuery, subQueryLookupTable ++ subQueries, tl)
 
-        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl if querySoFar.graph.optionalMatches.nonEmpty =>
-          throw new CantHandleQueryException
-
-        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl =>
+        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl if querySoFar.graph.optionalMatches.isEmpty =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
           val newQuery = querySoFar
@@ -229,13 +227,13 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         case With(false, _: ReturnAll, optOrderBy, skip, limit, optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
+          val inputIds = querySoFar.graph.coveredIds
           val (tailQuery: PlannerQuery, tailMap) = produceQueryGraphFromClauses(
-            PlannerQuery(QueryGraph(selections = selections)),
+            PlannerQuery(QueryGraph(argumentIds = inputIds, selections = selections)),
             subQueryLookupTable ++ subQueries.toMap,
             tl
           )
 
-          val inputIds = querySoFar.graph.coveredIds
           val argumentIds = inputIds intersect tailQuery.graph.coveredIds
 
           val newQuery =
@@ -254,13 +252,13 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
           val (projections, aggregations) = produceProjectionsMaps(expressions)
 
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+          val inputIds = projections.keySet.map(IdName) ++ aggregations.keySet.map(IdName)
           val (tailQuery: PlannerQuery, tailMap) = produceQueryGraphFromClauses(
-            PlannerQuery(QueryGraph(selections = selections)),
+            PlannerQuery(QueryGraph(argumentIds = inputIds, selections = selections)),
             subQueryLookupTable ++ subQueries.toMap,
             tl
           )
 
-          val inputIds = projections.keySet.map(IdName) ++ aggregations.keySet.map(IdName)
           val argumentIds = inputIds intersect tailQuery.graph.coveredIds
 
           val projection = if (aggregations.isEmpty)

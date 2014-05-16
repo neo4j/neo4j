@@ -72,6 +72,48 @@ class NodeHashJoinPipeTest extends CypherFunSuite {
     ))
   }
 
+  test("should work when the outer pipe produces rows with a null key") {
+    // given
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    when(left.createResults(queryState)).thenReturn(Iterator(row("b" -> null, "a" -> 10), row("b" -> node2, "a" -> 20)))
+
+    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> node2, "c" -> 30), row("b" -> node1, "c" -> 40)))
+
+    // when
+    val result = NodeHashJoinPipe("b", left, right).createResults(queryState)
+
+    // then
+    result.toList should equal(List(
+      Map("a" -> 20, "b" -> node2, "c" -> 30)
+    ))
+  }
+
+  test("should work when the inner pipe produces rows with a null key") {
+    // given
+    val node1 = newMockedNode(1)
+    val node2 = newMockedNode(2)
+    val queryState = QueryStateHelper.empty
+
+    val left = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    when(left.createResults(queryState)).thenReturn(Iterator(row("b" -> node2, "a" -> 10), row("b" -> node1, "a" -> 20)))
+
+    val right = newMockedPipe(SymbolTable(Map("b" -> CTNode)))
+    when(right.createResults(queryState)).thenReturn(Iterator(row("b" -> null, "c" -> 30), row("b" -> node2, "c" -> 40)))
+
+    // when
+    val result = NodeHashJoinPipe("b", left, right).createResults(queryState)
+
+    // then
+    result.toList should equal(List(
+      Map("a" -> 10, "b" -> node2, "c" -> 40)
+    ))
+  }
+
   private def row(values: (String, Any)*) = ExecutionContext.from(values: _*)
 
   private def newMockedNode(id: Int) = {

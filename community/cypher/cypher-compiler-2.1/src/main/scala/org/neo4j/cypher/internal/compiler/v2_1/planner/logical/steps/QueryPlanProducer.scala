@@ -199,10 +199,12 @@ object QueryPlanProducer {
 
 
   def planQueryArgumentRow(queryGraph: QueryGraph): QueryPlan = {
-    val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
-    val patternRels = queryGraph.patternRelationships.filter( rel => queryGraph.argumentIds.contains(rel.name))
-    val otherIds = queryGraph.argumentIds -- patternNodes -- patternRels.map(_.name)
-    planArgumentRow(patternNodes, patternRels, otherIds)
+    val argumentIds = queryGraph.argumentIds
+    val allGraphs = queryGraph.optionalMatches.toSet + queryGraph
+    val nodes = allGraphs.flatMap(_.patternNodes) intersect queryGraph.argumentIds
+    val rels = allGraphs.flatMap(graph => graph.patternRelationships.filter(rel => argumentIds.contains(rel.name)))
+    val otherIds = queryGraph.argumentIds -- nodes -- rels.map(_.name)
+    planArgumentRow(nodes, rels, otherIds)
   }
 
   def planArgumentRow(patternNodes: Set[IdName], patternRels: Set[PatternRelationship] = Set.empty, other: Set[IdName] = Set.empty): QueryPlan = {
@@ -218,9 +220,7 @@ object QueryPlanProducer {
       SingleRow(coveredIds)(typeInfo),
       PlannerQuery(graph =
         QueryGraph(
-          argumentIds = coveredIds,
-          patternNodes = patternNodes,
-          patternRelationships = patternRels
+          argumentIds = coveredIds
       ))
     )
   }
