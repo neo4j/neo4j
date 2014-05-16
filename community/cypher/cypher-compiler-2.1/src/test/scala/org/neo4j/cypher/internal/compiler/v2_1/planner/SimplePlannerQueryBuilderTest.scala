@@ -397,7 +397,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.argumentIds should equal(Set())
 
     val optMatchQG = query.graph.optionalMatches.head
-    optMatchQG.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    optMatchQG.patternNodes should equal(Set(IdName("b")))
     optMatchQG.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     ))
@@ -605,8 +605,33 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     evaluating(buildPlannerQuery("match (a) where (a)-->() OR id(a) = 12 OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
   }
 
-  test("should fail when the first pattern is optional") {
-    evaluating(buildPlannerQuery("optional match (a:Foo) with a match (a)-->() return a", normalize = true)) should produce[CantHandleQueryException]
+  test("optional match (a:Foo) with a match (a)-->() return a") {
+    val (query, _) = buildPlannerQuery("optional match (a:Foo) with a match (a)-[r]->() return r", normalize = true)
+    query.tail should not be empty
+
+    query.graph.optionalMatches.size should equal(1)
+    query.graph.argumentIds should equal(Set())
+
+    val optMatchQG = query.graph.optionalMatches.head
+    optMatchQG.patternRelationships should equal(Set())
+    optMatchQG.patternNodes should equal(Set(IdName("a")))
+    optMatchQG.selections should equal(Selections(Set(
+      Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Foo")(null)))_)
+    )))
+    optMatchQG.optionalMatches should be(empty)
+    optMatchQG.argumentIds should equal(Set())
+    query.graph.selections.predicates should be(empty)
+    query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    query.projection.limit should be(empty)
+
+    val patternRel = PatternRelationship("r", ("a", "  UNNAMED46"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+
+    val tailQg = query.tail.get
+    tailQg.graph.patternNodes should equal(Set(IdName("a"), IdName("  UNNAMED46")))
+    tailQg.graph.argumentIds should equal(Set(IdName("a")))
+    tailQg.graph.patternRelationships should be(Set(patternRel))
+    tailQg.graph.selections.predicates should be(empty)
+    tailQg.projection.projections should equal(Map[String, Expression]("r" -> Identifier("r")_))
   }
 
   test("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {

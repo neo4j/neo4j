@@ -1165,11 +1165,31 @@ RETURN a.name""")
     count should not equal 100
   }
 
+  test("match (a) with a optional match (a)-->(b) return b") {
+    // Given empty db
+
+    // when
+    val result = executeWithNewPlanner("match (a) with a optional match (a)-->(b) return b")
+
+    // should give us a number in the middle, not all or nothing
+    result.toList should be(empty)
+  }
+
+  test("match (a) with a optional match (a)-->(b) return b with one node in the database") {
+    createNode()
+
+    // when
+    val result = executeWithNewPlanner("match (a) with a optional match (a)-->(b) return b")
+
+    // should give us a number in the middle, not all or nothing
+    result.columnAs[Node]("b").toList should equal(List(null))
+  }
+
   test("should not find any matches when a node in a pattern is null") {
     // Given empty db
 
     // when
-    val result = execute("optional match (a) with a match (a)-->(b) return b")
+    val result = executeWithNewPlanner("optional match (a) with a match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
     result.toList should be(empty)
@@ -1182,7 +1202,7 @@ RETURN a.name""")
     relate(a, b)
 
     // when
-    val result = execute("optional match (a:Person) with a match (a)-->(b) return b").columnAs[Node]("b")
+    val result = executeWithNewPlanner("optional match (a:Person) with a match (a)-->(b) return b").columnAs[Node]("b")
 
     // should give us a number in the middle, not all or nothing
     result.toList should be(empty)
@@ -1192,7 +1212,7 @@ RETURN a.name""")
     // Given empty db
 
     // when
-    val result = execute("optional match (a) with a optional match (a)-->(b) return b")
+    val result = executeWithNewPlanner("optional match (a) with a optional match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
     result.toList should equal (List(Map("b"->null)))

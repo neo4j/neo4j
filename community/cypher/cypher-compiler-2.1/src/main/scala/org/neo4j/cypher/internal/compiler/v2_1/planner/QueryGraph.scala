@@ -105,8 +105,7 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
   def accept[R](visitor: Visitor[QueryGraph, R]): R = visitor.visit(this)
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
-    val argumentIds = coveredIds intersect optionalMatch.coveredIds
-    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentId(argumentIds.toSeq))
+    copy(optionalMatches = optionalMatches :+ optionalMatch)
   }
 
   def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
