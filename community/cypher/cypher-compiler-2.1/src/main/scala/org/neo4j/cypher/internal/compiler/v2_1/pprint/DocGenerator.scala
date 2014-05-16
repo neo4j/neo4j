@@ -20,13 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
 import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.{catchNotImplemented, DocStructureDocGenerator, ScalaDocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.{QueryGraphDocGenerator, catchNotImplemented, DocStructureDocGenerator, ScalaDocGenerator}
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.Doc._
 
 object DocGenerator {
 
   val forNestedValues: RecursiveDocGenerator[Any] =
     ScalaDocGenerator.forNestedValues orElse
+    QueryGraphDocGenerator.forQueryGraph orElse
     DocStructureDocGenerator.forNestedDocLiteral
 
   val forNestedValuesUsingToString: RecursiveDocGenerator[Any] = {

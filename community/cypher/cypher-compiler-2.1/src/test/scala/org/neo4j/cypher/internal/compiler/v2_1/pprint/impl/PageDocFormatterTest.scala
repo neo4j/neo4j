@@ -31,7 +31,7 @@ class PageDocFormatterTest extends CypherFunSuite {
   }
 
   test("format NilDoc") {
-    PageDocFormatter(10)(end) should equal(Seq.empty)
+    PageDocFormatter(10)(nil) should equal(Seq.empty)
   }
 
   test("format TextDoc") {
@@ -51,7 +51,7 @@ class PageDocFormatterTest extends CypherFunSuite {
   }
 
   test("format NestDoc") {
-    PageDocFormatter(10)(nest(10, end)) should equal(Seq.empty)
+    PageDocFormatter(10)(nest(10, nil)) should equal(Seq.empty)
   }
 
   test("introduces newlines when group does not fit remaining line") {

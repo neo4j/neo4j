@@ -97,13 +97,5 @@ object ScalaDocGenerator {
     val prefix = p.productPrefix
     if (prefix.startsWith("Tuple")) "" else prefix
   }
-
-  private def scalaGroup(name: String)(innerDocs: List[Doc]) =
-    group(list(List(
-      text(s"$name("),
-      nest(group(cons(pageBreak, sepList(innerDocs)))),
-      pageBreak,
-      text(")")
-    )))
 }
 

@@ -28,7 +28,7 @@ class DocStructureDocGeneratorTest extends CypherFunSuite {
   import Doc._
 
   test("end => \"ø\"") {
-    render(end) should equal("ø")
+    render(nil) should equal("ø")
   }
 
   test("break => \"_\"") {

@@ -37,21 +37,8 @@ final case class DocLiteral(doc: Doc)
 object Doc {
   // sequences of docs
 
-  def cons(head: Doc, tail: Doc = end): Doc = ConsDoc(head, tail)
-  def end: Doc = NilDoc
-
-  implicit def list(docs: List[Doc]): Doc = docs.foldRight(end)(cons)
-
-  def sepList(docs: List[Doc], sep: Doc => Doc = frontSeparator(",")): Doc = docs.foldRight(end) {
-    case (hd, NilDoc) => cons(hd, end)
-    case (hd, tail)   => cons(hd, sep(tail))
-  }
-
-  def frontSeparator(sep: Doc): Doc => Doc =
-    (tail: Doc) => breakCons(sep, tail)
-
-  def backSeparator(sep: Doc): Doc => Doc =
-    (tail: Doc) => cons(breakHere, cons(sep, tail))
+  def cons(head: Doc, tail: Doc = nil): Doc = ConsDoc(head, tail)
+  def nil: Doc = NilDoc
 
   // unbreakable text doc
   implicit def text(value: String): Doc = TextDoc(value)
@@ -76,7 +63,37 @@ object Doc {
 
   // helper
 
+  implicit def list(docs: List[Doc]): Doc = docs.foldRight(nil)(cons)
+
+  def breakList(docs: List[Doc], sep: Doc => Doc = frontSeparator(",")): Doc = docs.foldRight(nil) {
+    case (hd, NilDoc) => cons(hd, nil)
+    case (hd, tail)   => breakCons(hd, tail)
+  }
+
+  def sepList(docs: List[Doc], sep: Doc => Doc = frontSeparator(",")): Doc = docs.foldRight(nil) {
+    case (hd, NilDoc) => cons(hd, nil)
+    case (hd, tail)   => cons(hd, sep(tail))
+  }
+
+  def frontSeparator(sep: Doc): Doc => Doc =
+    (tail: Doc) => breakCons(sep, tail)
+
+  def backSeparator(sep: Doc): Doc => Doc =
+    (tail: Doc) => cons(breakHere, cons(sep, tail))
+
   def breakCons(head: Doc, tail: Doc) = ConsDoc(head, ConsDoc(breakHere, tail))
+
+  def scalaGroup(name: String, open: String = "(", close: String = ")")(innerDocs: List[Doc]): Doc =
+    scalaDocGroup(text(name), text(open), text(close))(innerDocs)
+
+  def scalaDocGroup(name: Doc, open: Doc = text("("), close: Doc = text(")"))(innerDocs: List[Doc]): Doc =
+    group(list(List(
+      name,
+      open,
+      nest(group(cons(pageBreak, sepList(innerDocs)))),
+      pageBreak,
+      close
+    )))
 }
 
 final case class ConsDoc(head: Doc, tail: Doc = NilDoc) extends Doc

@@ -31,7 +31,7 @@ class LineDocFormatterTest extends CypherFunSuite {
   }
 
   test("format NilDoc") {
-    LineDocFormatter(end) should equal(Seq.empty)
+    LineDocFormatter(nil) should equal(Seq.empty)
   }
 
   test("format TextDoc") {
@@ -51,6 +51,6 @@ class LineDocFormatterTest extends CypherFunSuite {
   }
 
   test("format NestDoc") {
-    LineDocFormatter(nest(10, end)) should equal(Seq.empty)
+    LineDocFormatter(nest(10, nil)) should equal(Seq.empty)
   }
 }

@@ -32,7 +32,7 @@ class LineFitterTest extends CypherFunSuite {
   }
 
   test("fits end") {
-    LineFitter.fitsDoc(0, end) should equal(true)
+    LineFitter.fitsDoc(0, nil) should equal(true)
   }
 
   test("fits text") {

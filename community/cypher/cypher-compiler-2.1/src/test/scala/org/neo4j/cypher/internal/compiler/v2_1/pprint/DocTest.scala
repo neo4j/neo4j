@@ -28,7 +28,7 @@ class DocTest extends CypherFunSuite {
   }
 
   test("empty == NilDoc") {
-    Doc.end should equal(NilDoc)
+    Doc.nil should equal(NilDoc)
   }
 
   test("text(v) = TextDoc(v)") {
@@ -59,7 +59,7 @@ class DocTest extends CypherFunSuite {
     Doc.breakCons(Doc.text("a"), Doc.text("b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(BreakDoc, TextDoc("b"))))
   }
 
-  test("list(a :: b) => cons(a, cons(b))") {
+  test("list(a :: b :: nil) => cons(a, cons(b))") {
     Doc.list(List("a", "b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"))))
   }
 
