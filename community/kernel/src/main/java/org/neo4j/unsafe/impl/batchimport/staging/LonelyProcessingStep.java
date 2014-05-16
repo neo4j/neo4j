@@ -19,6 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
+import static java.lang.System.currentTimeMillis;
+
 /**
  * {@link Step} that doesn't receive batches, not sends batches downstream, but just processes data.
  */
@@ -26,6 +28,7 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
 {
     private final int batchSize;
     private int batch;
+    private long lastProcessingTimestamp;
 
     public LonelyProcessingStep( StageControl control, String name, int batchSize )
     {
@@ -44,6 +47,7 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
                 assertHealthy();
                 try
                 {
+                    lastProcessingTimestamp = currentTimeMillis();
                     process();
                 }
                 catch ( Throwable e )
@@ -67,6 +71,9 @@ public abstract class LonelyProcessingStep extends AbstractStep<Void>
         {
             doneBatches.incrementAndGet();
             batch = 0;
+            long time = currentTimeMillis();
+            totalProcessingTime.addAndGet( time - lastProcessingTimestamp );
+            lastProcessingTimestamp = time;
         }
     }
 

@@ -22,6 +22,8 @@ package org.neo4j.unsafe.impl.batchimport;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.configuration.Config;
 
+import static java.lang.Math.round;
+
 /**
  * User controlled configuration for a {@link BatchImporter}.
  */
@@ -47,7 +49,7 @@ public interface Configuration
 
     public static class Default implements Configuration
     {
-        private static final int OPTIMAL_FILE_CHANNEL_CHUNK_SIZE = 1024*1024 * 4;
+        private static final int OPTIMAL_FILE_CHANNEL_CHUNK_SIZE = 1024 * 4;
 
         @Override
         public int batchSize()
@@ -58,7 +60,18 @@ public interface Configuration
         @Override
         public int fileChannelBufferSize()
         {
-            return OPTIMAL_FILE_CHANNEL_CHUNK_SIZE * 2;
+            // Do a little calculation here where the goal of the returned value is that if a file channel
+            // would be seen as a batch itself (think asynchronous writing) there would be created roughly
+            // as many as the other types of batches.
+            return roundToClosest( batchSize() * 40 /*some kind of record size average*/,
+                    OPTIMAL_FILE_CHANNEL_CHUNK_SIZE );
+        }
+
+        private int roundToClosest( int value, int divisible )
+        {
+            double roughCount = (double) value / divisible;
+            int count = (int) round( roughCount );
+            return divisible*count;
         }
 
         @Override
@@ -70,19 +83,44 @@ public interface Configuration
         @Override
         public int denseNodeThreshold()
         {
-            return 50;
+            return Integer.parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
         }
     }
 
     public static final Configuration DEFAULT = new Default();
 
-    public static class FromConfig extends Default
+    public static class OverrideFromConfig implements Configuration
     {
+        private final Configuration defaults;
         private final Config config;
 
-        public FromConfig( Config config )
+        public OverrideFromConfig( Configuration defaults, Config config )
         {
+            this.defaults = defaults;
             this.config = config;
+        }
+
+        public OverrideFromConfig( Config config )
+        {
+            this( DEFAULT, config );
+        }
+
+        @Override
+        public int batchSize()
+        {
+            return defaults.batchSize();
+        }
+
+        @Override
+        public int fileChannelBufferSize()
+        {
+            return defaults.fileChannelBufferSize();
+        }
+
+        @Override
+        public int workAheadSize()
+        {
+            return defaults.workAheadSize();
         }
 
         @Override

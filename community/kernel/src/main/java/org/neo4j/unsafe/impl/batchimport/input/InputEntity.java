@@ -19,6 +19,14 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+
+import org.neo4j.helpers.Pair;
+
+import static java.lang.String.format;
+
 /**
  * Represents an entity from an input source, for example a .csv file.
  */
@@ -53,5 +61,36 @@ public abstract class InputEntity
     public long firstPropertyId()
     {
         return firstPropertyId;
+    }
+
+    @Override
+    public String toString()
+    {
+        Collection<Pair<String,?>> fields = new ArrayList<>();
+        toStringFields( fields );
+
+        StringBuilder builder = new StringBuilder( "%s:" );
+        Object[] arguments = new Object[fields.size()+1];
+        int cursor = 0;
+        arguments[cursor++] = getClass().getSimpleName();
+        for ( Pair<String, ?> item : fields )
+        {
+            builder.append( "%n   %s" );
+            arguments[cursor++] = item.first() + ": " + item.other();
+        }
+
+        return format( builder.toString(), arguments );
+    }
+
+    protected void toStringFields( Collection<Pair<String, ?>> fields )
+    {
+        if ( hasFirstPropertyId() )
+        {
+            fields.add( Pair.of( "nextProp", firstPropertyId ) );
+        }
+        else
+        {
+            fields.add( Pair.of( "properties", Arrays.toString( properties ) ) );
+        }
     }
 }

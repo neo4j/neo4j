@@ -19,7 +19,10 @@
  */
 package org.neo4j.unsafe.impl.batchimport.input;
 
+import java.util.Collection;
+
 import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.Pair;
 
 /**
  * Represents a relationship from an input source, for example a .csv file.
@@ -74,5 +77,21 @@ public class InputRelationship extends InputEntity
     public int typeId()
     {
         return typeId.intValue();
+    }
+
+    @Override
+    protected void toStringFields( Collection<Pair<String, ?>> fields )
+    {
+        super.toStringFields( fields );
+        fields.add( Pair.of( "startNode", startNode ) );
+        fields.add( Pair.of( "endNode", endNode ) );
+        if ( hasTypeId() )
+        {
+            fields.add( Pair.of( "typeId", typeId ) );
+        }
+        else
+        {
+            fields.add( Pair.of( "type", type ) );
+        }
     }
 }

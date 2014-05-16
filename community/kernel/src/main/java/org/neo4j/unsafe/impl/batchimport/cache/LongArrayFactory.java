@@ -65,30 +65,32 @@ public interface LongArrayFactory
         }
     };
 
-    public static final LongArrayFactory AUTO = new LongArrayFactory()
+    public static class AutoLongArrayFactory implements LongArrayFactory
     {
+        private final AvailableMemoryCalculator calculator;
+        private final long margin;
+
+        public AutoLongArrayFactory( AvailableMemoryCalculator calculator, long margin )
+        {
+            this.calculator = calculator;
+            this.margin = margin;
+        }
+
         @Override
         public LongArray newLongArray( long length )
         {
             long bytesRequired = length * 8;
 
-            System.gc();
-            int margin = 500*1024*1024;
-            long freeHeap = Runtime.getRuntime().freeMemory() - margin; /*leave 500M or so*/
-
             // Try to fit it in heap
+            long freeHeap = calculator.availableHeapMemory() - margin;
             if ( bytesRequired < Integer.MAX_VALUE && bytesRequired < freeHeap )
             {
                 return HEAP.newLongArray( length );
             }
 
             // Otherwise if there's room outside heap
-            com.sun.management.OperatingSystemMXBean bean =
-                    (com.sun.management.OperatingSystemMXBean)
-                    java.lang.management.ManagementFactory.getOperatingSystemMXBean();
-            long osMemory = bean.getTotalPhysicalMemorySize();
-            long freeOffHeap = osMemory-Runtime.getRuntime().maxMemory() - margin;
-            if ( length < freeOffHeap )
+            long freeOffHeap = calculator.availableOffHeapMemory() - margin;
+            if ( bytesRequired < freeOffHeap )
             {
                 return OFF_HEAP.newLongArray( length );
             }
@@ -111,5 +113,8 @@ public interface LongArrayFactory
         {
             return new DynamicLongArray( this, chunkSize );
         }
-    };
+    }
+
+    public static final LongArrayFactory AUTO = new AutoLongArrayFactory(
+            AvailableMemoryCalculator.RUNTIME, 300*1024*1024 );
 }
