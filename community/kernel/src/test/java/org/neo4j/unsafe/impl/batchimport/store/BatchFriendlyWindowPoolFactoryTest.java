@@ -317,6 +317,18 @@ public class BatchFriendlyWindowPoolFactoryTest
         {
             return delegate.write( srcs );
         }
+
+        @Override
+        public void writeAll( ByteBuffer src, long position ) throws IOException
+        {
+            delegate.writeAll( src, position );
+        }
+
+        @Override
+        public void writeAll( ByteBuffer src ) throws IOException
+        {
+            delegate.writeAll( src );
+        }
     }
 
     public class Data
