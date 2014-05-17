@@ -22,46 +22,63 @@ package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.cypher.internal.PathImpl
 
-final class PathValueBuilder {
+object NULL extends PathValueBuilder {
+  override def result(): PathImpl = null
+
+  override def clear(): PathValueBuilder = new PathValueBuilder()
+}
+
+sealed class PathValueBuilder {
   private val builder = Vector.newBuilder[PropertyContainer]
+  private var nulled = false
 
-  def result(): PathImpl = new PathImpl(builder.result(): _*)
+  def result(): PathImpl = if (nulled) null else new PathImpl(builder.result(): _*)
 
-  def clear(): this.type =  {
+  def clear(): PathValueBuilder =  {
     builder.clear()
+    nulled = false
     this
   }
 
-  def addNode(node: Node): this.type = {
-    builder += node
-    this
+  def addNode(node: Node): PathValueBuilder = nullCheck(node) {
+      builder += node
+      this
   }
 
-  def addIncomingRelationship(rel: Relationship): this.type = {
+  def addIncomingRelationship(rel: Relationship): PathValueBuilder = nullCheck(rel) {
     builder += rel
     builder += rel.getStartNode
     this
   }
 
-  def addOutgoingRelationship(rel: Relationship): this.type = {
+  def addOutgoingRelationship(rel: Relationship): PathValueBuilder = nullCheck(rel) {
     builder += rel
     builder += rel.getEndNode
     this
   }
 
-  def addIncomingRelationships(rels: Iterable[Relationship]): this.type = addIncomingRelationships(rels.iterator)
+  def addIncomingRelationships(rels: Iterable[Relationship]): PathValueBuilder = addIncomingRelationships(rels.iterator)
 
-  def addIncomingRelationships(rels: Iterator[Relationship]): this.type = {
+  def addIncomingRelationships(rels: Iterator[Relationship]): PathValueBuilder = nullCheck(rels) {
     while (rels.hasNext)
       addIncomingRelationship(rels.next())
     this
   }
 
-  def addOutgoingRelationships(rels: Iterable[Relationship]): this.type = addOutgoingRelationships(rels.iterator)
+  def addOutgoingRelationships(rels: Iterable[Relationship]): PathValueBuilder = addOutgoingRelationships(rels.iterator)
 
-  def addOutgoingRelationships(rels: Iterator[Relationship]): this.type = {
+  def addOutgoingRelationships(rels: Iterator[Relationship]): PathValueBuilder = nullCheck(rels) {
     while (rels.hasNext)
       addOutgoingRelationship(rels.next())
     this
   }
+
+  private def nullCheck[A](value: A)(f: => PathValueBuilder):PathValueBuilder = value match {
+    case null =>
+      nulled = true
+      NULL
+
+    case _ => f
+  }
+
 }
