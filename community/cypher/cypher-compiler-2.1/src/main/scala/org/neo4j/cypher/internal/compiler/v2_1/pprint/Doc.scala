@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.LineDocFormatter
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.docStructureDocGenerator
+import scala.text.{DocBreak, DocText, DocCons, Document}
 
 /**
  * Class of pretty-printable documents.
@@ -30,18 +31,45 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.docStructureDocGene
  *
  */
 sealed abstract class Doc {
-  override def toString = pformat(this, formatter = LineDocFormatter)(docStructureDocGenerator.docGen)
-}
 
-final case class DocLiteral(doc: Doc)
+  import Doc._
+
+  override def toString = pformat(this, formatter = LineDocFormatter)(docStructureDocGenerator.docGen)
+
+  def ::(hd: Doc): Doc = cons(hd, this)
+  def :/:(hd: Doc): Doc = cons(hd, cons(breakHere, this))
+  def :?:(hd: Doc): Doc = replaceNil(hd, this)
+  def :+:(hd: Doc): Doc = appendWithBreak(hd, this)
+}
 
 object Doc {
   // sequences of docs
 
-  def cons(head: Doc, tail: Doc = nil): Doc = ConsDoc(head, tail)
+  def cons(head: Doc, tail: Doc = nil): Doc = if (head == nil) tail else ConsDoc(head, tail)
   def nil: Doc = NilDoc
 
+  // replace nil with default document
+
+  def replaceNil(head: Doc, tail: Doc) = tail match {
+    case NilDoc                => head
+    case ConsDoc(NilDoc, next) => cons(head, next)
+    case other                 => tail
+  }
+
+  // append doc with breaks but replace away nils
+
+  def appendWithBreak(head: Doc, tail: Doc) =
+    if (head == nil)
+      tail
+    else
+      tail match {
+        case NilDoc                => head
+        case ConsDoc(NilDoc, next) => ConsDoc(head, ConsDoc(BreakDoc, next))
+        case other                 => ConsDoc(head, ConsDoc(BreakDoc, other))
+      }
+
   // unbreakable text doc
+
   implicit def text(value: String): Doc = TextDoc(value)
 
   // breaks are either expanded to their value or a line break
@@ -51,7 +79,7 @@ object Doc {
 
   // useful to force a page break if a group is in PageMode and print nothing otherwise
 
-  def pageBreak = breakWith("")
+  def breakBefore(doc: Doc): Doc = if (doc == nil) nil else breakWith("") :: doc
 
   // *all* breaks in a group are either expanded to their value or a line break
 
@@ -62,39 +90,38 @@ object Doc {
   def nest(content: Doc): Doc = NestDoc(content)
   def nest(indent: Int, content: Doc): Doc = NestWith(indent, content)
 
+  // literals are helpful in tests to see the actual document produced instead of how it is rendered
+
+  def literal(doc: Doc) = DocLiteral(doc)
+
   // helper
 
-  implicit def list(docs: List[Doc]): Doc = docs.foldRight(nil)(cons)
+  def list(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil)(cons)
 
-  def breakList(docs: List[Doc]): Doc = docs.foldRight(nil) {
-    case (hd, NilDoc) => cons(hd, nil)
-    case (hd, tail)   => breakCons(hd, tail)
+  def breakList(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil) {
+    case (hd, NilDoc) => hd :: nil
+    case (hd, tail)   => hd :/: tail
   }
 
-  def sepList(docs: List[Doc], sep: Doc => Doc = frontSeparator(",")): Doc = docs.foldRight(nil) {
-    case (hd, NilDoc) => cons(hd, nil)
-    case (hd, tail)   => cons(hd, sep(tail))
+  def sepList(docs: TraversableOnce[Doc], sep: Doc => Doc = separator(",")): Doc = docs.foldRight(nil) {
+    case (hd, NilDoc) => hd :: nil
+    case (hd, tail)   => hd :: sep(tail)
   }
 
-  def frontSeparator(sep: Doc): Doc => Doc =
-    (tail: Doc) => breakCons(sep, tail)
+  def separator(sep: Doc): Doc => Doc = (tail: Doc) => sep :/: tail
 
-  def backSeparator(sep: Doc): Doc => Doc =
-    (tail: Doc) => cons(breakHere, cons(sep, tail))
+  def block(name: Doc, open: Doc = "(", close: Doc = ")")(innerDoc: Doc): Doc =
+    group(
+      name ::
+      open ::
+      nest(group(breakBefore(innerDoc))) ::
+      breakBefore(close)
+    )
 
-  def breakCons(head: Doc, tail: Doc) = ConsDoc(head, ConsDoc(breakHere, tail))
-
-  def scalaGroup(name: String, open: String = "(", close: String = ")")(innerDocs: List[Doc]): Doc =
-    scalaDocGroup(text(name), text(open), text(close))(innerDocs)
-
-  def scalaDocGroup(name: Doc, open: Doc = text("("), close: Doc = text(")"))(innerDocs: List[Doc]): Doc =
-    group(list(List(
-      name,
-      open,
-      nest(group(cons(pageBreak, sepList(innerDocs)))),
-      pageBreak,
-      close
-    )))
+  def section(start: String, inner: Doc): Doc = inner match {
+    case NilDoc => nil
+    case _      => group(start :/: nest(inner))
+  }
 }
 
 final case class ConsDoc(head: Doc, tail: Doc = NilDoc) extends Doc
@@ -133,5 +160,9 @@ final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
   def optIndent = Some(indent)
 }
 
+final case class DocLiteral(doc: Doc) {
+  override def toString =
+    pformat(doc, formatter = DocFormatters.defaultLineFormatter)(docStructureDocGenerator.docGen)
+}
 
 

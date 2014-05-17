@@ -29,59 +29,59 @@ case object scalaDocGenerator extends NestedDocGenerator[Any] {
   import Doc._
 
   val forNestedProducts: RecursiveDocGenerator[Any] = {
-    case p: Product if p.productArity == 0 => (inner: DocGenerator[Any]) =>
-      text(productPrefix(p))
+    case p: Product if p.productArity == 0 => (inner) =>
+      productPrefix(p)
 
-    case p: Product => (inner: DocGenerator[Any]) =>
-      scalaGroup(productPrefix(p))(p.productIterator.map(inner).toList)
+    case p: Product => (inner) =>
+      block(productPrefix(p))(sepList(p.productIterator.map(inner)))
   }
 
-  val forNestedMaps: RecursiveDocGenerator[Any] =  {
-    case m: mutable.Map[_, _] => (inner: DocGenerator[Any]) =>
+  val forNestedMaps: RecursiveDocGenerator[Any] = {
+    case m: mutable.Map[_, _] => (inner) =>
       val mapType = m.getClass.getSimpleName
-      val innerDocs = m.map { case (k, v) => nest(group(breakCons(inner(k), cons(text("→ "), cons(inner(v)))))) }.toList
-      scalaGroup(mapType)(innerDocs)
+      val innerDocs = m.map { case (k, v) => nest(group(inner(k) :/: "→ " :: inner(v))) }
+      block(mapType)(sepList(innerDocs))
 
-    case m: immutable.Map[_, _] => (inner: DocGenerator[Any]) =>
-      val innerDocs = m.map { case (k, v) => nest(group(breakCons(inner(k), cons(text("→ "), cons(inner(v)))))) }.toList
-      scalaGroup("Map")(innerDocs)
+    case m: immutable.Map[_, _] => (inner) =>
+      val innerDocs = m.map { case (k, v) => nest(group(inner(k) :/: "→ " :: inner(v))) }
+      block("Map")(sepList(innerDocs))
   }
 
   val forNestedSets: RecursiveDocGenerator[Any] = {
-    case s: mutable.Set[_] => (inner: DocGenerator[Any]) =>
+    case s: mutable.Set[_] => (inner) =>
       val setType = s.getClass.getSimpleName
-      val innerDocs = s.map(inner).toList
-      scalaGroup(setType)(innerDocs)
+      val innerDocs = s.map(inner)
+      block(setType)(sepList(innerDocs))
 
-    case s: immutable.Set[_] => (inner: DocGenerator[Any]) =>
-      val innerDocs = s.map(inner).toList
-      scalaGroup("Set")(innerDocs)
+    case s: immutable.Set[_] => (inner) =>
+      val innerDocs = s.map(inner)
+      block("Set")(sepList(innerDocs))
   }
 
   val forNestedSequences: RecursiveDocGenerator[Any] = {
-    case s: Seq[_] => (inner: DocGenerator[Any]) =>
+    case s: Seq[_] => (inner) =>
       val seqType = s.getClass.getSimpleName
-      val innerDocs = s.map(inner).toList
-      scalaGroup(seqType)(innerDocs)
+      val innerDocs = s.map(inner)
+      block(seqType)(sepList(innerDocs))
   }
 
   val forNestedArrays: RecursiveDocGenerator[Any] = {
-    case a: Array[_] => (inner: DocGenerator[Any]) =>
-      val innerDocs = a.map(inner).toList
-      scalaGroup("Array")(innerDocs)
+    case a: Array[_] => (inner) =>
+      val innerDocs = a.map(inner)
+      block("Array")(sepList(innerDocs))
   }
 
   val forNestedLists: RecursiveDocGenerator[Any] = {
-    case l: List[_] => (inner: DocGenerator[Any]) =>
-      group( l.foldRight(text("nil")) { case (v, doc) => breakCons(inner(v), cons(text("⸬ "), doc)) } )
+    case l: List[_] => (inner) =>
+      group( l.foldRight[Doc]("⬨") { case (v, doc) => inner(v) :/: "⸬ " :: doc } )
   }
 
   val forNestedPrimitiveValues: RecursiveDocGenerator[Any] = {
-    case v: String => (inner: DocGenerator[Any]) =>
-      text(quoteString(v))
+    case v: String => (inner) =>
+      quoteString(v)
 
-    case ch: Char => (inner: DocGenerator[Any]) =>
-      text(quoteChar(ch))
+    case ch: Char => (inner) =>
+      quoteChar(ch)
   }
 
   protected val instance: RecursiveDocGenerator[Any] =

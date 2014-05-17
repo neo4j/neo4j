@@ -29,21 +29,19 @@ case class queryProjectionDocGenerator(prefix: String = "WITH") extends NestedDo
   val instance: RecursiveDocGenerator[Any] = {
     case queryProjection: QueryProjection => (inner: DocGenerator[Any]) =>
       val projectionMapDoc = queryProjection.projections.collect {
-        case (k, v) => group( cons(inner(v), cons(breakHere, cons(text("AS "), cons(text(s"`$k`"))))) )
+        case (k, v) => group( inner(v) :/: "AS " :: s"`$k`" )
       }
-      val projection = if (projectionMapDoc.isEmpty) text("*") else group(sepList(projectionMapDoc.toList))
+      val projection = if (projectionMapDoc.isEmpty) text("*") else group(sepList(projectionMapDoc))
 
       val sortItemDocs = queryProjection.sortItems.collect {
         case AscSortItem(expr)  => inner(expr)
-        case DescSortItem(expr) => breakCons(inner(expr), cons(text("DESC")))
+        case DescSortItem(expr) => inner(expr) :/: "DESC"
       }
-      val sortItems = if (sortItemDocs.isEmpty) nil else group(breakCons(text("ORDER BY"), cons(sepList(sortItemDocs.toList))))
+      val sortItems = if (sortItemDocs.isEmpty) nil else group("ORDER BY" :/: sepList(sortItemDocs))
 
-      val skip = queryProjection.skip.map( skip => group(breakCons(text("SKIP"), inner(skip))) ).getOrElse(nil)
-      val limit = queryProjection.limit.map( limit => group(breakCons(text("LIMIT"), inner(limit))) ).getOrElse(nil)
+      val skip = queryProjection.skip.map( skip => group("SKIP" :/: inner(skip)) ).getOrElse(nil)
+      val limit = queryProjection.limit.map( limit => group("LIMIT" :/: inner(limit)) ).getOrElse(nil)
 
-      group(cons(text(prefix), nest(cons(breakHere, group(breakList(List(
-        projection, sortItems, skip, limit
-      ).filter(_ != NilDoc)))))))
+      section(prefix, projection :+: sortItems :+: skip :+: limit)
   }
 }

@@ -30,21 +30,21 @@ case object plannerQueryDocGenerator extends NestedDocGenerator[Any] {
   val instance: RecursiveDocGenerator[Any] = {
     case plannerQuery: PlannerQuery => (inner: DocGenerator[Any]) =>
       val allQueryDocs = queryDocs(inner, Some(plannerQuery), List.empty)
-
       group(breakList(allQueryDocs))
+  }
+
+  @tailrec
+  private def queryDocs(inner: DocGenerator[Any], optQuery: Option[PlannerQuery], docs: List[Doc]): List[Doc] = {
+    optQuery match {
+      case None => docs.reverse
+      case Some(query) => queryDocs(inner, query.tail, queryDoc(inner, query) :: docs)
+    }
   }
 
   private def queryDoc(inner: DocGenerator[Any], query: PlannerQuery) = {
     val graphDoc = inner(query.graph)
     val projectionPrefix = query.tail.map(_ => "WITH").getOrElse("RETURN")
     val projectionDoc = queryProjectionDocGenerator(projectionPrefix)(query.projection)(inner)
-    val queryDoc = group(cons(graphDoc, cons(breakHere, projectionDoc)))
-    queryDoc
-  }
-
-  @tailrec
-  private def queryDocs(inner: DocGenerator[Any], optQuery: Option[PlannerQuery], docs: List[Doc]): List[Doc] = optQuery match {
-    case None        => docs.reverse
-    case Some(query) => queryDocs(inner, query.tail, queryDoc(inner, query) :: docs)
+    group(graphDoc :/: projectionDoc)
   }
 }

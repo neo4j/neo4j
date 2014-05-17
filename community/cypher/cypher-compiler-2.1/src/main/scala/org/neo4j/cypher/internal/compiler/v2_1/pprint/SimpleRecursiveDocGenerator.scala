@@ -17,15 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint._
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.Doc._
+import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
+import scala.reflect.ClassTag
 
-case object toStringDocGenerator extends SimpleRecursiveDocGenerator[Any] {
+abstract class SimpleRecursiveDocGenerator[T: ClassTag] extends RecursiveDocGenerator[T] {
+  final val docGen = PartialFunctionSupport.fix(this)
 
-  def isDefinedAt(v: Any) = true
-
-  def apply(v: Any) =
-   (_: DocGenerator[Any]) => if (v == null) "null" else v.toString
+  final def uplifted[S >: T: ClassTag]: RecursiveDocGenerator[S] =
+    PartialFunctionSupport.uplift[T, DocGenerator[T] => Doc, S](this)
 }

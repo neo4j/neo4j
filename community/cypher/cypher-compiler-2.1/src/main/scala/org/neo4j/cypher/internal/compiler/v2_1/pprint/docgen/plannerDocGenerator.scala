@@ -30,62 +30,52 @@ case object plannerDocGenerator extends NestedDocGenerator[Any] {
   import Doc._
 
   val forNestedIdName: RecursiveDocGenerator[Any] = {
-    case idName: IdName => (inner: DocGenerator[Any]) =>
+    case idName: IdName => (inner) =>
       text(idName.name)
   }
 
   // TODO: This should go to ast doc generator
   val forNestedRelTypeName: RecursiveDocGenerator[Any] = {
-    case relTypeName: RelTypeName => (inner: DocGenerator[Any]) =>
+    case relTypeName: RelTypeName => (inner) =>
       text(relTypeName.name)
   }
 
   val forNestedPatternLength: RecursiveDocGenerator[Any] = {
-    case VarPatternLength(min, None)      => (inner: DocGenerator[Any]) => text(s"*${min.toString}..")
-    case VarPatternLength(min, Some(max)) => (inner: DocGenerator[Any]) => text(s"*${min.toString}..${max.toString}")
-    case SimplePatternLength              => (inner: DocGenerator[Any]) => nil
+    case VarPatternLength(min, None)      => (inner) => text(s"*${min.toString}..")
+    case VarPatternLength(min, Some(max)) => (inner) => text(s"*${min.toString}..${max.toString}")
+    case SimplePatternLength              => (inner) => nil
   }
 
   val forNestedPatternRelationship: RecursiveDocGenerator[Any] = {
-    case patRel: PatternRelationship => (inner: DocGenerator[Any]) =>
+    case patRel: PatternRelationship => (inner) =>
       val leftEnd = if (patRel.dir == Direction.INCOMING) "<-[" else "-["
       val rightEnd = if (patRel.dir == Direction.OUTGOING) "]->" else "]-"
 
-      group(list(List(
-        text("("), inner(patRel.left), text(")"),
-        text(leftEnd),
-        inner(patRel.name),
-        relTypeList(patRel.types)(inner),
-        inner(patRel.length),
-        text(rightEnd),
-        text("("), inner(patRel.right), text(")")
-      )))
+      group(
+        "(" :: inner(patRel.left) :: ")" :: leftEnd ::
+        inner(patRel.name) ::
+        relTypeList(patRel.types)(inner) ::
+        inner(patRel.length) :: rightEnd ::
+        "(" :: inner(patRel.right) :: ")"
+      )
   }
 
   val forNestedPredicate: RecursiveDocGenerator[Any] = {
-    case Predicate(dependencies, expr) => (inner: DocGenerator[Any]) =>
+    case Predicate(dependencies, expr) => (inner) =>
 
-      scalaDocGroup(
-        scalaGroup("Predicate", open = "[", close = "]")(List(
-          sepList(dependencies.map(inner).toList)
-        )))(List(inner(expr))
-        )
+      val pred = sepList(dependencies.map(inner))
+      val predBlock = block("Predicate", open = "[", close = "]")(pred)
+      block(predBlock)(inner(expr))
   }
 
   val forNestedSelections: RecursiveDocGenerator[Any] = {
-    case Selections(predicates) => (inner: DocGenerator[Any]) =>
+    case Selections(predicates) => (inner) =>
       sepList(predicates.map(inner).toList)
   }
 
-  def starList[T](list: List[T])(inner: DocGenerator[Any]) =
-    if (list.isEmpty)
-      text("*")
-    else
-      sepList(list.map(inner))
-
   def relTypeList(list: Seq[RelTypeName])(inner: DocGenerator[Any]): Doc = list.map(inner).foldRight(nil) {
-    case (hd, NilDoc) => cons(text(":"), cons(hd))
-    case (hd, tail)   => cons(text(":"), cons(hd, cons(text("|"), cons(tail))))
+    case (hd, NilDoc) => ":" :: hd
+    case (hd, tail)   => ":" :: hd :: "|" :: tail
   }
 
   protected val instance =

@@ -23,8 +23,10 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 
 class DocTest extends CypherFunSuite {
 
+  import Doc._
+
   test("cons(hd, tl) = ConsDocs(hd, tl)") {
-    Doc.cons(BreakDoc, NilDoc) should equal(ConsDoc(BreakDoc, NilDoc))
+    cons(BreakDoc, NilDoc) should equal(ConsDoc(BreakDoc, NilDoc))
   }
 
   test("empty == NilDoc") {
@@ -32,38 +34,71 @@ class DocTest extends CypherFunSuite {
   }
 
   test("text(v) = TextDoc(v)") {
-    Doc.text("text") should equal(TextDoc("text"))
+    text("text") should equal(TextDoc("text"))
   }
 
   test("break == BreakDoc") {
-    Doc.breakHere should equal(BreakDoc)
+    breakHere should equal(BreakDoc)
   }
 
   test("breakWith(v) == BreakWith(v)") {
-    Doc.breakWith("a") should equal(BreakWith("a"))
+    breakWith("a") should equal(BreakWith("a"))
   }
 
   test("group(...) = GroupDoc(...)") {
-    Doc.group(ConsDoc(BreakDoc, NilDoc)) should equal(GroupDoc(ConsDoc(BreakDoc, NilDoc)))
+    group(ConsDoc(BreakDoc, NilDoc)) should equal(GroupDoc(ConsDoc(BreakDoc, NilDoc)))
   }
 
   test("nest(...) = NestWith(...)") {
-    Doc.nest(BreakDoc) should equal(NestDoc(BreakDoc))
+    nest(BreakDoc) should equal(NestDoc(BreakDoc))
   }
 
   test("nest(i, ...) = NestWith(i, ...)") {
-    Doc.nest(3, BreakDoc) should equal(NestWith(3, BreakDoc))
-  }
-
-  test("breakCons(hd, tl) = cons(hd, cons(breakHere, tl))") {
-    Doc.breakCons(Doc.text("a"), Doc.text("b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(BreakDoc, TextDoc("b"))))
+    nest(3, BreakDoc) should equal(NestWith(3, BreakDoc))
   }
 
   test("list(a :: b :: nil) => cons(a, cons(b))") {
-    Doc.list(List("a", "b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"))))
+    list(List("a", "b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(TextDoc("b"))))
   }
 
   test("sepList(a :: b) => cons(a, cons(',', breakCons(b)))") {
-    Doc.sepList(List("a", "b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(TextDoc(","), ConsDoc(BreakDoc, ConsDoc(TextDoc("b"))))))
+    sepList(List("a", "b")) should equal(ConsDoc(TextDoc("a"), ConsDoc(TextDoc(","), ConsDoc(BreakDoc, ConsDoc(TextDoc("b"))))))
+  }
+
+  test("nil :?: a => a") {
+    nil :?: text("a") should equal(text("a"))
+  }
+
+  test("a :?: nil => a") {
+    text("a") :?: nil should equal(text("a"))
+  }
+
+  test("a :?: ConsDoc(nil, b) => a :: b") {
+    text("a") :?: ConsDoc(nil, text("b")) should equal(text("a") :: text("b"))
+  }
+
+  test("a :?: b => b") {
+    text("a") :?: text("b") should equal(text("b"))
+  }
+
+
+  test("nil :+: a => a") {
+    nil :+: text("a") should equal(text("a"))
+  }
+
+  test("a :+: nil => a") {
+    text("a") :+: nil should equal(text("a"))
+  }
+
+  test("a :+: ConsDoc(nil, b) => a :/: b") {
+    text("a") :+: ConsDoc(nil, text("b")) should equal(text("a") :/: text("b"))
+  }
+
+  test("a :+: b => a :/: b") {
+    text("a") :+: text("b") should equal(text("a") :/: text("b"))
+  }
+
+  test("literal(a) => DocLiteral(a)") {
+    literal(text("a")) should equal(DocLiteral(text("a")))
   }
 }

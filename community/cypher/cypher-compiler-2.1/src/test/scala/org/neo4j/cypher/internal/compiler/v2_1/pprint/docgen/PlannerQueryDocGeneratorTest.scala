@@ -19,39 +19,36 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{DocFormatters, pformat, NestedDocGenerator}
-import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.NestedDocGenerator
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryProjection, QueryGraph, PlannerQueryImpl}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{AstConstructionTestSupport, SignedIntegerLiteral}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 
-class PlannerQueryDocGeneratorTest extends CypherFunSuite with AstConstructionTestSupport {
-  object docGen extends NestedDocGenerator[Any] {
+class PlannerQueryDocGeneratorTest extends NestedDocGeneratorTest[Any] {
+
+  object nestedDocGen extends NestedDocGenerator[Any] {
     val instance = plannerQueryDocGenerator orElse plannerDocGenerator orElse scalaDocGenerator orElse toStringDocGenerator
   }
 
   test("renders tail free empty planner query") {
-    render(PlannerQueryImpl(
+    format(PlannerQueryImpl(
       graph = QueryGraph(),
       projection = QueryProjection()
     )) should equal("GIVEN * RETURN *")
   }
 
   test("renders tail free non-empty planner query") {
-    render(PlannerQueryImpl(
+    format(PlannerQueryImpl(
       graph = QueryGraph(patternNodes = Set(IdName("a"))),
       projection = QueryProjection( projections = Map("a" -> SignedIntegerLiteral("1")_))
     )) should equal("GIVEN * MATCH (a) RETURN SignedIntegerLiteral(\"1\") AS `a`")
   }
 
   test("render planner query with tail") {
-    render(PlannerQueryImpl(
+    format(PlannerQueryImpl(
       graph = QueryGraph(patternNodes = Set(IdName("a"))),
       projection = QueryProjection( projections = Map("a" -> SignedIntegerLiteral("1")_)),
       tail = Some(PlannerQuery.empty)
     )) should equal("GIVEN * MATCH (a) WITH SignedIntegerLiteral(\"1\") AS `a` GIVEN * RETURN *")
   }
-
-  private def render(v: Any) =
-    pformat(v, formatter = DocFormatters.defaultLineFormatter)(docGen.docGen)
 }

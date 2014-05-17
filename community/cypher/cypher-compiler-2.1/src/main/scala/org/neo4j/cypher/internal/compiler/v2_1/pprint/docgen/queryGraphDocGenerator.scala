@@ -27,31 +27,20 @@ case object queryGraphDocGenerator extends NestedDocGenerator[Any] {
   import Doc._
 
   protected val instance: RecursiveDocGenerator[Any] = {
-    case qg: QueryGraph => (inner: DocGenerator[Any]) =>
-      val args = section("GIVEN", starList(qg.argumentIds.toList)(inner))
+    case qg: QueryGraph => (inner) =>
+      val args = section("GIVEN", "*" :?: sepList(qg.argumentIds.map(inner)))
       val patterns = section("MATCH", sepList(
-        qg.patternNodes.map(id => cons(text("("), cons(inner(id), cons(")")))).toList ++
-        qg.patternRelationships.map(inner).toList
+        qg.patternNodes.map(id => "(" :: inner(id) :: ")") ++
+        qg.patternRelationships.map(inner)
       ))
 
-      val optionalMatches = qg.optionalMatches.map(inner).toList
+      val optionalMatches = qg.optionalMatches.map(inner)
       val optional =
         if (optionalMatches.isEmpty) nil
-        else section("OPTIONAL", scalaGroup("", open="{ ", close=" }")(optionalMatches))
+        else section("OPTIONAL", block("", open="{ ", close=" }")(sepList(optionalMatches)))
 
       val where = section("WHERE", inner(qg.selections))
 
-      group(breakList(List(args, patterns, optional, where).filter(_ != NilDoc)))
+      group(args :+: patterns :+: optional :+: where)
   }
-
-  private def section(start: String, inner: Doc): Doc = inner match {
-    case NilDoc => nil
-    case _      => group(breakCons(text(start), nest(inner)))
-  }
-
-  private def starList[T](list: List[T])(inner: DocGenerator[Any]) =
-    if (list.isEmpty)
-      text("*")
-    else
-      sepList(list.map(inner))
 }

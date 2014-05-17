@@ -19,23 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint._
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.quoteString
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{DocGenerator, DocFormatters, pformat}
 
-object docStructureDocGenerator extends NestedDocGenerator[Doc] {
+abstract class DocGeneratorTest[T] extends CypherFunSuite with AstConstructionTestSupport {
+  val docGen: DocGenerator[T]
 
-  import Doc._
-
-  protected val instance: RecursiveDocGenerator[Doc] = {
-    case ConsDoc(hd, tl)       => (inner) => inner(hd) :: "·" :: inner(tl)
-    case NilDoc                => (inner) => "ø"
-
-    case TextDoc(value)        => (inner) => quoteString(value)
-    case BreakDoc              => (inner) => breakWith("_")
-    case BreakWith(value)      => (inner) => breakWith(s"_${value}_")
-
-    case GroupDoc(doc)         => (inner) => group("[" :: inner(doc) :: "]")
-    case NestDoc(doc)          => (inner) => group("<" :: inner(doc) :: ">")
-    case NestWith(indent, doc) => (inner) => group(s"($indent)<" :: inner(doc) :: ">")
-  }
+  def format(value: T): String = pformat[T](value, formatter = DocFormatters.defaultLineFormatter)(docGen)
 }

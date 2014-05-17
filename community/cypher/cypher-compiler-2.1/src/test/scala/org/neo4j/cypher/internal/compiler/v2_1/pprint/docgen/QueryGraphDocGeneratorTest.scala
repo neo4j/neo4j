@@ -19,17 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{VarPatternLength, SimplePatternLength}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{HasLabels, LabelName, AstConstructionTestSupport, RelTypeName}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{HasLabels, LabelName, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
 import org.neo4j.graphdb.Direction
 
-class QueryGraphDocGeneratorTest extends CypherFunSuite with AstConstructionTestSupport {
-  object docGen extends NestedDocGenerator[Any] {
+class QueryGraphDocGeneratorTest extends NestedDocGeneratorTest[Any] {
+
+  object nestedDocGen extends NestedDocGenerator[Any] {
     val instance = queryGraphDocGenerator orElse plannerDocGenerator orElse scalaDocGenerator orElse toStringDocGenerator
   }
 
@@ -39,49 +39,49 @@ class QueryGraphDocGeneratorTest extends CypherFunSuite with AstConstructionTest
   private val rel4 = PatternRelationship(IdName("r4"), (IdName("d"), IdName("c")), Direction.INCOMING, Seq(RelTypeName("X")(null), RelTypeName("Y")(null)), VarPatternLength(0, Some(2)))
 
   test("render id names") {
-    render(IdName("a")) should equal("a")
+    format(IdName("a")) should equal("a")
   }
 
   test("render rel type names") {
-    render(RelTypeName("X")(null)) should equal("X")
+    format(RelTypeName("X")(null)) should equal("X")
   }
 
   test("render pattern rels") {
-    render(rel1) should equal("(a)-[r1]->(b)")
-    render(rel2) should equal("(b)<-[r2:X]-(a)")
-    render(rel3) should equal("(c)-[r3:X|:Y*1..]->(d)")
-    render(rel4) should equal("(d)<-[r4:X|:Y*0..2]-(c)")
+    format(rel1) should equal("(a)-[r1]->(b)")
+    format(rel2) should equal("(b)<-[r2:X]-(a)")
+    format(rel3) should equal("(c)-[r3:X|:Y*1..]->(d)")
+    format(rel4) should equal("(d)<-[r4:X|:Y*0..2]-(c)")
   }
 
   test("render empty query graphs") {
-    render(QueryGraph.empty) should equal("GIVEN *")
+    format(QueryGraph.empty) should equal("GIVEN *")
   }
 
   test("renders query graph arguments") {
-    render(QueryGraph(argumentIds = Set(IdName("a")))) should equal("GIVEN a")
-    render(QueryGraph(argumentIds = Set(IdName("a"), IdName("b")))) should equal("GIVEN a, b")
+    format(QueryGraph(argumentIds = Set(IdName("a")))) should equal("GIVEN a")
+    format(QueryGraph(argumentIds = Set(IdName("a"), IdName("b")))) should equal("GIVEN a, b")
   }
 
   test("renders query graph nodes") {
-    render(QueryGraph(patternNodes = Set(IdName("a"), IdName("b")))) should equal("GIVEN * MATCH (a), (b)")
+    format(QueryGraph(patternNodes = Set(IdName("a"), IdName("b")))) should equal("GIVEN * MATCH (a), (b)")
   }
 
   test("renders query graph rels") {
-    render(QueryGraph(
+    format(QueryGraph(
       patternNodes = Set(IdName("a"), IdName("b")),
       patternRelationships = Set(rel1)
     )) should equal("GIVEN * MATCH (a), (b), (a)-[r1]->(b)")
   }
 
   test("renders query graph selections") {
-    render(QueryGraph(
+    format(QueryGraph(
       patternNodes = Set(IdName("a")),
       selections = Selections( predicates = Set(Predicate(Set(IdName("a")), HasLabels(ident("a"), Seq(LabelName("Person")_))_)))
-    )) should equal("GIVEN * MATCH (a) WHERE Predicate[a](HasLabels(Identifier(\"a\"), LabelName(\"Person\") ⸬ nil))")
+    )) should equal("GIVEN * MATCH (a) WHERE Predicate[a](HasLabels(Identifier(\"a\"), LabelName(\"Person\") ⸬ ⬨))")
   }
 
   test("renders optional query graphs") {
-    render(QueryGraph(
+    format(QueryGraph(
       optionalMatches = Seq(
         QueryGraph(patternNodes = Set(IdName("a")))
       )
@@ -89,14 +89,11 @@ class QueryGraphDocGeneratorTest extends CypherFunSuite with AstConstructionTest
   }
 
   test("renders multiple optional query graphs") {
-    render(QueryGraph(
+    format(QueryGraph(
       optionalMatches = Seq(
         QueryGraph(patternNodes = Set(IdName("a"))),
         QueryGraph(patternNodes = Set(IdName("b")))
       )
-    ))  should equal("GIVEN * OPTIONAL { GIVEN * MATCH (a), GIVEN * MATCH (b) }")
+    )) should equal("GIVEN * OPTIONAL { GIVEN * MATCH (a), GIVEN * MATCH (b) }")
   }
-
-  private def render(v: Any) =
-    pformat(v, formatter = DocFormatters.defaultLineFormatter)(docGen.docGen)
 }

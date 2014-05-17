@@ -25,15 +25,17 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.defaultDocGenerator
 
 class DefaultDocGeneratorTest extends CypherFunSuite {
 
-  implicit val docGen = defaultDocGenerator.docGen
+  val docGen = defaultDocGenerator.docGen
 
-  test("DocGenerator.fixed renders primitive integers, longs, and doubles") {
+  import Doc._
+
+  test("DocGenerator renders primitive integers, longs, and doubles") {
     render(1) should equal("1")
     render(1L) should equal("1")
     render(1.0) should equal("1.0")
   }
 
-  test("DocGenerator.fixed quotes strings") {
+  test("DocGenerator quotes strings") {
     render("") should equal("\"\"")
     render("a") should equal("\"a\"")
     render("\\") should equal("\"\\\\\"")
@@ -44,7 +46,7 @@ class DefaultDocGeneratorTest extends CypherFunSuite {
     render("\r") should equal("\"\\r\"")
   }
 
-  test("DocGenerator.fixed quotes chars") {
+  test("DocGenerator quotes chars") {
     render('a') should equal("'a'")
     render('\'') should equal("'\\''")
     render('\t') should equal("'\\t'")
@@ -53,46 +55,46 @@ class DefaultDocGeneratorTest extends CypherFunSuite {
     render('\r') should equal("'\\r'")
   }
 
-  test("DocGenerator.fixed renders maps") {
+  test("DocGenerator renders maps") {
     render(Map.empty) should equal("Map()")
     render(Map(1 -> "a")) should equal("Map(1 → \"a\")")
     render(Map(1 -> "a", 2 -> "b")) should equal("Map(1 → \"a\", 2 → \"b\")")
   }
 
-  test("DocGenerator.fixed renders lists") {
-    render(List.empty) should equal("nil")
-    render(List(1)) should equal("1 ⸬ nil")
-    render(List(1, 2)) should equal("1 ⸬ 2 ⸬ nil")
+  test("DocGenerator renders lists") {
+    render(List.empty) should equal("⬨")
+    render(List(1)) should equal("1 ⸬ ⬨")
+    render(List(1, 2)) should equal("1 ⸬ 2 ⸬ ⬨")
   }
 
-  test("DocGenerator.fixed renders immutable sets") {
+  test("DocGenerator renders immutable sets") {
     render(Set.empty) should equal("Set()")
     render(Set(1)) should equal("Set(1)")
     render(Set(1, 2)) should equal("Set(1, 2)")
   }
 
-  test("DocGenerator.fixed renders mutable sets") {
+  test("DocGenerator renders mutable sets") {
     render(new mutable.HashSet) should equal("HashSet()")
     render((mutable.HashSet.newBuilder += 1 += 2).result()) should equal("HashSet(2, 1)")
   }
 
-  test("DocGenerator.fixed renders non-list sequences") {
+  test("DocGenerator renders non-list sequences") {
     render(Vector.empty) should equal("Vector()")
     render(Vector(1)) should equal("Vector(1)")
     render(Vector(1, 2)) should equal("Vector(1, 2)")
   }
 
-  test("DocGenerator.fixed renders arrays") {
+  test("DocGenerator renders arrays") {
     render(Array.empty) should equal("Array()")
     render(Array(1)) should equal("Array(1)")
     render(Array(1, 2)) should equal("Array(1, 2)")
   }
 
-  test("DocGenerator.fixed renders unit") {
+  test("DocGenerator renders unit") {
     render(()) should equal("()")
   }
 
-  test("DocGenerator.fixed catches ??? from inner doc generators") {
+  test("DocGenerator catches ??? from inner doc generators") {
     object Fail {
       override def toString = throw new NotImplementedError
     }
@@ -100,8 +102,7 @@ class DefaultDocGeneratorTest extends CypherFunSuite {
     render(Fail) should equal("???")
   }
 
-  test("DocGenerator.fixed renders products") {
-
+  test("DocGenerator renders products") {
     case object ZObj
     case class Y(v: Either[ZObj.type, Char])
     case class X[T](a: Y, b: T)
@@ -111,6 +112,10 @@ class DefaultDocGeneratorTest extends CypherFunSuite {
     render(X[(Int, Int)]( a = Y(Right('a')), b = (2, 3) )) should equal("X(Y(Right('a')), (2, 3))")
   }
 
-  private def render[T](v: T)(implicit docGen: DocGenerator[T]) =
+  test("DocGenerator renders literal docs") {
+    render(literal("a" :: "b")) should equal("DocLiteral(\"a\"·\"b\")")
+  }
+
+  private def render[T](v: T) =
     pformat(v, formatter = DocFormatters.defaultLineFormatter)(docGen)
 }

@@ -55,12 +55,12 @@ class PageDocFormatterTest extends CypherFunSuite {
   }
 
   test("introduces newlines when group does not fit remaining line") {
-    val result = PageDocFormatter(4)(group(breakCons("hello", "world")))
+    val result = PageDocFormatter(4)(group("hello" :/: "world"))
     result should equal(Seq(PrintText("hello"), PrintNewLine(0), PrintText("world")))
   }
 
   test("honors nesting when introducing newlines") {
-    val result = PageDocFormatter(6)(nest(2, group(breakCons("hello", "world"))))
+    val result = PageDocFormatter(6)(nest(2, group("hello" :/: "world")))
     result should equal(Seq(PrintText("hello"), PrintNewLine(2), PrintText("world")))
   }
 }

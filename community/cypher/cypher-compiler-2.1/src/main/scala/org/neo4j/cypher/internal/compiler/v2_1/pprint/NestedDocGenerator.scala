@@ -19,17 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
 import scala.reflect.ClassTag
 
-abstract class NestedDocGenerator[T: ClassTag] extends RecursiveDocGenerator[T] {
-  final val docGen = PartialFunctionSupport.fix(this)
-
+abstract class NestedDocGenerator[T: ClassTag] extends SimpleRecursiveDocGenerator[T] {
   protected def instance: RecursiveDocGenerator[T]
 
   def isDefinedAt(v: T) = instance.isDefinedAt(v)
   def apply(v: T) = instance(v)
-
-  final def uplifted[S >: T: ClassTag]: RecursiveDocGenerator[S] =
-    PartialFunctionSupport.uplift[T, DocGenerator[T] => Doc, S](this)
 }
