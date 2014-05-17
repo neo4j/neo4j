@@ -34,6 +34,7 @@ object PlannerDocGenerator extends NestedDocGenerator[Any] {
       text(idName.name)
   }
 
+  // TODO: This should go to ast doc generator
   val forNestedRelTypeName: RecursiveDocGenerator[Any] = {
     case relTypeName: RelTypeName => (inner: DocGenerator[Any]) =>
       text(relTypeName.name)
@@ -94,5 +95,6 @@ object PlannerDocGenerator extends NestedDocGenerator[Any] {
     forNestedPatternRelationship orElse
     forNestedPredicate orElse
     forNestedSelections orElse
+    QueryProjectionDocGenerator("WITH") orElse
     QueryGraphDocGenerator
 }

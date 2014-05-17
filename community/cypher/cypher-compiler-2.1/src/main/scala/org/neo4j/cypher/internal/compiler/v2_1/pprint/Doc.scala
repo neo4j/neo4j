@@ -66,7 +66,7 @@ object Doc {
 
   implicit def list(docs: List[Doc]): Doc = docs.foldRight(nil)(cons)
 
-  def breakList(docs: List[Doc], sep: Doc => Doc = frontSeparator(",")): Doc = docs.foldRight(nil) {
+  def breakList(docs: List[Doc]): Doc = docs.foldRight(nil) {
     case (hd, NilDoc) => cons(hd, nil)
     case (hd, tail)   => breakCons(hd, tail)
   }
