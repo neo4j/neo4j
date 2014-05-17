@@ -34,7 +34,7 @@ class QueryProjectionDocGeneratorTest extends CypherFunSuite with AstConstructio
   }
 
   test("renders regular projections") {
-    render(QueryProjection(projections = Map("a" -> ident("b")))) should equal("WITH Identifier(\"b\") AS a")
+    render(QueryProjection(projections = Map("a" -> ident("b")))) should equal("WITH Identifier(\"b\") AS `a`")
   }
 
   test("renders skip") {

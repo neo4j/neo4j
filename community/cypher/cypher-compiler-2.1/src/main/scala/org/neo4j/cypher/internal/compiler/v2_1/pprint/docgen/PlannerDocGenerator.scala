@@ -96,5 +96,6 @@ object PlannerDocGenerator extends NestedDocGenerator[Any] {
     forNestedPredicate orElse
     forNestedSelections orElse
     QueryProjectionDocGenerator("WITH") orElse
-    QueryGraphDocGenerator
+    QueryGraphDocGenerator orElse
+    PlannerQueryDocGenerator
 }

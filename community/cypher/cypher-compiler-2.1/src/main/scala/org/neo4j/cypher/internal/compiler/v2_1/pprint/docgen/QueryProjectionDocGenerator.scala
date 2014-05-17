@@ -29,9 +29,9 @@ case class QueryProjectionDocGenerator(prefix: String = "WITH") extends NestedDo
   val instance: RecursiveDocGenerator[Any] = {
     case queryProjection: QueryProjection => (inner: DocGenerator[Any]) =>
       val projectionMapDoc = queryProjection.projections.collect {
-        case (k, v) => group( cons(inner(v), cons(breakHere, cons(text("AS "), cons(text(k))))) )
+        case (k, v) => group( cons(inner(v), cons(breakHere, cons(text("AS "), cons(text(s"`$k`"))))) )
       }
-      val projection = if (projectionMapDoc.isEmpty) text("*") else group(projectionMapDoc.toList)
+      val projection = if (projectionMapDoc.isEmpty) text("*") else group(sepList(projectionMapDoc.toList))
 
       val sortItemDocs = queryProjection.sortItems.collect {
         case AscSortItem(expr)  => inner(expr)
@@ -42,7 +42,7 @@ case class QueryProjectionDocGenerator(prefix: String = "WITH") extends NestedDo
       val skip = queryProjection.skip.map( skip => group(breakCons(text("SKIP"), inner(skip))) ).getOrElse(nil)
       val limit = queryProjection.limit.map( limit => group(breakCons(text("LIMIT"), inner(limit))) ).getOrElse(nil)
 
-      group(cons(text(prefix), cons(breakHere, nest(group(breakList(List(
+      group(cons(text(prefix), nest(cons(breakHere, group(breakList(List(
         projection, sortItems, skip, limit
       ).filter(_ != NilDoc)))))))
   }
