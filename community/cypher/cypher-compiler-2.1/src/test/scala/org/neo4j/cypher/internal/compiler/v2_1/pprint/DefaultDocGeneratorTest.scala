@@ -21,10 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.DefaultDocGenerator
 
-class DocGeneratorTest extends CypherFunSuite {
+class DefaultDocGeneratorTest extends CypherFunSuite {
 
-  implicit val docGen = DocGenerator.docGen
+  implicit val docGen = DefaultDocGenerator.docGen
 
   test("DocGenerator.fixed renders primitive integers, longs, and doubles") {
     render(1) should equal("1")
@@ -53,7 +54,7 @@ class DocGeneratorTest extends CypherFunSuite {
   }
 
   test("DocGenerator.fixed renders maps") {
-    implicit val docGen = DocGenerator.docGen
+    implicit val docGen = DefaultDocGenerator.docGen
 
     render(Map.empty) should equal("Map()")
     render(Map(1 -> "a")) should equal("Map(1 → \"a\")")

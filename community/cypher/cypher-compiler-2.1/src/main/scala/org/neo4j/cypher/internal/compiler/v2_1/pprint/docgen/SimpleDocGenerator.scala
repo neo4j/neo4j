@@ -17,15 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen._
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.catchNotImplemented
+import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 
-object DocGenerator extends NestedDocGenerator[Any] {
-
+object SimpleDocGenerator extends NestedDocGenerator[Any] {
   val instance: RecursiveDocGenerator[Any] = catchNotImplemented(
-    PlannerDocGenerator orElse
     DocStructureDocGenerator.uplifted[Any] orElse
     ScalaDocGenerator orElse
     ToStringDocGenerator
