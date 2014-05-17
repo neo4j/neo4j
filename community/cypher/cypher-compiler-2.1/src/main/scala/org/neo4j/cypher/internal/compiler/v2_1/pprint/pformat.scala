@@ -19,9 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-object pprint {
-  // Print value to PrintStream after converting to a doc using the given generator and formatter
+object pformat {
+  // Convert value to String after converting to a doc using the given generator and formatter
   def apply[T](value: T, formatter: DocFormatter = DocFormatter.defaultPageFormatter)
-              (implicit generator: DocGenerator[T] = DocGenerator.forValues): Unit =
-    println(pformat(value, formatter)(generator))
+               (implicit generator: DocGenerator[T] = DocGenerator.forValues): String =
+    printToString(formatter(generator(value)))
 }
