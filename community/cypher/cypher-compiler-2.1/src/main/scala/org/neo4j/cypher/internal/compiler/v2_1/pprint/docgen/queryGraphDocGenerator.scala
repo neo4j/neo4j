@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-object QueryGraphDocGenerator extends NestedDocGenerator[Any] {
+case object queryGraphDocGenerator extends NestedDocGenerator[Any] {
 
   import Doc._
 

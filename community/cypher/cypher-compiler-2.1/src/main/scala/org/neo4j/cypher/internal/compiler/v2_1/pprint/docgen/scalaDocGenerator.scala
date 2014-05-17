@@ -24,7 +24,7 @@ import scala.collection.immutable
 import scala.collection.mutable
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.{quoteString, quoteChar}
 
-object ScalaDocGenerator extends NestedDocGenerator[Any] {
+case object scalaDocGenerator extends NestedDocGenerator[Any] {
 
   import Doc._
 

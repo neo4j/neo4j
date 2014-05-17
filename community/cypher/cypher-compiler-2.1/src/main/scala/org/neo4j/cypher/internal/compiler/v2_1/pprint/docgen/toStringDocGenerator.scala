@@ -19,12 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
+import org.neo4j.cypher.internal.compiler.v2_1
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.Doc._
 
-object SimpleDocGenerator extends NestedDocGenerator[Any] {
-  val instance: RecursiveDocGenerator[Any] = catchNotImplemented(
-    DocStructureDocGenerator.uplifted[Any] orElse
-    ScalaDocGenerator orElse
-    ToStringDocGenerator
-  )
+case object toStringDocGenerator extends NestedDocGenerator[Any] {
+  protected val instance: RecursiveDocGenerator[Any] = {
+    case v => (_: v2_1.pprint.DocGenerator[Any]) =>
+      text(v.toString)
+  }
 }

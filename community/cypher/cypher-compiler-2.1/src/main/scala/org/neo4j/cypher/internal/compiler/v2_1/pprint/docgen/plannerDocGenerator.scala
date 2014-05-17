@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, Predicate}
 
-object PlannerDocGenerator extends NestedDocGenerator[Any] {
+case object plannerDocGenerator extends NestedDocGenerator[Any] {
 
   import Doc._
 
@@ -95,7 +95,7 @@ object PlannerDocGenerator extends NestedDocGenerator[Any] {
     forNestedPatternRelationship orElse
     forNestedPredicate orElse
     forNestedSelections orElse
-    QueryProjectionDocGenerator("WITH") orElse
-    QueryGraphDocGenerator orElse
-    PlannerQueryDocGenerator
+    queryProjectionDocGenerator("WITH") orElse
+    queryGraphDocGenerator orElse
+    plannerQueryDocGenerator
 }

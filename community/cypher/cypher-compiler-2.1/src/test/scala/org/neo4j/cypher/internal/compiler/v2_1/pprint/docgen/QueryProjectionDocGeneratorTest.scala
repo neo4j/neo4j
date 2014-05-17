@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryProjection
 
 class QueryProjectionDocGeneratorTest extends CypherFunSuite with AstConstructionTestSupport {
   object docGen extends NestedDocGenerator[Any] {
-    val instance = QueryProjectionDocGenerator("WITH") orElse PlannerDocGenerator orElse ScalaDocGenerator orElse ToStringDocGenerator
+    val instance = queryProjectionDocGenerator("WITH") orElse plannerDocGenerator orElse scalaDocGenerator orElse toStringDocGenerator
   }
 
   test("renders star projections") {

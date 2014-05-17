@@ -59,5 +59,5 @@ class DocStructureDocGeneratorTest extends CypherFunSuite {
     render(nest(text("a"))) should equal("<\"a\">")
   }
 
-  private def render(doc: Doc) = pformat(doc, formatter = DocFormatters.defaultLineFormatter)(DocStructureDocGenerator.docGen)
+  private def render(doc: Doc) = pformat(doc, formatter = DocFormatters.defaultLineFormatter)(docStructureDocGenerator.docGen)
 }

@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint.ConsDoc
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.BreakWith
 import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
 
-object DocStructureDocGenerator extends NestedDocGenerator[Doc] {
+object docStructureDocGenerator extends NestedDocGenerator[Doc] {
 
   import Doc._
 

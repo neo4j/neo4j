@@ -30,7 +30,7 @@ import org.neo4j.graphdb.Direction
 
 class QueryGraphDocGeneratorTest extends CypherFunSuite with AstConstructionTestSupport {
   object docGen extends NestedDocGenerator[Any] {
-    val instance = QueryGraphDocGenerator orElse PlannerDocGenerator orElse ScalaDocGenerator orElse ToStringDocGenerator
+    val instance = queryGraphDocGenerator orElse plannerDocGenerator orElse scalaDocGenerator orElse toStringDocGenerator
   }
 
   private val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(), SimplePatternLength)

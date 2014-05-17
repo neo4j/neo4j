@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import scala.collection.mutable
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.{PageDocFormatter, LineDocFormatter}
 import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.{DocStructureDocGenerator, ScalaDocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.{docStructureDocGenerator, scalaDocGenerator}
 
 /**
  * See pp.Doc

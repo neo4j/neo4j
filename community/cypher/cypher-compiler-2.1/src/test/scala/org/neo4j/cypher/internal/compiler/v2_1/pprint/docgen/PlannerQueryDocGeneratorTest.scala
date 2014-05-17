@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.{AstConstructionTestSupport, 
 
 class PlannerQueryDocGeneratorTest extends CypherFunSuite with AstConstructionTestSupport {
   object docGen extends NestedDocGenerator[Any] {
-    val instance = PlannerQueryDocGenerator orElse PlannerDocGenerator orElse ScalaDocGenerator orElse ToStringDocGenerator
+    val instance = plannerQueryDocGenerator orElse plannerDocGenerator orElse scalaDocGenerator orElse toStringDocGenerator
   }
 
   test("renders tail free empty planner query") {
