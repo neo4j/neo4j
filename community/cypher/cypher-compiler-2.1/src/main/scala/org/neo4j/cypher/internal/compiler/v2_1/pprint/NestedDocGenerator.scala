@@ -19,14 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.{PageDocFormatter, LineDocFormatter}
+import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
+import scala.reflect.ClassTag
 
-object DocFormatter {
-  val defaultLineWidth = 80
+abstract class NestedDocGenerator[T: ClassTag] extends RecursiveDocGenerator[T] {
+  final val docGen = PartialFunctionSupport.fix(this)
 
-  val defaultLineFormatter = LineDocFormatter
-  val defaultPageFormatter = PageDocFormatter(defaultLineWidth)
+  protected def instance: RecursiveDocGenerator[T]
 
-  def pageFormatter(lineWidth: Int = defaultLineWidth) =
-    if (lineWidth == defaultLineWidth) defaultPageFormatter else PageDocFormatter(lineWidth)
+  def isDefinedAt(v: T) = instance.isDefinedAt(v)
+  def apply(v: T) = instance(v)
+
+  final def uplifted[S >: T: ClassTag]: RecursiveDocGenerator[S] =
+    PartialFunctionSupport.uplift[T, DocGenerator[T] => Doc, S](this)
 }

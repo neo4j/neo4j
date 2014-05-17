@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.LineDocFormatter
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.DocStructureDocGenerator
 
 /**
  * Class of pretty-printable documents.
@@ -29,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.LineDocFormatter
  *
  */
 sealed abstract class Doc {
-  override def toString = pprint.format(this, formatter = LineDocFormatter)(DocGenerator.forDocStructure)
+  override def toString = pformat(this, formatter = LineDocFormatter)(DocStructureDocGenerator.docGen)
 }
 
 final case class DocLiteral(doc: Doc)

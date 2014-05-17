@@ -19,26 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.{QueryGraphDocGenerator, catchNotImplemented, DocStructureDocGenerator, ScalaDocGenerator}
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.Doc._
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen._
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.catchNotImplemented
 
-object DocGenerator {
+object DocGenerator extends NestedDocGenerator[Any] {
 
-  val forNestedValues: RecursiveDocGenerator[Any] =
-    ScalaDocGenerator.forNestedValues orElse
-    QueryGraphDocGenerator.forQueryGraph orElse
-    DocStructureDocGenerator.forNestedDocLiteral
-
-  val forNestedValuesUsingToString: RecursiveDocGenerator[Any] = {
-    case v: Any => (inner: DocGenerator[Any]) =>
-      nest(group(sepList(v.toString.split(' ').map(text).toList, frontSeparator(breakHere))))
-  }
-
-  val forValues: DocGenerator[Any] =
-    catchNotImplemented(PartialFunctionSupport.fix(forNestedValues orElse forNestedValuesUsingToString))
-
-  val forValuesUsingToString: DocGenerator[Any] = PartialFunctionSupport.fix(forNestedValuesUsingToString)
-
-  val forDocStructure: DocGenerator[Doc] = PartialFunctionSupport.fix(DocStructureDocGenerator.forNestedDocStructure)
+  val instance: RecursiveDocGenerator[Any] = catchNotImplemented(
+    PlannerDocGenerator orElse
+    DocStructureDocGenerator.uplifted[Any] orElse
+    ScalaDocGenerator orElse
+    ToStringDocGenerator
+  )
 }

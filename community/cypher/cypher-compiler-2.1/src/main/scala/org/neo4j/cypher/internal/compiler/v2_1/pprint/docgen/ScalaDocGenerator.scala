@@ -24,7 +24,7 @@ import scala.collection.immutable
 import scala.collection.mutable
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.{quoteString, quoteChar}
 
-object ScalaDocGenerator {
+object ScalaDocGenerator extends NestedDocGenerator[Any] {
 
   import Doc._
 
@@ -84,7 +84,7 @@ object ScalaDocGenerator {
       text(quoteChar(ch))
   }
 
-  val forNestedValues: RecursiveDocGenerator[Any] =
+  protected val instance: RecursiveDocGenerator[Any] =
     forNestedPrimitiveValues orElse
     forNestedArrays orElse
     forNestedMaps orElse

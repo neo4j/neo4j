@@ -20,18 +20,18 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{DocGenerator, DocFormatter, pprint, Doc}
-import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Predicate, Selections, QueryGraph}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{VarPatternLength, SimplePatternLength, PatternRelationship, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint._
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{VarPatternLength, SimplePatternLength}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{HasLabels, LabelName, AstConstructionTestSupport, RelTypeName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{LabelName, HasLabels, AstConstructionTestSupport, RelTypeName}
 
 class QueryGraphDocGeneratorTest extends CypherFunSuite with AstConstructionTestSupport {
-  private val docGen = PartialFunctionSupport.fix(
-    QueryGraphDocGenerator.forPlannerTypes orElse
-    ScalaDocGenerator.forNestedValues
-  )
+  object docGen extends NestedDocGenerator[Any] {
+    val instance = QueryGraphDocGenerator orElse PlannerDocGenerator orElse ScalaDocGenerator orElse ToStringDocGenerator
+  }
 
   private val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(), SimplePatternLength)
   private val rel2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.INCOMING, Seq(RelTypeName("X")(null)), SimplePatternLength)
@@ -97,7 +97,6 @@ class QueryGraphDocGeneratorTest extends CypherFunSuite with AstConstructionTest
     ))  should equal("GIVEN * OPTIONAL { GIVEN * MATCH (a), GIVEN * MATCH (b) }")
   }
 
-  private def render(v: Any) = {
-      pprint.format(v, formatter = DocFormatter.defaultLineFormatter)(docGen)
-    }
+  private def render(v: Any) =
+    pformat(v, formatter = DocFormatters.defaultLineFormatter)(docGen.docGen)
 }

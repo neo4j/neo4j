@@ -17,11 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-object pformat {
-  // Convert value to String after converting to a doc using the given generator and formatter
-  def apply[T](value: T, formatter: DocFormatter = DocFormatters.defaultPageFormatter)
-              (implicit generator: DocGenerator[T] = DocGenerator.docGen): String =
-    printToString(formatter(generator(value)))
+import org.neo4j.cypher.internal.compiler.v2_1
+import org.neo4j.cypher.internal.compiler.v2_1.pprint._
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.Doc._
+
+object ToStringDocGenerator extends NestedDocGenerator[Any] {
+  protected val instance: RecursiveDocGenerator[Any] = {
+    case v => (_: v2_1.pprint.DocGenerator[Any]) =>
+      text(v.toString)
+  }
 }

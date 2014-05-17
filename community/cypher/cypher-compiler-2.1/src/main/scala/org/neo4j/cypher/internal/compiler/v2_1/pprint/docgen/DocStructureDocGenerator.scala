@@ -27,11 +27,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint.ConsDoc
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.BreakWith
 import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
 
-object DocStructureDocGenerator {
+object DocStructureDocGenerator extends NestedDocGenerator[Doc] {
 
   import Doc._
 
-  val forNestedDocStructure: RecursiveDocGenerator[Doc] = {
+  protected val instance: RecursiveDocGenerator[Doc] = {
     case ConsDoc(hd, tl)       => (inner: DocGenerator[Doc]) => cons(inner(hd), cons(TextDoc("·"), inner(tl)))
     case NilDoc                => (inner: DocGenerator[Doc]) => text("ø")
 
@@ -43,6 +43,4 @@ object DocStructureDocGenerator {
     case NestDoc(doc)          => (inner: DocGenerator[Doc]) => group(cons(text("<"), cons(inner(doc), text(">"))))
     case NestWith(indent, doc) => (inner: DocGenerator[Doc]) => group(cons(text(s"($indent)<"), cons(inner(doc), text(">"))))
   }
-
-  val forNestedDocLiteral: RecursiveDocGenerator[Any] = PartialFunctionSupport.uplift(forNestedDocStructure)
 }

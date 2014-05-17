@@ -19,11 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{Doc, DocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{RecursiveDocGenerator, NestedDocGenerator, Doc, DocGenerator}
+import scala.reflect.ClassTag
 
-object catchNotImplemented {
-  def apply[T](docGen: DocGenerator[T]): DocGenerator[T] = new PartialFunction[T, Doc] {
-    def isDefinedAt(v: T) = try { docGen.isDefinedAt(v) } catch { case _: NotImplementedError => true }
-    def apply(v: T) = try { docGen.apply(v) } catch { case _: NotImplementedError => Doc.text("???") }
-  }
+case class catchNotImplemented[T: ClassTag](instance: RecursiveDocGenerator[T]) extends NestedDocGenerator[T] {
+
+  import Doc._
+
+  override def isDefinedAt(v: T) =
+    try { super.isDefinedAt(v) } catch { case _: NotImplementedError => true }
+
+  override def apply(v: T) =
+    (inner: DocGenerator[T]) => try { super.apply(v)(inner) } catch { case _: NotImplementedError => text("???") }
 }

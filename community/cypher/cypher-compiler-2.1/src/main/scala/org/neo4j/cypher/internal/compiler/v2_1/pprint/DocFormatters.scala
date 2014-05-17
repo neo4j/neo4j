@@ -19,9 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-object pformat {
-  // Convert value to String after converting to a doc using the given generator and formatter
-  def apply[T](value: T, formatter: DocFormatter = DocFormatters.defaultPageFormatter)
-              (implicit generator: DocGenerator[T] = DocGenerator.docGen): String =
-    printToString(formatter(generator(value)))
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.{PageDocFormatter, LineDocFormatter}
+
+object DocFormatters {
+  val defaultLineWidth = 80
+
+  val defaultLineFormatter = LineDocFormatter
+  val defaultPageFormatter = PageDocFormatter(defaultLineWidth)
+
+  def pageFormatter(lineWidth: Int = defaultLineWidth) =
+    if (lineWidth == defaultLineWidth) defaultPageFormatter else PageDocFormatter(lineWidth)
 }
