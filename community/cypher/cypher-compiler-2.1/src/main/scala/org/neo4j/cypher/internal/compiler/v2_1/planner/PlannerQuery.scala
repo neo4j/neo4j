@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.pformat
 
 trait PlannerQuery extends Visitable[PlannerQuery] {
   def graph: QueryGraph
@@ -51,6 +52,8 @@ trait PlannerQuery extends Visitable[PlannerQuery] {
     )
 
   def accept[R](visitor: Visitor[PlannerQuery, R]): R = visitor.visit(this)
+
+  override def toString = pformat(this)
 
   private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
     case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
