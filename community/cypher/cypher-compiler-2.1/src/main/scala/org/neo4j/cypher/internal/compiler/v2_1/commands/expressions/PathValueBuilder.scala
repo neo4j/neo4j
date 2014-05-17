@@ -22,12 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 import org.neo4j.graphdb.{Relationship, Node, PropertyContainer}
 import org.neo4j.cypher.internal.PathImpl
 
-object NULL extends PathValueBuilder {
-  override def result(): PathImpl = null
-
-  override def clear(): PathValueBuilder = new PathValueBuilder()
-}
-
 sealed class PathValueBuilder {
   private val builder = Vector.newBuilder[PropertyContainer]
   private var nulled = false
@@ -76,7 +70,7 @@ sealed class PathValueBuilder {
   private def nullCheck[A](value: A)(f: => PathValueBuilder):PathValueBuilder = value match {
     case null =>
       nulled = true
-      NULL
+      this
 
     case _ => f
   }

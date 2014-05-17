@@ -162,6 +162,12 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
                                            clauses: Seq[Clause]): (PlannerQuery, Map[PatternExpression, QueryGraph]) =
     clauses match {
       case Return(false, ListedReturnItems(expressions), optOrderBy, skip, limit) :: tl =>
+
+        // Can't handle pattern expressions as projections yet
+        expressions.foreach(_.expression.exists {
+          case _:PatternExpression => throw new CantHandleQueryException
+        })
+
         val sortItems = produceSortItems(optOrderBy)
         val projection = produceProjectionsMaps(expressions)
           .withSortItems(sortItems)

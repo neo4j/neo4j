@@ -226,7 +226,7 @@ return coalesce(a.title, a.name)""")
   test("functions should return null if they get path containing null") {
     createNode()
 
-    val result = execute("start a=node(0) optional match p=a-[r]->() return length(rels(p)), id(r), type(r), nodes(p), rels(p)").toList
+    val result = executeWithNewPlanner("match a optional match p=a-[r]->() return length(rels(p)), id(r), type(r), nodes(p), rels(p)").toList
 
     result should equal(List(Map("length(rels(p))" -> null, "id(r)" -> null, "type(r)" -> null, "nodes(p)" -> null, "rels(p)" -> null)))
   }
@@ -234,7 +234,7 @@ return coalesce(a.title, a.name)""")
   test("aggregates inside normal functions should work") {
     createNode()
 
-    val result = execute("start a=node(0) return length(collect(a))").toList
+    val result = executeWithNewPlanner("match a return length(collect(a))").toList
     result should equal(List(Map("length(collect(a))" -> 1)))
   }
 
@@ -243,7 +243,7 @@ return coalesce(a.title, a.name)""")
     val b = createNode("foo" -> 3)
     relate(a, b, "rel", Map("foo" -> 2))
 
-    val result = execute("start a=node(0) match p=a-->() return filter(x in nodes(p) WHERE x.foo > 2) as n").toList
+    val result = executeWithNewPlanner("match (a { foo : 1 }) match p=a-->() return filter(x in nodes(p) WHERE x.foo > 2) as n").toList
 
     val resultingCollection = result.head("n").asInstanceOf[Seq[_]].toList
 
@@ -252,7 +252,7 @@ return coalesce(a.title, a.name)""")
 
   test("expose problem with aliasing") {
     createNode("nisse")
-    execute("start n = node(0) return n.name, count(*) as foo order by n.name")
+    executeWithNewPlanner("match n return n.name, count(*) as foo order by n.name")
   }
 
   test("distinct on nullable values") {
@@ -260,19 +260,17 @@ return coalesce(a.title, a.name)""")
     createNode()
     createNode()
 
-    val result = execute("start a=node(0,1,2) return distinct a.name").toList
+    val result = execute("match a return distinct a.name").toList
 
     result should equal(List(Map("a.name" -> "Florescu"), Map("a.name" -> null)))
   }
 
   test("return all identifiers") {
-    val a = createNode()
+    val a = createLabeledNode("Start")
     val b = createNode()
     val r = relate(a, b)
 
-    val q = "start a=node(0) match p=a-->b return *"
-
-    val result = execute(q).toList
+    val result = executeWithNewPlanner("match p=(a:Start)-->b return *").toList
     val first = result.head
     first.keys should equal(Set("a", "b", "p"))
 
@@ -282,7 +280,7 @@ return coalesce(a.title, a.name)""")
   test("issue 508") {
     createNode()
 
-    val q = "start n=node(0) set n.x=[1,2,3] return length(n.x)"
+    val q = "match n set n.x=[1,2,3] return length(n.x)"
 
     execute(q).toList should equal(List(Map("length(n.x)" -> 3)))
   }
@@ -344,13 +342,13 @@ return coalesce(a.title, a.name)""")
   }
 
   test("should return shortest path") {
-    val a = createNode()
+    val a = createLabeledNode("Start")
     val b = createNode()
-    val c = createNode()
+    val c = createLabeledNode("End")
     relate(a, b)
     relate(b, c)
 
-    val result = execute("start a=node(0), c=node(2) return shortestPath(a-[*]->c)").columnAs[Path]("shortestPath(a-[*]->c)").toList.head
+    val result = executeWithNewPlanner("match (a:Start), (c:End) return shortestPath(a-[*]->c)").columnAs[Path]("shortestPath(a-[*]->c)").toList.head
     result.endNode() should equal(c)
     result.startNode() should equal(a)
     result.length() should equal(2)
@@ -358,17 +356,17 @@ return coalesce(a.title, a.name)""")
 
   test("array prop output") {
     createNode("foo" -> Array(1, 2, 3))
-    val result = execute("start n = node(0) return n").dumpToString()
+    val result = executeWithNewPlanner("match n return n").dumpToString()
 
     result should include ("[1,2,3]")
   }
 
   test("var length predicate") {
-    val a = createNode()
-    val b = createNode()
+    val a = createLabeledNode("Start")
+    val b = createLabeledNode("End")
     relate(a, b)
 
-    val resultPath = execute("START a=node(0), b=node(1) RETURN a-[*]->b as path")
+    val resultPath = execute("match (a:Start), (b:End) RETURN a-[*]->b as path")
       .toList.head("path").asInstanceOf[Seq[_]]
 
     resultPath should have size 1
@@ -376,7 +374,7 @@ return coalesce(a.title, a.name)""")
 
   test("should be able to return predicate result") {
     createNode()
-    val result = execute("START a=node(0) return id(a) = 0, a is null").toList
+    val result = executeWithNewPlanner("match a return id(a) = 0, a is null").toList
     result should equal(List(Map("id(a) = 0" -> true, "a is null" -> false)))
   }
 
@@ -387,7 +385,7 @@ return coalesce(a.title, a.name)""")
 
   test("array property should be accessible as collection") {
     createNode()
-    val result = execute("START n=node(0) SET n.array = [1,2,3,4,5] RETURN tail(tail(n.array))").
+    val result = execute("match n SET n.array = [1,2,3,4,5] RETURN tail(tail(n.array))").
       toList.
       head("tail(tail(n.array))").
       asInstanceOf[Iterable[_]]
@@ -399,7 +397,7 @@ return coalesce(a.title, a.name)""")
     val r = new Random(1337)
     val nodes = (0 to 15).map(x => createNode("count" -> x)).sortBy(x => r.nextInt(100))
 
-    val result = execute("START a=node({nodes}) RETURN a.count ORDER BY a.count SKIP 10 LIMIT 10", "nodes" -> nodes)
+    val result = executeWithNewPlanner("MATCH a RETURN a.count ORDER BY a.count SKIP 10 LIMIT 10", "nodes" -> nodes)
 
     result.toList should equal(List(
       Map("a.count" -> 10),
@@ -419,7 +417,7 @@ return coalesce(a.title, a.name)""")
 
   test("should handle path predicates with labels") {
     // GIVEN
-    val a = createNode()
+    val a = createLabeledNode("Start")
 
     val b1 = createLabeledNode("A")
     val b2 = createLabeledNode("B")
@@ -430,7 +428,7 @@ return coalesce(a.title, a.name)""")
     relate(a, b3)
 
     // WHEN
-    val result = execute("START n = node(0) RETURN n-->(:A)")
+    val result = execute("MATCH (n:Start) RETURN n-->(:A)")
 
     val x = result.toList.head("n-->(:A)").asInstanceOf[Seq[_]]
 
@@ -439,7 +437,7 @@ return coalesce(a.title, a.name)""")
 
   test("sort columns do not leak") {
     //GIVEN
-    val result = execute("start n=node(*) return * order by id(n)")
+    val result = executeWithNewPlanner("match n return * order by id(n)")
 
     //THEN
     result.columns should equal(List("n"))
@@ -460,7 +458,7 @@ return coalesce(a.title, a.name)""")
 
   test("columns should not change when using order by and distinct") {
     val n = createNode()
-    val result = execute("start n=node(*) return distinct n order by id(n)")
+    val result = execute("match n return distinct n order by id(n)")
 
     result.toList should equal(List(Map("n" -> n)))
   }
@@ -476,7 +474,7 @@ return coalesce(a.title, a.name)""")
     createNode()
 
     // then shouldn't throw
-    execute("START x=node(0) RETURN DISTINCT x as otherName ORDER BY x.name ")
+    execute("match x RETURN DISTINCT x as otherName ORDER BY x.name ")
   }
 
   test("should propagate null through math funcs") {
