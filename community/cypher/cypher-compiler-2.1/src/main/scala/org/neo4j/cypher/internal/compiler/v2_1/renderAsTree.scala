@@ -24,7 +24,7 @@ object renderAsTree extends (PlanDescription => String) {
   def apply(plan: PlanDescription): String = {
 
     val result = new StringBuilder()
-
+    val newLine = "%n".format()
     val names: Map[PlanDescription, String] = createUniqueNames(plan)
 
 
@@ -36,21 +36,21 @@ object renderAsTree extends (PlanDescription => String) {
 
         case SingleChild(inner) =>
           result.
-            append(System.lineSeparator()).
-            append(prepend).append("  |").append(System.lineSeparator()).
+            append(newLine).
+            append(prepend).append("  |").append(newLine).
             append(prepend).append("  +")
           accumulateTree(inner, prepend + "  ")
 
         case TwoChildren(lhs, rhs) =>
           result.
-            append(System.lineSeparator()).
-            append(prepend).append("  |").append(System.lineSeparator()).
+            append(newLine).
+            append(prepend).append("  |").append(newLine).
             append(prepend).append("  +")
           accumulateTree(lhs, prepend + "  |")
 
           result.
-            append(System.lineSeparator()).
-            append(prepend).append("  |").append(System.lineSeparator()).
+            append(newLine).
+            append(prepend).append("  |").append(newLine).
             append(prepend).append("  +")
           accumulateTree(rhs, prepend + "   ")
       }

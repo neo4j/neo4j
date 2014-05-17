@@ -45,7 +45,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     val builder = new PathValueBuilder
 
     builder.addNode(node1)
-    builder.addOutgoingRelationship(rel1)
+      .addOutgoingRelationship(rel1)
 
     builder.result() should equal(new PathImpl(node1, rel1, node2))
   }
@@ -54,7 +54,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     val builder = new PathValueBuilder
 
     builder.addNode(node2)
-    builder.addIncomingRelationship(rel1)
+      .addIncomingRelationship(rel1)
 
     builder.result() should equal(new PathImpl(node2, rel1, node1))
   }
@@ -71,7 +71,7 @@ class PathValueBuilderTest extends CypherFunSuite {
     val builder = new PathValueBuilder
 
     builder.addNode(node1)
-    builder.addOutgoingRelationships(Iterator(rel1, rel2))
+      .addOutgoingRelationships(Iterator(rel1, rel2))
 
     builder.result() should equal(new PathImpl(node1, rel1, node2, rel2, node3))
   }
@@ -80,9 +80,38 @@ class PathValueBuilderTest extends CypherFunSuite {
     val builder = new PathValueBuilder
 
     builder.addNode(node3)
-    builder.addIncomingRelationships(Iterator(rel2, rel1))
+      .addIncomingRelationships(Iterator(rel2, rel1))
 
     builder.result() should equal(new PathImpl(node3, rel2, node2, rel1, node1))
+  }
+
+  test("p = (a) when single node is null") {
+    val builder = new PathValueBuilder
+
+    val result = builder
+      .addNode(null)
+      .result()
+
+    result should equal(null)
+  }
+
+  test("p = (a) when single node is null also for mutable builder") {
+    val builder = new PathValueBuilder
+
+    builder.addNode(null)
+
+    builder.result() should equal(null)
+  }
+
+  test("p = (a)-[r]->(b) when relationship is null") {
+    val builder = new PathValueBuilder
+
+    val result = builder
+      .addNode(node1)
+      .addIncomingRelationship(null)
+      .result()
+
+    result should equal(null)
   }
 
   private def mockedRelationship(id: Long, start: Node, end: Node) = {

@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
-import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, Rewriter, topDown}
+import org.neo4j.cypher.internal.compiler.v2_1.{Rewriter, topDown}
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator._
 import org.neo4j.cypher.InternalException
 
@@ -161,28 +161,21 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
                                            subQueryLookupTable: Map[PatternExpression, QueryGraph],
                                            clauses: Seq[Clause]): (PlannerQuery, Map[PatternExpression, QueryGraph]) =
     clauses match {
-        case Return(false, ListedReturnItems(expressions), optOrderBy, skip, limit) :: tl =>
-          val (projections, aggregations) = produceProjectionsMaps(expressions)
+      case Return(false, ListedReturnItems(expressions), optOrderBy, skip, limit) :: tl =>
 
-          val sortItems = produceSortItems(optOrderBy)
+        // Can't handle pattern expressions as projections yet
+        expressions.foreach(_.expression.exists {
+          case _:PatternExpression => throw new CantHandleQueryException
+        })
 
-          val projection = if (aggregations.isEmpty)
-            QueryProjection(
-              projections = projections,
-              sortItems = sortItems,
-              limit = limit.map(_.expression),
-              skip = skip.map(_.expression))
-          else
-            AggregationProjection(
-              aggregationExpressions = aggregations,
-              groupingKeys = projections,
-              sortItems = sortItems,
-              limit = limit.map(_.expression),
-              skip = skip.map(_.expression))
+        val sortItems = produceSortItems(optOrderBy)
+        val projection = produceProjectionsMaps(expressions)
+          .withSortItems(sortItems)
+          .withLimit(limit.map(_.expression))
+          .withSkip(skip.map(_.expression))
 
-          val newQG = querySoFar.withProjection(projection)
-
-          produceQueryGraphFromClauses(newQG, subQueryLookupTable, tl)
+        val newQG = querySoFar.withProjection(projection)
+        produceQueryGraphFromClauses(newQG, subQueryLookupTable, tl)
 
         case Match(optional@false, pattern: Pattern, Seq(), optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
@@ -251,7 +244,11 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
           (newQuery, tailMap)
 
         case With(false, ListedReturnItems(expressions), optOrderBy, skip, limit, optWhere) :: tl =>
-          val (projections, aggregations) = produceProjectionsMaps(expressions)
+          val orderBy = produceSortItems(optOrderBy)
+          val projection = produceProjectionsMaps(expressions)
+            .withSortItems(orderBy)
+            .withLimit(limit.map(_.expression))
+            .withSkip(skip.map(_.expression))
 
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
           val (tailQuery: PlannerQuery, tailMap) = produceQueryGraphFromClauses(
@@ -260,24 +257,8 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
             tl
           )
 
-          val inputIds = projections.keySet.map(IdName) ++ aggregations.keySet.map(IdName)
+          val inputIds = projection.keySet.map(IdName)
           val argumentIds = inputIds intersect tailQuery.graph.coveredIds
-
-          val projection = if (aggregations.isEmpty)
-            QueryProjection(
-              projections = projections,
-              sortItems = produceSortItems(optOrderBy),
-              limit = limit.map(_.expression),
-              skip = skip.map(_.expression)
-            )
-          else
-            AggregationProjection(
-              groupingKeys = projections,
-              aggregationExpressions = aggregations,
-              sortItems = produceSortItems(optOrderBy),
-              limit = limit.map(_.expression),
-              skip = skip.map(_.expression)
-            )
 
           val newQuery =
             querySoFar
@@ -296,7 +277,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
   private def produceSortItems(optOrderBy: Option[OrderBy]) =
     optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
 
-  private def produceProjectionsMaps(expressions: Seq[ReturnItem]): (Map[String, Expression], Map[String, Expression]) = {
+  private def produceProjectionsMaps(expressions: Seq[ReturnItem]): QueryProjection = {
     val (aggregatingItems: Seq[ReturnItem], nonAggrItems: Seq[ReturnItem]) =
       expressions.partition(item => IsAggregate(item.expression))
 
@@ -308,6 +289,9 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
     if(projectionMap.values.exists(containsAggregate))
       throw new InternalException("Grouping keys contains aggregation. AST has not been rewritten?")
 
-    (projectionMap, aggregationsMap)
+    if (aggregationsMap.isEmpty)
+      QueryProjection(projections = projectionMap)
+    else
+      AggregationProjection(groupingKeys = projectionMap, aggregationExpressions = aggregationsMap)
   }
 }
