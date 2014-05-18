@@ -107,12 +107,12 @@ class RenderPlanDescriptionDetailsTest extends CypherFunSuite {
     val plan2 = PlanDescriptionImpl(pipe, "NAME", SingleChild(plan1), args2)
 
     renderDetails(plan2) should equal(
-      """+----------+------+--------+-------------+-------------------+
-        || Operator | Rows | DbHits | Identifiers |             Other |
-        |+----------+------+--------+-------------+-------------------+
-        ||  NAME(0) |    2 |    633 |           b | Index(Label,Prop) |
-        ||  NAME(1) |   42 |     33 |           a |                   |
-        |+----------+------+--------+-------------+-------------------+
+      """+----------+------+--------+-------------+--------------+
+        || Operator | Rows | DbHits | Identifiers |        Other |
+        |+----------+------+--------+-------------+--------------+
+        ||  NAME(0) |    2 |    633 |           b | :Label(Prop) |
+        ||  NAME(1) |   42 |     33 |           a |              |
+        |+----------+------+--------+-------------+--------------+
         |""".stripMargin)
   }
 }
