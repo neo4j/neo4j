@@ -19,13 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint._
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{Doc, RecursiveDocGenerator, NestedDocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 
-case object defaultDocGenerator extends NestedDocGenerator[Any] {
-  val instance: RecursiveDocGenerator[Any] = catchNotImplemented(
-    astExpressionDocGenerator orElse
-    astDocGenerator orElse
-    plannerDocGenerator orElse
-    simpleDocGenerator
-  )
+case object astExpressionDocGenerator extends NestedDocGenerator[Any] {
+
+  import Doc._
+
+  protected val instance: RecursiveDocGenerator[Any] = {
+    case Identifier(name) => (inner) =>
+      text(name)
+
+    case (Equals(left, right)) => (inner) =>
+      inner(left) :/: "=" :/: inner(right)
+
+    case (Property(map, PropertyKeyName(name))) => (inner) =>
+      inner(map) :: "." :: name
+  }
 }

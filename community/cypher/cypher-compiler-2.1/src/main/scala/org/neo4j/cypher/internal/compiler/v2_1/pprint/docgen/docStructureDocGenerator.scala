@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.quoteString
 
-object docStructureDocGenerator extends NestedDocGenerator[Doc] {
+case object docStructureDocGenerator extends NestedDocGenerator[Doc] {
 
   import Doc._
 

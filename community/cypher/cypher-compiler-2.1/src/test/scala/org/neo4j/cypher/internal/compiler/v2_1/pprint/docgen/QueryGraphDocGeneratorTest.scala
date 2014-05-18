@@ -30,7 +30,12 @@ import org.neo4j.graphdb.Direction
 class QueryGraphDocGeneratorTest extends NestedDocGeneratorTest[Any] {
 
   object nestedDocGen extends NestedDocGenerator[Any] {
-    val instance = queryGraphDocGenerator orElse plannerDocGenerator orElse scalaDocGenerator orElse toStringDocGenerator
+    val instance =
+      queryGraphDocGenerator orElse
+      astDocGenerator orElse
+      plannerDocGenerator orElse
+      scalaDocGenerator orElse
+      toStringDocGenerator
   }
 
   private val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(), SimplePatternLength)

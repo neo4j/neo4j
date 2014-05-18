@@ -34,12 +34,6 @@ case object plannerDocGenerator extends NestedDocGenerator[Any] {
       text(idName.name)
   }
 
-  // TODO: This should go to ast doc generator
-  val forNestedRelTypeName: RecursiveDocGenerator[Any] = {
-    case relTypeName: RelTypeName => (inner) =>
-      text(relTypeName.name)
-  }
-
   val forNestedPatternLength: RecursiveDocGenerator[Any] = {
     case VarPatternLength(min, None)      => (inner) => text(s"*${min.toString}..")
     case VarPatternLength(min, Some(max)) => (inner) => text(s"*${min.toString}..${max.toString}")
@@ -80,7 +74,6 @@ case object plannerDocGenerator extends NestedDocGenerator[Any] {
 
   protected val instance =
     forNestedIdName orElse
-    forNestedRelTypeName orElse
     forNestedPatternLength orElse
     forNestedPatternRelationship orElse
     forNestedPredicate orElse
