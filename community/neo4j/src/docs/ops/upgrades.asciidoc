@@ -64,7 +64,7 @@ This edition adds a new store for labels and one for schema, an index for labels
 Note that we do not currently support rolling upgrades between 1.9.x and 2.0.
 
 For Neo4j 2.0, Java 7 is required.
-We recommend that you install the Java JDK 7 from the http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Website].
+We recommend that you install http://openjdk.java.net/[OpenJDK 7] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 7].
 
 When upgrading, the following will happen and will both take some time, and will require extra disk space:
 
