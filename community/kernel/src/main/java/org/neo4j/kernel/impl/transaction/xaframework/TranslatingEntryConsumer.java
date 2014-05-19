@@ -54,13 +54,8 @@ class TranslatingEntryConsumer implements Consumer<LogEntry, IOException>
             {
                 throw new IOException( "Unable to find start entry" );
             }
-            else
-            {
-                startEntry = (LogEntry.Start) logEntry;
-            }
+            startEntry = (LogEntry.Start) logEntry;
         }
-
-        logEntry.reset( xidIdentifier );
 
         if ( logEntry.getVersion() != LogEntry.CURRENT_LOG_ENTRY_VERSION )
         {
@@ -70,12 +65,9 @@ class TranslatingEntryConsumer implements Consumer<LogEntry, IOException>
             }
             entries.add( logEntry );
 
-            if ( (logEntry.getType() == LogEntry.TX_1P_COMMIT || logEntry.getType() == LogEntry.TX_2P_COMMIT)  )
+            if ( logEntry.getType() == LogEntry.TX_1P_COMMIT  )
             {
                 entries = translator.apply( entries );
-            }
-            if ( logEntry.getType() == LogEntry.DONE )
-            {
                 for ( LogEntry entry : entries )
                 {
                     entry.accept( handler );

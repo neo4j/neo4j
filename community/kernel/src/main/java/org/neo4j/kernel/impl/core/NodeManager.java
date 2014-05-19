@@ -41,6 +41,8 @@ import org.neo4j.helpers.collection.CombiningIterator;
 import org.neo4j.helpers.collection.FilteringIterator;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -49,21 +51,13 @@ import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.store.TokenStore;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.lifecycle.Lifecycle;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.String.format;
 import static java.util.Arrays.asList;
@@ -71,29 +65,22 @@ import static java.util.Arrays.asList;
 import static org.neo4j.helpers.collection.Iterables.cast;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
 
-public class NodeManager implements Lifecycle, EntityFactory
+public class NodeManager extends LifecycleAdapter implements EntityFactory
 {
-    private final StringLogger logger;
     private final GraphDatabaseService graphDbService;
     private final AutoLoadingCache<NodeImpl> nodeCache;
     private final AutoLoadingCache<RelationshipImpl> relCache;
     private final CacheProvider cacheProvider;
-    private final AbstractTransactionManager transactionManager;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
     private final RelationshipTypeTokenHolder relTypeHolder;
-    private final PersistenceManager persistenceManager;
-    private final EntityIdGenerator idGenerator;
-    private final XaDataSourceManager xaDsm;
-    private final ThreadToStatementContextBridge statementCtxProvider;
-
+    private final ThreadToStatementContextBridge threadToTransactionBridge;
     private final NodeProxy.NodeLookup nodeLookup;
     private final RelationshipProxy.RelationshipLookups relationshipLookups;
-
     private final RelationshipLoader relationshipLoader;
-
     private final List<PropertyTracker<Node>> nodePropertyTrackers;
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
+    private final IdGeneratorFactory idGeneratorFactory;
 
     private GraphPropertiesImpl graphProperties;
 
@@ -102,7 +89,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         @Override
         public NodeImpl loadById( long id )
         {
-            NodeRecord record = persistenceManager.loadLightNode( id );
+            NodeRecord record = threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true ).nodeLoadLight( id );
             if ( record == null )
             {
                 return null;
@@ -115,7 +102,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         @Override
         public RelationshipImpl loadById( long id )
         {
-            RelationshipRecord data = persistenceManager.loadLightRelationship( id );
+            RelationshipRecord data = threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true ).relLoadLight( id );
             if ( data == null )
             {
                 return null;
@@ -128,33 +115,27 @@ public class NodeManager implements Lifecycle, EntityFactory
     };
 
     public NodeManager( StringLogger logger, GraphDatabaseService graphDb,
-                        AbstractTransactionManager transactionManager,
-                        PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
                         RelationshipTypeTokenHolder relationshipTypeTokenHolder, CacheProvider cacheProvider,
                         PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                         NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                         Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache,
-                        XaDataSourceManager xaDsm, ThreadToStatementContextBridge statementCtxProvider )
+                        ThreadToStatementContextBridge threadToTransactionBridge,
+                        IdGeneratorFactory idGeneratorFactory )
     {
-        this.logger = logger;
         this.graphDbService = graphDb;
-        this.transactionManager = transactionManager;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        this.persistenceManager = persistenceManager;
-        this.idGenerator = idGenerator;
         this.labelTokenHolder = labelTokenHolder;
         this.nodeLookup = nodeLookup;
         this.relationshipLookups = relationshipLookups;
         this.relTypeHolder = relationshipTypeTokenHolder;
-
         this.cacheProvider = cacheProvider;
-        this.statementCtxProvider = statementCtxProvider;
+        this.threadToTransactionBridge = threadToTransactionBridge;
+        this.idGeneratorFactory = idGeneratorFactory;
         this.nodeCache = new AutoLoadingCache<>( nodeCache, nodeLoader );
         this.relCache = new AutoLoadingCache<>( relCache, relLoader );
-        this.xaDsm = xaDsm;
-        nodePropertyTrackers = new LinkedList<>();
-        relationshipPropertyTrackers = new LinkedList<>();
-        this.relationshipLoader = new RelationshipLoader( persistenceManager, relCache );
+        this.nodePropertyTrackers = new LinkedList<>();
+        this.relationshipPropertyTrackers = new LinkedList<>();
+        this.relationshipLoader = new RelationshipLoader( threadToTransactionBridge, relCache );
         this.graphProperties = instantiateGraphProperties();
     }
 
@@ -166,31 +147,6 @@ public class NodeManager implements Lifecycle, EntityFactory
     public CacheProvider getCacheType()
     {
         return this.cacheProvider;
-    }
-
-    @Override
-    public void init()
-    {   // Nothing to initialize
-    }
-
-    @Override
-    public void start()
-    {
-        for ( XaDataSource ds : xaDsm.getAllRegisteredDataSources() )
-        {
-            if ( ds.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
-            {
-                NeoStore neoStore = ((NeoStoreXaDataSource) ds).getNeoStore();
-
-                TokenStore<?> propTokens = neoStore.getPropertyKeyTokenStore();
-                TokenStore<?> labelTokens = neoStore.getLabelTokenStore();
-                TokenStore<?> relTokens = neoStore.getRelationshipTypeStore();
-
-                addRawRelationshipTypes( relTokens.getTokens( Integer.MAX_VALUE ) );
-                addPropertyKeyTokens( propTokens.getTokens( Integer.MAX_VALUE ) );
-                addLabelTokens( labelTokens.getTokens( Integer.MAX_VALUE ) );
-            }
-        }
     }
 
     @Override
@@ -210,14 +166,14 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     public long createNode() throws AcquireLockTimeoutException
     {
-        long id = idGenerator.nextId( Node.class );
+        long id = idGeneratorFactory.get( IdType.NODE ).nextId();
         NodeImpl node = new NodeImpl( id, true );
         TransactionState transactionState = getTransactionState();
         transactionState.locks().acquireExclusive( ResourceTypes.NODE, id );
         boolean success = false;
         try
         {
-            persistenceManager.nodeCreate( id );
+            threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true ).nodeCreate( id );
             transactionState.createNode( id );
             nodeCache.put( node );
             success = true;
@@ -235,7 +191,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     @Override
     public NodeProxy newNodeProxyById( long id )
     {
-        return new NodeProxy( id, nodeLookup, relationshipLookups, statementCtxProvider );
+        return new NodeProxy( id, nodeLookup, relationshipLookups, threadToTransactionBridge );
     }
 
     public long createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
@@ -257,7 +213,7 @@ public class NodeManager implements Lifecycle, EntityFactory
             throw new NotFoundException( "Second node[" + endNode.getId()
                     + "] deleted" );
         }
-        long id = idGenerator.nextId( Relationship.class );
+        long id = idGeneratorFactory.get( IdType.RELATIONSHIP ).nextId();
         RelationshipImpl rel = new RelationshipImpl( id, startNodeId, endNodeId, typeId, true );
         TransactionState tx = getTransactionState();
         tx.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, id );
@@ -289,10 +245,10 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     public Node getNodeByIdOrNull( long nodeId )
     {
-        transactionManager.assertInTransaction();
+        threadToTransactionBridge.assertInTransaction();
         NodeImpl node = getLightNode( nodeId );
         return node != null ?
-                new NodeProxy( nodeId, nodeLookup, relationshipLookups, statementCtxProvider ) : null;
+                new NodeProxy( nodeId, nodeLookup, relationshipLookups, threadToTransactionBridge ) : null;
     }
 
     public Node getNodeById( long nodeId ) throws NotFoundException
@@ -313,14 +269,14 @@ public class NodeManager implements Lifecycle, EntityFactory
     @Override
     public RelationshipProxy newRelationshipProxyById( long id )
     {
-        return new RelationshipProxy( id, relationshipLookups, statementCtxProvider );
+        return new RelationshipProxy( id, relationshipLookups, threadToTransactionBridge );
     }
 
     public Iterator<Node> getAllNodes()
     {
         Iterator<Node> committedNodes = new PrefetchingIterator<Node>()
         {
-            private long highId = getHighestPossibleIdInUse( Node.class );
+            private long highId = idGeneratorFactory.get( IdType.NODE ).getHighestPossibleIdInUse();
             private long currentId;
 
             @Override
@@ -344,7 +300,7 @@ public class NodeManager implements Lifecycle, EntityFactory
                         }
                     }
 
-                    long newHighId = getHighestPossibleIdInUse( Node.class );
+                    long newHighId = idGeneratorFactory.get( IdType.NODE ).getHighestPossibleIdInUse();
                     if ( newHighId > highId )
                     {
                         highId = newHighId;
@@ -416,9 +372,9 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     protected Relationship getRelationshipByIdOrNull( long relId )
     {
-        transactionManager.assertInTransaction();
+        threadToTransactionBridge.assertInTransaction();
         RelationshipImpl relationship = relCache.get( relId );
-        return relationship != null ? new RelationshipProxy( relId, relationshipLookups, statementCtxProvider ) : null;
+        return relationship != null ? new RelationshipProxy( relId, relationshipLookups, threadToTransactionBridge ) : null;
     }
 
     public Relationship getRelationshipById( long id ) throws NotFoundException
@@ -435,7 +391,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     {
         Iterator<Relationship> committedRelationships = new PrefetchingIterator<Relationship>()
         {
-            private long highId = getHighestPossibleIdInUse( Relationship.class );
+            private long highId = idGeneratorFactory.get( IdType.RELATIONSHIP ).getHighestPossibleIdInUse();
             private long currentId;
 
             @Override
@@ -459,7 +415,7 @@ public class NodeManager implements Lifecycle, EntityFactory
                         }
                     }
 
-                    long newHighId = getHighestPossibleIdInUse( Node.class );
+                    long newHighId = idGeneratorFactory.get( IdType.RELATIONSHIP ).getHighestPossibleIdInUse();
                     if ( newHighId > highId )
                     {
                         highId = newHighId;
@@ -568,7 +524,8 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     RelationshipLoadingPosition getRelationshipChainPosition( NodeImpl node )
     {
-        return persistenceManager.getRelationshipChainPosition( node.getId() );
+        return threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+                .getRelationshipChainPosition( node.getId() );
     }
 
     void putAllInRelCache( Collection<RelationshipImpl> relationships )
@@ -579,21 +536,24 @@ public class NodeManager implements Lifecycle, EntityFactory
     Iterator<DefinedProperty> loadGraphProperties( boolean light )
     {
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        persistenceManager.graphLoadProperties( light, receiver );
+        threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+                .graphLoadProperties( light, receiver );
         return receiver;
     }
 
     Iterator<DefinedProperty> loadProperties( NodeImpl node, boolean light )
     {
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        persistenceManager.loadNodeProperties( node.getId(), light, receiver );
+        threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+                .nodeLoadProperties( node.getId(), light, receiver );
         return receiver;
     }
 
     Iterator<DefinedProperty> loadProperties( RelationshipImpl relationship, boolean light )
     {
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        persistenceManager.loadRelProperties( relationship.getId(), light, receiver );
+        threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+                .relLoadProperties( relationship.getId(), light, receiver );
         return receiver;
     }
 
@@ -611,22 +571,7 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     public void setRollbackOnly()
     {
-        try
-        {
-            transactionManager.setRollbackOnly();
-        }
-        catch ( IllegalStateException e )
-        {
-            // this exception always get generated in a finally block and
-            // when it happens another exception has already been thrown
-            // (most likely NotInTransactionException)
-            logger.debug( "Failed to set transaction rollback only", e );
-        }
-        catch ( javax.transaction.SystemException se )
-        {
-            // our TM never throws this exception
-            logger.error( "Failed to set transaction rollback only", se );
-        }
+        threadToTransactionBridge.getTopLevelTransactionBoundToThisThread( true ).failure();
     }
 
     public <T extends PropertyContainer> T indexPutIfAbsent( Index<T> index, T entity, String key, Object value )
@@ -638,7 +583,7 @@ public class NodeManager implements Lifecycle, EntityFactory
         }
 
         // Grab lock
-        try(Statement statement = statementCtxProvider.instance())
+        try(Statement statement = threadToTransactionBridge.instance())
         {
             statement.readOperations().acquireExclusive(
                     ResourceTypes.LEGACY_INDEX, legacyIndexResourceId( index.getName(), key ) );
@@ -657,16 +602,6 @@ public class NodeManager implements Lifecycle, EntityFactory
             index.add( entity, key, value );
             return null;
         }
-    }
-
-    public long getHighestPossibleIdInUse( Class<?> clazz )
-    {
-        return idGenerator.getHighestPossibleIdInUse( clazz );
-    }
-
-    public long getNumberOfIdsInUse( Class<?> clazz )
-    {
-        return idGenerator.getNumberOfIdsInUse( clazz );
     }
 
     public void removeRelationshipTypeFromCache( int id )
@@ -717,7 +652,7 @@ public class NodeManager implements Lifecycle, EntityFactory
     public ArrayMap<Integer, DefinedProperty> deleteNode( NodeImpl node, TransactionState tx )
     {
         tx.deleteNode( node.getId() );
-        return persistenceManager.nodeDelete( node.getId() );
+        return threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true ).nodeDelete( node.getId() );
         // remove from node cache done via event
     }
 
@@ -747,7 +682,8 @@ public class NodeManager implements Lifecycle, EntityFactory
             ArrayMap<Integer,DefinedProperty> skipMap = tx.getOrCreateCowPropertyRemoveMap( rel );
 
             tx.deleteRelationship( rel.getId() );
-            ArrayMap<Integer,DefinedProperty> removedProps = persistenceManager.relDelete( rel.getId() );
+            ArrayMap<Integer,DefinedProperty> removedProps =
+                    threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true ).relDelete( rel.getId() );
 
             if ( removedProps.size() > 0 )
             {
@@ -883,7 +819,7 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     private GraphPropertiesImpl instantiateGraphProperties()
     {
-        return new GraphPropertiesImpl( this, statementCtxProvider );
+        return new GraphPropertiesImpl( this, threadToTransactionBridge );
     }
 
     public GraphPropertiesImpl getGraphProperties()
@@ -908,16 +844,20 @@ public class NodeManager implements Lifecycle, EntityFactory
 
     public TransactionState getTransactionState()
     {
-        return transactionManager.getTransactionState();
+        // TODO 2.2-future
+//        return transactionManager.getTransactionState();
+        throw new UnsupportedOperationException( "Please implement" );
     }
 
     public int getRelationshipCount( NodeImpl nodeImpl, int type, DirectionWrapper direction )
     {
-        return persistenceManager.getRelationshipCount( nodeImpl.getId(), type, direction );
+        return threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+                .getRelationshipCount( nodeImpl.getId(), type, direction );
     }
 
     public Iterator<Integer> getRelationshipTypes( DenseNodeImpl node )
     {
-        return asList( persistenceManager.getRelationshipTypes( node.getId() ) ).iterator();
+        return asList( threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+                .getRelationshipTypes( node.getId() ) ).iterator();
     }
 }

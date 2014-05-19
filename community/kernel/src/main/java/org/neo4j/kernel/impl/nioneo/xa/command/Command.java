@@ -35,16 +35,16 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyRecordChange;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 import static java.util.Collections.unmodifiableCollection;
+
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 /**
  * Command implementations for all the commands that can be performed on a Neo
  * store.
  */
-public abstract class Command extends XaCommand
+public abstract class Command
 {
     private int keyHash;
     private long key;
@@ -119,7 +119,9 @@ public abstract class Command extends XaCommand
 
     public abstract boolean accept( NeoCommandVisitor visitor ) throws IOException;
 
-    public abstract void applyToCache( CacheAccessBackDoor cacheAccess );
+    public void invalidateCache( CacheAccessBackDoor cacheAccess )
+    {   // no-op by default
+    }
 
     public static class NodeCommand extends Command
     {
@@ -140,6 +142,7 @@ public abstract class Command extends XaCommand
             visitor.visitNode( after );
         }
 
+        @Override
         public boolean accept( NeoCommandVisitor visitor ) throws IOException
         {
             return visitor.visitNodeCommand( this );
@@ -152,7 +155,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        public void applyToCache( CacheAccessBackDoor cacheAccess )
+        public void invalidateCache( CacheAccessBackDoor cacheAccess )
         {
             cacheAccess.removeNodeFromCache( getKey() );
         }
@@ -208,7 +211,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        public void applyToCache( CacheAccessBackDoor cacheAccess )
+        public void invalidateCache( CacheAccessBackDoor cacheAccess )
         {
             cacheAccess.removeRelationshipFromCache( getKey() );
             /*
@@ -253,11 +256,6 @@ public abstract class Command extends XaCommand
         public void accept( CommandRecordVisitor visitor )
         {
             visitor.visitRelationshipGroup( record );
-        }
-
-        @Override
-        public void applyToCache( CacheAccessBackDoor cacheAccess )
-        {
         }
 
         @Override
@@ -310,12 +308,6 @@ public abstract class Command extends XaCommand
             return visitor.visitNeoStoreCommand( this );
         }
 
-        @Override
-        public void applyToCache( CacheAccessBackDoor cacheAccess )
-        {
-            // no-op
-        }
-
         public NeoStoreRecord getRecord()
         {
             return record;
@@ -349,12 +341,6 @@ public abstract class Command extends XaCommand
         public boolean accept( NeoCommandVisitor visitor ) throws IOException
         {
             return visitor.visitPropertyKeyTokenCommand( this );
-        }
-
-        @Override
-        public void applyToCache( CacheAccessBackDoor cacheAccess )
-        {
-            // no-op
         }
 
         public PropertyKeyTokenRecord getRecord()
@@ -397,7 +383,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        public void applyToCache( CacheAccessBackDoor cacheAccess )
+        public void invalidateCache( CacheAccessBackDoor cacheAccess )
         {
             long nodeId = this.getNodeId();
             long relId = this.getRelId();
@@ -463,12 +449,6 @@ public abstract class Command extends XaCommand
             return visitor.visitRelationshipTypeTokenCommand( this );
         }
 
-        @Override
-        public void applyToCache( CacheAccessBackDoor cacheAccess )
-        {
-            // no-op
-        }
-
         public RelationshipTypeTokenRecord getRecord()
         {
             return record;
@@ -504,12 +484,6 @@ public abstract class Command extends XaCommand
             return visitor.visitLabelTokenCommand( this );
         }
 
-        @Override
-        public void applyToCache( CacheAccessBackDoor cacheAccess )
-        {
-            // no-op
-        }
-
         public LabelTokenRecord getRecord()
         {
             return record;
@@ -522,16 +496,13 @@ public abstract class Command extends XaCommand
         private Collection<DynamicRecord> recordsAfter;
         private SchemaRule schemaRule;
 
-        private long txId;
-
         public SchemaRuleCommand init( Collection<DynamicRecord> recordsBefore,
-                           Collection<DynamicRecord> recordsAfter, SchemaRule schemaRule, long txId )
+                           Collection<DynamicRecord> recordsAfter, SchemaRule schemaRule )
         {
             setup( first( recordsAfter ).getId(), Mode.fromRecordState( first( recordsAfter ) ) );
             this.recordsBefore = recordsBefore;
             this.recordsAfter = recordsAfter;
             this.schemaRule = schemaRule;
-            this.txId = txId;
             return this;
         }
 
@@ -558,7 +529,7 @@ public abstract class Command extends XaCommand
         }
 
         @Override
-        public void applyToCache( CacheAccessBackDoor cacheAccess )
+        public void invalidateCache( CacheAccessBackDoor cacheAccess )
         {
             cacheAccess.removeSchemaRuleFromCache( getKey() );
         }
@@ -571,16 +542,6 @@ public abstract class Command extends XaCommand
         public SchemaRule getSchemaRule()
         {
             return schemaRule;
-        }
-
-        public long getTxId()
-        {
-            return txId;
-        }
-
-        public void setTxId( long txId )
-        {
-            this.txId = txId;
         }
 
         public Collection<DynamicRecord> getRecordsBefore()

@@ -19,27 +19,23 @@
  */
 package org.neo4j.kernel.api;
 
+import static org.mockito.Mockito.mock;
+
 import org.junit.Test;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-
-import static org.mockito.Mockito.*;
 
 public class KernelTransactionImplementationTest
 {
-
-    private AbstractTransactionManager txm = mock( AbstractTransactionManager.class );
-
     @Test
     public void shouldBeAbleToRollbackPreparedTransaction() throws Exception
     {
         // given
         KernelTransactionImplementation tx = new KernelTransactionImplementation( null, false, null, null,
-                null, txm, null, null, null, null, mock( NeoStore.class ),
-                mock(TransactionState.class), new TransactionHooks() );
+                null, null, null, null, null, mock( NeoStore.class ),
+                mock(TransactionState.class), new TransactionHooks(), null );
         // when
         tx.prepare();
 

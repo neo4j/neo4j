@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-
 public interface LogBuffer
 {
     LogBuffer put( byte b ) throws IOException;
@@ -48,18 +46,18 @@ public interface LogBuffer
      *
      * @throws IOException if the data couldn't be written.
      */
-    void writeOut() throws IOException;
+//    void writeOut() throws IOException;
 
     /**
      * Makes sure the data added to this buffer is written out to the underlying
      * file and forced. Same guarantees as writeOut() plus actually being
      * written to disk.
-     * 
+     *
      * @throws IOException if the data couldn't be written.
      */
     void force() throws IOException;
 
-    long getFileChannelPosition() throws IOException;
+//    long getFileChannelPosition() throws IOException;
 
-    StoreChannel getFileChannel();
+//    StoreChannel getFileChannel();
 }

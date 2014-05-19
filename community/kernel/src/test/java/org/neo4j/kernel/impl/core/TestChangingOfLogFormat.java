@@ -30,9 +30,10 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -49,18 +50,17 @@ public class TestChangingOfLogFormat
     {
         File storeDir = new File( "target/var/oldlog" );
         GraphDatabaseService db = factory.newImpermanentDatabase( storeDir.getPath() );
-        File logBaseFileName = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( XaDataSourceManager
-                .class ).getNeoStoreDataSource().getXaContainer().getLogicalLog().getBaseFileName();
+        File logBaseFileName = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( Config.class ).get( GraphDatabaseSettings.logical_log );
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
         tx.finish();
-        
+
         Pair<Pair<File, File>, Pair<File, File>> copy = copyLogicalLog( fs.get(), logBaseFileName );
         decrementLogFormat( copy.other().other() );
         db.shutdown();
         renameCopiedLogicalLog( fs.get(), copy );
-        
+
         try
         {
             db = factory.newImpermanentDatabase( storeDir.getPath() );
@@ -70,7 +70,7 @@ public class TestChangingOfLogFormat
         {   // Good
         }
     }
-    
+
     private void decrementLogFormat( File file ) throws IOException
     {
         // Gotten from LogIoUtils class
@@ -89,10 +89,10 @@ public class TestChangingOfLogFormat
         channel.write( buffer );
         channel.close();
     }
-    
+
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TestGraphDatabaseFactory factory;
-    
+
     @Before
     public void before() throws Exception
     {

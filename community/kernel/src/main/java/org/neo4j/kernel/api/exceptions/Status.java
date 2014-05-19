@@ -24,6 +24,7 @@ import java.util.Collection;
 import java.util.Collections;
 
 import static java.lang.String.format;
+
 import static org.neo4j.kernel.api.exceptions.Status.Classification.ClientError;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.DatabaseError;
 import static org.neo4j.kernel.api.exceptions.Status.Classification.TransientError;
@@ -98,6 +99,7 @@ public interface Status
         CouldNotBegin( DatabaseError,    "The database was unable to start the transaction." ),
         CouldNotRollback( DatabaseError, "The database was unable to roll back the transaction." ),
         CouldNotCommit( DatabaseError,   "The database was unable to commit the transaction." ),
+        CouldNotWriteToLog( DatabaseError, "The database was unable to write transaction to log." ),
 
         InvalidType( ClientError, "The transaction is of the wrong type to service the request. For instance, a " +
                 "transaction that has had schema modifications performed in it cannot be used to subsequently " +
@@ -112,6 +114,9 @@ public interface Status
 
         EventHandlerThrewException( ClientError, "A transaction event handler threw an exception. The transaction " +
         "will be rolled back." ),
+
+        ValidationFailed( ClientError, "Transaction changes did not pass validation checks" ),
+        HookFailed( ClientError, "Transaction hook failure." ),
 
         ;
 

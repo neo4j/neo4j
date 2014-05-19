@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
-import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -42,12 +38,18 @@ import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.LabelChangeSummary;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
 
-class LazyIndexUpdates implements IndexUpdates
+import static java.util.Arrays.binarySearch;
+import static java.util.Arrays.copyOf;
+
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.add;
+import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+
+public class LazyIndexUpdates implements IndexUpdates
 {
     private final NodeStore nodeStore;
     private final PropertyStore propertyStore;
@@ -193,7 +195,70 @@ class LazyIndexUpdates implements IndexUpdates
     private Iterator<DefinedProperty> nodeFullyLoadProperties( long nodeId )
     {
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        NeoStoreTransaction.loadProperties( propertyStore, nodeCommands.get( nodeId ).getAfter().getNextProp(), receiver );
+        TransactionRecordState.loadProperties( propertyStore, nodeCommands.get( nodeId ).getAfter().getNextProp(), receiver );
         return receiver;
+    }
+
+    static class LabelChangeSummary
+    {
+        private static final long[] NO_LABELS = new long[0];
+
+        private final long[] addedLabels;
+        private final long[] removedLabels;
+
+        LabelChangeSummary( long[] labelsBefore, long[] labelsAfter )
+        {
+            // Ids are sorted in the store
+            long[] addedLabels = new long[labelsAfter.length];
+            long[] removedLabels = new long[labelsBefore.length];
+            int addedLabelsCursor = 0, removedLabelsCursor = 0;
+            for ( long labelAfter : labelsAfter )
+            {
+                if ( binarySearch( labelsBefore, labelAfter ) < 0 )
+                {
+                    addedLabels[addedLabelsCursor++] = labelAfter;
+                }
+            }
+            for ( long labelBefore : labelsBefore )
+            {
+                if ( binarySearch( labelsAfter, labelBefore ) < 0 )
+                {
+                    removedLabels[removedLabelsCursor++] = labelBefore;
+                }
+            }
+
+            // For each property on the node, produce one update for added labels and one for removed labels.
+            this.addedLabels = shrink( addedLabels, addedLabelsCursor );
+            this.removedLabels = shrink( removedLabels, removedLabelsCursor );
+        }
+
+        private long[] shrink( long[] array, int toLength )
+        {
+            if ( toLength == 0 )
+            {
+                return NO_LABELS;
+            }
+            return array.length == toLength ? array : copyOf( array, toLength );
+        }
+
+        public boolean hasAddedLabels()
+        {
+            return addedLabels.length > 0;
+        }
+
+        public boolean hasRemovedLabels()
+        {
+            return removedLabels.length > 0;
+        }
+
+        public long[] getAddedLabels()
+        {
+            return addedLabels;
+        }
+
+        public long[] getRemovedLabels()
+        {
+            return removedLabels;
+        }
     }
 }

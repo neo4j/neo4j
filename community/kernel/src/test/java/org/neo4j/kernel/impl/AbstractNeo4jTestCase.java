@@ -48,8 +48,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -290,8 +290,8 @@ public abstract class AbstractNeo4jTestCase
 
     protected PropertyStore propertyStore()
     {
-        XaDataSourceManager dsMgr = graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
-        return dsMgr.getNeoStoreDataSource().getXaConnection().getPropertyStore();
+        NeoStore neoStore = graphDb.getDependencyResolver().resolveDependency( NeoStore.class );
+        return neoStore.getPropertyStore();
     }
 
     public static File unzip( Class<?> testClass, String resource ) throws IOException

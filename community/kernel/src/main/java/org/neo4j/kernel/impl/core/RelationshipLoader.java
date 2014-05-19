@@ -27,7 +27,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -35,12 +34,13 @@ import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 
 public class RelationshipLoader
 {
-    private final PersistenceManager persistenceManager;
+    private final ThreadToStatementContextBridge threadToTransactionBridge;
     private final Cache<RelationshipImpl> relationshipCache;
 
-    public RelationshipLoader(PersistenceManager persistenceManager, Cache<RelationshipImpl> relationshipCache )
+    public RelationshipLoader( ThreadToStatementContextBridge threadToTransactionBridge,
+            Cache<RelationshipImpl> relationshipCache )
     {
-        this.persistenceManager = persistenceManager;
+        this.threadToTransactionBridge = threadToTransactionBridge;
         this.relationshipCache = relationshipCache;
     }
 
@@ -50,7 +50,8 @@ public class RelationshipLoader
         long nodeId = node.getId();
         RelationshipLoadingPosition position = node.getRelChainPosition();
         Pair<Map<RelIdArray.DirectionWrapper, Iterable<RelationshipRecord>>,RelationshipLoadingPosition> rels =
-                persistenceManager.getMoreRelationships( nodeId, position, direction, types );
+                threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+                .getMoreRelationships( nodeId, position, direction, types );
         ArrayMap<Integer, RelIdArray> newRelationshipMap = new ArrayMap<>();
 
         List<RelationshipImpl> relsList = new ArrayList<>( 150 );

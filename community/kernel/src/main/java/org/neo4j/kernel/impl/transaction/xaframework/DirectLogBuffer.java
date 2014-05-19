@@ -124,7 +124,6 @@ public class DirectLogBuffer implements LogBuffer
         return this;
     }
     
-    @Override
     public void writeOut() throws IOException
     {
         // Nothing to do, since the data is always written in the put... methods.

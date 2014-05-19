@@ -201,7 +201,7 @@ abstract class ArrayBasedPrimitive extends Primitive implements EntityWithSizeOb
     @Override
     protected void commitPropertyMaps(
             ArrayMap<Integer, DefinedProperty> cowPropertyAddMap,
-            ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap, long firstProp )
+            ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap )
     {
         synchronized ( this )
         {

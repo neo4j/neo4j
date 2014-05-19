@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.xa.command;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -41,10 +40,9 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
 
 public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
 {
@@ -53,28 +51,18 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         void add( T target, DynamicRecord record );
     }
 
-    private ByteBuffer scratch;
-    private ReadableByteChannel byteChannel;
-
-    public PhysicalLogNeoXaCommandReaderV1( ByteBuffer scratch )
-    {
-        this.scratch = scratch;
-    }
+    private ReadableLogChannel channel;
 
     @Override
-    public XaCommand read( ReadableByteChannel byteChannel ) throws IOException
+    public Command read( ReadableLogChannel channel ) throws IOException
     {
         // for the reader to pick up
-        this.byteChannel = byteChannel;
+        this.channel = channel;
 
         byte commandType = 0;
         while( commandType == 0)
         {
-            if ( !readAndFlip( byteChannel, scratch, 1 ) )
-            {
-                return null;
-            }
-            commandType = scratch.get();
+            commandType = channel.get();
         }
 
         PhysicalNeoCommandReader reader = new PhysicalNeoCommandReader();
@@ -149,11 +137,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         @Override
         public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException
         {
-            if ( !readAndFlip( byteChannel, scratch, 8 ) )
-            {
-                return false;
-            }
-            long id = scratch.getLong();
+            long id = channel.getLong();
 
             NodeRecord before = readNodeRecord( id );
             if ( before == null )
@@ -179,12 +163,8 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         @Override
         public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
         {
-            if ( !readAndFlip( byteChannel, scratch, 9 ) )
-            {
-                return false;
-            }
-            long id = scratch.getLong();
-            byte inUseFlag = scratch.get();
+            long id = channel.getLong();
+            byte inUseFlag = channel.get();
             boolean inUse = false;
             if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE.byteValue() )
             {
@@ -197,19 +177,15 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             RelationshipRecord record;
             if ( inUse )
             {
-                if ( !readAndFlip( byteChannel, scratch, 61 ) )
-                {
-                    return false;
-                }
-                record = new RelationshipRecord( id, scratch.getLong(), scratch
-                        .getLong(), scratch.getInt() );
+                record = new RelationshipRecord( id, channel.getLong(), channel
+                        .getLong(), channel.getInt() );
                 record.setInUse( inUse );
-                record.setFirstPrevRel( scratch.getLong() );
-                record.setFirstNextRel( scratch.getLong() );
-                record.setSecondPrevRel( scratch.getLong() );
-                record.setSecondNextRel( scratch.getLong() );
-                record.setNextProp( scratch.getLong() );
-                byte extraByte = scratch.get();
+                record.setFirstPrevRel( channel.getLong() );
+                record.setFirstNextRel( channel.getLong() );
+                record.setSecondPrevRel( channel.getLong() );
+                record.setSecondNextRel( channel.getLong() );
+                record.setNextProp( channel.getLong() );
+                byte extraByte = channel.get();
                 record.setFirstInFirstChain( (extraByte&0x1) > 0 );
                 record.setFirstInSecondChain( (extraByte&0x2) > 0 );
             }
@@ -226,11 +202,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         public boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException
         {
             // ID
-            if ( !readAndFlip( byteChannel, scratch, 8 ) )
-            {
-                return false;
-            }
-            long id = scratch.getLong(); // 8
+            long id = channel.getLong(); // 8
 
             // BEFORE
             PropertyRecord before = readPropertyRecord( id );
@@ -253,25 +225,21 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         @Override
         public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
         {
-            if ( !readAndFlip( byteChannel, scratch, 51 ) )
-            {
-                return false;
-            }
-            long id = scratch.getLong();
-            byte inUseByte = scratch.get();
+            long id = channel.getLong();
+            byte inUseByte = channel.get();
             boolean inUse = inUseByte == Record.IN_USE.byteValue();
             if ( inUseByte != Record.IN_USE.byteValue() && inUseByte != Record.NOT_IN_USE.byteValue() )
             {
                 throw new IOException( "Illegal in use flag: " + inUseByte );
             }
-            int type = scratch.getShort();
+            int type = channel.getShort();
             RelationshipGroupRecord record = new RelationshipGroupRecord( id, type );
             record.setInUse( inUse );
-            record.setNext( scratch.getLong() );
-            record.setFirstOut( scratch.getLong() );
-            record.setFirstIn( scratch.getLong() );
-            record.setFirstLoop( scratch.getLong() );
-            record.setOwningNode( scratch.getLong() );
+            record.setNext( channel.getLong() );
+            record.setFirstOut( channel.getLong() );
+            record.setFirstIn( channel.getLong() );
+            record.setFirstLoop( channel.getLong() );
+            record.setOwningNode( channel.getLong() );
             command.init( record );
             return true;
         }
@@ -280,12 +248,8 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException
         {
             // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
-            if ( !readAndFlip( byteChannel, scratch, 13 ) )
-            {
-                return false;
-            }
-            int id = scratch.getInt();
-            byte inUseFlag = scratch.get();
+            int id = channel.getInt();
+            byte inUseFlag = channel.get();
             boolean inUse = false;
             if ( (inUseFlag & Record.IN_USE.byteValue()) ==
                     Record.IN_USE.byteValue() )
@@ -298,8 +262,8 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             }
             RelationshipTypeTokenRecord record = new RelationshipTypeTokenRecord( id );
             record.setInUse( inUse );
-            record.setNameId( scratch.getInt() );
-            int nrTypeRecords = scratch.getInt();
+            record.setNameId( channel.getInt() );
+            int nrTypeRecords = channel.getInt();
             for ( int i = 0; i < nrTypeRecords; i++ )
             {
                 DynamicRecord dr = readDynamicRecord();
@@ -317,12 +281,8 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
         {
             // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
-            if ( !readAndFlip( byteChannel, scratch, 13 ) )
-            {
-                return false;
-            }
-            int id = scratch.getInt();
-            byte inUseFlag = scratch.get();
+            int id = channel.getInt();
+            byte inUseFlag = channel.get();
             boolean inUse = false;
             if ( (inUseFlag & Record.IN_USE.byteValue()) ==
                     Record.IN_USE.byteValue() )
@@ -335,8 +295,8 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             }
             LabelTokenRecord record = new LabelTokenRecord( id );
             record.setInUse( inUse );
-            record.setNameId( scratch.getInt() );
-            int nrTypeRecords = scratch.getInt();
+            record.setNameId( channel.getInt() );
+            int nrTypeRecords = channel.getInt();
             for ( int i = 0; i < nrTypeRecords; i++ )
             {
                 DynamicRecord dr = readDynamicRecord();
@@ -354,12 +314,8 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
         {
             // id+in_use(byte)+count(int)+key_blockId(int)
-            if ( !readAndFlip( byteChannel, scratch, 13 ) )
-            {
-                return false;
-            }
-            int id = scratch.getInt();
-            byte inUseFlag = scratch.get();
+            int id = channel.getInt();
+            byte inUseFlag = channel.get();
             boolean inUse = false;
             if ( (inUseFlag & Record.IN_USE.byteValue()) == Record.IN_USE
                     .byteValue() )
@@ -372,8 +328,8 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             }
             PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( id );
             record.setInUse( inUse );
-            record.setPropertyCount( scratch.getInt() );
-            record.setNameId( scratch.getInt() );
+            record.setPropertyCount( channel.getInt() );
+            record.setNameId( channel.getInt() );
             if ( !readDynamicRecords( record, PROPERTY_INDEX_DYNAMIC_RECORD_ADDER ) )
             {
                 return false;
@@ -391,12 +347,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             Collection<DynamicRecord> recordsAfter = new ArrayList<>();
             readDynamicRecords( recordsAfter, COLLECTION_DYNAMIC_RECORD_ADDER );
 
-            if ( !readAndFlip( byteChannel, scratch, 1 ) )
-            {
-                return false;
-            }
-
-            byte isCreated = scratch.get();
+            byte isCreated = channel.get();
             if ( 1 == isCreated )
             {
                 for ( DynamicRecord record : recordsAfter )
@@ -405,29 +356,18 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
                 }
             }
 
-            if ( !readAndFlip( byteChannel, scratch, 8 ) )
-            {
-                return false;
-            }
-
-            long txId = scratch.getLong();
-
             SchemaRule rule = first( recordsAfter ).inUse() ?
                     readSchemaRule( recordsAfter ) :
                     readSchemaRule( recordsBefore );
 
-            command.init( recordsBefore, recordsAfter, rule, txId );
+            command.init( recordsBefore, recordsAfter, rule );
             return true;
         }
 
         @Override
         public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException
         {
-            if ( !readAndFlip( byteChannel, scratch, 8 ) )
-            {
-                return false;
-            }
-            long nextProp = scratch.getLong();
+            long nextProp = channel.getLong();
             NeoStoreRecord record = new NeoStoreRecord();
             record.setNextProp( nextProp );
             command.init( record );
@@ -437,11 +377,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         private NodeRecord readNodeRecord( long id  )
                 throws IOException
         {
-            if ( !readAndFlip( byteChannel, scratch, 1 ) )
-            {
-                return null;
-            }
-            byte inUseFlag = scratch.get();
+            byte inUseFlag = channel.get();
             boolean inUse = false;
             if ( inUseFlag == Record.IN_USE.byteValue() )
             {
@@ -454,15 +390,11 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             NodeRecord record;
             if ( inUse )
             {
-                if ( !readAndFlip( byteChannel, scratch, 8*3+1 ) )
-                {
-                    return null;
-                }
-                boolean dense = scratch.get() == 1;
-                record = new NodeRecord( id, dense, scratch.getLong(), scratch.getLong() );
+                boolean dense = channel.get() == 1;
+                record = new NodeRecord( id, dense, channel.getLong(), channel.getLong() );
 
                 // labels
-                long labelField = scratch.getLong();
+                long labelField = channel.getLong();
                 Collection<DynamicRecord> dynamicLabelRecords = new ArrayList<>();
                 readDynamicRecords( dynamicLabelRecords, COLLECTION_DYNAMIC_RECORD_ADDER );
                 record.setLabelField( labelField, dynamicLabelRecords );
@@ -481,15 +413,11 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         DynamicRecord readDynamicRecord() throws IOException
         {
             // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
-            if ( !readAndFlip( byteChannel, scratch, 13 ) )
-            {
-                return null;
-            }
-            long id = scratch.getLong();
+            long id = channel.getLong();
             assert id >= 0 && id <= ( 1l << 36 ) - 1 : id
                     + " is not a valid dynamic record id";
-            int type = scratch.getInt();
-            byte inUseFlag = scratch.get();
+            int type = channel.getInt();
+            byte inUseFlag = channel.get();
             boolean inUse = ( inUseFlag & Record.IN_USE.byteValue() ) != 0;
 
             DynamicRecord record = new DynamicRecord( id );
@@ -497,24 +425,16 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             if ( inUse )
             {
                 record.setStartRecord( ( inUseFlag & Record.FIRST_IN_CHAIN.byteValue() ) != 0 );
-                if ( !readAndFlip( byteChannel, scratch, 12 ) )
-                {
-                    return null;
-                }
-                int nrOfBytes = scratch.getInt();
+                int nrOfBytes = channel.getInt();
                 assert nrOfBytes >= 0 && nrOfBytes < ( ( 1 << 24 ) - 1 ) : nrOfBytes
                         + " is not valid for a number of bytes field of a dynamic record";
-                long nextBlock = scratch.getLong();
+                long nextBlock = channel.getLong();
                 assert ( nextBlock >= 0 && nextBlock <= ( 1l << 36 - 1 ) )
                         || ( nextBlock == Record.NO_NEXT_BLOCK.intValue() ) : nextBlock
                         + " is not valid for a next record field of a dynamic record";
                 record.setNextBlock( nextBlock );
-                if ( !readAndFlip( byteChannel, scratch, nrOfBytes ) )
-                {
-                    return null;
-                }
                 byte data[] = new byte[nrOfBytes];
-                scratch.get( data );
+                channel.get( data, nrOfBytes );
                 record.setData( data );
             }
             return record;
@@ -522,11 +442,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
 
         <T> boolean readDynamicRecords( T target, DynamicRecordAdder<T> adder ) throws IOException
         {
-            if ( !readAndFlip( byteChannel, scratch, 4 ) )
-            {
-                return false;
-            }
-            int numberOfRecords = scratch.getInt();
+            int numberOfRecords = channel.getInt();
             assert numberOfRecords >= 0;
             while ( numberOfRecords-- > 0 )
             {
@@ -539,7 +455,6 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             }
             return true;
         }
-
 
         private final DynamicRecordAdder<PropertyBlock> PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER =
                 new DynamicRecordAdder<PropertyBlock>()
@@ -562,20 +477,15 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
                     }
                 };
 
-        private  PropertyRecord readPropertyRecord( long id )
+        private PropertyRecord readPropertyRecord( long id )
                 throws IOException
         {
             // in_use(byte)+type(int)+key_indexId(int)+prop_blockId(long)+
             // prev_prop_id(long)+next_prop_id(long)
-            if ( !readAndFlip( byteChannel, scratch, 1 + 8 + 8 + 8 ) )
-            {
-                return null;
-            }
-
             PropertyRecord record = new PropertyRecord( id );
-            byte inUseFlag = scratch.get(); // 1
-            long nextProp = scratch.getLong(); // 8
-            long prevProp = scratch.getLong(); // 8
+            byte inUseFlag = channel.get(); // 1
+            long nextProp = channel.getLong(); // 8
+            long prevProp = channel.getLong(); // 8
             record.setNextProp( nextProp );
             record.setPrevProp( prevProp );
             boolean inUse = false;
@@ -588,7 +498,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             {
                 nodeProperty = false;
             }
-            long primitiveId = scratch.getLong(); // 8
+            long primitiveId = channel.getLong(); // 8
             if ( primitiveId != -1 && nodeProperty )
             {
                 record.setNodeId( primitiveId );
@@ -597,11 +507,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             {
                 record.setRelId( primitiveId );
             }
-            if ( !readAndFlip( byteChannel, scratch, 1 ) )
-            {
-                return null;
-            }
-            int nrPropBlocks = scratch.get();
+            int nrPropBlocks = channel.get();
             assert nrPropBlocks >= 0;
             if ( nrPropBlocks > 0 )
             {
@@ -622,8 +528,9 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
                 return null;
             }
 
-            scratch.flip();
-            int deletedRecords = scratch.getInt(); // 4
+            // TODO 2.2-future
+//            channel.flip();
+            int deletedRecords = channel.getInt(); // 4
             assert deletedRecords >= 0;
             while ( deletedRecords-- > 0 )
             {
@@ -648,18 +555,10 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
         PropertyBlock readPropertyBlock() throws IOException
         {
             PropertyBlock toReturn = new PropertyBlock();
-            if ( !readAndFlip( byteChannel, scratch, 1 ) )
-            {
-                return null;
-            }
-            byte blockSize = scratch.get(); // the size is stored in bytes // 1
+            byte blockSize = channel.get(); // the size is stored in bytes // 1
             assert blockSize > 0 && blockSize % 8 == 0 : blockSize
                     + " is not a valid block size value";
             // Read in blocks
-            if ( !readAndFlip( byteChannel, scratch, blockSize ) )
-            {
-                return null;
-            }
             long[] blocks = readLongs( blockSize / 8 );
             assert blocks.length == blockSize / 8 : blocks.length
                     + " longs were read in while i asked for what corresponds to "
@@ -687,12 +586,12 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             return toReturn;
         }
 
-        private long[] readLongs( int count )
+        private long[] readLongs( int count ) throws IOException
         {
             long[] result = new long[count];
             for ( int i = 0; i < count; i++ )
             {
-                result[i] = scratch.getLong();
+                result[i] = channel.getLong();
             }
             return result;
         }

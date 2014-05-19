@@ -39,7 +39,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.util.DiffSets;
 
 import static org.neo4j.helpers.collection.Iterables.map;
@@ -138,15 +138,14 @@ public final class TxStateImpl implements TxState
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
 
     private final OldTxStateBridge legacyState;
-    private final PersistenceManager persistenceManager; // should go away dammit!
+    private final TransactionRecordState neoStoreTransaction;
     private final IdGeneration idGeneration; // needed when we move createNode() and createRelationship() to here...
-
     private boolean hasChanges;
 
-    public TxStateImpl( OldTxStateBridge legacyState, PersistenceManager legacyTransaction, IdGeneration idGeneration )
+    public TxStateImpl( OldTxStateBridge legacyState, TransactionRecordState neoStoreTransaction, IdGeneration idGeneration )
     {
         this.legacyState = legacyState;
-        this.persistenceManager = legacyTransaction;
+        this.neoStoreTransaction = neoStoreTransaction;
         this.idGeneration = idGeneration;
     }
 
@@ -553,7 +552,7 @@ public final class TxStateImpl implements TxState
     {
         labelStateNodeDiffSets( labelId ).add( nodeId );
         nodeStateLabelDiffSets( nodeId ).add( labelId );
-        persistenceManager.addLabelToNode( labelId, nodeId );
+        neoStoreTransaction.addLabelToNode( labelId, nodeId );
         hasChanges = true;
     }
 
@@ -562,7 +561,7 @@ public final class TxStateImpl implements TxState
     {
         labelStateNodeDiffSets( labelId ).remove( nodeId );
         nodeStateLabelDiffSets( nodeId ).remove( labelId );
-        persistenceManager.removeLabelFromNode( labelId, nodeId );
+        neoStoreTransaction.removeLabelFromNode( labelId, nodeId );
         hasChanges = true;
     }
 

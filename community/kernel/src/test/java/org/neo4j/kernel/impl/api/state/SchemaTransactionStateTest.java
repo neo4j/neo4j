@@ -52,7 +52,7 @@ import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 public class SchemaTransactionStateTest
 {
@@ -250,7 +250,7 @@ public class SchemaTransactionStateTest
     {
         oldTxState = mock( OldTxStateBridge.class );
 
-        txState = new TxStateImpl( oldTxState, mock( PersistenceManager.class ),
+        txState = new TxStateImpl( oldTxState,  mock( TransactionRecordState.class ),
                 mock( TxState.IdGeneration.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
 

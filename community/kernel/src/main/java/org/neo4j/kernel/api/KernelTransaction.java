@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+
 /**
  * Represents a transaction of changes to the underlying graph.
  * Actual changes are made in the {@linkplain #acquireStatement() statements} acquired from this transaction.
@@ -31,23 +34,28 @@ package org.neo4j.kernel.api;
  * Clearly separating between the concept of a transaction and the concept of a statement allows us to cater to this
  * type of isolation requirements.
  *
- * This class has a 1-1 relationship with{@link org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction}, please see its'
+ * This class has a 1-1 relationship with{@link org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState}, please see its'
  * javadoc for details.
  */
 public interface KernelTransaction
 {
+    /*
+     * TODO 2.2-future TransactionRecordState should not be visible anywhere. The problem is that there is
+     * TODO 2.2-future some inversion happening at some places where KernelTransaction should delegate down to
+     * TODO 2.2-future TRS instead. This must be fixed
+     */
+    TransactionRecordState getTransactionRecordState();
+
     Statement acquireStatement();
 
-    // Made unavailable for now, should be re-instated once the WriteTransaction/KernelTransaction structure is
-    // sorted out.
-//    void prepare();
-//
-//    /**
-//     * Commit this transaction, this will make the changes in this context visible to other
-//     * transactions.
-//     */
-//    void commit() throws TransactionFailureException;
-//
-//    /** Roll back this transaction, undoing any changes that have been made. */
-//    void rollback() throws TransactionFailureException;
+    void prepare() throws TransactionFailureException;
+
+    /**
+     * Commit this transaction, this will make the changes in this context visible to other
+     * transactions.
+     */
+    void commit() throws TransactionFailureException;
+
+    /** Roll back this transaction, undoing any changes that have been made. */
+    void rollback() throws TransactionFailureException;
 }

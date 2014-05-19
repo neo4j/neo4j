@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import javax.transaction.Transaction;
-
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.locking.community.LockNotFoundException;
 import org.neo4j.kernel.logging.Logging;
@@ -55,7 +53,7 @@ public interface LockManager
      * @throws DeadlockDetectedException if a deadlock is detected, or prevented rather
      * @throws IllegalResourceException if an illegal resource is supplied
      */
-    void getReadLock( Object resource, Transaction tx )
+    void getReadLock( Object resource, Object tx )
             throws DeadlockDetectedException, IllegalResourceException;
 
     /**
@@ -66,9 +64,9 @@ public interface LockManager
      * @param resource the resource
      * @throws IllegalResourceException if an illegal resource is supplied
      */
-    boolean tryReadLock( Object resource, Transaction tx )
+    boolean tryReadLock( Object resource, Object tx )
             throws IllegalResourceException;
-    
+
     /**
      * Tries to acquire write lock on <CODE>resource</CODE> for a given
      * transaction. If write lock can't be acquired the transaction will wait
@@ -79,9 +77,9 @@ public interface LockManager
      * @throws DeadlockDetectedException if a deadlock is detected, or prevented rather
      * @throws IllegalResourceException if an illegal resource is supplied
      */
-    void getWriteLock( Object resource, Transaction tx )
+    void getWriteLock( Object resource, Object tx )
             throws DeadlockDetectedException, IllegalResourceException;
-    
+
     /**
      * Tries to acquire write lock on {@code resource} for a given
      * transaction. If write lock can't be acquired {@code false} will be returned
@@ -90,7 +88,7 @@ public interface LockManager
      * @param resource the resource
      * @throws IllegalResourceException if an illegal resource is supplied
      */
-    boolean tryWriteLock( Object resource, Transaction tx )
+    boolean tryWriteLock( Object resource, Object tx )
             throws IllegalResourceException;
 
     /**
@@ -100,7 +98,7 @@ public interface LockManager
      * @throws IllegalResourceException if an illegal resource is supplied
      * @throws org.neo4j.kernel.impl.locking.community.LockNotFoundException if given transaction don't have read lock on the given {@code resource}.
      */
-    void releaseReadLock( Object resource, Transaction tx )
+    void releaseReadLock( Object resource, Object tx )
             throws LockNotFoundException, IllegalResourceException;
 
     /**
@@ -110,7 +108,7 @@ public interface LockManager
      * @throws IllegalResourceException if an illegal resource is supplied
      * @throws LockNotFoundException if given transaction don't have read lock on the given {@code resource}.
      */
-    void releaseWriteLock( Object resource, Transaction tx )
+    void releaseWriteLock( Object resource, Object tx )
             throws LockNotFoundException, IllegalResourceException;
 
     /**

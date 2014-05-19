@@ -47,9 +47,9 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(false);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(false);
-        XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
+        PhysicalLogFiles files = new PhysicalLogFiles(new File("logical_log"), fs);
         
-        assertThat(files.determineState(), is(XaLogicalLogFiles.State.LEGACY_WITHOUT_LOG_ROTATION));
+        assertThat(files.determineState(), is( PhysicalLogFiles.State.LEGACY_WITHOUT_LOG_ROTATION));
     }
 
     @Test
@@ -60,9 +60,9 @@ public class TestXaLogicalLogFiles {
         when(fs.fileExists(new File("logical_log"))).thenReturn(false);
         when(fs.fileExists(new File("logical_log.1"))).thenReturn(true);
         when(fs.fileExists(new File("logical_log.2"))).thenReturn(false);
-        XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
+        PhysicalLogFiles files = new PhysicalLogFiles(new File("logical_log"), fs);
         
-        assertThat(files.determineState(), is(XaLogicalLogFiles.State.NO_ACTIVE_FILE));
+        assertThat(files.determineState(), is( PhysicalLogFiles.State.NO_ACTIVE_FILE));
     }
 
     @Test
@@ -77,9 +77,9 @@ public class TestXaLogicalLogFiles {
         StoreChannel fc = mockedStoreChannel( XaLogicalLogTokens.LOG1 );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn( fc );
         
-        XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
+        PhysicalLogFiles files = new PhysicalLogFiles(new File("logical_log"), fs);
         
-        assertThat(files.determineState(), is(XaLogicalLogFiles.State.LOG_1_ACTIVE));
+        assertThat(files.determineState(), is( PhysicalLogFiles.State.LOG_1_ACTIVE));
     }
 
     @Test
@@ -94,9 +94,9 @@ public class TestXaLogicalLogFiles {
         StoreChannel fc = mockedStoreChannel( XaLogicalLogTokens.LOG2 );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
-        XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
+        PhysicalLogFiles files = new PhysicalLogFiles(new File("logical_log"), fs);
         
-        assertThat(files.determineState(), is(XaLogicalLogFiles.State.LOG_2_ACTIVE));
+        assertThat(files.determineState(), is( PhysicalLogFiles.State.LOG_2_ACTIVE));
     }
 
     @Test
@@ -111,9 +111,9 @@ public class TestXaLogicalLogFiles {
         StoreChannel fc = mockedStoreChannel( XaLogicalLogTokens.CLEAN );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
-        XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
+        PhysicalLogFiles files = new PhysicalLogFiles(new File("logical_log"), fs);
         
-        assertThat(files.determineState(), is(XaLogicalLogFiles.State.CLEAN));
+        assertThat(files.determineState(), is( PhysicalLogFiles.State.CLEAN));
     }
 
     @Test
@@ -128,9 +128,9 @@ public class TestXaLogicalLogFiles {
         StoreChannel fc = mockedStoreChannel( XaLogicalLogTokens.LOG1 );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
-        XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
+        PhysicalLogFiles files = new PhysicalLogFiles(new File("logical_log"), fs);
         
-        assertThat(files.determineState(), is(XaLogicalLogFiles.State.DUAL_LOGS_LOG_1_ACTIVE));
+        assertThat(files.determineState(), is( PhysicalLogFiles.State.DUAL_LOGS_LOG_1_ACTIVE));
     }
 
     @Test
@@ -145,9 +145,9 @@ public class TestXaLogicalLogFiles {
         StoreChannel fc = mockedStoreChannel( XaLogicalLogTokens.LOG2 );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
-        XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
+        PhysicalLogFiles files = new PhysicalLogFiles(new File("logical_log"), fs);
         
-        assertThat(files.determineState(), is(XaLogicalLogFiles.State.DUAL_LOGS_LOG_2_ACTIVE));
+        assertThat(files.determineState(), is( PhysicalLogFiles.State.DUAL_LOGS_LOG_2_ACTIVE));
     }
     
 
@@ -164,7 +164,7 @@ public class TestXaLogicalLogFiles {
         StoreChannel fc = mockedStoreChannel( ';' );
         when(fs.open(eq(new File("logical_log.active")), anyString())).thenReturn(fc);
         
-        XaLogicalLogFiles files = new XaLogicalLogFiles(new File("logical_log"), fs);
+        PhysicalLogFiles files = new PhysicalLogFiles(new File("logical_log"), fs);
         
         files.determineState();
     }

@@ -19,8 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import javax.transaction.xa.XAException;
-
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator;
 
 public class NeoStoreInjectedTransactionValidator implements InjectedTransactionValidator
@@ -33,7 +32,7 @@ public class NeoStoreInjectedTransactionValidator implements InjectedTransaction
     }
 
     @Override
-    public void assertInjectionAllowed( long lastCommittedTxWhenTransactionStarted ) throws XAException
+    public void assertInjectionAllowed( long lastCommittedTxWhenTransactionStarted ) throws TransactionFailureException
     {
         integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
     }

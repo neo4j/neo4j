@@ -46,31 +46,10 @@ public class EntryCountingLogHandler extends LogHandler.Filter
     }
 
     @Override
-    public void prepareEntry( LogEntry.Prepare prepareEntry ) throws IOException
-    {
-        entriesFound++;
-        super.prepareEntry( prepareEntry );
-    }
-
-    @Override
     public void onePhaseCommitEntry( LogEntry.OnePhaseCommit onePhaseCommitEntry ) throws IOException
     {
         entriesFound++;
         super.onePhaseCommitEntry( onePhaseCommitEntry );
-    }
-
-    @Override
-    public void twoPhaseCommitEntry( LogEntry.TwoPhaseCommit twoPhaseCommitEntry ) throws IOException
-    {
-        entriesFound++;
-        super.twoPhaseCommitEntry( twoPhaseCommitEntry );
-    }
-
-    @Override
-    public void doneEntry( LogEntry.Done doneEntry ) throws IOException
-    {
-        entriesFound++;
-        super.doneEntry( doneEntry );
     }
 
     @Override

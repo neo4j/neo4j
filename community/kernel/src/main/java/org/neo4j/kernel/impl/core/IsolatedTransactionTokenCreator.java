@@ -19,17 +19,12 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import javax.transaction.InvalidTransactionException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-
-import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.helpers.Provider;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 /**
  * Creates a key within its own transaction, such that the command(s) for creating the key
@@ -38,57 +33,44 @@ import org.neo4j.kernel.logging.Logging;
  */
 public abstract class IsolatedTransactionTokenCreator implements TokenCreator
 {
-    private final StringLogger logger;
+    protected final IdGeneratorFactory idGeneratorFactory;
+    private final Provider<KernelAPI> kernelProvider;
 
-    public IsolatedTransactionTokenCreator( Logging logging )
+    public IsolatedTransactionTokenCreator( Provider<KernelAPI> kernelProvider,
+            IdGeneratorFactory idGeneratorFactory )
     {
-        this.logger = logging.getMessagesLog( getClass() );
+        this.kernelProvider = kernelProvider;
+        this.idGeneratorFactory = idGeneratorFactory;
     }
-    
+
     @Override
-    public synchronized int getOrCreate( final AbstractTransactionManager txManager,
-                                         final EntityIdGenerator idGenerator,
-                                         final PersistenceManager persistence,
-                                         final String name )
+    public synchronized int getOrCreate( String name )
     {
+        KernelAPI kernel = kernelProvider.instance();
+        KernelTransaction transaction = kernel.newTransaction();
+        boolean success = false;
         try
         {
-            Transaction runningTransaction = txManager.suspend();
-            try
+            int id = createKey( transaction.getTransactionRecordState(), name );
+            success = true;
+            return id;
+        }
+        finally
+        {
+            if ( !success )
             {
-                txManager.begin( ForceMode.unforced );
-                int id = createKey( idGenerator, persistence, name );
-                txManager.commit();
-                return id;
-            }
-            catch ( Throwable t )
-            {
-                logger.error( "Unable to create key '" + name + "'", t );
                 try
                 {
-                    txManager.rollback();
+                    kernel.finish( transaction, success );
                 }
-                catch ( Throwable tt )
+                catch ( TransactionFailureException e )
                 {
-                    logger.error( "Unable to rollback after failure to create key '" + name + "'", t );
+                    throw new org.neo4j.graphdb.TransactionFailureException(
+                            "Failure to rollback after creating token failed", e );
                 }
-                throw new TransactionFailureException( "Unable to create key '" + name + "'" , t );
             }
-            finally
-            {
-                if ( runningTransaction != null )
-                    txManager.resume( runningTransaction );
-            }
-        }
-        catch ( SystemException e )
-        {
-            throw new TransactionFailureException( "Unable to resume or suspend running transaction", e );
-        }
-        catch ( InvalidTransactionException e )
-        {
-            throw new TransactionFailureException( "Unable to resume or suspend running transaction", e );
         }
     }
-    
-    protected abstract int createKey( EntityIdGenerator idGenerator, PersistenceManager persistence, String name );
+
+    protected abstract int createKey( TransactionRecordState transactionRecordState, String name );
 }

@@ -42,5 +42,4 @@ public abstract class SchemaKernelException extends KernelException
     {
         super( statusCode, message );
     }
-
 }

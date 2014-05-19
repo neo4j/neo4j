@@ -114,7 +114,7 @@ public abstract class Primitive implements SizeOfObject
 
     protected abstract void commitPropertyMaps(
             ArrayMap<Integer, DefinedProperty> cowPropertyAddMap,
-            ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap, long firstProp );
+            ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap );
 
     @Override
     public int hashCode()

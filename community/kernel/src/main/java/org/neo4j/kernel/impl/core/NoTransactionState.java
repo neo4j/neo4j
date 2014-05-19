@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.util.Collections.emptySet;
+
 import java.util.Set;
 
 import org.neo4j.graphdb.NotInTransactionException;
@@ -26,15 +28,12 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
-import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
+import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
-
-import static java.util.Collections.emptySet;
 
 public class NoTransactionState implements TransactionState
 {
@@ -54,11 +53,6 @@ public class NoTransactionState implements TransactionState
     public ArrayMap<Integer, RelIdArray> getCowRelationshipAddMap( NodeImpl node )
     {
         return null;
-    }
-
-    @Override
-    public void setFirstIds( long nodeId, long firstRel, long firstProp )
-    {
     }
 
     @Override
@@ -203,17 +197,6 @@ public class NoTransactionState implements TransactionState
 
     @Override
     public void markAsRemotelyInitialized()
-    {
-    }
-
-    @Override
-    public ResourceHolder getNeoStoreTransaction()
-    {
-        return null;
-    }
-
-    @Override
-    public void setNeoStoreTransaction( ResourceHolder neoStoreTransaction )
     {
     }
 }

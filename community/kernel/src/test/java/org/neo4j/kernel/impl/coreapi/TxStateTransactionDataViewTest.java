@@ -19,13 +19,22 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.kernel.api.properties.Property.stringProperty;
+
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
@@ -43,19 +52,7 @@ import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-
-import static java.util.Arrays.asList;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 public class TxStateTransactionDataViewTest
 {
@@ -63,7 +60,7 @@ public class TxStateTransactionDataViewTest
     private final Statement stmt = mock(Statement.class);
     private final ReadOperations ops = mock(ReadOperations.class);
     private final OldTxStateBridge oldTxState = mock( OldTxStateBridge.class );
-    private final TxState state = new TxStateImpl( oldTxState, mock( PersistenceManager.class),
+    private final TxState state = new TxStateImpl( oldTxState, mock( TransactionRecordState.class ),
                                              mock( TxState.IdGeneration.class) );
 
 

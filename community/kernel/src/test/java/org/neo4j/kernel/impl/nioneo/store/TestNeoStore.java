@@ -28,6 +28,7 @@ import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
@@ -54,7 +55,6 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionEventHandlers;
-import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -75,27 +75,17 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.community.LockManagerImpl;
 import org.neo4j.kernel.impl.locking.community.RagManager;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.PropertyReceiver;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaConnection;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState.PropertyReceiver;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.PlaceboTm;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
-import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -106,8 +96,6 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
-
-import static org.neo4j.kernel.impl.transaction.TransactionStateFactory.noStateFactory;
 
 public class TestNeoStore
 {
@@ -200,17 +188,12 @@ public class TestNeoStore
         Locks.Client lockClient = mock(Locks.Client.class);
         when(locks.newClient()).thenReturn( lockClient );
         ds = new NeoStoreXaDataSource(config, sf, StringLogger.DEV_NULL,
-                new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
-                        // Could be new TransactionStateFactory( new DevNullLoggingService() )
-                        fs, new Monitors(), DevNullLoggingService.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
-                        LogPruneStrategies.NO_PRUNING, kernelHealth ), noStateFactory( DevNullLoggingService.DEV_NULL ),
-                new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
-                        dependencyResolverForConfig( config ) ), null, new DevNullLoggingService(),
+                null, new DevNullLoggingService(),
                 new KernelSchemaStateStore(),
                 mock(TokenNameLookup.class),
-                dependencyResolverForNoIndexProvider( nodeManager ), mock( AbstractTransactionManager.class),
+                dependencyResolverForNoIndexProvider( nodeManager ),
                 mock( PropertyKeyTokenHolder.class ), mock(LabelTokenHolder.class),
-                mock( RelationshipTypeTokenHolder.class), mock(PersistenceManager.class), locks,
+                mock( RelationshipTypeTokenHolder.class), locks,
                 mock( SchemaWriteGuard.class), mock( TransactionEventHandlers.class), IndexingService.NO_MONITOR, fs,
                 new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
                 {
@@ -223,7 +206,6 @@ public class TestNeoStore
         ds.init();
         ds.start();
 
-        xaCon = ds.getXaConnection();
         pStore = xaCon.getPropertyStore();
         rtStore = xaCon.getRelationshipTypeStore();
     }

@@ -19,21 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Set;
-
-import org.junit.Before;
-import org.junit.Test;
-
-import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.TxState;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.util.DiffSets;
-
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -44,7 +29,6 @@ import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
@@ -54,10 +38,22 @@ import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.util.PrimitiveIteratorMatchers.containsLongs;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.util.DiffSets;
+
 public class TxStateTest
 {
-    private PersistenceManager persistenceManager;
-
     @Test
     public void shouldGetAddedLabels() throws Exception
     {
@@ -229,7 +225,7 @@ public class TxStateTest
 
         // Then
         verify( legacyState ).deleteNode( nodeId );
-        verifyNoMoreInteractions( legacyState, persistenceManager );
+        verifyNoMoreInteractions( legacyState );
 
         assertThat( asSet( state.addedAndRemovedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
     }
@@ -380,9 +376,8 @@ public class TxStateTest
         legacyState = mock( OldTxStateBridge.class );
         when(legacyState.relationshipCreate( anyInt(), anyLong(), anyLong() ))
                 .thenReturn( 1l, 2l, 3l, 4l, 5l, 6l, 7l, 8l, 9l, 10l, 11l );
-        persistenceManager = mock( PersistenceManager.class );
         state = new TxStateImpl( legacyState,
-                persistenceManager, mock( TxState.IdGeneration.class )
+                mock( TransactionRecordState.class ), mock( TxState.IdGeneration.class )
         );
     }
 }

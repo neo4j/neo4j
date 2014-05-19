@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import static org.neo4j.helpers.collection.MapUtil.reverse;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readByte;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
@@ -34,8 +29,15 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.CommandRecordVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+
+import static org.neo4j.helpers.collection.MapUtil.reverse;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readByte;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
 
 /**
  * A command which have to be first in the transaction. It will map index names
@@ -43,11 +45,11 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
  * to ids instead of names. This reduced the number of bytes needed for commands
  * roughly 50% for transaction with more than a couple of commands in it,
  * depending on the size of the value.
- * 
+ *
  * After this command has been created it will act as a factory for other
  * commands so that it can spit out correct index name and key ids.
  */
-public class IndexDefineCommand extends XaCommand
+public class IndexDefineCommand extends Command
 {
     private final AtomicInteger nextIndexNameId = new AtomicInteger();
     private final AtomicInteger nextKeyId = new AtomicInteger();
@@ -58,12 +60,12 @@ public class IndexDefineCommand extends XaCommand
 
     public IndexDefineCommand()
     {
-        indexNameIdRange = new HashMap<String, Byte>();
-        keyIdRange = new HashMap<String, Byte>();
-        idToIndexName = new HashMap<Byte, String>();
-        idToKey = new HashMap<Byte, String>();
+        indexNameIdRange = new HashMap<>();
+        keyIdRange = new HashMap<>();
+        idToIndexName = new HashMap<>();
+        idToKey = new HashMap<>();
     }
-    
+
     public IndexDefineCommand( Map<String, Byte> indexNames, Map<String, Byte> keys )
     {
         this.indexNameIdRange = indexNames;
@@ -87,38 +89,38 @@ public class IndexDefineCommand extends XaCommand
         return new IndexCommand.CreateCommand( indexNameId( indexName ),
                 entityTypeId( entityType ), config );
     }
-    
+
     public IndexCommand add( String indexName, Class<?> entityType, long entityId, String key,
             Object value )
     {
         return new IndexCommand.AddCommand( indexNameId( indexName ), entityTypeId( entityType ),
                 entityId, keyId( key ), value );
     }
-    
+
     public IndexCommand addRelationship( String indexName, Class<?> entityType, long entityId, String key,
             Object value, long startNode, long endNode )
     {
         return new IndexCommand.AddRelationshipCommand( indexNameId( indexName ),
                 entityTypeId( entityType ), entityId, keyId( key ), value, startNode, endNode );
     }
-    
+
     public IndexCommand remove( String indexName, Class<?> entityType, long entityId,
             String key, Object value )
     {
         return new IndexCommand.RemoveCommand( indexNameId( indexName ), entityTypeId( entityType ),
                 entityId, key != null ? keyId( key ) : 0, value );
     }
-    
+
     public IndexCommand delete( String indexName, Class<?> entityType )
     {
         return new IndexCommand.DeleteCommand( indexNameId( indexName ), entityTypeId( entityType ) );
     }
-    
+
     public String getIndexName( byte id )
     {
         return getFromMap( idToIndexName, id );
     }
-    
+
     public String getKey( byte id )
     {
         return getFromMap( idToKey, id );
@@ -128,7 +130,7 @@ public class IndexDefineCommand extends XaCommand
     {
         return entityType.equals( Relationship.class ) ? IndexCommand.RELATIONSHIP : IndexCommand.NODE;
     }
-    
+
     public static Class<? extends PropertyContainer> entityType( byte id )
     {
         switch ( id )
@@ -138,12 +140,12 @@ public class IndexDefineCommand extends XaCommand
         default: throw new IllegalArgumentException( "" + id );
         }
     }
-    
+
     private byte indexNameId( String indexName )
     {
         return id( indexName, indexNameIdRange, nextIndexNameId, idToIndexName );
     }
-    
+
     private byte keyId( String key )
     {
         return id( key, keyIdRange, nextKeyId, idToKey );
@@ -170,18 +172,24 @@ public class IndexDefineCommand extends XaCommand
         writeMap( indexNameIdRange, buffer );
         writeMap( keyIdRange, buffer );
     }
-    
+
     static Map<String, Byte> readMap( ReadableByteChannel channel, ByteBuffer buffer )
             throws IOException
     {
         Byte size = readByte( channel, buffer );
-        if ( size == null ) return null;
+        if ( size == null )
+        {
+            return null;
+        }
         Map<String, Byte> result = new HashMap<String, Byte>();
         for ( int i = 0; i < size; i++ )
         {
             String key = read2bLengthAndString( channel, buffer );
             Byte id = readByte( channel, buffer );
-            if ( key == null || id == null ) return null;
+            if ( key == null || id == null )
+            {
+                return null;
+            }
             result.put( key, id );
         }
         return result;
@@ -215,5 +223,24 @@ public class IndexDefineCommand extends XaCommand
         IndexDefineCommand other = (IndexDefineCommand) obj;
         return indexNameIdRange.equals( other.indexNameIdRange ) &&
                 keyIdRange.equals( other.keyIdRange );
+    }
+
+    @Override
+    public void accept( CommandRecordVisitor visitor )
+    {
+    }
+
+    @Override
+    public String toString()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
+
+    @Override
+    public boolean accept( NeoCommandVisitor visitor ) throws IOException
+    {
+        // TODO Auto-generated method stub
+        return false;
     }
 }

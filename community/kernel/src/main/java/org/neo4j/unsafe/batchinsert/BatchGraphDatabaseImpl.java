@@ -47,7 +47,6 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
-import org.neo4j.kernel.PlaceboTransaction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -219,6 +218,14 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         batchInserter.shutdown();
     }
 
+    private final static Lock NO_LOCK = new Lock()
+    {
+        @Override
+        public void release()
+        {
+        }
+    };
+
     static class FakeTransaction implements Transaction
     {
         @Override
@@ -232,7 +239,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         public void finish()
         {
         }
-        
+
         @Override
         public void close()
         {
@@ -246,13 +253,13 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         @Override
         public Lock acquireWriteLock( PropertyContainer entity )
         {
-            return PlaceboTransaction.NO_LOCK;
+            return NO_LOCK;
         }
 
         @Override
         public Lock acquireReadLock( PropertyContainer entity )
         {
-            return PlaceboTransaction.NO_LOCK;
+            return NO_LOCK;
         }
     }
 
@@ -480,7 +487,7 @@ class BatchGraphDatabaseImpl implements GraphDatabaseService
         {
             return graphDbService.batchInserter.nodeHasLabel( getId(), label );
         }
-        
+
         @Override
         public ResourceIterable<Label> getLabels()
         {

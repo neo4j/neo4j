@@ -19,23 +19,24 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.logging.Logging;
+import org.neo4j.helpers.Provider;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 public class DefaultRelationshipTypeCreator extends IsolatedTransactionTokenCreator
 {
-    public DefaultRelationshipTypeCreator( Logging logging )
+    public DefaultRelationshipTypeCreator( Provider<KernelAPI> kernelProvider, IdGeneratorFactory idGeneratorFactory )
     {
-        super( logging );
+        super( kernelProvider, idGeneratorFactory );
     }
 
     @Override
-    protected int createKey( EntityIdGenerator idGenerator, PersistenceManager persistence, String name )
+    protected int createKey( TransactionRecordState transactionRecordState, String name )
     {
-        int id = (int) idGenerator.nextId( RelationshipType.class );
-        persistence.createRelationshipType( id, name );
+        int id = (int) idGeneratorFactory.get( IdType.RELATIONSHIP_TYPE_TOKEN ).nextId();
+        transactionRecordState.createRelationshipTypeToken( id, name );
         return id;
     }
 }

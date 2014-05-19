@@ -19,21 +19,19 @@
  */
 package org.neo4j.graphdb.factory;
 
+import static java.util.Arrays.asList;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
+import static org.neo4j.helpers.Settings.TRUE;
+
 import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.EmbeddedReadOnlyGraphDatabase;
-import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase.Dependencies;
+import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-
-import static java.util.Arrays.asList;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.read_only;
-import static org.neo4j.helpers.Settings.TRUE;
 
 /**
  * Creates a {@link org.neo4j.graphdb.GraphDatabaseService}.
@@ -153,20 +151,4 @@ public class GraphDatabaseFactory
         getCurrentState().setCacheProviders( newCacheProviders );
         return this;
     }
-
-    /**
-     * @deprecated Manipulating cache providers is deprecated and will be moved to internal components.
-     */
-    @Deprecated
-    public List<TransactionInterceptorProvider> getTransactionInterceptorProviders()
-    {
-        return getCurrentState().getTransactionInterceptorProviders();
-    }
-
-    public GraphDatabaseFactory setTransactionInterceptorProviders( Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
-    {
-        getCurrentState().setTransactionInterceptorProviders( transactionInterceptorProviders );
-        return this;
-    }
-
 }

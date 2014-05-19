@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
@@ -34,9 +33,9 @@ public class LogDeserializer implements LogReader<ReadableByteChannel>
 {
     private final LogEntryReader logEntryReader;
 
-    public LogDeserializer( ByteBuffer scratch, XaCommandReaderFactory commandReaderFactory )
+    public LogDeserializer( XaCommandReaderFactory commandReaderFactory )
     {
-        logEntryReader = new VersionAwareLogEntryReader( scratch, commandReaderFactory );
+        logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
     }
 
     @Override

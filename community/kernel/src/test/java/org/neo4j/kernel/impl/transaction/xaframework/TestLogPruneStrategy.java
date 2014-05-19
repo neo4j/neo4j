@@ -283,9 +283,9 @@ public class TestLogPruneStrategy
     /**
      * A subset of what XaLogicaLog is. It's a LogLoader, add transactions to it's active log file,
      * and also rotate when max file size is reached. It uses the real xa command
-     * serialization/deserialization so it's only the {@link LogLoader} aspect that is mocked.
+     * serialization/deserialization so it's only the {@link LogVersionRepository} aspect that is mocked.
      */
-    private class MockedLogLoader implements LogLoader
+    private class MockedLogLoader implements LogVersionRepository
     {
         private long version;
         private long tx;
@@ -326,13 +326,6 @@ public class TestLogPruneStrategy
             activeBuffer.position( VersionAwareLogEntryReader.LOG_HEADER_SIZE );
         }
         
-        @Override
-        public ReadableByteChannel getLogicalLogOrMyselfCommitted( long version, long position )
-                throws IOException
-        {
-            throw new UnsupportedOperationException();
-        }
-
         @Override
         public long getHighestLogVersion()
         {

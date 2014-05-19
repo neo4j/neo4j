@@ -42,7 +42,7 @@ import org.neo4j.kernel.impl.nioneo.store.RecordSerializer;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoXaCommandExecutor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
@@ -161,7 +161,7 @@ public class SchemaRuleCommandTest
     private final NeoStore neoStore = mock( NeoStore.class );
     private final SchemaStore store = mock( SchemaStore.class );
     private final IndexingService indexes = mock( IndexingService.class );
-    private final NeoXaCommandExecutor executor = new NeoXaCommandExecutor( neoStore, indexes );
+    private final NeoTransactionStoreApplier executor = new NeoTransactionStoreApplier( neoStore, indexes );
     private final PhysicalLogNeoXaCommandReaderV1 reader = new PhysicalLogNeoXaCommandReaderV1( allocate( 1000 ) );
     private final PhysicalLogNeoXaCommandWriter writer = new PhysicalLogNeoXaCommandWriter();
     private final int labelId = 2;

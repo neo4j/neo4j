@@ -30,7 +30,7 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static org.neo4j.helpers.Settings.osIsWindows;
@@ -68,7 +68,7 @@ public class StoreAccess
     @SuppressWarnings( "deprecation" )
     private static NeoStore getNeoStoreFrom( GraphDatabaseAPI graphdb )
     {
-        return graphdb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore();
+        return graphdb.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
     }
 
     public StoreAccess( NeoStore store )

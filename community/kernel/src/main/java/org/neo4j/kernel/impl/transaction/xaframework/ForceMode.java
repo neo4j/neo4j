@@ -36,7 +36,7 @@ public enum ForceMode
         @Override
         public void force( LogBuffer buffer ) throws IOException
         {
-            buffer.writeOut();
+            buffer.force();
         }
     };
     

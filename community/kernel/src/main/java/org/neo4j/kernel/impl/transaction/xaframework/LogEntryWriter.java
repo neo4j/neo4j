@@ -21,7 +21,15 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
-public interface LogEntryWriter
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+
+public interface LogEntryWriter extends NeoCommandVisitor
 {
-    void writeLogEntry( LogEntry entry, LogBuffer buffer ) throws IOException;
+    void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
+            byte[] additionalHeaderData ) throws IOException;
+
+    void writeCommandEntry( Command command ) throws IOException;
+
+    void writeCommitEntry( long transactionId, long timeWritten ) throws IOException;
 }

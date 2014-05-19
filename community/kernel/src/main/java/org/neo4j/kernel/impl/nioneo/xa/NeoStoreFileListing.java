@@ -24,7 +24,6 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
-import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.Resource;
 import org.neo4j.graphdb.ResourceIterator;
@@ -34,70 +33,31 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
 
 import static org.neo4j.helpers.SillyUtils.nonNull;
 
 public class NeoStoreFileListing
 {
-    private final XaContainer xaContainer;
     private final File storeDir;
     private final LabelScanStore labelScanStore;
     private final IndexingService indexingService;
-    private Pattern logFilePattern;
 
-    public NeoStoreFileListing(XaContainer xaContainer, File storeDir, LabelScanStore labelScanStore, IndexingService indexingService)
+    public NeoStoreFileListing( File storeDir, LabelScanStore labelScanStore,
+            IndexingService indexingService )
     {
-        this.xaContainer = xaContainer;
         this.storeDir = storeDir;
         this.labelScanStore = labelScanStore;
         this.indexingService = indexingService;
-
-        // storing this so we only do Pattern.compile once
-        this.logFilePattern = xaContainer.getLogicalLog().getHistoryFileNamePattern();
-    }
-
-    public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
-    {
-        Collection<File> files = new ArrayList<>();
-        gatherNeoStoreFiles( includeLogicalLogs, files );
-        Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
-        Resource schemaIndexSnapshots = gatherSchemaIndexFiles( files );
-
-        return new StoreSnapshot( files.iterator(), labelScanStoreSnapshot, schemaIndexSnapshots );
     }
 
     public ResourceIterator<File> listStoreFiles() throws IOException
     {
         Collection<File> files = new ArrayList<>();
-        gatherNeoStoreFiles( false, files );
+        gatherNeoStoreFiles( files );
         Resource labelScanStoreSnapshot = gatherLabelScanStoreFiles( files );
         Resource schemaIndexSnapshots = gatherSchemaIndexFiles( files );
 
         return new StoreSnapshot( files.iterator(), labelScanStoreSnapshot, schemaIndexSnapshots );
-    }
-
-    public ResourceIterator<File> listLogicalLogs()
-    {
-        Collection<File> files = new ArrayList<>();
-
-        for ( File dbFile : nonNull( storeDir.listFiles() ) )
-        {
-            if ( dbFile.isFile() )
-            {
-                if ( isLogicalLog( dbFile ) )
-                {
-                    files.add( dbFile );
-                }
-            }
-        }
-
-        return new StoreSnapshot( files.iterator() );
-    }
-
-    private boolean isLogicalLog( File dbFile )
-    {
-        return logFilePattern.matcher( dbFile.getName() ).matches();
     }
 
     private Resource gatherSchemaIndexFiles(Collection<File> targetFiles) throws IOException
@@ -118,7 +78,7 @@ public class NeoStoreFileListing
         return snapshot;
     }
 
-    private void gatherNeoStoreFiles( boolean includeLogicalLogs, final Collection<File> targetFiles )
+    private void gatherNeoStoreFiles( final Collection<File> targetFiles )
     {
         File neostoreFile = null;
         for ( File dbFile : nonNull( storeDir.listFiles() ) )
@@ -133,10 +93,6 @@ public class NeoStoreFileListing
                     neostoreFile = dbFile;
                 }
                 else if ( neoStoreFile( name ) )
-                {
-                    targetFiles.add( dbFile );
-                }
-                else if ( includeLogicalLogs && isLogicalLog( dbFile ) )
                 {
                     targetFiles.add( dbFile );
                 }

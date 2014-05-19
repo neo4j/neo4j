@@ -29,7 +29,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -37,8 +36,6 @@ import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import static java.util.Arrays.asList;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.*;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.*;
 
 public class RelationshipLoaderTest
@@ -49,7 +46,6 @@ public class RelationshipLoaderTest
         // Given
         long fromDiskRelId = 12l;
 
-        PersistenceManager persistenceManager = mock( PersistenceManager.class );
         Cache relCache = mock( Cache.class );
 
         NodeImpl node = new NodeImpl( 1337l );

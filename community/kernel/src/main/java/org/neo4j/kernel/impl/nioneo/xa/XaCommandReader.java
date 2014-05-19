@@ -20,11 +20,11 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
 public interface XaCommandReader
 {
-    public XaCommand read( ReadableByteChannel channel ) throws IOException;
+    public Command read( ReadableLogChannel channel ) throws IOException;
 }

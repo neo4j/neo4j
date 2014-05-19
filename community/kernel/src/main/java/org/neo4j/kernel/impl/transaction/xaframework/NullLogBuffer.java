@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-
 public class NullLogBuffer implements LogBuffer
 {
     public static final LogBuffer INSTANCE = new NullLogBuffer();
@@ -37,18 +35,5 @@ public class NullLogBuffer implements LogBuffer
     @Override public LogBuffer putDouble( double d ) throws IOException { return this; }
     @Override public LogBuffer put( byte[] bytes ) throws IOException { return this; }
     @Override public LogBuffer put( char[] chars ) throws IOException { return this; }
-    @Override public void writeOut() throws IOException {}
     @Override public void force() throws IOException {}
-
-    @Override
-    public long getFileChannelPosition() throws IOException
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public StoreChannel getFileChannel()
-    {
-        throw new UnsupportedOperationException();
-    }
 }

@@ -152,7 +152,7 @@ public class DirectMappedLogBuffer implements LogBuffer
         }
     }
 
-    @Override
+
     public void writeOut() throws IOException
     {
         byteBuffer.flip();
@@ -165,6 +165,7 @@ public class DirectMappedLogBuffer implements LogBuffer
         byteBuffer.clear();
     }
 
+    @Override
     public void force() throws IOException
     {
         writeOut();

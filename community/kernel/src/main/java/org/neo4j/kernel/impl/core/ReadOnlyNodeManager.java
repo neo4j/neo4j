@@ -21,29 +21,26 @@ package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
+import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ReadOnlyNodeManager extends NodeManager
 {
     public ReadOnlyNodeManager( StringLogger logger, GraphDatabaseService graphDb,
-                                AbstractTransactionManager transactionManager, PersistenceManager persistenceManager,
-                                EntityIdGenerator idGenerator, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
+                                RelationshipTypeTokenHolder relationshipTypeTokenHolder,
                                 CacheProvider cacheType, PropertyKeyTokenHolder propertyKeyTokenHolder, LabelTokenHolder labelTokenHolder,
                                 NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
-                                Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache, XaDataSourceManager xaDsm,
-                                ThreadToStatementContextBridge statementCtxProvider )
+                                Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache,
+                                ThreadToStatementContextBridge statementCtxProvider,
+                                IdGeneratorFactory idGeneratorFactory )
     {
-        super( logger, graphDb, transactionManager, persistenceManager, idGenerator,
+        super( logger, graphDb,
                 relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, nodeLookup, relationshipLookups,
-                nodeCache, relCache, xaDsm, statementCtxProvider );
+                nodeCache, relCache, statementCtxProvider, idGeneratorFactory );
     }
 
     @Override

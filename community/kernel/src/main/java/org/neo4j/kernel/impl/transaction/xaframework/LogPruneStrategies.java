@@ -25,7 +25,6 @@ import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
 
 import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 
@@ -34,22 +33,22 @@ public class LogPruneStrategies
     public static final LogPruneStrategy NO_PRUNING = new LogPruneStrategy()
     {
         @Override
-        public void prune( LogLoader source )
+        public void prune( LogVersionRepository source )
         {   // Don't prune logs at all.
         }
-        
+
         @Override
         public String toString()
         {
             return "NO_PRUNING";
         }
     };
-    
+
     static interface Threshold
     {
-        boolean reached( File file, long version, LogLoader source );
+        boolean reached( File file, long version, LogVersionRepository source );
     }
-    
+
     private abstract static class AbstractPruneStrategy implements LogPruneStrategy
     {
         protected final FileSystemAbstraction fileSystem;
@@ -58,13 +57,15 @@ public class LogPruneStrategies
         {
             this.fileSystem = fileSystem;
         }
-        
+
         @Override
-        public void prune( LogLoader source )
+        public void prune( LogVersionRepository source )
         {
             if ( source.getHighestLogVersion() == 0 )
+            {
                 return;
-            
+            }
+
             long upper = source.getHighestLogVersion()-1;
             Threshold threshold = newThreshold();
             boolean exceeded = false;
@@ -72,9 +73,11 @@ public class LogPruneStrategies
             {
                 File file = source.getFileName( upper );
                 if ( !fileSystem.fileExists( file ) )
+                {
                     // There aren't logs to prune anything. Just return
                     return;
-                
+                }
+
                 if ( fileSystem.getFileSize( file ) > VersionAwareLogEntryReader.LOG_HEADER_SIZE &&
                         threshold.reached( file, upper, source ) )
                 {
@@ -83,19 +86,25 @@ public class LogPruneStrategies
                 }
                 upper--;
             }
-            
+
             if ( !exceeded )
+            {
                 return;
-            
+            }
+
             // Find out which log is the earliest existing (lower bound to prune)
             long lower = upper;
             while ( fileSystem.fileExists( source.getFileName( lower-1 ) ) )
+            {
                 lower--;
-            
+            }
+
             // The reason we delete from lower to upper is that if it crashes in the middle
             // we can be sure that no holes are created
             for ( long version = lower; version < upper; version++ )
+            {
                 fileSystem.deleteFile( source.getFileName( version ) );
+            }
         }
 
         /**
@@ -106,12 +115,12 @@ public class LogPruneStrategies
          */
         protected abstract Threshold newThreshold();
     }
-    
+
     public static LogPruneStrategy nonEmptyFileCount( FileSystemAbstraction fileSystem, int maxLogCountToKeep )
     {
         return new FileCountPruneStrategy( fileSystem, maxLogCountToKeep );
     }
-    
+
     private static class FileCountPruneStrategy extends AbstractPruneStrategy
     {
         private final int maxNonEmptyLogCount;
@@ -121,34 +130,34 @@ public class LogPruneStrategies
             super( fileSystem );
             this.maxNonEmptyLogCount = maxNonEmptyLogCount;
         }
-        
+
         @Override
         protected Threshold newThreshold()
         {
             return new Threshold()
             {
                 int nonEmptyLogCount = 0;
-                
+
                 @Override
-                public boolean reached( File file, long version, LogLoader source )
+                public boolean reached( File file, long version, LogVersionRepository source )
                 {
                     return ++nonEmptyLogCount >= maxNonEmptyLogCount;
                 }
             };
         }
-        
+
         @Override
         public String toString()
         {
             return getClass().getSimpleName() + "[max:" + maxNonEmptyLogCount + "]";
         }
     }
-    
+
     public static LogPruneStrategy totalFileSize( FileSystemAbstraction fileSystem, int numberOfBytes )
     {
         return new FileSizePruneStrategy( fileSystem, numberOfBytes );
     }
-    
+
     public static class FileSizePruneStrategy extends AbstractPruneStrategy
     {
         private final int maxSize;
@@ -165,9 +174,9 @@ public class LogPruneStrategies
             return new Threshold()
             {
                 private int size;
-                
+
                 @Override
-                public boolean reached( File file, long version, LogLoader source )
+                public boolean reached( File file, long version, LogVersionRepository source )
                 {
                     size += fileSystem.getFileSize( file );
                     return size >= maxSize;
@@ -175,12 +184,12 @@ public class LogPruneStrategies
             };
         }
     }
-    
+
     public static LogPruneStrategy transactionCount( FileSystemAbstraction fileSystem, int maxCount )
     {
         return new TransactionCountPruneStrategy( fileSystem, maxCount );
     }
-    
+
     public static class TransactionCountPruneStrategy extends AbstractPruneStrategy
     {
         private final int maxTransactionCount;
@@ -197,9 +206,9 @@ public class LogPruneStrategies
             return new Threshold()
             {
                 private Long highest;
-                
+
                 @Override
-                public boolean reached( File file, long version, LogLoader source )
+                public boolean reached( File file, long version, LogVersionRepository source )
                 {
                     try
                     {
@@ -227,12 +236,12 @@ public class LogPruneStrategies
             };
         }
     }
-    
+
     public static LogPruneStrategy transactionTimeSpan( FileSystemAbstraction fileSystem, int timeToKeep, TimeUnit timeUnit )
     {
         return new TransactionTimeSpanPruneStrategy( fileSystem, timeToKeep, timeUnit );
     }
-    
+
     public static class TransactionTimeSpanPruneStrategy extends AbstractPruneStrategy
     {
         private final int timeToKeep;
@@ -250,10 +259,10 @@ public class LogPruneStrategies
         {
             return new Threshold()
             {
-                private long lowerLimit = System.currentTimeMillis() - unit.toMillis( timeToKeep );
-                
+                private final long lowerLimit = System.currentTimeMillis() - unit.toMillis( timeToKeep );
+
                 @Override
-                public boolean reached( File file, long version, LogLoader source )
+                public boolean reached( File file, long version, LogVersionRepository source )
                 {
                     try
                     {
@@ -302,37 +311,57 @@ public class LogPruneStrategies
     {
         String[] tokens = configValue.split( " " );
         if ( tokens.length == 0 )
+        {
             throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue + "'" );
-        
+        }
+
         String numberWithUnit = tokens[0];
         if ( tokens.length == 1 )
         {
             if ( numberWithUnit.equals( "true" ) )
+            {
                 return NO_PRUNING;
+            }
             else if ( numberWithUnit.equals( "false" ) )
+            {
                 return transactionCount( fileSystem, 1 );
+            }
             else
+            {
                 throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
                         "'. The form is 'all' or '<number><unit> <type>' for example '100k txs' " +
                         "for the latest 100 000 transactions" );
+            }
         }
-        
+
         String[] types = new String[] { "files", "size", "txs", "hours", "days" };
         String type = tokens[1];
         int number = (int) parseLongWithUnit( numberWithUnit );
         int typeIndex = 0;
         if ( type.equals( types[typeIndex++] ) )
+        {
             return nonEmptyFileCount( fileSystem, number );
+        }
         else if ( type.equals( types[typeIndex++] ) )
+        {
             return totalFileSize( fileSystem, number );
+        }
         else if ( type.equals( types[typeIndex++] ) )
+        {
             return transactionCount( fileSystem, number );
+        }
         else if ( type.equals( types[typeIndex++] ) )
+        {
             return transactionTimeSpan( fileSystem, number, TimeUnit.HOURS );
+        }
         else if ( type.equals( types[typeIndex++] ) )
+        {
             return transactionTimeSpan( fileSystem, number, TimeUnit.DAYS );
+        }
         else
+        {
             throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
                     "'. Invalid type '" + type + "', valid are " + Arrays.asList( types ) );
+        }
     }
 }

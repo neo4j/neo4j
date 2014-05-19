@@ -88,7 +88,7 @@ public class IdGeneratorImpl implements IdGenerator
     private final LinkedList<Long> idsReadFromFile = new LinkedList<>();
     // ids freed in this session that havn't been flushed to disk yet
     private final LinkedList<Long> releasedIdList = new LinkedList<>();
-    
+
     private final long max;
     private final boolean aggressiveReuse;
 
@@ -150,7 +150,10 @@ public class IdGeneratorImpl implements IdGenerator
     {
         assertStillOpen();
         long nextDefragId = nextIdFromDefragList();
-        if ( nextDefragId != -1 ) return nextDefragId;
+        if ( nextDefragId != -1 )
+        {
+            return nextDefragId;
+        }
 
         long id = highId.get();
         if ( id == INTEGER_MINUS_ONE )
@@ -171,7 +174,7 @@ public class IdGeneratorImpl implements IdGenerator
             throw new UnderlyingStorageException( "Id capacity exceeded" );
         }
     }
-    
+
     private boolean canReadMoreIdBatches()
     {
         return readPosition < maxReadPosition;
@@ -265,6 +268,12 @@ public class IdGeneratorImpl implements IdGenerator
         return highId.get();
     }
 
+    @Override
+    public long getHighestPossibleIdInUse()
+    {
+        return getHighId()-1;
+    }
+
     /**
      * Frees the <CODE>id</CODE> making it a defragged id that will be
      * returned by next id before any new id (that hasn't been used yet) is
@@ -339,11 +348,11 @@ public class IdGeneratorImpl implements IdGenerator
             ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
             writeHeader( buffer );
             defragReusableIdsInFile( writeBuffer );
-            
+
             fileChannel.force( false );
-            
+
             markAsCleanlyClosed( buffer );
-            
+
             // flush and close
             fileChannel.force( false );
             fileChannel.close();
@@ -453,7 +462,7 @@ public class IdGeneratorImpl implements IdGenerator
             ByteBuffer buffer = ByteBuffer.allocate( HEADER_SIZE );
             readHeader( buffer );
             markAsSticky( buffer );
-            
+
             fileChannel.position( HEADER_SIZE );
             maxReadPosition = fileChannel.size();
             defraggedIdCount = (int) (maxReadPosition - HEADER_SIZE) / 8;
@@ -497,8 +506,10 @@ public class IdGeneratorImpl implements IdGenerator
     private void readIdBatch()
     {
         if ( !canReadMoreIdBatches() )
+        {
             return;
-        
+        }
+
         try
         {
             int howMuchToRead = (int) Math.min( grabSize*8, maxReadPosition-readPosition );
@@ -562,7 +573,9 @@ public class IdGeneratorImpl implements IdGenerator
             // position for next readIdBatch
             fileChannel.position( readPosition );
             if ( aggressiveReuse )
+            {
                 maxReadPosition = fileChannel.size();
+            }
         }
         catch ( IOException e )
         {

@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+
 import java.lang.reflect.Field;
 
 import org.junit.ClassRule;
@@ -28,20 +36,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.TestShortString;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.GraphTransactionRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
-
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 
 public class TestShortStringProperties extends TestShortString
 {
@@ -245,8 +245,6 @@ public class TestShortStringProperties extends TestShortString
 
     private PropertyStore propertyStore()
     {
-        XaDataSourceManager dsMgr = graphdb.getGraphDatabaseAPI().getDependencyResolver()
-                .resolveDependency( XaDataSourceManager.class );
-        return dsMgr.getNeoStoreDataSource().getXaConnection().getPropertyStore();
+        return graphdb.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStore.class ).getPropertyStore();
     }
 }

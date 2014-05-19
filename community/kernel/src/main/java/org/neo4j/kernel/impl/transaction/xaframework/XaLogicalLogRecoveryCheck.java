@@ -23,10 +23,10 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
-public class XaLogicalLogRecoveryCheck {
-
+public class XaLogicalLogRecoveryCheck
+{
     private final StoreChannel fileChannel;
-    
+
     public XaLogicalLogRecoveryCheck( StoreChannel fileChannel )
     {
         this.fileChannel = fileChannel;

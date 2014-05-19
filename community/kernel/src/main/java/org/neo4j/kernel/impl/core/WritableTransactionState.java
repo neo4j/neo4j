@@ -27,16 +27,12 @@ import java.util.Map;
 import java.util.Map.Entry;
 import java.util.Set;
 
-import javax.transaction.Status;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.nioneo.store.Record;
-import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -55,7 +51,6 @@ public class WritableTransactionState implements TransactionState
 
     // State
     private PrimitiveElement primitiveElement;
-    private ResourceHolder neoStoreTransaction;
 
     private boolean isRemotelyInitialized = false;
 
@@ -94,7 +89,7 @@ public class WritableTransactionState implements TransactionState
             return totalCount.value;
         }
     }
-    
+
     public static class PrimitiveElement
     {
         PrimitiveElement()
@@ -202,8 +197,6 @@ public class WritableTransactionState implements TransactionState
         {
             super( id );
         }
-
-        private long firstProp = Record.NO_NEXT_PROPERTY.intValue();
 
         private ArrayMap<Integer, RelIdArray> relationshipAddMap;
         private ArrayMap<Integer, SetAndDirectionCounter> relationshipRemoveMap;
@@ -331,13 +324,6 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
-    public void setFirstIds( long nodeId, long firstRel, long firstProp )
-    {
-        CowNodeElement nodeElement = getPrimitiveElement( true ).nodeElement( nodeId, true );
-        nodeElement.firstProp = firstProp;
-    }
-
-    @Override
     public ArrayMap<Integer, RelIdArray> getCowRelationshipAddMap( NodeImpl node )
     {
         PrimitiveElement primitiveElement = getPrimitiveElement( false );
@@ -398,8 +384,7 @@ public class WritableTransactionState implements TransactionState
                 if ( param == Status.STATUS_COMMITTED )
                 {
                     node.commitRelationshipMaps( nodeElement.relationshipAddMap, nodeElement.relationshipRemoveMap );
-                    node.commitPropertyMaps( nodeElement.propertyAddMap,
-                            nodeElement.propertyRemoveMap, nodeElement.firstProp );
+                    node.commitPropertyMaps( nodeElement.propertyAddMap, nodeElement.propertyRemoveMap );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
@@ -421,8 +406,7 @@ public class WritableTransactionState implements TransactionState
                 CowRelElement relElement = entry.getValue();
                 if ( param == Status.STATUS_COMMITTED )
                 {
-                    rel.commitPropertyMaps( relElement.propertyAddMap,
-                            relElement.propertyRemoveMap, Record.NO_NEXT_PROPERTY.intValue() );
+                    rel.commitPropertyMaps( relElement.propertyAddMap, relElement.propertyRemoveMap );
                 }
                 else if ( param != Status.STATUS_ROLLEDBACK )
                 {
@@ -436,8 +420,7 @@ public class WritableTransactionState implements TransactionState
         if ( primitiveElement.graph != null && param == Status.STATUS_COMMITTED )
         {
             nodeManager.getGraphProperties().commitPropertyMaps( primitiveElement.graph.getPropertyAddMap( false ),
-                    primitiveElement.graph.getPropertyRemoveMap( false ), Record.NO_NEXT_PROPERTY.intValue()
-            );
+                    primitiveElement.graph.getPropertyRemoveMap( false ) );
         }
     }
 
@@ -746,15 +729,16 @@ public class WritableTransactionState implements TransactionState
         isRemotelyInitialized = true;
     }
 
-    @Override
-    public ResourceHolder getNeoStoreTransaction()
-    {
-        return neoStoreTransaction;
-    }
-
-    @Override
-    public void setNeoStoreTransaction( ResourceHolder neoStoreTransaction )
-    {
-        this.neoStoreTransaction = neoStoreTransaction;
+    private interface Status {
+        int STATUS_ACTIVE = 0;
+        int STATUS_MARKED_ROLLBACK = 1;
+        int STATUS_PREPARED = 2;
+        int STATUS_COMMITTED = 3;
+        int STATUS_ROLLEDBACK = 4;
+        int STATUS_UNKNOWN = 5;
+        int STATUS_NO_TRANSACTION = 6;
+        int STATUS_PREPARING = 7;
+        int STATUS_COMMITTING = 8;
+        int STATUS_ROLLING_BACK = 9;
     }
 }

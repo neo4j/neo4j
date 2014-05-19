@@ -19,39 +19,60 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
+import java.io.File;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.heuristics.StatisticsData;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.statistics.StatisticsService;
-import org.neo4j.kernel.impl.api.statistics.StatisticsServiceRepository;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.statistics.StatisticsService;
+import org.neo4j.kernel.impl.api.statistics.StatisticsServiceRepository;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
+import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.core.Transactor;
+import org.neo4j.kernel.impl.core.WritableTransactionState;
+import org.neo4j.kernel.impl.locking.LockService;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.nioneo.xa.IntegrityValidator;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransactionContext;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransactionContextSupplier;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
+import org.neo4j.kernel.impl.transaction.RemoteTxHook;
+import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPositionCache;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
+import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.kernel.logging.Logging;
+
+import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
@@ -87,9 +108,8 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
  * commit support. As such, we are working to keep the Kernel compatible with a JTA system built on top of it, but
  * at the same time it should remain independent and runnable without a transaction manager.
  *
- * The heart of this work is in the relationship between {@link KernelTransaction},
- * {@link org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction} and
- * {@link org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager}. The latter should become a wrapper around
+ * The heart of this work is in the relationship between {@link KernelTransaction} and
+ * {@link org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState}. The latter should become a wrapper around
  * KernelTransactions, exposing them as JTA-capable transactions. The Write transaction should be hidden from the outside,
  * an implementation detail living inside the kernel.
  *
@@ -111,62 +131,64 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
  */
 public class Kernel extends LifecycleAdapter implements KernelAPI
 {
-    private final AbstractTransactionManager transactionManager;
-    private final PersistenceManager persistenceManager;
     private final UpdateableSchemaState schemaState;
     private final SchemaWriteGuard schemaWriteGuard;
     private final IndexingService indexService;
     private final NeoStore neoStore;
-    private final Provider<NeoStore> neoStoreProvider;
-    private final PersistenceCache persistenceCache;
     private final SchemaCache schemaCache;
     private final SchemaIndexProviderMap providerMap;
     private final LabelScanStore labelScanStore;
-    private final NodeManager nodeManager;
     private final StatementOperationParts statementOperations;
     private final StoreReadLayer storeLayer;
-
     private final TransactionHooks hooks = new TransactionHooks();
-
-    private final boolean readOnly;
     private final LegacyPropertyTrackers legacyPropertyTrackers;
     private final StatisticsService statisticsService;
     private final FileSystemAbstraction fs;
     private final Config config;
     private final JobScheduler scheduler;
-
+    private final TransactionMonitor transactionMonitor;
+    private final boolean readOnly;
     private boolean isShutdown = false;
-    private PropertyKeyTokenHolder propertyKeyTokenHolder;
-    private LabelTokenHolder labelTokenHolder;
-    private RelationshipTypeTokenHolder relationshipTypeTokenHolder;
+    private final CacheAccessBackDoor cacheAccess;
+    private final IntegrityValidator integrityValidator;
+    private final Locks locks;
+    private final NodeManager nodeManager;
+    private final NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier;
+    private final RemoteTxHook remoteTxHook;
+    private final TxIdGenerator txIdGenerator;
+    private final TransactionRepresentationCommitProcess commitProcess;
+    private final TransactionHeaderInformation transactionHeaderInformation;
 
-    public Kernel( AbstractTransactionManager transactionManager, PropertyKeyTokenHolder propertyKeyTokenHolder,
-                   LabelTokenHolder labelTokenHolder, RelationshipTypeTokenHolder relationshipTypeTokenHolder,
-                   PersistenceManager persistenceManager, UpdateableSchemaState schemaState,
+    public Kernel( PropertyKeyTokenHolder propertyKeyTokenHolder, UpdateableSchemaState schemaState,
                    SchemaWriteGuard schemaWriteGuard,
                    IndexingService indexService, NodeManager nodeManager, Provider<NeoStore> neoStoreProvider,
                    PersistenceCache persistenceCache, SchemaCache schemaCache, SchemaIndexProviderMap providerMap,
                    FileSystemAbstraction fs, Config config,
-                   LabelScanStore labelScanStore, StoreReadLayer storeLayer, JobScheduler scheduler, boolean readOnly )
+                   LabelScanStore labelScanStore, StoreReadLayer storeLayer, JobScheduler scheduler,
+                   TransactionMonitor transactionMonitor, KernelHealth kernelHealth,
+                   boolean readOnly, CacheAccessBackDoor cacheAccess, IntegrityValidator integrityValidator,
+                   Locks locks, LockService lockService, RemoteTxHook remoteTxHook, TxIdGenerator txIdGenerator,
+                   TransactionHeaderInformation transactionHeaderInformation, LogRotationControl logRotationControl,
+                   Logging logging )
     {
+        this.nodeManager = nodeManager;
         this.fs = fs;
         this.config = config;
-        this.transactionManager = transactionManager;
-        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
-        this.labelTokenHolder = labelTokenHolder;
-        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
-        this.persistenceManager = persistenceManager;
         this.schemaState = schemaState;
         this.providerMap = providerMap;
+        this.transactionMonitor = transactionMonitor;
         this.readOnly = readOnly;
         this.schemaWriteGuard = schemaWriteGuard;
         this.indexService = indexService;
+        this.cacheAccess = cacheAccess;
+        this.integrityValidator = integrityValidator;
+        this.locks = locks;
+        this.remoteTxHook = remoteTxHook;
+        this.txIdGenerator = txIdGenerator;
+        this.transactionHeaderInformation = transactionHeaderInformation;
         this.neoStore = neoStoreProvider.instance();
-        this.neoStoreProvider = neoStoreProvider;
-        this.persistenceCache = persistenceCache;
         this.schemaCache = schemaCache;
         this.labelScanStore = labelScanStore;
-        this.nodeManager = nodeManager;
         this.scheduler = scheduler;
 
         this.legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
@@ -176,6 +198,20 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.storeLayer = storeLayer;
         this.statementOperations = buildStatementOperations();
         this.statisticsService = new StatisticsServiceRepository( fs, config, storeLayer, scheduler ).loadStatistics();
+        this.neoStoreTransactionContextSupplier = new NeoStoreTransactionContextSupplier( neoStore );
+
+        File directory = config.get( GraphDatabaseSettings.store_dir );
+        LogPositionCache logPositionCache = new LogPositionCache( 1000, 100_000 );
+        LogFile logFile = new PhysicalLogFile( fs, directory, PhysicalLogFile.DEFAULT_NAME,
+                config.get( GraphDatabaseSettings.logical_log_rotation_threshold ),
+                LogPruneStrategies.fromConfigValue( fs, config.get( GraphDatabaseSettings.keep_logical_logs ) ),
+                neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
+                logRotationControl, logPositionCache );
+        TransactionStore transactionStore = new PhysicalTransactionStore( logFile, txIdGenerator, logPositionCache,
+                new VersionAwareLogEntryReader( XaCommandReaderFactory.DEFAULT ) );
+
+        this.commitProcess = new TransactionRepresentationCommitProcess( transactionStore.getAppender(),
+                kernelHealth, indexService, labelScanStore, neoStore, cacheAccess, lockService, false );
     }
 
     @Override
@@ -200,9 +236,18 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public KernelTransaction newTransaction()
     {
         checkIfShutdown();
+        NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
+        TransactionState legacyState = new WritableTransactionState(
+                locks.newClient(), nodeManager, remoteTxHook, txIdGenerator );
+        context.bind( legacyState );
+        TransactionRecordState neoStoreTransaction = new TransactionRecordState(
+                neoStore.getLastCommittingTransactionId(),
+                neoStore, cacheAccess, integrityValidator, context );
+        ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( this, indexService );
         return new KernelTransactionImplementation( statementOperations, readOnly,
-                schemaWriteGuard, labelScanStore, indexService, transactionManager, nodeManager,
-                schemaState, persistenceManager, providerMap, neoStore, getLegacyTxState(), hooks );
+                schemaWriteGuard, labelScanStore, indexService,
+                nodeManager, schemaState, neoStoreTransaction, providerMap, neoStore, legacyState, hooks,
+                constraintIndexCreator );
     }
 
     @Override
@@ -223,45 +268,6 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         return statisticsService.statistics();
     }
 
-    // We temporarily need this until all transaction state has moved into the kernel
-    private TransactionState getLegacyTxState()
-    {
-        try
-        {
-            TransactionState legacyState = transactionManager.getTransactionState();
-            return legacyState != null ? legacyState : TransactionState.NO_STATE;
-        }
-        catch ( RuntimeException e )
-        {
-            // If the transaction manager is in a bad state, we use an empty transaction state. It's not
-            // a great thing, but without this we can't create kernel transactions during recovery.
-            // Accepting that this is terrible for now, since the plan is to remove this dependency on the JTA
-            // transaction entirely.
-            // This should be safe to do, since we only use the JTA tx for locking, and we don't do any locking during
-            // recovery.
-            return TransactionState.NO_STATE;
-        }
-    }
-
-    // We temporarily depend on this to satisfy locking. This should go away once all locks are handled in the kernel.
-    private Transaction getJTATransaction()
-    {
-        try
-        {
-            return transactionManager.getTransaction();
-        }
-        catch ( SystemException e )
-        {
-            // If the transaction manager is in a bad state, we return a placebo transaction. It's not
-            // a great thing, but without this we can't create kernel transactions during recovery.
-            // Accepting that this is terrible for now, since the plan is to remove this dependency on the JTA
-            // transaction entirely.
-            // This should be safe to do, since we only use the JTA tx for locking, and we don't do any locking during
-            // recovery.
-            return new NoOpJTATransaction();
-        }
-    }
-
     private void checkIfShutdown()
     {
         if ( isShutdown )
@@ -278,7 +284,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         // + Transaction state handling
         StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations(
                 storeLayer, legacyPropertyTrackers,
-                new ConstraintIndexCreator( new Transactor( transactionManager, persistenceManager ), indexService ) );
+                new ConstraintIndexCreator( this, indexService ) );
 
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
@@ -308,5 +314,68 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext, lockingContext );
 
         return parts;
+    }
+
+    /**
+     * Convenience for either commit or rollback, where the advantage of it is that it's more natural to
+     * put it in a finally block.
+     */
+    @Override
+    public void finish( KernelTransaction tx, boolean success ) throws TransactionFailureException
+    {
+        if ( success )
+        {
+            commit( tx );
+        }
+        else
+        {
+            rollback( tx );
+        }
+    }
+
+    @Override
+    public void commit( KernelTransaction transaction ) throws TransactionFailureException
+    {
+        boolean success = false;
+        try
+        {
+            // deferred creation of records
+            transaction.prepare();
+
+            KernelTransactionImplementation transactionImplementation = (KernelTransactionImplementation)transaction;
+            if ( !transactionImplementation.isReadOnly() )
+            {   // generate a transaction representation out of it
+                PhysicalTransactionRepresentation transactionRepresentation =
+                        transactionImplementation.getTransactionRecordState().doPrepare();
+                transactionRepresentation.setHeader( transactionHeaderInformation.getAdditionalHeader(),
+                        transactionHeaderInformation.getMasterId(),
+                        transactionHeaderInformation.getAuthorId(), currentTimeMillis(),
+                        neoStore.getLastCommittingTransactionId() );
+                commitProcess.commit( transactionRepresentation );
+
+                TransactionState transactionState = transactionImplementation.getLegacyTransactionState();
+                transactionState.commitCows();
+
+                // TODO 2.2-future do the TxIdGenerator#committed thing
+                success = true;
+            }
+        }
+        finally
+        {
+            try
+            {
+                transaction.commit();
+            }
+            finally
+            {
+                transactionMonitor.transactionFinished( success );
+            }
+        }
+    }
+
+    @Override
+    public void rollback( KernelTransaction transaction ) throws TransactionFailureException
+    {
+        throw new UnsupportedOperationException( "Please implement" );
     }
 }

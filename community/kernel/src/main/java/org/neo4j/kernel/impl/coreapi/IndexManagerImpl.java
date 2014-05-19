@@ -31,7 +31,6 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
@@ -41,14 +40,13 @@ import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.index.RelationshipAutoIndexer;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.kernel.impl.index.IndexXaConnection;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class IndexManagerImpl implements IndexManager, IndexProviders
 {
@@ -58,20 +56,16 @@ public class IndexManagerImpl implements IndexManager, IndexProviders
     private NodeAutoIndexerImpl nodeAutoIndexer;
     private RelationshipAutoIndexerImpl relAutoIndexer;
     private final Config config;
-    private final XaDataSourceManager xaDataSourceManager;
-    private final AbstractTransactionManager txManager;
-    private final GraphDatabaseAPI graphDatabaseAPI;
+    private final ThreadToStatementContextBridge transactionBridge;
+    private final Provider<KernelAPI> kernelProvider;
 
     public IndexManagerImpl( Config config, IndexStore indexStore,
-                             XaDataSourceManager xaDataSourceManager, AbstractTransactionManager txManager,
-                             GraphDatabaseAPI graphDatabaseAPI
-    )
+            ThreadToStatementContextBridge transactionBridge, Provider<KernelAPI> kernelProvider )
     {
-        this.graphDatabaseAPI = graphDatabaseAPI;
         this.config = config;
-        this.xaDataSourceManager = xaDataSourceManager;
-        this.txManager = txManager;
         this.indexStore = indexStore;
+        this.transactionBridge = transactionBridge;
+        this.kernelProvider = kernelProvider;
     }
 
     private IndexImplementation getIndexProvider( String provider )
@@ -266,16 +260,30 @@ public class IndexManagerImpl implements IndexManager, IndexProviders
         public Object call()
                 throws Exception
         {
-            String provider = config.get( PROVIDER );
-            String dataSourceName = getIndexProvider( provider ).getDataSourceName();
-            try ( Transaction tx = graphDatabaseAPI.tx().begin() )
+//            String provider = config.get( PROVIDER );
+//            String dataSourceName = getIndexProvider( provider ).getDataSourceName();
+//            try ( Transaction tx = graphDatabaseAPI.tx().begin() )
+//            {
+//                XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
+//                IndexXaConnection connection = (IndexXaConnection) dataSource.getXaConnection();
+//                javax.transaction.Transaction javaxTx = txManager.getTransaction();
+//                connection.enlistResource( javaxTx );
+//                connection.createIndex( cls, indexName, config );
+//                tx.success();
+//            }
+
+            KernelAPI kernel = kernelProvider.instance();
+            KernelTransaction transaction = kernel.newTransaction();
+            boolean success = false;
+            try
             {
-                XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
-                IndexXaConnection connection = (IndexXaConnection) dataSource.getXaConnection();
-                javax.transaction.Transaction javaxTx = txManager.getTransaction();
-                connection.enlistResource( javaxTx );
-                connection.createIndex( cls, indexName, config );
-                tx.success();
+                // TODO 2.2-future
+//                transaction.createIndex( cls, indexName, config );
+                success = true;
+            }
+            finally
+            {
+                kernel.finish( transaction, success );
             }
             return null;
         }
@@ -463,6 +471,6 @@ public class IndexManagerImpl implements IndexManager, IndexProviders
 
     private void assertInTransaction()
     {
-        txManager.assertInTransaction();
+        transactionBridge.assertInTransaction();
     }
 }

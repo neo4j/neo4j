@@ -240,8 +240,7 @@ public class StoreFactory
         }
         neoStore.setCreationTime( storeId.getCreationTime() );
         neoStore.setRandomNumber( storeId.getRandomId() );
-        neoStore.setVersion( 0 );
-        neoStore.setLastCommittedTx( 1 );
+        neoStore.setCurrentLogVersion( 0 );
         neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         neoStore.setGraphNextProp( -1 );
         return neoStore;

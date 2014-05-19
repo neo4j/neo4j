@@ -135,5 +135,11 @@ public class BatchingIdGeneratorFactory implements IdGeneratorFactory
         {
             throw new UnsupportedOperationException();
         }
+
+        @Override
+        public long getHighestPossibleIdInUse()
+        {
+            return getHighId()-1;
+        }
     }
 }

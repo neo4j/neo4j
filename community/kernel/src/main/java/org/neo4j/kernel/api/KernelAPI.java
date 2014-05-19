@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.heuristics.StatisticsData;
 
 /**
@@ -44,4 +45,13 @@ public interface KernelAPI
 
     /** Access live updated statistics for the data the kernel manages. */
     StatisticsData heuristics();
+
+    void commit( KernelTransaction transaction ) throws TransactionFailureException;
+
+    void rollback( KernelTransaction transaction ) throws TransactionFailureException;
+
+    /**
+     * Convenience method for commit/rollback.
+     */
+    void finish( KernelTransaction transaction, boolean success ) throws TransactionFailureException;
 }

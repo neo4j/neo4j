@@ -285,7 +285,6 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
     }
 
     @Override
-    @SuppressWarnings("deprecation")
     protected DefinedProperty getPropertyForIndex( int keyId )
     {
         DefinedProperty property = properties.get( keyId );
@@ -325,7 +324,7 @@ public class GraphPropertiesImpl extends Primitive implements GraphProperties
 
     @Override
     protected void commitPropertyMaps( ArrayMap<Integer, DefinedProperty> cowPropertyAddMap,
-                                       ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap, long firstProp )
+                                       ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap )
     {
         if ( cowPropertyAddMap != null )
         {

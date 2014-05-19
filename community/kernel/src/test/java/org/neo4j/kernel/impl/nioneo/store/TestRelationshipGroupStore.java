@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.Integer.parseInt;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -27,7 +32,6 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -41,16 +45,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
-
-import static java.lang.Integer.parseInt;
-import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
 
 public class TestRelationshipGroupStore
 {
@@ -208,8 +205,7 @@ public class TestRelationshipGroupStore
             tx.success();
         }
 
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                .getNeoStoreDataSource().getNeoStore();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStore.class );
         NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
@@ -243,8 +239,7 @@ public class TestRelationshipGroupStore
             tx.success();
         }
 
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                .getNeoStoreDataSource().getNeoStore();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStore.class );
         NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
@@ -277,8 +272,7 @@ public class TestRelationshipGroupStore
         tx.success();
         tx.finish();
 
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                .getNeoStoreDataSource().getNeoStore();
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStore.class );
         NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();

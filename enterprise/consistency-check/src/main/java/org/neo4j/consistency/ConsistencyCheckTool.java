@@ -36,7 +36,7 @@ import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogFiles;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class ConsistencyCheckTool
@@ -98,7 +98,7 @@ public class ConsistencyCheckTool
         }
         else
         {
-            XaLogicalLogFiles logFiles = new XaLogicalLogFiles(
+            PhysicalLogFiles logFiles = new PhysicalLogFiles(
                     new File( storeDir, NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME ),
                     new DefaultFileSystemAbstraction() );
             try

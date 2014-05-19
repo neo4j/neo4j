@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 
 /**

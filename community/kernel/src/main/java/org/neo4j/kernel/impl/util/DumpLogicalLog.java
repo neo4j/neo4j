@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static java.util.TimeZone.getTimeZone;
-import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.FilenameFilter;
@@ -32,17 +29,22 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.TreeSet;
+
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+
+import static java.util.TimeZone.getTimeZone;
+
+import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
 
 public class DumpLogicalLog
 {
@@ -52,7 +54,7 @@ public class DumpLogicalLog
     {
         this.fileSystem = fileSystem;
     }
-    
+
     public int dump( String filenameOrDirectory, PrintStream out, TimeZone timeZone ) throws IOException
     {
         int logsFound = 0;
@@ -81,12 +83,15 @@ public class DumpLogicalLog
                 prevLastCommittedTx + "]" );
 
             LogDeserializer deserializer =
-                    new LogDeserializer( buffer, instantiateCommandReaderFactory() );
+                    new LogDeserializer( instantiateCommandReaderFactory() );
             PrintingConsumer consumer = new PrintingConsumer( out, timeZone );
 
             try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
             {
-                while( cursor.next( consumer ) );
+                while( cursor.next( consumer ) )
+                {
+                    ;
+                }
             }
         }
         return logsFound;
@@ -121,21 +126,21 @@ public class DumpLogicalLog
             }
         }
     }
-    
+
     public static Printer getPrinter( Args args )
     {
         boolean toFile = args.getBoolean( "tofile", false, true ).booleanValue();
         return toFile ? new FilePrinter() : SYSTEM_OUT_PRINTER;
     }
-    
+
     public interface Printer extends AutoCloseable
     {
         PrintStream getFor( String file ) throws FileNotFoundException;
-        
+
         @Override
         void close();
     }
-    
+
     private static final Printer SYSTEM_OUT_PRINTER = new Printer()
     {
         @Override
@@ -149,12 +154,12 @@ public class DumpLogicalLog
         {   // Don't close System.out
         }
     };
-    
+
     private static class FilePrinter implements Printer
     {
         private File directory;
         private PrintStream out;
-        
+
         @Override
         public PrintStream getFor( String file ) throws FileNotFoundException
         {

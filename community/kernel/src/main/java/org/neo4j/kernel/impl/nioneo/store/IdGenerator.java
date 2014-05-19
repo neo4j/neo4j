@@ -28,6 +28,7 @@ public interface IdGenerator extends IdSequence
      */
     void setHighId( long id );
     long getHighId();
+    long getHighestPossibleIdInUse();
     void freeId( long id );
 
     /**

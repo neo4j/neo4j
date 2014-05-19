@@ -19,91 +19,94 @@
  */
 package org.neo4j.kernel;
 
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.doAnswer;
 
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.invocation.InvocationOnMock;
+import org.mockito.stubbing.Answer;
 import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.api.ReadOperations;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.TopLevelTransaction.TransactionOutcome;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-
-import static org.mockito.Mockito.*;
 
 public class TestPlaceboTransaction
 {
-    private Transaction mockTopLevelTx;
-    private PlaceboTransaction placeboTx;
+    private TopLevelTransaction mockTopLevelTx;
+    private Transaction placeboTx;
     private Node resource;
-    private PersistenceManager persistenceManager;
-    private ReadOperations readOps;
 
     @Before
     public void before() throws Exception
     {
-        AbstractTransactionManager mockTxManager = mock( AbstractTransactionManager.class );
-        mockTopLevelTx = mock( Transaction.class );
-        when( mockTxManager.getTransaction() ).thenReturn( mockTopLevelTx );
-        persistenceManager = mock( PersistenceManager.class );
+        ThreadToStatementContextBridge bridge = mock (ThreadToStatementContextBridge.class );
+        when( bridge.instance() ).thenReturn( mock( Statement.class ) );
+        mockTopLevelTx = mock ( TopLevelTransaction.class);
+        final TransactionOutcome outcome = new TransactionOutcome();
+        when( mockTopLevelTx.getTransactionOutcome()).thenReturn(outcome);
+        doAnswer(new Answer<Void>()
+        {
+            public Void answer(InvocationOnMock invocation) {
+                outcome.failed();
+                return null;
+            }})
+                .when(mockTopLevelTx).failure();
 
-        ThreadToStatementContextBridge stmtProvider = mock( ThreadToStatementContextBridge.class );
-        Statement stmt = mock( Statement.class );
-        readOps = mock(ReadOperations.class);
 
-        when( stmtProvider.instance()).thenReturn( stmt );
-        when( stmt.readOperations()).thenReturn( readOps );
-
-        placeboTx = new PlaceboTransaction( mockTxManager, stmtProvider );
+        placeboTx = new PlaceboTransaction( mockTopLevelTx );
         resource = mock( Node.class );
         when(resource.getId()).thenReturn( 1l );
     }
 
     @Test
-    public void shouldRollbackParentByDefault() throws SystemException
+    public void shouldRollbackParentByDefault()
     {
         // When
-        placeboTx.finish();
-        
+        placeboTx.close();
+
         // Then
-        verify( mockTopLevelTx ).setRollbackOnly();
+        verify( mockTopLevelTx ).failure();
     }
 
     @Test
-    public void shouldRollbackParentIfFailureCalled() throws SystemException
+    public void shouldRollbackParentIfFailureCalled() throws TransactionFailureException
     {
         // When
         placeboTx.failure();
-        placeboTx.finish();
-        
+        placeboTx.close();
+
         // Then
-        verify( mockTopLevelTx ).setRollbackOnly();
+        verify( mockTopLevelTx ).failure();
     }
-    
+
     @Test
-    public void shouldNotRollbackParentIfSuccessCalled() throws SystemException
+    public void shouldNotRollbackParentIfSuccessCalled()
     {
         // When
         placeboTx.success();
-        placeboTx.finish();
-        
+        placeboTx.close();
+
         // Then
-        verifyNoMoreInteractions( mockTopLevelTx );
+        verify( mockTopLevelTx ).success();
     }
-    
+
     @Test
     public void successCannotOverrideFailure() throws Exception
     {
         // When
         placeboTx.failure();
         placeboTx.success();
-        placeboTx.finish();
-        
+        placeboTx.close();
+
         // Then
-        verify( mockTopLevelTx ).setRollbackOnly();
+        verify( mockTopLevelTx ).failure();
+        verify( mockTopLevelTx, times( 0 ) ).success();
     }
 
     @Test
@@ -111,9 +114,9 @@ public class TestPlaceboTransaction
     {
         // when
         placeboTx.acquireReadLock( resource );
-        
+
         // then
-        verify( readOps ).acquireShared( ResourceTypes.NODE, 1l );
+        verify( mockTopLevelTx ).acquireReadLock( resource );
     }
 
     @Test
@@ -121,8 +124,8 @@ public class TestPlaceboTransaction
     {
         // when
         placeboTx.acquireWriteLock( resource );
-        
+
         // then
-        verify( readOps ).acquireExclusive( ResourceTypes.NODE, 1l );
+        verify( mockTopLevelTx ).acquireWriteLock( resource );
     }
 }

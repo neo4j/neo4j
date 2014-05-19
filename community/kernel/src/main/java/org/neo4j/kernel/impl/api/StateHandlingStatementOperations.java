@@ -40,7 +40,7 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
-import org.neo4j.kernel.api.exceptions.TransactionalException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
@@ -303,7 +303,7 @@ public class StateHandlingStatementOperations implements
             }
             return constraint;
         }
-        catch ( TransactionalException | ConstraintVerificationFailedKernelException | DropIndexFailureException e )
+        catch ( TransactionFailureException | ConstraintVerificationFailedKernelException | DropIndexFailureException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
         }

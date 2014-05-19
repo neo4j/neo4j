@@ -19,9 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
@@ -31,15 +29,17 @@ import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 
+// TODO 2.2-future check out how deserialization happens on recovery and transfer over anything useful
 public class RecoveryLogDeserializer implements LogReader<StoreChannel>
 {
     private final LogEntryReader logEntryReader;
 
-    public RecoveryLogDeserializer( ByteBuffer scratch, XaCommandReaderFactory commandReaderFactory )
+    public RecoveryLogDeserializer( XaCommandReaderFactory commandReaderFactory )
     {
-        logEntryReader = new VersionAwareLogEntryReader( scratch, commandReaderFactory );
+        logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
     }
 
+    @Override
     public Cursor<LogEntry, IOException> cursor( StoreChannel channel )
     {
         return new RecoveryCursor( channel );
@@ -62,7 +62,7 @@ public class RecoveryLogDeserializer implements LogReader<StoreChannel>
             LogEntry entry = logEntryReader.readLogEntry( channel );
             if ( entry instanceof LogEntry.Start )
             {
-                ((LogEntry.Start) entry).setStartPosition( position );
+//                ((LogEntry.Start) entry).setStartPosition( position );
             }
             else if ( entry == null )
             {

@@ -33,7 +33,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 public class KernelStatement implements TxState.Holder, Statement
 {
@@ -42,7 +42,7 @@ public class KernelStatement implements TxState.Holder, Statement
     protected final TxState.Holder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
-    protected NeoStoreTransaction neoStoreTransaction;
+    protected TransactionRecordState neoStoreTransaction;
     
     private LabelScanReader labelScanReader;
     private int referenceCount;
@@ -52,7 +52,7 @@ public class KernelStatement implements TxState.Holder, Statement
     public KernelStatement( KernelTransactionImplementation transaction, IndexReaderFactory indexReaderFactory,
                             LabelScanStore labelScanStore,
                             TxState.Holder txStateHolder, Locks.Client locks, StatementOperationParts operations,
-                            NeoStoreTransaction neoStoreTransaction )
+                            TransactionRecordState neoStoreTransaction )
     {
         this.transaction = transaction;
         this.locks = locks;

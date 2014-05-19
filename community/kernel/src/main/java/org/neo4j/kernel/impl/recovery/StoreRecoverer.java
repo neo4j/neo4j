@@ -30,7 +30,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogFiles;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogRecoveryCheck;
 
 /**
@@ -59,7 +59,7 @@ public class StoreRecoverer
         Config config = new Config( params, GraphDatabaseSettings.class );
 
         File baseLogPath = config.get( GraphDatabaseSettings.logical_log );
-        XaLogicalLogFiles logFiles = new XaLogicalLogFiles( baseLogPath, fs );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( baseLogPath, fs );
 
         File log;
         switch ( logFiles.determineState() )
@@ -71,10 +71,6 @@ public class StoreRecoverer
         case DUAL_LOGS_LOG_1_ACTIVE:
         case DUAL_LOGS_LOG_2_ACTIVE:
             return true;
-
-        case LEGACY_WITHOUT_LOG_ROTATION:
-            log = baseLogPath;
-            break;
 
         case LOG_1_ACTIVE:
             log = logFiles.getLog1FileName();

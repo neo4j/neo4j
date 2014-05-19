@@ -21,15 +21,82 @@ package org.neo4j.kernel.impl.nioneo.xa.command;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.LabelTokenCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.NeoStoreCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
+
 public interface NeoCommandVisitor
 {
-    public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException;
-    public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException;
-    public boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException;
-    public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException;
-    public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException;
-    public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException;
-    public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException;
-    public boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException;
-    public boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException;
+    boolean visitNodeCommand( Command.NodeCommand command ) throws IOException;
+    boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException;
+    boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException;
+    boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException;
+    boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws IOException;
+    boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException;
+    boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException;
+    boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException;
+    boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException;
+
+    public static class Adapter implements NeoCommandVisitor
+    {
+        @Override
+        public boolean visitNodeCommand( NodeCommand command ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
+        {
+            return true;
+        }
+    }
 }

@@ -22,14 +22,30 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import javax.transaction.xa.Xid;
-
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.LabelTokenCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.NeoStoreCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
 
 public class LogEntryWriterv1 implements LogEntryWriter
 {
     private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_LOG_VERSION) & 0xFF;
     static final int LOG_HEADER_SIZE = 16;
+    private final WritableLogChannel channel;
+    private final NeoCommandVisitor commandWriter;
+
+    public LogEntryWriterv1( WritableLogChannel channel, NeoCommandVisitor commandWriter )
+    {
+        this.channel = channel;
+        this.commandWriter = commandWriter;
+    }
 
     public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion,
             long previousCommittedTxId )
@@ -41,93 +57,94 @@ public class LogEntryWriterv1 implements LogEntryWriter
         return buffer;
     }
 
-    public void writeLogEntry( LogEntry entry, LogBuffer buffer ) throws IOException
+    private void writeLogEntryHeader( byte type ) throws IOException
     {
-        if ( entry.getVersion() == LogEntry.CURRENT_LOG_ENTRY_VERSION )
-        {
-            buffer.put( entry.getVersion() );
-        }
-        switch ( entry.getType() )
-        {
-            case LogEntry.TX_START:
-                writeStart( entry.getIdentifier(), ((LogEntry.Start) entry).getXid(),
-                        ((LogEntry.Start) entry).getMasterId(), ((LogEntry.Start) entry).getLocalId(),
-                        ((LogEntry.Start) entry).getTimeWritten(),
-                        ((LogEntry.Start) entry).getLastCommittedTxWhenTransactionStarted(), buffer );
-                break;
-            case LogEntry.COMMAND:
-                writeCommand( entry.getIdentifier(), ((LogEntry.Command) entry).getXaCommand(), buffer );
-                break;
-            case LogEntry.TX_PREPARE:
-                writePrepare( entry.getIdentifier(), ((LogEntry.Prepare) entry).getTimeWritten(), buffer );
-                break;
-            case LogEntry.TX_1P_COMMIT:
-                LogEntry.Commit commit1PC = (LogEntry.Commit) entry;
-                writeCommit( false, commit1PC.getIdentifier(), commit1PC.getTxId(),
-                        ((LogEntry.OnePhaseCommit) entry).getTimeWritten(), buffer );
-                break;
-            case LogEntry.TX_2P_COMMIT:
-                LogEntry.Commit commit2PC = (LogEntry.Commit) entry;
-                writeCommit( true, commit2PC.getIdentifier(), commit2PC.getTxId(),
-                        ((LogEntry.TwoPhaseCommit) entry).getTimeWritten(), buffer );
-                break;
-            case LogEntry.DONE:
-                writeDone( entry.getIdentifier(), buffer );
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown entry type " + entry.getType() );
-
-        }
+        channel.put( LogEntry.CURRENT_LOG_ENTRY_VERSION ).put( type );
     }
 
-    private void writePrepare( int identifier, long timeWritten, LogBuffer logBuffer ) throws IOException
+    @Override
+    public void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
+            byte[] additionalHeaderData ) throws IOException
     {
-        logBuffer.put( LogEntry.TX_PREPARE ).putInt( identifier ).putLong( timeWritten );
+        writeLogEntryHeader( LogEntry.TX_START );
+        channel.putInt( masterId ).putInt( authorId ).putLong( timeWritten ).putLong( latestCommittedTxWhenStarted )
+               .putInt( additionalHeaderData.length ).put( additionalHeaderData, additionalHeaderData.length );
     }
 
-    private void writeCommit( boolean twoPhase, int identifier, long txId,
-            long timeWritten, LogBuffer logBuffer ) throws IOException
+    @Override
+    public void writeCommitEntry( long transactionId, long timeWritten ) throws IOException
     {
-        logBuffer.put( twoPhase ? LogEntry.TX_2P_COMMIT : LogEntry.TX_1P_COMMIT )
-              .putInt( identifier ).putLong( txId ).putLong( timeWritten );
+        writeLogEntryHeader( LogEntry.TX_1P_COMMIT );
+        channel.putLong( transactionId ).putLong( timeWritten );
     }
 
-    private void writeDone( int identifier, LogBuffer logBuffer ) throws IOException
+    @Override
+    public void writeCommandEntry( Command command ) throws IOException
     {
-        logBuffer.put( LogEntry.DONE ).putInt( identifier );
+        writeLogEntryHeader( LogEntry.COMMAND );
+        command.accept( commandWriter );
     }
 
-    private void writeStart( int identifier, Xid xid, int masterId, int myId, long timeWritten,
-                                   long latestCommittedTxWhenStarted, LogBuffer logBuffer )
-            throws IOException
+    @Override
+    public boolean visitNodeCommand( NodeCommand command ) throws IOException
     {
-        byte globalId[] = xid.getGlobalTransactionId();
-        byte branchId[] = xid.getBranchQualifier();
-        int formatId = xid.getFormatId();
-        logBuffer
-              .put( LogEntry.TX_START )
-              .put( (byte) globalId.length )
-              .put( (byte) branchId.length )
-              .put( globalId ).put( branchId )
-              .putInt( identifier )
-              .putInt( formatId )
-              .putInt( masterId )
-              .putInt( myId )
-              .putLong( timeWritten )
-              .putLong( latestCommittedTxWhenStarted );
+        writeCommandEntry( command );
+        return true;
     }
 
-    private void writeCommand( int identifier, XaCommand command, LogBuffer logBuffer )
-            throws IOException
+    @Override
+    public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
     {
-        logBuffer.put( LogEntry.COMMAND ).putInt( identifier );
-        commandWriter.write( command, logBuffer );
+        writeCommandEntry( command );
+        return true;
     }
 
-    private XaCommandWriter commandWriter;
-
-    public void setCommandWriter( XaCommandWriter commandWriter )
+    @Override
+    public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
     {
-        this.commandWriter = commandWriter;
+        writeCommandEntry( command );
+        return true;
+    }
+
+    @Override
+    public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
+    {
+        writeCommandEntry( command );
+        return true;
+    }
+
+    @Override
+    public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
+    {
+        writeCommandEntry( command );
+        return true;
+    }
+
+    @Override
+    public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
+    {
+        writeCommandEntry( command );
+        return true;
+    }
+
+    @Override
+    public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
+    {
+        writeCommandEntry( command );
+        return true;
+    }
+
+    @Override
+    public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+    {
+        writeCommandEntry( command );
+        return true;
+    }
+
+    @Override
+    public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
+    {
+        writeCommandEntry( command );
+        return true;
     }
 }

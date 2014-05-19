@@ -24,12 +24,10 @@ import java.util.Set;
 import org.junit.Test;
 import org.neo4j.graphdb.schema.IndexDefinition;
 import org.neo4j.kernel.api.SchemaWriteOperations;
-import org.neo4j.kernel.impl.core.Transactor;
 import org.neo4j.kernel.api.exceptions.schema.SchemaKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.integrationtest.KernelIntegrationTest;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
 
 import javax.transaction.TransactionManager;
 

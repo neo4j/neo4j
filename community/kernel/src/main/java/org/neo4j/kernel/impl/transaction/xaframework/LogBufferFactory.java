@@ -37,5 +37,4 @@ public interface LogBufferFactory
      * @return LogBuffer that wraps the log file. Caller MUST call LogBuffer.getFileChannel.close() when done.
      */
     LogBuffer createActiveLogFile( Config config, long prevCommittedId ) throws IllegalStateException, IOException;
-
 }

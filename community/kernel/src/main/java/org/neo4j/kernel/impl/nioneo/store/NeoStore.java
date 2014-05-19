@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.String.format;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -38,13 +36,15 @@ import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static java.lang.String.format;
+
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
  * PropertyStore and RelationshipTypeStore". NeoStore doesn't actually "store"
  * anything but extends the AbstractStore for the "type and version" validation
  * performed in there.
  */
-public class NeoStore extends AbstractStore
+public class NeoStore extends AbstractStore implements TransactionIdStore
 {
     public RelationshipTypeTokenStore getRelationshipTypeTokenStore()
     {
@@ -91,7 +91,8 @@ public class NeoStore extends AbstractStore
     private SchemaStore schemaStore;
     private RelationshipGroupStore relGroupStore;
     private final RemoteTxHook txHook;
-    private final AtomicLong lastCommittedTx = new AtomicLong( -1 );
+    private final AtomicLong lastCommittingTx = new AtomicLong( -1 );
+    private final AtomicLong lastAppliedTx = new AtomicLong( -1 );
     private final AtomicLong latestConstraintIntroducingTx = new AtomicLong( -1 );
 
     private final int REL_GRAB_SIZE;
@@ -209,7 +210,7 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    private void insertRecord( int recordPosition, long value ) throws IOException
+    private void insertRecord( int recordPosition, long value )
     {
         try
         {
@@ -293,6 +294,9 @@ public class NeoStore extends AbstractStore
         {
             return;
         }
+
+        setRecord( LATEST_TX_POSITION, lastCommittingTx.get() );
+
         super.flushAll();
         relTypeStore.flushAll();
         labelTokenStore.flushAll();
@@ -365,12 +369,12 @@ public class NeoStore extends AbstractStore
 
     public static long getStoreVersion( FileSystemAbstraction fs, File neoStore )
     {
-        return getRecord( fs, neoStore, 4 );
+        return getRecord( fs, neoStore, STORE_VERSION_POSITION );
     }
 
     public static long getTxId( FileSystemAbstraction fs, File neoStore )
     {
-        return getRecord( fs, neoStore, 3 );
+        return getRecord( fs, neoStore, LATEST_TX_POSITION );
     }
 
     private static long getRecord( FileSystemAbstraction fs, File neoStore, int recordPosition )
@@ -405,22 +409,22 @@ public class NeoStore extends AbstractStore
 
     public long getCreationTime()
     {
-        return getRecord( 0 );
+        return getRecord( TIME_POSITION );
     }
 
     public void setCreationTime( long time )
     {
-        setRecord( 0, time );
+        setRecord( TIME_POSITION, time );
     }
 
     public long getRandomNumber()
     {
-        return getRecord( 1 );
+        return getRecord( RANDOM_POSITION );
     }
 
     public void setRandomNumber( long nr )
     {
-        setRecord( 1, nr );
+        setRecord( RANDOM_POSITION, nr );
     }
 
     public void setRecoveredStatus( boolean status )
@@ -449,41 +453,43 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    public long getVersion()
+    @Override
+    public long getCurrentLogVersion()
     {
         return getRecord( 2 );
     }
 
-    public void setVersion( long version )
+    @Override
+    public void setCurrentLogVersion( long version )
     {
         setRecord( 2, version );
     }
 
-    public synchronized void setLastCommittedTx( long txId )
-    {
-        long current = getLastCommittedTx();
-        if ( (current + 1) != txId && !isInRecoveryMode() )
-        {
-            throw new InvalidRecordException( "Could not set tx commit id[" +
-                txId + "] since the current one is[" + current + "]" );
-        }
-        setRecord( 3, txId );
-        lastCommittedTx.set( txId );
-    }
-
-    public long getLastCommittedTx()
-    {
-        long txId = lastCommittedTx.get();
-        if ( txId == -1 )
-        {
-            synchronized ( this )
-            {
-                txId = getRecord( 3 );
-                lastCommittedTx.compareAndSet( -1, txId ); // CAS since multiple threads may pass the if check above
-            }
-        }
-        return txId;
-    }
+//    public synchronized void setLastCommittedTx( long txId )
+//    {
+//        long current = getLastCommittedTx();
+//        if ( (current + 1) != txId && !isInRecoveryMode() )
+//        {
+//            throw new InvalidRecordException( "Could not set tx commit id[" +
+//                txId + "] since the current one is[" + current + "]" );
+//        }
+//        setRecord( 3, txId );
+//        lastCommittedTx.set( txId );
+//    }
+//
+//    public long getLastCommittedTx()
+//    {
+//        long txId = lastCommittedTx.get();
+//        if ( txId == -1 )
+//        {
+//            synchronized ( this )
+//            {
+//                txId = getRecord( 3 );
+//                lastCommittedTx.compareAndSet( -1, txId ); // CAS since multiple threads may pass the if check above
+//            }
+//        }
+//        return txId;
+//    }
 
     public long getLatestConstraintIntroducingTx()
     {
@@ -505,10 +511,11 @@ public class NeoStore extends AbstractStore
         this.latestConstraintIntroducingTx.set( latestConstraintIntroducingTx );
     }
 
-    public long incrementVersion()
+    @Override
+    public long nextLogVersion()
     {
-        long current = getVersion();
-        setVersion( current + 1 );
+        long current = getCurrentLogVersion();
+        setCurrentLogVersion( current + 1 );
         return current;
     }
 
@@ -806,7 +813,7 @@ public class NeoStore extends AbstractStore
         if ( length == 0 || length > 7 )
         {
             throw new IllegalArgumentException( String.format(
-                    "The read in version string length %d is not proper.",
+                    "The read version string length %d is not proper.",
                     length ) );
         }
         char[] result = new char[length];
@@ -820,5 +827,41 @@ public class NeoStore extends AbstractStore
     public int getDenseNodeThreshold()
     {
         return getRelationshipGroupStore().getDenseNodeThreshold();
+    }
+
+    @Override
+    public long nextCommittingTransactionId()
+    {
+        long txId = lastCommittingTx.get();
+        if ( txId == -1 )
+        {
+            synchronized ( this )
+            {
+                txId = getRecord( LATEST_TX_POSITION );
+                lastCommittingTx.compareAndSet( -1, txId ); // CAS since multiple threads may pass the if check above
+            }
+        }
+
+        return lastCommittingTx.incrementAndGet();
+    }
+
+    @Override
+    public long getLastCommittingTransactionId()
+    {
+        return lastCommittingTx.get();
+    }
+
+    @Override
+    public void transactionIdApplied( long transactionId )
+    {
+        // For now just assert that transactions are applied in order
+        boolean set = lastAppliedTx.compareAndSet( transactionId-1, transactionId );
+        assert set;
+    }
+
+    @Override
+    public boolean appliedTransactionIsOnParWithCommittingTransactionId()
+    {
+        return lastAppliedTx.get() == lastCommittingTx.get();
     }
 }

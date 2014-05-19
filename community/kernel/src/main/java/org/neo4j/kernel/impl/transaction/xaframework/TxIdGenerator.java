@@ -19,67 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import javax.transaction.xa.XAException;
-
+/**
+ * Generates transaction ids.
+ */
 public interface TxIdGenerator
 {
-    TxIdGenerator DEFAULT = new TxIdGenerator()
-    {
-        public long generate( XaDataSource dataSource, int identifier ) throws XAException
-        {
-            return dataSource.getLastCommittedTxId() + 1;
-        }
-        
-        public int getCurrentMasterId()
-        {
-            return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
-        }
-        
-        public int getMyId()
-        {
-            return XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
-        }
-
-        @Override
-        public void committed( XaDataSource dataSource, int identifier, long txId, Integer externalAuthor )
-        {
-        }
-    };
-    
     /**
      * Generates a transaction id to use for the committing transaction.
+     * TODO ideally {@link TransactionRepresentation} shouldn't have to be passed in here, but in order to
+     * comply with the current HA architecture where, in the slave case, the transaction gets sent over to
+     * the master and transaction id generated there.
      *
-     * @param dataSource {@link org.neo4j.kernel.impl.transaction.xaframework.XaDataSource} to commit.
      * @param identifier temporary transaction identifier.
      * @return transaction id to use to commit the next transaction for
      * this {@code dataSource}.
      */
-    long generate( final XaDataSource dataSource, final int identifier ) throws XAException;
-    
-    /**
-     * Hook which gets called when a transaction has been committed, but before
-     * returning from commit methods.
-     * @param dataSource {@link XaDataSource} which committed the transaction.
-     * @param identifier temporary identifier for the committed transaction.
-     * @param txId the transaction id used for this committed transaction.
-     * @param externalAuthorServerId if this transaction was authored by an
-     * external server exclude it as push target for this transaction.
-     * {@code null} means authored by this server.
-     */
-    void committed( XaDataSource dataSource, int identifier, long txId, Integer externalAuthorServerId );
-    
-    /**
-     * Returns the id of the current master. For single instance case it's
-     * {@code -1}, but in multi instance scenario it returns the id
-     * of the current master instance.
-     * @return id of the current master.
-     */
-    int getCurrentMasterId();
-
-    /**
-     * Returns the id of my database instance. In a single instance scenario
-     * {@code -1} will be returned. 
-     * @return my database instance id.
-     */
-    int getMyId();
+    long generate( TransactionRepresentation transaction );
 }
