@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{Doc, DocGenerator, RecursiveDocGenerator, NestedDocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
 import scala.annotation.tailrec
 
-case object plannerQueryDocGenerator extends NestedDocGenerator[Any] {
+case object plannerQueryDocGenerator extends DocBuilder[Any] {
 
   import Doc._
 
-  val instance: RecursiveDocGenerator[Any] = {
+  val nested: NestedDocGenerator[Any] = {
     case plannerQuery: PlannerQuery => (inner: DocGenerator[Any]) =>
       val allQueryDocs = queryDocs(inner, Some(plannerQuery), List.empty)
       group(breakList(allQueryDocs))
@@ -44,7 +44,7 @@ case object plannerQueryDocGenerator extends NestedDocGenerator[Any] {
   private def queryDoc(inner: DocGenerator[Any], query: PlannerQuery) = {
     val graphDoc = inner(query.graph)
     val projectionPrefix = query.tail.map(_ => "WITH").getOrElse("RETURN")
-    val projectionDoc = queryProjectionDocGenerator(projectionPrefix)(query.projection)(inner)
+    val projectionDoc = queryProjectionDocBuilder(projectionPrefix).nested(query.projection)(inner)
     group(graphDoc :/: projectionDoc)
   }
 }

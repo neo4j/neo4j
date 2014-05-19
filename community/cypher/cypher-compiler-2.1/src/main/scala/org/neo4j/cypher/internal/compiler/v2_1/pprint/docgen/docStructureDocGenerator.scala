@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.quoteString
 
-case object docStructureDocGenerator extends NestedDocGenerator[Doc] {
+case object docStructureDocGenerator extends DocBuilder[Doc] {
 
   import Doc._
 
-  protected val instance: RecursiveDocGenerator[Doc] = {
+  val nested: NestedDocGenerator[Doc] = {
     case ConsDoc(hd, tl)       => (inner) => inner(hd) :: "·" :: inner(tl)
     case NilDoc                => (inner) => "ø"
 

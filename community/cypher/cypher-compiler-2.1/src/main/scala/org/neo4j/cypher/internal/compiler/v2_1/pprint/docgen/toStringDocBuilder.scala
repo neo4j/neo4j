@@ -20,14 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.Doc._
 
-case object astDocGenerator extends NestedDocGenerator[Any] {
-
-  import Doc._
-
-  protected val instance: RecursiveDocGenerator[Any] = {
-    case relTypeName: RelTypeName => (inner) =>
-      text(relTypeName.name)
+case object toStringDocBuilder extends DocBuilder[Any] {
+  val nested: NestedDocGenerator[Any] = {
+    case v: Any => (_) => if (v == null) "null" else v.toString
   }
 }

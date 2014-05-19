@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
-case object queryGraphDocGenerator extends NestedDocGenerator[Any] {
+case object queryGraphDocBuilder extends DocBuilder[Any] {
 
   import Doc._
 
-  protected val instance: RecursiveDocGenerator[Any] = {
+  val nested: NestedDocGenerator[Any] = {
     case qg: QueryGraph => (inner) =>
       val args = section("GIVEN", "*" :?: sepList(qg.argumentIds.map(inner)))
       val patterns = section("MATCH", sepList(

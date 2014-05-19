@@ -25,22 +25,22 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, Predicate}
 
-case object plannerDocGenerator extends NestedDocGenerator[Any] {
+case object plannerDocBuilder extends DocBuilder[Any] {
 
   import Doc._
 
-  val forNestedIdName: RecursiveDocGenerator[Any] = {
+  val forNestedIdName: NestedDocGenerator[Any] = {
     case idName: IdName => (inner) =>
       text(idName.name)
   }
 
-  val forNestedPatternLength: RecursiveDocGenerator[Any] = {
+  val forNestedPatternLength: NestedDocGenerator[Any] = {
     case VarPatternLength(min, None)      => (inner) => text(s"*${min.toString}..")
     case VarPatternLength(min, Some(max)) => (inner) => text(s"*${min.toString}..${max.toString}")
     case SimplePatternLength              => (inner) => nil
   }
 
-  val forNestedPatternRelationship: RecursiveDocGenerator[Any] = {
+  val forNestedPatternRelationship: NestedDocGenerator[Any] = {
     case patRel: PatternRelationship => (inner) =>
       val leftEnd = if (patRel.dir == Direction.INCOMING) "<-[" else "-["
       val rightEnd = if (patRel.dir == Direction.OUTGOING) "]->" else "]-"
@@ -54,7 +54,7 @@ case object plannerDocGenerator extends NestedDocGenerator[Any] {
       )
   }
 
-  val forNestedPredicate: RecursiveDocGenerator[Any] = {
+  val forNestedPredicate: NestedDocGenerator[Any] = {
     case Predicate(dependencies, expr) => (inner) =>
 
       val pred = sepList(dependencies.map(inner))
@@ -62,7 +62,7 @@ case object plannerDocGenerator extends NestedDocGenerator[Any] {
       block(predBlock)(inner(expr))
   }
 
-  val forNestedSelections: RecursiveDocGenerator[Any] = {
+  val forNestedSelections: NestedDocGenerator[Any] = {
     case Selections(predicates) => (inner) =>
       sepList(predicates.map(inner).toList)
   }
@@ -72,13 +72,13 @@ case object plannerDocGenerator extends NestedDocGenerator[Any] {
     case (hd, tail)   => ":" :: hd :: "|" :: tail
   }
 
-  protected val instance =
+  val nested =
     forNestedIdName orElse
     forNestedPatternLength orElse
     forNestedPatternRelationship orElse
     forNestedPredicate orElse
     forNestedSelections orElse
-    queryProjectionDocGenerator("WITH") orElse
-    queryGraphDocGenerator orElse
-    plannerQueryDocGenerator
+    queryProjectionDocBuilder("WITH").nested orElse
+    queryGraphDocBuilder.nested orElse
+    plannerQueryDocGenerator.nested
 }

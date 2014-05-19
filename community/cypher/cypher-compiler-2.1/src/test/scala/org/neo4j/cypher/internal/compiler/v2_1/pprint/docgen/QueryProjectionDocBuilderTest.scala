@@ -20,13 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{DescSortItem, AscSortItem, SignedIntegerLiteral}
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.NestedDocGenerator
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.DocBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryProjection
 
-class QueryProjectionDocGeneratorTest extends NestedDocGeneratorTest[Any] {
+class QueryProjectionDocBuilderTest extends DocBuilderTest[Any] {
 
-  object nestedDocGen extends NestedDocGenerator[Any] {
-    val instance = queryProjectionDocGenerator("WITH") orElse plannerDocGenerator orElse scalaDocGenerator orElse toStringDocGenerator
+  object docBuilder extends DocBuilder[Any] {
+    val nested = queryProjectionDocBuilder("WITH").nested orElse plannerDocBuilder.nested orElse scalaDocBuilder.nested orElse toStringDocBuilder.nested
   }
 
   test("renders star projections") {

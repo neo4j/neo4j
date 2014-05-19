@@ -17,25 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{Doc, RecursiveDocGenerator, NestedDocGenerator}
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
+import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
+import scala.reflect.ClassTag
 
-case object astExpressionDocGenerator extends NestedDocGenerator[Any] {
+abstract class DocBuilder[T: ClassTag] {
+  self =>
 
-  import Doc._
+  val nested: NestedDocGenerator[T]
+  def docGen: DocGenerator[T] = PartialFunctionSupport.fix(nested)
 
-  protected val instance: RecursiveDocGenerator[Any] = {
-    case Identifier(name) => (inner) =>
-      text(name)
-
-    case (Equals(left, right)) => (inner) =>
-      inner(left) :/: "=" :/: inner(right)
-
-    case (Property(map, PropertyKeyName(name))) => (inner) =>
-      inner(map) :: "." :: name
+  def uplifted[S >: T: ClassTag]: DocBuilder[S] = new DocBuilder[S] {
+    val nested: NestedDocGenerator[S] = PartialFunctionSupport.uplift[T, DocGenerator[T] => Doc, S](self.nested)
   }
 }
+
+
+

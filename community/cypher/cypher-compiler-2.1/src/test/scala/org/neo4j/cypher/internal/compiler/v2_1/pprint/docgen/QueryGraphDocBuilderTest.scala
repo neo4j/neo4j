@@ -27,15 +27,15 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
 import org.neo4j.graphdb.Direction
 
-class QueryGraphDocGeneratorTest extends NestedDocGeneratorTest[Any] {
+class QueryGraphDocBuilderTest extends DocBuilderTest[Any] {
 
-  object nestedDocGen extends NestedDocGenerator[Any] {
-    val instance =
-      queryGraphDocGenerator orElse
-      astDocGenerator orElse
-      plannerDocGenerator orElse
-      scalaDocGenerator orElse
-      toStringDocGenerator
+  object docBuilder extends DocBuilder[Any] {
+    val nested =
+      queryGraphDocBuilder.nested orElse
+      astDocBuilder.nested orElse
+      plannerDocBuilder.nested orElse
+      scalaDocBuilder.nested orElse
+      toStringDocBuilder.nested
   }
 
   private val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(), SimplePatternLength)

@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import scala.collection.mutable
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.defaultDocGenerator
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.defaultDocBuilder
 
 class DefaultDocGeneratorTest extends CypherFunSuite {
 
-  val docGen = defaultDocGenerator.docGen
+  val docGen = defaultDocBuilder.docGen
 
   import Doc._
 

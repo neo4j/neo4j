@@ -19,13 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint._
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.Doc._
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.DocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, PropertyKeyName, Property, Equals}
 
-case object toStringDocGenerator extends SimpleRecursiveDocGenerator[Any] {
+class AstExpressionDocBuilderTest extends DocBuilderTest[Any] {
 
-  def isDefinedAt(v: Any) = true
+  object docBuilder extends DocBuilder[Any] {
+    val nested = astExpressionDocBuilder.nested orElse simpleDocBuilder.nested
+  }
 
-  def apply(v: Any) =
-   (_: DocGenerator[Any]) => if (v == null) "null" else v.toString
+  test("Identifier(\"a\") => a") {
+    format(ident("a")) should equal("a")
+  }
+
+  test("Equals(left, right) => left = right") {
+    val expr: Expression = Equals(ident("a"), ident("b"))_
+    format(expr) should equal("a = b")
+  }
+
+  test("Property(map, name) => map.name") {
+    val expr: Expression = Property(ident("a"), PropertyKeyName("name")_)_
+    format(expr) should equal("a.name")
+  }
 }
