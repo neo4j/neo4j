@@ -26,7 +26,6 @@ import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 
 import static java.lang.Math.max;
-
 import static org.neo4j.kernel.impl.util.FileUtils.truncateFile;
 
 /**

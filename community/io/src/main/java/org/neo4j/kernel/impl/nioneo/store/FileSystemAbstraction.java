@@ -27,7 +27,7 @@ import java.io.Reader;
 import java.io.Writer;
 import java.util.zip.ZipOutputStream;
 
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 
 public interface FileSystemAbstraction
 {

@@ -33,7 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 @Deprecated
 public class StoreLocker
 {
-    public static final String STORE_LOCK_FILENAME = "store_lock";
+    public static final String STORE_LOCK_FILENAME = FileLock.STORE_LOCK_FILENAME;
 
     private final FileSystemAbstraction fileSystemAbstraction;
 

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
-import java.nio.channels.*;
+import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 public class AbstractStoreChannel implements StoreChannel

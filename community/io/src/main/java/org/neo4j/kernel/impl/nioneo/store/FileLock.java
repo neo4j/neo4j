@@ -25,11 +25,16 @@ import java.io.RandomAccessFile;
 import java.nio.channels.FileChannel;
 import java.nio.channels.OverlappingFileLockException;
 
-import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.StoreLocker;
+import org.neo4j.io.fs.RenameThis;
 
 public abstract class FileLock
 {
+    // This should not be here, see note in getOsSpecificFileLock.
+    public static final String STORE_LOCK_FILENAME = "store_lock";
+
+    // This should not be here, see note in getOsSpecificFileLock
+    public static final String NEO_STORE_NAME = "neostore";
+
     private static FileLock wrapFileChannelLock( StoreChannel channel ) throws IOException
     {
         final java.nio.channels.FileLock lock = channel.tryLock();
@@ -51,15 +56,18 @@ public abstract class FileLock
     public static FileLock getOsSpecificFileLock( File fileName, StoreChannel channel )
             throws IOException
     {
-        if ( Settings.osIsWindows() )
+        if ( RenameThis.osIsWindows() )
         {
+            // TODO: This code should not be here. It is file-specific, and the logic here should
+            // be handled in the StoreLocker.
+
             /*
              * We need to grab only one lock for the whole store. Even though every store will try to grab one
              * we will honor only the top level, dedicated store lock. This has the benefit that older versions of
              * Neo4j that do not have a dedicated locker still lock on the parent file of neostore so this will still
              * block when new instances are started on top of in use older stores and vice versa.
              */
-            if ( fileName.getName().equals( StoreLocker.STORE_LOCK_FILENAME ) )
+            if ( fileName.getName().equals( STORE_LOCK_FILENAME ) )
             {
                 return getLockFileBasedFileLock( fileName.getParentFile() );
             }
@@ -67,7 +75,7 @@ public abstract class FileLock
             // For the rest just return placebo locks
             return new PlaceboFileLock();
         }
-        else if ( fileName.getName().equals( NeoStore.DEFAULT_NAME ) )
+        else if ( fileName.getName().equals( NEO_STORE_NAME ) )
         {
             // Lock the file
             FileLock regular = wrapFileChannelLock( channel );

@@ -17,18 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.function;
 
 /**
  * Generic function interface with 2 input parameters.
- *
- * This is deprecated, use {@link org.neo4j.function.Function2} instead.
  *
  * @param <T1>
  * @param <T2>
  * @param <R>
  */
-@Deprecated
-public interface Function2<T1, T2, R> extends org.neo4j.function.Function2<T1, T2, R>
+public interface Function2<T1, T2, R>
 {
+    /**
+     * Map a single item from one type to another
+     *
+     * @param from1 the first input item
+     * @param from2 the second input item
+     * @return the mapped item
+     */
+    R apply( T1 from1, T2 from2 );
 }

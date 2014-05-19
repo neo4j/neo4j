@@ -41,7 +41,7 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
-import org.neo4j.graphdb.NotFoundException;
+import org.neo4j.io.fs.RenameThis;
 
 public class FileUtils
 {
@@ -110,12 +110,12 @@ public class FileUtils
     {
         if ( !toMove.exists() )
         {
-            throw new NotFoundException( "Source file[" + toMove.getAbsolutePath()
+            throw new FileNotFoundException( "Source file[" + toMove.getAbsolutePath()
                     + "] not found" );
         }
         if ( target.exists() )
         {
-            throw new NotFoundException( "Target file[" + target.getAbsolutePath()
+            throw new FileNotFoundException( "Target file[" + target.getAbsolutePath()
                     + "] already exists" );
         }
 
@@ -161,19 +161,19 @@ public class FileUtils
         return target;
     }
 
-    public static boolean renameFile( File srcFile, File renameToFile )
+    public static boolean renameFile( File srcFile, File renameToFile ) throws IOException
     {
         if ( !srcFile.exists() )
         {
-            throw new NotFoundException( "Source file[" + srcFile.getName() + "] not found" );
+            throw new FileNotFoundException( "Source file[" + srcFile.getName() + "] not found" );
         }
         if ( renameToFile.exists() )
         {
-            throw new NotFoundException( "Target file[" + renameToFile.getName() + "] already exists" );
+            throw new FileNotFoundException( "Target file[" + renameToFile.getName() + "] already exists" );
         }
         if ( !renameToFile.getParentFile().isDirectory() )
         {
-            throw new NotFoundException( "Target directory[" + renameToFile.getParent() + "] does not exists" );
+            throw new FileNotFoundException( "Target directory[" + renameToFile.getParent() + "] does not exists" );
         }
         int count = 0;
         boolean renamed;
@@ -454,7 +454,7 @@ public class FileUtils
         }
         catch ( IOException e )
         {
-            if ( SystemUtils.isOsWindows() && mayBeWindowsMemoryMappedFileReleaseProblem( e ) )
+            if ( RenameThis.osIsWindows() && mayBeWindowsMemoryMappedFileReleaseProblem( e ) )
             {
                 if ( tries >= WINDOWS_RETRY_COUNT )
                 {

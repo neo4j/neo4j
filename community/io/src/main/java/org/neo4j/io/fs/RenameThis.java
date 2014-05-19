@@ -17,18 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.helpers;
+package org.neo4j.io.fs;
 
-/**
- * Generic function interface with 2 input parameters.
- *
- * This is deprecated, use {@link org.neo4j.function.Function2} instead.
- *
- * @param <T1>
- * @param <T2>
- * @param <R>
- */
-@Deprecated
-public interface Function2<T1, T2, R> extends org.neo4j.function.Function2<T1, T2, R>
+public class RenameThis
 {
+    public static boolean osIsWindows()
+    {
+        try {
+            String osName = System.getProperty( "os.name" );
+            return osName != null && osName.startsWith( "Windows" );
+        } catch (SecurityException ex) {
+            return false;
+        }
+    }
 }

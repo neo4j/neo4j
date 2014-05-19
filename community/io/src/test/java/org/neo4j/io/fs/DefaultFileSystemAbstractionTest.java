@@ -17,14 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
-
-import static java.lang.String.format;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.DefaultFileSystemAbstraction.UNABLE_TO_CREATE_DIRECTORY_FORMAT;
+package org.neo4j.io.fs;
 
 import java.io.File;
 import java.io.IOException;
@@ -32,6 +25,9 @@ import java.util.UUID;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.*;
 
 public class DefaultFileSystemAbstractionTest
 {
@@ -106,7 +102,8 @@ public class DefaultFileSystemAbstractionTest
         catch ( IOException e )
         {
             assertThat( path.exists(), is( false ) );
-            assertThat( e.getMessage(), is( format( UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) ) );
+            assertThat( e.getMessage(), is( String.format( DefaultFileSystemAbstraction
+                    .UNABLE_TO_CREATE_DIRECTORY_FORMAT, path ) ) );
         }
     }
 }
