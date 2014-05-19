@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.LineDocFormatter
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.docStructureDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders.docStructureDocBuilder
 import scala.text.{DocBreak, DocText, DocCons, Document}
 
 /**

@@ -17,12 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{DocBuilder, DocGenerator}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{DocGenerator, DocFormatters, pformat}
 
-abstract class DocBuilderTestSuite[T] extends DocGeneratorTestSuite[T] {
-  val docBuilder: DocBuilder[T]
+abstract class DocGeneratorTestSuite[T] extends CypherFunSuite with AstConstructionTestSupport {
+  def docGen: DocGenerator[T]
 
-  override def docGen: DocGenerator[T] = docBuilder.docGen
+  def format(value: T): String = pformat[T](value, formatter = DocFormatters.defaultLineFormatter)(docGen)
 }

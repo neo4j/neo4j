@@ -17,17 +17,31 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{SingleDocBuilder, DocBuilder, Doc, NestedDocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 
-case object astDocBuilder extends SingleDocBuilder[Any] {
+case object astExpressionDocBuilder extends SingleDocBuilder[Any] {
 
   import Doc._
 
   val nested: NestedDocGenerator[Any] = {
-    case relTypeName: RelTypeName => (inner) =>
-      text(relTypeName.name)
+    case Identifier(name) => (inner) =>
+      text(name)
+
+    case Equals(left, right) => (inner) =>
+      inner(left) :/: "=" :/: inner(right)
+
+    case Property(map, PropertyKeyName(name)) => (inner) =>
+      inner(map) :: "." :: name
+
+    case LabelName(name) => (inner) =>
+      ":" :: name
+
+    case HasLabels(expr, labels) => (inner) =>
+      inner(expr) :: breakBeforeList(labels.map(inner))
   }
 }

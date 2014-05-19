@@ -17,30 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.Doc._
 
-case object queryGraphDocBuilder extends SingleDocBuilder[Any] {
-
-  import Doc._
-
+case object toStringDocBuilder extends SingleDocBuilder[Any] {
   val nested: NestedDocGenerator[Any] = {
-    case qg: QueryGraph => (inner) =>
-      val args = section("GIVEN", "*" :?: sepList(qg.argumentIds.map(inner)))
-      val patterns = section("MATCH", sepList(
-        qg.patternNodes.map(id => "(" :: inner(id) :: ")") ++
-        qg.patternRelationships.map(inner)
-      ))
-
-      val optionalMatches = qg.optionalMatches.map(inner)
-      val optional =
-        if (optionalMatches.isEmpty) nil
-        else section("OPTIONAL", block("", open="{ ", close=" }")(sepList(optionalMatches)))
-
-      val where = section("WHERE", inner(qg.selections))
-
-      group(args :+: patterns :+: optional :+: where)
+    case v: Any => (_) => if (v == null) "null" else v.toString
   }
 }

@@ -70,13 +70,11 @@ abstract class DocBuilderChain[T: ClassTag] extends DocBuilder[T] {
     val nested = self.nested
   }
 
-  def prepend(builder: DocBuilder[T]) = SimpleDocBuilderChain[T](cons(builder): _*)
+  def prepend(builder: DocBuilder[T]) = SimpleDocBuilderChain[T](builder +: builders: _*)
 
   def append(builder: DocBuilder[T]) = appendAll(Seq(builder))
 
   def appendAll(others: Seq[DocBuilder[T]]) = SimpleDocBuilderChain[T](builders ++ others: _*)
-
-  private def cons(builder: DocBuilder[T]): Seq[DocBuilder[T]] = builder +: builders
 }
 
 case class SimpleDocBuilderChain[T: ClassTag](builders: DocBuilder[T]*) extends DocBuilderChain[T]
