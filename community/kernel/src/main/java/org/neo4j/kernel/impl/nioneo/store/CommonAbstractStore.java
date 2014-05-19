@@ -27,6 +27,9 @@ import java.nio.channels.OverlappingFileLockException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.io.fs.FileLock;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -34,13 +37,13 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
-import org.neo4j.kernel.impl.util.FileUtils.FileOperation;
+import org.neo4j.io.fs.FileUtils.FileOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.nio.ByteBuffer.wrap;
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.UTF8.encode;
-import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
+import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
 
 /**
  * Contains common implementation for {@link AbstractStore} and

@@ -25,6 +25,8 @@ import java.io.RandomAccessFile;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ResourceCollection;

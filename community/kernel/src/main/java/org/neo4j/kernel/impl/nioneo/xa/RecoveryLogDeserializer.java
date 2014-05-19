@@ -23,7 +23,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;

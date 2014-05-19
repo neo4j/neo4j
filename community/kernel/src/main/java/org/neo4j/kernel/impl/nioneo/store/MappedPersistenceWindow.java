@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel;
 
+import org.neo4j.io.fs.StoreChannel;
+
 /**
  * Persistence window using a {@link MappedByteBuffer} as underlying buffer.
  */

@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.StoreChannel;
+
 /**
  * PersistenRow only encapsulates one record in a store. It is used as a light-
  * weight window when no other (larger window) is found that encapsulates the

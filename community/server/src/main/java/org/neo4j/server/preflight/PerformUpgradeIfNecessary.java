@@ -26,7 +26,7 @@ import org.apache.commons.configuration.Configuration;
 
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.CurrentDatabase;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationTool;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;

@@ -22,6 +22,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.StoreChannel;
+
 abstract class AbstractPersistenceWindow extends LockableWindow
 {
     private final int recordSize;

@@ -41,7 +41,7 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
 import org.neo4j.test.EphemeralFileSystemRule;

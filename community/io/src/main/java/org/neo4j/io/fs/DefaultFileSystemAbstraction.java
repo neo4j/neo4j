@@ -35,11 +35,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.function.Function;
-import org.neo4j.kernel.impl.nioneo.store.FileLock;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
-import org.neo4j.kernel.impl.util.FileUtils;
 
 import static java.lang.String.format;
 

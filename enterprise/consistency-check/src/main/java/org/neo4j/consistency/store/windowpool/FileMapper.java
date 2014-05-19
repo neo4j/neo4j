@@ -21,7 +21,7 @@ package org.neo4j.consistency.store.windowpool;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.StoreChannel;
 
 import static java.nio.channels.FileChannel.MapMode.READ_ONLY;
 

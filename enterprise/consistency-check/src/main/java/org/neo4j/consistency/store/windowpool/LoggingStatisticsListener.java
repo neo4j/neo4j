@@ -25,7 +25,7 @@ import java.io.PrintWriter;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.kernel.impl.util.Charsets;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 
 public class LoggingStatisticsListener implements MappingStatisticsListener
 {

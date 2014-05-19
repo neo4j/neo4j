@@ -29,8 +29,8 @@ import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 
 import static java.lang.String.format;
 

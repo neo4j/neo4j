@@ -38,7 +38,7 @@ import static java.lang.System.getProperty;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.kernel.impl.util.FileUtils.truncateFile;
+import static org.neo4j.io.fs.FileUtils.truncateFile;
 import static org.neo4j.test.LogTestUtils.filterNeostoreLogicalLog;
 
 public class TestRecoveryNotHappening

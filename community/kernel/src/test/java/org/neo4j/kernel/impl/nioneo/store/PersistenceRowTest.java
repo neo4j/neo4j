@@ -29,6 +29,8 @@ import java.util.UUID;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.io.fs.StoreFileChannel;
+
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;

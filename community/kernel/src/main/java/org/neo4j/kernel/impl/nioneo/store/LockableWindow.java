@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.util.LinkedList;
 
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.locking.community.LockException;
 
 /**

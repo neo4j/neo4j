@@ -23,7 +23,7 @@ import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public enum BranchedDataPolicy

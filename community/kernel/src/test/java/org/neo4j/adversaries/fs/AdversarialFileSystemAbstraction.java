@@ -32,9 +32,9 @@ import org.neo4j.adversaries.Adversary;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.function.Function;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.FileLock;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.FileLock;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 
 /**
  * Used by the robustness suite to check for partial failures.

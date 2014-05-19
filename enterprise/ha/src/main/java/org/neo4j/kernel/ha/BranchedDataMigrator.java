@@ -22,7 +22,7 @@ package org.neo4j.kernel.ha;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class BranchedDataMigrator extends LifecycleAdapter

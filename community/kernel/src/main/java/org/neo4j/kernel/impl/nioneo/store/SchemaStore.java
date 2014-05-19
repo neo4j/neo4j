@@ -26,6 +26,7 @@ import java.util.Collection;
 import java.util.Iterator;
 
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;

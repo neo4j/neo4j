@@ -23,9 +23,9 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.channels.OverlappingFileLockException;
 
-import org.neo4j.kernel.impl.nioneo.store.FileLock;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.FileLock;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 
 /**
  * @deprecated This will be moved to internal packages in the next major release.

@@ -27,7 +27,7 @@ import org.junit.Test;
 
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertFalse;

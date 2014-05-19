@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;

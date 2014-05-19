@@ -22,7 +22,7 @@ package org.neo4j.kernel.info;
 import static java.net.NetworkInterface.getNetworkInterfaces;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
-import static org.neo4j.kernel.impl.util.FileUtils.newBufferedFileReader;
+import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
 
 import java.io.BufferedReader;
 import java.io.File;

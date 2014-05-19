@@ -21,6 +21,8 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.StoreChannel;
+
 class PlainPersistenceWindow extends AbstractPersistenceWindow
 {
     PlainPersistenceWindow( long position, int recordSize, int totalSize, 
