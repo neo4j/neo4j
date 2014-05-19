@@ -197,7 +197,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
 
     // then
     graph.txCounts-initialTxCounts should equal(TxCounts(commits = 11))
-    result.executionPlanDescription().asJava should not equal(null)
+    result.executionPlanDescription().asJava should not equal null
     result.queryStatistics().containsUpdates should equal(true)
     result.queryStatistics().nodesCreated should equal(100)
   }
@@ -225,7 +225,7 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result
   }
 
-  private def getArgument[A <: Argument](plan: v2_1.PlanDescription)(implicit manifest: Manifest[A]): Argument = plan.arguments.collectFirst {
+  private def getArgument[A <: Argument](plan: v2_1.PlanDescription)(implicit manifest: Manifest[A]): A = plan.arguments.collectFirst {
     case x: A => x
   }.getOrElse(fail(s"Failed to find plan description argument where expected. Wanted ${manifest.toString} but only found ${plan.arguments}"))
 
