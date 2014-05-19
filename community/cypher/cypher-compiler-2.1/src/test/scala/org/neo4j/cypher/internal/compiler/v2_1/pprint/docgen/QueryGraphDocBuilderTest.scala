@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{VarPatternLength, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{HasLabels, LabelName, RelTypeName}
@@ -27,16 +26,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
 import org.neo4j.graphdb.Direction
 
-class QueryGraphDocBuilderTest extends DocBuilderTest[Any] {
+class QueryGraphDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  object docBuilder extends DocBuilder[Any] {
-    val nested =
-      queryGraphDocBuilder.nested orElse
-      astDocBuilder.nested orElse
-      plannerDocBuilder.nested orElse
-      scalaDocBuilder.nested orElse
-      toStringDocBuilder.nested
-  }
+  val docBuilder =
+      queryGraphDocBuilder orElse
+      astDocBuilder orElse
+      plannerDocBuilder orElse
+      scalaDocBuilder orElse
+      toStringDocBuilder
 
   private val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(), SimplePatternLength)
   private val rel2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.INCOMING, Seq(RelTypeName("X")(null)), SimplePatternLength)

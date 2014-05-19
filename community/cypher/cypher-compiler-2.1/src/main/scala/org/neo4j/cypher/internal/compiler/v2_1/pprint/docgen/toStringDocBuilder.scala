@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.Doc._
 
-case object toStringDocBuilder extends DocBuilder[Any] {
+case object toStringDocBuilder extends SingleDocBuilder[Any] {
   val nested: NestedDocGenerator[Any] = {
     case v: Any => (_) => if (v == null) "null" else v.toString
   }

@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{DocGenerator, NestedDocGenerator, NestedDocGenerator, Doc}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{NestedDocGenerator, Doc}
 import scala.reflect.ClassTag
 
 case class catchNotImplemented[T: ClassTag](instance: NestedDocGenerator[T]) extends NestedDocGenerator[T] {

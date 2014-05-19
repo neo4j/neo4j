@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.LineDocFormatter
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.docStructureDocGenerator
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.docStructureDocBuilder
 import scala.text.{DocBreak, DocText, DocCons, Document}
 
 /**
@@ -34,7 +34,7 @@ sealed abstract class Doc {
 
   import Doc._
 
-  override def toString = pformat(this, formatter = LineDocFormatter)(docStructureDocGenerator.docGen)
+  override def toString = pformat(this, formatter = LineDocFormatter)(docStructureDocBuilder.docGen)
 
   def ::(hd: Doc): Doc = cons(hd, this)
   def :/:(hd: Doc): Doc = cons(hd, cons(breakHere, this))
@@ -162,7 +162,7 @@ final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
 
 final case class DocLiteral(doc: Doc) {
   override def toString =
-    pformat(doc, formatter = DocFormatters.defaultLineFormatter)(docStructureDocGenerator.docGen)
+    pformat(doc, formatter = DocFormatters.defaultLineFormatter)(docStructureDocBuilder.docGen)
 }
 
 

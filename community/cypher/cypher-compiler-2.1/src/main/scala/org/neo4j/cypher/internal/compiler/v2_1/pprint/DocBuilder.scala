@@ -22,16 +22,61 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint
 import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
 import scala.reflect.ClassTag
 
-abstract class DocBuilder[T: ClassTag] {
+sealed abstract class DocBuilder[T: ClassTag] {
   self =>
 
-  val nested: NestedDocGenerator[T]
-  def docGen: DocGenerator[T] = PartialFunctionSupport.fix(nested)
+  import DocBuilder.asDocBuilder
 
-  def uplifted[S >: T: ClassTag]: DocBuilder[S] = new DocBuilder[S] {
-    val nested: NestedDocGenerator[S] = PartialFunctionSupport.uplift[T, DocGenerator[T] => Doc, S](self.nested)
+  def nested: NestedDocGenerator[T]
+  final def docGen: DocGenerator[T] = PartialFunctionSupport.fix(nested)
+
+  def orElse(other: DocBuilder[T]): DocBuilderChain[T] = other match {
+    case others: DocBuilderChain[T] => others.prepend(self)
+    case _                          => SimpleDocBuilderChain(self, other)
   }
+
+  final def uplifted[S >: T: ClassTag]: DocBuilder[S] =
+    asDocBuilder[S](PartialFunctionSupport.uplift[T, DocGenerator[T] => Doc, S](self.nested))
 }
 
+object DocBuilder {
+  implicit def asDocBuilder[T: ClassTag](nestedDocGen: NestedDocGenerator[T]): SingleDocBuilder[T] =
+    new SingleDocBuilder[T] {
+      val nested = nestedDocGen
+    }
+}
 
+abstract class SingleDocBuilder[T: ClassTag] extends DocBuilder[T] {
+  override val nested: NestedDocGenerator[T]
+}
 
+abstract class DocBuilderChain[T: ClassTag] extends DocBuilder[T] {
+  self =>
+
+  def builders: Seq[DocBuilder[T]]
+
+  def nested: NestedDocGenerator[T] =
+    builders
+      .map(_.nested)
+      .reduceLeftOption(_ orElse _)
+      .getOrElse(PartialFunction.empty)
+
+  override def orElse(other: DocBuilder[T]): DocBuilderChain[T] = other match {
+    case chain: DocBuilderChain[T] => appendAll(chain.builders)
+    case _                         => append(other)
+  }
+
+  def flatten = new SingleDocBuilder[T] {
+    val nested = self.nested
+  }
+
+  def prepend(builder: DocBuilder[T]) = SimpleDocBuilderChain[T](cons(builder): _*)
+
+  def append(builder: DocBuilder[T]) = appendAll(Seq(builder))
+
+  def appendAll(others: Seq[DocBuilder[T]]) = SimpleDocBuilderChain[T](builders ++ others: _*)
+
+  private def cons(builder: DocBuilder[T]): Seq[DocBuilder[T]] = builder +: builders
+}
+
+case class SimpleDocBuilderChain[T: ClassTag](builders: DocBuilder[T]*) extends DocBuilderChain[T]

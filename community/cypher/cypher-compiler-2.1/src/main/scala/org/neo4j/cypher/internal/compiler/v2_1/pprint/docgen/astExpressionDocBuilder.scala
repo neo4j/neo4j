@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{DocBuilder, Doc, NestedDocGenerator, NestedDocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{SingleDocBuilder, DocBuilder, Doc, NestedDocGenerator}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 
-case object astExpressionDocBuilder extends DocBuilder[Any] {
+case object astExpressionDocBuilder extends SingleDocBuilder[Any] {
 
   import Doc._
 

@@ -20,14 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{DescSortItem, AscSortItem, SignedIntegerLiteral}
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.DocBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryProjection
 
-class QueryProjectionDocBuilderTest extends DocBuilderTest[Any] {
+class QueryProjectionDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  object docBuilder extends DocBuilder[Any] {
-    val nested = queryProjectionDocBuilder("WITH").nested orElse plannerDocBuilder.nested orElse scalaDocBuilder.nested orElse toStringDocBuilder.nested
-  }
+  val docBuilder =
+    queryProjectionDocBuilder("WITH") orElse
+    plannerDocBuilder orElse
+    scalaDocBuilder orElse
+    toStringDocBuilder
 
   test("renders star projections") {
     format(QueryProjection.empty) should equal("WITH *")

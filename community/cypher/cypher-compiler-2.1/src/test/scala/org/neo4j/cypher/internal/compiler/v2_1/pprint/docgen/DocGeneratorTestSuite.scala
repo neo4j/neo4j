@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{DocBuilder, DocGenerator}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{DocGenerator, DocFormatters, pformat}
 
-abstract class DocBuilderTest[T] extends DocGeneratorTest[T] {
-  val docBuilder: DocBuilder[T]
+abstract class DocGeneratorTestSuite[T] extends CypherFunSuite with AstConstructionTestSupport {
+  def docGen: DocGenerator[T]
 
-  override val docGen: DocGenerator[T] = docBuilder.docGen
+  def format(value: T): String = pformat[T](value, formatter = DocFormatters.defaultLineFormatter)(docGen)
 }

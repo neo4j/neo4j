@@ -19,16 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.DocBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryProjection, QueryGraph, PlannerQueryImpl}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 
-class PlannerQueryDocBuilderTest extends DocBuilderTest[Any] {
+class PlannerQueryDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  object docBuilder extends DocBuilder[Any] {
-    val nested = plannerQueryDocGenerator.nested orElse plannerDocBuilder.nested orElse scalaDocBuilder.nested orElse toStringDocBuilder.nested
-  }
+  val docBuilder = plannerQueryDocBuilder orElse plannerDocBuilder orElse scalaDocBuilder orElse toStringDocBuilder
 
   test("renders tail free empty planner query") {
     format(PlannerQueryImpl(

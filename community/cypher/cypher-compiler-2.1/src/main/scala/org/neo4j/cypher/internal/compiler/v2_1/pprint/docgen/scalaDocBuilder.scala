@@ -24,7 +24,7 @@ import scala.collection.immutable
 import scala.collection.mutable
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.{quoteString, quoteChar}
 
-case object scalaDocBuilder extends DocBuilder[Any] {
+case object scalaDocBuilder extends SingleDocBuilder[Any] {
 
   import Doc._
 

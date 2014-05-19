@@ -21,10 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 
-case object simpleDocBuilder extends DocBuilder[Any] {
-  val nested: NestedDocGenerator[Any] = catchNotImplemented(
-    docStructureDocGenerator.uplifted[Any].nested orElse
-    scalaDocBuilder.nested orElse
-    toStringDocBuilder.nested
+case object simpleDocBuilder extends DocBuilderChain[Any] {
+
+  override val nested = catchNotImplemented(super.nested)
+
+  def builders = Seq(
+    docStructureDocBuilder.uplifted[Any],
+    scalaDocBuilder,
+    toStringDocBuilder
   )
 }

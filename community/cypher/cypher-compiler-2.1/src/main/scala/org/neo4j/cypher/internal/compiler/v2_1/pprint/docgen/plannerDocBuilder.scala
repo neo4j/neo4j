@@ -25,22 +25,23 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, Predicate}
 
-case object plannerDocBuilder extends DocBuilder[Any] {
+case object plannerDocBuilder extends DocBuilderChain[Any] {
 
   import Doc._
+  import DocBuilder._
 
-  val forNestedIdName: NestedDocGenerator[Any] = {
+  val forNestedIdName = asDocBuilder[Any] {
     case idName: IdName => (inner) =>
       text(idName.name)
   }
 
-  val forNestedPatternLength: NestedDocGenerator[Any] = {
+  val forNestedPatternLength = asDocBuilder[Any] {
     case VarPatternLength(min, None)      => (inner) => text(s"*${min.toString}..")
     case VarPatternLength(min, Some(max)) => (inner) => text(s"*${min.toString}..${max.toString}")
     case SimplePatternLength              => (inner) => nil
   }
 
-  val forNestedPatternRelationship: NestedDocGenerator[Any] = {
+  val forNestedPatternRelationship = asDocBuilder[Any] {
     case patRel: PatternRelationship => (inner) =>
       val leftEnd = if (patRel.dir == Direction.INCOMING) "<-[" else "-["
       val rightEnd = if (patRel.dir == Direction.OUTGOING) "]->" else "]-"
@@ -54,7 +55,7 @@ case object plannerDocBuilder extends DocBuilder[Any] {
       )
   }
 
-  val forNestedPredicate: NestedDocGenerator[Any] = {
+  val forNestedPredicate = asDocBuilder[Any] {
     case Predicate(dependencies, expr) => (inner) =>
 
       val pred = sepList(dependencies.map(inner))
@@ -62,7 +63,7 @@ case object plannerDocBuilder extends DocBuilder[Any] {
       block(predBlock)(inner(expr))
   }
 
-  val forNestedSelections: NestedDocGenerator[Any] = {
+  val forNestedSelections = asDocBuilder[Any] {
     case Selections(predicates) => (inner) =>
       sepList(predicates.map(inner).toList)
   }
@@ -72,13 +73,16 @@ case object plannerDocBuilder extends DocBuilder[Any] {
     case (hd, tail)   => ":" :: hd :: "|" :: tail
   }
 
-  val nested =
-    forNestedIdName orElse
-    forNestedPatternLength orElse
-    forNestedPatternRelationship orElse
-    forNestedPredicate orElse
-    forNestedSelections orElse
-    queryProjectionDocBuilder("WITH").nested orElse
-    queryGraphDocBuilder.nested orElse
-    plannerQueryDocGenerator.nested
+  val builders =
+    Seq(
+      forNestedIdName,
+      forNestedPatternLength,
+      forNestedPatternRelationship,
+      forNestedPredicate,
+      forNestedSelections,
+      queryProjectionDocBuilder("WITH"),
+      queryGraphDocBuilder,
+      queryGraphDocBuilder,
+      plannerQueryDocBuilder
+    )
 }

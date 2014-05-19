@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
 import scala.annotation.tailrec
 
-case object plannerQueryDocGenerator extends DocBuilder[Any] {
+case object plannerQueryDocBuilder extends SingleDocBuilder[Any] {
 
   import Doc._
 

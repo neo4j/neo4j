@@ -19,23 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint._
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.quoteString
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{DocBuilder, DocGenerator}
 
-case object docStructureDocGenerator extends DocBuilder[Doc] {
+abstract class DocBuilderTestSuite[T] extends DocGeneratorTestSuite[T] {
+  val docBuilder: DocBuilder[T]
 
-  import Doc._
-
-  val nested: NestedDocGenerator[Doc] = {
-    case ConsDoc(hd, tl)       => (inner) => inner(hd) :: "·" :: inner(tl)
-    case NilDoc                => (inner) => "ø"
-
-    case TextDoc(value)        => (inner) => quoteString(value)
-    case BreakDoc              => (inner) => breakWith("_")
-    case BreakWith(value)      => (inner) => breakWith(s"_${value}_")
-
-    case GroupDoc(doc)         => (inner) => group("[" :: inner(doc) :: "]")
-    case NestDoc(doc)          => (inner) => group("<" :: inner(doc) :: ">")
-    case NestWith(indent, doc) => (inner) => group(s"($indent)<" :: inner(doc) :: ">")
-  }
+  override def docGen: DocGenerator[T] = docBuilder.docGen
 }

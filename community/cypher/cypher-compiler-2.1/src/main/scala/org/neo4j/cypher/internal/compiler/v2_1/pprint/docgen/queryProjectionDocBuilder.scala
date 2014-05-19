@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryProjection
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{DescSortItem, AscSortItem}
 
-case class queryProjectionDocBuilder(prefix: String = "WITH") extends DocBuilder[Any] {
+case class queryProjectionDocBuilder(prefix: String = "WITH") extends SingleDocBuilder[Any] {
   import Doc._
 
   val nested: NestedDocGenerator[Any] = {

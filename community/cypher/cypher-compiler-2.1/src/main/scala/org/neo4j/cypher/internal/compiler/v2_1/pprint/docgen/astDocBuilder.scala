@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
 
-case object astDocBuilder extends DocBuilder[Any] {
+case object astDocBuilder extends SingleDocBuilder[Any] {
 
   import Doc._
 

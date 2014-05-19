@@ -19,15 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.LineDocFormatter
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 
-class DocStructureDocGeneratorTest extends DocGeneratorTest[Doc] {
+class DocStructureDocBuilderTest extends DocGeneratorTestSuite[Doc] {
 
   import Doc._
 
-  val docGen = docStructureDocGenerator.docGen
+  val docGen = docStructureDocBuilder.docGen
 
   test("end => \"ø\"") {
     format(nil) should equal("ø")

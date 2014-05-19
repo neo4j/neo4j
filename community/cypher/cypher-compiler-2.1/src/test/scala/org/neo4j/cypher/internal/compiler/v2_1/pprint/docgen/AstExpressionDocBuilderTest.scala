@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.DocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.SingleDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, PropertyKeyName, Property, Equals}
 
-class AstExpressionDocBuilderTest extends DocBuilderTest[Any] {
+class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  object docBuilder extends DocBuilder[Any] {
+  object docBuilder extends SingleDocBuilder[Any] {
     val nested = astExpressionDocBuilder.nested orElse simpleDocBuilder.nested
   }
 
