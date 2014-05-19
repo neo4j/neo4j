@@ -103,12 +103,15 @@ object Doc {
     case (hd, tail)   => hd :/: tail
   }
 
-  def sepList(docs: TraversableOnce[Doc], sep: Doc => Doc = separator(",")): Doc = docs.foldRight(nil) {
+  def breakBeforeList(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil) {
     case (hd, NilDoc) => hd :: nil
-    case (hd, tail)   => hd :: sep(tail)
+    case (hd, tail)   => hd :: breakBefore(tail)
   }
 
-  def separator(sep: Doc): Doc => Doc = (tail: Doc) => sep :/: tail
+  def sepList(docs: TraversableOnce[Doc], sep: Doc = ","): Doc = docs.foldRight(nil) {
+    case (hd, NilDoc) => hd :: nil
+    case (hd, tail)   => hd :: sep :/: tail
+  }
 
   def block(name: Doc, open: Doc = "(", close: Doc = ")")(innerDoc: Doc): Doc =
     group(

@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.SingleDocBuilder
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Expression, PropertyKeyName, Property, Equals}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 
 class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  object docBuilder extends SingleDocBuilder[Any] {
-    val nested = astExpressionDocBuilder.nested orElse simpleDocBuilder.nested
-  }
+  val docBuilder = astExpressionDocBuilder orElse simpleDocBuilder
 
   test("Identifier(\"a\") => a") {
     format(ident("a")) should equal("a")
@@ -40,5 +39,15 @@ class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
   test("Property(map, name) => map.name") {
     val expr: Expression = Property(ident("a"), PropertyKeyName("name")_)_
     format(expr) should equal("a.name")
+  }
+
+  test("HasLabel(n, Seq(LabelName(\"Label\"))) => n:Label") {
+    val expr: Expression = HasLabels(ident("a"), Seq(LabelName("Person")_))_
+    format(expr) should equal("a:Person")
+  }
+
+  test("HasLabel(n, Seq(LabelName(\"Label1\"), LabelName(\"Label2\"))) => n:Label1:Label2") {
+    val expr: Expression = HasLabels(ident("a"), Seq(LabelName("Person")_, LabelName("PartyAnimal")_))_
+    format(expr) should equal("a:Person:PartyAnimal")
   }
 }

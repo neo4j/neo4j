@@ -32,10 +32,16 @@ case object astExpressionDocBuilder extends SingleDocBuilder[Any] {
     case Identifier(name) => (inner) =>
       text(name)
 
-    case (Equals(left, right)) => (inner) =>
+    case Equals(left, right) => (inner) =>
       inner(left) :/: "=" :/: inner(right)
 
-    case (Property(map, PropertyKeyName(name))) => (inner) =>
+    case Property(map, PropertyKeyName(name)) => (inner) =>
       inner(map) :: "." :: name
+
+    case LabelName(name) => (inner) =>
+      ":" :: name
+
+    case HasLabels(expr, labels) => (inner) =>
+      inner(expr) :: breakBeforeList(labels.map(inner))
   }
 }
