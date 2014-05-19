@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.internal.helpers
 
+import scala.reflect.ClassTag
+
 object PartialFunctionSupport {
 
   def reduceAnyDefined[A, B](functions: Seq[PartialFunction[A, B]])(init: B)(combine: (B, B) => B) = foldAnyDefined[A, B, B](functions)(init)(combine)
@@ -35,4 +37,16 @@ object PartialFunctionSupport {
       if (pf.isDefinedAt(v)) Some(pf(v)) else current
     }).get
   }
+
+  def uplift[A: ClassTag, B, S >: A](f: PartialFunction[A, B]): PartialFunction[S, B] = {
+    case v: A if f.isDefinedAt(v) => f(v)
+  }
+
+  def fix[A, B](f: PartialFunction[A, PartialFunction[A, B] => B]): PartialFunction[A, B] = new fixedPartialFunction(f)
+
+  final class fixedPartialFunction[-A, +B](f: PartialFunction[A, PartialFunction[A, B] => B]) extends PartialFunction[A, B] {
+    def isDefinedAt(v: A) = f.isDefinedAt(v)
+    def apply(v: A) = f(v)(this)
+  }
+
 }
