@@ -24,6 +24,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders.defaultDocBuil
 object pformat {
   // Convert value to String after converting to a doc using the given generator and formatter
   def apply[T](value: T, formatter: DocFormatter = DocFormatters.defaultPageFormatter)
-              (implicit generator: DocGenerator[T] = defaultDocBuilder.docGen): String =
+              (implicit generator: DocGenerator[T] = defaultDocBuilder.docGenerator): String =
     printToString(formatter(generator(value)))
 }

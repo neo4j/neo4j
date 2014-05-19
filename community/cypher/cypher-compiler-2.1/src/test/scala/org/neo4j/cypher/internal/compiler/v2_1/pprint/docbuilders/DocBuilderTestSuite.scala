@@ -24,5 +24,5 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint.{DocBuilder, DocGenerator}
 abstract class DocBuilderTestSuite[T] extends DocGeneratorTestSuite[T] {
   val docBuilder: DocBuilder[T]
 
-  override def docGen: DocGenerator[T] = docBuilder.docGen
+  override def docGen: DocGenerator[T] = docBuilder.docGenerator
 }

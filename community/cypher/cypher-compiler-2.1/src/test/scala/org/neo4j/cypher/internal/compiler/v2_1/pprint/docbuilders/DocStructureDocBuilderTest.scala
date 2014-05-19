@@ -25,7 +25,7 @@ class DocStructureDocBuilderTest extends DocGeneratorTestSuite[Doc] {
 
   import Doc._
 
-  val docGen = docStructureDocBuilder.docGen
+  val docGen = docStructureDocBuilder.docGenerator
 
   test("end => \"ø\"") {
     format(nil) should equal("ø")
@@ -57,5 +57,13 @@ class DocStructureDocBuilderTest extends DocGeneratorTestSuite[Doc] {
 
   test("nest(text(\"a\")) => (3)<\"a\">") {
     format(nest("a")) should equal("<\"a\">")
+  }
+
+  test("page(group(\"a\"))) => (|[\"a\"]|)") {
+    format(page(group("a"))) should equal("(|[\"a\"]|)")
+  }
+
+  test("group(page(\"a\"))) => [(|\"a\"|)]") {
+    format(group(page("a"))) should equal("[(|\"a\"|)]")
   }
 }

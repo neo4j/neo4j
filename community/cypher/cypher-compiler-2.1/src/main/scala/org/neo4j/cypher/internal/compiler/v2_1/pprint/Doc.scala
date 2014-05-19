@@ -34,7 +34,7 @@ sealed abstract class Doc {
 
   import Doc._
 
-  override def toString = pformat(this, formatter = LineDocFormatter)(docStructureDocBuilder.docGen)
+  override def toString = pformat(this, formatter = LineDocFormatter)(docStructureDocBuilder.docGenerator)
 
   def ::(hd: Doc): Doc = cons(hd, this)
   def :/:(hd: Doc): Doc = cons(hd, cons(breakHere, this))
@@ -89,6 +89,10 @@ object Doc {
 
   def nest(content: Doc): Doc = NestDoc(content)
   def nest(indent: Int, content: Doc): Doc = NestWith(indent, content)
+
+  // force vertical layout
+
+  def page(content: Doc): Doc = PageDoc(content)
 
   // literals are helpful in tests to see the actual document produced instead of how it is rendered
 
@@ -159,13 +163,15 @@ final case class NestDoc(content: Doc) extends NestingDoc {
   def optIndent = None
 }
 
+final case class PageDoc(content: Doc) extends ContentDoc
+
 final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
   def optIndent = Some(indent)
 }
 
 final case class DocLiteral(doc: Doc) {
   override def toString =
-    pformat(doc, formatter = DocFormatters.defaultLineFormatter)(docStructureDocBuilder.docGen)
+    pformat(doc, formatter = DocFormatters.defaultLineFormatter)(docStructureDocBuilder.docGenerator)
 }
 
 

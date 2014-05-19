@@ -23,11 +23,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
 import scala.annotation.tailrec
 
-case object plannerQueryDocBuilder extends SingleDocBuilder[Any] {
+case object plannerQueryDocBuilder extends CachingDocBuilder[Any] {
 
   import Doc._
 
-  val nested: NestedDocGenerator[Any] = {
+  override protected def newNestedDocGenerator = {
     case plannerQuery: PlannerQuery => (inner: DocGenerator[Any]) =>
       val allQueryDocs = queryDocs(inner, Some(plannerQuery), List.empty)
       group(breakList(allQueryDocs))
@@ -44,7 +44,7 @@ case object plannerQueryDocBuilder extends SingleDocBuilder[Any] {
   private def queryDoc(inner: DocGenerator[Any], query: PlannerQuery) = {
     val graphDoc = inner(query.graph)
     val projectionPrefix = query.tail.map(_ => "WITH").getOrElse("RETURN")
-    val projectionDoc = queryProjectionDocBuilder(projectionPrefix).nested(query.projection)(inner)
+    val projectionDoc = queryProjectionDocBuilder(projectionPrefix).nestedDocGenerator(query.projection)(inner)
     group(graphDoc :/: projectionDoc)
   }
 }

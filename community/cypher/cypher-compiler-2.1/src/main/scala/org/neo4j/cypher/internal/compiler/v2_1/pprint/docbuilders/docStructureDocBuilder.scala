@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.quoteString
 
-case object docStructureDocBuilder extends SingleDocBuilder[Doc] {
+case object docStructureDocBuilder extends CachingDocBuilder[Doc] {
 
   import Doc._
 
-  val nested: NestedDocGenerator[Doc] = {
+  override protected def newNestedDocGenerator = {
     case ConsDoc(hd, tl)       => (inner) => inner(hd) :: "·" :: inner(tl)
     case NilDoc                => (inner) => "ø"
 
@@ -37,5 +37,7 @@ case object docStructureDocBuilder extends SingleDocBuilder[Doc] {
     case GroupDoc(doc)         => (inner) => group("[" :: inner(doc) :: "]")
     case NestDoc(doc)          => (inner) => group("<" :: inner(doc) :: ">")
     case NestWith(indent, doc) => (inner) => group(s"($indent)<" :: inner(doc) :: ">")
+
+    case PageDoc(doc)          => (inner) => group("(|" :: inner(doc) :: "|)")
   }
 }

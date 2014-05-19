@@ -53,4 +53,8 @@ class LineDocFormatterTest extends CypherFunSuite {
   test("format NestDoc") {
     LineDocFormatter(nest(10, nil)) should equal(Seq.empty)
   }
+
+  test("format PageDoc") {
+    LineDocFormatter(page(nil)) should equal(Seq.empty)
+  }
 }

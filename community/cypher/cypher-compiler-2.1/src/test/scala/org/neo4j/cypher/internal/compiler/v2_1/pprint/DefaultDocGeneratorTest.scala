@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders.defaultDocBuil
 
 class DefaultDocGeneratorTest extends CypherFunSuite {
 
-  val docGen = defaultDocBuilder.docGen
+  val docGen = defaultDocBuilder.docGenerator
 
   import Doc._
 

@@ -101,4 +101,8 @@ class DocTest extends CypherFunSuite {
   test("literal(a) => DocLiteral(a)") {
     literal(text("a")) should equal(DocLiteral(text("a")))
   }
+
+  test("page(a) => PageDoc(a)") {
+    page(text("a")) should equal(PageDoc(text("a")))
+  }
 }

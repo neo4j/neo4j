@@ -22,13 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint
 import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
 import scala.reflect.ClassTag
 
-sealed abstract class DocBuilder[T: ClassTag] {
+abstract class DocBuilder[T: ClassTag] {
   self =>
 
   import DocBuilder.asDocBuilder
 
-  def nested: NestedDocGenerator[T]
-  final def docGen: DocGenerator[T] = PartialFunctionSupport.fix(nested)
+  def nestedDocGenerator: NestedDocGenerator[T]
+  def docGenerator: DocGenerator[T]
 
   def orElse(other: DocBuilder[T]): DocBuilderChain[T] = other match {
     case others: DocBuilderChain[T] => others.prepend(self)
@@ -36,28 +36,37 @@ sealed abstract class DocBuilder[T: ClassTag] {
   }
 
   final def uplifted[S >: T: ClassTag]: DocBuilder[S] =
-    asDocBuilder[S](PartialFunctionSupport.uplift[T, DocGenerator[T] => Doc, S](self.nested))
+    asDocBuilder(PartialFunctionSupport.uplift(self.nestedDocGenerator))
 }
 
 object DocBuilder {
-  implicit def asDocBuilder[T: ClassTag](nestedDocGen: NestedDocGenerator[T]): SingleDocBuilder[T] =
-    new SingleDocBuilder[T] {
-      val nested = nestedDocGen
-    }
+  implicit def asDocBuilder[T: ClassTag](nestedDocGen: NestedDocGenerator[T]): DocBuilder[T] =
+    SimpleDocBuilder(nestedDocGen)
 }
 
-abstract class SingleDocBuilder[T: ClassTag] extends DocBuilder[T] {
-  override val nested: NestedDocGenerator[T]
+final case class SimpleDocBuilder[T: ClassTag](nestedDocGenerator: NestedDocGenerator[T]) extends DocBuilder[T] {
+  val docGenerator: DocGenerator[T] = PartialFunctionSupport.fix(nestedDocGenerator)
 }
 
-abstract class DocBuilderChain[T: ClassTag] extends DocBuilder[T] {
-  self =>
+abstract class CachingDocBuilder[T: ClassTag] extends DocBuilder[T] {
 
-  def builders: Seq[DocBuilder[T]]
+  def nestedDocGenerator = cachedDocGenerators.nestedDocGenerator
+  def docGenerator = cachedDocGenerators.docGenerator
 
-  def nested: NestedDocGenerator[T] =
+  protected def newNestedDocGenerator: NestedDocGenerator[T]
+
+  private object cachedDocGenerators {
+    lazy val nestedDocGenerator: NestedDocGenerator[T] = newNestedDocGenerator
+    lazy val docGenerator: DocGenerator[T] = PartialFunctionSupport.fix(nestedDocGenerator)
+  }
+}
+
+abstract class DocBuilderChain[T: ClassTag] extends CachingDocBuilder[T] {
+  val builders: Seq[DocBuilder[T]]
+
+  override protected def newNestedDocGenerator: NestedDocGenerator[T] =
     builders
-      .map(_.nested)
+      .map(_.nestedDocGenerator)
       .reduceLeftOption(_ orElse _)
       .getOrElse(PartialFunction.empty)
 
@@ -66,15 +75,10 @@ abstract class DocBuilderChain[T: ClassTag] extends DocBuilder[T] {
     case _                         => append(other)
   }
 
-  def flatten = new SingleDocBuilder[T] {
-    val nested = self.nested
-  }
+  def appendAll(others: Seq[DocBuilder[T]]) = SimpleDocBuilderChain[T](builders ++ others: _*)
 
   def prepend(builder: DocBuilder[T]) = SimpleDocBuilderChain[T](builder +: builders: _*)
-
   def append(builder: DocBuilder[T]) = appendAll(Seq(builder))
-
-  def appendAll(others: Seq[DocBuilder[T]]) = SimpleDocBuilderChain[T](builders ++ others: _*)
 }
 
 case class SimpleDocBuilderChain[T: ClassTag](builders: DocBuilder[T]*) extends DocBuilderChain[T]

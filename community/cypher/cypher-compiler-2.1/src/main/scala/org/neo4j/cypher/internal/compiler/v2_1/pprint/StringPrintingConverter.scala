@@ -40,8 +40,6 @@ class StringPrintingConverter(var builder: mutable.StringBuilder = new mutable.S
           builder = builder += ' '
           remaining  -= 1
         }
-
-
     }
     this
   }

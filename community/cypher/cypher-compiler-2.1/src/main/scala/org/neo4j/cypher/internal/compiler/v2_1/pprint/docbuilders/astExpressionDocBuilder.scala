@@ -19,16 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{SingleDocBuilder, DocBuilder, Doc, NestedDocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 
-case object astExpressionDocBuilder extends SingleDocBuilder[Any] {
+case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
 
   import Doc._
 
-  val nested: NestedDocGenerator[Any] = {
+  override protected def newNestedDocGenerator = {
     case Identifier(name) => (inner) =>
       text(name)
 

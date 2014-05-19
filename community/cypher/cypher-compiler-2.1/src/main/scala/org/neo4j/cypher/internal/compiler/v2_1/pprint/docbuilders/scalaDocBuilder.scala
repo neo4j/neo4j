@@ -24,11 +24,11 @@ import scala.collection.immutable
 import scala.collection.mutable
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.{quoteString, quoteChar}
 
-case object scalaDocBuilder extends SingleDocBuilder[Any] {
+case object scalaDocBuilder extends CachingDocBuilder[Any] {
 
   import Doc._
 
-  val nested: NestedDocGenerator[Any] = {
+  override protected def newNestedDocGenerator = {
     case v: String => (inner) =>
       quoteString(v)
 

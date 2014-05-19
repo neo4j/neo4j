@@ -22,11 +22,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
 
-case object astDocBuilder extends SingleDocBuilder[Any] {
+case object astDocBuilder extends CachingDocBuilder[Any] {
 
   import Doc._
 
-  val nested: NestedDocGenerator[Any] = {
+  override protected def newNestedDocGenerator = {
     case relTypeName: RelTypeName => (inner) =>
       text(relTypeName.name)
   }

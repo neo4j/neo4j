@@ -46,6 +46,6 @@ class DocBuilderTest extends CypherFunSuite {
   }
 
   test("constructs empty doc chain") {
-    SimpleDocBuilderChain[Any]().nested should equal(PartialFunction.empty)
+    SimpleDocBuilderChain[Any]().nestedDocGenerator should equal(PartialFunction.empty)
   }
 }

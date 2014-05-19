@@ -23,12 +23,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 
 case object defaultDocBuilder extends DocBuilderChain[Any] {
 
-  override val nested = catchNotImplemented(super.nested)
-
-  def builders = Seq(
+  val builders = Seq(
     astExpressionDocBuilder,
     astDocBuilder,
     plannerDocBuilder,
     simpleDocBuilder
   )
+
+  override protected def newNestedDocGenerator = catchNotImplemented(super.newNestedDocGenerator)
 }

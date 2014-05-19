@@ -23,10 +23,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryProjection
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{DescSortItem, AscSortItem}
 
-case class queryProjectionDocBuilder(prefix: String = "WITH") extends SingleDocBuilder[Any] {
+case class queryProjectionDocBuilder(prefix: String = "WITH") extends CachingDocBuilder[Any] {
   import Doc._
 
-  val nested: NestedDocGenerator[Any] = {
+  override protected def newNestedDocGenerator = {
     case queryProjection: QueryProjection => (inner: DocGenerator[Any]) =>
       val projectionMapDoc = queryProjection.projections.collect {
         case (k, v) => group( inner(v) :/: "AS " :: s"`$k`" )
