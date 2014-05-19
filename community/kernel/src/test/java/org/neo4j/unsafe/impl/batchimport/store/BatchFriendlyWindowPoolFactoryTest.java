@@ -30,14 +30,14 @@ import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
 
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode;
 
@@ -191,7 +191,7 @@ public class BatchFriendlyWindowPoolFactoryTest
     {
         channel = new TrackingStoreChannel( openChannel() );
         WindowPoolFactory factory = new BatchFriendlyWindowPoolFactory( windowSize, monitor, mode, SYNCHRONOUS );
-        return factory.create( file, recordSize, channel, new Config(), StringLogger.DEV_NULL, 0 );
+        return factory.create( file, recordSize, channel, new Config(), 0, new Monitors() );
     }
 
     public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();

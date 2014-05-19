@@ -20,13 +20,14 @@
 package org.neo4j.kernel.impl.nioneo.store.windowpool;
 
 import java.io.File;
+import java.io.IOException;
 
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public interface WindowPoolFactory
 {
     WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel,
-                       Config configuration, StringLogger log, int numberOfReservedLowIds );
+                       Config configuration, int numberOfReservedLowIds, Monitors monitors ) throws IOException;
 }

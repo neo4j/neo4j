@@ -42,6 +42,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -185,10 +186,15 @@ public class TestGraphProperties
         tx.finish();
         db.shutdown();
 
-        NeoStore neoStore = new StoreFactory( new Config( Collections.<String, String>emptyMap(),
-                GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                null ).newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
+        StoreFactory storeFactory = new StoreFactory(
+                new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class ),
+                new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                null,
+                new Monitors() );
+        NeoStore neoStore = storeFactory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
         neoStore.close();

@@ -42,6 +42,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -120,14 +121,28 @@ public class TestDynamicStore
 
     private void createEmptyStore( File fileName, int blockSize )
     {
-        new StoreFactory( config(), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(), fs.get(),
-                StringLogger.DEV_NULL, null ).createDynamicArrayStore( fileName, blockSize );
+        new StoreFactory(
+                config(),
+                ID_GENERATOR_FACTORY,
+                new DefaultWindowPoolFactory(),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                null,
+                new Monitors() ).createDynamicArrayStore( fileName, blockSize );
     }
 
     private DynamicArrayStore newStore()
     {
-        return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY,
-                WINDOW_POOL_FACTORY, fs.get(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.THROW_EXCEPTION );
+        return new DynamicArrayStore(
+                dynamicStoreFile(),
+                config(),
+                IdType.ARRAY_BLOCK,
+                ID_GENERATOR_FACTORY,
+                WINDOW_POOL_FACTORY,
+                fs.get(),
+                StringLogger.DEV_NULL,
+                StoreVersionMismatchHandler.THROW_EXCEPTION,
+                new Monitors() );
     }
 
     private void deleteBothFiles()

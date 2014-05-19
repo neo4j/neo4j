@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -34,7 +35,6 @@ import org.mockito.stubbing.Answer;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.ResourceCollection;
@@ -71,7 +71,7 @@ public class PersistenceWindowPoolTest
         StoreChannel channel = new StoreFileChannel( file.getChannel() );
         PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8,
                 channel, 0, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
-                BrickElementFactory.DEFAULT, StringLogger.DEV_NULL );
+                BrickElementFactory.DEFAULT, PersistenceWindowPool.Monitor.NULL );
 
         PersistenceWindow initialWindow = pool.acquire( 0, OperationType.READ );
         pool.release( initialWindow );
@@ -95,7 +95,7 @@ public class PersistenceWindowPoolTest
         StoreChannel channel = new StoreFileChannel( file.getChannel() );
         final PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), blockSize,
                 channel, 0, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
-                BrickElementFactory.DEFAULT, StringLogger.DEV_NULL );
+                BrickElementFactory.DEFAULT, PersistenceWindowPool.Monitor.NULL );
         
         // The gist:
         // T1 acquires position 0 as WRITE
@@ -112,20 +112,37 @@ public class PersistenceWindowPoolTest
             @Override
             public Throwable doWork( Void state )
             {
-                PersistenceWindow t2Row = pool.acquire( 0, OperationType.READ ); // Will block until t1Row is released.
+                PersistenceWindow t2Row = null;
+                Throwable th = null;
                 try
                 {
+                    t2Row = pool.acquire( 0, OperationType.READ ); // Will block until t1Row is released.
                     assertTrue( t1Row == t2Row );
                     assertBufferContents( blockSize, t2Row );
                     return null;
                 }
                 catch ( Throwable t )
                 {
+                    th = t;
                     return t;
                 }
                 finally
                 {
-                    pool.release( t2Row );
+                    if ( t2Row != null )
+                    {
+                        try
+                        {
+                            pool.release( t2Row );
+                        }
+                        catch ( IOException e )
+                        {
+                            if ( th != null )
+                            {
+                                e.addSuppressed( th );
+                            }
+                            return e;
+                        }
+                    }
                 }
             }
         } );
@@ -161,7 +178,7 @@ public class PersistenceWindowPoolTest
         StoreChannel channel = new StoreFileChannel( file.getChannel() );
         PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, channel, 0,
                 false, false, new ConcurrentHashMap<Long, PersistenceRow>(), BrickElementFactory.DEFAULT,
-                StringLogger.DEV_NULL );
+                PersistenceWindowPool.Monitor.NULL );
 
         PersistenceRow row = mock( PersistenceRow.class );
         when( row.writeOutAndCloseIfFree( false ) ).thenThrow(
@@ -205,7 +222,7 @@ public class PersistenceWindowPoolTest
         when( map.putIfAbsent( eq( 0l ), any( PersistenceRow.class ) ) ).thenReturn( window );
 
         PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8, channel, 0,
-                false, false, map, BrickElementFactory.DEFAULT, StringLogger.DEV_NULL );
+                false, false, map, BrickElementFactory.DEFAULT, PersistenceWindowPool.Monitor.NULL );
 
         // When
         PersistenceWindow acquiredWindow = pool.acquire( 0l, OperationType.READ );
@@ -256,7 +273,7 @@ public class PersistenceWindowPoolTest
         };
         PersistenceWindowPool pool = new PersistenceWindowPool( new File("test.store"), 8,
                 channel, 10000, false, false, new ConcurrentHashMap<Long, PersistenceRow>(),
-                brickFactory, StringLogger.DEV_NULL );
+                brickFactory, PersistenceWindowPool.Monitor.NULL );
         
         try
         {

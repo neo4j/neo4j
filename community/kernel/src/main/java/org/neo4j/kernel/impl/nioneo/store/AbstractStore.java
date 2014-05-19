@@ -36,6 +36,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * An abstract representation of a store. A store is a file that contains
@@ -78,10 +79,11 @@ public abstract class AbstractStore extends CommonAbstractStore
     public AbstractStore( File fileName, Config conf, IdType idType,
                           IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                           FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                          StoreVersionMismatchHandler versionMismatchHandler )
+                          StoreVersionMismatchHandler versionMismatchHandler,
+                          Monitors monitors )
     {
         super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
-                versionMismatchHandler );
+                versionMismatchHandler, monitors );
         this.conf = conf;
     }
 

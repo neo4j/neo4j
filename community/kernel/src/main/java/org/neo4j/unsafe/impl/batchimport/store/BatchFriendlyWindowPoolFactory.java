@@ -23,15 +23,15 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.nio.ByteBuffer.allocateDirect;
 
@@ -112,7 +112,7 @@ public class BatchFriendlyWindowPoolFactory implements WindowPoolFactory
 
     @Override
     public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel, Config configuration,
-            StringLogger log, int numberOfReservedLowIds )
+            int numberOfReservedLowIds, Monitors monitors )
     {
         return new SingleWindowPool( storageFileName, recordSize, fileChannel, numberOfReservedLowIds );
     }
@@ -186,10 +186,6 @@ public class BatchFriendlyWindowPoolFactory implements WindowPoolFactory
         protected long lastIdInWindow;
         private final Writer writer;
 
-        /**
-         * @param mode whether or not to read window data when moving the window to a new location,
-         * if {@code false} then only the first window will be read (since it may contain reserved header information).
-         */
         protected SingleWindow( File storageFileName, int recordSize, StoreChannel channel )
         {
             this.storageFileName = storageFileName;

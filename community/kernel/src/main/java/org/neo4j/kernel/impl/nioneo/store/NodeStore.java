@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
@@ -75,10 +76,11 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     public NodeStore( File fileName, Config config,
                      IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                      FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                     DynamicArrayStore dynamicLabelStore, StoreVersionMismatchHandler versionMismatchHandler )
+                     DynamicArrayStore dynamicLabelStore, StoreVersionMismatchHandler versionMismatchHandler,
+                     Monitors monitors )
     {
         super( fileName, config, IdType.NODE, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
-                stringLogger, versionMismatchHandler );
+                stringLogger, versionMismatchHandler, monitors );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 

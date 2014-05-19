@@ -29,6 +29,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Implementation of the relationship store.
@@ -50,10 +51,11 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
 
     public RelationshipStore( File fileName, Config configuration, IdGeneratorFactory idGeneratorFactory,
                              WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
-                             StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler )
+                             StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler,
+                             Monitors monitors )
     {
         super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
-                windowPoolFactory, fileSystemAbstraction, stringLogger, versionMismatchHandler );
+                windowPoolFactory, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     @Override

@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class ConsistencyCheckService
 {
@@ -64,7 +65,7 @@ public class ConsistencyCheckService
                 new DefaultIdGeneratorFactory(),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
                         .windowPoolFactory( tuningConfiguration, logger ), fileSystem, logger,
-                new DefaultTxHook() );
+                new DefaultTxHook(), new Monitors() );
 
         ConsistencySummaryStatistics summary;
         File reportFile = chooseReportPath( tuningConfiguration );

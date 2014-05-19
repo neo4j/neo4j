@@ -33,6 +33,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Settings.osIsWindows;
 
@@ -101,26 +102,21 @@ public class StoreAccess
 
     public StoreAccess( String path )
     {
-        this( path, defaultParams() );
+        this( path, defaultParams(), new Monitors() );
     }
 
-    public StoreAccess( FileSystemAbstraction fileSystem, String path )
+    private StoreAccess( String path, Map<String, String> params, Monitors monitors )
     {
-        this( fileSystem, path, defaultParams() );
+        this( new DefaultFileSystemAbstraction(), path, params, monitors );
     }
 
-    public StoreAccess( String path, Map<String, String> params )
-    {
-        this( new DefaultFileSystemAbstraction(), path, params );
-    }
-
-    public StoreAccess( FileSystemAbstraction fileSystem, String path, Map<String, String> params )
+    public StoreAccess( FileSystemAbstraction fileSystem, String path, Map<String, String> params, Monitors monitors )
     {
         this( new StoreFactory( new Config( requiredParams( params, path ) ),
                                 new DefaultIdGeneratorFactory(),
                                 new DefaultWindowPoolFactory(),
                                 fileSystem, StringLogger.DEV_NULL,
-                                new DefaultTxHook() ).newNeoStore( new File( path, "neostore" ) ) );
+                                new DefaultTxHook(), monitors ).newNeoStore( new File( path, "neostore" ) ) );
         this.closeable = true;
     }
 

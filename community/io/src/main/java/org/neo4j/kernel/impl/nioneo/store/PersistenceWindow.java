@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.IOException;
+
 /**
  * A persistence window encapsulates a part of the records (or blocks) in a
  * store and makes it possible to read and write data to those records.
@@ -66,7 +68,7 @@ public interface PersistenceWindow
      * Force (write) changes to the underlying buffer returned from {@link #getBuffer()}
      * and {@link #getOffsettedBuffer(long)}.
      */
-    void force();
+    void force() throws IOException;
 
     /**
      * Just closes the window without writing any potential changes made to it.

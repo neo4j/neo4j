@@ -27,6 +27,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Implementation of the property store.
@@ -47,10 +48,11 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
     public PropertyKeyTokenStore( File fileName, Config config,
                                   IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                                   FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                                  DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler )
+                                  DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler,
+                                  Monitors monitors )
     {
         super(fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler);
+                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
     @Override

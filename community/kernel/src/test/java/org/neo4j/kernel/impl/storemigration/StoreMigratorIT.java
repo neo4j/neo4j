@@ -52,6 +52,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.Unzip;
@@ -206,7 +207,7 @@ public class StoreMigratorIT
         Config config = MigrationTestUtils.defaultConfig();
         storeFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
         storeFactory = new StoreFactory( config, idGeneratorFactory,
-                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
+                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook(), new Monitors() );
     }
 
     private void verifyNeoStore( NeoStore neoStore )

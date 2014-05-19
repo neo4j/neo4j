@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-
 import java.io.File;
 import java.io.IOException;
 
@@ -30,6 +26,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
@@ -42,7 +39,13 @@ import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+
+import static java.nio.ByteBuffer.allocate;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 public class RelationshipGroupCommandTest
 {
@@ -57,8 +60,14 @@ public class RelationshipGroupCommandTest
     public void before() throws Exception
     {
         @SuppressWarnings("deprecation")
-        StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, new DefaultTxHook() );
+        StoreFactory storeFactory = new StoreFactory(
+                new Config(),
+                new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                new DefaultTxHook(),
+                new Monitors() );
         File storeFile = new File( "story" );
         storeFactory.createNodeStore( storeFile );
         nodeStore = storeFactory.newNodeStore( storeFile );

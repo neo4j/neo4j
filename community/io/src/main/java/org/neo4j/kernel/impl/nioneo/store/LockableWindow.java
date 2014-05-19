@@ -19,10 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import java.io.IOException;
 import java.util.LinkedList;
 
+import org.neo4j.io.fs.PageLockException;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.locking.community.LockException;
 
 /**
  * Makes a {@link PersistenceWindow} "lockable" meaning it can be locked by a
@@ -56,7 +57,7 @@ public abstract class LockableWindow implements PersistenceWindow
      * Writes out any changes to the underlying {@link StoreChannel} and is then
      * considered unusable.
      */
-    protected final void writeOutAndClose()
+    protected final void writeOutAndClose() throws IOException
     {
         force();
         close();
@@ -126,7 +127,7 @@ public abstract class LockableWindow implements PersistenceWindow
         Thread currentThread = Thread.currentThread();
         if ( !locked )
         {
-            throw new LockException( currentThread
+            throw new PageLockException( currentThread
                 + " doesn't have window lock on " + this );
         }
         locked = false;
@@ -149,7 +150,7 @@ public abstract class LockableWindow implements PersistenceWindow
                 marked == 0 && !locked; // no one must have this marked and it mustn't be locked
     }
 
-    synchronized boolean writeOutAndCloseIfFree( boolean readOnly )
+    synchronized boolean writeOutAndCloseIfFree( boolean readOnly ) throws IOException
     {
         if ( isFree( lockingThread == Thread.currentThread() ) )
         {

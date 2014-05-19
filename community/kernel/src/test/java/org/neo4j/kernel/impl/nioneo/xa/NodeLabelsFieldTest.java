@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -450,9 +451,14 @@ public class NodeLabelsFieldTest
     @Before
     public void startUp()
     {
-        StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                new DefaultTxHook() );
+        StoreFactory storeFactory = new StoreFactory(
+                new Config(),
+                new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                new DefaultTxHook(),
+                new Monitors() );
         File storeFile = new File( "store" );
         storeFactory.createNodeStore( storeFile );
         nodeStore = storeFactory.newNodeStore( storeFile );

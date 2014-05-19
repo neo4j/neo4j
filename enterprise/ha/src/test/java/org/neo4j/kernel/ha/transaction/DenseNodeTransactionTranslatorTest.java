@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import static org.junit.Assert.assertThat;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -36,6 +33,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -61,8 +59,13 @@ import org.neo4j.kernel.impl.nioneo.xa.TransactionDataBuilder;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.EphemeralFileSystemRule;
+
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class DenseNodeTransactionTranslatorTest
 {
@@ -1461,8 +1464,14 @@ public class DenseNodeTransactionTranslatorTest
     private NeoStore existingStore( ExistingContents contents )
     {
         @SuppressWarnings( "deprecation" )
-        StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs.get(), DEV_NULL, new DefaultTxHook() );
+        StoreFactory storeFactory = new StoreFactory(
+                new Config(),
+                new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(),
+                fs.get(),
+                DEV_NULL,
+                new DefaultTxHook(),
+                new Monitors() );
         File storeFile = new File( "neostore" );
         NeoStore neoStore = cleanup.add( storeFactory.createNeoStore( storeFile ) );
 

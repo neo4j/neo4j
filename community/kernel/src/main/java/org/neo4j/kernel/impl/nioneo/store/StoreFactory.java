@@ -37,6 +37,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
@@ -82,24 +83,26 @@ public class StoreFactory
     public static final String SCHEMA_STORE_NAME = ".schemastore.db";
     public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
     private final StoreVersionMismatchHandler versionMismatchHandler;
+    private final Monitors monitors;
 
     public StoreFactory( File neoStoreFileName, StringLogger logger )
     {
         this( configForNeoStore( new Config(), neoStoreFileName ),
                 new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
-                logger, new DefaultTxHook(), StoreVersionMismatchHandler.THROW_EXCEPTION );
+                logger, new DefaultTxHook(), StoreVersionMismatchHandler.THROW_EXCEPTION, new Monitors() );
     }
 
     public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-            FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, RemoteTxHook txHook )
+            FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, RemoteTxHook txHook,
+            Monitors monitors )
     {
         this( config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger, txHook,
-                StoreVersionMismatchHandler.THROW_EXCEPTION );
+                StoreVersionMismatchHandler.THROW_EXCEPTION, monitors );
     }
 
     public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                          FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, RemoteTxHook txHook,
-                         StoreVersionMismatchHandler versionMismatchHandler )
+                         StoreVersionMismatchHandler versionMismatchHandler, Monitors monitors )
     {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
@@ -108,6 +111,7 @@ public class StoreFactory
         this.stringLogger = stringLogger;
         this.txHook = txHook;
         this.versionMismatchHandler = versionMismatchHandler;
+        this.monitors = monitors;
     }
 
     public boolean ensureStoreExists() throws IOException
@@ -138,32 +142,32 @@ public class StoreFactory
                 // We don't need any particular upgrade when we add the schema store
                 newSchemaStore(new File( fileName.getPath() + SCHEMA_STORE_NAME)),
                 newRelationshipGroupStore(new File( fileName.getPath() + RELATIONSHIP_GROUP_STORE_NAME)),
-                versionMismatchHandler);
+                versionMismatchHandler, monitors );
     }
 
     public RelationshipGroupStore newRelationshipGroupStore( File fileName )
     {
         return new RelationshipGroupStore( fileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
-                stringLogger, versionMismatchHandler );
+                stringLogger, versionMismatchHandler, monitors );
     }
 
     public SchemaStore newSchemaStore( File file )
     {
         return new SchemaStore( file, config, IdType.SCHEMA, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler );
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     private DynamicStringStore newDynamicStringStore(File fileName, IdType nameIdType)
     {
         return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler);
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     private RelationshipTypeTokenStore newRelationshipTypeTokenStore( File baseFileName )
     {
         DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + NAMES_PART), IdType.RELATIONSHIP_TYPE_TOKEN_NAME );
         return new RelationshipTypeTokenStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler );
+                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
     public PropertyStore newPropertyStore( File baseFileName )
@@ -174,7 +178,8 @@ public class StoreFactory
                 new File( baseFileName.getPath() + INDEX_PART ) );
         DynamicArrayStore arrayPropertyStore = newDynamicArrayStore( new File( baseFileName.getPath() + ARRAYS_PART ) );
         return new PropertyStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
-                stringLogger, stringPropertyStore, propertyKeyTokenStore, arrayPropertyStore, versionMismatchHandler );
+                stringLogger, stringPropertyStore, propertyKeyTokenStore, arrayPropertyStore, versionMismatchHandler,
+                monitors);
     }
 
     public PropertyKeyTokenStore newPropertyKeyTokenStore( File baseFileName )
@@ -182,7 +187,7 @@ public class StoreFactory
         DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + KEYS_PART ),
                 IdType.PROPERTY_KEY_TOKEN_NAME );
         return new PropertyKeyTokenStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler );
+                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
     private LabelTokenStore newLabelTokenStore( File baseFileName )
@@ -190,19 +195,19 @@ public class StoreFactory
         DynamicStringStore nameStore = newDynamicStringStore(new File( baseFileName.getPath() + NAMES_PART ),
                 IdType.LABEL_TOKEN_NAME );
         return new LabelTokenStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler );
+                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
     public RelationshipStore newRelationshipStore(File baseFileName)
     {
         return new RelationshipStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler);
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     public DynamicArrayStore newDynamicArrayStore(File baseFileName)
     {
         return new DynamicArrayStore( baseFileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler);
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     public NodeStore newNodeStore(File baseFileName)
@@ -210,9 +215,9 @@ public class StoreFactory
         File labelsFileName = new File( baseFileName.getPath() + LABELS_PART );
         DynamicArrayStore dynamicLabelStore = new DynamicArrayStore( labelsFileName,
                 config, IdType.NODE_LABELS, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
-                versionMismatchHandler);
+                versionMismatchHandler, monitors );
         return new NodeStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
-                stringLogger, dynamicLabelStore, versionMismatchHandler );
+                stringLogger, dynamicLabelStore, versionMismatchHandler, monitors );
     }
 
     public NeoStore createNeoStore(File fileName)

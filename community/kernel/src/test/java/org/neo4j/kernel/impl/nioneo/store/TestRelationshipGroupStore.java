@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 
@@ -154,9 +155,14 @@ public class TestRelationshipGroupStore
         {
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
-        return new StoreFactory( config( customConfig ), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL,
-                new DefaultTxHook() );
+        return new StoreFactory(
+                config( customConfig ),
+                new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(),
+                new DefaultFileSystemAbstraction(),
+                StringLogger.DEV_NULL,
+                new DefaultTxHook(),
+                new Monitors() );
     }
 
     private Config config( Map<String, String> customConfig )

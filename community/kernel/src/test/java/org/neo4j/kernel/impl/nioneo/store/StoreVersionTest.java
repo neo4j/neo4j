@@ -35,6 +35,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
@@ -58,7 +59,7 @@ public class StoreVersionTest
         config.put( "neo_store", storeFileName.getPath() );
         StoreFactory sf = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
                 new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                null );
+                null, new Monitors() );
         NeoStore neoStore = sf.createNeoStore( storeFileName );
 
         CommonAbstractStore[] stores = {
@@ -93,7 +94,7 @@ public class StoreVersionTest
         {
             new NodeStore( workingFile, config, new DefaultIdGeneratorFactory(),
                     new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, null,
-                    StoreVersionMismatchHandler.THROW_EXCEPTION );
+                    StoreVersionMismatchHandler.THROW_EXCEPTION, new Monitors() );
             fail( "Should have thrown exception" );
         }
         catch ( NotCurrentStoreVersionException e )
@@ -112,12 +113,12 @@ public class StoreVersionTest
 
         File storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME );
 
-        Map<String, String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.store_dir.name(), outputDir.getPath() );
         config.put( "neo_store", storeFileName.getPath() );
         StoreFactory sf = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
                 new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                null );
+                null, new Monitors() );
         NeoStore neoStore = sf.createNeoStore( storeFileName );
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,

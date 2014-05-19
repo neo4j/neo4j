@@ -31,6 +31,7 @@ import org.junit.Test;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static java.nio.ByteBuffer.wrap;
@@ -147,8 +148,14 @@ public class SchemaStoreTest
         config = new Config( stringMap() );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
-        storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fs.get(), DEV_NULL,
-                new DefaultTxHook() );
+        storeFactory = new StoreFactory(
+                config,
+                idGeneratorFactory,
+                windowPoolFactory,
+                fs.get(),
+                DEV_NULL,
+                new DefaultTxHook(),
+                new Monitors() );
         File file = new File( "schema-store" );
         storeFactory.createSchemaStore( file );
         store = storeFactory.newSchemaStore( file );

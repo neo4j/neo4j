@@ -35,6 +35,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.System.arraycopy;
 
@@ -53,10 +54,11 @@ public class DynamicArrayStore extends AbstractDynamicStore
     public DynamicArrayStore( File fileName, Config configuration, IdType idType,
                              IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                              FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                             StoreVersionMismatchHandler versionMismatchHandler )
+                             StoreVersionMismatchHandler versionMismatchHandler,
+                             Monitors monitors )
     {
         super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler );
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     @Override

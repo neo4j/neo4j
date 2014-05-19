@@ -31,6 +31,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGroupRecord> implements Store
 {
@@ -47,10 +48,11 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
 
     public RelationshipGroupStore( File fileName, Config config, IdGeneratorFactory idGeneratorFactory,
             WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler )
+            StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
         super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler );
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     @Override

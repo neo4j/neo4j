@@ -33,6 +33,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.decodeString;
 
@@ -50,10 +51,11 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     public TokenStore( File fileName, Config configuration, IdType idType,
                        IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                        FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                       DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler )
+                       DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler,
+                       Monitors monitors )
     {
         super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler );
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
         this.nameStore = nameStore;
     }
 

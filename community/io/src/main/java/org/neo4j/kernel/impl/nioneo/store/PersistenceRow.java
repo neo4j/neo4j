@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.PageLockException;
 import org.neo4j.io.fs.StoreChannel;
 
 /**
@@ -91,7 +92,7 @@ public class PersistenceRow extends LockableWindow
     {
         if ( id != position )
         {
-            throw new InvalidRecordException( "Id[" + id + 
+            throw new IllegalArgumentException( "Id[" + id +
                 "] not equal to buffer position[" + position + "]" );
         }
         return buffer;
@@ -161,7 +162,7 @@ public class PersistenceRow extends LockableWindow
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to load position["
+            throw new PageLockException( "Unable to load position["
                 + position + "] @[" + position * recordSize + "]", e );
         }
     }
@@ -173,7 +174,7 @@ public class PersistenceRow extends LockableWindow
         bufferState = State.CLEAN;
     }
 
-    private void writeContents()
+    private void writeContents() throws IOException
     {
         if ( isDirty() )
         {
@@ -197,7 +198,7 @@ public class PersistenceRow extends LockableWindow
             }
             catch ( IOException e )
             {
-                throw new UnderlyingStorageException( "Unable to write record["
+                throw new IOException( "Unable to write record["
                         + position + "] @[" + position * recordSize + "]", e );
             }
             setClean();
@@ -211,7 +212,7 @@ public class PersistenceRow extends LockableWindow
     }
 
     @Override
-    public void force()
+    public void force() throws IOException
     {
         writeContents();
     }

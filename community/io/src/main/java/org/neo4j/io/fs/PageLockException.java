@@ -17,18 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.store;
+package org.neo4j.io.fs;
 
-import java.nio.ByteBuffer;
-
-import org.neo4j.io.fs.StoreChannel;
-
-class DirectPersistenceWindow extends AbstractPersistenceWindow
+public class PageLockException extends RuntimeException
 {
-    DirectPersistenceWindow( long position, int recordSize, int totalSize, 
-        StoreChannel channel )
+    public PageLockException( String message )
     {
-        super( position, recordSize, totalSize, channel, 
-            ByteBuffer.allocateDirect( totalSize ) );
+        super( message );
+    }
+
+    public PageLockException( String message, Throwable cause )
+    {
+        super( message, cause );
     }
 }

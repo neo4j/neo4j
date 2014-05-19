@@ -29,6 +29,7 @@ import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -57,16 +58,29 @@ public class TestGrowingFileMemoryMapping
                 Configuration.use_memory_mapped_buffers.name(), "true",
                 Configuration.store_dir.name(), storeDir.getPath() ), NodeStore.Configuration.class );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-        StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory,
-                new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL,
-                new DefaultTxHook() );
+        StoreFactory storeFactory = new StoreFactory(
+                config,
+                idGeneratorFactory,
+                new DefaultWindowPoolFactory(),
+                new DefaultFileSystemAbstraction(),
+                StringLogger.DEV_NULL,
+                new DefaultTxHook(),
+                new Monitors() );
 
         File fileName = new File( storeDir, NeoStore.DEFAULT_NAME + ".nodestore.db" );
         storeFactory.createEmptyStore( fileName, storeFactory.buildTypeDescriptorAndVersion(
                 NodeStore.TYPE_DESCRIPTOR ) );
 
-        NodeStore nodeStore = new NodeStore( fileName, config, idGeneratorFactory, new DefaultWindowPoolFactory(),
-                new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, null, StoreVersionMismatchHandler.THROW_EXCEPTION );
+        NodeStore nodeStore = new NodeStore(
+                fileName,
+                config,
+                idGeneratorFactory,
+                new DefaultWindowPoolFactory(),
+                new DefaultFileSystemAbstraction(),
+                StringLogger.DEV_NULL,
+                null,
+                StoreVersionMismatchHandler.THROW_EXCEPTION,
+                new Monitors() );
 
         // when
         for ( int i = 0; i < 2 * NUMBER_OF_RECORDS; i++ )

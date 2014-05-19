@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-class MappedMemException extends RuntimeException
+public class MappedMemException extends RuntimeException
 {
     MappedMemException( Throwable cause )
     {

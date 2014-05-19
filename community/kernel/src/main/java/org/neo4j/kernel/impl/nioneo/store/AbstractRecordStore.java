@@ -28,6 +28,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Collections.singletonList;
 
@@ -36,10 +37,11 @@ public abstract class AbstractRecordStore<R extends AbstractBaseRecord> extends 
 {
     public AbstractRecordStore( File fileName, Config conf, IdType idType, IdGeneratorFactory idGeneratorFactory,
                                 WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
-                                StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler )
+                                StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler,
+                                Monitors monitors )
     {
         super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
-                versionMismatchHandler );
+                versionMismatchHandler, monitors );
     }
 
     @Override

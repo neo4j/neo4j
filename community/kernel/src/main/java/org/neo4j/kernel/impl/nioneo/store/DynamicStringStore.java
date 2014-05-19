@@ -27,6 +27,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Dynamic store that stores strings.
@@ -40,10 +41,11 @@ public class DynamicStringStore extends AbstractDynamicStore
     public DynamicStringStore( File fileName, Config configuration, IdType idType,
                                IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                                FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                               StoreVersionMismatchHandler versionMismatchHandler )
+                               StoreVersionMismatchHandler versionMismatchHandler,
+                               Monitors monitors )
     {
         super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler );
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     @Override

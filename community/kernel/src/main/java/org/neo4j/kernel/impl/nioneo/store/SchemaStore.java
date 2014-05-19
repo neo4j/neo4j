@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.nioneo.store.SchemaRule.Kind.deserialize;
 
@@ -46,10 +47,11 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     @SuppressWarnings("deprecation")
     public SchemaStore( File fileName, Config conf, IdType idType, IdGeneratorFactory idGeneratorFactory,
             WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler )
+            StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
         super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
-                stringLogger, versionMismatchHandler );
+                stringLogger, versionMismatchHandler, monitors );
     }
 
     @Override

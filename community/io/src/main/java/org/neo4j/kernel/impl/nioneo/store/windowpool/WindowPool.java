@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store.windowpool;
 
+import java.io.IOException;
+
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
@@ -35,7 +37,7 @@ public interface WindowPool
      *            The type of operation (READ or WRITE)
      * @return A locked window encapsulating the position
      */
-    PersistenceWindow acquire( long position, OperationType operationType );
+    PersistenceWindow acquire( long position, OperationType operationType ) throws IOException;
 
     /**
      * Releases a window used for an operation back to the pool and unlocks it
@@ -44,11 +46,11 @@ public interface WindowPool
      * @param window
      *            The window to be released
      */
-    void release( PersistenceWindow window );
+    void release( PersistenceWindow window ) throws IOException;
 
-    void flushAll();
+    void flushAll() throws IOException;
 
-    void close();
+    void close() throws IOException;
 
     WindowPoolStats getStats();
 }

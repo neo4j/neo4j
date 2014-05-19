@@ -31,6 +31,7 @@ import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static java.util.Arrays.asList;
@@ -107,7 +108,14 @@ public class NodeStoreTest
         Config config = new Config();
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         WindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
-        StoreFactory factory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fs, DEV_NULL, new DefaultTxHook() );
+        StoreFactory factory = new StoreFactory(
+                config,
+                idGeneratorFactory,
+                windowPoolFactory,
+                fs,
+                DEV_NULL,
+                new DefaultTxHook(),
+                new Monitors() );
         File nodeStoreFileName = new File( "nodestore" );
         factory.createNodeStore( nodeStoreFileName );
         NodeStore nodeStore = factory.newNodeStore( nodeStoreFileName );

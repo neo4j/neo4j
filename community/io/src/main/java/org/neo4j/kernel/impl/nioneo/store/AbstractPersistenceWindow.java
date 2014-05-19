@@ -72,7 +72,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         return position;
     }
 
-    void readFullWindow()
+    void readFullWindow() throws IOException
     {
         try
         {
@@ -92,12 +92,12 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to load position["
+            throw new IOException( "Unable to load position["
                 + position + "] @[" + position * recordSize + "]", e );
         }
     }
 
-    private void writeContents()
+    private void writeContents() throws IOException
     {
         ByteBuffer byteBuffer = buffer.getBuffer().duplicate();
         byteBuffer.clear();
@@ -117,7 +117,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to write record["
+            throw new IOException( "Unable to write record["
                 + position + "] @[" + position * recordSize + "]", e );
         }
     }
@@ -129,7 +129,7 @@ abstract class AbstractPersistenceWindow extends LockableWindow
     }
 
     @Override
-    public void force()
+    public void force() throws IOException
     {
         if ( isDirty() )
         {

@@ -37,6 +37,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
@@ -161,7 +162,7 @@ public class TestStore
             super( fileName, new Config( MapUtil.stringMap( "store_dir", "target/var/teststore" ),
                     GraphDatabaseSettings.class ),
                     IdType.NODE, ID_GENERATOR_FACTORY, WINDOW_POOL_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL,
-                    StoreVersionMismatchHandler.THROW_EXCEPTION );
+                    StoreVersionMismatchHandler.THROW_EXCEPTION, new Monitors() );
         }
 
         @Override
@@ -180,7 +181,7 @@ public class TestStore
         {
             new StoreFactory( new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class ),
                     ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(),
-                    FILE_SYSTEM, StringLogger.DEV_NULL, null ).
+                    FILE_SYSTEM, StringLogger.DEV_NULL, null, new Monitors() ).
                     createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) );
             return new Store( fileName );
         }

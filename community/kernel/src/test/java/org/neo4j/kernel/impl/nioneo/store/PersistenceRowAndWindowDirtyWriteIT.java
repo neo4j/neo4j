@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
+import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.util.Arrays;
 import java.util.concurrent.ConcurrentHashMap;
@@ -31,7 +32,6 @@ import org.junit.runner.RunWith;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
@@ -103,12 +103,24 @@ public class PersistenceRowAndWindowDirtyWriteIT
                         true, // memory map?
                         false, // read only?
                         new ConcurrentHashMap<Long, PersistenceRow>(), BrickElementFactory.DEFAULT,
-                        StringLogger.DEV_NULL );
+                        PersistenceWindowPool.Monitor.NULL );
 
         Thread theTriggeringOne = new Thread( new Runnable()
         {
             @Override
             public void run()
+            {
+                try
+                {
+                    doWork();
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+
+            private void doWork() throws IOException
             {
                 /*
                  * When we attempt to grab a brick for the first time, we always immediately memory map it if there is

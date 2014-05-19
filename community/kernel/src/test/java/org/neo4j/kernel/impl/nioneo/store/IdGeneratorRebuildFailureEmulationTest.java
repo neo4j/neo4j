@@ -45,6 +45,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.test.subprocess.BreakPoint;
@@ -159,8 +160,14 @@ public class IdGeneratorRebuildFailureEmulationTest
         Map<String, String> config = new HashMap<String, String>();
         config.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
         config.put( GraphDatabaseSettings.store_dir.name(), prefix );
-        factory = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, null );
+        factory = new StoreFactory(
+                new Config( config, GraphDatabaseSettings.class ),
+                new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(),
+                fs,
+                StringLogger.DEV_NULL,
+                null,
+                new Monitors() );
     }
 
     @After

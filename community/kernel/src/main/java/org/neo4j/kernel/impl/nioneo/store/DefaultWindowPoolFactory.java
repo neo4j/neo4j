@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.neo4j.graphdb.config.Setting;
@@ -28,7 +29,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Settings.setting;
 
@@ -36,14 +37,15 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
 {
     @Override
     public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel, Config configuration,
-                              StringLogger log, int numberOfReservedLowIds )
+                              int numberOfReservedLowIds, Monitors monitors ) throws IOException
     {
 
+        PersistenceWindowPool.Monitor monitor = monitors.newMonitor( PersistenceWindowPool.Monitor.class );
         return new PersistenceWindowPool( storageFileName, recordSize, fileChannel,
                 calculateMappedMemory( configuration, storageFileName ),
                 configuration.get( CommonAbstractStore.Configuration.use_memory_mapped_buffers ),
                 isReadOnly( configuration ) && !isBackupSlave( configuration ),
-                new ConcurrentHashMap<Long, PersistenceRow>(), BrickElementFactory.DEFAULT, log );
+                new ConcurrentHashMap<Long, PersistenceRow>(), BrickElementFactory.DEFAULT, monitor );
     }
 
     private boolean isBackupSlave( Config configuration )

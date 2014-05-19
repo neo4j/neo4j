@@ -38,7 +38,6 @@ import org.junit.Test;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -73,7 +72,7 @@ public class TestPersistenceWindowPoolContention
         write( channel, fileSize );
         pool = new PersistenceWindowPool( new File("contention test"), recordSize, channel, mappingSize,
                 true, false, new ConcurrentHashMap<Long, PersistenceRow>(), BrickElementFactory.DEFAULT,
-                StringLogger.DEV_NULL );
+                PersistenceWindowPool.Monitor.NULL );
     }
 
     private void write( StoreChannel channel, long bytes ) throws IOException
@@ -158,7 +157,19 @@ public class TestPersistenceWindowPoolContention
         @Override
         public void run()
         {
-            warmItUp();
+            try
+            {
+                warmItUp();
+                runIt();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+        }
+
+        private void runIt() throws IOException
+        {
             while ( !halted )
             {
                 OperationType type = randomOperationTypeButFavoringReads(0.6f);
@@ -183,8 +194,8 @@ public class TestPersistenceWindowPoolContention
                 count++;
             }
         }
-        
-        private void warmItUp()
+
+        private void warmItUp() throws IOException
         {
             for ( int i = 0; i < 100000; i++ )
             {

@@ -45,6 +45,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static org.junit.Assert.assertFalse;
@@ -309,8 +310,16 @@ public class UpgradeStoreIT
     private void createManyRelationshipTypes( File path, int numberOfTypes )
     {
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
-        DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names"), null, IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.THROW_EXCEPTION );
+        DynamicStringStore stringStore = new DynamicStringStore(
+                new File( fileName.getPath() + ".names"),
+                null,
+                IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
+                new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(),
+                new DefaultFileSystemAbstraction(),
+                StringLogger.DEV_NULL,
+                StoreVersionMismatchHandler.THROW_EXCEPTION,
+                new Monitors() );
         RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
@@ -333,9 +342,15 @@ public class UpgradeStoreIT
 
         public RelationshipTypeTokenStoreWithOneOlderVersion( File fileName, DynamicStringStore stringStore )
         {
-            super( fileName, new Config( stringMap() ), new NoLimitIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                    new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, stringStore,
-                    StoreVersionMismatchHandler.THROW_EXCEPTION );
+            super( fileName,
+                    new Config( stringMap() ),
+                    new NoLimitIdGeneratorFactory(),
+                    new DefaultWindowPoolFactory(),
+                    new DefaultFileSystemAbstraction(),
+                    StringLogger.DEV_NULL,
+                    stringStore,
+                    StoreVersionMismatchHandler.THROW_EXCEPTION,
+                    new Monitors() );
         }
 
         @Override

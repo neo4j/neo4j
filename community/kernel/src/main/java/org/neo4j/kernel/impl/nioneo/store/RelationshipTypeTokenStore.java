@@ -30,6 +30,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Implementation of the relationship type store. Uses a dynamic store to store
@@ -49,10 +50,11 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     public RelationshipTypeTokenStore( File fileName, Config config,
                                        IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                                        FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                                       DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler )
+                                       DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler,
+                                       Monitors monitors )
     {
         super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler );
+                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
     @Override

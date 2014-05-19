@@ -32,10 +32,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
-import org.neo4j.kernel.impl.util.StringLogger;
 
 /**
  * Manages {@link PersistenceWindow persistence windows} for a store. Each store
@@ -47,6 +45,36 @@ import org.neo4j.kernel.impl.util.StringLogger;
  */
 public class PersistenceWindowPool implements WindowPool
 {
+    interface Monitor {
+
+        void recordStatistics( File storeName, int hit, int miss, int switches, int ooe );
+
+        void recordStatus( File storeName, int brickCount, int brickSize, long availableMem, long size );
+
+        void allocationError( File storeName, Throwable cause, String description );
+
+        void insufficientMemoryForMapping( long availableMem, long wantedMem );
+
+        public static final Monitor NULL = new Monitor()
+        {
+            @Override
+            public void recordStatistics( File storeName, int hit, int miss, int switches, int ooe )
+            {}
+
+            @Override
+            public void recordStatus( File storeName, int brickCount, int brickSize, long availableMem, long size )
+            {}
+
+            @Override
+            public void allocationError( File storeName, Throwable cause, String description )
+            {}
+
+            @Override
+            public void insufficientMemoryForMapping( long availableMem, long wantedMem )
+            {}
+        };
+    }
+
     private static final int MAX_BRICK_COUNT = 100000;
 
     private final File storeName;
@@ -76,7 +104,7 @@ public class PersistenceWindowPool implements WindowPool
     private final AtomicInteger avertedRefreshes = new AtomicInteger();
     private final AtomicLong refreshTime = new AtomicLong();
     private final AtomicInteger refreshes = new AtomicInteger();
-    private final StringLogger log;
+    private final Monitor monitor;
     private final BrickElementFactory brickFactory;
 
     /**
@@ -93,14 +121,14 @@ public class PersistenceWindowPool implements WindowPool
      *            Number of bytes dedicated to memory mapped windows
      * @param activeRowWindows
      *            Data structure for storing active "row windows", generally just provide a concurrent hash map.
-     * @throws UnderlyingStorageException If unable to create pool
+     * @throws java.io.IOException If unable to create pool
      */
     public PersistenceWindowPool( File storeName, int blockSize,
                                   StoreChannel fileChannel, long mappedMem,
                                   boolean useMemoryMappedBuffers, boolean readOnly,
                                   ConcurrentMap<Long, PersistenceRow> activeRowWindows,
                                   BrickElementFactory brickFactory,
-                                  StringLogger log )
+                                  Monitor monitor ) throws IOException
     {
         this.storeName = storeName;
         this.blockSize = blockSize;
@@ -111,7 +139,7 @@ public class PersistenceWindowPool implements WindowPool
         this.activeRowWindows = activeRowWindows;
         this.brickFactory = brickFactory;
         this.mapMode = readOnly ? MapMode.READ_ONLY : MapMode.READ_WRITE;
-        this.log = log;
+        this.monitor = monitor;
         setupBricks();
         dumpStatus();
     }
@@ -127,7 +155,7 @@ public class PersistenceWindowPool implements WindowPool
      * @return A locked window encapsulating the position
      */
     @Override
-    public PersistenceWindow acquire( long position, OperationType operationType )
+    public PersistenceWindow acquire( long position, OperationType operationType ) throws IOException
     {
         LockableWindow window = null;
         if ( brickMiss >= REFRESH_BRICK_COUNT )
@@ -211,8 +239,9 @@ public class PersistenceWindowPool implements WindowPool
 
     void dumpStatistics()
     {
-        log.info( storeName + " hit=" + hit + " miss=" + miss + " switches="
-                        + switches + " ooe=" + ooe );
+        monitor.recordStatistics( storeName, hit, miss, switches, ooe );
+//        log.info( storeName + " hit=" + hit + " miss=" + miss + " switches="
+//                        + switches + " ooe=" + ooe );
     }
 
     /**
@@ -223,7 +252,7 @@ public class PersistenceWindowPool implements WindowPool
      *            The window to be released
      */
     @Override
-    public void release( PersistenceWindow window )
+    public void release( PersistenceWindow window ) throws IOException
     {
         try
         {
@@ -288,7 +317,7 @@ public class PersistenceWindowPool implements WindowPool
     }
 
     @Override
-    public synchronized void close()
+    public synchronized void close() throws IOException
     {
         flushAll();
         for ( BrickElement element : brickArray )
@@ -305,28 +334,28 @@ public class PersistenceWindowPool implements WindowPool
     }
 
     @Override
-    public void flushAll()
+    public void flushAll() throws IOException
     {
         if ( readOnly )
         {
             return;
         }
 
-        for ( BrickElement element : brickArray )
-        {
-            PersistenceWindow window = element.getWindow();
-            if ( window != null )
-            {
-                window.force();
-            }
-        }
         try
         {
+            for ( BrickElement element : brickArray )
+            {
+                PersistenceWindow window = element.getWindow();
+                if ( window != null )
+                {
+                    window.force();
+                }
+            }
             fileChannel.force( false );
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException(
+            throw new IOException(
                 "Failed to flush file channel " + storeName, e );
         }
     }
@@ -335,7 +364,7 @@ public class PersistenceWindowPool implements WindowPool
      * Initial setup of bricks based on the size of the given channel and
      * available memory to map.
      */
-    private void setupBricks()
+    private void setupBricks() throws IOException
     {
         long fileSize = -1;
         try
@@ -344,7 +373,7 @@ public class PersistenceWindowPool implements WindowPool
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException(
+            throw new IOException(
                 "Unable to get file size for " + storeName, e );
         }
         if ( blockSize == 0 )
@@ -356,10 +385,11 @@ public class PersistenceWindowPool implements WindowPool
         // to use available memory.
         if(availableMem > 0 && availableMem < blockSize * 10l )
         {
-            logWarn( "Unable to use " + availableMem
-                    + "b as memory mapped windows, need at least " + blockSize * 10
-                    + "b (block size * 10)" );
-            logWarn( "Memory mapped windows have been turned off" );
+            monitor.insufficientMemoryForMapping( availableMem, blockSize * 10 );
+//            log.warn( "[" + storeName + "] " + "Unable to use " + availableMem
+//                        + "b as memory mapped windows, need at least " + blockSize * 10
+//                        + "b (block size * 10)" );
+//            log.warn( "[" + storeName + "] " + "Memory mapped windows have been turned off" );
             availableMem = 0;
             brickCount = 0;
             brickSize = 0;
@@ -391,10 +421,11 @@ public class PersistenceWindowPool implements WindowPool
                 }
                 if ( fileSize / brickCount > availableMem )
                 {
-                    logWarn( "Unable to use " + (availableMem / 1024)
-                        + "kb as memory mapped windows, need at least "
-                        + (fileSize / brickCount / 1024) + "kb" );
-                    logWarn( "Memory mapped windows have been turned off" );
+                    monitor.insufficientMemoryForMapping( availableMem, fileSize / brickCount );
+//                    log.warn( "[" + storeName + "] " + "Unable to use " + (availableMem / 1024)
+//                                    + "kb as memory mapped windows, need at least "
+//                                    + (fileSize / brickCount / 1024) + "kb" );
+//                    log.warn( "[" + storeName + "] " + "Memory mapped windows have been turned off" );
                     availableMem = 0;
                     brickCount = 0;
                     brickSize = 0;
@@ -441,7 +472,7 @@ public class PersistenceWindowPool implements WindowPool
      *
      * @param nr the number of windows to free.
      */
-    private void freeWindows( int nr )
+    private void freeWindows( int nr ) throws IOException
     {
         // Only called from expandBricks, so we're under a lock here
         if ( brickSize <= 0 )
@@ -449,7 +480,7 @@ public class PersistenceWindowPool implements WindowPool
             // memory mapped turned off
             return;
         }
-        ArrayList<BrickElement> mappedBricks = new ArrayList<BrickElement>();
+        ArrayList<BrickElement> mappedBricks = new ArrayList<>();
         for ( int i = 0; i < brickCount; i++ )
         {
             BrickElement be = brickArray[i];
@@ -477,7 +508,7 @@ public class PersistenceWindowPool implements WindowPool
      * accordingly. This happens whenever we see that there has been a certain
      * amount of brick misses since the last refresh.
      */
-    private void refreshBricks()
+    private void refreshBricks() throws IOException
     {
         if ( brickMiss < REFRESH_BRICK_COUNT || brickSize <= 0 )
         {
@@ -507,12 +538,12 @@ public class PersistenceWindowPool implements WindowPool
         }
     }
 
-    private synchronized void doRefreshBricks()
+    private synchronized void doRefreshBricks() throws IOException
     {
         brickMiss = 0;
-        Pair<List<BrickElement>, List<BrickElement>> currentMappings = gatherMappedVersusUnmappedWindows();
-        List<BrickElement> mappedBricks = currentMappings.first();
-        List<BrickElement> unmappedBricks = currentMappings.other();
+        List<BrickElement> mappedBricks = new ArrayList<>();
+        List<BrickElement> unmappedBricks = new ArrayList<>();
+        gatherMappedVersusUnmappedWindows( mappedBricks, unmappedBricks );
 
         // Fill up unused memory, i.e. map unmapped bricks as much as available memory allows
         // and request patterns signals. Start the loop from the end of the array where the
@@ -569,10 +600,10 @@ public class PersistenceWindowPool implements WindowPool
      *
      * @return all bricks in this pool divided into mapped and unmapped.
      */
-    private Pair<List<BrickElement>, List<BrickElement>> gatherMappedVersusUnmappedWindows()
+    private void gatherMappedVersusUnmappedWindows(
+            List<BrickElement> mappedBricks,
+            List<BrickElement> unmappedBricks )
     {
-        List<BrickElement> mappedBricks = new ArrayList<BrickElement>();
-        List<BrickElement> unmappedBricks = new ArrayList<BrickElement>();
         for ( int i = 0; i < brickCount; i++ )
         {
             BrickElement be = brickArray[i];
@@ -589,7 +620,6 @@ public class PersistenceWindowPool implements WindowPool
         }
         Collections.sort( unmappedBricks, BRICK_SORTER );
         Collections.sort( mappedBricks, BRICK_SORTER );
-        return Pair.of( mappedBricks, unmappedBricks );
     }
 
     /**
@@ -599,7 +629,7 @@ public class PersistenceWindowPool implements WindowPool
      *
      * @param newBrickCount the size to expand the brick count to.
      */
-    private synchronized void expandBricks( int newBrickCount )
+    private synchronized void expandBricks( int newBrickCount ) throws IOException
     {
         if ( newBrickCount > brickCount )
         {
@@ -634,7 +664,7 @@ public class PersistenceWindowPool implements WindowPool
      * @return {@code true} if the window was successfully allocated,
      * otherwise {@code false}.
      */
-    boolean allocateNewWindow( BrickElement brick )
+    boolean allocateNewWindow( BrickElement brick ) throws IOException
     {
         try
         {
@@ -672,7 +702,7 @@ public class PersistenceWindowPool implements WindowPool
                         return true;
                     }
                 }
-                // Locks are still held on this brick, give others some breething space to release their locks:
+                // Locks are still held on this brick, give others some breathing space to release their locks:
                 Thread.yield();
             }
             return false;
@@ -680,39 +710,32 @@ public class PersistenceWindowPool implements WindowPool
         catch ( MappedMemException e )
         {
             ooe++;
-            logWarn( "Unable to memory map", e );
+//            log.warn( "[" + storeName + "] " + "Unable to memory map", e );
+            monitor.allocationError( storeName, e, "Unable to memory map" );
         }
         catch ( OutOfMemoryError e )
         {
             ooe++;
-            logWarn( "Unable to allocate direct buffer", e );
+            monitor.allocationError( storeName, e, "Unable to allocate direct buffer" );
+//            log.warn( "[" + storeName + "] " + "Unable to allocate direct buffer", e );
         }
         return false;
     }
 
-    private void dumpStatus()
+    private void dumpStatus() throws IOException
     {
         try
         {
-            log.info( "[" + storeName + "] brickCount=" + brickCount
-                            + " brickSize=" + brickSize + "b mappedMem=" + availableMem
-                            + "b (storeSize=" + fileChannel.size() + "b)" );
+            monitor.recordStatus( storeName, brickCount, brickSize, availableMem, fileChannel.size() );
+//            log.info( "[" + storeName + "] brickCount=" + brickCount
+//                            + " brickSize=" + brickSize + "b mappedMem=" + availableMem
+//                            + "b (storeSize=" + fileChannel.size() + "b)" );
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException(
+            throw new IOException(
                 "Unable to get file size for " + storeName, e );
         }
-    }
-
-    private void logWarn( String logMessage )
-    {
-        log.warn( "[" + storeName + "] " + logMessage );
-    }
-
-    private void logWarn( String logMessage, Throwable cause )
-    {
-        log.warn( "[" + storeName + "] " + logMessage, cause );
     }
 
     @Override

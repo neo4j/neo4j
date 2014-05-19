@@ -20,15 +20,16 @@
 package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * A {@link WindowPoolFactory} that can assign specific {@link WindowPool window pools} tailored
@@ -51,10 +52,10 @@ public class TailoredWindowPoolFactory implements WindowPoolFactory
 
     @Override
     public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel, Config configuration,
-            StringLogger log, int numberOfReservedLowIds )
+            int numberOfReservedLowIds, Monitors monitors ) throws IOException
     {
         WindowPoolFactory override = overrides.get( storageFileName.getName() );
         WindowPoolFactory factory = override != null ? override : defaultFactory;
-        return factory.create( storageFileName, recordSize, fileChannel, configuration, log, numberOfReservedLowIds );
+        return factory.create( storageFileName, recordSize, fileChannel, configuration, numberOfReservedLowIds, monitors );
     }
 }

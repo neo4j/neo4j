@@ -1224,7 +1224,7 @@ public class NeoStoreTransactionTest
                 GraphDatabaseSettings.dense_node_threshold.name(), "" + denseNodeThreshold ) );
         @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
-                fs.get(), DEV_NULL, new DefaultTxHook() );
+                fs.get(), DEV_NULL, new DefaultTxHook(), new Monitors() );
         neoStore = storeFactory.createNeoStore( new File( "neostore" ) );
         lockMocks.clear();
         locks = mock( LockService.class, new Answer()

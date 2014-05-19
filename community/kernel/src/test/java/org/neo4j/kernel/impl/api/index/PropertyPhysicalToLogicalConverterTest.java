@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyRecordChange;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 import static org.junit.Assert.assertEquals;
@@ -209,8 +210,14 @@ public class PropertyPhysicalToLogicalConverterTest
     @Before
     public void before() throws Exception
     {
-        StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, new DefaultTxHook() );
+        StoreFactory storeFactory = new StoreFactory(
+                new Config(),
+                new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory(),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                new DefaultTxHook(),
+                new Monitors() );
         File storeFile = new File( "propertystore" );
         storeFactory.createPropertyStore( storeFile );
         store = storeFactory.newPropertyStore( storeFile );

@@ -21,9 +21,9 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.io.File;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
@@ -34,6 +34,7 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
@@ -44,9 +45,9 @@ import static java.lang.String.valueOf;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.SYNCHRONOUS;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode.APPEND_ONLY;
 import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode.UPDATE;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.SYNCHRONOUS;
 
 /**
  * Creator and accessor of {@link NeoStore} with some logic to provide very batch friendly services to the
@@ -58,6 +59,7 @@ public class BatchFriendlyNeoStore implements AutoCloseable
     private final ChannelReusingFileSystemAbstraction fileSystem;
     private final Configuration config;
     private final Monitor writeMonitor;
+    private final Monitors monitors;
     private NeoStore neoStore;
     private final BatchingPropertyKeyTokenRepository propertyKeyRepository;
     private final BatchingLabelTokenRepository labelRepository;
@@ -67,8 +69,9 @@ public class BatchFriendlyNeoStore implements AutoCloseable
     private final File neoStoreFileName;
 
     public BatchFriendlyNeoStore( FileSystemAbstraction fileSystem, String storeDir,
-            Configuration config, Monitor writeMonitor, Logging logging )
+            Configuration config, Monitor writeMonitor, Logging logging, Monitors monitors )
     {
+        this.monitors = monitors;
         this.fileSystem = life.add( new ChannelReusingFileSystemAbstraction( fileSystem ) );
         this.neoStoreFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
 
@@ -90,7 +93,7 @@ public class BatchFriendlyNeoStore implements AutoCloseable
     private NeoStore newNeoStore( WindowPoolFactory windowPoolFactory )
     {
         StoreFactory storeFactory = new StoreFactory( neo4jConfig, new BatchingIdGeneratorFactory(),
-                windowPoolFactory, fileSystem, logger, new DefaultTxHook() );
+                windowPoolFactory, fileSystem, logger, new DefaultTxHook(), monitors );
         if ( fileSystem.fileExists( neoStoreFileName ) )
         {
             return storeFactory.newNeoStore( neoStoreFileName );

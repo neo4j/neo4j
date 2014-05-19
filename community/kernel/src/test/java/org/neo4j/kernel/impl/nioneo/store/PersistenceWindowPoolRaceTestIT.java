@@ -36,7 +36,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 
 public class PersistenceWindowPoolRaceTestIT
@@ -62,9 +61,8 @@ public class PersistenceWindowPoolRaceTestIT
         long mappedMem = blockSize + (blockSize * (maxId / 10)) + (blockSize / 2);
         boolean useMemoryMappedBuffers = true;
         boolean readOnly = false;
-        ConcurrentMap<Long, PersistenceRow> activeRowWindows = new ConcurrentHashMap<Long, PersistenceRow>();
+        ConcurrentMap<Long, PersistenceRow> activeRowWindows = new ConcurrentHashMap<>();
         BrickElementFactory brickFactory = BrickElementFactory.DEFAULT;
-        StringLogger log = StringLogger.SYSTEM;
 
         PersistenceWindowPool pwp = new PersistenceWindowPool(
                 file,
@@ -75,7 +73,7 @@ public class PersistenceWindowPoolRaceTestIT
                 readOnly,
                 activeRowWindows,
                 brickFactory,
-                log );
+                PersistenceWindowPool.Monitor.NULL );
 
         for ( int i = 0; i <= 9; i++ )
         {
