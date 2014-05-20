@@ -1,4 +1,4 @@
-["dot", "graphdb-compare-docdb.svg", "meta", scaledwidth="75%"]
+["dot", "graphdb-compare-docdb.svg", "meta"]
 ----
 subgraph cluster_0 {
   color="BOXCOLOR"

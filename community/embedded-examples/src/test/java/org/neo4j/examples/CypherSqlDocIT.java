@@ -113,10 +113,10 @@ public class CypherSqlDocIT extends ImpermanentGraphJavaDocTestBase
      * To illustrate this, consider this image, comparing the SQL model and Neo4j/Cypher.
      * 
      * ifdef::nonhtmloutput[]
-     * image::RDBMSvsGraph.svg[scaledwidth="100%"]
+     * image::RDBMSvsGraph.svg[]
      * endif::nonhtmloutput[]
      * ifndef::nonhtmloutput[]
-     * image::RDBMSvsGraph.svg.png[scaledwidth="100%"]
+     * image::RDBMSvsGraph.svg.png[]
      * endif::nonhtmloutput[]
      * 
      * And here are example queries:

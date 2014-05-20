@@ -349,11 +349,36 @@ div.note *,div.caution *,div.important *,div.tip *,div.warning * {
   #content,#content * {
     visibility: visible;
   }
-  #sidebar-wrapper,.navfooter {
+  #content {
+    position: static;
+    width: auto;
+    padding: 0 30px 5px 15px;
+    margin: 0 0 0 0;
+    border-left: 0 none;
+    overflow: visible;
+    overflow-x: visible;
+  }  
+  #sidebar-wrapper,.navfooter, #discuss, div.query-outer-wrapper div.btn-group, body #header a {
     display: none !important;
     width: 0 !important;
   }
-  #content {
-    margin: 0 0 0 0;
+  body #header {
+    position: static;
+    height: auto;
+  }
+  body #header h1 {
+    position: static;
+    color: #000000 !important;
+    visibility: visible;
+    margin: 0, 0, 0, 15px;
+  }
+  div.figure, div.informalfigure {
+    page-break-inside: avoid;
+  }
+  footer p {
+    text-align: left;
+  }
+  footer p a {
+    padding-right: 1em;
   }
 }
