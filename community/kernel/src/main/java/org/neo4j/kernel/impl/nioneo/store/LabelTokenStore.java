@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -65,15 +66,15 @@ public class LabelTokenStore extends TokenStore<LabelTokenRecord>
     }
 
     @Override
-    protected void readRecord( LabelTokenRecord record, Buffer buffer )
+    protected void readRecord( LabelTokenRecord record, PageCursor cursor )
     {
-        record.setNameId( buffer.getInt() );
+        record.setNameId( cursor.getInt() );
     }
 
     @Override
-    protected void writeRecord( LabelTokenRecord record, Buffer buffer )
+    protected void writeRecord( LabelTokenRecord record, PageCursor cursor )
     {
-        buffer.putInt( record.getNameId() );
+        cursor.putInt( record.getNameId() );
     }
 
     @Override

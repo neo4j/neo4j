@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
@@ -27,6 +28,11 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageLock;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.legacy.WindowPoolPageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -38,6 +44,10 @@ import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.decodeString;
 
 public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordStore<T> implements Store
 {
+    private final PageCache pageCache;
+    private final PagedFile storeFile;
+    private final int pageSize;
+
     public static abstract class Configuration
         extends AbstractStore.Configuration
     {
@@ -56,6 +66,17 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
         this.nameStore = nameStore;
+        pageCache = new WindowPoolPageCache( windowPoolFactory, fileSystemAbstraction );
+        try
+        {
+            storeFile = pageCache.map( fileName, getRecordSize() * 128, getRecordSize() );
+        }
+        catch ( IOException e )
+        {
+            // TODO: Just throw IOException, add proper handling further up
+            throw new UnderlyingStorageException( e );
+        }
+        pageSize = storeFile.pageSize();
     }
 
     public DynamicStringStore getNameStore()
@@ -175,17 +196,30 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     public T getRecord( int id )
     {
         T record;
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            record = getRecord( id, window, false );
+            storeFile.pin( cursor, PageLock.READ, pageIdForRecord( id ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            record = getRecord( id, cursor, false );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
         record.addNameRecords( nameStore.getLightRecords( record.getNameId() ) );
         return record;
+    }
+
+    private long pageIdForRecord( long id )
+    {
+        return id * getRecordSize() / pageSize;
     }
 
     @Override
@@ -197,23 +231,23 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     @Override
     public T forceGetRecord( long id )
     {
-        PersistenceWindow window;
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            window = acquireWindow( id, OperationType.READ );
+            storeFile.pin( cursor, PageLock.READ, pageIdForRecord( id ) );
         }
-        catch ( InvalidRecordException e )
+        catch ( IOException e )
         {
             return newRecord( (int) id );
         }
 
         try
         {
-            return getRecord( (int) id, window, true );
+            return getRecord( (int) id, cursor, true );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
@@ -238,31 +272,47 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
     public T getLightRecord( int id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            T record = getRecord( id, window, false );
+            storeFile.pin( cursor, PageLock.READ, pageIdForRecord( id ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+
+        try
+        {
+            T record = getRecord( id, cursor, false );
             record.setIsLight( true );
             return record;
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
     @Override
     public void updateRecord( T record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
-            OperationType.WRITE );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            updateRecord( record, window );
+            storeFile.pin( cursor, PageLock.WRITE, pageIdForRecord( record.getId() ));
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            updateRecord( record, cursor );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
         if ( !record.isLight() )
         {
@@ -276,15 +326,22 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     @Override
     public void forceUpdateRecord( T record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
-                OperationType.WRITE );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            updateRecord( record, window );
+            storeFile.pin( cursor, PageLock.WRITE, pageIdForRecord( record.getId() ));
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            updateRecord( record, cursor );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
@@ -295,10 +352,10 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
     protected abstract T newRecord( int id );
 
-    protected T getRecord( int id, PersistenceWindow window, boolean force )
+    protected T getRecord( int id, PageCursor cursor, boolean force )
     {
-        Buffer buffer = window.getOffsettedBuffer( id );
-        byte inUseByte = buffer.get();
+        cursor.setOffset( id * getRecordSize() % pageSize );
+        byte inUseByte = cursor.getByte();
         boolean inUse = (inUseByte == Record.IN_USE.byteValue());
         if ( !inUse && !force )
         {
@@ -311,28 +368,28 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
         T record = newRecord( id );
         record.setInUse( inUse );
-        readRecord( record, buffer );
+        readRecord( record, cursor );
         return record;
     }
 
-    protected void readRecord( T record, Buffer buffer )
+    protected void readRecord( T record, PageCursor cursor )
     {
-        record.setNameId( buffer.getInt() );
+        record.setNameId( cursor.getInt() );
     }
 
-    protected void updateRecord( T record, PersistenceWindow window )
+    protected void updateRecord( T record, PageCursor cursor )
     {
         int id = record.getId();
         registerIdFromUpdateRecord( id );
-        Buffer buffer = window.getOffsettedBuffer( id );
+        cursor.setOffset( id * getRecordSize() % pageSize );
         if ( record.inUse() )
         {
-            buffer.put( Record.IN_USE.byteValue() );
-            writeRecord( record, buffer );
+            cursor.putByte( Record.IN_USE.byteValue() );
+            writeRecord( record, cursor );
         }
         else
         {
-            buffer.put( Record.NOT_IN_USE.byteValue() );
+            cursor.putByte( Record.NOT_IN_USE.byteValue() );
             if ( !isInRecoveryMode() )
             {
                 freeId( id );
@@ -340,9 +397,9 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         }
     }
 
-    protected void writeRecord( T record, Buffer buffer )
+    protected void writeRecord( T record, PageCursor cursor )
     {
-        buffer.putInt( record.getNameId() );
+        cursor.putInt( record.getNameId() );
     }
 
     public void ensureHeavy( T record )
@@ -378,7 +435,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     @Override
     public List<WindowPoolStats> getAllWindowPoolStats()
     {
-        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
+        List<WindowPoolStats> list = new ArrayList<>();
         list.add( nameStore.getWindowPoolStats() );
         list.add( getWindowPoolStats() );
         return list;

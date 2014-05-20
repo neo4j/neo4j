@@ -430,6 +430,7 @@ public abstract class CommonAbstractStore implements IdSequence
      * @param type     The operation type
      * @return a persistence window encapsulating the record
      */
+    @Deprecated
     protected PersistenceWindow acquireWindow( long position, OperationType type )
     {
         assertIdExists( position );
@@ -460,6 +461,7 @@ public abstract class CommonAbstractStore implements IdSequence
      *
      * @param window The window to be released
      */
+    @Deprecated
     protected void releaseWindow( PersistenceWindow window )
     {
         try
