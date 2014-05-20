@@ -106,10 +106,16 @@ public class OffsetTrackingCursor implements PageCursor
         currentOffset = offset;
     }
 
-    public void reset( Page page )
+    public int getOffset()
+    {
+        return currentOffset;
+    }
+
+    public OffsetTrackingCursor reset( Page page )
     {
         this.page = page;
         currentOffset = 0;
+        return this;
     }
 
     public Page getPage()

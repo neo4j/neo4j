@@ -36,4 +36,5 @@ public interface PageCursor
     void putBytes( byte[] data );
 
     void setOffset( int offset );
+    int getOffset();
 }
