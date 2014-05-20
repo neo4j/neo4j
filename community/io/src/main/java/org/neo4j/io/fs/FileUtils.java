@@ -41,11 +41,21 @@ import java.nio.file.Path;
 import java.nio.file.SimpleFileVisitor;
 import java.nio.file.attribute.BasicFileAttributes;
 
-import org.neo4j.io.fs.RenameThis;
-
 public class FileUtils
 {
-    private static int WINDOWS_RETRY_COUNT = 5;
+    public static final boolean OS_IS_WINDOWS;
+    private static final int WINDOWS_RETRY_COUNT = 5;
+
+    static {
+        boolean isWindows;
+        try {
+            String osName = System.getProperty( "os.name" );
+            isWindows = osName != null && osName.startsWith( "Windows" );
+        } catch (SecurityException ex) {
+            isWindows = false;
+        }
+        OS_IS_WINDOWS = isWindows;
+    }
 
     public static void deleteRecursively( File directory ) throws IOException
     {
@@ -454,7 +464,7 @@ public class FileUtils
         }
         catch ( IOException e )
         {
-            if ( RenameThis.osIsWindows() && mayBeWindowsMemoryMappedFileReleaseProblem( e ) )
+            if ( OS_IS_WINDOWS && mayBeWindowsMemoryMappedFileReleaseProblem( e ) )
             {
                 if ( tries >= WINDOWS_RETRY_COUNT )
                 {

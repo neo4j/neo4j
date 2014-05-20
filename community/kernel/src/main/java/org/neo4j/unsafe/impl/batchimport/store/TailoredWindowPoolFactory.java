@@ -27,8 +27,8 @@ import java.util.Map;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
+import org.neo4j.kernel.impl.nioneo.store.WindowPool;
+import org.neo4j.kernel.impl.nioneo.store.WindowPoolFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 
 /**

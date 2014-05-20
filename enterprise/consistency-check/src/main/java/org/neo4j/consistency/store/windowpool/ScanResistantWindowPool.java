@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
+import org.neo4j.kernel.impl.nioneo.store.WindowPool;
 
 public class ScanResistantWindowPool implements WindowPool,
         PageReplacementStrategy.Storage<PersistenceWindow, WindowPage>

@@ -40,8 +40,6 @@ import static java.lang.String.format;
 
 /**
  * Default file system abstraction that creates files using the underlying file system.
- *
- * @deprecated This will be moved to internal packages in the next major release.
  */
 public class DefaultFileSystemAbstraction
         implements FileSystemAbstraction
@@ -171,7 +169,7 @@ public class DefaultFileSystemAbstraction
     }
 
     private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =
-            new HashMap<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem>();
+            new HashMap<>();
 
     @Override
     public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(

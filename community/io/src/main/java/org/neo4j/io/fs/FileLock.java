@@ -54,7 +54,7 @@ public abstract class FileLock
     public static FileLock getOsSpecificFileLock( File fileName, StoreChannel channel )
             throws IOException
     {
-        if ( RenameThis.osIsWindows() )
+        if ( FileUtils.OS_IS_WINDOWS )
         {
             // TODO: This code should not be here. It is file-specific, and the logic here should
             // be handled in the StoreLocker.

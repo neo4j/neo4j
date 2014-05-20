@@ -27,8 +27,6 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Settings.setting;
@@ -39,7 +37,6 @@ public class DefaultWindowPoolFactory implements WindowPoolFactory
     public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel, Config configuration,
                               int numberOfReservedLowIds, Monitors monitors ) throws IOException
     {
-
         PersistenceWindowPool.Monitor monitor = monitors.newMonitor( PersistenceWindowPool.Monitor.class );
         return new PersistenceWindowPool( storageFileName, recordSize, fileChannel,
                 calculateMappedMemory( configuration, storageFileName ),

@@ -21,7 +21,7 @@ package org.neo4j.consistency.store.windowpool;
 
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
+import org.neo4j.kernel.impl.nioneo.store.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public enum WindowPoolImplementation

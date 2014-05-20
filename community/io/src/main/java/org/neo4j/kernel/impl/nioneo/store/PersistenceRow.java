@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.io.fs.PageLockException;
+import org.neo4j.io.pagecache.PageLockException;
 import org.neo4j.io.fs.StoreChannel;
 
 /**

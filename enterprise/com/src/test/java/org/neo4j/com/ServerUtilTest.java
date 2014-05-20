@@ -41,7 +41,7 @@ import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.function.Function;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.nioneo.store.AbstractStoreChannel;
+import org.neo4j.io.fs.AbstractStoreChannel;
 import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
