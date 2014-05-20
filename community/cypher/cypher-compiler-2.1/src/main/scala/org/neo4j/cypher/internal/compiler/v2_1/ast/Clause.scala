@@ -149,11 +149,11 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
   }
 
   def containsPropertyPredicate(identifier: String, property: String): Boolean = {
-    val properties: Seq[String] = where match {
+    val properties: Seq[String] = (where match {
       case Some(where) => where.treeFold(Seq.empty[String]) {
-        case Equals(Property(Identifier(identifier), PropertyKeyName(name)), _) =>
+        case Equals(Property(Identifier(id), PropertyKeyName(name)), _) if id == identifier =>
           (acc, _) => acc :+ name
-        case Equals(_, Property(Identifier(identifier), PropertyKeyName(name))) =>
+        case Equals(_, Property(Identifier(id), PropertyKeyName(name))) if id == identifier =>
           (acc, _) => acc :+ name
         case _: Where | _: And =>
           (acc, children) => children(acc)
@@ -161,18 +161,23 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
           (acc, _) => acc
       }
       case None => Seq.empty
+    }) ++ pattern.treeFold(Seq.empty[String]) {
+      case NodePattern(Some(Identifier(id)), _, Some(MapExpression(properties)), _) if identifier == id => {
+        case (acc, _) =>
+          acc ++ properties.map(_._1.name)
+      }
     }
     properties.contains(property)
   }
 
   def containsLabelPredicate(identifier: String, label: String): Boolean = {
     var labels = pattern.fold(Seq.empty[String]) {
-      case NodePattern(Some(Identifier(identifier)), labels, _, _) =>
+      case NodePattern(Some(Identifier(id)), labels, _, _) if identifier == id =>
         list => list ++ labels.map(_.name)
     }
     labels = where match {
       case Some(where) => where.treeFold(labels) {
-        case HasLabels(Identifier(identifier), labels) =>
+        case HasLabels(Identifier(id), labels) if id == identifier =>
           (acc, _) => acc ++ labels.map(_.name)
         case _: Where | _: And =>
           (acc, children) => children(acc)
