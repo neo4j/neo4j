@@ -51,7 +51,7 @@ $JAVA_HOME/bin/jconsole
 Connect to the process running your Neo4j database instance:
 
 .Connecting JConsole to the Neo4j Java process
-image::jconsole_connect.png[scaledwidth="50%", alt="Connecting with JConsole"]
+image::jconsole_connect.png[alt="Connecting with JConsole"]
 
 Now, beside the MBeans exposed by the JVM, you will see an +org.neo4j+ section in the MBeans tab.
 Under that, you will have access to all the monitoring information exposed by Neo4j.
@@ -60,7 +60,7 @@ For opening JMX to remote monitoring access, please see <<jmx-remote>> and http:
 When using Neo4j in embedded mode, make sure to pass the +com.sun.management.jmxremote.port=portNum+ or other configuration as JVM parameters to your running Java process.
 
 .Neo4j MBeans View
-image::jconsole_beans.png[scaledwidth="100%",alt="Neo4j MBeans view"]
+image::jconsole_beans.png[alt="Neo4j MBeans view"]
 
 
 [[jmx-connect-programmatic]]

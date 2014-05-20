@@ -598,8 +598,7 @@
           </execution>
           <execution>
             <id>generate-pdf</id>
-            <!-- requires the "docbook" goal to be executed in make. -->
-            <phase>none</phase>
+            <phase>process-classes</phase>
             <goals>
               <goal>generate-pdf</goal>
             </goals>
@@ -611,6 +610,17 @@
                 book toc
                 part toc
               </generateToc>
+              <preProcess>
+                <copy todir="${project.build.directory}/images" overwrite="true">
+                  <fileset dir="${docs.tools}/main/resources/images" />
+                </copy>
+                <copy todir="${project.build.directory}/images" overwrite="true">
+                  <fileset dir="${project.build.directory}/src/images" />
+                </copy>
+                <replace file="${project.build.directory}/neo4j-manual-shortinfo.xml" encoding="UTF-8" token="url=&quot;javadocs" value="url=&quot;http://docs.neo4j.org/chunked/${project.version}/javadocs" />
+              </preProcess>
+              <imgSrcPath>${project.build.directory}/images</imgSrcPath>
+              <admonGraphicsPath>${project.build.directory}/images/icons/admon/</admonGraphicsPath>
             </configuration>
           </execution>
         </executions>

@@ -16,5 +16,5 @@ include $(make_dir)/context-manual.make
 
 manpage_list = "neo4j server" "neo4j-installer server" "neo4j-arbiter server" "neo4j-coordinator server" "neo4j-coordinator-shell server" "neo4j-shell shell" "neo4j-backup backup"
 
-webhelp_dist: initialize install-extensions manpages copy-images docbook-html year-check
+webhelp_dist: initialize install-extensions manpages copy-images docbook docbook-html year-check
 # cleanup
