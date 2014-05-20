@@ -370,19 +370,27 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
 
         long blockId = record.getId();
         PersistenceWindow window = acquireWindow( blockId, OperationType.READ );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            Buffer buf = window.getBuffer();
+            storeFile.pin( cursor, PageLock.READ, pageIdForRecord( blockId ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
             // NOTE: skip of header in offset
             int offset = (int) (blockId-window.position()) * getBlockSize() + BLOCK_HEADER_SIZE;
-            buf.setOffset( offset );
+            cursor.setOffset( offset );
             byte bytes[] = new byte[record.getLength()];
-            buf.get( bytes );
+            cursor.getBytes( bytes );
             record.setData( bytes );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
