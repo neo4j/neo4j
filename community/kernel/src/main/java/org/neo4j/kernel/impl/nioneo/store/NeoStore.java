@@ -30,6 +30,11 @@ import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageLock;
+import org.neo4j.io.pagecache.PagedFile;
+import org.neo4j.io.pagecache.impl.legacy.WindowPoolPageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -95,6 +100,9 @@ public class NeoStore extends AbstractStore
     private final RemoteTxHook txHook;
     private final AtomicLong lastCommittedTx = new AtomicLong( -1 );
     private final AtomicLong latestConstraintIntroducingTx = new AtomicLong( -1 );
+    private final PagedFile storeFile;
+    private final PageCache pageCache;
+    private final int pageSize;
 
     private final int REL_GRAB_SIZE;
 
@@ -119,6 +127,18 @@ public class NeoStore extends AbstractStore
         this.relGroupStore = relGroupStore;
         REL_GRAB_SIZE = conf.get( Configuration.relationship_grab_size );
         this.txHook = txHook;
+
+        pageCache = new WindowPoolPageCache( windowPoolFactory, fileSystemAbstraction );
+        try
+        {
+            storeFile = pageCache.map( fileName, RECORD_SIZE * 128, RECORD_SIZE );
+        }
+        catch ( IOException e )
+        {
+            // TODO: Just throw IOException, add proper handling further up
+            throw new UnderlyingStorageException( e );
+        }
+        pageSize = storeFile.pageSize();
 
         /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
          * corresponding store version record was not added. That record was added in the release
@@ -517,31 +537,47 @@ public class NeoStore extends AbstractStore
 
     private long getRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            Buffer buffer = window.getOffsettedBuffer( id );
-            buffer.get();
-            return buffer.getLong();
+            storeFile.pin( cursor, PageLock.READ, pageIdForRecord( id ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+            cursor.getByte();
+            return cursor.getLong();
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
     private void setRecord( long id, long value )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.WRITE );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            Buffer buffer = window.getOffsettedBuffer( id );
-            buffer.put( Record.IN_USE.byteValue() ).putLong( value );
-            registerIdFromUpdateRecord( id );
+            storeFile.pin( cursor, PageLock.WRITE, pageIdForRecord( id ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+            cursor.putByte(Record.IN_USE.byteValue());
+            cursor.putLong(value);
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
@@ -823,5 +859,10 @@ public class NeoStore extends AbstractStore
     public int getDenseNodeThreshold()
     {
         return getRelationshipGroupStore().getDenseNodeThreshold();
+    }
+
+    private long pageIdForRecord( long id )
+    {
+        return id * RECORD_SIZE / pageSize;
     }
 }
