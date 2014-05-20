@@ -79,4 +79,70 @@ class MatchClauseTest extends CypherFunSuite with AstConstructionTestSupport {
     result.errors should have size 1
     result.errors.head.msg should startWith("Cannot match on a pattern containing only already bound identifiers")
   }
+
+  test("should allow USING INDEX when the property predicate is part of the pattern") {
+    val properties: Option[MapExpression] = Some(MapExpression(Seq(
+      (PropertyKeyName("name")(pos), StringLiteral("Andres")(pos))
+    ))_)
+    val nodePattern: NodePattern = NodePattern(Some(ident("a")), Seq(LabelName("Label")(pos)), properties, naked = false)(pos)
+    val pattern: Pattern = Pattern(Seq(EveryPath(nodePattern)))_
+    val hints: Seq[Hint] = Seq(
+      UsingIndexHint(Identifier("a")_, LabelName("Label")(pos), Identifier("name")_)_
+    )
+    val matchClause: Match = Match(optional = false, pattern, hints, None)_
+
+    val state = SemanticState.clean
+    val result = matchClause.semanticCheck(state)
+    result.errors should be(empty)
+  }
+
+  test("should not allow USING INDEX when the property predicate is defined on the wrong node in WHERE") {
+    val properties: Option[MapExpression] = Some(MapExpression(Seq(
+      (PropertyKeyName("name")(pos), StringLiteral("Andres")(pos))
+    ))_)
+    val nodePattern: NodePattern = NodePattern(Some(ident("a")), Seq(LabelName("Label")(pos)), properties, naked = false)(pos)
+    val nodePattern2: NodePattern = NodePattern(Some(ident("b")), Seq(LabelName("Label")(pos)), None, naked = false)(pos)
+    val pattern: Pattern = Pattern(Seq(EveryPath(nodePattern), EveryPath(nodePattern2)))_
+    val hints: Seq[Hint] = Seq(
+      UsingIndexHint(Identifier("b")_, LabelName("Label")(pos), Identifier("name")_)_
+    )
+    val matchClause: Match = Match(optional = false, pattern, hints, None)_
+
+    val state = SemanticState.clean
+    val result = matchClause.semanticCheck(state)
+    result.errors should have size 1
+    result.errors.head.msg should startWith("Cannot use index hint in this context.")
+  }
+
+  test("should not allow USING INDEX when the label predicate is defined on the wrong node in WHERE") {
+    val nodePattern: NodePattern = NodePattern(Some(ident("a")), Seq(LabelName("Label")(pos)), None, naked = false)(pos)
+    val nodePattern2: NodePattern = NodePattern(Some(ident("b")), Seq(LabelName("Label")(pos)), None, naked = false)(pos)
+    val pattern: Pattern = Pattern(Seq(EveryPath(nodePattern), EveryPath(nodePattern2)))_
+    val hints: Seq[Hint] = Seq(
+      UsingIndexHint(Identifier("b")_, LabelName("Label")(pos), Identifier("name")_)_
+    )
+    val where: Where = Where(Equals(Property(Identifier("a")_, PropertyKeyName("name")(pos))_, StringLiteral("Andres")(pos))_)_
+    val matchClause: Match = Match(optional = false, pattern, hints, Some(where))_
+
+    val state = SemanticState.clean
+    val result = matchClause.semanticCheck(state)
+    result.errors should have size 1
+    result.errors.head.msg should startWith("Cannot use index hint in this context.")
+  }
+
+  test("should not allow USING INDEX when the label predicate is defined on the wrong node") {
+    val nodePattern: NodePattern = NodePattern(Some(ident("a")), Seq(LabelName("Label")(pos)), None, naked = false)(pos)
+    val nodePattern2: NodePattern = NodePattern(Some(ident("b")), Seq(LabelName("Label")(pos)), None, naked = false)(pos)
+    val pattern: Pattern = Pattern(Seq(EveryPath(nodePattern), EveryPath(nodePattern2)))_
+    val hints: Seq[Hint] = Seq(
+      UsingIndexHint(Identifier("b")_, LabelName("Label")(pos), Identifier("name")_)_
+    )
+    val where: Where = Where(HasLabels(Identifier("a")_, Seq(LabelName("Label")(pos)))_)_
+    val matchClause: Match = Match(optional = false, pattern, hints, Some(where))_
+
+    val state = SemanticState.clean
+    val result = matchClause.semanticCheck(state)
+    result.errors should have size 1
+    result.errors.head.msg should startWith("Cannot use index hint in this context.")
+  }
 }
