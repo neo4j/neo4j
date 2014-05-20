@@ -157,17 +157,19 @@ public class IdGeneratorRebuildFailureEmulationTest
         prefix = graphdb.getStoreDir();
         createInitialData( graphdb );
         graphdb.shutdown();
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
-        config.put( GraphDatabaseSettings.store_dir.name(), prefix );
+        Map<String, String> params = new HashMap<String, String>();
+        params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
+        params.put( GraphDatabaseSettings.store_dir.name(), prefix );
+        Monitors monitors = new Monitors();
+        Config config = new Config( params, GraphDatabaseSettings.class );
         factory = new StoreFactory(
-                new Config( config, GraphDatabaseSettings.class ),
+                config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
                 fs,
                 StringLogger.DEV_NULL,
                 null,
-                new Monitors() );
+                monitors );
     }
 
     @After

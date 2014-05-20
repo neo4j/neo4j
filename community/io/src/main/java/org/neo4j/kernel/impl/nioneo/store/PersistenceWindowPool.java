@@ -78,7 +78,7 @@ public class PersistenceWindowPool implements WindowPool
 
     private final File storeName;
     // == recordSize
-    private final int blockSize;
+    private final int pageSize;
     private StoreChannel fileChannel;
     private final ConcurrentMap<Long,PersistenceRow> activeRowWindows;
     private long availableMem = 0;
@@ -112,7 +112,7 @@ public class PersistenceWindowPool implements WindowPool
      *
      * @param storeName
      *            Name of store that use this pool
-     * @param blockSize
+     * @param pageSize
      *            The size of each record/block in the store
      * @param fileChannel
      *            A fileChannel to the store
@@ -122,7 +122,7 @@ public class PersistenceWindowPool implements WindowPool
      *            Data structure for storing active "row windows", generally just provide a concurrent hash map.
      * @throws java.io.IOException If unable to create pool
      */
-    public PersistenceWindowPool( File storeName, int blockSize,
+    public PersistenceWindowPool( File storeName, int pageSize,
                                   StoreChannel fileChannel, long mappedMem,
                                   boolean useMemoryMappedBuffers, boolean readOnly,
                                   ConcurrentMap<Long, PersistenceRow> activeRowWindows,
@@ -130,7 +130,7 @@ public class PersistenceWindowPool implements WindowPool
                                   Monitor monitor ) throws IOException
     {
         this.storeName = storeName;
-        this.blockSize = blockSize;
+        this.pageSize = pageSize;
         this.fileChannel = fileChannel;
         this.availableMem = mappedMem;
         this.useMemoryMapped = useMemoryMappedBuffers;
@@ -195,7 +195,7 @@ public class PersistenceWindowPool implements WindowPool
                 // Either there was no active window for this position or it got
                 // closed right before we managed to mark it as in use.
                 // Either way instantiate a new active window for this position
-                dpw = new PersistenceRow( position, blockSize, fileChannel );
+                dpw = new PersistenceRow( position, pageSize, fileChannel );
                 PersistenceRow existing = activeRowWindows.putIfAbsent( position, dpw );
                 if ( existing == null )
                 {
@@ -228,12 +228,12 @@ public class PersistenceWindowPool implements WindowPool
 
     private int positionToBrickIndex( long position )
     {
-        return (int) (position * blockSize / brickSize);
+        return (int) (position * pageSize / brickSize);
     }
 
     private long brickIndexToPosition( int brickIndex )
     {
-        return (long) brickIndex * brickSize / blockSize;
+        return (long) brickIndex * brickSize / pageSize;
     }
 
     void dumpStatistics()
@@ -375,18 +375,18 @@ public class PersistenceWindowPool implements WindowPool
             throw new IOException(
                 "Unable to get file size for " + storeName, e );
         }
-        if ( blockSize == 0 )
+        if ( pageSize == 0 )
         {
             return;
         }
 
         // If we can't fit even 10 blocks in available memory don't even try
         // to use available memory.
-        if(availableMem > 0 && availableMem < blockSize * 10l )
+        if(availableMem > 0 && availableMem < pageSize * 10l )
         {
-            monitor.insufficientMemoryForMapping( availableMem, blockSize * 10 );
+            monitor.insufficientMemoryForMapping( availableMem, pageSize * 10 );
 //            log.warn( "[" + storeName + "] " + "Unable to use " + availableMem
-//                        + "b as memory mapped windows, need at least " + blockSize * 10
+//                        + "b as memory mapped windows, need at least " + pageSize * 10
 //                        + "b (block size * 10)" );
 //            log.warn( "[" + storeName + "] " + "Memory mapped windows have been turned off" );
             availableMem = 0;
@@ -404,10 +404,10 @@ public class PersistenceWindowPool implements WindowPool
                 {
                     brickSize = Integer.MAX_VALUE;
                 }
-                brickSize = (brickSize / blockSize) * blockSize;
+                brickSize = (brickSize / pageSize) * pageSize;
                 if ( brickSize == 0 )
                 {
-                    brickSize = blockSize;
+                    brickSize = pageSize;
                 }
                 brickCount = (int) (fileSize / brickSize);
             }
@@ -434,18 +434,18 @@ public class PersistenceWindowPool implements WindowPool
                 if ( brickSize < 0 )
                 {
                     brickSize = Integer.MAX_VALUE;
-                    brickSize = (brickSize / blockSize) * blockSize;
+                    brickSize = (brickSize / pageSize) * pageSize;
                     brickCount = (int) (fileSize / brickSize);
                 }
-                else if ( brickSize < blockSize )
+                else if ( brickSize < pageSize )
                 {
-                    brickSize = blockSize;
+                    brickSize = pageSize;
                 }
                 else
                 {
-                    brickSize = (brickSize / blockSize) * blockSize;
+                    brickSize = (brickSize / pageSize) * pageSize;
                 }
-                assert brickSize >= blockSize;
+                assert brickSize >= pageSize;
             }
         }
         else if ( availableMem > 0 )
@@ -455,7 +455,7 @@ public class PersistenceWindowPool implements WindowPool
             {
                 brickSize = Integer.MAX_VALUE;
             }
-            brickSize = (brickSize / blockSize) * blockSize;
+            brickSize = (brickSize / pageSize) * pageSize;
         }
         brickArray = new BrickElement[brickCount];
         for ( int i = 0; i < brickCount; i++ )
@@ -684,7 +684,7 @@ public class PersistenceWindowPool implements WindowPool
                         if ( useMemoryMapped )
                         {
                             LockableWindow window = new MappedPersistenceWindow(
-                                    brickIndexToPosition( brick.index() ), blockSize,
+                                    brickIndexToPosition( brick.index() ), pageSize,
                                     brickSize, fileChannel, mapMode );
                             brick.setWindow( window );
                         }
@@ -693,7 +693,7 @@ public class PersistenceWindowPool implements WindowPool
                             PlainPersistenceWindow window =
                                     new PlainPersistenceWindow(
                                             brickIndexToPosition( brick.index() ),
-                                            blockSize, brickSize, fileChannel );
+                                            pageSize, brickSize, fileChannel );
                             window.readFullWindow();
                             brick.setWindow( window );
                         }

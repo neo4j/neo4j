@@ -138,14 +138,16 @@ public class TestXa
         log.setLevel( Level.OFF );
         propertyKeyTokens = new HashMap<>();
 
+        Monitors monitors = new Monitors();
+        Config config = new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class );
         StoreFactory sf = new StoreFactory(
-                new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class ),
+                config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
                 fileSystem,
                 StringLogger.DEV_NULL,
                 null,
-                new Monitors() );
+                monitors );
         sf.createNeoStore( file( "neo" ) ).close();
 
         ds = newNeoStore();
@@ -363,14 +365,15 @@ public class TestXa
                         InternalAbstractGraphDatabase.Configuration.logical_log.name(),
                         file( LOGICAL_LOG_DEFAULT_NAME ).getPath() ), GraphDatabaseSettings.class );
 
+        Monitors monitors = new Monitors();
         StoreFactory sf = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
                 fileSystem,
                 StringLogger.DEV_NULL,
                 null,
-                new Monitors() );
+                monitors );
 
         PlaceboTm txManager = new PlaceboTm( null, TxIdGenerator.DEFAULT );
 
@@ -395,7 +398,7 @@ public class TestXa
         NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource( config, sf,
                                                                               StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
-                        fileSystem, new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
+                        fileSystem, monitors, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING, kernelHealth ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
                         new TransactionInterceptorProviders(
                                 Collections.<TransactionInterceptorProvider>emptyList(), dependencyResolverForConfig( config ) ), null,

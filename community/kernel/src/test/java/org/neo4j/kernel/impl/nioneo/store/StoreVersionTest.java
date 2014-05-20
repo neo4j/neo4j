@@ -54,12 +54,14 @@ public class StoreVersionTest
 
         File storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME );
 
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( GraphDatabaseSettings.store_dir.name(), outputDir.getPath());
-        config.put( "neo_store", storeFileName.getPath() );
-        StoreFactory sf = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                null, new Monitors() );
+        Map<String, String> params = new HashMap<String, String>();
+        params.put( GraphDatabaseSettings.store_dir.name(), outputDir.getPath() );
+        params.put( "neo_store", storeFileName.getPath() );
+        Monitors monitors = new Monitors();
+        Config config = new Config( params, GraphDatabaseSettings.class );
+        StoreFactory sf = new StoreFactory( config,
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory( monitors, config ), fs.get(), StringLogger.DEV_NULL,
+                null, monitors );
         NeoStore neoStore = sf.createNeoStore( storeFileName );
 
         CommonAbstractStore[] stores = {
@@ -92,9 +94,10 @@ public class StoreVersionTest
 
         try
         {
+            Monitors monitors = new Monitors();
             new NodeStore( workingFile, config, new DefaultIdGeneratorFactory(),
-                    new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, null,
-                    StoreVersionMismatchHandler.THROW_EXCEPTION, new Monitors() );
+                    new DefaultWindowPoolFactory( monitors, config ), fs.get(), StringLogger.DEV_NULL, null,
+                    StoreVersionMismatchHandler.THROW_EXCEPTION, monitors );
             fail( "Should have thrown exception" );
         }
         catch ( NotCurrentStoreVersionException e )
@@ -113,12 +116,14 @@ public class StoreVersionTest
 
         File storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME );
 
-        Map<String, String> config = new HashMap<>();
-        config.put( GraphDatabaseSettings.store_dir.name(), outputDir.getPath() );
-        config.put( "neo_store", storeFileName.getPath() );
-        StoreFactory sf = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                null, new Monitors() );
+        Map<String, String> params = new HashMap<>();
+        params.put( GraphDatabaseSettings.store_dir.name(), outputDir.getPath() );
+        params.put( "neo_store", storeFileName.getPath() );
+        Monitors monitors = new Monitors();
+        Config config = new Config( params, GraphDatabaseSettings.class );
+        StoreFactory sf = new StoreFactory( config,
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory( monitors, config ), fs.get(), StringLogger.DEV_NULL,
+                null, monitors );
         NeoStore neoStore = sf.createNeoStore( storeFileName );
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,

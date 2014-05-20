@@ -58,14 +58,15 @@ public class TestGrowingFileMemoryMapping
                 Configuration.use_memory_mapped_buffers.name(), "true",
                 Configuration.store_dir.name(), storeDir.getPath() ), NodeStore.Configuration.class );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
+        Monitors monitors = new Monitors();
         StoreFactory storeFactory = new StoreFactory(
                 config,
                 idGeneratorFactory,
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
                 new DefaultFileSystemAbstraction(),
                 StringLogger.DEV_NULL,
                 new DefaultTxHook(),
-                new Monitors() );
+                monitors );
 
         File fileName = new File( storeDir, NeoStore.DEFAULT_NAME + ".nodestore.db" );
         storeFactory.createEmptyStore( fileName, storeFactory.buildTypeDescriptorAndVersion(
@@ -75,12 +76,12 @@ public class TestGrowingFileMemoryMapping
                 fileName,
                 config,
                 idGeneratorFactory,
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
                 new DefaultFileSystemAbstraction(),
                 StringLogger.DEV_NULL,
                 null,
                 StoreVersionMismatchHandler.THROW_EXCEPTION,
-                new Monitors() );
+                monitors );
 
         // when
         for ( int i = 0; i < 2 * NUMBER_OF_RECORDS; i++ )

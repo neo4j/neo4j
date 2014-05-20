@@ -61,14 +61,15 @@ public class TestArrayStore
         Config config = new Config( configParams );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory( config,
-                idGeneratorFactory, new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook(),
-                new Monitors() );
+                idGeneratorFactory, new DefaultWindowPoolFactory( monitors, config ), fs, StringLogger.DEV_NULL, new DefaultTxHook(),
+                monitors );
         File fileName = new File( dir, "arraystore" );
         factory.createDynamicArrayStore( fileName, 120 );
         arrayStore = new DynamicArrayStore( fileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory,
-                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, StoreVersionMismatchHandler.THROW_EXCEPTION,
-                new Monitors() );
+                new DefaultWindowPoolFactory( monitors, config ), fs, StringLogger.DEV_NULL, StoreVersionMismatchHandler.THROW_EXCEPTION,
+                monitors );
     }
 
     @After

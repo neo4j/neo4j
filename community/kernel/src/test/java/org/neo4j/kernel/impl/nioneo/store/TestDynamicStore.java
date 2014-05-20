@@ -54,8 +54,7 @@ public class TestDynamicStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             new DefaultIdGeneratorFactory();
-    public static WindowPoolFactory WINDOW_POOL_FACTORY =
-            new DefaultWindowPoolFactory();
+    private static final Monitors monitors = new Monitors();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     private File path()
@@ -120,24 +119,26 @@ public class TestDynamicStore
 
     private void createEmptyStore( File fileName, int blockSize )
     {
+        Config config = config();
         new StoreFactory(
-                config(),
+                config,
                 ID_GENERATOR_FACTORY,
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 null,
-                new Monitors() ).createDynamicArrayStore( fileName, blockSize );
+                monitors ).createDynamicArrayStore( fileName, blockSize );
     }
 
     private DynamicArrayStore newStore()
     {
+        Config config = config();
         return new DynamicArrayStore(
                 dynamicStoreFile(),
-                config(),
+                config,
                 IdType.ARRAY_BLOCK,
                 ID_GENERATOR_FACTORY,
-                WINDOW_POOL_FACTORY,
+                new DefaultWindowPoolFactory( monitors, config ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 StoreVersionMismatchHandler.THROW_EXCEPTION,

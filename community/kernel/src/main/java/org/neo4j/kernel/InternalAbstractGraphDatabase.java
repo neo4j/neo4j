@@ -823,7 +823,7 @@ public abstract class InternalAbstractGraphDatabase
 
     protected DefaultWindowPoolFactory createWindowPoolFactory()
     {
-        return new DefaultWindowPoolFactory();
+        return new DefaultWindowPoolFactory( monitors, config );
     }
 
     protected RecoveryVerifier createRecoveryVerifier()

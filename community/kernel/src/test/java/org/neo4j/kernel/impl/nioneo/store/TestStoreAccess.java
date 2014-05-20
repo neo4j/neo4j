@@ -29,14 +29,11 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestStoreAccess
 {
@@ -48,7 +45,7 @@ public class TestStoreAccess
         File messages = new File( storeDir, "messages.log" );
         snapshot.deleteFile( messages );
         
-        new StoreAccess( snapshot, storeDir.getPath(), stringMap(), new Monitors() ).close();
+        new StoreAccess( snapshot, storeDir.getPath() ).close();
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
     }
     

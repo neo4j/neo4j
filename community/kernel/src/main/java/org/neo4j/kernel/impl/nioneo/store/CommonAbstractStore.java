@@ -74,7 +74,7 @@ public abstract class CommonAbstractStore implements IdSequence
     protected StringLogger stringLogger;
     private IdGenerator idGenerator = null;
     private StoreChannel fileChannel = null;
-    private WindowPool windowPool;
+    protected WindowPool windowPool;
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
     private FileLock fileLock;
@@ -210,7 +210,7 @@ public abstract class CommonAbstractStore implements IdSequence
             verifyFileSizeAndTruncate();
             loadIdGenerator();
             this.windowPool = windowPoolFactory.create( getStorageFileName(), getEffectiveRecordSize(),
-                    getFileChannel(), configuration, getNumberOfReservedLowIds(), monitors );
+                    getFileChannel() );
         }
         catch ( IOException e )
         {
@@ -432,12 +432,7 @@ public abstract class CommonAbstractStore implements IdSequence
      */
     protected PersistenceWindow acquireWindow( long position, OperationType type )
     {
-        if ( !isInRecoveryMode() && (position > getHighId() || !storeOk) )
-        {
-            throw new InvalidRecordException(
-                    "Position[" + position + "] requested for high id[" + getHighId() + "], store is ok[" + storeOk +
-                    "] recovery[" + isInRecoveryMode() + "]", causeOfStoreNotOk );
-        }
+        assertIdExists( position );
         try
         {
             return windowPool.acquire( position, type );
@@ -446,6 +441,16 @@ public abstract class CommonAbstractStore implements IdSequence
         {
             throw new UnderlyingStorageException(
                     "Could not acquire " + type + " window for position " + position, e );
+        }
+    }
+
+    protected void assertIdExists( long position )
+    {
+        if ( !isInRecoveryMode() && (position > getHighId() || !storeOk) )
+        {
+            throw new InvalidRecordException(
+                    "Position[" + position + "] requested for high id[" + getHighId() + "], store is ok[" + storeOk +
+                    "] recovery[" + isInRecoveryMode() + "]", causeOfStoreNotOk );
         }
     }
 

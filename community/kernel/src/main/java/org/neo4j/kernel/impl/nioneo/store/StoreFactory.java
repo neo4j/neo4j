@@ -86,9 +86,14 @@ public class StoreFactory
 
     public StoreFactory( File neoStoreFileName, StringLogger logger )
     {
-        this( configForNeoStore( new Config(), neoStoreFileName ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
-                logger, new DefaultTxHook(), StoreVersionMismatchHandler.THROW_EXCEPTION, new Monitors() );
+        this.config = configForNeoStore( new Config(), neoStoreFileName );
+        this.idGeneratorFactory = new DefaultIdGeneratorFactory();
+        this.monitors = new Monitors();
+        this.windowPoolFactory = new DefaultWindowPoolFactory( monitors, config );
+        this.fileSystemAbstraction = new DefaultFileSystemAbstraction();
+        this.stringLogger = logger;
+        this.txHook = new DefaultTxHook();
+        this.versionMismatchHandler = StoreVersionMismatchHandler.THROW_EXCEPTION;
     }
 
     public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,

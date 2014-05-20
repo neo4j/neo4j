@@ -106,7 +106,8 @@ public class NodeStoreTest
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
         Config config = new Config();
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-        WindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
+        Monitors monitors = new Monitors();
+        WindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory( monitors, config );
         StoreFactory factory = new StoreFactory(
                 config,
                 idGeneratorFactory,
@@ -114,7 +115,7 @@ public class NodeStoreTest
                 fs,
                 DEV_NULL,
                 new DefaultTxHook(),
-                new Monitors() );
+                monitors );
         File nodeStoreFileName = new File( "nodestore" );
         factory.createNodeStore( nodeStoreFileName );
         NodeStore nodeStore = factory.newNodeStore( nodeStoreFileName );

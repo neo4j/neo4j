@@ -310,17 +310,20 @@ public class UpgradeStoreIT
     private void createManyRelationshipTypes( File path, int numberOfTypes )
     {
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
+        Monitors monitors = new Monitors();
+        Config config = new Config();
         DynamicStringStore stringStore = new DynamicStringStore(
                 new File( fileName.getPath() + ".names"),
-                null,
+                config,
                 IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
                 new DefaultFileSystemAbstraction(),
                 StringLogger.DEV_NULL,
                 StoreVersionMismatchHandler.THROW_EXCEPTION,
-                new Monitors() );
-        RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore );
+                monitors );
+        RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion(
+                fileName, stringStore, monitors );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             String name = "type" + i;
@@ -338,19 +341,21 @@ public class UpgradeStoreIT
 
     private static class RelationshipTypeTokenStoreWithOneOlderVersion extends RelationshipTypeTokenStore
     {
+        private static final Config config = new Config( stringMap() );
         private boolean versionCalled;
 
-        public RelationshipTypeTokenStoreWithOneOlderVersion( File fileName, DynamicStringStore stringStore )
+        public RelationshipTypeTokenStoreWithOneOlderVersion(
+                File fileName, DynamicStringStore stringStore, Monitors monitors )
         {
             super( fileName,
-                    new Config( stringMap() ),
+                    config,
                     new NoLimitIdGeneratorFactory(),
-                    new DefaultWindowPoolFactory(),
+                    new DefaultWindowPoolFactory( monitors, config ),
                     new DefaultFileSystemAbstraction(),
                     StringLogger.DEV_NULL,
                     stringStore,
                     StoreVersionMismatchHandler.THROW_EXCEPTION,
-                    new Monitors() );
+                    monitors );
         }
 
         @Override

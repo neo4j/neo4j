@@ -1201,7 +1201,7 @@ public class NeoStoreTransactionTest
     private Config config;
     @SuppressWarnings("deprecation")
     private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-    private final DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
+    private final DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory( new Monitors(), config );
     private NeoStore neoStore;
     private LockService locks;
     private CacheAccessBackDoor cacheAccessBackDoor;

@@ -31,7 +31,6 @@ import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.String.format;
 
@@ -97,12 +96,11 @@ public class ScanResistantWindowPoolFactory implements WindowPoolFactory
     }
 
     @Override
-    public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel,
-                              Config configuration, int numberOfReservedLowIds, Monitors monitors )
+    public WindowPool create( File storageFileName, int pageSize, StoreChannel fileChannel )
     {
         try
         {
-            return new ScanResistantWindowPool( storageFileName, recordSize, targetBytesPerPage,
+            return new ScanResistantWindowPool( storageFileName, pageSize, targetBytesPerPage,
                     new FileMapper( fileChannel ), cart, reportingInterval, statisticsListener );
         }
         catch ( IOException e )

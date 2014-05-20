@@ -155,14 +155,16 @@ public class TestRelationshipGroupStore
         {
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
+        Monitors monitors = new Monitors();
+        Config config = config( customConfig );
         return new StoreFactory(
-                config( customConfig ),
+                config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
                 new DefaultFileSystemAbstraction(),
                 StringLogger.DEV_NULL,
                 new DefaultTxHook(),
-                new Monitors() );
+                monitors );
     }
 
     private Config config( Map<String, String> customConfig )

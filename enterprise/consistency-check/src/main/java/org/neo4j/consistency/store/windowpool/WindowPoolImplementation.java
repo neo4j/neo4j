@@ -23,25 +23,26 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public enum WindowPoolImplementation
 {
     MOST_FREQUENTLY_USED
     {
         @Override
-        public WindowPoolFactory windowPoolFactory( Config config, StringLogger logger )
+        public WindowPoolFactory windowPoolFactory( Config config, StringLogger logger, Monitors monitors )
         {
-            return new DefaultWindowPoolFactory();
+            return new DefaultWindowPoolFactory( monitors, config );
         }
     },
     SCAN_RESISTANT
     {
         @Override
-        public WindowPoolFactory windowPoolFactory( Config config, StringLogger logger )
+        public WindowPoolFactory windowPoolFactory( Config config, StringLogger logger, Monitors monitors )
         {
             return new ScanResistantWindowPoolFactory( config, logger );
         }
     };
 
-    public abstract WindowPoolFactory windowPoolFactory( Config config, StringLogger logger );
+    public abstract WindowPoolFactory windowPoolFactory( Config config, StringLogger logger, Monitors monitors );
 }

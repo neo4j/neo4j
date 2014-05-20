@@ -147,7 +147,8 @@ public class SchemaStoreTest
     {
         config = new Config( stringMap() );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-        DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
+        Monitors monitors = new Monitors();
+        DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory( monitors, config );
         storeFactory = new StoreFactory(
                 config,
                 idGeneratorFactory,
@@ -155,7 +156,7 @@ public class SchemaStoreTest
                 fs.get(),
                 DEV_NULL,
                 new DefaultTxHook(),
-                new Monitors() );
+                monitors );
         File file = new File( "schema-store" );
         storeFactory.createSchemaStore( file );
         store = storeFactory.newSchemaStore( file );

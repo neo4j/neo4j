@@ -33,15 +33,23 @@ import static org.neo4j.helpers.Settings.setting;
 
 public class DefaultWindowPoolFactory implements WindowPoolFactory
 {
+    private final Monitors monitors;
+    private final Config config;
+
+    public DefaultWindowPoolFactory( Monitors monitors, Config config )
+    {
+        this.monitors = monitors;
+        this.config = config;
+    }
+
     @Override
-    public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel, Config configuration,
-                              int numberOfReservedLowIds, Monitors monitors ) throws IOException
+    public WindowPool create( File storageFileName, int pageSize, StoreChannel fileChannel ) throws IOException
     {
         PersistenceWindowPool.Monitor monitor = monitors.newMonitor( PersistenceWindowPool.Monitor.class );
-        return new PersistenceWindowPool( storageFileName, recordSize, fileChannel,
-                calculateMappedMemory( configuration, storageFileName ),
-                configuration.get( CommonAbstractStore.Configuration.use_memory_mapped_buffers ),
-                isReadOnly( configuration ) && !isBackupSlave( configuration ),
+        return new PersistenceWindowPool( storageFileName, pageSize, fileChannel,
+                calculateMappedMemory( config, storageFileName ),
+                config.get( CommonAbstractStore.Configuration.use_memory_mapped_buffers ),
+                isReadOnly( config ) && !isBackupSlave( config ),
                 new ConcurrentHashMap<Long, PersistenceRow>(), BrickElementFactory.DEFAULT, monitor );
     }
 

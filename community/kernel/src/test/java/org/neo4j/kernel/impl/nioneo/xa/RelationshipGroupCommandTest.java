@@ -59,15 +59,17 @@ public class RelationshipGroupCommandTest
     @Before
     public void before() throws Exception
     {
+        Monitors monitors = new Monitors();
+        Config config = new Config();
         @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory(
-                new Config(),
+                config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 new DefaultTxHook(),
-                new Monitors() );
+                monitors );
         File storeFile = new File( "story" );
         storeFactory.createNodeStore( storeFile );
         nodeStore = storeFactory.newNodeStore( storeFile );

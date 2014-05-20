@@ -132,8 +132,9 @@ public class TestNeoStore
         targetDirectory = TargetDirectory.forTest( fs.get(), getClass() );
         path = targetDirectory.cleanDirectory( "dir" );
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
-        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fs.get(), StringLogger.DEV_NULL, null, new Monitors() );
+        Monitors monitors = new Monitors();
+        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory( monitors, config ),
+                fs.get(), StringLogger.DEV_NULL, null, monitors );
         sf.createNeoStore( file( NeoStore.DEFAULT_NAME ) ).close();
     }
 
@@ -185,8 +186,9 @@ public class TestNeoStore
                 InternalAbstractGraphDatabase.Configuration.logical_log.name(), file( "nioneo_logical.log" ).getPath() ),
                 GraphDatabaseSettings.class );
         EphemeralFileSystemAbstraction fs = this.fs.get();
-        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fs, StringLogger.DEV_NULL, null, new Monitors() );
+        Monitors monitors = new Monitors();
+        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory( monitors, config ),
+                fs, StringLogger.DEV_NULL, null, monitors );
         KernelHealth kernelHealth = mock( KernelHealth.class );
 
         NodeManager nodeManager = mock(NodeManager.class);
@@ -202,7 +204,7 @@ public class TestNeoStore
         ds = new NeoStoreXaDataSource(config, sf, StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
                         // Could be new TransactionStateFactory( new DevNullLoggingService() )
-                        fs, new Monitors(), DevNullLoggingService.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        fs, monitors, DevNullLoggingService.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING, kernelHealth ), noStateFactory( DevNullLoggingService.DEV_NULL ),
                 new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
                         dependencyResolverForConfig( config ) ), null, new DevNullLoggingService(),
@@ -1179,8 +1181,9 @@ public class TestNeoStore
 
         Config config = new Config( MapUtil.stringMap( "string_block_size", "62", "array_block_size", "302" ),
                 GraphDatabaseSettings.class );
-        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fs.get(), StringLogger.DEV_NULL, null, new Monitors() );
+        Monitors monitors = new Monitors();
+        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory( monitors, config ),
+                fs.get(), StringLogger.DEV_NULL, null, monitors );
         sf.createNeoStore( file( "neo" ) ).close();
 
         initializeStores();
@@ -1199,9 +1202,11 @@ public class TestNeoStore
         assertEquals( 1, NeoStore.setVersion( fs.get(), new File( storeDir, NeoStore.DEFAULT_NAME ), 10 ) );
         assertEquals( 10, NeoStore.setVersion( fs.get(), new File( storeDir, NeoStore.DEFAULT_NAME ), 12 ) );
 
-        StoreFactory sf = new StoreFactory( new Config( new HashMap<String, String>(), GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, null,
-                new Monitors() );
+        Monitors monitors = new Monitors();
+        Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
+        StoreFactory sf = new StoreFactory( config,
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory( monitors, config ), fs.get(), StringLogger.DEV_NULL, null,
+                monitors );
 
         NeoStore neoStore = sf.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         assertEquals( 12, neoStore.getVersion() );
@@ -1213,9 +1218,11 @@ public class TestNeoStore
     {
         // given
         new GraphDatabaseFactory().newEmbeddedDatabase( testDir.absolutePath() ).shutdown();
-        StoreFactory sf = new StoreFactory( new Config( new HashMap<String, String>(), GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
-                StringLogger.DEV_NULL, null, new Monitors() );
+        Monitors monitors = new Monitors();
+        Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
+        StoreFactory sf = new StoreFactory( config,
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory( monitors, config ), new DefaultFileSystemAbstraction(),
+                StringLogger.DEV_NULL, null, monitors );
 
         // when
         NeoStore neoStore = sf.newNeoStore( new File( testDir.absolutePath(), NeoStore.DEFAULT_NAME ) );

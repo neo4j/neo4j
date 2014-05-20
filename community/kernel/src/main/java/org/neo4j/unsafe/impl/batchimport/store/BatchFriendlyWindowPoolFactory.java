@@ -24,14 +24,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
-import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.nioneo.store.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolFactory;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 
 import static java.nio.ByteBuffer.allocateDirect;
 
@@ -111,10 +109,9 @@ public class BatchFriendlyWindowPoolFactory implements WindowPoolFactory
     }
 
     @Override
-    public WindowPool create( File storageFileName, int recordSize, StoreChannel fileChannel, Config configuration,
-            int numberOfReservedLowIds, Monitors monitors )
+    public WindowPool create( File storageFileName, int pageSize, StoreChannel fileChannel )
     {
-        return new SingleWindowPool( storageFileName, recordSize, fileChannel, numberOfReservedLowIds );
+        return new SingleWindowPool( storageFileName, pageSize, fileChannel );
     }
 
     private class SingleWindowPool implements WindowPool
@@ -122,12 +119,11 @@ public class BatchFriendlyWindowPoolFactory implements WindowPoolFactory
         private final SingleWindow window;
         private final File storageFileName;
 
-        public SingleWindowPool( File storageFileName, int recordSize, StoreChannel channel,
-                int numberOfReservedLowIds )
+        public SingleWindowPool( File storageFileName, int recordSize, StoreChannel channel )
         {
             this.storageFileName = storageFileName;
-            this.window = createSingleWindow( storageFileName, recordSize, channel,
-                    numberOfReservedLowIds );
+            this.window = createSingleWindow( storageFileName, recordSize, channel
+            );
             window.allocateBuffer();
             window.placeWindowFor( 0 );
         }
@@ -169,8 +165,7 @@ public class BatchFriendlyWindowPoolFactory implements WindowPoolFactory
         }
     }
 
-    protected SingleWindow createSingleWindow( File storageFileName, int recordSize, StoreChannel channel,
-            int numberOfReservedLowIds )
+    protected SingleWindow createSingleWindow( File storageFileName, int recordSize, StoreChannel channel )
     {
         return new SingleWindow( storageFileName, recordSize, channel );
     }

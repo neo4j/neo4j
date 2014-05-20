@@ -45,8 +45,7 @@ public class TestStore
 {
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             new DefaultIdGeneratorFactory();
-    public static WindowPoolFactory WINDOW_POOL_FACTORY =
-            new DefaultWindowPoolFactory();
+    private static Monitors monitors = new Monitors();
     public static FileSystemAbstraction FILE_SYSTEM =
             new DefaultFileSystemAbstraction();
 
@@ -153,14 +152,15 @@ public class TestStore
 
     private static class Store extends AbstractStore
     {
+        private final static Config config = new Config( MapUtil.stringMap( "store_dir", "target/var/teststore" ),
+                GraphDatabaseSettings.class );
         public static final String TYPE_DESCRIPTOR = "TestVersion";
         private static final int RECORD_SIZE = 1;
 
         public Store( File fileName ) throws IOException
         {
-            super( fileName, new Config( MapUtil.stringMap( "store_dir", "target/var/teststore" ),
-                    GraphDatabaseSettings.class ),
-                    IdType.NODE, ID_GENERATOR_FACTORY, WINDOW_POOL_FACTORY, FILE_SYSTEM, StringLogger.DEV_NULL,
+            super( fileName, config,
+                    IdType.NODE, ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory( monitors, config ), FILE_SYSTEM, StringLogger.DEV_NULL,
                     StoreVersionMismatchHandler.THROW_EXCEPTION, new Monitors() );
         }
 
@@ -179,7 +179,7 @@ public class TestStore
         public static Store createStore( File fileName ) throws IOException
         {
             new StoreFactory( new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class ),
-                    ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(),
+                    ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory( monitors, config ),
                     FILE_SYSTEM, StringLogger.DEV_NULL, null, new Monitors() ).
                     createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) );
             return new Store( fileName );

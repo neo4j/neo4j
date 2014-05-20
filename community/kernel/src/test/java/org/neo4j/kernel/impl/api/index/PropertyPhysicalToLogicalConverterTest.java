@@ -210,14 +210,15 @@ public class PropertyPhysicalToLogicalConverterTest
     @Before
     public void before() throws Exception
     {
+        Monitors monitors = new Monitors();
         StoreFactory storeFactory = new StoreFactory(
                 new Config(),
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, new Config() ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 new DefaultTxHook(),
-                new Monitors() );
+                monitors );
         File storeFile = new File( "propertystore" );
         storeFactory.createPropertyStore( storeFile );
         store = storeFactory.newPropertyStore( storeFile );

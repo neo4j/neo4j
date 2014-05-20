@@ -186,14 +186,16 @@ public class TestGraphProperties
         tx.finish();
         db.shutdown();
 
+        Monitors monitors = new Monitors();
+        Config config = new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class );
         StoreFactory storeFactory = new StoreFactory(
-                new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class ),
+                config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 null,
-                new Monitors() );
+                monitors );
         NeoStore neoStore = storeFactory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );

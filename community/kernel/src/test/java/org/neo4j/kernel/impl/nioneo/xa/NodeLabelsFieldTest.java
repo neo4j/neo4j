@@ -451,14 +451,16 @@ public class NodeLabelsFieldTest
     @Before
     public void startUp()
     {
+        Monitors monitors = new Monitors();
+        Config config = new Config();
         StoreFactory storeFactory = new StoreFactory(
-                new Config(),
+                config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 new DefaultTxHook(),
-                new Monitors() );
+                monitors );
         File storeFile = new File( "store" );
         storeFactory.createNodeStore( storeFile );
         nodeStore = storeFactory.newNodeStore( storeFile );

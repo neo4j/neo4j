@@ -135,12 +135,14 @@ public class ConsistencyPerformanceCheck
     {
         StringLogger logger = StringLogger.DEV_NULL;
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
-                        .windowPoolFactory( tuningConfiguration, logger ),
-                fileSystem, logger, new DefaultTxHook(), new Monitors() );
+                        .windowPoolFactory( tuningConfiguration, logger, monitors ),
+                fileSystem, logger, new DefaultTxHook(), monitors
+        );
 
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
 

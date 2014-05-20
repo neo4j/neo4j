@@ -206,8 +206,9 @@ public class StoreMigratorIT
     {
         Config config = MigrationTestUtils.defaultConfig();
         storeFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
+        Monitors monitors = new Monitors();
         storeFactory = new StoreFactory( config, idGeneratorFactory,
-                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook(), new Monitors() );
+                new DefaultWindowPoolFactory( monitors, config ), fs, StringLogger.DEV_NULL, new DefaultTxHook(), monitors );
     }
 
     private void verifyNeoStore( NeoStore neoStore )

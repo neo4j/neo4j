@@ -25,8 +25,8 @@ import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -102,21 +102,21 @@ public class StoreAccess
 
     public StoreAccess( String path )
     {
-        this( path, defaultParams(), new Monitors() );
+        this( new DefaultFileSystemAbstraction(), path );
     }
 
-    private StoreAccess( String path, Map<String, String> params, Monitors monitors )
+    public StoreAccess( FileSystemAbstraction fileSystem, String path )
     {
-        this( new DefaultFileSystemAbstraction(), path, params, monitors );
+        this( fileSystem, path, new Config( requiredParams( defaultParams(), path )), new Monitors() );
     }
 
-    public StoreAccess( FileSystemAbstraction fileSystem, String path, Map<String, String> params, Monitors monitors )
+    private StoreAccess( FileSystemAbstraction fileSystem, String path, Config config, Monitors monitors )
     {
-        this( new StoreFactory( new Config( requiredParams( params, path ) ),
-                                new DefaultIdGeneratorFactory(),
-                                new DefaultWindowPoolFactory(),
-                                fileSystem, StringLogger.DEV_NULL,
-                                new DefaultTxHook(), monitors ).newNeoStore( new File( path, "neostore" ) ) );
+        this( new StoreFactory( config,
+                new DefaultIdGeneratorFactory(),
+                new DefaultWindowPoolFactory( monitors, config ),
+                fileSystem, StringLogger.DEV_NULL,
+                new DefaultTxHook(), monitors ).newNeoStore( new File( path, "neostore" ) ) );
         this.closeable = true;
     }
 

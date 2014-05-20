@@ -232,8 +232,9 @@ public class BatchInserterImpl implements BatchInserter
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();
 
-        StoreFactory sf = new StoreFactory( config, idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem,
-                                            msgLog, null, new Monitors() );
+        Monitors monitors = new Monitors();
+        StoreFactory sf = new StoreFactory( config, idGeneratorFactory, new DefaultWindowPoolFactory( monitors, config ), fileSystem,
+                                            msgLog, null, monitors );
 
         File store = fixPath( this.storeDir, sf );
 
