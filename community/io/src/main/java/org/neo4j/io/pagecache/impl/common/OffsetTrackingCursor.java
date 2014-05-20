@@ -111,4 +111,9 @@ public class OffsetTrackingCursor implements PageCursor
         this.page = page;
         currentOffset = 0;
     }
+
+    public Page getPage()
+    {
+        return page;
+    }
 }

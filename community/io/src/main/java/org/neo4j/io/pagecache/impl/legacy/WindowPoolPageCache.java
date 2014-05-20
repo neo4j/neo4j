@@ -60,6 +60,7 @@ public class WindowPoolPageCache implements PageCache
     @Override
     public PageCursor newCursor()
     {
+        // TODO pool these thread-locally
         return new OffsetTrackingCursor();
     }
 

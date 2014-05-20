@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.PagedFile;
@@ -41,7 +42,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> implements Store
 {
     private final PagedFile storeFile;
-    private final WindowPoolPageCache pageCache;
+    private final PageCache pageCache;
     private final int pageSize;
 
     public static abstract class Configuration
@@ -123,18 +124,6 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         {
             return new RelationshipRecord( id, -1, -1, -1 );
         }
-//        PageCursor cursor = pageCache.newCursor();
-//        storeFile.pin( cursor, PageLock.READ, storeFile.pageForOffset(id * RECORD_SIZE) );
-//
-//
-//        try
-//        {
-//            return getRecord( id, window, RecordLoad.FORCE, new RelationshipRecord( id ) );
-//        }
-//        finally
-//        {
-//            releaseWindow( window );
-//        }
         return getRecord( id, new RelationshipRecord( id ), RecordLoad.FORCE );
     }
 
@@ -175,7 +164,6 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         {
             throw new UnderlyingStorageException( e );
         }
-//        PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
             return getRecord( id, cursor, loadMode, target );
@@ -302,7 +290,6 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     private RelationshipRecord getRecord( long id, PageCursor cursor,
         RecordLoad load, RelationshipRecord record )
     {
-//        Buffer buffer = window.getOffsettedBuffer( id );
         cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
 
         // [    ,   x] in use flag

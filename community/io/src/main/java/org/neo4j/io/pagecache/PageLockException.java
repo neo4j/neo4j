@@ -30,4 +30,9 @@ public class PageLockException extends RuntimeException
     {
         super( message, cause );
     }
+
+    public PageLockException( Throwable cause )
+    {
+        super( cause );
+    }
 }

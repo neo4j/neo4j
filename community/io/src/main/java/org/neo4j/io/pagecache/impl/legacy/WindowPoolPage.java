@@ -19,9 +19,12 @@
  */
 package org.neo4j.io.pagecache.impl.legacy;
 
+import java.io.IOException;
+
 import org.neo4j.io.pagecache.impl.common.Page;
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
 import org.neo4j.kernel.impl.nioneo.store.PersistenceWindow;
+import org.neo4j.kernel.impl.nioneo.store.WindowPool;
 
 public class WindowPoolPage implements Page
 {
@@ -88,5 +91,10 @@ public class WindowPoolPage implements Page
     {
         buffer.setOffset( offset );
         buffer.put( data );
+    }
+
+    public void release( WindowPool pool ) throws IOException
+    {
+        pool.release( window );
     }
 }

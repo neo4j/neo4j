@@ -24,6 +24,7 @@ import java.io.IOException;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
+import org.neo4j.io.pagecache.PageLockException;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
@@ -61,7 +62,16 @@ public class WindowPoolPagedFile implements PagedFile
     @Override
     public void unpin( PageCursor cursor )
     {
-
+        OffsetTrackingCursor trackingCursor = (OffsetTrackingCursor) cursor;
+        WindowPoolPage page = (WindowPoolPage) trackingCursor.getPage();
+        try
+        {
+            page.release( pool );
+        }
+        catch ( IOException e )
+        {
+            throw new PageLockException( e );
+        }
     }
 
     @Override
