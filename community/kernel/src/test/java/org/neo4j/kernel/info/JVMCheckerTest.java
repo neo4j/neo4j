@@ -53,11 +53,33 @@ public class JVMCheckerTest
     }
 
     @Test
-    public void shouldIssueWarningWhenUsingUnsupportedJvm() throws Exception
+    public void shouldNotIssueWarningWhenUsingOpenJDKServerVmVersion7() throws Exception
     {
         BufferingLogger bufferingLogger = new BufferingLogger();
 
         new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "OpenJDK 64-Bit Server VM",
+                "1.7.0-b147" ) ).checkJvmCompatibilityAndIssueWarning();
+
+        assertTrue( bufferingLogger.toString().isEmpty() );
+    }
+
+    @Test
+    public void shouldNotIssueWarningWhenUsingOpenJDKClientVmVersion7() throws Exception
+    {
+        BufferingLogger bufferingLogger = new BufferingLogger();
+
+        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "OpenJDK Client VM",
+                "1.7.0-b147" ) ).checkJvmCompatibilityAndIssueWarning();
+
+        assertTrue( bufferingLogger.toString().isEmpty() );
+    }
+
+    @Test
+    public void shouldIssueWarningWhenUsingUnsupportedJvm() throws Exception
+    {
+        BufferingLogger bufferingLogger = new BufferingLogger();
+
+        new JvmChecker( bufferingLogger, new CannedJvmMetadataRepository( "MyOwnJDK 64-Bit Awesome VM",
                 "1.7" ) ).checkJvmCompatibilityAndIssueWarning();
 
         assertThat( bufferingLogger.toString().trim(), is( INCOMPATIBLE_JVM_WARNING ) );

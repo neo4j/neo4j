@@ -24,9 +24,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class JvmChecker
 {
     public static final String INCOMPATIBLE_JVM_WARNING = "You are using an unsupported Java runtime. Please" +
-            " use Oracle(R) Java(TM) Runtime Environment 7.";
+            " use Oracle(R) Java(TM) Runtime Environment 7 or OpenJDK(TM) 7.";
     public static final String INCOMPATIBLE_JVM_VERSION_WARNING = "You are using an unsupported version of " +
-            "the Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 7.";
+            "the Java runtime. Please use Oracle(R) Java(TM) Runtime Environment 7 or OpenJDK(TM) 7.";
 
     private final StringLogger stringLogger;
     private final JvmMetadataRepository jvmMetadataRepository;
@@ -42,7 +42,7 @@ public class JvmChecker
         String javaVmName = jvmMetadataRepository.getJavaVmName();
         String javaVersion = jvmMetadataRepository.getJavaVersion();
 
-        if ( !javaVmName.matches( "Java HotSpot\\(TM\\) (64-Bit Server|Server|Client) VM" ) )
+        if ( !javaVmName.matches( "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM" ) )
         {
             stringLogger.warn( INCOMPATIBLE_JVM_WARNING );
         }
