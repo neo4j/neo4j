@@ -59,7 +59,6 @@ public class StandardPageTableTest
     public void loading_must_read_file() throws Exception
     {
         // Given
-        StandardPageTable table = new StandardPageTable( 1024 );
         byte[] expected = "Hello, cruel world!".getBytes( "UTF-8" );
         BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( expected ) );
 
@@ -70,14 +69,46 @@ public class StandardPageTableTest
         byte[] actual = new byte[expected.length];
         page.getBytes( actual, 0 );
 
-        assertThat( actual, equalTo( expected ));
+        assertThat( actual, equalTo( expected ) );
+    }
+
+    @Test
+    public void evicting_must_flush_file() throws Exception
+    {
+        // Given a table with 1 entry, which I've modified
+        ByteBuffer storageBuffer = ByteBuffer.allocate( 1024 );
+        BufferPageIO io = new BufferPageIO( storageBuffer );
+
+        PinnablePage page = table.load( io, 12, PageLock.EXCLUSIVE );
+        page.putBytes( "Muaha".getBytes("UTF-8"), 0 );
+        page.unpin( PageLock.EXCLUSIVE );
+
+        // When I perform an operation that will force eviction
+        Thread thread = new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                // This thread will cause the single page in the cache to be replaced
+                BufferPageIO io = new BufferPageIO( ByteBuffer.allocate( 1 ) );
+                table.load( io, 3, PageLock.SHARED );
+            }
+        });
+        thread.start();
+        thread.join();
+
+        // Then my changes should've been forced to disk
+        byte[] actual = new byte[5];
+        storageBuffer.position(0);
+        storageBuffer.get( actual );
+        assertThat( actual, equalTo("Muaha".getBytes("UTF-8")) );
+
     }
 
     @Test
     public void loading_with_shared_lock_allows_other_shared() throws Exception
     {
         // Given
-        StandardPageTable table = new StandardPageTable( 1024 );
         BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( "expected".getBytes("UTF-8") ) );
 
         // When
@@ -91,7 +122,6 @@ public class StandardPageTableTest
     public void loading_with_shared_lock_stops_exclusive_pinners() throws Exception
     {
         // Given
-        StandardPageTable table = new StandardPageTable( 1024 );
         final BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( "expected".getBytes("UTF-8") ) );
 
         // When
@@ -157,14 +187,6 @@ public class StandardPageTableTest
         assertTrue( acquiredPage.get() );
     }
 
-    private void awaitThreadState( Thread otherThread, Thread.State state ) throws InterruptedException
-    {
-        do
-        {
-            otherThread.join( 100 );
-        } while(otherThread.getState() != state );
-    }
-
     @Test(timeout = 1000)
     public void pinning_replaced_page_must_fail() throws Exception
     {
@@ -196,6 +218,16 @@ public class StandardPageTableTest
 
     // TODO evicting page should not allow readers or writers access
 
+
+
+    private void awaitThreadState( Thread otherThread, Thread.State state ) throws InterruptedException
+    {
+        do
+        {
+            otherThread.join( 100 );
+        } while(otherThread.getState() != state );
+    }
+
     private class BufferPageIO implements PageTable.PageIO
     {
         private final ByteBuffer buffer;
@@ -215,7 +247,8 @@ public class StandardPageTableTest
         @Override
         public void write( long pageId, ByteBuffer from )
         {
-            throw new UnsupportedOperationException(  );
+            buffer.position(0);
+            buffer.put(from);
         }
     }
 }

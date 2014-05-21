@@ -33,8 +33,6 @@ import static org.neo4j.io.pagecache.impl.standard.PageTable.PinnablePage;
 
 public class StandardPagedFile implements PagedFile
 {
-    static final int BEING_LOADED = -1;
-    static final int NOT_LOADED = -2;
     static final Object NULL = new Object();
 
     private final PageTable table;

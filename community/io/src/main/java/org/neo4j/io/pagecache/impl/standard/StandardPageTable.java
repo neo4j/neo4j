@@ -55,7 +55,7 @@ public class StandardPageTable implements PageTable, Runnable
         StandardPinnablePage page = nextFreePage();
         page.reset( io, pageId );
         page.pin( io, pageId, lock );
-        io.read( pageId, page.buffer() );
+        page.load();
         return page;
     }
 
@@ -88,31 +88,37 @@ public class StandardPageTable implements PageTable, Runnable
     {
         while ( !Thread.interrupted() )
         {
-            int useSumTotal = 0;
-            for ( StandardPinnablePage page : pages )
+            try
             {
-                if ( page.grabUnpinned() )
+                for ( StandardPinnablePage page : pages )
                 {
-                    try
+                    if ( page.loaded && page.grabUnpinned() )
                     {
-                        byte stamp = page.usageStamp;
-                        useSumTotal += stamp;
-                        if ( stamp == 0 )
+                        try
                         {
-                            evict( page );
+                            byte stamp = page.usageStamp;
+                            if ( stamp == 0 )
+                            {
+                                evict( page );
+                            }
+                            else
+                            {
+                                page.usageStamp = (byte) (stamp - 1);
+                            }
                         }
-                        else
+                        finally
                         {
-                            page.usageStamp = (byte) (stamp - 1);
+                            page.releaseUnpinned();
                         }
-                    }
-                    finally
-                    {
-                        page.releaseUnpinned();
                     }
                 }
+                LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
             }
-            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+            catch(Exception e)
+            {
+                // Aviod having this thread crash at all cost.
+                e.printStackTrace();
+            }
         }
     }
 
@@ -120,6 +126,7 @@ public class StandardPageTable implements PageTable, Runnable
     {
         page.flush();
         page.reset( null, 0 );
+        page.loaded = false;
         do {
             page.next = freeList.get();
         } while ( !freeList.compareAndSet( page.next, page ) );

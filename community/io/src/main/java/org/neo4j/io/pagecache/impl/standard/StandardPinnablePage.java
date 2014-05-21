@@ -32,9 +32,9 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
     /** Used when the page is part of the free-list, points to next free page */
     public volatile StandardPinnablePage next;
     public volatile byte usageStamp;
+    public volatile boolean loaded = false;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-
     private PageTable.PageIO io;
     private long pageId = -1;
     private boolean dirty;
@@ -135,8 +135,16 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
     {
         if ( dirty )
         {
-            io.write( pageId, buffer() );
+            buffer.position(0);
+            io.write( pageId, buffer );
             dirty = false;
         }
+    }
+
+    public void load()
+    {
+        buffer.position(0);
+        io.read( pageId, buffer );
+        loaded = true;
     }
 }
