@@ -61,6 +61,7 @@ import org.neo4j.cluster.timeout.TimeoutStrategy;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.cluster.com.message.Message.internal;
 
@@ -70,11 +71,13 @@ import static org.neo4j.cluster.com.message.Message.internal;
 public class MultiPaxosServerFactory
         implements ProtocolServerFactory
 {
+    private Monitors monitors;
     private final ClusterConfiguration initialConfig;
     private final Logging logging;
 
-    public MultiPaxosServerFactory( ClusterConfiguration initialConfig, Logging logging )
+    public MultiPaxosServerFactory( Monitors monitors, ClusterConfiguration initialConfig, Logging logging )
     {
+        this.monitors = monitors;
         this.initialConfig = initialConfig;
         this.logging = logging;
     }
@@ -93,48 +96,60 @@ public class MultiPaxosServerFactory
         Timeouts timeouts = new Timeouts( timeoutStrategy );
 
         final MultiPaxosContext context = new MultiPaxosContext( me,
-                Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole(ClusterConfiguration.COORDINATOR )),
+                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
                 new ClusterConfiguration( initialConfig.getName(), logging.getMessagesLog( ClusterConfiguration.class ),
                         initialConfig.getMemberURIs() ),
                 executor, logging, objectInputStreamFactory, objectOutputStreamFactory, acceptorInstanceStore, timeouts,
-                electionCredentialsProvider);
+                electionCredentialsProvider
+        );
 
-        SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(),context.getLearnerContext());
+        SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(),
+                context.getLearnerContext() );
 
         return newProtocolServer( me, input, output, stateMachineExecutor, executor, timeouts,
                 context, snapshotContext );
     }
 
     public ProtocolServer newProtocolServer( InstanceId me, MessageSource input, MessageSender output,
-                                              Executor stateMachineExecutor, DelayedDirectExecutor executor, Timeouts timeouts,
-                                              MultiPaxosContext context, SnapshotContext snapshotContext )
+                                             Executor stateMachineExecutor, DelayedDirectExecutor executor,
+                                             Timeouts timeouts,
+                                             MultiPaxosContext context, SnapshotContext snapshotContext )
     {
-        return constructSupportingInfrastructureFor( me, input, output, executor, timeouts, stateMachineExecutor, context, new StateMachine[]
-        {
-                new StateMachine( context.getAtomicBroadcastContext(), AtomicBroadcastMessage.class,
-                        AtomicBroadcastState.start, logging ),
-                new StateMachine( context.getAcceptorContext(), AcceptorMessage.class, AcceptorState.start, logging ),
-                new StateMachine( context.getProposerContext(), ProposerMessage.class, ProposerState.start, logging ),
-                new StateMachine( context.getLearnerContext(), LearnerMessage.class, LearnerState.start, logging ),
-                new StateMachine( context.getHeartbeatContext(), HeartbeatMessage.class, HeartbeatState.start,
-                        logging ),
-                new StateMachine( context.getElectionContext(), ElectionMessage.class, ElectionState.start, logging ),
-                new StateMachine( snapshotContext, SnapshotMessage.class, SnapshotState.start, logging ),
-                new StateMachine( context.getClusterContext(), ClusterMessage.class, ClusterState.start, logging )
-        });
+        return constructSupportingInfrastructureFor( me, input, output, executor, timeouts, stateMachineExecutor,
+                context, new StateMachine[]
+                {
+                        new StateMachine( context.getAtomicBroadcastContext(), AtomicBroadcastMessage.class,
+                                AtomicBroadcastState.start, logging ),
+                        new StateMachine( context.getAcceptorContext(), AcceptorMessage.class, AcceptorState.start,
+                                logging ),
+                        new StateMachine( context.getProposerContext(), ProposerMessage.class, ProposerState.start,
+                                logging ),
+                        new StateMachine( context.getLearnerContext(), LearnerMessage.class, LearnerState.start,
+                                logging ),
+                        new StateMachine( context.getHeartbeatContext(), HeartbeatMessage.class, HeartbeatState.start,
+                                logging ),
+                        new StateMachine( context.getElectionContext(), ElectionMessage.class, ElectionState.start,
+                                logging ),
+                        new StateMachine( snapshotContext, SnapshotMessage.class, SnapshotState.start, logging ),
+                        new StateMachine( context.getClusterContext(), ClusterMessage.class, ClusterState.start,
+                                logging )
+                } );
     }
 
     /**
      * Sets up the supporting infrastructure and communication hooks for our state machines. This is here to support
      * an external requirement for assembling protocol servers given an existing set of state machines (used to prove
      * correctness).
-     * */
+     */
     public ProtocolServer constructSupportingInfrastructureFor( InstanceId me, MessageSource input,
-                    MessageSender output, DelayedDirectExecutor executor, Timeouts timeouts,
-                    Executor stateMachineExecutor, final MultiPaxosContext context,
-                    StateMachine[] machines )
+                                                                MessageSender output, DelayedDirectExecutor executor,
+                                                                Timeouts timeouts,
+                                                                Executor stateMachineExecutor,
+                                                                final MultiPaxosContext context,
+                                                                StateMachine[] machines )
     {
-        StateMachines stateMachines = new StateMachines( input, output, timeouts, executor, stateMachineExecutor, me );
+        StateMachines stateMachines = new StateMachines( monitors.newMonitor( StateMachines.Monitor.class ), input,
+                output, timeouts, executor, stateMachineExecutor, me );
 
         for ( StateMachine machine : machines )
         {
@@ -164,7 +179,8 @@ public class MultiPaxosServerFactory
                 server.newClient( Election.class ), logging.getMessagesLog( ClusterLeaveReelectionListener.class ) ) );
         context.getClusterContext().addClusterListener( new ClusterLeaveReelectionListener( server.newClient(
                 Election.class ),
-                logging.getMessagesLog( ClusterLeaveReelectionListener.class ) ) );
+                logging.getMessagesLog( ClusterLeaveReelectionListener.class )
+        ) );
 
         StateMachineRules rules = new StateMachineRules( stateMachines.getOutgoing() )
                 .rule( ClusterState.start, ClusterMessage.create, ClusterState.entered,

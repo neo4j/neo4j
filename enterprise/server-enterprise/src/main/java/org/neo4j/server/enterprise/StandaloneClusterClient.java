@@ -37,6 +37,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.cluster.client.ClusterClient.adapt;
 import static org.neo4j.helpers.Exceptions.exceptionsOfType;
@@ -51,20 +52,20 @@ import static org.neo4j.server.configuration.Configurator.NEO_SERVER_CONFIG_FILE
  * Wrapper around a {@link ClusterClient} to fit the environment of the Neo4j server,
  * mostly regarding the use of the server config file passed in from the script starting
  * this class. That server config file will be parsed and necessary parts passed on.
- * 
+ * <p/>
  * Configuration of the cluster client can be specified by
  * <ol>
- *   <li>reading from a db tuning file (neo4j.properties) appointed by the neo4j server configuration file,
- *       specified from org.neo4j.server.properties system property.</li>
- *   <li>
- *   </li>   
- * 
+ * <li>reading from a db tuning file (neo4j.properties) appointed by the neo4j server configuration file,
+ * specified from org.neo4j.server.properties system property.</li>
+ * <li>
+ * </li>
+ *
  * @author Mattias Persson
  */
 public class StandaloneClusterClient
 {
     private final LifeSupport life = new LifeSupport();
-    
+
     private StandaloneClusterClient( Logging logging, ClusterClient clusterClient )
     {
         life.add( logging );
@@ -94,7 +95,9 @@ public class StandaloneClusterClient
         if ( dbProperties != null )
         {
             if ( !dbProperties.exists() )
+            {
                 throw new IllegalArgumentException( dbProperties + " doesn't exist" );
+            }
             config = readFromConfigConfig( config, dbProperties );
         }
         config.putAll( new Args( args ).asMap() );
@@ -103,16 +106,19 @@ public class StandaloneClusterClient
         {
             Logging logging = logging();
             ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-            new StandaloneClusterClient( logging, new ClusterClient( adapt( new Config( config ) ),
-                    logging, new NotElectableElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory )  );
+            new StandaloneClusterClient( logging, new ClusterClient( new Monitors(), adapt( new Config( config ) ),
+                    logging, new NotElectableElectionCredentialsProvider(), objectStreamFactory,
+                    objectStreamFactory ) );
         }
         catch ( LifecycleException e )
         {
             @SuppressWarnings({"ThrowableResultOfMethodCallIgnored", "unchecked"})
             Throwable cause = peel( e, exceptionsOfType( LifecycleException.class ) );
             if ( cause instanceof ChannelException )
+            {
                 System.err.println( "ERROR: " + cause.getMessage() +
                         (cause.getCause() != null ? ", caused by:" + cause.getCause().getMessage() : "") );
+            }
             else
             {
                 System.err.println( "ERROR: Unknown error" );
@@ -134,17 +140,17 @@ public class StandaloneClusterClient
             System.exit( 1 );
         }
     }
-    
+
     private static Map<String, String> readFromConfigConfig( Map<String, String> config, File propertiesFile )
     {
         Map<String, String> result = new HashMap<String, String>( config );
         Map<String, String> existingConfig = loadStrictly( propertiesFile );
-        for ( Setting<?> setting : new Setting[] {
+        for ( Setting<?> setting : new Setting[]{
                 ClusterSettings.initial_hosts,
                 ClusterSettings.cluster_name,
                 ClusterSettings.cluster_server,
                 ClusterSettings.server_id} )
-                // TODO add timeouts
+        // TODO add timeouts
         {
             moveOver( existingConfig, result, setting );
         }
@@ -156,31 +162,39 @@ public class StandaloneClusterClient
     {
         String key = setting.name();
         if ( from.containsKey( key ) )
+        {
             to.put( key, from.get( key ) );
+        }
     }
 
     private static Logging logging()
     {
         File home = new File( System.getProperty( "neo4j.home" ) );
         String logDir = System.getProperty( "org.neo4j.cluster.logdirectory",
-                new File( new File( new File ( home, "data" ), "log" ), "arbiter" ).getPath() );
+                new File( new File( new File( home, "data" ), "log" ), "arbiter" ).getPath() );
         Config config = new Config( stringMap( InternalAbstractGraphDatabase.Configuration.store_dir.name(), logDir ) );
 
         return new LogbackWeakDependency().tryLoadLogbackService( config, DEFAULT_TO_CLASSIC );
     }
-    
+
     private static File extractDbTuningProperties( String propertiesFile )
     {
         if ( propertiesFile == null )
+        {
             return null;
+        }
         File serverConfigFile = new File( propertiesFile );
         if ( !serverConfigFile.exists() )
+        {
             return null;
-        
+        }
+
         Map<String, String> serverConfig = loadStrictly( serverConfigFile );
         String dbTuningFile = serverConfig.get( DB_TUNING_PROPERTY_FILE_KEY );
         if ( dbTuningFile == null )
+        {
             return null;
+        }
         File result = new File( dbTuningFile );
         return result.exists() ? result : null;
     }

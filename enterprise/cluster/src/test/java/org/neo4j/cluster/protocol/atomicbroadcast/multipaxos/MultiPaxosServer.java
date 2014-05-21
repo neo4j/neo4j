@@ -31,7 +31,6 @@ import java.util.List;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
-import org.neo4j.kernel.impl.util.StringLogger;
 import org.slf4j.impl.StaticLoggerBinder;
 
 import org.neo4j.cluster.BindingListener;
@@ -59,8 +58,10 @@ import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Multi Paxos test server
@@ -82,7 +83,7 @@ public class MultiPaxosServer
     public void start()
             throws IOException
     {
-        broadcastSerializer = new AtomicBroadcastSerializer(new ObjectStreamFactory(), new ObjectStreamFactory());
+        broadcastSerializer = new AtomicBroadcastSerializer( new ObjectStreamFactory(), new ObjectStreamFactory() );
         final LifeSupport life = new LifeSupport();
         try
         {
@@ -90,9 +91,12 @@ public class MultiPaxosServer
                     .timeout( HeartbeatMessage.sendHeartbeat, 200 );
 
             NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
-                    new MultiPaxosServerFactory( new ClusterConfiguration( "default", StringLogger.SYSTEM ),
+                    new MultiPaxosServerFactory( new Monitors(), new ClusterConfiguration( "default",
+                            StringLogger.SYSTEM ),
                             new LogbackService( null, null ) ),
-                    timeoutStrategy, new LogbackService( null, null ), new ObjectStreamFactory(), new ObjectStreamFactory() );
+                    timeoutStrategy, new Monitors(), new LogbackService( null, null ), new ObjectStreamFactory(),
+                    new ObjectStreamFactory()
+            );
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             server = serverFactory.newNetworkedServer(
@@ -121,7 +125,7 @@ public class MultiPaxosServer
                 @Override
                 public void joinedCluster( InstanceId instanceId, URI member )
                 {
-                    System.out.println( "Joined cluster:" + instanceId + " (at URI " + member +")" );
+                    System.out.println( "Joined cluster:" + instanceId + " (at URI " + member + ")" );
                 }
 
                 @Override
@@ -200,7 +204,7 @@ public class MultiPaxosServer
                     System.arraycopy( arguments, 1, realArgs, 0, realArgs.length );
                     try
                     {
-                        method.invoke( this, (Object[])realArgs );
+                        method.invoke( this, (Object[]) realArgs );
                     }
                     catch ( IllegalAccessException e )
                     {

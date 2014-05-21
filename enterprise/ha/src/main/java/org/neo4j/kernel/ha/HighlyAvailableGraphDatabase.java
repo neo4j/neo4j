@@ -19,24 +19,16 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.helpers.collection.Iterables.iterable;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
-
 import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
-
 import javax.transaction.Transaction;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -114,6 +106,14 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.Iterables.iterable;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.kernel.ha.DelegateInvocationHandler.snapshot;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
@@ -273,7 +273,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 {
                     return locks.newClient();
                 }
-                catch( TransactionFailureException e )
+                catch ( TransactionFailureException e )
                 {
                     // This happens during recovery, when there is no lock manager available in certain conditions
                     // due to HAs lifecycle management. It's "safe", since recover does not need locks, but this is
@@ -328,7 +328,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
 
 
-        clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider,
+        clusterClient = new ClusterClient( monitors, ClusterClient.adapt( config ), logging,
+                electionCredentialsProvider,
                 objectStreamFactory, objectStreamFactory );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
@@ -463,7 +464,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
                         (HaIdGeneratorFactory) idGeneratorFactory,
                         logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
-                        updateableSchemaState, monitors, kernelExtensions.listFactories() ),
+                        updateableSchemaState, monitors, kernelExtensions.listFactories()
+                ),
                         new SwitchToMaster( logging, msgLog, this,
                                 (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
                                 masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
@@ -505,7 +507,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 return HighlyAvailableGraphDatabase.super.createLockManager();
             }
-        });
+        }
+        );
         return lockManager;
     }
 

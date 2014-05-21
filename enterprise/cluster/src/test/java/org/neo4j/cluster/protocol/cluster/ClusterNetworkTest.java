@@ -19,8 +19,6 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
-import static org.junit.Assert.assertEquals;
-
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -46,8 +44,10 @@ import org.junit.ClassRule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-import org.neo4j.cluster.InstanceId;
+import org.slf4j.LoggerFactory;
+
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultiPaxosServerFactory;
 import org.neo4j.cluster.NetworkedServerFactory;
 import org.neo4j.cluster.ProtocolServer;
@@ -61,8 +61,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.LoggerRule;
-import org.slf4j.LoggerFactory;
+
+import static org.junit.Assert.assertEquals;
 
 /**
  * TODO
@@ -168,19 +170,23 @@ public class ClusterNetworkTest
             final URI uri = new URI( "neo4j://localhost:800" + (i + 1) );
 
             NetworkedServerFactory factory = new NetworkedServerFactory( life,
-                    new MultiPaxosServerFactory( new ClusterConfiguration( "default", StringLogger.SYSTEM ),
+                    new MultiPaxosServerFactory( new Monitors(), new ClusterConfiguration( "default",
+                            StringLogger.SYSTEM ),
                             new LogbackService( null,
-                                    (LoggerContext) LoggerFactory.getILoggerFactory() ) ),
-                    new FixedTimeoutStrategy( 1000 ),
-                    logbackService, new ObjectStreamFactory(), new ObjectStreamFactory() );
+                                    (LoggerContext) LoggerFactory.getILoggerFactory() )
+                    ),
+                    new FixedTimeoutStrategy( 1000 ), new Monitors(),
+                    logbackService, new ObjectStreamFactory(), new ObjectStreamFactory()
+            );
 
             ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
             ProtocolServer server = factory.newNetworkedServer(
                     new Config( MapUtil.stringMap( ClusterSettings.cluster_server.name(),
                             uri.getHost() + ":" + uri.getPort(),
-                            ClusterSettings.server_id.name(), ""+i ) ),
+                            ClusterSettings.server_id.name(), "" + i ) ),
                     new InMemoryAcceptorInstanceStore(),
-                    electionCredentialsProvider );
+                    electionCredentialsProvider
+            );
             server.addBindingListener( electionCredentialsProvider );
             final Cluster cluster2 = server.newClient( Cluster.class );
             final AtomicReference<ClusterConfiguration> config2 = clusterStateListener( uri, cluster2 );
@@ -325,6 +331,7 @@ public class ClusterNetworkTest
     public interface ClusterTestScript
     {
         void tick( long time );
+
         long getLength();
     }
 
@@ -355,15 +362,17 @@ public class ClusterNetworkTest
                         {
                             out.remove( cluster );
                             logger.getLogger().debug( "Join:" + cluster.toString() );
-                            if (joinServers.length == 0)
+                            if ( joinServers.length == 0 )
                             {
                                 if ( in.isEmpty() )
                                 {
                                     cluster.create( "default" );
-                                } else
+                                }
+                                else
                                 {
                                     // Use test info to figure out who to join
-                                    final Future<ClusterConfiguration> result = cluster.join( "default", URI.create( in.get( 0 ).toString() ) );
+                                    final Future<ClusterConfiguration> result = cluster.join( "default",
+                                            URI.create( in.get( 0 ).toString() ) );
                                     executor.submit( new Runnable()
                                     {
                                         @Override
@@ -377,14 +386,16 @@ public class ClusterNetworkTest
                                             }
                                             catch ( Exception e )
                                             {
-                                                logger.getLogger().debug( "**** Node "+joinServer+" could not join cluster:" + e
+                                                logger.getLogger().debug( "**** Node " + joinServer + " could not " +
+                                                        "join cluster:" + e
                                                         .getMessage() );
                                                 out.add( cluster );
                                             }
                                         }
                                     } );
                                 }
-                            } else
+                            }
+                            else
                             {
                                 // List of servers to join was explicitly specified, so use that
                                 URI[] instanceUris = new URI[joinServers.length];
@@ -408,7 +419,7 @@ public class ClusterNetworkTest
                                         }
                                         catch ( Exception e )
                                         {
-                                            if ( !(e.getCause() instanceof IllegalStateException ))
+                                            if ( !(e.getCause() instanceof IllegalStateException) )
                                             {
                                                 cluster.create( "default" );
                                             }

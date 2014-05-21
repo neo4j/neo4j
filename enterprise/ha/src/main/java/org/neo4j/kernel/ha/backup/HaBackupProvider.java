@@ -30,8 +30,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.neo4j.backup.BackupExtensionService;
 import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
@@ -54,6 +54,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleException;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SystemOutLogging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 @Service.Implementation(BackupExtensionService.class)
 public final class HaBackupProvider extends BackupExtensionService
@@ -74,7 +75,8 @@ public final class HaBackupProvider extends BackupExtensionService
         String clusterName = args.get( ClusterSettings.cluster_name.name(), null );
         if ( clusterName == null )
         {
-            clusterName = args.get( ClusterSettings.cluster_name.name(), ClusterSettings.cluster_name.getDefaultValue() );
+            clusterName = args.get( ClusterSettings.cluster_name.name(), ClusterSettings.cluster_name.getDefaultValue
+                    () );
         }
 
         try
@@ -98,13 +100,14 @@ public final class HaBackupProvider extends BackupExtensionService
         params.put( ClusterSettings.server_id.name(), "-1" );
         params.put( ClusterSettings.cluster_name.name(), clusterName );
         params.put( ClusterSettings.initial_hosts.name(), from );
-        params.put( ClusterSettings.instance_name.name(), "Backup");
-        params.put(ClusterClient.clusterJoinTimeout.name(), "20s");
+        params.put( ClusterSettings.instance_name.name(), "Backup" );
+        params.put( ClusterClient.clusterJoinTimeout.name(), "20s" );
         final Config config = new Config( params,
                 ClusterSettings.class, OnlineBackupSettings.class );
 
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-        final ClusterClient clusterClient = life.add( new ClusterClient( ClusterClient.adapt( config ), logging,
+        final ClusterClient clusterClient = life.add( new ClusterClient( new Monitors(),
+                ClusterClient.adapt( config ), logging,
                 new NotElectableElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory ) );
         ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, new SystemOutLogging(),
@@ -120,9 +123,9 @@ public final class HaBackupProvider extends BackupExtensionService
                 clusterClient.performRoleElections();
                 clusterClient.removeClusterListener( this );
             }
-        });
+        } );
         final Semaphore infoReceivedLatch = new Semaphore( 0 );
-        final AtomicReference<URI> backupUri = new AtomicReference<URI>(  );
+        final AtomicReference<URI> backupUri = new AtomicReference<URI>();
         events.addClusterMemberListener( new ClusterMemberListener.Adapter()
         {
             Map<InstanceId, URI> backupUris = new HashMap<InstanceId, URI>();
@@ -167,7 +170,8 @@ public final class HaBackupProvider extends BackupExtensionService
 
             if ( !infoReceivedLatch.tryAcquire( 20, TimeUnit.SECONDS ) )
             {
-                throw new RuntimeException( "Could not find backup server in cluster " + clusterName + " at " + from + ", " +
+                throw new RuntimeException( "Could not find backup server in cluster " + clusterName + " at " + from
+                        + ", " +
                         "operation timed out" );
             }
         }
@@ -179,28 +183,30 @@ public final class HaBackupProvider extends BackupExtensionService
         {
             Throwable ex = Exceptions.peel( e, Exceptions.exceptionsOfType( LifecycleException.class ) );
 
-            if (ex != null && ex instanceof ClusterEntryDeniedException)
+            if ( ex != null && ex instanceof ClusterEntryDeniedException )
             {
                 // Someone else is doing a backup
-                throw new RuntimeException( "Another backup client is currently performing backup; concurrent backups are not allowed" );
+                throw new RuntimeException( "Another backup client is currently performing backup; concurrent backups" +
+                        " are not allowed" );
             }
 
             ex = Exceptions.peel( e, Exceptions.exceptionsOfType( TimeoutException.class ) );
             if ( ex != null )
             {
-                throw new RuntimeException( "Could not find backup server in cluster " + clusterName + " at " + from + ", " +
+                throw new RuntimeException( "Could not find backup server in cluster " + clusterName + " at " + from
+                        + ", " +
                         "operation timed out" );
             }
             else
             {
-                throw new RuntimeException(Exceptions.peel(e, new Predicate<Throwable>()
+                throw new RuntimeException( Exceptions.peel( e, new Predicate<Throwable>()
                 {
                     @Override
                     public boolean accept( Throwable item )
                     {
                         return !(item instanceof LifecycleException);
                     }
-                }));
+                } ) );
             }
         }
         finally
