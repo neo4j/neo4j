@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 /** A page backed by a simple byte buffer. */
 public class ByteBufferPage implements Page
 {
-    private final ByteBuffer buffer;
+    protected final ByteBuffer buffer;
 
     public ByteBufferPage( ByteBuffer buffer )
     {
@@ -64,13 +64,17 @@ public class ByteBufferPage implements Page
     @Override
     public void getBytes( byte[] data, int offset )
     {
-        buffer.get( data, offset, data.length );
+        int end = offset + data.length;
+        for (int i = offset; i < end; i++)
+            data[i] = getByte(i);
     }
 
     @Override
     public void putBytes( byte[] data, int offset )
     {
-        buffer.put( data, offset, data.length );
+        int end = offset + data.length;
+        for (int i = 0; i < end; i++)
+            putByte(data[i], offset + i );
     }
 
     @Override

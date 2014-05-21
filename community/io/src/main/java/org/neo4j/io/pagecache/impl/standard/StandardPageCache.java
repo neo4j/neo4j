@@ -38,11 +38,12 @@ public class StandardPageCache implements PageCache
 {
     private final FileSystemAbstraction fs;
     private final Map<File, StandardPagedFile> pagedFiles = new HashMap<>();
-    private final PageTable table = null;
+    private final PageTable table;
 
     public StandardPageCache( FileSystemAbstraction fs, long memoryPoolSizeInBytes )
     {
         this.fs = fs;
+        table = new StandardPageTable( memoryPoolSizeInBytes );
     }
 
     @Override

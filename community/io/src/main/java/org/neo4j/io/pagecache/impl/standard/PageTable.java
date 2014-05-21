@@ -54,5 +54,14 @@ public interface PageTable
          * If the page is currently pinned for writing, and the given PageLock is SHARED, the pin will block.
          */
         boolean pin( PageIO assertIO, long assertPageId, PageLock lock );
+
+        /**
+         * Unpin the page.
+         *
+         * This does not verify that the page actually is pinned, it is up to the client to
+         * ensure that this method does not get called without an accompanying #pin() call
+         * beforehand.
+         */
+        void unpin( PageLock lock );
     }
 }
