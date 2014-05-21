@@ -37,7 +37,9 @@ public class StandardPagedFile implements PagedFile
 
     private final PageTable table;
     private final PageTable.PageIO pageIO;
-    private ConcurrentMap<Long, Object> addressTranslationTable = new ConcurrentHashMap<>();
+
+    /** Currently active pages in the file this object manages. */
+    private ConcurrentMap<Long, Object> filePages = new ConcurrentHashMap<>();
 
     public StandardPagedFile( PageTable table, StoreChannel channel )
     {
@@ -50,19 +52,22 @@ public class StandardPagedFile implements PagedFile
     {
         for (;;)
         {
-            Object pageRef = addressTranslationTable.get( pageId );
+            Object pageRef = filePages.get( pageId );
             if ( pageRef == null )
             {
-                addressTranslationTable.putIfAbsent( pageId, NULL );
+                filePages.putIfAbsent( pageId, NULL );
             }
             else if ( pageRef == NULL )
             {
                 CountDownLatch latch = new CountDownLatch( 1 );
-                if ( addressTranslationTable.replace( pageId, pageRef, latch ) )
+                if ( filePages.replace( pageId, pageRef, latch ) )
                 {
                     PinnablePage page = table.load( pageIO, pageId, lock );
-                    addressTranslationTable.put( pageId, page );
+                    filePages.put( pageId, page );
                     latch.countDown();
+
+                    ((StandardPageCursor)cursor).reset( page, lock );
+
                     return; // yay!
                 }
             }
@@ -84,9 +89,10 @@ public class StandardPagedFile implements PagedFile
                 PinnablePage page = (PinnablePage) pageRef;
                 if ( page.pin( pageIO, pageId, lock ) )
                 {
+                    ((StandardPageCursor)cursor).reset( page, lock );
                     return; // yay!
                 }
-                addressTranslationTable.replace( pageId, page, NULL );
+                filePages.replace( pageId, page, NULL );
             }
         }
     }
@@ -94,7 +100,9 @@ public class StandardPagedFile implements PagedFile
     @Override
     public void unpin( PageCursor cursor )
     {
-
+        StandardPageCursor standardCursor = (StandardPageCursor) cursor;
+        standardCursor.page().unpin( standardCursor.lockType() );
+        standardCursor.reset( null, null );
     }
 
     @Override

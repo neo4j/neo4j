@@ -27,7 +27,7 @@ public class OffsetTrackingCursor implements PageCursor
 {
     private static final AtomicInteger THREAD_ID_COUNTER = new AtomicInteger( -1 );
 
-    private Page page;
+    protected Page page;
     private int currentOffset;
 
 

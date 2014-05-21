@@ -20,16 +20,12 @@
 package org.neo4j.io.pagecache.impl.standard;
 
 import org.junit.Test;
-
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
-import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.mockito.Mockito.*;
 import static org.neo4j.io.pagecache.impl.standard.PageTable.PinnablePage;
 
 public class StandardPagedFileTest
@@ -39,7 +35,7 @@ public class StandardPagedFileTest
     public void shouldLoadPage() throws Exception
     {
         // Given
-        PageCursor cursor = new OffsetTrackingCursor();
+        StandardPageCursor cursor = new StandardPageCursor();
         PageTable table = mock(PageTable.class);
         PinnablePage page = mock( PinnablePage.class );
         StoreChannel channel = mock( StoreChannel.class);
@@ -53,7 +49,31 @@ public class StandardPagedFileTest
 
         // Then
         verify(table).load( io, 12, PageLock.SHARED );
+        assertThat(cursor.page(), equalTo( page ));
     }
+
+    @Test
+    public void shouldUnpinWithCorrectLockType() throws Exception
+    {
+        // Given
+        StandardPageCursor cursor = new StandardPageCursor();
+        PageTable table = mock(PageTable.class);
+        PinnablePage page = mock( PinnablePage.class );
+        StoreChannel channel = mock( StoreChannel.class);
+        StandardPageIO io = new StandardPageIO( channel );
+        when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
+        when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
+        StandardPagedFile file = new StandardPagedFile(table, channel);
+
+        // When
+        file.pin( cursor, PageLock.SHARED, 12 );
+        file.unpin( cursor );
+
+        // Then
+        verify(page).unpin( PageLock.SHARED );
+    }
+
+
 
 
 }
