@@ -56,7 +56,7 @@ public interface ClusterListener
      *
      * @param member
      */
-    void leftCluster( InstanceId instanceId );
+    void leftCluster( InstanceId instanceId, URI member );
 
     /**
      * When a member (including potentially myself) has been elected to a particular role, this callback is invoked.
@@ -83,7 +83,7 @@ public interface ClusterListener
         }
 
         @Override
-        public void leftCluster( InstanceId instanceId )
+        public void leftCluster( InstanceId instanceId, URI member )
         {
         }
 

@@ -21,6 +21,7 @@ package org.neo4j.ha;
 
 import java.io.File;
 import java.io.InputStream;
+import java.net.URI;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.LinkedList;
@@ -32,8 +33,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
@@ -126,7 +127,7 @@ public class TestPullUpdatesApplied
                 new ClusterListener.Adapter()
                 {
                     @Override
-                    public void leftCluster( InstanceId member )
+                    public void leftCluster( InstanceId instanceId, URI member )
                     {
                         latch1.countDown();
                         masterDb.getDependencyResolver().resolveDependency( ClusterClient.class )
