@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCursor;
@@ -36,15 +37,29 @@ public class StandardPagedFile implements PagedFile
     static final Object NULL = new Object();
 
     private final PageTable table;
+    private final StoreChannel channel;
+    private final int filePageSize;
     private final PageTable.PageIO pageIO;
+
+    private final AtomicInteger references = new AtomicInteger( 1 );
 
     /** Currently active pages in the file this object manages. */
     private ConcurrentMap<Long, Object> filePages = new ConcurrentHashMap<>();
 
-    public StandardPagedFile( PageTable table, StoreChannel channel )
+    /**
+     * @param table
+     * @param channel
+     * @param filePageSize is the page size used by this file, NOT the page size used by
+     *                     the cache. This value is always smaller than the page size used
+     *                     by the cache. The remaining space in the page cache buffers are
+     *                     unused.
+     */
+    public StandardPagedFile( PageTable table, StoreChannel channel, int filePageSize )
     {
         this.table = table;
-        this.pageIO = new StandardPageIO(channel);
+        this.channel = channel;
+        this.filePageSize = filePageSize;
+        this.pageIO = new StandardPageIO(channel, filePageSize);
     }
 
     @Override
@@ -108,6 +123,36 @@ public class StandardPagedFile implements PagedFile
     @Override
     public int pageSize()
     {
-        return 0;
+        return filePageSize;
+    }
+
+    /**
+     * @return true if this file is still open and we managed to claim a reference to it.
+     */
+    public boolean claimReference()
+    {
+        int refs;
+        do
+        {
+            refs = references.get();
+            if(refs <= 0)
+            {
+                return false;
+            }
+        } while( !references.compareAndSet( refs, refs + 1 ));
+        return true;
+    }
+
+    /**
+     * @return true if this was the last reference to the file.
+     */
+    public boolean releaseReference()
+    {
+        return references.decrementAndGet() == 0;
+    }
+
+    public void close() throws IOException
+    {
+        channel.close();
     }
 }

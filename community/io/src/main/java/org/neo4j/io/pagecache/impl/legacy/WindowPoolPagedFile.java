@@ -38,12 +38,12 @@ public class WindowPoolPagedFile implements PagedFile
     private final StoreChannel channel;
     private final int recordSize;
 
-    public WindowPoolPagedFile( WindowPool pool, int pageSize, StoreChannel channel, int transitionalRecordSizeUntilWeHaveNewPageCache )
+    public WindowPoolPagedFile( WindowPool pool, int pageSize, StoreChannel channel )
     {
         this.pool = pool;
         this.pageSize = pageSize;
         this.channel = channel;
-        recordSize = transitionalRecordSizeUntilWeHaveNewPageCache;
+        recordSize = -1;
     }
 
     @Override

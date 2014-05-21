@@ -39,24 +39,41 @@ public class StandardPageCache implements PageCache
     private final FileSystemAbstraction fs;
     private final Map<File, StandardPagedFile> pagedFiles = new HashMap<>();
     private final PageTable table;
+    private final int pageSize;
 
-    public StandardPageCache( FileSystemAbstraction fs, long memoryPoolSizeInBytes )
+    public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize )
     {
         this.fs = fs;
-        table = new StandardPageTable( memoryPoolSizeInBytes );
+        this.pageSize = pageSize;
+        this.table = new StandardPageTable( maxPages, pageSize );
     }
 
     @Override
-    public synchronized PagedFile map( File file, int pageSize, int transitionalPeriodRecordSize ) throws IOException
+    public synchronized PagedFile map( File file, int filePageSize ) throws IOException
     {
-        StandardPagedFile pagedFile = pagedFiles.get( file );
-        if( pagedFile == null)
+        assert filePageSize < pageSize;
+        StandardPagedFile pagedFile;
+
+        pagedFile = pagedFiles.get( file );
+        if ( pagedFile == null || !pagedFile.claimReference() )
         {
             StoreChannel channel = fs.open( file, "rw" );
-            pagedFile = new StandardPagedFile( table, channel );
+            pagedFile = new StandardPagedFile( table, channel, filePageSize );
             pagedFiles.put( file, pagedFile );
         }
+
         return pagedFile;
+    }
+
+    @Override
+    public synchronized void unmap( File fileName ) throws IOException
+    {
+        StandardPagedFile file = pagedFiles.get( fileName );
+        if(file != null && file.releaseReference())
+        {
+            file.close();
+            pagedFiles.remove( fileName );
+        }
     }
 
     @Override
@@ -66,8 +83,11 @@ public class StandardPageCache implements PageCache
     }
 
     @Override
-    public void close()
+    public synchronized void close() throws IOException
     {
-
+        for ( StandardPagedFile file : pagedFiles.values() )
+        {
+            file.close();
+        }
     }
 }

@@ -45,16 +45,22 @@ public class WindowPoolPageCache implements PageCache
     }
 
     @Override
-    public synchronized PagedFile map( File file, int pageSize, int recordSize ) throws IOException
+    public synchronized PagedFile map( File file, int pageSize ) throws IOException
     {
         WindowPoolPagedFile pagedFile = pagedFiles.get( file );
         if( pagedFile == null)
         {
             StoreChannel channel = fs.open( file, "rw" );
-            pagedFile = new WindowPoolPagedFile(windowPool.create( file, pageSize, channel ), pageSize, channel, recordSize);
+            pagedFile = new WindowPoolPagedFile(windowPool.create( file, pageSize, channel ), pageSize, channel );
             pagedFiles.put( file, pagedFile );
         }
         return pagedFile;
+    }
+
+    @Override
+    public void unmap( File file ) throws IOException
+    {
+        throw new UnsupportedOperationException( "HAHA" );
     }
 
     @Override

@@ -33,14 +33,12 @@ public class StandardPageTable implements PageTable, Runnable
     private final StandardPinnablePage[] pages;
     private volatile Thread sweeperThread;
 
-    public StandardPageTable( long memoryPoolSizeInBytes )
+    public StandardPageTable( int maxPages, int pageSize )
     {
         freeList = new AtomicReference<>();
-        int pageSize = 1024;
-        int pageCount = (int) (memoryPoolSizeInBytes / pageSize);
-        pages = new StandardPinnablePage[pageCount];
+        pages = new StandardPinnablePage[maxPages];
 
-        for ( int i = 0; i < pageCount; i++ )
+        for ( int i = 0; i < maxPages; i++ )
         {
             StandardPinnablePage page = new StandardPinnablePage(
                     ByteBuffer.allocateDirect( pageSize ) );

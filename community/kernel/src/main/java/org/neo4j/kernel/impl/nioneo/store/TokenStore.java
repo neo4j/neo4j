@@ -69,7 +69,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         pageCache = new WindowPoolPageCache( windowPoolFactory, fileSystemAbstraction );
         try
         {
-            storeFile = pageCache.map( fileName, getRecordSize() * 128, getRecordSize() );
+            storeFile = pageCache.map( fileName, getRecordSize() * 128 );
         }
         catch ( IOException e )
         {

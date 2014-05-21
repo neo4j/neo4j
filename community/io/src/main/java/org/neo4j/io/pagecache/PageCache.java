@@ -32,9 +32,11 @@ public interface PageCache
      * of varying size in the stores. This should be consolidated to use a standard page size for the
      * whole cache, with records aligning on those page boundaries.
      */
-    PagedFile map( File file, int pageSize, int transitionalPeriodRecordSize ) throws IOException;
+    PagedFile map( File file, int pageSize ) throws IOException;
+
+    void unmap( File file ) throws IOException;
 
     PageCursor newCursor();
 
-    void close();
+    void close() throws IOException;
 }

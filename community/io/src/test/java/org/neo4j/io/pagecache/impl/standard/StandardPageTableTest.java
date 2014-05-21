@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -44,7 +45,7 @@ public class StandardPageTableTest
     @Before
     public void startPageTable()
     {
-        table = new StandardPageTable( 1024 );
+        table = new StandardPageTable( 1, 1024 );
         sweeperThread = new Thread( table );
         sweeperThread.start();
     }
@@ -91,7 +92,14 @@ public class StandardPageTableTest
             {
                 // This thread will cause the single page in the cache to be replaced
                 BufferPageIO io = new BufferPageIO( ByteBuffer.allocate( 1 ) );
-                table.load( io, 3, PageLock.SHARED );
+                try
+                {
+                    table.load( io, 3, PageLock.SHARED );
+                }
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                }
             }
         });
         thread.start();
@@ -156,7 +164,7 @@ public class StandardPageTableTest
     public void loading_with_exclusive_lock_stops_all_others() throws Exception
     {
         // Given
-        StandardPageTable table = new StandardPageTable( 1024 );
+        StandardPageTable table = new StandardPageTable( 1, 1024 );
         final BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( "expected".getBytes("UTF-8") ) );
 
         // When
@@ -206,7 +214,14 @@ public class StandardPageTableTest
             {
                 // This thread will cause the single page in the cache to be replaced
                 BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( otherBytes ) );
-                table.load( io, 3, PageLock.SHARED ).unpin( PageLock.SHARED );
+                try
+                {
+                    table.load( io, 3, PageLock.SHARED ).unpin( PageLock.SHARED );
+                }
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                }
             }
         });
         thread.start();
@@ -247,7 +262,7 @@ public class StandardPageTableTest
         @Override
         public void write( long pageId, ByteBuffer from )
         {
-            buffer.position(0);
+            buffer.position( 0 );
             buffer.put(from);
         }
     }

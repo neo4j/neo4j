@@ -93,7 +93,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         pageCache = new WindowPoolPageCache( windowPoolFactory, fileSystemAbstraction );
         try
         {
-            storeFile = pageCache.map( fileName, RECORD_SIZE * 128, RECORD_SIZE );
+            storeFile = pageCache.map( fileName, RECORD_SIZE * 128 );
         }
         catch ( IOException e )
         {

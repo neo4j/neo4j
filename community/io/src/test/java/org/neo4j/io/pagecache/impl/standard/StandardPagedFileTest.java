@@ -30,7 +30,6 @@ import static org.neo4j.io.pagecache.impl.standard.PageTable.PinnablePage;
 
 public class StandardPagedFileTest
 {
-
     @Test
     public void shouldLoadPage() throws Exception
     {
@@ -39,10 +38,10 @@ public class StandardPagedFileTest
         PageTable table = mock(PageTable.class);
         PinnablePage page = mock( PinnablePage.class );
         StoreChannel channel = mock( StoreChannel.class);
-        StandardPageIO io = new StandardPageIO( channel );
+        StandardPageIO io = new StandardPageIO( channel, 512 );
         when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
         when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
-        StandardPagedFile file = new StandardPagedFile(table, channel);
+        StandardPagedFile file = new StandardPagedFile(table, channel, 512);
 
         // When
         file.pin( cursor, PageLock.SHARED, 12 );
@@ -60,10 +59,10 @@ public class StandardPagedFileTest
         PageTable table = mock(PageTable.class);
         PinnablePage page = mock( PinnablePage.class );
         StoreChannel channel = mock( StoreChannel.class);
-        StandardPageIO io = new StandardPageIO( channel );
+        StandardPageIO io = new StandardPageIO( channel, 512 );
         when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
         when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
-        StandardPagedFile file = new StandardPagedFile(table, channel);
+        StandardPagedFile file = new StandardPagedFile(table, channel, 512);
 
         // When
         file.pin( cursor, PageLock.SHARED, 12 );
@@ -72,8 +71,4 @@ public class StandardPagedFileTest
         // Then
         verify(page).unpin( PageLock.SHARED );
     }
-
-
-
-
 }

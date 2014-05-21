@@ -94,7 +94,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         int recordSize = getBlockSize();
         try
         {
-            storeFile = pageCache.map( fileName, recordSize * 128, recordSize );
+            storeFile = pageCache.map( fileName, recordSize * 128 );
         }
         catch ( IOException e )
         {
