@@ -33,4 +33,7 @@ public interface Page
     void putBytes( byte[] data, int offset );
 
     void putByte( byte value, int offset );
+
+    short getShort( int offset );
+    void putShort( short value, int offset );
 }

@@ -25,10 +25,10 @@ public interface PageCursor
     void putByte( byte value );
 
     long getLong();
-    void putLong( long l );
+    void putLong( long value );
 
     int getInt();
-    void putInt( int i );
+    void putInt( int value );
 
     long getUnsignedInt();
 
@@ -36,4 +36,8 @@ public interface PageCursor
     void putBytes( byte[] data );
 
     void setOffset( int offset );
+
+    short getShort();
+
+    void putShort( short value );
 }

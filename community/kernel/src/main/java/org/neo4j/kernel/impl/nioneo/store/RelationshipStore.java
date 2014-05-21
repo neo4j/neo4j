@@ -370,25 +370,6 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         }
 
         return getRecord( id, new RelationshipRecord( id ), RecordLoad.NORMAL );
-//        PersistenceWindow window;
-//        try
-//        {
-//            window = acquireWindow( relId, OperationType.READ );
-//        }
-//        catch ( InvalidRecordException e )
-//        {
-//            // ok to high id
-//            return null;
-//        }
-//        try
-//        {
-////            return getFullRecord( relId, window );
-//            return getRecord( relId, window, RecordLoad.NORMAL, new RelationshipRecord( relId ) );
-//        }
-//        finally
-//        {
-//            releaseWindow( window );
-//        }
     }
 
     @Override

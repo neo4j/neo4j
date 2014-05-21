@@ -106,6 +106,21 @@ public class OffsetTrackingCursor implements PageCursor
         currentOffset = offset;
     }
 
+    @Override
+    public short getShort()
+    {
+        short value = page.getShort( currentOffset );
+        currentOffset += 2;
+        return value;
+    }
+
+    @Override
+    public void putShort( short value )
+    {
+        page.putShort( value, currentOffset );
+        currentOffset += 2;
+    }
+
     public void reset( Page page )
     {
         this.page = page;

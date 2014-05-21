@@ -52,6 +52,20 @@ public class WindowPoolPage implements Page
     }
 
     @Override
+    public short getShort( int offset )
+    {
+        buffer.setOffset( offset );
+        return buffer.getShort();
+    }
+
+    @Override
+    public void putShort( short value, int offset )
+    {
+        buffer.setOffset( offset );
+        buffer.putShort( value );
+    }
+
+    @Override
     public long getLong( int offset )
     {
         buffer.setOffset( offset );
