@@ -189,7 +189,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         PageCursor cursor = pageCache.newCursor();
         try
         {
-            storeFile.pin( cursor, PageLock.WRITE, pageIdForRecord( record.getId() ) );
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
         }
         catch ( IOException e )
         {
@@ -212,7 +212,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         PageCursor cursor = pageCache.newCursor();
         try
         {
-            storeFile.pin( cursor, PageLock.WRITE, pageIdForRecord( record.getId() ) );
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
         }
         catch ( IOException e )
         {
@@ -248,7 +248,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         PageCursor cursor = pageCache.newCursor();
         try
         {
-            storeFile.pin( cursor, PageLock.READ, pageIdForRecord( id ) );
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
         }
         catch ( IOException e )
         {
@@ -270,7 +270,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         PageCursor cursor = pageCache.newCursor();
         try
         {
-            storeFile.pin( cursor, PageLock.READ, pageIdForRecord( id ) );
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
         }
         catch ( IOException e )
         {

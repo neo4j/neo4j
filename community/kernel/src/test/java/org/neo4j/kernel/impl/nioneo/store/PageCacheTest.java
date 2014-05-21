@@ -53,7 +53,7 @@ public class PageCacheTest
 
         // Then I should be able to write to the file
         PageCursor cursor = cache.newCursor();
-        mappedFile.pin( cursor, PageLock.WRITE, 4 );
+        mappedFile.pin( cursor, PageLock.EXCLUSIVE, 4 );
 
         cursor.setOffset( 33 );
         byte[] expected = "Hello, cruel world".getBytes( "UTF-8" );
@@ -76,6 +76,6 @@ public class PageCacheTest
     private PageCache newPageCache() throws IOException
     {
         EphemeralFileSystemAbstraction fs = fsRule.get();
-        return new StandardPageCache( fs );
+        return new StandardPageCache( fs, 4096 );
     }
 }

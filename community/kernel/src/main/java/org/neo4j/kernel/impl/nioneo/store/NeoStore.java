@@ -540,7 +540,7 @@ public class NeoStore extends AbstractStore
         PageCursor cursor = pageCache.newCursor();
         try
         {
-            storeFile.pin( cursor, PageLock.READ, pageIdForRecord( id ) );
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
         }
         catch ( IOException e )
         {
@@ -563,7 +563,7 @@ public class NeoStore extends AbstractStore
         PageCursor cursor = pageCache.newCursor();
         try
         {
-            storeFile.pin( cursor, PageLock.WRITE, pageIdForRecord( id ) );
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( id ) );
         }
         catch ( IOException e )
         {

@@ -217,7 +217,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         PageCursor cursor = pageCache.newCursor();
         try
         {
-            storeFile.pin( cursor, PageLock.WRITE, pageIdForRecord( blockId ) );
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( blockId ) );
         }
         catch ( IOException e )
         {
@@ -337,7 +337,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             PageCursor cursor = pageCache.newCursor();
             try
             {
-                storeFile.pin( cursor, PageLock.READ, pageIdForRecord( blockId ) );
+                storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( blockId ) );
             }
             catch ( IOException e )
             {
@@ -373,7 +373,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         PageCursor cursor = pageCache.newCursor();
         try
         {
-            storeFile.pin( cursor, PageLock.READ, pageIdForRecord( blockId ) );
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( blockId ) );
         }
         catch ( IOException e )
         {
@@ -465,7 +465,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         PageCursor cursor = pageCache.newCursor();
         try
         {
-            storeFile.pin( cursor, PageLock.READ, pageIdForRecord( id ) );
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
         }
         catch ( IOException e )
         {
@@ -487,7 +487,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         PageCursor cursor = pageCache.newCursor();
         try
         {
-            storeFile.pin( cursor, PageLock.READ, pageIdForRecord( id ) );
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
         }
         catch ( IOException e )
         {
@@ -530,7 +530,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
             PageCursor cursor = pageCache.newCursor();
             try
             {
-                storeFile.pin( cursor, PageLock.READ, pageIdForRecord( blockId ) );
+                storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( blockId ) );
             }
             catch ( IOException e )
             {

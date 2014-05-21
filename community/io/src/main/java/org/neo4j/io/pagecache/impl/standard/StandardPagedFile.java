@@ -53,7 +53,22 @@ public class StandardPagedFile implements PagedFile
         for (;;)
         {
             Object pageRef = addressTranslationTable.get( pageId );
-            if ( pageRef instanceof CountDownLatch )
+            if ( pageRef == null )
+            {
+                addressTranslationTable.putIfAbsent( pageId, NULL );
+            }
+            else if ( pageRef == NULL )
+            {
+                CountDownLatch latch = new CountDownLatch( 1 );
+                if ( addressTranslationTable.replace( pageId, pageRef, latch ) )
+                {
+                    PinnablePage page = table.load( pageIO, pageId, lock );
+                    addressTranslationTable.put( pageId, page );
+                    latch.countDown();
+                    return; // yay!
+                }
+            }
+            else if ( pageRef instanceof CountDownLatch )
             {
                 try
                 {
@@ -63,17 +78,6 @@ public class StandardPagedFile implements PagedFile
                 {
                     Thread.interrupted();
                     throw new IOException( "Interrupted while waiting for page load.", e );
-                }
-            }
-            else if ( pageRef == null || pageRef == NULL )
-            {
-                pageRef = new CountDownLatch( 1 );
-                Object existing = addressTranslationTable.putIfAbsent( pageId, pageRef );
-                if ( existing == null )
-                {
-                    PinnablePage page = table.load( pageIO, pageId, lock );
-                    addressTranslationTable.put( pageId, page );
-                    ((CountDownLatch) pageRef).countDown();
                 }
             }
             else

@@ -40,7 +40,7 @@ public class StandardPageCache implements PageCache
     private final Map<File, StandardPagedFile> pagedFiles = new HashMap<>();
     private final PageTable table = null;
 
-    public StandardPageCache( FileSystemAbstraction fs )
+    public StandardPageCache( FileSystemAbstraction fs, long memoryPoolSizeInBytes )
     {
         this.fs = fs;
     }

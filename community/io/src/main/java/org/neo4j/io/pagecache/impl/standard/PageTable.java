@@ -43,6 +43,16 @@ public interface PageTable
 
     interface PinnablePage extends Page
     {
+        /**
+         * Pin the given page, so that it will not get evicted before unpin has been called.
+         *
+         * Returns true if this page still represent the given assertPageId in the context of the
+         * given assertIO. In other words, it will return true if the page has not been replaced.
+         * Otherwise it returns false.
+         *
+         * If the page is currently pinned for reading or writing, and the given PageLock is EXCLUSIVE, the pin will block.
+         * If the page is currently pinned for writing, and the given PageLock is SHARED, the pin will block.
+         */
         boolean pin( PageIO assertIO, long assertPageId, PageLock lock );
     }
 }

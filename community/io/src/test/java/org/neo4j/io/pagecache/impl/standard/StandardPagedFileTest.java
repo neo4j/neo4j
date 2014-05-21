@@ -20,15 +20,16 @@
 package org.neo4j.io.pagecache.impl.standard;
 
 import org.junit.Test;
+
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
 
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.eq;
-import static org.mockito.Mockito.*;
-import static org.neo4j.io.pagecache.impl.standard.PageTable.PageIO;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.io.pagecache.impl.standard.PageTable.PinnablePage;
 
 public class StandardPagedFileTest
@@ -41,15 +42,17 @@ public class StandardPagedFileTest
         PageCursor cursor = new OffsetTrackingCursor();
         PageTable table = mock(PageTable.class);
         PinnablePage page = mock( PinnablePage.class );
-        when( table.load( any( PageIO.class), 12, PageLock.READ ) ).thenReturn( page );
         StoreChannel channel = mock( StoreChannel.class);
+        StandardPageIO io = new StandardPageIO( channel );
+        when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
+        when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
         StandardPagedFile file = new StandardPagedFile(table, channel);
 
         // When
-        file.pin( cursor, PageLock.READ, 12 );
+        file.pin( cursor, PageLock.SHARED, 12 );
 
         // Then
-        verify(table).load( any(PageIO.class), eq(12), eq(PageLock.READ) );
+        verify(table).load( io, 12, PageLock.SHARED );
     }
 
 

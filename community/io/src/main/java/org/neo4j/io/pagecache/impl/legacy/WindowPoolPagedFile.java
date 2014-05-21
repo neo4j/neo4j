@@ -54,7 +54,7 @@ public class WindowPoolPagedFile implements PagedFile
 
         PersistenceWindow window = pool.acquire(
                 pageSize / recordSize * pageId,
-                lock == PageLock.READ ? OperationType.READ : OperationType.WRITE );
+                lock == PageLock.SHARED ? OperationType.READ : OperationType.WRITE );
 
         trackingCursor.reset( new WindowPoolPage( window ) );
     }
