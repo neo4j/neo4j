@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.pagecache.PageLock;
@@ -33,12 +34,12 @@ public interface PageTable
      *
      * The page returned is pre-locked with the lock specified in the call.
      */
-    PinnablePage load( PageIO io, long pageId, PageLock lock );
+    PinnablePage load( PageIO io, long pageId, PageLock lock ) throws IOException;
 
     interface PageIO
     {
-        void read( long pageId, ByteBuffer into );
-        void write( long pageId, ByteBuffer from );
+        void read( long pageId, ByteBuffer into ) throws IOException;
+        void write( long pageId, ByteBuffer from ) throws IOException;
     }
 
     interface PinnablePage extends Page

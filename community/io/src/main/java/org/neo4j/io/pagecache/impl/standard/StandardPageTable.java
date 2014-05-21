@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -50,7 +51,7 @@ public class StandardPageTable implements PageTable, Runnable
     }
 
     @Override
-    public PinnablePage load( PageIO io, long pageId, PageLock lock )
+    public PinnablePage load( PageIO io, long pageId, PageLock lock ) throws IOException
     {
         StandardPinnablePage page = nextFreePage();
         page.reset( io, pageId );
@@ -117,12 +118,15 @@ public class StandardPageTable implements PageTable, Runnable
             catch(Exception e)
             {
                 // Aviod having this thread crash at all cost.
+                // TODO: If we get IOEXception here, we may be failing to flush pages
+                // to disk. Need to shut database down if that happens. Perhaps with
+                // some retries.
                 e.printStackTrace();
             }
         }
     }
 
-    private void evict( StandardPinnablePage page )
+    private void evict( StandardPinnablePage page ) throws IOException
     {
         page.flush();
         page.reset( null, 0 );

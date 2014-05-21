@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.StoreChannel;
@@ -26,22 +27,34 @@ import org.neo4j.io.fs.StoreChannel;
 public class StandardPageIO implements PageTable.PageIO
 {
     private final StoreChannel channel;
+    private final int filePageSize;
 
-    public StandardPageIO( StoreChannel channel )
+    public StandardPageIO( StoreChannel channel, int filePageSize )
     {
         this.channel = channel;
+        this.filePageSize = filePageSize;
     }
 
     @Override
-    public void read( long pageId, ByteBuffer into )
+    public void
+    read( long pageId, ByteBuffer into ) throws IOException
     {
-
+        into.position(0);
+        into.limit(filePageSize);
+        channel.read( into, pageIdToPosition( pageId ) );
     }
 
     @Override
-    public void write( long pageId, ByteBuffer from )
+    public void write( long pageId, ByteBuffer from ) throws IOException
     {
+        from.position(0);
+        from.limit(filePageSize);
+        channel.writeAll( from, pageIdToPosition( pageId ) );
+    }
 
+    private long pageIdToPosition( long pageId )
+    {
+        return filePageSize * pageId;
     }
 
     @Override

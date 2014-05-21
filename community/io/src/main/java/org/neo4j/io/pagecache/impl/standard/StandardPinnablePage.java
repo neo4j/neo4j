@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
@@ -131,7 +132,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
         lock.writeLock().unlock();
     }
 
-    public void flush()
+    public void flush() throws IOException
     {
         if ( dirty )
         {
@@ -141,7 +142,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
         }
     }
 
-    public void load()
+    public void load() throws IOException
     {
         buffer.position(0);
         io.read( pageId, buffer );
