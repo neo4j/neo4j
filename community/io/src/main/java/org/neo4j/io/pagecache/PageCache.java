@@ -22,14 +22,19 @@ package org.neo4j.io.pagecache;
 import java.io.File;
 import java.io.IOException;
 
+
 public interface PageCache
 {
+    /**
+     * Ask for a handle to a paged file, backed by this page cache.
+     *
+     * Note that this currently asks for the pageSize to use, which is an artifact or records being
+     * of varying size in the stores. This should be consolidated to use a standard page size for the
+     * whole cache, with records aligning on those page boundaries.
+     */
     PagedFile map( File file, int pageSize, int transitionalPeriodRecordSize ) throws IOException;
 
     PageCursor newCursor();
 
-    int getPageCount();
-    int getPageSize();
-    
     void close();
 }

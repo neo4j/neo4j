@@ -24,14 +24,11 @@ import java.io.IOException;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.legacy.WindowPoolPageCache;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -79,6 +76,6 @@ public class PageCacheTest
     private PageCache newPageCache() throws IOException
     {
         EphemeralFileSystemAbstraction fs = fsRule.get();
-        return new WindowPoolPageCache( new DefaultWindowPoolFactory( new Monitors(), new Config() ), fs );
+        return new StandardPageCache( fs );
     }
 }

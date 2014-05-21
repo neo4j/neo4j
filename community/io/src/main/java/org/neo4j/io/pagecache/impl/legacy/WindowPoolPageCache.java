@@ -65,18 +65,6 @@ public class WindowPoolPageCache implements PageCache
     }
 
     @Override
-    public int getPageCount()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
-    public int getPageSize()
-    {
-        throw new UnsupportedOperationException();
-    }
-
-    @Override
     public void close()
     {
         throw new UnsupportedOperationException();
