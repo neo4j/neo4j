@@ -26,7 +26,7 @@ public interface Page
     long getLong( int offset );
     void putLong( long value, int offset );
 
-    int getInt( int currentOffset );
+    int getInt( int offset );
     void putInt( int value, int offset );
 
     void getBytes( byte[] data, int offset );

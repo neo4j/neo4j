@@ -38,6 +38,7 @@ public interface PageCursor
     void setOffset( int offset );
 
     short getShort();
-
     void putShort( short value );
+
+    int getOffset();
 }
