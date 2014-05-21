@@ -26,7 +26,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.udc.impl.ComponentVersion;
 
 import static org.junit.Assert.assertNotNull;
 
@@ -69,7 +68,10 @@ public class DefaultUdcInformationCollectorTest
         @Override
         public Version version()
         {
-            return new ComponentVersion();
+            return new Version( "foo", "bar" )
+            {
+
+            };
         }
 
         @Override
