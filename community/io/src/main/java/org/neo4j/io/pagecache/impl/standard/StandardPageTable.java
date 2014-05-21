@@ -20,23 +20,30 @@
 package org.neo4j.io.pagecache.impl.standard;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.pagecache.PageLock;
 
-public class StandardPageTable implements PageTable
+public class StandardPageTable implements PageTable, Runnable
 {
     private final AtomicReference<StandardPinnablePage> freeList;
+    private final StandardPinnablePage[] pages;
+    private volatile Thread sweeperThread;
 
     public StandardPageTable( long memoryPoolSizeInBytes )
     {
         freeList = new AtomicReference<>();
         int pageSize = 1024;
+        int pageCount = (int) (memoryPoolSizeInBytes / pageSize);
+        pages = new StandardPinnablePage[pageCount];
 
-        for ( int i = 0; i < memoryPoolSizeInBytes / pageSize; i++ )
+        for ( int i = 0; i < pageCount; i++ )
         {
             StandardPinnablePage page = new StandardPinnablePage(
                     ByteBuffer.allocateDirect( pageSize ) );
+            pages[i] = page;
             page.next = freeList.get();
             freeList.compareAndSet( page.next, page );
         }
@@ -59,10 +66,67 @@ public class StandardPageTable implements PageTable
             page = freeList.get();
             if ( page == null )
             {
-                // TODO: Wait for a latch from the sweep thread here.
-                continue;
+                LockSupport.unpark( sweeperThread );
             }
         } while ( page == null || !freeList.compareAndSet( page, page.next ));
         return page;
+    }
+
+    /**
+     * This is the continuous background page replacement and flushing job.
+     * This method runs concurrently with the page loading.
+     */
+    @Override
+    public void run()
+    {
+        sweeperThread = Thread.currentThread();
+        continuouslySweepPages();
+        shutDownPageCache();
+    }
+
+    private void continuouslySweepPages()
+    {
+        while ( !Thread.interrupted() )
+        {
+            int useSumTotal = 0;
+            for ( StandardPinnablePage page : pages )
+            {
+                if ( page.grabUnpinned() )
+                {
+                    try
+                    {
+                        byte stamp = page.usageStamp;
+                        useSumTotal += stamp;
+                        if ( stamp == 0 )
+                        {
+                            evict( page );
+                        }
+                        else
+                        {
+                            page.usageStamp = (byte) (stamp - 1);
+                        }
+                    }
+                    finally
+                    {
+                        page.releaseUnpinned();
+                    }
+                }
+            }
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+        }
+    }
+
+    private void evict( StandardPinnablePage page )
+    {
+        page.flush();
+        page.reset( null, 0 );
+        do {
+            page.next = freeList.get();
+        } while ( !freeList.compareAndSet( page.next, page ) );
+    }
+
+    private void shutDownPageCache()
+    {
+
     }
 }

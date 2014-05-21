@@ -22,17 +22,39 @@ package org.neo4j.io.pagecache.impl.standard;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageLock;
 
-import static junit.framework.TestCase.assertFalse;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.io.pagecache.impl.standard.PageTable.PinnablePage;
 
 public class StandardPageTableTest
 {
+    private StandardPageTable table;
+    private Thread sweeperThread;
+
+    @Before
+    public void startPageTable()
+    {
+        table = new StandardPageTable( 1024 );
+        sweeperThread = new Thread( table );
+        sweeperThread.start();
+    }
+
+    @After
+    public void stopPageTable()
+    {
+        sweeperThread.interrupt();
+    }
+
     @Test
     public void loading_must_read_file() throws Exception
     {
@@ -42,7 +64,7 @@ public class StandardPageTableTest
         BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( expected ) );
 
         // When
-        PageTable.PinnablePage page = table.load( io, 1, PageLock.EXCLUSIVE );
+        PinnablePage page = table.load( io, 1, PageLock.EXCLUSIVE );
 
         // Then
         byte[] actual = new byte[expected.length];
@@ -59,7 +81,7 @@ public class StandardPageTableTest
         BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( "expected".getBytes("UTF-8") ) );
 
         // When
-        PageTable.PinnablePage page = table.load( io, 12, PageLock.SHARED );
+        PinnablePage page = table.load( io, 12, PageLock.SHARED );
 
         // Then we should be able to grab another shared lock on it
         assertTrue( page.pin( io, 12, PageLock.SHARED ) );
@@ -73,7 +95,7 @@ public class StandardPageTableTest
         final BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( "expected".getBytes("UTF-8") ) );
 
         // When
-        final PageTable.PinnablePage page = table.load( io, 12, PageLock.SHARED );
+        final PinnablePage page = table.load( io, 12, PageLock.SHARED );
 
         // Then we should have to wait for the page to be unpinned if we want an
         // exclusive lock on it.
@@ -108,7 +130,7 @@ public class StandardPageTableTest
         final BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( "expected".getBytes("UTF-8") ) );
 
         // When
-        final PageTable.PinnablePage page = table.load( io, 12, PageLock.EXCLUSIVE );
+        final PinnablePage page = table.load( io, 12, PageLock.EXCLUSIVE );
 
         // Then we should have to wait for the page to be unpinned if we want an
         // exclusive lock on it.
@@ -143,21 +165,36 @@ public class StandardPageTableTest
         } while(otherThread.getState() != state );
     }
 
+    @Test(timeout = 1000)
+    public void pinning_replaced_page_must_fail() throws Exception
+    {
+        // Given
+        final byte[] expectedBytes = "expected".getBytes( "UTF-8" );
+        final byte[] otherBytes = "rare brand string".getBytes( "UTF-8" );
+        BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( expectedBytes ) );
 
-    // TODO loading a page for writing must block others
+        PinnablePage page = table.load( io, 12, PageLock.SHARED );
+        page.unpin( PageLock.SHARED );
 
-    // TODO pinning a page for reading must allow other readers
-    // TODO pinning a page for reading must block other writers
-    // TODO pinning a page for writing must block others
+        // When
+        Thread thread = new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                // This thread will cause the single page in the cache to be replaced
+                BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( otherBytes ) );
+                table.load( io, 3, PageLock.SHARED ).unpin( PageLock.SHARED );
+            }
+        });
+        thread.start();
+        thread.join();
 
-    // TODO blocked readers must unblock when writer unpins
-    // TODO blocked writer must unblock when reader unpins
-
-    // TODO pinning must fail if page has been replaced
+        // Then
+        assertFalse( page.pin( io, 12, PageLock.SHARED ) );
+    }
 
     // TODO evicting page should not allow readers or writers access
-
-
 
     private class BufferPageIO implements PageTable.PageIO
     {

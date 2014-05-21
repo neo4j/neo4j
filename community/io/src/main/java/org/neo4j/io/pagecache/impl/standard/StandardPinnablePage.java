@@ -27,17 +27,22 @@ import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
 
 public class StandardPinnablePage extends ByteBufferPage implements PageTable.PinnablePage
 {
+    static final byte MAX_USAGE_COUNT = 5;
+
     /** Used when the page is part of the free-list, points to next free page */
     public volatile StandardPinnablePage next;
+    public volatile byte usageStamp;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
 
     private PageTable.PageIO io;
     private long pageId = -1;
+    private boolean dirty;
 
     public StandardPinnablePage( ByteBuffer buffer )
     {
         super(buffer);
+        dirty = false;
     }
 
     @Override
@@ -48,6 +53,12 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
             lock(lockType);
             if(assertionsHold( assertIO, assertPageId ))
             {
+                byte stamp = usageStamp;
+                if ( stamp < MAX_USAGE_COUNT )
+                {
+                    // Racy, but we don't care
+                    usageStamp = (byte) (stamp + 1);
+                }
                 return true;
             }
             else
@@ -75,7 +86,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
         }
     }
 
-    private void lock( PageLock lockType )
+    void lock( PageLock lockType )
     {
         if(lockType == PageLock.SHARED)
         {
@@ -84,6 +95,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
         else if( lockType == PageLock.EXCLUSIVE )
         {
             lock.writeLock().lock();
+            dirty = true;
         }
         else
         {
@@ -105,5 +117,26 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
     {
         this.io = io;
         this.pageId = pageId;
+    }
+
+    public boolean grabUnpinned()
+    {
+        return lock.getReadLockCount() == 0
+                && !lock.isWriteLocked()
+                && lock.writeLock().tryLock();
+    }
+
+    public void releaseUnpinned()
+    {
+        lock.writeLock().unlock();
+    }
+
+    public void flush()
+    {
+        if ( dirty )
+        {
+            io.write( pageId, buffer() );
+            dirty = false;
+        }
     }
 }
