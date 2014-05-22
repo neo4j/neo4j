@@ -84,4 +84,9 @@ public class StandardPageIO implements PageTable.PageIO
     {
         return channel != null ? channel.hashCode() : 0;
     }
+
+    public void close() throws IOException
+    {
+        channel.close();
+    }
 }

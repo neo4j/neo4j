@@ -28,4 +28,6 @@ public interface PagedFile
     void unpin( PageCursor cursor );
 
     int pageSize();
+
+    void close() throws IOException;
 }

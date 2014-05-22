@@ -106,8 +106,10 @@ public class NeoStore extends AbstractStore
 
     private final int REL_GRAB_SIZE;
 
-    public NeoStore( File fileName, Config conf,
-                     IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+    public NeoStore( File fileName,
+                     Config conf,
+                     IdGeneratorFactory idGeneratorFactory,
+                     PageCache pageCache,
                      FileSystemAbstraction fileSystemAbstraction,
                      StringLogger stringLogger, RemoteTxHook txHook,
                      RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore,
@@ -127,8 +129,7 @@ public class NeoStore extends AbstractStore
         this.relGroupStore = relGroupStore;
         REL_GRAB_SIZE = conf.get( Configuration.relationship_grab_size );
         this.txHook = txHook;
-
-        pageCache = new WindowPoolPageCache( windowPoolFactory, fileSystemAbstraction );
+        this.pageCache = pageCache;
         try
         {
             storeFile = pageCache.map( fileName, RECORD_SIZE * 128 );
@@ -840,7 +841,7 @@ public class NeoStore extends AbstractStore
         {
             return CommonAbstractStore.UNKNOWN_VERSION;
         }
-        Bits bits = Bits.bitsFromLongs(new long[]{storeVersion});
+        Bits bits = Bits.bitsFromLongs( new long[]{storeVersion} );
         int length = bits.getShort( 8 );
         if ( length == 0 || length > 7 )
         {

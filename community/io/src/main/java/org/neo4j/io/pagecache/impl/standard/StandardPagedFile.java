@@ -37,9 +37,8 @@ public class StandardPagedFile implements PagedFile
     static final Object NULL = new Object();
 
     private final PageTable table;
-    private final StoreChannel channel;
     private final int filePageSize;
-    private final PageTable.PageIO pageIO;
+    private final StandardPageIO pageIO;
 
     private final AtomicInteger references = new AtomicInteger( 1 );
 
@@ -57,7 +56,6 @@ public class StandardPagedFile implements PagedFile
     public StandardPagedFile( PageTable table, StoreChannel channel, int filePageSize )
     {
         this.table = table;
-        this.channel = channel;
         this.filePageSize = filePageSize;
         this.pageIO = new StandardPageIO(channel, filePageSize);
     }
@@ -153,6 +151,6 @@ public class StandardPagedFile implements PagedFile
 
     public void close() throws IOException
     {
-        channel.close();
+        pageIO.close();
     }
 }

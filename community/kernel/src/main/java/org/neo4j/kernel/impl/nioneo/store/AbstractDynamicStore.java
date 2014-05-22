@@ -369,7 +369,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
 
         long blockId = record.getId();
-        PersistenceWindow window = acquireWindow( blockId, OperationType.READ );
         PageCursor cursor = pageCache.newCursor();
         try
         {

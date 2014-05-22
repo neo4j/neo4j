@@ -32,8 +32,8 @@ import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 public class PageCacheTest
 {
