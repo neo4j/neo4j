@@ -58,6 +58,23 @@ public class StandardPageTable implements PageTable, Runnable
         return page;
     }
 
+    @Override
+    public void flush() throws IOException
+    {
+        for ( StandardPinnablePage page : pages )
+        {
+            page.lock( PageLock.SHARED );
+            try
+            {
+                page.flush();
+            }
+            finally
+            {
+                page.unlock(PageLock.SHARED);
+            }
+        }
+    }
+
     private StandardPinnablePage nextFreePage()
     {
         StandardPinnablePage page;

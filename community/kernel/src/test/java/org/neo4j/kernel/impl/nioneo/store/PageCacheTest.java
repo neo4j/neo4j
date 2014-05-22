@@ -55,7 +55,7 @@ public class PageCacheTest
         PageCache cache = newPageCache();
 
         // When
-        PagedFile mappedFile = cache.map( storeFile, 1024 );
+        PagedFile mappedFile = cache.map( storeFile, 16 );
 
         // Then I should be able to write to the file
         PageCursor cursor = cache.newCursor();
@@ -119,7 +119,7 @@ public class PageCacheTest
     {
         // Given
         StandardPageCache cache = newPageCache();
-        PagedFile mappedFile = cache.map( storeFile, 1024 );
+        PagedFile mappedFile = cache.map( storeFile, 16 );
         PageCursor cursor = cache.newCursor();
 
         Thread evictionThread = new Thread( cache );
@@ -138,9 +138,53 @@ public class PageCacheTest
         evictionThread.interrupt();
     }
 
+
+
+    @Test
+    public void shouldFlushDirtyPagesOnShutdown() throws Exception
+    {
+        // Given
+        StandardPageCache cache = newPageCache();
+        PagedFile mappedFile = cache.map( storeFile, 16 );
+        PageCursor cursor = cache.newCursor();
+
+        Thread evictionThread = new Thread( cache );
+        evictionThread.start();
+
+        // Given I've written to all the pages
+        for ( int i = 0; i < 128; i++ )
+        {
+            mappedFile.pin( cursor, PageLock.EXCLUSIVE, i );
+            cursor.putByte( (byte)i );
+            mappedFile.unpin( cursor );
+        }
+
+        // When I close the page cache
+        cache.close();
+        evictionThread.interrupt();
+
+        // Then all modified pages should've been persisted
+        cache = newPageCache();
+        mappedFile = cache.map( storeFile, 16 );
+        cursor = cache.newCursor();
+
+        evictionThread = new Thread( cache );
+        evictionThread.start();
+
+        for ( int i = 0; i < 128; i++ )
+        {
+            mappedFile.pin( cursor, PageLock.SHARED, i );
+            byte aByte = cursor.getByte();
+            assertThat( aByte, equalTo( (byte) i ) );
+            mappedFile.unpin( cursor );
+        }
+
+        evictionThread.interrupt();
+    }
+
     private StandardPageCache newPageCache() throws IOException
     {
         EphemeralFileSystemAbstraction fs = fsRule.get();
-        return new StandardPageCache( fs, 64, 1024 );
+        return new StandardPageCache( fs, 64, 16 );
     }
 }

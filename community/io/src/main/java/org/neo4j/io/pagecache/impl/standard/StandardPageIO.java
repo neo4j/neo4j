@@ -39,19 +39,27 @@ public class StandardPageIO implements PageTable.PageIO
     }
 
     @Override
-    public void
-    read( long pageId, ByteBuffer into ) throws IOException
+    public void read( long pageId, ByteBuffer into ) throws IOException
     {
-        into.position(0);
-        into.limit(filePageSize);
-        channel.read( into, pageIdToPosition( pageId ) );
+        into.position( 0 );
+        into.limit( filePageSize );
+        int readBytes = channel.read( into, pageIdToPosition( pageId ) );
+
+        if ( readBytes < filePageSize )
+        {
+            // zero-fill any part of the page that was not in the file.
+            for ( int i = Math.max( readBytes, 0 ); i < filePageSize; i++ )
+            {
+                into.put( i, (byte) 0 );
+            }
+        }
     }
 
     @Override
     public void write( long pageId, ByteBuffer from ) throws IOException
     {
         from.position(0);
-        from.limit(filePageSize);
+        from.limit( filePageSize );
         channel.writeAll( from, pageIdToPosition( pageId ) );
     }
 

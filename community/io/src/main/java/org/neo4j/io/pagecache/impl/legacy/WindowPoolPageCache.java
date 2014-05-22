@@ -71,6 +71,12 @@ public class WindowPoolPageCache implements PageCache
     }
 
     @Override
+    public void flush() throws IOException
+    {
+
+    }
+
+    @Override
     public void close()
     {
         throw new UnsupportedOperationException();

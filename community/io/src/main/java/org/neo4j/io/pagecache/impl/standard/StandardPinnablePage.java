@@ -73,21 +73,10 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
     @Override
     public void unpin( PageLock lock )
     {
-        if( lock == PageLock.SHARED)
-        {
-            this.lock.readLock().unlock();
-        }
-        else if( lock == PageLock.EXCLUSIVE )
-        {
-            this.lock.writeLock().unlock();
-        }
-        else
-        {
-            throw new IllegalArgumentException( "Unknown lock type: " + lock );
-        }
+        unlock( lock );
     }
 
-    void lock( PageLock lockType )
+    public void lock( PageLock lockType )
     {
         if(lockType == PageLock.SHARED)
         {
@@ -97,6 +86,22 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
         {
             lock.writeLock().lock();
             dirty = true;
+        }
+        else
+        {
+            throw new IllegalArgumentException( "Unknown lock type: " + lockType );
+        }
+    }
+
+    public void unlock( PageLock lockType )
+    {
+        if( lockType == PageLock.SHARED)
+        {
+            this.lock.readLock().unlock();
+        }
+        else if( lockType == PageLock.EXCLUSIVE )
+        {
+            this.lock.writeLock().unlock();
         }
         else
         {

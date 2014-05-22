@@ -38,6 +38,9 @@ public interface PageCache
 
     PageCursor newCursor();
 
+    /** Flush all dirty pages */
+    void flush() throws IOException;
+
     void close() throws IOException;
 
     void flush();

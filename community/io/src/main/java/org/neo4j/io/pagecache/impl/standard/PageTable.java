@@ -36,6 +36,9 @@ public interface PageTable
      */
     PinnablePage load( PageIO io, long pageId, PageLock lock ) throws IOException;
 
+    /** Flush all dirty pages. */
+    void flush() throws IOException;
+
     interface PageIO
     {
         void read( long pageId, ByteBuffer into ) throws IOException;
