@@ -35,6 +35,8 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.verify;
 import static org.neo4j.io.pagecache.impl.standard.PageTable.PinnablePage;
 
 public class StandardPageTableTest
@@ -110,7 +112,6 @@ public class StandardPageTableTest
         storageBuffer.position(0);
         storageBuffer.get( actual );
         assertThat( actual, equalTo("Muaha".getBytes("UTF-8")) );
-
     }
 
     @Test
@@ -233,6 +234,40 @@ public class StandardPageTableTest
 
     // TODO evicting page should not allow readers or writers access
 
+    @Test
+    public void must_notify_io_object_on_eviction() throws Exception
+    {
+        // Given
+        final byte[] expectedBytes = "expected".getBytes( "UTF-8" );
+        BufferPageIO io = spy(new BufferPageIO( ByteBuffer.wrap( expectedBytes ) ));
+
+        PinnablePage page = table.load( io, 12, PageLock.SHARED );
+        page.unpin( PageLock.SHARED );
+
+        // When
+        Thread thread = new Thread(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                // This thread will cause the single page in the cache to be replaced
+                BufferPageIO io = new BufferPageIO( ByteBuffer.allocate( 1024 ) );
+                try
+                {
+                    table.load( io, 3, PageLock.SHARED ).unpin( PageLock.SHARED );
+                }
+                catch ( IOException e )
+                {
+                    e.printStackTrace();
+                }
+            }
+        });
+        thread.start();
+        thread.join();
+
+        // Then
+        verify( io ).evicted( 12 );
+    }
 
 
     private void awaitThreadState( Thread otherThread, Thread.State state ) throws InterruptedException
@@ -264,6 +299,12 @@ public class StandardPageTableTest
         {
             buffer.position( 0 );
             buffer.put(from);
+        }
+
+        @Override
+        public void evicted( long pageId )
+        {
+
         }
     }
 }

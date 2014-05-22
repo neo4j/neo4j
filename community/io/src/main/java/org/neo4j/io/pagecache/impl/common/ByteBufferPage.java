@@ -64,16 +64,14 @@ public class ByteBufferPage implements Page
     @Override
     public void getBytes( byte[] data, int offset )
     {
-        int end = offset + data.length;
-        for (int i = offset; i < end; i++)
-            data[i] = getByte(i);
+        for (int i = 0; i < data.length; i++)
+            data[i] = getByte(i + offset);
     }
 
     @Override
     public void putBytes( byte[] data, int offset )
     {
-        int end = offset + data.length;
-        for (int i = 0; i < end; i++)
+        for (int i = 0; i < data.length; i++)
             putByte(data[i], offset + i );
     }
 

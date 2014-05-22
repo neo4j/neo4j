@@ -120,14 +120,15 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
         this.pageId = pageId;
     }
 
-    public boolean grabUnpinned()
+    /** Attempt to lock this page exclusively, used by page table during house keeping. */
+    public boolean tryExclusiveLock()
     {
         return lock.getReadLockCount() == 0
                 && !lock.isWriteLocked()
                 && lock.writeLock().tryLock();
     }
 
-    public void releaseUnpinned()
+    public void releaseExclusiveLock()
     {
         lock.writeLock().unlock();
     }
@@ -147,5 +148,10 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
         buffer.position(0);
         io.read( pageId, buffer );
         loaded = true;
+    }
+
+    public void evicted()
+    {
+        io.evicted( pageId );
     }
 }

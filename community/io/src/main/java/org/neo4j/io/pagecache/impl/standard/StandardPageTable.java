@@ -85,33 +85,68 @@ public class StandardPageTable implements PageTable, Runnable
 
     private void continuouslySweepPages()
     {
+        /**
+         * This is the minimum amount of pages to keep around, we will stop
+         * evicting pages once we reach this threshold.
+         */
+        final int minLoadedPages = (int) Math.round(pages.length * 0.96);
+        int maxPagesToEvict = Math.max( pages.length - minLoadedPages, 1 );
+        int clockHand = 0;
+
         while ( !Thread.interrupted() )
         {
             try
             {
-                for ( StandardPinnablePage page : pages )
+                int loadedPages = 0;
+                for ( ; clockHand < pages.length; clockHand++ )
                 {
-                    if ( page.loaded && page.grabUnpinned() )
+                    StandardPinnablePage page = pages[clockHand];
+                    if ( page.loaded )
                     {
-                        try
+                        loadedPages++;
+
+                        if( page.tryExclusiveLock() )
                         {
-                            byte stamp = page.usageStamp;
-                            if ( stamp == 0 )
+                            try
                             {
-                                evict( page );
+                                byte stamp = page.usageStamp;
+                                if ( stamp == 0 )
+                                {
+                                    evict( page );
+                                    maxPagesToEvict--;
+                                    loadedPages--;
+
+                                    // Stop the clock if we're down to a sensible
+                                    // number of free pages.
+                                    if( maxPagesToEvict <= 0  )
+                                    {
+                                        break;
+                                    }
+                                }
+                                else
+                                {
+                                    page.usageStamp = (byte) (stamp - 1);
+                                }
                             }
-                            else
+                            finally
                             {
-                                page.usageStamp = (byte) (stamp - 1);
+                                page.releaseExclusiveLock();
                             }
-                        }
-                        finally
-                        {
-                            page.releaseUnpinned();
                         }
                     }
                 }
-                LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 10 ) );
+
+                // Reset the clock hand if we reached the end of the list of pages.
+                if( clockHand >= pages.length )
+                {
+                    clockHand = 0;
+                }
+
+                if( loadedPages <= minLoadedPages )
+                {
+                    parkUntilEvictionRequired( minLoadedPages );
+                }
+                maxPagesToEvict = loadedPages - minLoadedPages;
             }
             catch(Exception e)
             {
@@ -124,9 +159,34 @@ public class StandardPageTable implements PageTable, Runnable
         }
     }
 
+    private int parkUntilEvictionRequired( int minLoadedPages )
+    {
+        int loadedPages;
+        outerLoop: do
+        {
+            LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 5 ) );
+
+            loadedPages = 0;
+            for ( StandardPinnablePage page : pages )
+            {
+                if(page.loaded)
+                {
+                    loadedPages++;
+                    if( freeList.get() == null )
+                    {
+                        // Bail out immediately if the free list is empty.
+                        break outerLoop;
+                    }
+                }
+            }
+        } while( loadedPages <= minLoadedPages );
+        return loadedPages;
+    }
+
     private void evict( StandardPinnablePage page ) throws IOException
     {
         page.flush();
+        page.evicted();
         page.reset( null, 0 );
         page.loaded = false;
         do {

@@ -22,17 +22,20 @@ package org.neo4j.io.pagecache.impl.standard;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.io.fs.StoreChannel;
 
 public class StandardPageIO implements PageTable.PageIO
 {
     private final StoreChannel channel;
     private final int filePageSize;
+    private final FunctionFromPrimitiveLong onEviction;
 
-    public StandardPageIO( StoreChannel channel, int filePageSize )
+    public StandardPageIO( StoreChannel channel, int filePageSize, FunctionFromPrimitiveLong onEviction )
     {
         this.channel = channel;
         this.filePageSize = filePageSize;
+        this.onEviction = onEviction;
     }
 
     @Override
@@ -50,6 +53,12 @@ public class StandardPageIO implements PageTable.PageIO
         from.position(0);
         from.limit(filePageSize);
         channel.writeAll( from, pageIdToPosition( pageId ) );
+    }
+
+    @Override
+    public void evicted( long pageId )
+    {
+        onEviction.apply( pageId );
     }
 
     private long pageIdToPosition( long pageId )

@@ -57,7 +57,7 @@ public class StandardPagedFile implements PagedFile
     {
         this.table = table;
         this.filePageSize = filePageSize;
-        this.pageIO = new StandardPageIO(channel, filePageSize);
+        this.pageIO = new StandardPageIO(channel, filePageSize, new RemoveEvictedPage(filePages));
     }
 
     @Override
@@ -122,6 +122,12 @@ public class StandardPagedFile implements PagedFile
     public int pageSize()
     {
         return filePageSize;
+    }
+
+    @Override
+    public int numberOfCachedPages()
+    {
+        return filePages.size();
     }
 
     /**

@@ -40,6 +40,12 @@ public interface PageTable
     {
         void read( long pageId, ByteBuffer into ) throws IOException;
         void write( long pageId, ByteBuffer from ) throws IOException;
+
+        /**
+         * Notification that a page has been evicted, used to clean up state in structures
+         * outside the page table.
+         */
+        void evicted( long pageId );
     }
 
     interface PinnablePage extends Page

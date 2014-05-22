@@ -24,6 +24,8 @@ import java.io.IOException;
 
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
@@ -34,6 +36,10 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class PageCacheTest
 {
@@ -73,9 +79,68 @@ public class PageCacheTest
         assertThat(cursor.getLong(), equalTo(7331l));
     }
 
-    private PageCache newPageCache() throws IOException
+    @Test
+    public void shouldCloseAllFiles() throws Exception
+    {
+        // Given
+        FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
+        StandardPageCache cache = new StandardPageCache( fs, 16, 512 );
+        File file1Name = new File( "file1" );
+        File file2Name = new File( "file2" );
+
+        StoreChannel channel1 = mock(StoreChannel.class);
+        StoreChannel channel2 = mock(StoreChannel.class);
+        when( fs.open( file1Name, "rw" ) ).thenReturn( channel1 );
+        when( fs.open( file2Name, "rw" ) ).thenReturn( channel2 );
+
+
+        // When
+        PagedFile file1 = cache.map( file1Name, 64 );
+        PagedFile file1Again = cache.map( file1Name, 64 );
+        PagedFile file2 = cache.map( file2Name, 64 );
+        cache.unmap( file2Name );
+
+        // Then
+        verify( fs ).open( file1Name, "rw" );
+        verify( fs ).open( file2Name, "rw" );
+        verify( channel2 ).close();
+        verifyNoMoreInteractions( channel1, channel2, fs );
+
+        // And When
+        cache.close();
+
+        // Then
+        verify( channel1 ).close();
+        verifyNoMoreInteractions( channel1, channel2, fs );
+    }
+
+    @Test
+    public void shouldRemoveEvictedPages() throws Exception
+    {
+        // Given
+        StandardPageCache cache = newPageCache();
+        PagedFile mappedFile = cache.map( storeFile, 1024 );
+        PageCursor cursor = cache.newCursor();
+
+        Thread evictionThread = new Thread( cache );
+        evictionThread.start();
+
+        // When I pin and unpin a series of pages
+        for ( int i = 0; i < 128; i++ )
+        {
+            mappedFile.pin( cursor, PageLock.SHARED, i );
+            mappedFile.unpin( cursor );
+        }
+
+        // Then
+        Thread.sleep( 50 );
+        assertThat( mappedFile.numberOfCachedPages(), equalTo( 61 ) );
+        evictionThread.interrupt();
+    }
+
+    private StandardPageCache newPageCache() throws IOException
     {
         EphemeralFileSystemAbstraction fs = fsRule.get();
-        return new StandardPageCache( fs, 16, 1024 );
+        return new StandardPageCache( fs, 64, 1024 );
     }
 }
