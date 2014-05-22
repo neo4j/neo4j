@@ -35,10 +35,15 @@ import com.sun.management.OperatingSystemMXBean;
 
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcSettings;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -49,10 +54,14 @@ import static org.neo4j.ext.udc.UdcConstants.DISTRIBUTION;
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
 import static org.neo4j.ext.udc.UdcConstants.HEAP_SIZE;
 import static org.neo4j.ext.udc.UdcConstants.ID;
+import static org.neo4j.ext.udc.UdcConstants.LABEL_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.MAC;
+import static org.neo4j.ext.udc.UdcConstants.NODE_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.NUM_PROCESSORS;
 import static org.neo4j.ext.udc.UdcConstants.OS_PROPERTY_PREFIX;
+import static org.neo4j.ext.udc.UdcConstants.PROPERTY_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
+import static org.neo4j.ext.udc.UdcConstants.RELATIONSHIP_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.REVISION;
 import static org.neo4j.ext.udc.UdcConstants.SOURCE;
 import static org.neo4j.ext.udc.UdcConstants.TAGS;
@@ -67,6 +76,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     private final Config config;
     @SuppressWarnings("deprecation")
     private final KernelData kernel;
+    private final NodeManager nodeManager;
     private String storeId;
     private boolean crashPing;
 
@@ -75,6 +85,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     {
         this.config = config;
         this.kernel = kernel;
+        nodeManager = kernel.graphDatabase().getDependencyResolver().resolveDependency( NodeManager.class );
 
         if ( xadsm != null )
         {
@@ -128,12 +139,18 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         add( udcFields, CLUSTER_HASH, determineClusterNameHash() );
         add( udcFields, SOURCE, config.get( UdcSettings.udc_source ) );
         add( udcFields, REGISTRATION, config.get( UdcSettings.udc_registration_key ) );
-        add( udcFields, MAC, determineMacAddress() );
         add( udcFields, DISTRIBUTION, determineOsDistribution() );
         add( udcFields, USER_AGENTS, determineUserAgents() );
+
+        add( udcFields, MAC, determineMacAddress() );
         add( udcFields, NUM_PROCESSORS, determineNumberOfProcessors() );
         add( udcFields, TOTAL_MEMORY, determineTotalMemory() );
         add( udcFields, HEAP_SIZE, determineHeapSize() );
+
+        add( udcFields, NODE_IDS_IN_USE, determineNodesIdsInUse() );
+        add( udcFields, RELATIONSHIP_IDS_IN_USE, determineRelationshipIdsInUse() );
+        add( udcFields, LABEL_IDS_IN_USE, determineLabelIdsInUse() );
+        add( udcFields, PROPERTY_IDS_IN_USE, determinePropertyIdsInUse() );
 
         udcFields.putAll( determineSystemProperties() );
         return udcFields;
@@ -294,6 +311,31 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     private long determineHeapSize()
     {
         return ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
+    }
+
+    private long determineNodesIdsInUse()
+    {
+        return getNumberOfIdsInUse( Node.class );
+    }
+
+    private long determineLabelIdsInUse()
+    {
+        return getNumberOfIdsInUse( Label.class );
+    }
+
+    private long determinePropertyIdsInUse()
+    {
+        return getNumberOfIdsInUse( PropertyStore.class );
+    }
+
+    private long determineRelationshipIdsInUse()
+    {
+        return getNumberOfIdsInUse( Relationship.class );
+    }
+
+    private long getNumberOfIdsInUse( Class<?> clazz )
+    {
+        return nodeManager.getNumberOfIdsInUse( clazz );
     }
 
     private String toCommaString( Object values )
