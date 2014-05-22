@@ -29,16 +29,15 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
 
 /**
  * Your average run-of-the-mill page cache.
  */
-public class StandardPageCache implements PageCache
+public class StandardPageCache implements PageCache, Runnable
 {
     private final FileSystemAbstraction fs;
     private final Map<File, StandardPagedFile> pagedFiles = new HashMap<>();
-    private final PageTable table;
+    private final StandardPageTable table;
     private final int pageSize;
 
     public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize )
@@ -51,7 +50,7 @@ public class StandardPageCache implements PageCache
     @Override
     public synchronized PagedFile map( File file, int filePageSize ) throws IOException
     {
-        assert filePageSize < pageSize;
+        assert filePageSize <= pageSize;
         StandardPagedFile pagedFile;
 
         pagedFile = pagedFiles.get( file );
@@ -79,7 +78,7 @@ public class StandardPageCache implements PageCache
     @Override
     public PageCursor newCursor()
     {
-        return new OffsetTrackingCursor();
+        return new StandardPageCursor();
     }
 
     @Override
@@ -89,5 +88,12 @@ public class StandardPageCache implements PageCache
         {
             file.close();
         }
+    }
+
+    /** Run the eviction algorithm until interrupted. */
+    @Override
+    public void run()
+    {
+        table.run();
     }
 }

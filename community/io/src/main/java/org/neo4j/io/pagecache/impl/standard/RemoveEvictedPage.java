@@ -17,17 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache;
+package org.neo4j.io.pagecache.impl.standard;
 
-import java.io.IOException;
+import java.util.concurrent.ConcurrentMap;
 
-public interface PagedFile
+import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
+
+public class RemoveEvictedPage implements FunctionFromPrimitiveLong
 {
-    void pin( PageCursor cursor, PageLock lock, long pageId ) throws IOException;
+    private final ConcurrentMap<Long, Object> filePages;
 
-    void unpin( PageCursor cursor );
+    public RemoveEvictedPage( ConcurrentMap<Long, Object> filePages )
+    {
+        this.filePages = filePages;
+    }
 
-    int pageSize();
-
-    int numberOfCachedPages();
+    @Override
+    public Object apply( long value )
+    {
+        filePages.remove( value );
+        return null;
+    }
 }

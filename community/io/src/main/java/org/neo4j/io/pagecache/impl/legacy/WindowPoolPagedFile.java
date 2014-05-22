@@ -79,4 +79,10 @@ public class WindowPoolPagedFile implements PagedFile
     {
         return pageSize;
     }
+
+    @Override
+    public int numberOfCachedPages()
+    {
+        return 0;
+    }
 }
