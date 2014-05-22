@@ -42,6 +42,10 @@ public interface PageTable
     /** Flush all dirty pages backed by the specified io. */
     void flush( PageIO io ) throws IOException;
 
+    int pageSize();
+
+    int maxCachedPages();
+
     interface PageIO
     {
         void read( long pageId, ByteBuffer into ) throws IOException;

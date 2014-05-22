@@ -32,4 +32,6 @@ public interface PagedFile
     void close() throws IOException;
 
     int numberOfCachedPages();
+
+    void flush() throws IOException;
 }

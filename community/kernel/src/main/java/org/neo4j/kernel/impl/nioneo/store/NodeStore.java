@@ -457,4 +457,15 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         dynamicLabelStore.updateHighId();
         super.updateHighId();
     }
+
+    public void flushAll()
+    {
+        try
+        {
+            storeFile.flush();
+        } catch(IOException e)
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
 }

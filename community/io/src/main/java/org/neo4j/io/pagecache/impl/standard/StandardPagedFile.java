@@ -161,7 +161,8 @@ public class StandardPagedFile implements PagedFile
         pageIO.close();
     }
 
-    public void force() throws IOException
+    @Override
+    public void flush() throws IOException
     {
         pageIO.force();
     }

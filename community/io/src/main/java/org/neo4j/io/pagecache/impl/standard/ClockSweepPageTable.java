@@ -40,10 +40,12 @@ public class ClockSweepPageTable implements PageTable, Runnable
 {
     private final AtomicReference<StandardPinnablePage> freeList;
     private final StandardPinnablePage[] pages;
+    private final int pageSize;
     private volatile Thread sweeperThread;
 
     public ClockSweepPageTable( int maxPages, int pageSize )
     {
+        this.pageSize = pageSize;
         freeList = new AtomicReference<>();
         pages = new StandardPinnablePage[maxPages];
 
@@ -126,7 +128,6 @@ public class ClockSweepPageTable implements PageTable, Runnable
     {
         sweeperThread = Thread.currentThread();
         continuouslySweepPages();
-        shutDownPageCache();
     }
 
     private void continuouslySweepPages()
@@ -240,8 +241,15 @@ public class ClockSweepPageTable implements PageTable, Runnable
         } while ( !freeList.compareAndSet( page.next, page ) );
     }
 
-    private void shutDownPageCache()
+    @Override
+    public int pageSize()
     {
+        return pageSize;
+    }
 
+    @Override
+    public int maxCachedPages()
+    {
+        return pages.length;
     }
 }

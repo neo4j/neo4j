@@ -51,4 +51,10 @@ public interface PageCache
 
     /** Flush all dirty pages and close the page cache. */
     void close() throws IOException;
+
+    /** The size in bytes of the pages managed by this cache. */
+    int pageSize();
+
+    /** The max number of cached pages. */
+    int maxCachedPages();
 }

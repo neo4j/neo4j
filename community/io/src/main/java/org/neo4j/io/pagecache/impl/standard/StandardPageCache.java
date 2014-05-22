@@ -38,19 +38,17 @@ public class StandardPageCache implements PageCache, Runnable
     private final FileSystemAbstraction fs;
     private final Map<File, StandardPagedFile> pagedFiles = new HashMap<>();
     private final ClockSweepPageTable table;
-    private final int pageSize;
 
     public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize )
     {
         this.fs = fs;
-        this.pageSize = pageSize;
         this.table = new ClockSweepPageTable( maxPages, pageSize );
     }
 
     @Override
     public synchronized PagedFile map( File file, int filePageSize ) throws IOException
     {
-        assert filePageSize <= pageSize;
+        assert filePageSize <= table.pageSize();
         StandardPagedFile pagedFile;
 
         pagedFile = pagedFiles.get( file );
@@ -87,7 +85,7 @@ public class StandardPageCache implements PageCache, Runnable
         table.flush();
         for ( StandardPagedFile file : pagedFiles.values() )
         {
-            file.force();
+            file.flush();
         }
     }
 
@@ -105,5 +103,17 @@ public class StandardPageCache implements PageCache, Runnable
     public void run()
     {
         table.run();
+    }
+
+    @Override
+    public int pageSize()
+    {
+        return table.pageSize();
+    }
+
+    @Override
+    public int maxCachedPages()
+    {
+        return table.maxCachedPages();
     }
 }

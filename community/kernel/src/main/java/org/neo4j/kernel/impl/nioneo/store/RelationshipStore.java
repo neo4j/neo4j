@@ -357,4 +357,16 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
 
         return getRecord( id, new RelationshipRecord( id ), RecordLoad.NORMAL );
     }
+
+    public void flushAll()
+    {
+        try
+        {
+            storeFile.flush();
+        } catch(IOException e)
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
 }

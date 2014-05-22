@@ -31,6 +31,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.all_stores_total_mapped_memory_size;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.mapped_memory_page_size;
+
 public class LifecycledPageCache extends LifecycleAdapter implements PageCache
 {
     private final StandardPageCache pageCache;
@@ -45,14 +48,12 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
 
     private static int calculateMaxPages( Config config )
     {
-        // TODO do something clever for calculating the number of pages
-        return 1024;
+        return (int) Math.floor(config.get( all_stores_total_mapped_memory_size ) / config.get( mapped_memory_page_size));
     }
 
     private static int calculatePageSize( Config config )
     {
-        // TODO do something clever for calculating the page size
-        return 4096;
+        return config.get( mapped_memory_page_size ).intValue();
     }
 
     @Override
@@ -99,5 +100,17 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     public void flush() throws IOException
     {
         pageCache.flush();
+    }
+
+    @Override
+    public int pageSize()
+    {
+        return pageCache.pageSize();
+    }
+
+    @Override
+    public int maxCachedPages()
+    {
+        return pageCache.maxCachedPages();
     }
 }

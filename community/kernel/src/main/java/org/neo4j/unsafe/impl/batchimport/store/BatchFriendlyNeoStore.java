@@ -159,6 +159,14 @@ public class BatchFriendlyNeoStore implements AutoCloseable
         neoStore = newNeoStore( pageCache );
     }
 
+    public void flushAll()
+    {
+        if(neoStore != null)
+        {
+            neoStore.flushAll();
+        }
+    }
+
     @Override
     public void close()
     {
