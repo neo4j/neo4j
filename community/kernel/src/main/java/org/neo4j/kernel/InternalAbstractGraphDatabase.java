@@ -124,13 +124,13 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
+import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
@@ -195,6 +195,7 @@ import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_
 public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
+
     public interface Dependencies
     {
         /**
@@ -268,6 +269,7 @@ public abstract class InternalAbstractGraphDatabase
     protected IndexStore indexStore;
     protected AbstractTransactionManager txManager;
     protected TxIdGenerator txIdGenerator;
+    protected PageCache pageCache;
     protected StoreFactory storeFactory;
     protected XaFactory xaFactory;
     protected DiagnosticsManager diagnosticsManager;
@@ -485,7 +487,7 @@ public abstract class InternalAbstractGraphDatabase
         }
 
         jobScheduler =
-            life.add( new Neo4jJobScheduler( this.toString(), logging.getMessagesLog( Neo4jJobScheduler.class ) ));
+            life.add( new Neo4jJobScheduler( this.toString() ));
 
         kernelEventHandlers = new KernelEventHandlers(logging.getMessagesLog( KernelEventHandlers.class ));
 
@@ -589,6 +591,9 @@ public abstract class InternalAbstractGraphDatabase
         recoveryVerifier = createRecoveryVerifier();
 
         // Factories for things that needs to be created later
+        pageCache = createPageCache();
+        life.add( pageCache );
+
         storeFactory = createStoreFactory();
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
         xaFactory = new XaFactory( config, txIdGenerator, txManager, fileSystem,
@@ -818,13 +823,13 @@ public abstract class InternalAbstractGraphDatabase
 
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory( config, idGeneratorFactory, createPageCache(), fileSystem,
+        return new StoreFactory( config, idGeneratorFactory, pageCache, fileSystem,
                 logging.getMessagesLog( StoreFactory.class ), txHook, monitors );
     }
 
     protected PageCache createPageCache()
     {
-        return new DefaultWindowPoolFactory( monitors, config );
+        return new LifecycledPageCache( fileSystem, jobScheduler, config );
     }
 
     protected RecoveryVerifier createRecoveryVerifier()

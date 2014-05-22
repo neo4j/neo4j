@@ -24,6 +24,7 @@ import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -31,6 +32,7 @@ import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static java.util.Arrays.asList;
@@ -107,11 +109,10 @@ public class NodeStoreTest
         Config config = new Config();
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Monitors monitors = new Monitors();
-        WindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory( monitors, config );
         StoreFactory factory = new StoreFactory(
                 config,
                 idGeneratorFactory,
-                windowPoolFactory,
+                pageCacheRule.getPageCache( fs, config ),
                 fs,
                 DEV_NULL,
                 new DefaultTxHook(),
@@ -166,4 +167,7 @@ public class NodeStoreTest
         // THEN
         assertFalse( record.isLight() );
     }
+
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
 }

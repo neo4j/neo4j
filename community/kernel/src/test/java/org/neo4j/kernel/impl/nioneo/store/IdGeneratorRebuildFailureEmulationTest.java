@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -47,6 +48,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
@@ -149,6 +151,9 @@ public class IdGeneratorRebuildFailureEmulationTest
     private StoreFactory factory;
     private String prefix;
 
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Before
     public void initialize()
     {
@@ -165,7 +170,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         factory = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory( monitors, config ),
+                pageCacheRule.getPageCache( fs, config ),
                 fs,
                 StringLogger.DEV_NULL,
                 null,

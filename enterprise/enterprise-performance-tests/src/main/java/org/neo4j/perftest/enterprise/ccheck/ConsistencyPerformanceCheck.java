@@ -41,6 +41,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.perftest.enterprise.generator.DataGenerator;
@@ -77,6 +79,9 @@ public class ConsistencyPerformanceCheck
             stringSetting( "log_mapped_memory_stats_filename", "mapped_memory_stats.log" );
     static final Setting<Long> log_mapped_memory_stats_interval =
             integerSetting( "log_mapped_memory_stats_interval", 1000000 );
+    private static LifecycledPageCache pageCache;
+    private static Neo4jJobScheduler jobScheduler;
+    private static FileSystemAbstraction fileSystem;
 
     /**
      * Sample execution:
@@ -122,27 +127,41 @@ public class ConsistencyPerformanceCheck
         }
 
         Config tuningConfiguration = buildTuningConfiguration( configuration );
+        jobScheduler = new Neo4jJobScheduler();
+        fileSystem = new DefaultFileSystemAbstraction();
+        pageCache = new LifecycledPageCache( fileSystem, jobScheduler, tuningConfiguration );
+        jobScheduler.start();
+        pageCache.start();
         DirectStoreAccess directStoreAccess = createScannableStores( configuration.get( DataGenerator.store_dir ),
                 tuningConfiguration );
 
         JsonReportWriter reportWriter = new JsonReportWriter( configuration, tuningConfiguration );
         TimingProgress progressMonitor = new TimingProgress( new TimeLogger( reportWriter ), progress );
 
-        configuration.get( checker_version ).run( progressMonitor, directStoreAccess, tuningConfiguration );
+        try
+        {
+            configuration.get( checker_version ).run( progressMonitor, directStoreAccess, tuningConfiguration );
+        }
+        finally
+        {
+            pageCache.stop();
+            jobScheduler.stop();
+        }
     }
 
     private static DirectStoreAccess createScannableStores( String storeDir, Config tuningConfiguration )
     {
         StringLogger logger = StringLogger.DEV_NULL;
-        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+
         Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
-                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
-                        .windowPoolFactory( tuningConfiguration, logger, monitors ),
-                fileSystem, logger, new DefaultTxHook(), monitors
-        );
+                pageCache,
+                fileSystem,
+                logger,
+                new DefaultTxHook(),
+                monitors );
 
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
 

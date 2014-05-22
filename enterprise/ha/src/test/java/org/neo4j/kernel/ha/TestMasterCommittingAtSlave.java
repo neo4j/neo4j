@@ -62,7 +62,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.LogMarker;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -234,7 +233,7 @@ public class TestMasterCommittingAtSlave
         log = new FakeStringLogger();
         Config config = new Config( MapUtil.stringMap(
                 HaSettings.tx_push_factor.name(), "" + replication ) );
-        Neo4jJobScheduler scheduler = new Neo4jJobScheduler( new TestLogger() );
+        Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
         MasterTxIdGenerator result = new MasterTxIdGenerator( MasterTxIdGenerator.from( config, slavePriority ),
                 log, new Slaves()
         {

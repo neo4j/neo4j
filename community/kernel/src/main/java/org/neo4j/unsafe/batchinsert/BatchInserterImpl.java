@@ -46,6 +46,8 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -83,9 +85,7 @@ import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -119,8 +119,9 @@ import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipCreator;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipLocker;
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.util.Listener;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -213,28 +214,37 @@ public class BatchInserterImpl implements BatchInserter
     BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        life = new LifeSupport();
-        this.fileSystem = fileSystem;
-        this.storeDir = new File( FileUtils.fixSeparatorsInPath( storeDir ) );
-
         rejectAutoUpgrade( stringParams );
-        msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
-        logging = new SingleLoggingService( msgLog );
         Map<String, String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), Settings.FALSE );
         params.put( InternalAbstractGraphDatabase.Configuration.store_dir.name(), storeDir );
         params.putAll( stringParams );
+        config = new Config( params, GraphDatabaseSettings.class );
 
+        life = new LifeSupport();
+        this.fileSystem = fileSystem;
+        this.storeDir = new File( FileUtils.fixSeparatorsInPath( storeDir ) );
+        Neo4jJobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
+        LifecycledPageCache pageCache = life.add( new LifecycledPageCache( fileSystem, jobScheduler, config ) );
+
+
+        msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
+        logging = new SingleLoggingService( msgLog );
         storeLocker = new StoreLocker( fileSystem );
         storeLocker.checkLock( this.storeDir );
 
-        config = new Config( params, GraphDatabaseSettings.class );
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();
 
         Monitors monitors = new Monitors();
-        StoreFactory sf = new StoreFactory( config, idGeneratorFactory, new DefaultWindowPoolFactory( monitors, config ), fileSystem,
-                                            msgLog, null, monitors );
+        StoreFactory sf = new StoreFactory(
+                config,
+                idGeneratorFactory,
+                pageCache,
+                fileSystem,
+                msgLog,
+                null,
+                monitors );
 
         File store = fixPath( this.storeDir, sf );
 

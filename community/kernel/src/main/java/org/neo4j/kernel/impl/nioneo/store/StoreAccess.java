@@ -27,6 +27,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -100,21 +101,21 @@ public class StoreAccess
         this.relGroupStore = wrapStore( relGroupStore );
     }
 
-    public StoreAccess( String path )
+    public StoreAccess( PageCache pageCache, String path )
     {
-        this( new DefaultFileSystemAbstraction(), path );
+        this( new DefaultFileSystemAbstraction(), pageCache, path );
     }
 
-    public StoreAccess( FileSystemAbstraction fileSystem, String path )
+    public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, String path )
     {
-        this( fileSystem, path, new Config( requiredParams( defaultParams(), path )), new Monitors() );
+        this( fileSystem, pageCache, path, new Config( requiredParams( defaultParams(), path )), new Monitors() );
     }
 
-    private StoreAccess( FileSystemAbstraction fileSystem, String path, Config config, Monitors monitors )
+    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, String path, Config config, Monitors monitors )
     {
         this( new StoreFactory( config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory( monitors, config ),
+                pageCache,
                 fileSystem, StringLogger.DEV_NULL,
                 new DefaultTxHook(), monitors ).newNeoStore( new File( path, "neostore" ) ) );
         this.closeable = true;

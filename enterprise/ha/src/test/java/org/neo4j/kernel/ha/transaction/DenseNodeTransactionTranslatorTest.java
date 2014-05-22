@@ -31,6 +31,8 @@ import java.util.Set;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.junit.After;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,7 +40,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IdSequence;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
@@ -58,7 +59,9 @@ import org.neo4j.kernel.impl.nioneo.xa.LogEntryVerifyingOutput;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionDataBuilder;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -69,6 +72,7 @@ import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class DenseNodeTransactionTranslatorTest
 {
+
     @Test
     public void shouldConvertFirstRelationshipForNodeCreation() throws Exception
     {
@@ -1431,6 +1435,24 @@ public class DenseNodeTransactionTranslatorTest
 
     public final @Rule CleanupRule cleanup = new CleanupRule();
     public final @Rule EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private Neo4jJobScheduler jobScheduler;
+    private LifecycledPageCache pageCache;
+
+    @Before
+    public void setUp()
+    {
+        jobScheduler = new Neo4jJobScheduler();
+        jobScheduler.start();
+        pageCache = new LifecycledPageCache( fs.get(), jobScheduler, new Config() );
+        pageCache.start();
+    }
+
+    @After
+    public void tearDown()
+    {
+        pageCache.stop();
+        jobScheduler.stop();
+    }
 
     private List<LogEntry> transaction( TransactionContents contents ) throws IOException
     {
@@ -1469,7 +1491,7 @@ public class DenseNodeTransactionTranslatorTest
         StoreFactory storeFactory = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory( monitors, config ),
+                pageCache,
                 fs.get(),
                 DEV_NULL,
                 new DefaultTxHook(),

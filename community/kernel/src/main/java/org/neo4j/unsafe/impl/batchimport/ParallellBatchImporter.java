@@ -88,7 +88,7 @@ public class ParallellBatchImporter implements BatchImporter
         logger.log( "Starting CSV import [TODO source info]" );
 
         try ( BatchFriendlyNeoStore neoStore = new BatchFriendlyNeoStore( fileSystem, storeDir, config,
-                writeMonitor, logging, monitors ) )
+                logging, monitors ) )
         {
             NodeIdMapper nodeIdMapper = nodeIdMapping.mapper( neoStore.getNodeStore() );
 

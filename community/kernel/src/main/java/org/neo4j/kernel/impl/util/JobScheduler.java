@@ -46,13 +46,17 @@ public interface JobScheduler extends Lifecycle
          * Gathers approximated data about the underlying data store.
          */
         heuristics,
+        pageCacheEviction,
     }
 
-    void schedule( Group group, Runnable job );
+    interface JobHandle
+    {
+        void cancel( boolean mayInterruptIfRunning );
+    }
 
-    void scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit );
+    JobHandle schedule( Group group, Runnable job );
 
-    void scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit );
+    JobHandle scheduleRecurring( Group group, Runnable runnable, long period, TimeUnit timeUnit );
 
-    void cancelRecurring( Group group, Runnable runnable );
+    JobHandle scheduleRecurring( Group group, Runnable runnable, long initialDelay, long period, TimeUnit timeUnit );
 }
