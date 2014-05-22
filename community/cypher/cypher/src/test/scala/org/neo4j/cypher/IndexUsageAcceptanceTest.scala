@@ -23,7 +23,8 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite {
   test("should not forget predicates") {
     // Given
     execute("CREATE (_0:Matrix { name:'The Architect' }),(_1:Matrix { name:'Agent Smith' }),(_2:Matrix:Crew { name:'Cypher' }),(_3:Crew { name:'Trinity' }),(_4:Crew { name:'Morpheus' }),(_5:Crew { name:'Neo' }), _1-[:CODED_BY]->_0, _2-[:KNOWS]->_1, _4-[:KNOWS]->_3, _4-[:KNOWS]->_2, _5-[:KNOWS]->_4, _5-[:LOVES]->_3")
-    execute("CREATE INDEX ON :Crew(name)")
+    graph.createIndex("Crew", "name")
+
 
     // When
     val result = execute("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name= 'Morpheus' RETURN n")
@@ -32,9 +33,9 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite {
     assert(result.isEmpty, "Should not find anything here")
   }
 
-  test("should handle dependencies coming from UWNIND properly") {
+  test("should handle dependencies coming from UNWIND properly") {
     // Given
-    execute("CREATE INDEX ON :Prop(id)")
+    graph.createIndex("Prop", "id")
 
     // When
     val result = execute("unwind [1,2,3] as x match (n:Prop) using index n:Prop(id) where n.id = x return *;")
