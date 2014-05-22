@@ -28,28 +28,17 @@ import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
 
 class SimpleTokenResolver {
   def resolve(ast: Query)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
-    val (propertyKeyNames, labelNames, relTypeNames) =
-      ast.treeFold((Set.empty[PropertyKeyName], Set.empty[LabelName], Set.empty[RelTypeName]))({
-        case token: PropertyKeyName => {
-          case ((propKeyNames, labelNames, relTypeNames), c) =>
-            (propKeyNames + token, labelNames, relTypeNames)
-        }
-        case token: LabelName => {
-          case ((propKeyNames, labelNames, relTypeNames), _) =>
-            (propKeyNames, labelNames + token, relTypeNames)
-        }
-        case token: RelTypeName => {
-          case ((propKeyNames, labelNames, relTypeNames), _) =>
-            (propKeyNames, labelNames, relTypeNames + token)
-        }
-      })
-
-    propertyKeyNames.foreach{ x => propertyKeyId(x.name) }
-    labelNames.foreach{ x => labelId(x.name) }
-    relTypeNames.foreach{ x => relTypeId(x.name) }
+    ast.fold(()) {
+      case token: PropertyKeyName =>
+        _ => resolvePropertyKeyName(token.name)
+      case token: LabelName =>
+        _ => resolveLabelName(token.name)
+      case token: RelTypeName =>
+        _ => resolveRelTypeName(token.name)
+    }
   }
 
-  private def propertyKeyId(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
+  private def resolvePropertyKeyName(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
     tokenContext.getOptPropertyKeyId(name).map(PropertyKeyId) match {
       case Some(id) =>
         semanticTable.resolvedPropertyKeyNames += name -> id
@@ -57,7 +46,7 @@ class SimpleTokenResolver {
     }
   }
 
-  private def labelId(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
+  private def resolveLabelName(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
     tokenContext.getOptLabelId(name).map(LabelId) match {
       case Some(id) =>
         semanticTable.resolvedLabelIds += name -> id
@@ -65,7 +54,7 @@ class SimpleTokenResolver {
     }
   }
 
-  private def relTypeId(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
+  private def resolveRelTypeName(name: String)(implicit semanticTable: SemanticTable, tokenContext: TokenContext) {
     tokenContext.getOptRelTypeId(name).map(RelTypeId) match {
       case Some(id) =>
         semanticTable.resolvedRelTypeNames += name -> id
