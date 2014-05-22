@@ -208,7 +208,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
             @Override
             void dump( NeoStoreXaDataSource source, StringLogger.LineLogger log )
             {
-                source.neoStore.logAllWindowPoolStats( log );
+                // TODO
+//                source.neoStore.logAllWindowPoolStats( log );
             }
 
             @Override
@@ -698,7 +699,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
     public List<WindowPoolStats> getWindowPoolStats()
     {
-        return neoStore.getAllWindowPoolStats();
+        // TODO
+        return Collections.emptyList();
     }
 
     @Override

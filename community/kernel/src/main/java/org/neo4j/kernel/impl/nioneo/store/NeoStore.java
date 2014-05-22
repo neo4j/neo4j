@@ -293,7 +293,16 @@ public class NeoStore extends AbstractStore
 
     public void flushAll()
     {
-        pageCache.flush();
+        try
+        {
+            pageCache.flush();
+        }
+        catch ( IOException e )
+        {
+            // Temporary, let this trickle up when there's time to refactor. For now,
+            // the system expects underlyingstorageexception
+            throw new UnderlyingStorageException( e );
+        }
     }
 
     @Override
