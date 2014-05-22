@@ -37,14 +37,14 @@ public class StandardPageCache implements PageCache, Runnable
 {
     private final FileSystemAbstraction fs;
     private final Map<File, StandardPagedFile> pagedFiles = new HashMap<>();
-    private final StandardPageTable table;
+    private final ClockSweepPageTable table;
     private final int pageSize;
 
     public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize )
     {
         this.fs = fs;
         this.pageSize = pageSize;
-        this.table = new StandardPageTable( maxPages, pageSize );
+        this.table = new ClockSweepPageTable( maxPages, pageSize );
     }
 
     @Override

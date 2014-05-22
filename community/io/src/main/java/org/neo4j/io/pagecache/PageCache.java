@@ -22,7 +22,14 @@ package org.neo4j.io.pagecache;
 import java.io.File;
 import java.io.IOException;
 
-
+/**
+ * A page caching mechanism that allows caching multiple files and accessing their data
+ * in pages via a re-usable cursor.
+ *
+ * This interface does not specify the cache eviction and allocation behavior, it may be
+ * backed by implementations that map entire files into RAM, or implementations with smart
+ * eviction strategies, trying to keep "hot" pages in RAM.
+ */
 public interface PageCache
 {
     /**

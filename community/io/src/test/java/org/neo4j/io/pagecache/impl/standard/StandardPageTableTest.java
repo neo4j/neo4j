@@ -41,13 +41,13 @@ import static org.neo4j.io.pagecache.impl.standard.PageTable.PinnablePage;
 
 public class StandardPageTableTest
 {
-    private StandardPageTable table;
+    private ClockSweepPageTable table;
     private Thread sweeperThread;
 
     @Before
     public void startPageTable()
     {
-        table = new StandardPageTable( 1, 1024 );
+        table = new ClockSweepPageTable( 1, 1024 );
         sweeperThread = new Thread( table );
         sweeperThread.start();
     }
@@ -165,7 +165,7 @@ public class StandardPageTableTest
     public void loading_with_exclusive_lock_stops_all_others() throws Exception
     {
         // Given
-        StandardPageTable table = new StandardPageTable( 1, 1024 );
+        ClockSweepPageTable table = new ClockSweepPageTable( 1, 1024 );
         final BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( "expected".getBytes("UTF-8") ) );
 
         // When

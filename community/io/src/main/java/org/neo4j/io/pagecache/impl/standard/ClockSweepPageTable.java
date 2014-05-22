@@ -27,13 +27,22 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.pagecache.PageLock;
 
-public class StandardPageTable implements PageTable, Runnable
+/**
+ * An implementation of {@link org.neo4j.io.pagecache.impl.standard.PageTable} which uses
+ * a variant of the ClockSweep algorithm to attempt to keep popular pages in RAM based on
+ * recency and frequency of use.
+ *
+ * It uses a background thread to run eviction, trying to optimize for allowing new page-ins
+ * to immediately have free pages available to be populated, while still keeping as many pages
+ * as possible live in RAM.
+ */
+public class ClockSweepPageTable implements PageTable, Runnable
 {
     private final AtomicReference<StandardPinnablePage> freeList;
     private final StandardPinnablePage[] pages;
     private volatile Thread sweeperThread;
 
-    public StandardPageTable( int maxPages, int pageSize )
+    public ClockSweepPageTable( int maxPages, int pageSize )
     {
         freeList = new AtomicReference<>();
         pages = new StandardPinnablePage[maxPages];
