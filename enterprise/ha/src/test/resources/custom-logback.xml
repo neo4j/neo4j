@@ -41,6 +41,12 @@
   <logger name="org.neo4j.kernel.ha" level="debug">
   </logger>
 
+  <!--
+  <logger name="org.neo4j.test" level="debug">
+    <appender-ref ref="FILE"/>
+  </logger>
+-->
+
   <root level="debug">
 <!--
     <appender-ref ref="CONSOLE"/>

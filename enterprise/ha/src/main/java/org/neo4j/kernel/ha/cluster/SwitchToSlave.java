@@ -19,16 +19,11 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Collections;
 import java.util.List;
-import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
@@ -39,19 +34,20 @@ import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.storecopy.RemoteStoreCopier;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
-import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.ha.BranchedDataException;
 import org.neo4j.kernel.ha.BranchedDataPolicy;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.HaRecovery;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HaXaDataSourceManager;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -63,30 +59,17 @@ import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
-import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
-import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
-import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
-import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -94,23 +77,27 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
+
 public class SwitchToSlave
 {
     // TODO solve this with lifecycle instance grouping or something
-    @SuppressWarnings( "rawtypes" )
-    private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {
-            StoreLockerLifecycleAdapter.class,
-            XaDataSourceManager.class,
-            TransactionManager.class,
-            NodeManager.class,
-            IndexStore.class
-    };
+    private final List<Lifecycle> servicesToRestartForStoreCopy = new ArrayList<>(  );
 
     private final Logging logging;
     private final StringLogger msgLog;
     private final ConsoleLogger console;
     private final Config config;
-    private final DependencyResolver resolver;
+    private final FileSystemAbstraction fileSystemAbstraction;
+    private final HaXaDataSourceManager xaDataSourceManager;
+    private final StoreLockerLifecycleAdapter storeLockerLifecycleAdapter;
+    private final IndexStore indexStore;
+    private final AbstractTransactionManager txManager;
+    private final NodeManager nodeManager;
+    private final Factory<NeoStoreXaDataSource> dataSourceFactory;
+    private final HaRecovery recovery;
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
@@ -118,18 +105,28 @@ public class SwitchToSlave
     private final UpdateableSchemaState updateableSchemaState;
     private final Monitors monitors;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
+    private HighlyAvailableGraphDatabase highlyAvailableGraphDatabase;
 
     private MasterClientResolver masterClientResolver;
 
-    public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver, HaIdGeneratorFactory
+    public SwitchToSlave( ConsoleLogger console, Config config, HaIdGeneratorFactory
             idGeneratorFactory, Logging logging, DelegateInvocationHandler<Master> masterDelegateHandler,
                           ClusterMemberAvailability clusterMemberAvailability, RequestContextFactory
             requestContextFactory, UpdateableSchemaState updateableSchemaState, Monitors monitors,
-                          Iterable<KernelExtensionFactory<?>> kernelExtensions )
+                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
+                          HighlyAvailableGraphDatabase highlyAvailableGraphDatabase,
+                          FileSystemAbstraction fileSystemAbstraction,
+                          HaXaDataSourceManager xaDataSourceManager,
+                          HaRecovery recovery,
+                          StoreLockerLifecycleAdapter storeLockerLifecycleAdapter,
+                          IndexStore indexStore, AbstractTransactionManager txManager, NodeManager nodeManager,
+                          Factory<NeoStoreXaDataSource> dataSourceFactory )
     {
         this.console = console;
         this.config = config;
-        this.resolver = resolver;
+        this.fileSystemAbstraction = fileSystemAbstraction;
+        this.xaDataSourceManager = xaDataSourceManager;
+        this.recovery = recovery;
         this.idGeneratorFactory = idGeneratorFactory;
         this.logging = logging;
         this.clusterMemberAvailability = clusterMemberAvailability;
@@ -137,8 +134,20 @@ public class SwitchToSlave
         this.updateableSchemaState = updateableSchemaState;
         this.monitors = monitors;
         this.kernelExtensions = kernelExtensions;
+        this.highlyAvailableGraphDatabase = highlyAvailableGraphDatabase;
+        this.storeLockerLifecycleAdapter = storeLockerLifecycleAdapter;
+        this.indexStore = indexStore;
+        this.txManager = txManager;
+        this.nodeManager = nodeManager;
+        this.dataSourceFactory = dataSourceFactory;
         this.msgLog = logging.getMessagesLog( getClass() );
         this.masterDelegateHandler = masterDelegateHandler;
+
+        servicesToRestartForStoreCopy.add( storeLockerLifecycleAdapter );
+        servicesToRestartForStoreCopy.add( xaDataSourceManager );
+        servicesToRestartForStoreCopy.add( txManager );
+        servicesToRestartForStoreCopy.add( nodeManager );
+        servicesToRestartForStoreCopy.add( indexStore );
     }
 
     public URI switchToSlave( LifeSupport haCommunicationLife, URI me, URI masterUri ) throws Throwable
@@ -155,12 +164,10 @@ public class SwitchToSlave
                 config.get( HaSettings.com_chunk_size ).intValue()  );
 
 
-        HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency(
-                HaXaDataSourceManager.class );
         idGeneratorFactory.switchToSlave();
         synchronized ( xaDataSourceManager )
         {
-            if ( !isStorePresent( resolver.resolveDependency( FileSystemAbstraction.class ), config ) )
+            if ( !isStorePresent( fileSystemAbstraction, config ) )
             {
                 copyStoreFromMaster( masterUri );
             }
@@ -171,10 +178,14 @@ public class SwitchToSlave
                              * or we already had a store, so we have already started the ds. Either way,
                              * make sure it's there.
                              */
-            NeoStoreXaDataSource nioneoDataSource = ensureDataSourceStarted( xaDataSourceManager, resolver );
-            checkDataConsistency( xaDataSourceManager, resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
+            NeoStoreXaDataSource nioneoDataSource = ensureDataSourceStarted(  );
+            checkDataConsistency( nioneoDataSource, masterUri );
 
-            URI slaveUri = startHaCommunication( haCommunicationLife, xaDataSourceManager, nioneoDataSource, me, masterUri );
+            URI slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri );
+
+            // Recover database
+            recovery.recover();
+            highlyAvailableGraphDatabase.doAfterRecoveryAndStartup( false );
 
             console.log( "ServerId " + config.get( ClusterSettings.server_id ) +
                     ", successfully moved to slave for master " + masterUri );
@@ -183,9 +194,7 @@ public class SwitchToSlave
         }
     }
 
-    private void checkDataConsistency( HaXaDataSourceManager xaDataSourceManager,
-                                          RequestContextFactory requestContextFactory,
-                                          NeoStoreXaDataSource nioneoDataSource, URI masterUri ) throws Throwable
+    private void checkDataConsistency( NeoStoreXaDataSource nioneoDataSource, URI masterUri ) throws Throwable
     {
         // Must be called under lock on XaDataSourceManager
         LifeSupport checkConsistencyLife = new LifeSupport();
@@ -246,17 +255,16 @@ public class SwitchToSlave
         }
     }
 
-    private URI startHaCommunication( LifeSupport haCommunicationLife, HaXaDataSourceManager xaDataSourceManager,
+    private URI startHaCommunication( LifeSupport haCommunicationLife,
             NeoStoreXaDataSource nioneoDataSource, URI me, URI masterUri )
     {
         MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), haCommunicationLife );
 
         Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
                 new RequestContextFactory( getServerId( masterUri ).toIntegerIndex(), xaDataSourceManager,
-                        resolver ), xaDataSourceManager );
+                        singletonProvider( txManager ) ), xaDataSourceManager );
 
-        SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging,
-                resolver.resolveDependency( Monitors.class ) );
+        SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging, monitors );
 
         masterDelegateHandler.setDelegate( master );
 
@@ -312,7 +320,6 @@ public class SwitchToSlave
 
     private void copyStoreFromMaster( URI masterUri ) throws Throwable
     {
-        FileSystemAbstraction fs = resolver.resolveDependency( FileSystemAbstraction.class );
         // Must be called under lock on XaDataSourceManager
         LifeSupport life = new LifeSupport();
         try
@@ -325,7 +332,7 @@ public class SwitchToSlave
             // This will move the copied db to the graphdb location
             console.log( "Copying store from master" );
             new RemoteStoreCopier( config, kernelExtensions, console,
-                    fs ).copyStore( new RemoteStoreCopier.StoreCopyRequester()
+                    fileSystemAbstraction ).copyStore( new RemoteStoreCopier.StoreCopyRequester()
 
             {
                 @Override
@@ -352,27 +359,25 @@ public class SwitchToSlave
 
     private MasterClient newMasterClient( URI masterUri, StoreId storeId, LifeSupport life )
     {
-        return masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(),
-                resolver.resolveDependency( Monitors.class ), storeId, life );
+        return masterClientResolver.instantiate( masterUri.getHost(), masterUri.getPort(), monitors, storeId, life );
     }
 
     private void startServicesAgain() throws Throwable
     {
-        List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
-        for ( Class<?> serviceClass : services )
+        for ( Lifecycle lifecycle : servicesToRestartForStoreCopy )
         {
-            Lifecycle service = (Lifecycle) resolver.resolveDependency( serviceClass );
-            service.start();
+            lifecycle.start();
         }
     }
 
     private void stopServicesAndHandleBranchedStore( BranchedDataPolicy branchPolicy ) throws Throwable
     {
-        List<Class> services = new ArrayList<>( Arrays.asList( SERVICES_TO_RESTART_FOR_STORE_COPY ) );
-        Collections.reverse( services );
-        for ( Class<Lifecycle> serviceClass : services )
+        List<Lifecycle> reversedList = new ArrayList<>( servicesToRestartForStoreCopy );
+        Collections.reverse( reversedList );
+
+        for ( Lifecycle lifecycle : reversedList )
         {
-            resolver.resolveDependency( serviceClass ).stop();
+            lifecycle.stop();
         }
 
         branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
@@ -450,7 +455,7 @@ public class SwitchToSlave
                 myLastCommittedTx + " with masterId=" + myMaster, true );
     }
 
-    private NeoStoreXaDataSource ensureDataSourceStarted( XaDataSourceManager xaDataSourceManager, DependencyResolver resolver )
+    private NeoStoreXaDataSource ensureDataSourceStarted(  )
             throws IOException
     {
         // Must be called under lock on XaDataSourceManager
@@ -458,27 +463,7 @@ public class SwitchToSlave
                 NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         if ( nioneoDataSource == null )
         {
-            nioneoDataSource = new NeoStoreXaDataSource( config,
-                    resolver.resolveDependency( StoreFactory.class ),
-                    resolver.resolveDependency( StringLogger.class ),
-                    resolver.resolveDependency( XaFactory.class ),
-                    resolver.resolveDependency( TransactionStateFactory.class ),
-                    resolver.resolveDependency( TransactionInterceptorProviders.class ),
-                    resolver.resolveDependency( JobScheduler.class ),
-                    logging,
-                    updateableSchemaState,
-                    new NonTransactionalTokenNameLookup(
-                            resolver.resolveDependency( LabelTokenHolder.class ),
-                            resolver.resolveDependency( PropertyKeyTokenHolder.class ) ),
-                    resolver,
-                    resolver.resolveDependency( AbstractTransactionManager.class ),
-                    resolver.resolveDependency( PropertyKeyTokenHolder.class ),
-                    resolver.resolveDependency( LabelTokenHolder.class ),
-                    resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
-                    resolver.resolveDependency( PersistenceManager.class ),
-                    resolver.resolveDependency( LockManager.class ),
-                    resolver.resolveDependency( SchemaWriteGuard.class ),
-                    monitors.newMonitor( IndexingService.Monitor.class ));
+            nioneoDataSource = dataSourceFactory.newInstance();
             xaDataSourceManager.registerDataSource( nioneoDataSource );
                 /*
                  * CAUTION: The next line may cause severe eye irritation, mental instability and potential
@@ -488,7 +473,7 @@ public class SwitchToSlave
                  * register the datasource with the DsMgr we need to make sure that NodeManager re-reads the reltype
                  * and propindex information. Normally, we would have shutdown everything before getting here.
                  */
-            resolver.resolveDependency( NodeManager.class ).start();
+            nodeManager.start();
         }
         return nioneoDataSource;
     }

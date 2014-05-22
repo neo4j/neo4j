@@ -19,9 +19,6 @@
  */
 package org.neo4j.cluster;
 
-import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
-import static org.neo4j.cluster.com.message.Message.CREATED_BY;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -41,8 +38,10 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.statemachine.StateTransitionListener;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
+import static org.neo4j.cluster.com.message.Message.CREATED_BY;
 
 
 /**
@@ -54,7 +53,7 @@ import org.slf4j.LoggerFactory;
 public class StateMachines
         implements MessageProcessor, MessageSource
 {
-    private final Logger logger = LoggerFactory.getLogger( StateMachines.class );
+    private final StringLogger logger;
 
     private final MessageSender sender;
     private DelayedDirectExecutor executor;
@@ -69,11 +68,12 @@ public class StateMachines
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
     private final String instanceIdHeaderValue;
 
-    public StateMachines( MessageSource source,
+    public StateMachines( StringLogger logger, MessageSource source,
                           final MessageSender sender,
                           Timeouts timeouts,
                           DelayedDirectExecutor executor, Executor stateMachineExecutor, InstanceId instanceId )
     {
+        this.logger = logger;
         this.sender = sender;
         this.executor = executor;
         this.stateMachineExecutor = stateMachineExecutor;

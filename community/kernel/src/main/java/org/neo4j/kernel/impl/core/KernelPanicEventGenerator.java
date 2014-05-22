@@ -21,22 +21,38 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
+import java.util.concurrent.TimeUnit;
 
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.kernel.KernelEventHandlers;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class KernelPanicEventGenerator
+    extends LifecycleAdapter
 {
     private final KernelEventHandlers kernelEventHandlers;
+    private ExecutorService executor;
 
     public KernelPanicEventGenerator( KernelEventHandlers kernelEventHandlers )
     {
         this.kernelEventHandlers = kernelEventHandlers;
     }
-    
+
+    @Override
+    public void start() throws Throwable
+    {
+        executor = Executors.newSingleThreadExecutor();
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        executor.shutdown();
+        executor.awaitTermination( 60, TimeUnit.SECONDS );
+    }
+
     public void generateEvent( final ErrorState error, final Throwable cause )
     {
-        ExecutorService executor = Executors.newSingleThreadExecutor(  );
         executor.execute( new Runnable()
         {
             @Override
@@ -45,6 +61,5 @@ public class KernelPanicEventGenerator
                 kernelEventHandlers.kernelPanic( error, cause );
             }
         } );
-        executor.shutdown();
     }
 }

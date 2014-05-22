@@ -26,18 +26,21 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
-import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
+import org.neo4j.kernel.ha.HaRecovery;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
+import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -47,34 +50,50 @@ public class SwitchToMaster
 {
     private final Logging logging;
     private final StringLogger msgLog;
-    private final GraphDatabaseAPI graphDb;
+    private final HighlyAvailableGraphDatabase graphDb;
     private final HaIdGeneratorFactory idGeneratorFactory;
     private final Config config;
-    private final DependencyResolver resolver;
+    private final TransactionManager txManager;
+    private final XaDataSourceManager xaDataSourceManager;
+    private final HaRecovery recovery;
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final Monitors monitors;
+    private final Provider<XaDataSource> xaDataSourceProvider;
 
-    public SwitchToMaster( Logging logging, StringLogger msgLog, GraphDatabaseAPI graphDb, HaIdGeneratorFactory
-            idGeneratorFactory, Config config, DependencyResolver resolver, DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
-                           Monitors monitors )
+    public SwitchToMaster( Logging logging, StringLogger msgLog, HighlyAvailableGraphDatabase graphDb, HaIdGeneratorFactory
+            idGeneratorFactory, Config config, TransactionManager txManager,
+            XaDataSourceManager xaDataSourceManager,
+            DelegateInvocationHandler<Master> masterDelegateHandler, ClusterMemberAvailability clusterMemberAvailability,
+
+            HaRecovery recovery, Monitors monitors )
     {
         this.logging = logging;
         this.msgLog = msgLog;
         this.graphDb = graphDb;
         this.idGeneratorFactory = idGeneratorFactory;
         this.config = config;
-        this.resolver = resolver;
+        this.txManager = txManager;
+        this.xaDataSourceManager = xaDataSourceManager;
+        this.recovery = recovery;
         this.masterDelegateHandler = masterDelegateHandler;
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.monitors = monitors;
+
+        xaDataSourceProvider = new Provider<XaDataSource>()
+        {
+            @Override
+            public XaDataSource instance()
+            {
+                return SwitchToMaster.this.xaDataSourceManager.getXaDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            }
+        };
     }
 
     public URI switchToMaster(LifeSupport haCommunicationLife, URI me)
     {
         msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
 
-        HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency( HaXaDataSourceManager.class );
         /*
          * Synchronizing on the xaDataSourceManager makes sense if you also look at HaKernelPanicHandler. In
          * particular, it is possible to get a masterIsElected while recovering the database. That is generally
@@ -83,25 +102,26 @@ public class SwitchToMaster
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
         synchronized ( xaDataSourceManager )
         {
-            final TransactionManager txManager = resolver.resolveDependency( TransactionManager.class );
-
             idGeneratorFactory.switchToMaster();
 
-            Monitors monitors = resolver.resolveDependency( Monitors.class );
-
+            // Start networking
             MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager, monitors );
 
             MasterImpl masterImpl = new MasterImpl( spi, monitors.newMonitor( MasterImpl.Monitor.class ),
                     logging, config );
 
             MasterServer masterServer = new MasterServer( masterImpl, logging, serverConfig(),
-                    new BranchDetectingTxVerifier( resolver ),
+                    new BranchDetectingTxVerifier( logging.getMessagesLog( BranchDetectingTxVerifier.class ), xaDataSourceProvider ),
                     monitors );
             haCommunicationLife.add( masterImpl );
             haCommunicationLife.add( masterServer );
             masterDelegateHandler.setDelegate( masterImpl );
 
             haCommunicationLife.start();
+
+            // Recover database
+            recovery.recover();
+            graphDb.doAfterRecoveryAndStartup( true );
 
             URI masterHaURI = URI.create( "ha://" + (ServerUtil.getHostString( masterServer.getSocketAddress
                     () ).contains

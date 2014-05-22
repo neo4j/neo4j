@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.Collection;
 
 import org.neo4j.com.RequestContext;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -36,12 +36,11 @@ public class RequestContextFactory
     private long epoch;
     private final int serverId;
     private final XaDataSourceManager xaDsm;
-    private final DependencyResolver resolver;
-    private AbstractTransactionManager txManager;
+    private Provider<AbstractTransactionManager> txManager;
 
-    public RequestContextFactory( int serverId, XaDataSourceManager xaDsm, DependencyResolver resolver )
+    public RequestContextFactory( int serverId, XaDataSourceManager xaDsm, Provider<AbstractTransactionManager> txManager )
     {
-        this.resolver = resolver;
+        this.txManager = txManager;
         this.epoch = -1;
         this.serverId = serverId;
         this.xaDsm = xaDsm;
@@ -50,7 +49,6 @@ public class RequestContextFactory
     public void setEpoch( long epoch )
     {
         this.epoch = epoch;
-        this.txManager = resolver.resolveDependency( AbstractTransactionManager.class );
     }
 
     public RequestContext newRequestContext( int eventIdentifier )
@@ -124,11 +122,11 @@ public class RequestContextFactory
 
     public RequestContext newRequestContext( XaDataSource dataSource )
     {
-        return newRequestContext( dataSource, epoch, serverId, txManager.getEventIdentifier() );
+        return newRequestContext( dataSource, epoch, serverId, txManager.instance().getEventIdentifier() );
     }
 
     public RequestContext newRequestContext()
     {
-        return newRequestContext( epoch, serverId, txManager.getEventIdentifier() );
+        return newRequestContext( epoch, serverId, txManager.instance().getEventIdentifier() );
     }
 }
