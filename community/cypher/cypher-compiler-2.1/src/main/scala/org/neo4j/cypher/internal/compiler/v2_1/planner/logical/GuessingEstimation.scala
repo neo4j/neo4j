@@ -84,10 +84,28 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case semiApply @ SemiApply(outer, inner) =>
       cardinality(outer) // TODO: This is not true. We should calculate cardinality on QG and not LP
 
+    case semiApply @ LetSemiApply(outer, inner, _) =>
+      cardinality(outer) // TODO: This is not true. We should calculate cardinality on QG and not LP
+
     case semiApply @ AntiSemiApply(outer, inner) =>
       cardinality(outer)
       // TODO: This is not true. We should calculate cardinality on QG and not LP
 //    private def semiApplyCardinality(outer: LogicalPlan, exp: ast.Expression) = cardinality(outer) * predicateSelectivity(Seq(exp))
+
+    case semiApply @ LetAntiSemiApply(outer, inner, _) =>
+      cardinality(outer) // TODO: This is not true. We should calculate cardinality on QG and not LP
+
+    case selectOrSemiApply @ SelectOrSemiApply(outer, inner, expr) =>
+      cardinality(outer) * predicateSelectivity(Seq(expr)) // TODO: This is not true. We should calculate cardinality on QG and not LP
+
+    case selectOrSemiApply @ LetSelectOrSemiApply(outer, inner, _, expr) =>
+      cardinality(outer) * predicateSelectivity(Seq(expr)) // TODO: This is not true. We should calculate cardinality on QG and not LP
+
+    case selectOrSemiApply @ SelectOrAntiSemiApply(outer, inner, expr) =>
+      cardinality(outer) * predicateSelectivity(Seq(expr)) // TODO: This is not true. We should calculate cardinality on QG and not LP
+
+    case selectOrSemiApply @ LetSelectOrAntiSemiApply(outer, inner, _, expr) =>
+      cardinality(outer) * predicateSelectivity(Seq(expr)) // TODO: This is not true. We should calculate cardinality on QG and not LP
 
     case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
       relIds.size

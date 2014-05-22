@@ -19,14 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+case class LetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName) extends AbstractLetSemiApply(left, right, idName)
+case class LetAntiSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName) extends AbstractLetSemiApply(left, right, idName)
 
-case class SelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression) extends AbstractSelectOrSemiApply(left, right, expr)
-case class SelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression) extends AbstractSelectOrSemiApply(left, right, expr)
-
-abstract class AbstractSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression) extends LogicalPlan {
+abstract class AbstractLetSemiApply(left: LogicalPlan, right: LogicalPlan, idName: IdName) extends LogicalPlan {
   val lhs = Some(left)
   val rhs = Some(right)
 
-  def availableSymbols = left.availableSymbols
+  def availableSymbols = left.availableSymbols + idName
 }

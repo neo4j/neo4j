@@ -122,31 +122,23 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
       case p => p
     }
 
-    val subQueries = predicatesWithCorrectDeps.collect {
-      case Predicate(_, Ors((_:PatternExpression) :: (_:PatternExpression) :: _ )) =>
-        throw new CantHandleQueryException
-      case Predicate(_, Ors(Not(_:PatternExpression) :: (_:PatternExpression) :: _ )) =>
-        throw new CantHandleQueryException
-      case Predicate(_, Ors((_:PatternExpression) :: Not(_:PatternExpression) :: _ )) =>
-        throw new CantHandleQueryException
-      case Predicate(_, Ors(Not(_:PatternExpression) :: Not(_:PatternExpression) :: _ )) =>
-        throw new CantHandleQueryException
-
-      case Predicate(_, Ors((patternExpr:PatternExpression) :: tail)) if !tail.exists(_.isInstanceOf[PatternExpression])  =>
-        (patternExpr, extractQueryGraph(patternExpr))
-
-      case Predicate(_, Ors((Not(patternExpr: PatternExpression)) :: tail)) if !tail.exists(_.isInstanceOf[PatternExpression])  =>
-        (patternExpr, extractQueryGraph(patternExpr))
+    val subQueries = predicatesWithCorrectDeps.flatMap {
+      case Predicate(_, Ors(orOperands)) =>
+        orOperands.collect {
+          case expr: PatternExpression => (expr, extractQueryGraph(expr))
+          case Not(expr: PatternExpression) => (expr, extractQueryGraph(expr))
+        }
 
       case Predicate(_, Not(patternExpr: PatternExpression)) =>
-        (patternExpr, extractQueryGraph(patternExpr))
+        Seq((patternExpr, extractQueryGraph(patternExpr)))
 
       case Predicate(_, patternExpr: PatternExpression) =>
-        (patternExpr, extractQueryGraph(patternExpr))
+        Seq((patternExpr, extractQueryGraph(patternExpr)))
 
-    }.toSeq
+      case _ => Seq.empty
+    }
 
-    (Selections(predicates), subQueries)
+    (Selections(predicates), subQueries.toSeq)
   }
 
   override def produce(ast: Query): (PlannerQuery, Map[PatternExpression, QueryGraph]) = ast match {

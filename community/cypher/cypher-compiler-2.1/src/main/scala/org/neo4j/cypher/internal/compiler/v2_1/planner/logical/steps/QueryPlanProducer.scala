@@ -29,6 +29,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
 object QueryPlanProducer {
+  def solvePredicate(plan: QueryPlan, solved: Expression) =
+    QueryPlan(
+      plan.plan,
+      plan.solved.updateGraph(_.addPredicates(solved))
+    )
+
   def planAggregation(left: QueryPlan, grouping: Map[String, Expression], aggregation: Map[String, Expression]) =
     QueryPlan(
       Aggregation(left.plan, grouping, aggregation),
@@ -41,11 +47,6 @@ object QueryPlanProducer {
     QueryPlan(
       AllNodesScan(idName),
       PlannerQuery(graph = QueryGraph(patternNodes = Set(idName))))
-
-  def planAntiSemiApply(left: QueryPlan, right: QueryPlan, predicate: PatternExpression, solved: Expression) =
-    QueryPlan(
-      AntiSemiApply(left.plan, right.plan),
-      left.solved.updateGraph(_.addPredicates(solved)))
 
   def planApply(left: QueryPlan, right: QueryPlan) =
     QueryPlan(
@@ -166,15 +167,46 @@ object QueryPlanProducer {
   def planSelection(predicates: Seq[Expression], left: QueryPlan) =
     QueryPlan(Selection(predicates, left.plan), left.solved.updateTailOrSelf(_.updateGraph(_.addPredicates(predicates: _*))))
 
-  def planSelectOrAntiSemiApply(outer: QueryPlan, inner: QueryPlan, expr: Expression, solved: Expression) =
+  def planSelectOrAntiSemiApply(outer: QueryPlan, inner: QueryPlan, expr: Expression) =
     QueryPlan(
       SelectOrAntiSemiApply(outer.plan, inner.plan, expr),
-      outer.solved.updateGraph(_.addPredicates(solved)))
+      outer.solved
+    )
 
-  def planSelectOrSemiApply(outer: QueryPlan, inner: QueryPlan, expr: Expression, solved: Expression) =
+  def planLetSelectOrAntiSemiApply(outer: QueryPlan, inner: QueryPlan, id: IdName, expr: Expression) =
+    QueryPlan(
+      LetSelectOrAntiSemiApply(outer.plan, inner.plan, id, expr),
+      outer.solved
+    )
+
+  def planSelectOrSemiApply(outer: QueryPlan, inner: QueryPlan, expr: Expression) =
     QueryPlan(
       SelectOrSemiApply(outer.plan, inner.plan, expr),
-      outer.solved.updateGraph(_.addPredicates(solved))
+      outer.solved
+    )
+
+  def planLetSelectOrSemiApply(outer: QueryPlan, inner: QueryPlan, id: IdName, expr: Expression) =
+    QueryPlan(
+      LetSelectOrSemiApply(outer.plan, inner.plan, id, expr),
+      outer.solved
+    )
+
+  def planLetAntiSemiApply(left: QueryPlan, right: QueryPlan, id: IdName) =
+    QueryPlan(
+      LetAntiSemiApply(left.plan, right.plan, id),
+      left.solved
+    )
+
+  def planLetSemiApply(left: QueryPlan, right: QueryPlan, id: IdName) =
+    QueryPlan(
+      LetSemiApply(left.plan, right.plan, id),
+      left.solved
+    )
+
+  def planAntiSemiApply(left: QueryPlan, right: QueryPlan, predicate: PatternExpression, solved: Expression) =
+    QueryPlan(
+      AntiSemiApply(left.plan, right.plan),
+      left.solved.updateGraph(_.addPredicates(solved))
     )
 
   def planSemiApply(left: QueryPlan, right: QueryPlan, predicate: Expression) =
