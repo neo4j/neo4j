@@ -90,5 +90,6 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
         }
         System.out.println( "# dense nodes: " + numberOfDenseNodes + ", which is " +
                 round( 100D*numberOfDenseNodes/highestSeenNodeId ) + " %" );
+        super.done();
     }
 }
