@@ -39,6 +39,9 @@ public interface PageTable
     /** Flush all dirty pages. */
     void flush() throws IOException;
 
+    /** Flush all dirty pages backed by the specified io. */
+    void flush( PageIO io ) throws IOException;
+
     interface PageIO
     {
         void read( long pageId, ByteBuffer into ) throws IOException;

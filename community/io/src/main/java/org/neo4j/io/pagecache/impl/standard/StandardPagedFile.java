@@ -157,6 +157,12 @@ public class StandardPagedFile implements PagedFile
 
     public void close() throws IOException
     {
+        table.flush( pageIO );
         pageIO.close();
+    }
+
+    public void force() throws IOException
+    {
+        pageIO.force();
     }
 }

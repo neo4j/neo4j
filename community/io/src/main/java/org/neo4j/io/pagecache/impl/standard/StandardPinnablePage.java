@@ -159,4 +159,9 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
     {
         io.evicted( pageId );
     }
+
+    public boolean isBackedBy( PageTable.PageIO io )
+    {
+        return this.io != null && this.io.equals( io );
+    }
 }

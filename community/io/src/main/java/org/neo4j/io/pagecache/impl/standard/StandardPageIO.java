@@ -106,4 +106,9 @@ public class StandardPageIO implements PageTable.PageIO
     {
         channel.close();
     }
+
+    public void force() throws IOException
+    {
+        channel.force( false );
+    }
 }

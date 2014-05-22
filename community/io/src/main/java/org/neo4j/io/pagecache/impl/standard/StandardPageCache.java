@@ -85,12 +85,15 @@ public class StandardPageCache implements PageCache, Runnable
     public void flush() throws IOException
     {
         table.flush();
+        for ( StandardPagedFile file : pagedFiles.values() )
+        {
+            file.force();
+        }
     }
 
     @Override
     public synchronized void close() throws IOException
     {
-        flush();
         for ( StandardPagedFile file : pagedFiles.values() )
         {
             file.close();

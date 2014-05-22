@@ -85,4 +85,10 @@ public class WindowPoolPagedFile implements PagedFile
     {
         return 0;
     }
+
+    @Override
+    public void close() throws IOException
+    {
+
+    }
 }

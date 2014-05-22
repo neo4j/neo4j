@@ -75,6 +75,26 @@ public class StandardPageTable implements PageTable, Runnable
         }
     }
 
+    @Override
+    public void flush( PageIO io ) throws IOException
+    {
+        for ( StandardPinnablePage page : pages )
+        {
+            if( page.isBackedBy( io ) )
+            {
+                page.lock( PageLock.SHARED );
+                try
+                {
+                    page.flush();
+                }
+                finally
+                {
+                    page.unlock( PageLock.SHARED );
+                }
+            }
+        }
+    }
+
     private StandardPinnablePage nextFreePage()
     {
         StandardPinnablePage page;
