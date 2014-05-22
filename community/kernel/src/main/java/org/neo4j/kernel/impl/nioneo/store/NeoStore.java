@@ -22,8 +22,6 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.config.Setting;
@@ -33,8 +31,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.legacy.WindowPoolPageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -100,9 +96,6 @@ public class NeoStore extends AbstractStore
     private final RemoteTxHook txHook;
     private final AtomicLong lastCommittedTx = new AtomicLong( -1 );
     private final AtomicLong latestConstraintIntroducingTx = new AtomicLong( -1 );
-    private final PagedFile storeFile;
-    private final PageCache pageCache;
-    private final int pageSize;
 
     private final int REL_GRAB_SIZE;
 
@@ -118,7 +111,7 @@ public class NeoStore extends AbstractStore
                      StoreVersionMismatchHandler versionMismatchHandler,
                      Monitors monitors )
     {
-        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, windowPoolFactory,
+        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
         this.relTypeStore = relTypeStore;
         this.labelTokenStore = labelTokenStore;
@@ -129,17 +122,6 @@ public class NeoStore extends AbstractStore
         this.relGroupStore = relGroupStore;
         REL_GRAB_SIZE = conf.get( Configuration.relationship_grab_size );
         this.txHook = txHook;
-        this.pageCache = pageCache;
-        try
-        {
-            storeFile = pageCache.map( fileName, RECORD_SIZE * 128 );
-        }
-        catch ( IOException e )
-        {
-            // TODO: Just throw IOException, add proper handling further up
-            throw new UnderlyingStorageException( e );
-        }
-        pageSize = storeFile.pageSize();
 
         /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
          * corresponding store version record was not added. That record was added in the release
@@ -309,22 +291,9 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    @Override
     public void flushAll()
     {
-        if ( relTypeStore == null || labelTokenStore == null || propStore == null || relStore == null ||
-                nodeStore == null || schemaStore == null || relGroupStore == null )
-        {
-            return;
-        }
-        super.flushAll();
-        relTypeStore.flushAll();
-        labelTokenStore.flushAll();
-        propStore.flushAll();
-        relStore.flushAll();
-        nodeStore.flushAll();
-        schemaStore.flushAll();
-        relGroupStore.flushAll();
+        pageCache.flush();
     }
 
     @Override
@@ -549,7 +518,7 @@ public class NeoStore extends AbstractStore
         }
         try
         {
-            cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+            cursor.setOffset( offsetForId( id ) );
             cursor.getByte();
             return cursor.getLong();
         }
@@ -572,7 +541,7 @@ public class NeoStore extends AbstractStore
         }
         try
         {
-            cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+            cursor.setOffset( offsetForId( id ) );
             cursor.putByte(Record.IN_USE.byteValue());
             cursor.putLong(value);
         }
@@ -719,34 +688,6 @@ public class NeoStore extends AbstractStore
         return REL_GRAB_SIZE;
     }
 
-    @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
-    {
-        // Reverse order from everything else
-        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
-        // TODO no stats for schema store?
-        list.addAll( nodeStore.getAllWindowPoolStats() );
-        list.addAll( propStore.getAllWindowPoolStats() );
-        list.addAll( relStore.getAllWindowPoolStats() );
-        list.addAll( relTypeStore.getAllWindowPoolStats() );
-        list.addAll( labelTokenStore.getAllWindowPoolStats() );
-        list.addAll( relGroupStore.getAllWindowPoolStats() );
-        return list;
-    }
-
-    @Override
-    public void logAllWindowPoolStats( StringLogger.LineLogger logger )
-    {
-        super.logAllWindowPoolStats( logger );
-        // TODO no stats for schema store?
-        nodeStore.logAllWindowPoolStats( logger );
-        relStore.logAllWindowPoolStats( logger );
-        relTypeStore.logAllWindowPoolStats( logger );
-        labelTokenStore.logAllWindowPoolStats( logger );
-        propStore.logAllWindowPoolStats( logger );
-        relGroupStore.logAllWindowPoolStats( logger );
-    }
-
     public boolean isStoreOk()
     {
         return getStoreOk() && relTypeStore.getStoreOk() && labelTokenStore.getStoreOk() &&
@@ -860,10 +801,5 @@ public class NeoStore extends AbstractStore
     public int getDenseNodeThreshold()
     {
         return getRelationshipGroupStore().getDenseNodeThreshold();
-    }
-
-    private long pageIdForRecord( long id )
-    {
-        return id * RECORD_SIZE / pageSize;
     }
 }

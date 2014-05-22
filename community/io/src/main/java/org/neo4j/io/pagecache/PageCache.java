@@ -39,4 +39,6 @@ public interface PageCache
     PageCursor newCursor();
 
     void close() throws IOException;
+
+    void flush();
 }

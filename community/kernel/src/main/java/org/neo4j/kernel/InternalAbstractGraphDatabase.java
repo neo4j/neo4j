@@ -65,6 +65,7 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -817,11 +818,11 @@ public abstract class InternalAbstractGraphDatabase
 
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory( config, idGeneratorFactory, createWindowPoolFactory(), fileSystem,
+        return new StoreFactory( config, idGeneratorFactory, createPageCache(), fileSystem,
                 logging.getMessagesLog( StoreFactory.class ), txHook, monitors );
     }
 
-    protected DefaultWindowPoolFactory createWindowPoolFactory()
+    protected PageCache createPageCache()
     {
         return new DefaultWindowPoolFactory( monitors, config );
     }

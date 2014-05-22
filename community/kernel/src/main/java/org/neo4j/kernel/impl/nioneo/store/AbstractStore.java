@@ -23,13 +23,13 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
-import java.util.List;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -75,13 +75,18 @@ public abstract class AbstractStore extends CommonAbstractStore
         }
     }
 
-    public AbstractStore( File fileName, Config conf, IdType idType,
-                          IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                          FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                          StoreVersionMismatchHandler versionMismatchHandler,
-                          Monitors monitors )
+    public AbstractStore(
+            File fileName,
+            Config conf,
+            IdType idType,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
                 versionMismatchHandler, monitors );
         this.conf = conf;
     }
@@ -222,12 +227,5 @@ public abstract class AbstractStore extends CommonAbstractStore
                             + " (defragged=" + defraggedCount + ")" );
         closeIdGenerator();
         openIdGenerator();
-    }
-
-    public abstract List<WindowPoolStats> getAllWindowPoolStats();
-
-    public void logAllWindowPoolStats( StringLogger.LineLogger logger )
-    {
-        logger.logLine( getWindowPoolStats().toString() );
     }
 }

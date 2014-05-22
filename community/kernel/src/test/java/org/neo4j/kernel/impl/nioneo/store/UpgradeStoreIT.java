@@ -38,8 +38,10 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -312,18 +314,20 @@ public class UpgradeStoreIT
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
         Monitors monitors = new Monitors();
         Config config = new Config();
+        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        StandardPageCache pageCache = new StandardPageCache( fs, 1024, 4096 );
         DynamicStringStore stringStore = new DynamicStringStore(
                 new File( fileName.getPath() + ".names"),
                 config,
                 IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory( monitors, config ),
-                new DefaultFileSystemAbstraction(),
+                pageCache,
+                fs,
                 StringLogger.DEV_NULL,
                 StoreVersionMismatchHandler.THROW_EXCEPTION,
                 monitors );
         RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion(
-                fileName, stringStore, monitors );
+                fileName, stringStore, monitors, fs, pageCache );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             String name = "type" + i;
@@ -345,13 +349,17 @@ public class UpgradeStoreIT
         private boolean versionCalled;
 
         public RelationshipTypeTokenStoreWithOneOlderVersion(
-                File fileName, DynamicStringStore stringStore, Monitors monitors )
+                File fileName,
+                DynamicStringStore stringStore,
+                Monitors monitors,
+                FileSystemAbstraction fs,
+                PageCache pageCache )
         {
             super( fileName,
                     config,
                     new NoLimitIdGeneratorFactory(),
-                    new DefaultWindowPoolFactory( monitors, config ),
-                    new DefaultFileSystemAbstraction(),
+                    pageCache,
+                    fs,
                     StringLogger.DEV_NULL,
                     stringStore,
                     StoreVersionMismatchHandler.THROW_EXCEPTION,

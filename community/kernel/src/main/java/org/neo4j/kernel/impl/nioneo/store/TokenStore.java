@@ -25,14 +25,11 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Iterator;
 import java.util.LinkedList;
-import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.legacy.WindowPoolPageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -44,10 +41,6 @@ import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.decodeString;
 
 public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordStore<T> implements Store
 {
-    private final PageCache pageCache;
-    private final PagedFile storeFile;
-    private final int pageSize;
-
     public static abstract class Configuration
         extends AbstractStore.Configuration
     {
@@ -57,26 +50,21 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     private DynamicStringStore nameStore;
     public static final int NAME_STORE_BLOCK_SIZE = 30;
 
-    public TokenStore( File fileName, Config configuration, IdType idType,
-                       IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                       FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                       DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler,
-                       Monitors monitors )
+    public TokenStore(
+            File fileName,
+            Config configuration,
+            IdType idType,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            DynamicStringStore nameStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
         this.nameStore = nameStore;
-        pageCache = new WindowPoolPageCache( windowPoolFactory, fileSystemAbstraction );
-        try
-        {
-            storeFile = pageCache.map( fileName, getRecordSize() * 128 );
-        }
-        catch ( IOException e )
-        {
-            // TODO: Just throw IOException, add proper handling further up
-            throw new UnderlyingStorageException( e );
-        }
-        pageSize = storeFile.pageSize();
     }
 
     public DynamicStringStore getNameStore()
@@ -137,13 +125,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
             nameStore.close();
             nameStore = null;
         }
-    }
-
-    @Override
-    public void flushAll()
-    {
-        nameStore.flushAll();
-        super.flushAll();
     }
 
     public Token[] getTokens( int maxCount )
@@ -215,11 +196,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         }
         record.addNameRecords( nameStore.getLightRecords( record.getNameId() ) );
         return record;
-    }
-
-    private long pageIdForRecord( long id )
-    {
-        return id * getRecordSize() / pageSize;
     }
 
     @Override
@@ -354,7 +330,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
     protected T getRecord( int id, PageCursor cursor, boolean force )
     {
-        cursor.setOffset( id * getRecordSize() % pageSize );
+        cursor.setOffset( offsetForId( id ) );
         byte inUseByte = cursor.getByte();
         boolean inUse = (inUseByte == Record.IN_USE.byteValue());
         if ( !inUse && !force )
@@ -381,7 +357,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     {
         int id = record.getId();
         registerIdFromUpdateRecord( id );
-        cursor.setOffset( id * getRecordSize() % pageSize );
+        cursor.setOffset( offsetForId( id ) );
         if ( record.inUse() )
         {
             cursor.putByte( Record.IN_USE.byteValue() );
@@ -430,21 +406,5 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
             }
         }
         return decodeString( nameStore.readFullByteArray( relevantRecords, PropertyType.STRING ).other() );
-    }
-
-    @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
-    {
-        List<WindowPoolStats> list = new ArrayList<>();
-        list.add( nameStore.getWindowPoolStats() );
-        list.add( getWindowPoolStats() );
-        return list;
-    }
-
-    @Override
-    public void logAllWindowPoolStats( StringLogger.LineLogger logger )
-    {
-        super.logAllWindowPoolStats( logger );
-        logger.logLine( nameStore.getWindowPoolStats().toString() );
     }
 }

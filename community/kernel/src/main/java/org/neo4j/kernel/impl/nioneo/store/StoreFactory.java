@@ -53,7 +53,6 @@ public class StoreFactory
 
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final WindowPoolFactory windowPoolFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final StringLogger stringLogger;
     private final RemoteTxHook txHook;
@@ -86,7 +85,7 @@ public class StoreFactory
     public StoreFactory(
             Config config,
             IdGeneratorFactory idGeneratorFactory,
-            WindowPoolFactory windowPoolFactory,
+            PageCache pageCache,
             FileSystemAbstraction fileSystemAbstraction,
             StringLogger stringLogger,
             RemoteTxHook txHook,
@@ -94,13 +93,12 @@ public class StoreFactory
     {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.windowPoolFactory = windowPoolFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.stringLogger = stringLogger;
         this.txHook = txHook;
         this.versionMismatchHandler = StoreVersionMismatchHandler.THROW_EXCEPTION;
         this.monitors = monitors;
-        pageCache = null; //  TODO this must come from outside, or what?
+        this.pageCache = pageCache;
     }
 
     public boolean ensureStoreExists() throws IOException
@@ -143,26 +141,26 @@ public class StoreFactory
 
     private RelationshipGroupStore newRelationshipGroupStore( File fileName )
     {
-        return new RelationshipGroupStore( fileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+        return new RelationshipGroupStore( fileName, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 stringLogger, versionMismatchHandler, monitors );
     }
 
     public SchemaStore newSchemaStore( File file )
     {
-        return new SchemaStore( file, config, IdType.SCHEMA, idGeneratorFactory, windowPoolFactory,
+        return new SchemaStore( file, config, IdType.SCHEMA, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     private DynamicStringStore newDynamicStringStore(File fileName, IdType nameIdType)
     {
-        return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, windowPoolFactory,
+        return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     private RelationshipTypeTokenStore newRelationshipTypeTokenStore( File baseFileName )
     {
         DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + NAMES_PART), IdType.RELATIONSHIP_TYPE_TOKEN_NAME );
-        return new RelationshipTypeTokenStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
+        return new RelationshipTypeTokenStore( baseFileName, config, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
@@ -173,7 +171,7 @@ public class StoreFactory
         PropertyKeyTokenStore propertyKeyTokenStore = newPropertyKeyTokenStore(
                 new File( baseFileName.getPath() + INDEX_PART ) );
         DynamicArrayStore arrayPropertyStore = newDynamicArrayStore( new File( baseFileName.getPath() + ARRAYS_PART ) );
-        return new PropertyStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+        return new PropertyStore( baseFileName, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 stringLogger, stringPropertyStore, propertyKeyTokenStore, arrayPropertyStore, versionMismatchHandler,
                 monitors);
     }
@@ -182,7 +180,7 @@ public class StoreFactory
     {
         DynamicStringStore nameStore = newDynamicStringStore( new File( baseFileName.getPath() + KEYS_PART ),
                 IdType.PROPERTY_KEY_TOKEN_NAME );
-        return new PropertyKeyTokenStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
+        return new PropertyKeyTokenStore( baseFileName, config, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
@@ -190,19 +188,19 @@ public class StoreFactory
     {
         DynamicStringStore nameStore = newDynamicStringStore(new File( baseFileName.getPath() + NAMES_PART ),
                 IdType.LABEL_TOKEN_NAME );
-        return new LabelTokenStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
+        return new LabelTokenStore( baseFileName, config, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
     private RelationshipStore newRelationshipStore(File baseFileName)
     {
-        return new RelationshipStore( baseFileName, config, idGeneratorFactory, windowPoolFactory,
+        return new RelationshipStore( baseFileName, config, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     private DynamicArrayStore newDynamicArrayStore(File baseFileName)
     {
-        return new DynamicArrayStore( baseFileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory, windowPoolFactory,
+        return new DynamicArrayStore( baseFileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
@@ -210,9 +208,9 @@ public class StoreFactory
     {
         File labelsFileName = new File( baseFileName.getPath() + LABELS_PART );
         DynamicArrayStore dynamicLabelStore = new DynamicArrayStore( labelsFileName,
-                config, IdType.NODE_LABELS, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
+                config, IdType.NODE_LABELS, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
                 versionMismatchHandler, monitors );
-        return new NodeStore( baseFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+        return new NodeStore( baseFileName, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 stringLogger, dynamicLabelStore, versionMismatchHandler, monitors );
     }
 
@@ -428,7 +426,7 @@ public class StoreFactory
                 firstRecord, IdType.RELATIONSHIP_GROUP );
     }
 
-    private void createEmptyStore( File fileName, String typeAndVersionDescriptor )
+    public void createEmptyStore( File fileName, String typeAndVersionDescriptor )
     {
         createEmptyStore( fileName, typeAndVersionDescriptor, null, null );
     }

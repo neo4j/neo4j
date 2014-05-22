@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -46,13 +47,18 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
     private static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
-    public RelationshipTypeTokenStore( File fileName, Config config,
-                                       IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                                       FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                                       DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler,
-                                       Monitors monitors )
+    public RelationshipTypeTokenStore(
+            File fileName,
+            Config config,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            DynamicStringStore nameStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, windowPoolFactory,
+        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 

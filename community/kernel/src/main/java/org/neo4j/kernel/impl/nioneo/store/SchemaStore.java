@@ -27,6 +27,7 @@ import java.util.Iterator;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
@@ -44,12 +45,18 @@ public class SchemaStore extends AbstractDynamicStore implements Iterable<Schema
     public static final int BLOCK_SIZE = 56; // + BLOCK_HEADER_SIZE == 64
 
     @SuppressWarnings("deprecation")
-    public SchemaStore( File fileName, Config conf, IdType idType, IdGeneratorFactory idGeneratorFactory,
-            WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler,
+    public SchemaStore(
+            File fileName,
+            Config conf,
+            IdType idType,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            StoreVersionMismatchHandler versionMismatchHandler,
             Monitors monitors )
     {
-        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 stringLogger, versionMismatchHandler, monitors );
     }
 

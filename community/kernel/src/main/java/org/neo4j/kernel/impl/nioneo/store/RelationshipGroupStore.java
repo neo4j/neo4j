@@ -22,15 +22,11 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.legacy.WindowPoolPageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -47,30 +43,21 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
      */
     public static final int RECORD_SIZE = 25;
     public static final String TYPE_DESCRIPTOR = "RelationshipGroupStore";
-    private final PageCache pageCache;
-    private final PagedFile storeFile;
-    private final int pageSize;
 
     private int denseNodeThreshold;
 
-    public RelationshipGroupStore( File fileName, Config config, IdGeneratorFactory idGeneratorFactory,
-            WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler,
+    public RelationshipGroupStore(
+            File fileName,
+            Config config,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            StoreVersionMismatchHandler versionMismatchHandler,
             Monitors monitors )
     {
-        super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, windowPoolFactory,
+        super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
-        pageCache = new WindowPoolPageCache( windowPoolFactory, fileSystemAbstraction );
-        try
-        {
-            storeFile = pageCache.map( fileName, RECORD_SIZE * 128 );
-        }
-        catch ( IOException e )
-        {
-            // TODO: Just throw IOException, add proper handling further up
-            throw new UnderlyingStorageException( e );
-        }
-        pageSize = storeFile.pageSize();
     }
 
     @Override
@@ -93,11 +80,6 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         {
             storeFile.unpin( cursor );
         }
-    }
-
-    private long pageIdForRecord( long id )
-    {
-        return id * RECORD_SIZE / pageSize;
     }
 
     @Override
@@ -124,7 +106,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
 
     private RelationshipGroupRecord getRecord( long id, PageCursor cursor, RecordLoad load )
     {
-        cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+        cursor.setOffset( offsetForId( id ) );
 
         // [    ,   x] in use
         // [    ,xxx ] high next id bits
@@ -207,7 +189,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     {
         long id = record.getId();
         registerIdFromUpdateRecord( id );
-        cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+        cursor.setOffset( offsetForId( id ) );
         if ( record.inUse() || force )
         {
             long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getNext() & 0x700000000L) >> 31;
@@ -316,14 +298,6 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     public int getRecordSize()
     {
         return RECORD_SIZE;
-    }
-
-    @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
-    {
-        List<WindowPoolStats> list = new ArrayList<>();
-        list.add( getWindowPoolStats() );
-        return list;
     }
 
     @Override

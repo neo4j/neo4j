@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.Collection;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -34,12 +35,18 @@ import static java.util.Collections.singletonList;
 public abstract class AbstractRecordStore<R extends AbstractBaseRecord> extends AbstractStore
         implements RecordStore<R>
 {
-    public AbstractRecordStore( File fileName, Config conf, IdType idType, IdGeneratorFactory idGeneratorFactory,
-                                WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
-                                StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler,
-                                Monitors monitors )
+    public AbstractRecordStore(
+            File fileName,
+            Config conf,
+            IdType idType,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
                 versionMismatchHandler, monitors );
     }
 

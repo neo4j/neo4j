@@ -26,14 +26,12 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.legacy.WindowPoolPageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -76,31 +74,21 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     // in_use(byte)+next_rel_id(int)+next_prop_id(int)+labels(5)+extra(byte)
     public static final int RECORD_SIZE = 15;
 
-    private final PagedFile storeFile;
-    private final WindowPoolPageCache pageCache;
-    private final int pageSize;
-
     private DynamicArrayStore dynamicLabelStore;
 
-    public NodeStore( File fileName, Config config,
-                     IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                     FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                     DynamicArrayStore dynamicLabelStore, StoreVersionMismatchHandler versionMismatchHandler,
-                     Monitors monitors )
+    public NodeStore(
+            File fileName,
+            Config config,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            DynamicArrayStore dynamicLabelStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, config, IdType.NODE, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+        super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 stringLogger, versionMismatchHandler, monitors );
-        pageCache = new WindowPoolPageCache( windowPoolFactory, fileSystemAbstraction );
-        try
-        {
-            storeFile = pageCache.map( fileName, RECORD_SIZE * 128 );
-        }
-        catch ( IOException e )
-        {
-            // TODO: Just throw IOException, add proper handling further up
-            throw new UnderlyingStorageException( e );
-        }
-        pageSize = storeFile.pageSize();
         this.dynamicLabelStore = dynamicLabelStore;
     }
 
@@ -279,7 +267,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
         try
         {
-            cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+            cursor.setOffset( offsetForId( id ) );
             return ((long) cursor.getByte() & 0x1) == Record.IN_USE.intValue();
         }
         finally
@@ -291,7 +279,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     private NodeRecord getRecord( long id, PageCursor cursor,
         RecordLoad load, NodeRecord record )
     {
-        cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+        cursor.setOffset( offsetForId( id ) );
 
         // [    ,   x] in use bit
         // [    ,xxx ] higher bits for rel id
@@ -337,7 +325,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     private void updateRecord( NodeRecord record, PageCursor cursor, boolean force )
     {
         long id = record.getId();
-        cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+        cursor.setOffset( offsetForId( id ) );
         registerIdFromUpdateRecord( id );
         if ( record.inUse() || force )
         {
@@ -374,14 +362,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                 freeId( id );
             }
         }
-    }
-
-    @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
-    {
-        List<WindowPoolStats> list = new ArrayList<>();
-        list.add( getWindowPoolStats() );
-        return list;
     }
 
     public DynamicArrayStore getDynamicLabelStore()
@@ -476,17 +456,5 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     {
         dynamicLabelStore.updateHighId();
         super.updateHighId();
-    }
-
-    @Override
-    public void flushAll()
-    {
-        dynamicLabelStore.flushAll();
-        super.flushAll();
-    }
-
-    private long pageIdForRecord( long id )
-    {
-        return id * RECORD_SIZE / pageSize;
     }
 }

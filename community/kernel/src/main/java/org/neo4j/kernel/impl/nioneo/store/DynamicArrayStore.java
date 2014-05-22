@@ -29,6 +29,7 @@ import java.util.List;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -50,13 +51,18 @@ public class DynamicArrayStore extends AbstractDynamicStore
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
     public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
 
-    public DynamicArrayStore( File fileName, Config configuration, IdType idType,
-                             IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                             FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                             StoreVersionMismatchHandler versionMismatchHandler,
-                             Monitors monitors )
+    public DynamicArrayStore(
+            File fileName,
+            Config configuration,
+            IdType idType,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 

@@ -21,15 +21,11 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.ArrayList;
-import java.util.List;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.legacy.WindowPoolPageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -41,10 +37,6 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> implements Store
 {
-    private final PagedFile storeFile;
-    private final PageCache pageCache;
-    private final int pageSize;
-
     public static abstract class Configuration
         extends AbstractStore.Configuration
     {
@@ -58,24 +50,18 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     // second_next_rel_id+next_prop_id(int)+first-in-chain-markers(1)
     public static final int RECORD_SIZE = 34;
 
-    public RelationshipStore( File fileName, Config configuration, IdGeneratorFactory idGeneratorFactory,
-                             WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
-                             StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler,
-                             Monitors monitors )
+    public RelationshipStore(
+            File fileName,
+            Config configuration,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
         super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
-                windowPoolFactory, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
-        pageCache = new WindowPoolPageCache( windowPoolFactory, fileSystemAbstraction );
-        try
-        {
-            storeFile = pageCache.map( fileName, RECORD_SIZE * 128 );
-        }
-        catch ( IOException e )
-        {
-            // TODO: Just throw IOException, add proper handling further up
-            throw new UnderlyingStorageException( e );
-        }
-        pageSize = storeFile.pageSize();
+                pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     @Override
@@ -222,7 +208,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         PageCursor cursor, boolean force )
     {
         long id = record.getId();
-        cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+        cursor.setOffset( offsetForId( id ) );
         registerIdFromUpdateRecord( id );
         if ( record.inUse() || force )
         {
@@ -290,7 +276,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     private RelationshipRecord getRecord( long id, PageCursor cursor,
         RecordLoad load, RelationshipRecord record )
     {
-        cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+        cursor.setOffset( offsetForId( id ) );
 
         // [    ,   x] in use flag
         // [    ,xxx ] first node high order bits
@@ -370,18 +356,5 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         }
 
         return getRecord( id, new RelationshipRecord( id ), RecordLoad.NORMAL );
-    }
-
-    @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
-    {
-        List<WindowPoolStats> list = new ArrayList<>();
-        list.add( getWindowPoolStats() );
-        return list;
-    }
-
-    private long pageIdForRecord( long id )
-    {
-        return id * RECORD_SIZE / pageSize;
     }
 }

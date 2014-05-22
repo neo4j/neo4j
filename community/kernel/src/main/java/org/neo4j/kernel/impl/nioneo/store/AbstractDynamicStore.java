@@ -37,8 +37,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.legacy.WindowPoolPageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -66,10 +64,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 public abstract class AbstractDynamicStore extends CommonAbstractStore implements Store, RecordStore<DynamicRecord>,
         DynamicBlockSize, DynamicRecordAllocator
 {
-    private final PageCache pageCache;
-    private final PagedFile storeFile;
-    private final int pageSize;
-
     public static abstract class Configuration
         extends CommonAbstractStore.Configuration
     {
@@ -81,26 +75,20 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     private final Config conf;
     private int blockSize;
 
-    public AbstractDynamicStore( File fileName, Config conf, IdType idType,
-                                 IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                                 FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                                 StoreVersionMismatchHandler versionMismatchHandler,
-                                 Monitors monitors )
+    public AbstractDynamicStore(
+            File fileName,
+            Config conf,
+            IdType idType,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, conf, idType, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
+        super( fileName, conf, idType, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
                 versionMismatchHandler, monitors );
         this.conf = conf;
-        pageCache = new WindowPoolPageCache( windowPoolFactory, fileSystemAbstraction );
-        int recordSize = getBlockSize();
-        try
-        {
-            storeFile = pageCache.map( fileName, recordSize * 128 );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-        pageSize = storeFile.pageSize();
     }
 
     @Override
@@ -226,7 +214,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         try
         {
             long id = record.getId();
-            cursor.setOffset( (int) (id * getRecordSize() % pageSize) );
+            cursor.setOffset( offsetForId( id ) );
             if ( record.inUse() )
             {
                 long nextBlock = record.getNextBlock();
@@ -272,11 +260,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         {
             storeFile.unpin( cursor );
         }
-    }
-
-    private long pageIdForRecord( long id )
-    {
-        return id * getRecordSize() / pageSize;
     }
 
     @Override
@@ -381,8 +364,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         try
         {
             // NOTE: skip of header in offset
-            int offset = (int) (blockId-window.position()) * getBlockSize() + BLOCK_HEADER_SIZE;
-            cursor.setOffset( offset );
+            cursor.setOffset( offsetForId( blockId ) + BLOCK_HEADER_SIZE );
             byte bytes[] = new byte[record.getLength()];
             cursor.getBytes( bytes );
             record.setData( bytes );
@@ -401,7 +383,7 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     private DynamicRecord getRecord( long blockId, PageCursor cursor, RecordLoad load )
     {
         DynamicRecord record = new DynamicRecord( blockId );
-        cursor.setOffset( (int) (blockId * getRecordSize() % pageSize) );
+        cursor.setOffset( offsetForId( blockId ) );
 
         /*
          * First 4b

@@ -52,8 +52,6 @@ import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
  */
 public abstract class CommonAbstractStore implements IdSequence
 {
-
-
     public static abstract class Configuration
     {
         public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
@@ -219,7 +217,7 @@ public abstract class CommonAbstractStore implements IdSequence
             loadIdGenerator();
             try
             {
-                storeFile = pageCache.map( getStorageFileName(), getEffectiveRecordSize() * 128, getEffectiveRecordSize() );
+                storeFile = pageCache.map( getStorageFileName(), getEffectiveRecordSize() * 128 );
             }
             catch ( IOException e )
             {
@@ -231,6 +229,16 @@ public abstract class CommonAbstractStore implements IdSequence
         {
             throw new UnderlyingStorageException( "Unable to load storage " + getStorageFileName(), e );
         }
+    }
+
+    protected long pageIdForRecord( long id )
+    {
+        return id * getEffectiveRecordSize() / storeFile.pageSize();
+    }
+
+    protected int offsetForId( long id )
+    {
+        return (int) (id * getEffectiveRecordSize() % storeFile.pageSize());
     }
 
     protected abstract int getEffectiveRecordSize();
@@ -446,19 +454,6 @@ public abstract class CommonAbstractStore implements IdSequence
         }
     }
 
-    public void flushAll()
-    {
-        try
-        {
-
-            windowPool.flushAll();
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( "Could not flush " + windowPool, e );
-        }
-    }
-
     private boolean isRecovered = false;
 
     public boolean isInRecoveryMode()
@@ -550,18 +545,13 @@ public abstract class CommonAbstractStore implements IdSequence
             return;
         }
         closeStorage();
-        pageCache.unmap( getStorageFileName() );
-        if ( windowPool != null )
+        try
         {
-            try
-            {
-                windowPool.close();
-            }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( "Failed to close " + windowPool, e );
-            }
-            windowPool = null;
+            pageCache.unmap( getStorageFileName() );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Failed to close store file: " + getStorageFileName(), e );
         }
         if ( (isReadOnly() && !isBackupSlave()) || idGenerator == null || !storeOk )
         {

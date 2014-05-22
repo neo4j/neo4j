@@ -34,10 +34,8 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
-import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
 import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
-import org.neo4j.io.pagecache.impl.legacy.WindowPoolPageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -72,39 +70,30 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     + DEFAULT_PAYLOAD_SIZE /*property blocks*/;
     // = 41
 
-    private final PagedFile storeFile;
-    private final PageCache pageCache;
-    private final int pageSize;
-
     private DynamicStringStore stringPropertyStore;
     private PropertyKeyTokenStore propertyKeyTokenStore;
     private DynamicArrayStore arrayPropertyStore;
     private final PropertyPhysicalToLogicalConverter physicalToLogicalConverter;
 
-    public PropertyStore( File fileName, Config configuration,
-                         IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                         FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                         DynamicStringStore stringPropertyStore, PropertyKeyTokenStore propertyKeyTokenStore,
-                         DynamicArrayStore arrayPropertyStore, StoreVersionMismatchHandler versionMismatchHandler,
-                         Monitors monitors )
+    public PropertyStore(
+            File fileName,
+            Config configuration,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            DynamicStringStore stringPropertyStore,
+            PropertyKeyTokenStore propertyKeyTokenStore,
+            DynamicArrayStore arrayPropertyStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, windowPoolFactory,
+        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache,
                 fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
         this.stringPropertyStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayPropertyStore = arrayPropertyStore;
         this.physicalToLogicalConverter = new PropertyPhysicalToLogicalConverter( this );
-        pageCache = new WindowPoolPageCache( windowPoolFactory, fileSystemAbstraction );
-        try
-        {
-            storeFile = pageCache.map( fileName, RECORD_SIZE * 128 );
-        }
-        catch ( IOException e )
-        {
-            // TODO: Just throw IOException, add proper handling further up
-            throw new UnderlyingStorageException( e );
-        }
-        pageSize = storeFile.pageSize();
     }
 
     @Override
@@ -160,15 +149,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             arrayPropertyStore.close();
             arrayPropertyStore = null;
         }
-    }
-
-    @Override
-    public void flushAll()
-    {
-        stringPropertyStore.flushAll();
-        propertyKeyTokenStore.flushAll();
-        arrayPropertyStore.flushAll();
-        super.flushAll();
     }
 
     @Override
@@ -236,7 +216,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     {
         long id = record.getId();
         registerIdFromUpdateRecord( id );
-        cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+        cursor.setOffset( (int) (id * RECORD_SIZE % storeFile.pageSize()) );
         if ( record.inUse() )
         {
             // Set up the record header
@@ -445,7 +425,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
 
     private PropertyRecord getRecord( long id, PageCursor cursor, RecordLoad load )
     {
-        cursor.setOffset( (int) (id * RECORD_SIZE % pageSize) );
+        cursor.setOffset( (int) (id * RECORD_SIZE % storeFile.pageSize()) );
         PropertyRecord toReturn = getRecordFromBuffer( id, cursor );
         if ( !toReturn.inUse() && load != RecordLoad.FORCE )
         {
@@ -657,25 +637,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         return getRightArray( arrayPropertyStore.readFullByteArray( records, PropertyType.ARRAY ) );
     }
 
-    @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
-    {
-        List<WindowPoolStats> list = new ArrayList<>();
-        list.add( stringPropertyStore.getWindowPoolStats() );
-        list.add( arrayPropertyStore.getWindowPoolStats() );
-        list.add( getWindowPoolStats() );
-        return list;
-    }
-
-    @Override
-    public void logAllWindowPoolStats( StringLogger.LineLogger logger )
-    {
-        super.logAllWindowPoolStats( logger );
-        propertyKeyTokenStore.logAllWindowPoolStats( logger );
-        logger.logLine( stringPropertyStore.getWindowPoolStats().toString() );
-        logger.logLine( arrayPropertyStore.getWindowPoolStats().toString() );
-    }
-
     public int getStringBlockSize()
     {
         return stringPropertyStore.getBlockSize();
@@ -737,10 +698,5 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             long[] nodeLabelsAfter )
     {
         physicalToLogicalConverter.apply( target, changes, nodeLabelsBefore, nodeLabelsAfter );
-    }
-
-    private long pageIdForRecord( long id )
-    {
-        return id * RECORD_SIZE / pageSize;
     }
 }
