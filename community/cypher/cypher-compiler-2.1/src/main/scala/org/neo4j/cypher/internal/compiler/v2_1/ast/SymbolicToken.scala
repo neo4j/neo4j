@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, InputPosition}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 
 final case class LabelName(name: String)(val position: InputPosition) extends ASTNode with SymbolicName
@@ -39,7 +39,7 @@ final case class PropertyKeyName(name: String)(val position: InputPosition) exte
 
 object PropertyKeyName {
   implicit class PropertyKeyNameId(that: PropertyKeyName)(implicit semanticTable: SemanticTable) {
-    def id = semanticTable.resolvedPropertyKeyNames.get(that.name)
+    def id: Option[PropertyKeyId] = semanticTable.resolvedPropertyKeyNames.get(that.name)
 
     def either = that.id match {
       case Some(id) => Right(id)

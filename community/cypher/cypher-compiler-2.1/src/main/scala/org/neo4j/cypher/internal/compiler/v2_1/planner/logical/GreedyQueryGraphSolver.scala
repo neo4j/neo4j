@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{SingleRow, QueryPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.cartesianProduct
 
 class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
-  extends QueryGraphSolver{
+  extends QueryGraphSolver {
 
   def plan(implicit context: QueryGraphSolvingContext, leafPlan: Option[QueryPlan] = None): QueryPlan = {
     val select = config.applySelections.asFunctionInContext

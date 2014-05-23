@@ -89,7 +89,6 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
       query = qg,
       metrics = factory.newMetrics(statistics, semanticTable)
     )
-    when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator.empty)
 
     // when
     val resultPlans = labelScanLeafPlanner(qg)
