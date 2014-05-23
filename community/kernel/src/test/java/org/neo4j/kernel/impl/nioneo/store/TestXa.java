@@ -36,6 +36,7 @@ import javax.transaction.xa.Xid;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DependencyResolver;
@@ -90,6 +91,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
@@ -104,6 +106,9 @@ import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class TestXa
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+
     private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     private NeoStoreXaDataSource ds;
     private File logBaseFileName;
@@ -143,7 +148,7 @@ public class TestXa
         StoreFactory sf = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory( monitors, config ),
+                pageCacheRule.getPageCache( fileSystem, config ),
                 fileSystem,
                 StringLogger.DEV_NULL,
                 null,
@@ -369,7 +374,7 @@ public class TestXa
         StoreFactory sf = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory( monitors, config ),
+                pageCacheRule.getPageCache( fileSystem, config ),
                 fileSystem,
                 StringLogger.DEV_NULL,
                 null,

@@ -21,8 +21,10 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 
+import org.junit.ClassRule;
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -30,9 +32,12 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assume.assumeTrue;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.nodestore_mapped_memory_size;
@@ -59,11 +64,13 @@ public class TestGrowingFileMemoryMapping
                 Configuration.store_dir.name(), storeDir.getPath() ), NodeStore.Configuration.class );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Monitors monitors = new Monitors();
+        DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+        PageCache pageCache = pageCacheRule.getPageCache( fileSystemAbstraction, config );
         StoreFactory storeFactory = new StoreFactory(
                 config,
                 idGeneratorFactory,
-                new DefaultWindowPoolFactory( monitors, config ),
-                new DefaultFileSystemAbstraction(),
+                pageCache,
+                fileSystemAbstraction,
                 StringLogger.DEV_NULL,
                 new DefaultTxHook(),
                 monitors );
@@ -76,27 +83,37 @@ public class TestGrowingFileMemoryMapping
                 fileName,
                 config,
                 idGeneratorFactory,
-                new DefaultWindowPoolFactory( monitors, config ),
-                new DefaultFileSystemAbstraction(),
+                pageCache,
+                fileSystemAbstraction,
                 StringLogger.DEV_NULL,
                 null,
                 StoreVersionMismatchHandler.THROW_EXCEPTION,
                 monitors );
 
         // when
-        for ( int i = 0; i < 2 * NUMBER_OF_RECORDS; i++ )
+        int iterations = 2 * NUMBER_OF_RECORDS;
+        long startingId = nodeStore.nextId();
+        long nodeId = startingId;
+        for ( int i = 0; i < iterations; i++ )
         {
-            NodeRecord record = new NodeRecord( nodeStore.nextId(), false, 0, 0 );
+            NodeRecord record = new NodeRecord( nodeId, false, i, 0 );
             record.setInUse( true );
             nodeStore.updateRecord( record );
+            nodeId = nodeStore.nextId();
         }
 
         // then
-        WindowPoolStats stats = nodeStore.getWindowPoolStats();
+        NodeRecord record = new NodeRecord( 0, false, 0, 0 );
+        for ( int i = 0; i < iterations; i++ )
+        {
+            record.setId( startingId + i );
+            nodeStore.getRecord( i, record );
+            assertTrue( "record[" + i + "] should be in use", record.inUse() );
+            assertThat( "record[" + i + "] should have nextRelId of " + i,
+                    record.getNextRel(), is( (long) i ) );
+        }
 
         nodeStore.close();
-
-        assertEquals( stats.toString(), 0, stats.getMissCount() );
     }
 
     private String mmapSize( int numberOfRecords, int recordSize )
@@ -108,4 +125,7 @@ public class TestGrowingFileMemoryMapping
         }
         return bytes / MEGA + "M";
     }
+
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
 }

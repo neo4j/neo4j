@@ -201,9 +201,14 @@ public class TestStore
 
         public static Store createStore( File fileName, PageCache pageCache ) throws IOException
         {
-            new StoreFactory( new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class ),
-                    ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory( monitors, config ),
-                    FILE_SYSTEM, StringLogger.DEV_NULL, null, new Monitors() ).
+            new StoreFactory(
+                    new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class ),
+                    ID_GENERATOR_FACTORY,
+                    pageCache,
+                    FILE_SYSTEM,
+                    StringLogger.DEV_NULL,
+                    null,
+                    new Monitors() ).
                     createEmptyStore( fileName, buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR ) );
             return new Store( fileName, pageCache );
         }

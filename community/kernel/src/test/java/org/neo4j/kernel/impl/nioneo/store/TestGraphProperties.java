@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.concurrent.Future;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -191,7 +193,7 @@ public class TestGraphProperties
         StoreFactory storeFactory = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory( monitors, config ),
+                pageCacheRule.getPageCache( fs.get(), config ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 null,
@@ -430,4 +432,7 @@ public class TestGraphProperties
         db.shutdown();
         return snapshot;
     }
+
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
 }

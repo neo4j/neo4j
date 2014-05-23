@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Node;
@@ -33,8 +34,8 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.GraphDatabaseAPI;
@@ -46,6 +47,7 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
 import static java.lang.Integer.parseInt;
@@ -56,6 +58,8 @@ import static org.junit.Assert.assertFalse;
 
 public class TestRelationshipGroupStore
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     private File directory;
     private String neostoreFileName;
     private int defaultThreshold;
@@ -67,6 +71,7 @@ public class TestRelationshipGroupStore
     {
         directory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
         neostoreFileName = new File( directory, "neostore" ).getAbsolutePath();
+        fs = new DefaultFileSystemAbstraction();
         defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
     }
 
@@ -160,8 +165,8 @@ public class TestRelationshipGroupStore
         return new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory( monitors, config ),
-                new DefaultFileSystemAbstraction(),
+                pageCacheRule.getPageCache( fs, config ),
+                fs,
                 StringLogger.DEV_NULL,
                 new DefaultTxHook(),
                 monitors );

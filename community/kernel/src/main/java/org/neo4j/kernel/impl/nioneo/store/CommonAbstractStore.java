@@ -529,6 +529,18 @@ public abstract class CommonAbstractStore implements IdSequence
         }
     }
 
+    public void flush()
+    {
+        try
+        {
+            pageCache.flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Failed to flush", e );
+        }
+    }
+
     /**
      * Closes this store. This will cause all buffers and channels to be closed.
      * Requesting an operation from after this method has been invoked is

@@ -27,13 +27,13 @@ import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -46,6 +46,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static java.nio.ByteBuffer.allocate;
 import static java.util.Arrays.asList;
@@ -61,6 +62,8 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeCommandTest
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     private NodeStore nodeStore;
     private XaCommandReader commandReader = new PhysicalLogNeoXaCommandReaderV1( allocate( 64 ));
     private XaCommandWriter commandWriter = new PhysicalLogNeoXaCommandWriter();
@@ -222,7 +225,7 @@ public class NodeCommandTest
         StoreFactory storeFactory = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory( monitors, config ),
+                pageCacheRule.getPageCache( fs.get(), config ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 new DefaultTxHook(),

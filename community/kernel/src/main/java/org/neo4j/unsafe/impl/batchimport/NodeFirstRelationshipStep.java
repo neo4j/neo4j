@@ -76,7 +76,7 @@ public class NodeFirstRelationshipStep extends LonelyProcessingStep implements G
             nodeStore.updateRecord( record );
             itemProcessed();
         }
-        nodeStore.flushAll();
+        nodeStore.flush();
     }
 
     @Override

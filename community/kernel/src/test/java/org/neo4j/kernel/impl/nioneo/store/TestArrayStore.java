@@ -29,13 +29,15 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdType;
@@ -43,6 +45,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
 import static org.junit.Assert.assertEquals;
@@ -50,6 +53,9 @@ import static org.junit.Assert.assertTrue;
 
 public class TestArrayStore
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+
     private File dir;
     private DynamicArrayStore arrayStore;
 
@@ -62,13 +68,26 @@ public class TestArrayStore
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         Monitors monitors = new Monitors();
-        StoreFactory factory = new StoreFactory( config,
-                idGeneratorFactory, new DefaultWindowPoolFactory( monitors, config ), fs, StringLogger.DEV_NULL, new DefaultTxHook(),
+        PageCache pageCache = pageCacheRule.getPageCache( fs, config );
+        StoreFactory factory = new StoreFactory(
+                config,
+                idGeneratorFactory,
+                pageCache,
+                fs,
+                StringLogger.DEV_NULL,
+                new DefaultTxHook(),
                 monitors );
         File fileName = new File( dir, "arraystore" );
         factory.createDynamicArrayStore( fileName, 120 );
-        arrayStore = new DynamicArrayStore( fileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory,
-                new DefaultWindowPoolFactory( monitors, config ), fs, StringLogger.DEV_NULL, StoreVersionMismatchHandler.THROW_EXCEPTION,
+        arrayStore = new DynamicArrayStore(
+                fileName,
+                config,
+                IdType.ARRAY_BLOCK,
+                idGeneratorFactory,
+                pageCache,
+                fs,
+                StringLogger.DEV_NULL,
+                StoreVersionMismatchHandler.THROW_EXCEPTION,
                 monitors );
     }
 

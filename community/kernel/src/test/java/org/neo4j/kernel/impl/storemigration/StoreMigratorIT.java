@@ -27,6 +27,7 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -37,14 +38,13 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.Unzip;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -194,6 +195,8 @@ public class StoreMigratorIT
         throw new IllegalArgumentException( name + " not found" );
     }
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
@@ -207,8 +210,14 @@ public class StoreMigratorIT
         Config config = MigrationTestUtils.defaultConfig();
         storeFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
         Monitors monitors = new Monitors();
-        storeFactory = new StoreFactory( config, idGeneratorFactory,
-                new DefaultWindowPoolFactory( monitors, config ), fs, StringLogger.DEV_NULL, new DefaultTxHook(), monitors );
+        storeFactory = new StoreFactory(
+                config,
+                idGeneratorFactory,
+                pageCacheRule.getPageCache( fs, config ),
+                fs,
+                StringLogger.DEV_NULL,
+                new DefaultTxHook(),
+                monitors );
     }
 
     private void verifyNeoStore( NeoStore neoStore )

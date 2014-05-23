@@ -23,13 +23,16 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -37,6 +40,9 @@ import static org.junit.Assert.assertTrue;
 
 public class TestStoreAccess
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Test
     public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Exception
     {
@@ -45,7 +51,7 @@ public class TestStoreAccess
         File messages = new File( storeDir, "messages.log" );
         snapshot.deleteFile( messages );
         
-        new StoreAccess( snapshot, storeDir.getPath() ).close();
+        new StoreAccess( snapshot, pageCacheRule.getPageCache( snapshot, new Config() ), storeDir.getPath() ).close();
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
     }
     

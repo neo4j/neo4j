@@ -25,6 +25,7 @@ import java.util.Collection;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -33,7 +34,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
@@ -42,6 +42,7 @@ import org.neo4j.kernel.impl.nioneo.xa.PropertyRecordChange;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 
@@ -200,6 +201,8 @@ public class PropertyPhysicalToLogicalConverterTest
         return block;
     }
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private PropertyStore store;
     private final String longString = "my super looooooooooooooooooooooooooooooooooooooong striiiiiiiiiiiiiiiiiiiiiiing";
@@ -211,10 +214,11 @@ public class PropertyPhysicalToLogicalConverterTest
     public void before() throws Exception
     {
         Monitors monitors = new Monitors();
+        Config config = new Config();
         StoreFactory storeFactory = new StoreFactory(
-                new Config(),
+                config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory( monitors, new Config() ),
+                pageCacheRule.getPageCache( fs.get(), config ),
                 fs.get(),
                 StringLogger.DEV_NULL,
                 new DefaultTxHook(),
