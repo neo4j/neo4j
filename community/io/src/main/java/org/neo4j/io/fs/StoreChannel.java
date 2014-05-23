@@ -56,6 +56,9 @@ public interface StoreChannel
 
     MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException;
 
+    /**
+     * @see java.nio.channels.FileChannel#read(java.nio.ByteBuffer, long)
+     */
     int read( ByteBuffer dst, long position ) throws IOException;
 
     void force( boolean metaData ) throws IOException;
