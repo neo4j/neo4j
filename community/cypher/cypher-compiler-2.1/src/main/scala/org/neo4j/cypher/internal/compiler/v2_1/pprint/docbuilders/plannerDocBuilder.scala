@@ -83,6 +83,7 @@ case object plannerDocBuilder extends DocBuilderChain[Any] {
       queryProjectionDocBuilder("WITH"),
       queryGraphDocBuilder,
       queryGraphDocBuilder,
+      logicalPlanDocBuilder,
       plannerQueryDocBuilder
     )
 }

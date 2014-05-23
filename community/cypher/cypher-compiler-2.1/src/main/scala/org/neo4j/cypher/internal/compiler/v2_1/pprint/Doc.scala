@@ -40,6 +40,8 @@ sealed abstract class Doc {
   def :/:(hd: Doc): Doc = cons(hd, cons(breakHere, this))
   def :?:(hd: Doc): Doc = replaceNil(hd, this)
   def :+:(hd: Doc): Doc = appendWithBreak(hd, this)
+
+  def toOption: Option[Doc] = Some(this)
 }
 
 object Doc {
@@ -100,7 +102,9 @@ object Doc {
 
   // helper
 
-  def list(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil)(cons)
+  implicit def opt(optDoc: Option[Doc]) = optDoc.getOrElse(NilDoc)
+
+  implicit def list(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil)(cons)
 
   def breakList(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil) {
     case (hd, NilDoc) => hd :: nil
@@ -125,14 +129,17 @@ object Doc {
       breakBefore(close)
     )
 
-  def section(start: String, inner: Doc): Doc = inner match {
+  def section(start: Doc, inner: Doc): Doc = inner match {
     case NilDoc => nil
     case _      => group(start :/: nest(inner))
   }
 }
 
 final case class ConsDoc(head: Doc, tail: Doc = NilDoc) extends Doc
-case object NilDoc extends Doc
+
+case object NilDoc extends Doc {
+  override def toOption = None
+}
 
 sealed abstract class ValueDoc extends Doc {
   def value: String
