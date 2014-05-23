@@ -20,6 +20,9 @@
 package org.neo4j.helpers;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
+import java.lang.management.OperatingSystemMXBean;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -27,10 +30,13 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Pattern;
 
+import org.neo4j.function.Function;
+import org.neo4j.function.Function2;
+import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.configuration.Config;
 
 /**
  * Create settings for configurations in Neo4j. See {@link org.neo4j.graphdb.factory.GraphDatabaseSettings} for example.
@@ -359,6 +365,100 @@ public final class Settings
         public String toString()
         {
             return "a byte size";
+        }
+    };
+
+    /**
+     * Behaves the same as BYTES, but augments the available settings by also adding the ability to specifify memory
+     * usage as a percentage of available RAM.
+     */
+    public static class MemoryUsage implements Function<String, Long>
+    {
+        private final long totalRAM;
+        private final long freeRAM;
+
+        public static MemoryUsage memoryUsage()
+        {
+            return new MemoryUsage(totalPhysicalMemory(), totalFreeMemory() );
+        }
+
+        private static long totalPhysicalMemory()
+        {
+            long memorySize = callSunOSBeanMethod( "getTotalPhysicalMemorySize" );
+            if(memorySize == -1)
+            {
+                // Unable to figure out system memory. Default to 2x the amount assigned to the JVM
+                return Runtime.getRuntime().maxMemory() * 2;
+            }
+            return memorySize;
+        }
+
+        private static long totalFreeMemory()
+        {
+            long memorySize = callSunOSBeanMethod( "getFreePhysicalMemorySize" );
+            if(memorySize == -1)
+            {
+                // Unable to figure out system memory. Default to the amount assigned to the JVM
+                return Runtime.getRuntime().maxMemory();
+            }
+            return memorySize;
+        }
+
+        private static long callSunOSBeanMethod(String methodName)
+        {
+            OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
+            long mem;
+            try
+            {
+                Class<?> beanClass =
+                        Thread.currentThread().getContextClassLoader()
+                                .loadClass( "com.sun.management.OperatingSystemMXBean" );
+                Method method = beanClass.getMethod( methodName );
+                mem = (Long) method.invoke( osBean );
+            }
+            catch ( Exception | LinkageError e )
+            {
+                // ok we tried but probably 1.5 JVM or other class library implementation
+                mem = -1; // Be explicit about how this error is handled.
+            }
+            return mem;
+        }
+
+        public MemoryUsage( long totalRAM, long freeRAM )
+        {
+            this.totalRAM = totalRAM;
+            this.freeRAM = freeRAM;
+        }
+
+        @Override
+        public Long apply( String value )
+        {
+            if(value.contains( "%" ))
+            {
+                try
+                {
+                    String digitsOnly = value.replace( "%", "" ).trim();
+                    double percentage = Double.parseDouble( digitsOnly ) / 100;
+
+                    if ( percentage > 0 && percentage <= 1 )
+                    {
+                        return Math.round( Math.min( percentage * totalRAM, freeRAM ) );
+                    }
+                }
+                catch(NumberFormatException e)
+                {
+                    // Just drop to the line below where we throw.
+                }
+
+                throw new IllegalArgumentException( "Invalid memory fraction, expected a value between 0.0% and 100.0%." );
+            }
+            return BYTES.apply( value );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "a byte size or a percentage of the total RAM available in the system, for instance '25%'";
         }
     };
 

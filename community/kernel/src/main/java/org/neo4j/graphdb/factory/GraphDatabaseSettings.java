@@ -38,6 +38,7 @@ import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Settings.MemoryUsage.memoryUsage;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.STRING;
@@ -177,10 +178,10 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> use_memory_mapped_buffers = setting( "use_memory_mapped_buffers", BOOLEAN, Boolean.toString(!Settings.osIsWindows()));
 
     @Description("Target size for pages of mapped memory.")
-    public static final Setting<Long> mapped_memory_page_size = setting("mapped_memory_page_size", BYTES, "1M" );
+    public static final Setting<Long> mapped_memory_page_size = setting("mapped_memory_page_size", BYTES, "8192" );
 
-    @Description("The size to allocate for a memory mapping pool to be shared between all stores.")
-    public static final Setting<Long> all_stores_total_mapped_memory_size = setting("all_stores_total_mapped_memory_size", BYTES, "500M" );
+    @Description("The size to allocate for the memory mapping pool used by the database. Defaults to a low value, you will want to change this to a higher value if your database is running on a dedicated machine.")
+    public static final Setting<Long> all_stores_total_mapped_memory_size = setting("all_stores_total_mapped_memory_size", memoryUsage(), "5%" );
 
     @Description("Tell Neo4j to regularly log memory mapping statistics.")
     public static final Setting<Boolean> log_mapped_memory_stats = setting("log_mapped_memory_stats", BOOLEAN, FALSE );
