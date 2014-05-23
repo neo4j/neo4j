@@ -72,6 +72,13 @@ import static org.neo4j.cluster.com.NetworkReceiver.CLUSTER_SCHEME;
 public class NetworkSender
         implements MessageSender, Lifecycle
 {
+    public interface Monitor
+    {
+        void queuedMessage( Message message );
+
+        void sentMessage( Message message );
+    }
+
     public interface Configuration
     {
         int defaultPort(); // This is the default port to try to connect to
@@ -95,6 +102,7 @@ public class NetworkSender
     // connections to
     private ClientBootstrap clientBootstrap;
 
+    private final Monitor monitor;
     private Configuration config;
     private final NetworkReceiver receiver;
     private StringLogger msgLog;
@@ -103,8 +111,9 @@ public class NetworkSender
     private Map<URI, Channel> connections = new ConcurrentHashMap<URI, Channel>();
     private Iterable<NetworkChannelsListener> listeners = Listeners.newListeners();
 
-    public NetworkSender( Configuration config, NetworkReceiver receiver, Logging logging )
+    public NetworkSender( Monitor monitor, Configuration config, NetworkReceiver receiver, Logging logging )
     {
+        this.monitor = monitor;
         this.config = config;
         this.receiver = receiver;
         this.msgLog = logging.getMessagesLog( getClass() );
@@ -216,6 +225,8 @@ public class NetworkSender
 
     private synchronized void send( final Message message )
     {
+        monitor.queuedMessage( message );
+
         final URI to = URI.create( message.getHeader( Message.TO ) );
 
         ExecutorService senderExecutor = senderExecutors.get( to );
@@ -269,6 +280,8 @@ public class NetworkSender
                         @Override
                         public void operationComplete( ChannelFuture future ) throws Exception
                         {
+                            monitor.sentMessage( message );
+
                             if ( !future.isSuccess() )
                             {
                                 msgLog.debug( "Unable to write " + message + " to " + future.getChannel(),
@@ -352,7 +365,8 @@ public class NetworkSender
 
     private Channel openChannel( URI clusterUri )
     {
-        // TODO refactor the creation of InetSocketAddress'es into HostnamePort, so we can be rid of this defaultPort method and simplify code a couple of places
+        // TODO refactor the creation of InetSocketAddress'es into HostnamePort, so we can be rid of this defaultPort
+        // method and simplify code a couple of places
         SocketAddress address = new InetSocketAddress( clusterUri.getHost(), clusterUri.getPort() == -1 ? config
                 .defaultPort() : clusterUri.getPort() );
 
@@ -422,7 +436,7 @@ public class NetworkSender
         public void exceptionCaught( ChannelHandlerContext ctx, ExceptionEvent e ) throws Exception
         {
             Throwable cause = e.getCause();
-            if ( ! ( cause instanceof ConnectException || cause instanceof RejectedExecutionException ) )
+            if ( !(cause instanceof ConnectException || cause instanceof RejectedExecutionException) )
             {
                 msgLog.error( "Receive exception:", cause );
             }

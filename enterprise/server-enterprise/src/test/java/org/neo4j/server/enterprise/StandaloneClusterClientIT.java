@@ -46,6 +46,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.enterprise.functional.DumpPortListenerOnNettyBindFailure;
 import org.neo4j.test.InputStreamAwaiter;
@@ -84,7 +85,8 @@ public class StandaloneClusterClientIT
                 // Arguments
                 stringMap(
                         initial_hosts.name(), ":5001",
-                        server_id.name(), "3" ) );
+                        server_id.name(), "3" )
+        );
     }
 
     @Test
@@ -97,7 +99,8 @@ public class StandaloneClusterClientIT
                 // Arguments
                 stringMap(
                         initial_hosts.name(), ":5011",
-                        server_id.name(), "3" ) );
+                        server_id.name(), "3" )
+        );
     }
 
     @Test
@@ -130,7 +133,8 @@ public class StandaloneClusterClientIT
                 // Arguments
                 stringMap(
                         initial_hosts.name(), ":5001",
-                        server_id.name(), "3" ) );
+                        server_id.name(), "3" )
+        );
     }
 
     @Test
@@ -143,7 +147,8 @@ public class StandaloneClusterClientIT
                 stringMap(
                         initial_hosts.name(), ":5001",
                         server_id.name(), "3",
-                        cluster_server.name(), ":5010" ) );
+                        cluster_server.name(), ":5010" )
+        );
     }
 
     @Test
@@ -155,7 +160,8 @@ public class StandaloneClusterClientIT
                         initial_hosts.name(), ":5001",
                         cluster_server.name(), ":5012-5020" ),
                 // Arguments
-                stringMap( server_id.name(), "3" ) );
+                stringMap( server_id.name(), "3" )
+        );
     }
 
     // === Everything else ===
@@ -182,7 +188,7 @@ public class StandaloneClusterClientIT
             config.put( initial_hosts.name(), ":5001" );
             Logging logging = new DevNullLoggingService();
             ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-            final ClusterClient client = new ClusterClient( adapt( new Config( config ) ), logging,
+            final ClusterClient client = new ClusterClient( new Monitors(), adapt( new Config( config ) ), logging,
                     new ServerIdElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory );
             final CountDownLatch latch = new CountDownLatch( 1 );
             client.addClusterListener( new ClusterListener.Adapter()

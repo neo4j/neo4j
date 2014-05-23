@@ -41,6 +41,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * TODO
@@ -50,18 +51,21 @@ public class NetworkedServerFactory
     private LifeSupport life;
     private ProtocolServerFactory protocolServerFactory;
     private TimeoutStrategy timeoutStrategy;
+    private Monitors monitors;
     private Logging logging;
     private ObjectInputStreamFactory objectInputStreamFactory;
     private ObjectOutputStreamFactory objectOutputStreamFactory;
 
     public NetworkedServerFactory( LifeSupport life, ProtocolServerFactory protocolServerFactory,
-                                   TimeoutStrategy timeoutStrategy, Logging logging,
+                                   TimeoutStrategy timeoutStrategy,
+                                   Monitors monitors, Logging logging,
                                    ObjectInputStreamFactory objectInputStreamFactory,
                                    ObjectOutputStreamFactory objectOutputStreamFactory )
     {
         this.life = life;
         this.protocolServerFactory = protocolServerFactory;
         this.timeoutStrategy = timeoutStrategy;
+        this.monitors = monitors;
         this.logging = logging;
         this.objectInputStreamFactory = objectInputStreamFactory;
         this.objectOutputStreamFactory = objectOutputStreamFactory;
@@ -70,13 +74,15 @@ public class NetworkedServerFactory
     public ProtocolServer newNetworkedServer( final Config config, AcceptorInstanceStore acceptorInstanceStore,
                                               ElectionCredentialsProvider electionCredentialsProvider )
     {
-        final NetworkReceiver receiver = new NetworkReceiver(new NetworkReceiver.Configuration()
+        final NetworkReceiver receiver = new NetworkReceiver( monitors.newMonitor( NetworkReceiver.Monitor.class ),
+                new NetworkReceiver.Configuration()
         {
             @Override
             public HostnamePort clusterServer()
             {
                 return config.get( ClusterSettings.cluster_server );
             }
+
             @Override
             public int defaultPort()
             {
@@ -88,9 +94,10 @@ public class NetworkedServerFactory
             {
                 return null;
             }
-        }, logging);
+        }, logging );
 
-        final NetworkSender sender = new NetworkSender(new NetworkSender.Configuration()
+        final NetworkSender sender = new NetworkSender( monitors.newMonitor( NetworkSender.Monitor.class ),
+                new NetworkSender.Configuration()
         {
             @Override
             public int defaultPort()
@@ -103,7 +110,7 @@ public class NetworkedServerFactory
             {
                 return config.get( ClusterSettings.cluster_server ).getPort();
             }
-        }, receiver, logging);
+        }, receiver, logging );
 
         ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
         {
@@ -126,7 +133,7 @@ public class NetworkedServerFactory
             public void listeningAt( URI me )
             {
                 protocolServer.listeningAt( me );
-                if (logger == null)
+                if ( logger == null )
                 {
                     logger = new StateTransitionLogger( logging );
                     protocolServer.addStateTransitionListener( logger );

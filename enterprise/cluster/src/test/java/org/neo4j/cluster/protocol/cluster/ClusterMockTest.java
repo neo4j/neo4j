@@ -19,10 +19,6 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -41,8 +37,9 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.After;
 import org.junit.Rule;
-import org.neo4j.cluster.InstanceId;
+
 import org.neo4j.cluster.FixedNetworkLatencyStrategy;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultipleFailureLatencyStrategy;
 import org.neo4j.cluster.NetworkMock;
 import org.neo4j.cluster.ScriptableNetworkFailureLatencyStrategy;
@@ -62,7 +59,12 @@ import org.neo4j.cluster.statemachine.State;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.LoggerRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Base class for cluster tests
@@ -72,11 +74,12 @@ public class ClusterMockTest
 
     public static NetworkMock DEFAULT_NETWORK()
     {
-        return new NetworkMock( 10,
+        return new NetworkMock( new Monitors(), 10,
                 new MultipleFailureLatencyStrategy( new FixedNetworkLatencyStrategy( 10 ),
                         new ScriptableNetworkFailureLatencyStrategy() ),
                 new MessageTimeoutStrategy( new FixedTimeoutStrategy( 500 ) )
-                        .timeout( HeartbeatMessage.sendHeartbeat, 200 ) );
+                        .timeout( HeartbeatMessage.sendHeartbeat, 200 )
+        );
     }
 
     List<TestProtocolServer> servers = new ArrayList<TestProtocolServer>();
@@ -118,7 +121,8 @@ public class ClusterMockTest
         testCluster( serverIds, null, mock, script );
     }
 
-    protected void testCluster( int[] serverIds, VerifyInstanceConfiguration[] finalConfig, NetworkMock mock, ClusterTestScript script )
+    protected void testCluster( int[] serverIds, VerifyInstanceConfiguration[] finalConfig, NetworkMock mock,
+                                ClusterTestScript script )
             throws ExecutionException, InterruptedException, URISyntaxException, TimeoutException
     {
         this.script = script;
@@ -152,7 +156,8 @@ public class ClusterMockTest
             } );
             server.newClient( AtomicBroadcast.class ).addAtomicBroadcastListener( new AtomicBroadcastListener()
             {
-                AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer(new ObjectStreamFactory(), new ObjectStreamFactory());
+                AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer( new ObjectStreamFactory(),
+                        new ObjectStreamFactory() );
 
                 @Override
                 public void receive( Payload value )
@@ -259,7 +264,8 @@ public class ClusterMockTest
             public void unelected( String role, InstanceId instanceId, URI electedMember )
             {
                 logger.getLogger().debug(
-                        uri + " sees an unelection: " + instanceId + " removed from " + role + " at URI " + electedMember );
+                        uri + " sees an unelection: " + instanceId + " removed from " + role + " at URI " +
+                                electedMember );
             }
         } );
     }
@@ -365,7 +371,8 @@ public class ClusterMockTest
             }
         }
 
-        assertEquals( description + ": In:" + in + ", Out:" + out, protocolServers.size(), Iterables.count( Iterables.<Cluster,
+        assertEquals( description + ": In:" + in + ", Out:" + out, protocolServers.size(),
+                Iterables.count( Iterables.<Cluster,
                 List<Cluster>>flatten( in, out ) ) );
 
 
@@ -402,7 +409,8 @@ public class ClusterMockTest
         {
             assertEquals( "Config for server" + myId + " is wrong", new HashSet<URI>( members ),
                     new HashSet<URI>( clusterConfiguration
-                            .getMemberURIs() ) );
+                            .getMemberURIs() )
+            );
         }
         catch ( AssertionError e )
         {
@@ -445,7 +453,8 @@ public class ClusterMockTest
         }
 
         private final Queue<ClusterAction> actions = new LinkedList<ClusterAction>();
-        private final AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer(new ObjectStreamFactory(), new ObjectStreamFactory());
+        private final AtomicBroadcastSerializer serializer = new AtomicBroadcastSerializer( new ObjectStreamFactory()
+                , new ObjectStreamFactory() );
 
         private int rounds = 100;
         private long now = 0;
@@ -533,7 +542,8 @@ public class ClusterMockTest
                                         {
                                             logger.getLogger().debug(
                                                     "**** Node " + joinServer + " could not join cluster:" + e
-                                                            .getMessage() );
+                                                            .getMessage()
+                                            );
                                             if ( !(e.getCause() instanceof IllegalStateException) )
                                             {
                                                 cluster.create( "default" );
@@ -586,7 +596,7 @@ public class ClusterMockTest
                 {
                     Cluster server = servers.get( serverDown - 1 ).newClient( Cluster.class );
                     network.getNetworkLatencyStrategy().getStrategy( ScriptableNetworkFailureLatencyStrategy.class )
-                            .nodeIsDown( "server"+server.toString() );
+                            .nodeIsDown( "server" + server.toString() );
                     logger.getLogger().debug( server + " is down" );
                 }
             }, time );
@@ -602,7 +612,7 @@ public class ClusterMockTest
                     Cluster server = servers.get( serverUp - 1 ).newClient( Cluster.class );
                     network.getNetworkLatencyStrategy()
                             .getStrategy( ScriptableNetworkFailureLatencyStrategy.class )
-                            .nodeIsUp( "server"+server.toString() );
+                            .nodeIsUp( "server" + server.toString() );
                     logger.getLogger().debug( server + " is up" );
                 }
             }, time );

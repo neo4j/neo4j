@@ -66,10 +66,12 @@ public class HeartbeatIAmAliveProcessor implements MessageProcessor
                 if ( theId != null && clusterContext.getConfiguration().getMembers().containsKey( theId )
                         && !clusterContext.isMe( theId ) )
                 {
-                    output.offer( message.copyHeadersTo(
+                    Message<HeartbeatMessage> heartbeatMessage = message.copyHeadersTo(
                             Message.internal( HeartbeatMessage.i_am_alive,
                                     new HeartbeatMessage.IAmAliveState( theId ) ),
-                            Message.FROM, Message.INSTANCE_ID ) );
+                            Message.FROM, Message.INSTANCE_ID
+                    );
+                    output.offer( heartbeatMessage );
                 }
             }
         }
