@@ -40,7 +40,6 @@ import org.neo4j.kernel.info.WaitingThread;
 
 import static java.lang.Thread.currentThread;
 import static java.lang.Thread.interrupted;
-
 import static org.neo4j.kernel.impl.transaction.LockType.READ;
 import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
 
@@ -214,10 +213,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         tle.readCount--;
         if ( tle.isFree() )
         {
-            if ( !this.isMarked() )
-            {
-                txLockElementMap.remove( tx );
-            }
+            txLockElementMap.remove( tx );
             ragManager.lockReleased( this, tx );
         }
         if ( waitingThreadList.size() > 0 )
@@ -380,10 +376,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         tle.writeCount--;
         if ( tle.isFree() )
         {
-            if ( !this.isMarked() )
-            {
-                txLockElementMap.remove( tx );
-            }
+            txLockElementMap.remove( tx );
             ragManager.lockReleased( this, tx );
         }
 
@@ -579,5 +572,10 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
             txLockElementMap.put( tx, tle = new TxLockElement( tx ) );
         }
         return tle;
+    }
+
+    synchronized int getTxLockElementCount()
+    {
+        return txLockElementMap.size();
     }
 }
