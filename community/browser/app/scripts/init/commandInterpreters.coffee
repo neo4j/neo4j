@@ -256,8 +256,8 @@ angular.module('neo4jApp')
       templateUrl: 'views/frame-cypher.html'
       exec: ['Cypher', 'GraphModel', (Cypher, GraphModel) ->
         # Return the function that handles the input
-        (input, q) ->
-          Cypher.transaction().commit(input).then(
+        (input, q, timeout) ->
+          Cypher.transaction(timeout).commit(input).then(
             (response) ->
               if response.size > Settings.maxRows
                 q.reject(error("Resultset too large (over #{Settings.maxRows} rows)"))

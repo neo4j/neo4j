@@ -25,7 +25,8 @@ angular.module('neo4jApp.services')
     '$q'
     '$rootScope'
     'Server'
-    ($q, $rootScope, Server) ->
+    'Settings'
+    ($q, $rootScope, Server, Settings) ->
       parseId = (resource = "") ->
         id = resource.split('/').slice(-2, -1)
         return parseInt(id, 10)
@@ -95,7 +96,10 @@ angular.module('neo4jApp.services')
         q.promise
 
       class CypherTransaction
-        constructor: () ->
+
+        timeout: null
+
+        constructor: (@timeout = Settings.maxExecutionTime) ->
           @_reset()
 
         _onSuccess: () ->
@@ -128,6 +132,9 @@ angular.module('neo4jApp.services')
             statements: [
               statement: query
             ]
+            , {
+              timeout: @timeout
+            }
           ))
 
         commit: (query) ->
@@ -148,6 +155,7 @@ angular.module('neo4jApp.services')
             promiseResult(Server.transaction(
               path: "/commit"
               statements: statements
+              timeout: @timeout
             ))
 
         # FIXME: What is wrong?
@@ -170,8 +178,8 @@ angular.module('neo4jApp.services')
         send: (query) -> # Deprecated
           @transaction().commit(query)
 
-        transaction: ->
-          new CypherTransaction()
+        transaction: (timeout = Settings.maxExecutionTime) ->
+          new CypherTransaction(timeout)
 
       window.Cypher = new CypherService()
 ]

@@ -24,8 +24,9 @@ angular.module('neo4jApp.services')
   .factory 'Server', [
     '$http'
     '$q'
+    '$timeout'
     'Settings'
-    ($http, $q, Settings) ->
+    ($http, $q, $timeout, Settings) ->
 
       # http://docs.angularjs.org/api/ng.$http
       httpOptions =
@@ -49,6 +50,16 @@ angular.module('neo4jApp.services')
       class Server
         constructor: ->
 
+        requestTimeout: () ->
+
+          deferred = $q.defer()
+
+          $timeout( ->
+            deferred.resolve(); 
+          , Settings.maxExecutionTime)
+
+          deferred
+
         #
         # Basic HTTP methods
         #
@@ -70,9 +81,9 @@ angular.module('neo4jApp.services')
           path = Settings.host + path unless path.indexOf(Settings.host) is 0
           $http.get(path, options or httpOptions)
 
-        post: (path = '', data) ->
+        post: (path = '', data, options) ->
           path = Settings.host + path unless path.indexOf(Settings.host) is 0
-          $http.post(path, data, httpOptions)
+          $http.post(path, data, options or httpOptions)
 
         put: (path = '', data) ->
           path = Settings.host + path unless path.indexOf(Settings.host) is 0
@@ -80,17 +91,18 @@ angular.module('neo4jApp.services')
 
         transaction: (opts) ->
           opts = angular.extend(
-            path: '',
-            statements: [],
+            path: ''
+            statements: []
             method: 'post'
+            timeout: Settings.maxExecutionTime
           , opts)
-          {path, statements, method} = opts
+          {path, statements, method, timeout} = opts
           path = Settings.endpoint.transaction + path
           method = method.toLowerCase()
           for s in statements
             s.resultDataContents = ['row','graph']
             s.includeStats = true
-          @[method]?(path, {statements: statements})
+          @[method]?(path, {statements: statements}, {timeout: timeout})
 
         #
         # Convenience methods
@@ -102,7 +114,7 @@ angular.module('neo4jApp.services')
 
         # one-shot cypher queries
         cypher: (path = '', data) ->
-          @post("#{Settings.endpoint.cypher}" + path, data)
+          @post("#{Settings.endpoint.cypher}" + path, data, {timeout: @requestTimeout().promise })
 
         # JMX queries
         jmx: (query) ->

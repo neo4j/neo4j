@@ -53,4 +53,5 @@ angular.module('neo4jApp.utils', [])
 
     firstWord: (input) ->
       input.split(/\n| /)[0] 
+      
   ])
