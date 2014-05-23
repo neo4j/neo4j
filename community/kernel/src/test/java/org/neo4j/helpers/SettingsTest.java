@@ -288,12 +288,12 @@ public class SettingsTest
     public void testMemoryUse() throws Exception
     {
         // Given
-        Setting<Long> memUse = setting("mySetting", new Settings.DirectMemoryUsage( 1024, 800 ), "5%");
+        Setting<Long> memUse = setting("mySetting", new Settings.DirectMemoryUsage( 1024, 100 ), "5%");
 
         // When && Then
         assertThat(memUse.apply( Functions.<String, String>constant( null )),  equalTo(51l));
-        assertThat(memUse.apply( Functions.<String, String>constant( "35M" )), equalTo(36700160l));
-        assertThat(memUse.apply( Functions.<String, String>constant( "85%" )), equalTo(800l));
+        assertThat(memUse.apply( Functions.<String, String>constant( "35M" )), equalTo(95l));
+        assertThat(memUse.apply( Functions.<String, String>constant( "85%" )), equalTo(95l));
 
         try
         {

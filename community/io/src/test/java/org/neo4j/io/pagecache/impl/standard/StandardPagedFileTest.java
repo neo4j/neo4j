@@ -35,7 +35,7 @@ public class StandardPagedFileTest
     private final PageTable table = mock(PageTable.class);
     private final PinnablePage page = mock( PinnablePage.class );
     private final StoreChannel channel = mock( StoreChannel.class);
-    private final StandardPageIO io = new StandardPageIO( channel, 512, null );
+    private final StandardPageIO io = new StandardPageIO( null, channel, 512, null );
 
     @Test
     public void shouldLoadPage() throws Exception
@@ -44,7 +44,7 @@ public class StandardPagedFileTest
         when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
         when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
 
-        StandardPagedFile file = new StandardPagedFile(table, channel, 512);
+        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512);
 
         // When
         file.pin( cursor, PageLock.SHARED, 12 );
@@ -61,7 +61,7 @@ public class StandardPagedFileTest
         when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
         when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
 
-        StandardPagedFile file = new StandardPagedFile(table, channel, 512);
+        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512);
 
         // When
         file.pin( cursor, PageLock.SHARED, 12 );

@@ -25,6 +25,7 @@ import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Test;
@@ -73,6 +74,15 @@ public class TestRelationshipGroupStore
         neostoreFileName = new File( directory, "neostore" ).getAbsolutePath();
         fs = new DefaultFileSystemAbstraction();
         defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
+    }
+
+    @After
+    public void after()
+    {
+        if(db != null)
+        {
+            db.shutdown();
+        }
     }
 
     @Test

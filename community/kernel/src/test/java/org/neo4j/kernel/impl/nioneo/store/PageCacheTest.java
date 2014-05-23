@@ -55,7 +55,7 @@ public class PageCacheTest
         PageCache cache = newPageCache();
 
         // When
-        PagedFile mappedFile = cache.map( storeFile, 16 );
+        PagedFile mappedFile = cache.map( storeFile, 512 );
 
         // Then I should be able to write to the file
         PageCursor cursor = cache.newCursor();
@@ -185,6 +185,6 @@ public class PageCacheTest
     private StandardPageCache newPageCache() throws IOException
     {
         EphemeralFileSystemAbstraction fs = fsRule.get();
-        return new StandardPageCache( fs, 64, 16 );
+        return new StandardPageCache( fs, 64, 512 );
     }
 }

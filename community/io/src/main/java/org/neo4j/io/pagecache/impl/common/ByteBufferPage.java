@@ -24,7 +24,7 @@ import java.nio.ByteBuffer;
 /** A page backed by a simple byte buffer. */
 public class ByteBufferPage implements Page
 {
-    protected final ByteBuffer buffer;
+    protected ByteBuffer buffer;
 
     public ByteBufferPage( ByteBuffer buffer )
     {

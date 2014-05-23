@@ -243,6 +243,8 @@ public class LabelsAcceptanceTest
         {
             tx.finish();
         }
+
+        beansAPI.shutdown();
     }
 
     @Test

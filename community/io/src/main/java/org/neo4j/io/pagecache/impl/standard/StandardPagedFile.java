@@ -19,6 +19,7 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
+import java.io.File;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
@@ -47,17 +48,17 @@ public class StandardPagedFile implements PagedFile
 
     /**
      * @param table
+     * @param file
      * @param channel
      * @param filePageSize is the page size used by this file, NOT the page size used by
-     *                     the cache. This value is always smaller than the page size used
-     *                     by the cache. The remaining space in the page cache buffers are
-     *                     unused.
+ *                     the cache. This value is always smaller than the page size used
+ *                     by the cache. The remaining space in the page cache buffers are
      */
-    public StandardPagedFile( PageTable table, StoreChannel channel, int filePageSize )
+    public StandardPagedFile( PageTable table, File file, StoreChannel channel, int filePageSize )
     {
         this.table = table;
         this.filePageSize = filePageSize;
-        this.pageIO = new StandardPageIO(channel, filePageSize, new RemoveEvictedPage(filePages));
+        this.pageIO = new StandardPageIO(file, channel, filePageSize, new RemoveEvictedPage(filePages));
     }
 
     @Override

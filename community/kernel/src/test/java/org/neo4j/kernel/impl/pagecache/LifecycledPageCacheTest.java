@@ -42,7 +42,7 @@ public class LifecycledPageCacheTest
     {
         // Given
         Config config = new Config();
-        config.with( stringMap(
+        config.applyChanges( stringMap(
                 mapped_memory_page_size.name(),             "4096",
                 all_stores_total_mapped_memory_size.name(), Integer.toString(4096 * 16) ) );
 

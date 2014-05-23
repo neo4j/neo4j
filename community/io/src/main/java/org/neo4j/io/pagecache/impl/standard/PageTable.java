@@ -56,6 +56,8 @@ public interface PageTable
          * outside the page table.
          */
         void evicted( long pageId );
+
+        String fileName();
     }
 
     interface PinnablePage extends Page

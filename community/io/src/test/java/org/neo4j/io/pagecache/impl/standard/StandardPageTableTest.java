@@ -47,7 +47,7 @@ public class StandardPageTableTest
     @Before
     public void startPageTable()
     {
-        table = new ClockSweepPageTable( 1, 1024 );
+        table = new ClockSweepPageTable( 1, 1024, StandardPageCache.NO_MONITOR );
         sweeperThread = new Thread( table );
         sweeperThread.start();
     }
@@ -165,7 +165,7 @@ public class StandardPageTableTest
     public void loading_with_exclusive_lock_stops_all_others() throws Exception
     {
         // Given
-        ClockSweepPageTable table = new ClockSweepPageTable( 1, 1024 );
+        ClockSweepPageTable table = new ClockSweepPageTable( 1, 1024, StandardPageCache.NO_MONITOR );
         final BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( "expected".getBytes("UTF-8") ) );
 
         // When
@@ -305,6 +305,12 @@ public class StandardPageTableTest
         public void evicted( long pageId )
         {
 
+        }
+
+        @Override
+        public String fileName()
+        {
+            return buffer.toString();
         }
     }
 }

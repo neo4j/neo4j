@@ -43,7 +43,22 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     public LifecycledPageCache( FileSystemAbstraction fs, JobScheduler scheduler, Config config )
     {
         this.scheduler = scheduler;
-        this.pageCache = new StandardPageCache( fs, calculateMaxPages( config ), calculatePageSize( config ) );
+        this.pageCache = new StandardPageCache( fs, calculateMaxPages( config ), calculatePageSize( config ));
+//                new StandardPageCache.Monitor()
+//
+//        {
+//            @Override
+//            public void pageFault( long pageId, PageTable.PageIO io )
+//            {
+//                System.out.println("MISS [" + io.fileName() + "] " + pageId);
+//            }
+//
+//            @Override
+//            public void evict( long pageId, PageTable.PageIO io )
+//            {
+//                System.out.println("EVIC [" + io.fileName() + "] " + pageId);
+//            }
+//        } );
     }
 
     private static int calculateMaxPages( Config config )
