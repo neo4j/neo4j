@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SortItem, Expression}
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{Pretty, pformat}
 
-trait QueryProjection {
+trait QueryProjection extends Pretty {
   def projections: Map[String, Expression]
   def sortItems: Seq[SortItem]
   def limit: Option[Expression]
