@@ -83,7 +83,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.Store;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -695,12 +694,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     public boolean isReadOnly()
     {
         return readOnly;
-    }
-
-    public List<WindowPoolStats> getWindowPoolStats()
-    {
-        // TODO
-        return Collections.emptyList();
     }
 
     @Override

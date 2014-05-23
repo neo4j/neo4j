@@ -24,11 +24,11 @@ import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
-import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -37,7 +37,6 @@ import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -65,8 +64,6 @@ public class ConsistencyPerformanceCheck
     static final Setting<Boolean> generate_graph = booleanSetting( "generate_graph", false );
     static final Setting<String> report_file = stringSetting( "report_file", "target/report.json" );
     static final Setting<CheckerVersion> checker_version = enumSetting( "checker_version", CheckerVersion.NEW );
-    static final Setting<WindowPoolImplementation> window_pool_implementation =
-            enumSetting( "window_pool_implementation", WindowPoolImplementation.SCAN_RESISTANT );
     static final Setting<TaskExecutionOrder> execution_order =
             enumSetting( "execution_order", TaskExecutionOrder.SINGLE_THREADED );
     static final Setting<Boolean> wait_before_check = booleanSetting( "wait_before_check", false );
@@ -176,8 +173,6 @@ public class ConsistencyPerformanceCheck
                 param( GraphDatabaseSettings.store_dir, DataGenerator.store_dir ),
                 param( GraphDatabaseSettings.all_stores_total_mapped_memory_size, all_stores_total_mapped_memory_size ),
                 param( ConsistencyCheckSettings.consistency_check_execution_order, execution_order ),
-                param( ConsistencyCheckSettings.consistency_check_window_pool_implementation,
-                        window_pool_implementation ),
                 param( GraphDatabaseSettings.mapped_memory_page_size, mapped_memory_page_size ),
                 param( GraphDatabaseSettings.log_mapped_memory_stats, log_mapped_memory_stats ),
                 param( GraphDatabaseSettings.log_mapped_memory_stats_filename, log_mapped_memory_stats_filename ),

@@ -46,6 +46,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -66,9 +67,7 @@ import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -1206,7 +1205,6 @@ public class NeoStoreTransactionTest
     private Config config;
     @SuppressWarnings("deprecation")
     private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-    private final DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory( new Monitors(), config );
     private NeoStore neoStore;
     private LockService locks;
     private CacheAccessBackDoor cacheAccessBackDoor;
