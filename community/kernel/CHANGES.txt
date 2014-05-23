@@ -1,3 +1,8 @@
+2.1.0-RC2
+---------
+o Fixes issue where store upgrade could leave relationship ids to be reused by
+  subsequent usage of the database
+
 2.1.0-RC1
 ---------
 o The traversal framework can now take Iterable<Node> as starting points
