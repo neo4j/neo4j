@@ -31,11 +31,6 @@ class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
     format(ident("a")) should equal("a")
   }
 
-  test("Equals(left, right) => left = right") {
-    val expr: Expression = Equals(ident("a"), ident("b"))_
-    format(expr) should equal("a = b")
-  }
-
   test("Property(map, name) => map.name") {
     val expr: Expression = Property(ident("a"), PropertyKeyName("name")_)_
     format(expr) should equal("a.name")
@@ -49,5 +44,55 @@ class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
   test("HasLabel(n, Seq(LabelName(\"Label1\"), LabelName(\"Label2\"))) => n:Label1:Label2") {
     val expr: Expression = HasLabels(ident("a"), Seq(LabelName("Person")_, LabelName("PartyAnimal")_))_
     format(expr) should equal("a:Person:PartyAnimal")
+  }
+
+  test("Not(left) => NOT left") {
+    val expr: Expression = Not(ident("a"))_
+    format(expr) should equal("NOT a")
+  }
+
+  test("And(left, right) => left AND right") {
+    val expr: Expression = And(ident("a"), ident("b"))_
+    format(expr) should equal("a AND b")
+  }
+
+  test("Or(left, right) => left OR right") {
+    val expr: Expression = Or(ident("a"), ident("b"))_
+    format(expr) should equal("a OR b")
+  }
+
+  test("Xor(left, right) => left XOR right") {
+    val expr: Expression = Xor(ident("a"), ident("b"))_
+    format(expr) should equal("a XOR b")
+  }
+
+  test("Equals(left, right) => left = right") {
+    val expr: Expression = Equals(ident("a"), ident("b"))_
+    format(expr) should equal("a = b")
+  }
+
+  test("NotEquals(left, right) => left <> right") {
+    val expr: Expression = NotEquals(ident("a"), ident("b"))_
+    format(expr) should equal("a <> b")
+  }
+
+  test("LessThan(left, right) => left < right") {
+    val expr: Expression = LessThan(ident("a"), ident("b"))_
+    format(expr) should equal("a < b")
+  }
+
+  test("LessThanOrEqual(left, right) => left <= right") {
+    val expr: Expression = LessThanOrEqual(ident("a"), ident("b"))_
+    format(expr) should equal("a <= b")
+  }
+
+  test("GreaterThan(left, right) => left > right") {
+    val expr: Expression = GreaterThan(ident("a"), ident("b"))_
+    format(expr) should equal("a > b")
+  }
+
+  test("GreaterThanOrEqual(left, right) => left >= right") {
+    val expr: Expression = GreaterThanOrEqual(ident("a"), ident("b"))_
+    format(expr) should equal("a >= b")
   }
 }

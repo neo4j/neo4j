@@ -36,9 +36,6 @@ case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
     case Identifier(name) => (inner) =>
       text(name)
 
-    case Equals(left, right) => (inner) =>
-      inner(left) :/: "=" :/: inner(right)
-
     case Property(map, PropertyKeyName(name)) => (inner) =>
       inner(map) :: "." :: name
 
@@ -47,5 +44,35 @@ case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
 
     case HasLabels(expr, labels) => (inner) =>
       inner(expr) :: breakBeforeList(labels.map(inner))
+
+    case Not(expr) => (inner) =>
+      "NOT" :/: inner(expr)
+
+    case Xor(left, right) => (inner) =>
+      inner(left) :/: "XOR" :/: inner(right)
+
+    case Or(left, right) => (inner) =>
+      inner(left) :/: "OR" :/: inner(right)
+
+    case And(left, right) => (inner) =>
+      inner(left) :/: "AND" :/: inner(right)
+
+    case Equals(left, right) => (inner) =>
+      inner(left) :/: "=" :/: inner(right)
+
+    case NotEquals(left, right) => (inner) =>
+      inner(left) :/: "<>" :/: inner(right)
+
+    case LessThan(left, right) => (inner) =>
+      inner(left) :/: "<" :/: inner(right)
+
+    case LessThanOrEqual(left, right) => (inner) =>
+      inner(left) :/: "<=" :/: inner(right)
+
+    case GreaterThan(left, right) => (inner) =>
+      inner(left) :/: ">" :/: inner(right)
+
+    case GreaterThanOrEqual(left, right) => (inner) =>
+      inner(left) :/: ">=" :/: inner(right)
   }
 }
