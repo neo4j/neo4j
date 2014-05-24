@@ -20,7 +20,6 @@
 package org.neo4j.io.pagecache.impl.standard;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
@@ -41,18 +40,19 @@ public class ClockSweepPageTable implements PageTable, Runnable
     private final AtomicReference<StandardPinnablePage> freeList;
     private final StandardPinnablePage[] pages;
     private final int pageSize;
+    private final StandardPageCache.Monitor monitor;
     private volatile Thread sweeperThread;
 
-    public ClockSweepPageTable( int maxPages, int pageSize )
+    public ClockSweepPageTable( int maxPages, int pageSize, StandardPageCache.Monitor monitor )
     {
         this.pageSize = pageSize;
+        this.monitor = monitor;
         freeList = new AtomicReference<>();
         pages = new StandardPinnablePage[maxPages];
 
         for ( int i = 0; i < maxPages; i++ )
         {
-            StandardPinnablePage page = new StandardPinnablePage(
-                    ByteBuffer.allocateDirect( pageSize ) );
+            StandardPinnablePage page = new StandardPinnablePage( pageSize );
             pages[i] = page;
             page.next = freeList.get();
             freeList.compareAndSet( page.next, page );
@@ -66,6 +66,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
         page.reset( io, pageId );
         page.pin( io, pageId, lock );
         page.load();
+        monitor.pageFault( pageId, io );
         return page;
     }
 
@@ -206,12 +207,28 @@ public class ClockSweepPageTable implements PageTable, Runnable
         }
     }
 
+    private void evict( StandardPinnablePage page ) throws IOException
+    {
+        page.flush();
+        page.evicted();
+        page.reset( null, 0 );
+        page.loaded = false;
+        do {
+            page.next = freeList.get();
+        } while ( !freeList.compareAndSet( page.next, page ) );
+        monitor.evict( page.pageId(), page.io() );
+    }
+
     private int parkUntilEvictionRequired( int minLoadedPages )
     {
         int loadedPages;
         outerLoop: do
         {
             LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 5 ) );
+            if(Thread.currentThread().isInterrupted())
+            {
+                return 0;
+            }
 
             loadedPages = 0;
             for ( StandardPinnablePage page : pages )
@@ -228,17 +245,6 @@ public class ClockSweepPageTable implements PageTable, Runnable
             }
         } while( loadedPages <= minLoadedPages );
         return loadedPages;
-    }
-
-    private void evict( StandardPinnablePage page ) throws IOException
-    {
-        page.flush();
-        page.evicted();
-        page.reset( null, 0 );
-        page.loaded = false;
-        do {
-            page.next = freeList.get();
-        } while ( !freeList.compareAndSet( page.next, page ) );
     }
 
     @Override

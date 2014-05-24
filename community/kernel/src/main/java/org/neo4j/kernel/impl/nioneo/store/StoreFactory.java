@@ -216,7 +216,16 @@ public class StoreFactory
 
     public NeoStore createNeoStore(File fileName)
     {
-        return createNeoStore( fileName, new StoreId() );
+        NeoStore neoStore = createNeoStore( fileName, new StoreId() );
+        try
+        {
+            pageCache.flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        return neoStore;
     }
 
     private NeoStore createNeoStore( File fileName, StoreId storeId )

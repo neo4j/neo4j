@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport.store;
 
 import java.io.File;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultTxHook;
@@ -75,7 +76,8 @@ public class BatchFriendlyNeoStore implements AutoCloseable
 
         this.logger = logging.getMessagesLog( getClass() );
         this.neo4jConfig = configForStoreDir(
-                new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ) ),
+                new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ),
+                        GraphDatabaseSettings.class ),
                 new File( storeDir ) );
         Neo4jJobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
         pageCache = life.add( new LifecycledPageCache( fileSystem, jobScheduler, neo4jConfig ) );

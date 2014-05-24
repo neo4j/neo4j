@@ -21,7 +21,6 @@ package org.neo4j.helpers;
 
 import java.io.File;
 import java.lang.management.ManagementFactory;
-import java.lang.management.OperatingSystemMXBean;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -369,70 +368,65 @@ public final class Settings
     };
 
     /**
-     * Behaves the same as BYTES, but augments the available settings by also adding the ability to specifify memory
+     * Behaves the same as BYTES, but augments the available settings by also adding the ability to specify memory
      * usage as a percentage of available RAM.
      */
-    public static class MemoryUsage implements Function<String, Long>
+    public static class DirectMemoryUsage implements Function<String, Long>
     {
-        private final long totalRAM;
+        private final long availableRAM;
         private final long freeRAM;
 
-        public static MemoryUsage memoryUsage()
+        public static DirectMemoryUsage directMemoryUsage()
         {
-            return new MemoryUsage(totalPhysicalMemory(), totalFreeMemory() );
+            return new DirectMemoryUsage(Math.min( maxOffHeapMemory(), totalPhysicalMemory() ), totalFreeMemory() );
         }
 
         private static long totalPhysicalMemory()
         {
-            long memorySize = callSunOSBeanMethod( "getTotalPhysicalMemorySize" );
-            if(memorySize == -1)
-            {
-                // Unable to figure out system memory. Default to 2x the amount assigned to the JVM
-                return Runtime.getRuntime().maxMemory() * 2;
-            }
-            return memorySize;
+            return tryCalling( ManagementFactory.getOperatingSystemMXBean(),
+                    "com.sun.management.OperatingSystemMXBean",
+                    "getTotalPhysicalMemorySize",
+                    /*default=*/Runtime.getRuntime().maxMemory() * 2 );
         }
 
         private static long totalFreeMemory()
         {
-            long memorySize = callSunOSBeanMethod( "getFreePhysicalMemorySize" );
-            if(memorySize == -1)
-            {
-                // Unable to figure out system memory. Default to the amount assigned to the JVM
-                return Runtime.getRuntime().maxMemory();
-            }
-            return memorySize;
+            return tryCalling( ManagementFactory.getOperatingSystemMXBean(),
+                    "com.sun.management.OperatingSystemMXBean",
+                    "getFreePhysicalMemorySize",
+                    /*default=*/Runtime.getRuntime().maxMemory() );
         }
 
-        private static long callSunOSBeanMethod(String methodName)
+        private static long maxOffHeapMemory()
         {
-            OperatingSystemMXBean osBean = ManagementFactory.getOperatingSystemMXBean();
-            long mem;
+            return tryCalling( null, "sun.misc.VM", "maxDirectMemory", /*default=*/64 * 1024 * 1024 );
+        }
+
+        private static long tryCalling( Object baseObject, String fullClassName, String methodName, long fallbackValue )
+        {
             try
             {
-                Class<?> beanClass =
-                        Thread.currentThread().getContextClassLoader()
-                                .loadClass( "com.sun.management.OperatingSystemMXBean" );
+                Class<?> beanClass = Thread.currentThread().getContextClassLoader().loadClass( fullClassName );
                 Method method = beanClass.getMethod( methodName );
-                mem = (Long) method.invoke( osBean );
+                return (Long) method.invoke( baseObject );
             }
             catch ( Exception | LinkageError e )
             {
                 // ok we tried but probably 1.5 JVM or other class library implementation
-                mem = -1; // Be explicit about how this error is handled.
+                return fallbackValue;
             }
-            return mem;
         }
 
-        public MemoryUsage( long totalRAM, long freeRAM )
+        public DirectMemoryUsage( long totalRAM, long freeRAM )
         {
-            this.totalRAM = totalRAM;
+            this.availableRAM = totalRAM;
             this.freeRAM = freeRAM;
         }
 
         @Override
         public Long apply( String value )
         {
+            long bytes;
             if(value.contains( "%" ))
             {
                 try
@@ -442,23 +436,32 @@ public final class Settings
 
                     if ( percentage > 0 && percentage <= 1 )
                     {
-                        return Math.round( Math.min( percentage * totalRAM, freeRAM ) );
+                        bytes = (long) Math.min( percentage * availableRAM, freeRAM );
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException( "Invalid memory fraction, expected a value between 0.0% and 100.0%." );
                     }
                 }
                 catch(NumberFormatException e)
                 {
                     // Just drop to the line below where we throw.
+                    throw new IllegalArgumentException( "Invalid memory fraction, expected a value between 0.0% and 100.0%." );
                 }
 
-                throw new IllegalArgumentException( "Invalid memory fraction, expected a value between 0.0% and 100.0%." );
             }
-            return BYTES.apply( value );
+            else
+            {
+                bytes = BYTES.apply( value );
+            }
+
+            return Math.round(Math.min( bytes, freeRAM * 0.95 /* leave a wee bit for other allocations. */));
         }
 
         @Override
         public String toString()
         {
-            return "a byte size or a percentage of the total RAM available in the system, for instance '25%'";
+            return "a byte size or a percentage of the max direct memory or total RAM (whichever is smallest), for instance '25%'";
         }
     };
 

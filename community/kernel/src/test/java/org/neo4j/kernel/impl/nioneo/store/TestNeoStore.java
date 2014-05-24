@@ -52,6 +52,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -1250,11 +1251,12 @@ public class TestNeoStore
         new GraphDatabaseFactory().newEmbeddedDatabase( testDir.absolutePath() ).shutdown();
         Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
+        DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
         StoreFactory sf = new StoreFactory(
                 config,
                 new DefaultIdGeneratorFactory(),
-                pageCache,
-                new DefaultFileSystemAbstraction(),
+                new StandardPageCache( fileSystemAbstraction, 1014, 4096 ),
+                fileSystemAbstraction,
                 StringLogger.DEV_NULL,
                 null,
                 monitors );

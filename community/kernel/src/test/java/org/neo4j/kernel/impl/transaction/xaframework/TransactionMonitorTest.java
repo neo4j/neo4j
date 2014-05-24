@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -28,6 +26,8 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.*;
 
 public class TransactionMonitorTest
 {
@@ -48,6 +48,8 @@ public class TransactionMonitorTest
         assertEquals( 1, monitor.getCommitCount() );
         assertEquals( 0, monitor.getInjectOnePhaseCommitCount() );
         assertEquals( 0, monitor.getInjectTwoPhaseCommitCount() );
+
+        db.shutdown();
     }
 
     @Test
@@ -67,5 +69,7 @@ public class TransactionMonitorTest
         assertEquals( 0, monitor.getCommitCount() );
         assertEquals( 0, monitor.getInjectOnePhaseCommitCount() );
         assertEquals( 0, monitor.getInjectTwoPhaseCommitCount() );
+
+        db.shutdown();
     }
 }

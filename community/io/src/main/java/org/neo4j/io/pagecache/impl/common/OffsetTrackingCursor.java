@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.impl.common;
 
+import java.nio.BufferOverflowException;
+import java.nio.BufferUnderflowException;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.io.pagecache.PageCursor;
@@ -47,35 +49,65 @@ public class OffsetTrackingCursor implements PageCursor
 
     public byte getByte()
     {
-        byte value = page.getByte( currentOffset );
-        currentOffset += 1;
-        return value;
+        try
+        {
+            byte value = page.getByte( currentOffset );
+            currentOffset += 1;
+            return value;
+        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            throw outOfBoundsException( e );
+        }
     }
 
     public void putByte( byte value )
     {
-        page.putByte( value, currentOffset );
-        currentOffset += 1;
+        try
+        {
+            page.putByte( value, currentOffset );
+            currentOffset += 1;
+        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            throw outOfBoundsException( e );
+        }
     }
 
     public long getLong()
     {
-        long value = page.getLong( currentOffset );
-        currentOffset += 8;
-        return value;
+        try
+        {
+            long value = page.getLong( currentOffset );
+            currentOffset += 8;
+            return value;
+        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            throw outOfBoundsException( e );
+        }
     }
 
     public void putLong( long l )
     {
-        page.putLong( l, currentOffset );
-        currentOffset += 8;
+        try
+        {
+            page.putLong( l, currentOffset );
+            currentOffset += 8;
+        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            throw outOfBoundsException( e );
+        }
     }
 
     public int getInt()
     {
-        int value = page.getInt( currentOffset );
-        currentOffset += 4;
-        return value;
+        try
+        {
+            int value = page.getInt( currentOffset );
+            currentOffset += 4;
+            return value;
+        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            throw outOfBoundsException( e );
+        }
     }
 
     public long getUnsignedInt()
@@ -85,20 +117,38 @@ public class OffsetTrackingCursor implements PageCursor
 
     public void putInt( int i )
     {
-        page.putInt( i, currentOffset );
-        currentOffset += 4;
+        try
+        {
+            page.putInt( i, currentOffset );
+            currentOffset += 4;
+        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            throw outOfBoundsException( e );
+        }
     }
 
     public void getBytes( byte[] data )
     {
-        page.getBytes( data, currentOffset );
-        currentOffset += data.length;
+        try
+        {
+            page.getBytes( data, currentOffset );
+            currentOffset += data.length;
+        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            throw outOfBoundsException( e );
+        }
     }
 
     public void putBytes( byte[] data )
     {
-        page.putBytes( data, currentOffset );
-        currentOffset += data.length;
+        try
+        {
+            page.putBytes( data, currentOffset );
+            currentOffset += data.length;
+        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            throw outOfBoundsException( e );
+        }
     }
 
     public void setOffset( int offset )
@@ -109,16 +159,28 @@ public class OffsetTrackingCursor implements PageCursor
     @Override
     public short getShort()
     {
-        short value = page.getShort( currentOffset );
-        currentOffset += 2;
-        return value;
+        try
+        {
+            short value = page.getShort( currentOffset );
+            currentOffset += 2;
+            return value;
+        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            throw outOfBoundsException( e );
+        }
     }
 
     @Override
     public void putShort( short value )
     {
-        page.putShort( value, currentOffset );
-        currentOffset += 2;
+        try
+        {
+            page.putShort( value, currentOffset );
+            currentOffset += 2;
+        } catch(IndexOutOfBoundsException | BufferOverflowException | BufferUnderflowException e )
+        {
+            throw outOfBoundsException( e );
+        }
     }
 
     public int getOffset()
@@ -136,5 +198,19 @@ public class OffsetTrackingCursor implements PageCursor
     public Page getPage()
     {
         return page;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "OffsetTrackingCursor{" +
+                "currentOffset=" + currentOffset +
+                ", page=" + page +
+                '}';
+    }
+
+    private RuntimeException outOfBoundsException( RuntimeException e )
+    {
+        return new RuntimeException( "Failed to read or write to page: " + toString(), e );
     }
 }

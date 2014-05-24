@@ -217,7 +217,7 @@ public abstract class CommonAbstractStore implements IdSequence
             loadIdGenerator();
             try
             {
-                int filePageSize = (int) Math.floor(pageCache.pageSize() / getEffectiveRecordSize());
+                int filePageSize = pageCache.pageSize() - pageCache.pageSize() % getEffectiveRecordSize();
                 storeFile = pageCache.map( getStorageFileName(), filePageSize );
             }
             catch ( IOException e )

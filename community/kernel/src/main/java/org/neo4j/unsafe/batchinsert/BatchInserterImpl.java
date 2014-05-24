@@ -292,13 +292,7 @@ public class BatchInserterImpl implements BatchInserter
     private Map<String, String> getDefaultParams()
     {
         Map<String, String> params = new HashMap<>();
-        params.put( "neostore.nodestore.db.mapped_memory", "20M" );
-        params.put( "neostore.propertystore.db.mapped_memory", "90M" );
-        params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
-        params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
-        params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
+        params.put( GraphDatabaseSettings.all_stores_total_mapped_memory_size.name(), "1%" );
         return params;
     }
 

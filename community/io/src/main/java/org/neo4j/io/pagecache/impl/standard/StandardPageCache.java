@@ -35,14 +35,43 @@ import org.neo4j.io.pagecache.PagedFile;
  */
 public class StandardPageCache implements PageCache, Runnable
 {
+    public interface Monitor
+    {
+        /** A page not in the cache was loaded */
+        void pageFault( long pageId, PageTable.PageIO io );
+
+        /** A page was evicted. */
+        void evict( long pageId, PageTable.PageIO io );
+    }
+
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void pageFault( long pageId, PageTable.PageIO io )
+        {
+
+        }
+
+        @Override
+        public void evict( long pageId, PageTable.PageIO io )
+        {
+
+        }
+    };
+
     private final FileSystemAbstraction fs;
     private final Map<File, StandardPagedFile> pagedFiles = new HashMap<>();
     private final ClockSweepPageTable table;
 
     public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize )
     {
+        this(fs, maxPages, pageSize, NO_MONITOR );
+    }
+
+    public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize, Monitor monitor )
+    {
         this.fs = fs;
-        this.table = new ClockSweepPageTable( maxPages, pageSize );
+        this.table = new ClockSweepPageTable( maxPages, pageSize, monitor );
     }
 
     @Override
@@ -55,7 +84,7 @@ public class StandardPageCache implements PageCache, Runnable
         if ( pagedFile == null || !pagedFile.claimReference() )
         {
             StoreChannel channel = fs.open( file, "rw" );
-            pagedFile = new StandardPagedFile( table, channel, filePageSize );
+            pagedFile = new StandardPagedFile( table, file, channel, filePageSize );
             pagedFiles.put( file, pagedFile );
         }
 

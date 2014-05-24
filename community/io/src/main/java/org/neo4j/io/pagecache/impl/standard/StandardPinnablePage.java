@@ -39,10 +39,12 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
     private PageTable.PageIO io;
     private long pageId = -1;
     private boolean dirty;
+    private int pageSize;
 
-    public StandardPinnablePage( ByteBuffer buffer )
+    public StandardPinnablePage( int pageSize )
     {
-        super(buffer);
+        super(null);
+        this.pageSize = pageSize;
         dirty = false;
     }
 
@@ -116,6 +118,16 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
 
     public ByteBuffer buffer()
     {
+        if(buffer == null)
+        {
+            try
+            {
+                buffer = ByteBuffer.allocateDirect( pageSize );
+            } catch(OutOfMemoryError e)
+            {
+                buffer = ByteBuffer.allocate( pageSize );
+            }
+        }
         return buffer;
     }
 
@@ -142,7 +154,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
     {
         if ( dirty )
         {
-            buffer.position(0);
+            buffer().position(0);
             io.write( pageId, buffer );
             dirty = false;
         }
@@ -150,7 +162,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
 
     public void load() throws IOException
     {
-        buffer.position(0);
+        buffer().position(0);
         io.read( pageId, buffer );
         loaded = true;
     }
@@ -163,5 +175,28 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
     public boolean isBackedBy( PageTable.PageIO io )
     {
         return this.io != null && this.io.equals( io );
+    }
+
+    public PageTable.PageIO io()
+    {
+        return io;
+    }
+
+    public long pageId()
+    {
+        return pageId;
+    }
+
+    @Override
+    public String toString()
+    {
+        return "StandardPinnablePage{" +
+                "buffer=" + buffer +
+                ", io=" + io +
+                ", pageId=" + pageId +
+                ", dirty=" + dirty +
+                ", usageStamp=" + usageStamp +
+                ", loaded=" + loaded +
+                '}';
     }
 }
