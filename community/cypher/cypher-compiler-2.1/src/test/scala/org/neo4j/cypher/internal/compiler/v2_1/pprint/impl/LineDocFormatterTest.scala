@@ -39,7 +39,7 @@ class LineDocFormatterTest extends CypherFunSuite {
   }
 
   test("format BreakDoc") {
-    LineDocFormatter(breakHere) should equal(Seq(PrintText(" ")))
+    LineDocFormatter(break) should equal(Seq(PrintText(" ")))
   }
 
   test("format BreakWith") {

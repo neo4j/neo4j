@@ -41,8 +41,8 @@ class LineFitterTest extends CypherFunSuite {
   }
 
   test("fits breaks") {
-    LineFitter.fitsDoc(1, breakHere) should equal(true)
-    LineFitter.fitsDoc(0, breakHere) should equal(false)
+    LineFitter.fitsDoc(1, break) should equal(true)
+    LineFitter.fitsDoc(0, break) should equal(false)
   }
 
   test("fits breakWith") {

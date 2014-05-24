@@ -37,7 +37,7 @@ sealed abstract class Doc {
   override def toString = pformat(this, formatter = LineDocFormatter)(docStructureDocBuilder.docGenerator)
 
   def ::(hd: Doc): Doc = cons(hd, this)
-  def :/:(hd: Doc): Doc = cons(hd, cons(breakHere, this))
+  def :/:(hd: Doc): Doc = cons(hd, cons(break, this))
   def :?:(hd: Doc): Doc = replaceNil(hd, this)
   def :+:(hd: Doc): Doc = appendWithBreak(hd, this)
 
@@ -54,7 +54,6 @@ object Doc {
 
   def replaceNil(head: Doc, tail: Doc) = tail match {
     case NilDoc                => head
-    case ConsDoc(NilDoc, next) => cons(head, next)
     case other                 => tail
   }
 
@@ -66,7 +65,6 @@ object Doc {
     else
       tail match {
         case NilDoc                => head
-        case ConsDoc(NilDoc, next) => ConsDoc(head, ConsDoc(BreakDoc, next))
         case other                 => ConsDoc(head, ConsDoc(BreakDoc, other))
       }
 
@@ -76,12 +74,13 @@ object Doc {
 
   // breaks are either expanded to their value or a line break
 
-  def breakHere: Doc = BreakDoc
-  def breakWith(value: String): Doc = BreakWith(value)
+  val break: BreakingDoc = BreakDoc
+  val breakHere: BreakingDoc = BreakWith("")
+  def breakWith(value: String): BreakingDoc = BreakWith(value)
 
   // useful to force a page break if a group is in PageMode and print nothing otherwise
 
-  def breakBefore(doc: Doc): Doc = if (doc == nil) nil else breakWith("") :: doc
+  def breakBefore(doc: Doc): Doc = if (doc == nil) nil else breakHere :: doc
 
   // *all* breaks in a group are either expanded to their value or a line break
 
@@ -106,9 +105,9 @@ object Doc {
 
   implicit def list(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil)(cons)
 
-  def breakList(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil) {
+  def breakList(docs: TraversableOnce[Doc], break: BreakingDoc = break): Doc = docs.foldRight(nil) {
     case (hd, NilDoc) => hd :: nil
-    case (hd, tail)   => hd :/: tail
+    case (hd, tail)   => hd :: break :: tail
   }
 
   def breakBeforeList(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil) {
@@ -116,9 +115,9 @@ object Doc {
     case (hd, tail)   => hd :: breakBefore(tail)
   }
 
-  def sepList(docs: TraversableOnce[Doc], sep: Doc = ","): Doc = docs.foldRight(nil) {
+  def sepList(docs: TraversableOnce[Doc], sep: Doc = ",", break: BreakingDoc = break): Doc = docs.foldRight(nil) {
     case (hd, NilDoc) => hd :: nil
-    case (hd, tail)   => hd :: sep :/: tail
+    case (hd, tail)   => hd :: sep :: break :: tail
   }
 
   def block(name: Doc, open: Doc = "(", close: Doc = ")")(innerDoc: Doc): Doc =

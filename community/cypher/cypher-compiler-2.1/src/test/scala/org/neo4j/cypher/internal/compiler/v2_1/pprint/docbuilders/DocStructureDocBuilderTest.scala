@@ -32,7 +32,7 @@ class DocStructureDocBuilderTest extends DocGeneratorTestSuite[Doc] {
   }
 
   test("break => \"_\"") {
-    format(breakHere) should equal("_")
+    format(break) should equal("_")
   }
 
   test("breakWith(...) => \"_..._\"") {

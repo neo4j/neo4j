@@ -38,7 +38,7 @@ object logicalPlanDocBuilder extends CachingDocBuilder[Any] {
           .filter( (v: Any) => !childPlans.contains(v) )
           .map(inner)
 
-      val deps = sepList(plan.availableSymbols.map(inner))
+      val deps = sepList(plan.availableSymbols.map(inner), break = breakHere)
       val depsBlock = block(plan.productPrefix, open = "[", close = "]")(deps)
       val head = block(depsBlock)(sepList(arguments))
 

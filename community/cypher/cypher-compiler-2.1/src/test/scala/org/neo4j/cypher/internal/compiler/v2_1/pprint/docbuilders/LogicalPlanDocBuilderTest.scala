@@ -22,7 +22,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, IdName, LogicalLeafPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import scala.Some
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.PrintNewLine
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.PrintText
 
@@ -62,7 +61,7 @@ class LogicalPlanDocBuilderTest extends DocBuilderTestSuite[Any] {
     val doc = docGen(TestComboPlan(TestLeafPlan(1), TestLeafPlan(2)))
     val result = condense(defaultFormatter(doc))
     result should equal(Seq(
-      PrintText("TestComboPlan[c, d]()"),
+      PrintText("TestComboPlan[c,d]()"),
       PrintNewLine(2),
       PrintText("↳ left = TestLeafPlan[a](1)"),
       PrintNewLine(2),

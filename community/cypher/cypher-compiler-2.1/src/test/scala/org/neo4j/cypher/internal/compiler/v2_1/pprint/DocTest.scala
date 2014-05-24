@@ -38,7 +38,7 @@ class DocTest extends CypherFunSuite {
   }
 
   test("break == BreakDoc") {
-    breakHere should equal(BreakDoc)
+    break should equal(BreakDoc)
   }
 
   test("breakWith(v) == BreakWith(v)") {
@@ -73,14 +73,9 @@ class DocTest extends CypherFunSuite {
     text("a") :?: nil should equal(text("a"))
   }
 
-  test("a :?: ConsDoc(nil, b) => a :: b") {
-    text("a") :?: ConsDoc(nil, text("b")) should equal(text("a") :: text("b"))
-  }
-
   test("a :?: b => b") {
     text("a") :?: text("b") should equal(text("b"))
   }
-
 
   test("nil :+: a => a") {
     nil :+: text("a") should equal(text("a"))
@@ -88,10 +83,6 @@ class DocTest extends CypherFunSuite {
 
   test("a :+: nil => a") {
     text("a") :+: nil should equal(text("a"))
-  }
-
-  test("a :+: ConsDoc(nil, b) => a :/: b") {
-    text("a") :+: ConsDoc(nil, text("b")) should equal(text("a") :/: text("b"))
   }
 
   test("a :+: b => a :/: b") {
