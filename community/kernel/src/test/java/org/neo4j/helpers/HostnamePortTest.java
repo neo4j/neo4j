@@ -21,6 +21,7 @@ package org.neo4j.helpers;
 
 import java.net.InetAddress;
 import java.net.URI;
+import java.net.UnknownHostException;
 
 import org.junit.Test;
 
@@ -29,9 +30,12 @@ import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+import static org.junit.Assume.assumeFalse;
 
 public class HostnamePortTest
 {
+	
     @Test
     public void testHostnameOnly()
     {
@@ -94,44 +98,335 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatches() throws Exception
+    public void testGetHostAddress() throws Exception
     {
-        HostnamePort hostnamePortSinglePort = new HostnamePort( "host1:1234" );
-        // Should match, same host and port
-        assertTrue( hostnamePortSinglePort.matches( URI.create( "ha://host1:1234" ) ) );
-        // Should fail, different host or port
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host1:1235" ) ) );
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host2:1234" ) ) );
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host2:1235" ) ) );
-        // Should fail, no port
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host1" ) ) );
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host2" ) ) );
+    	// should return default, when host is null
+    	assertThat( HostnamePort.getHostAddress( null, "default" ), equalTo( "default" ) );
+    	
+    	// should return host ip address if host is known
+    	String hostName = InetAddress.getLocalHost().getHostName();
+    	assertThat( HostnamePort.getHostAddress( hostName, "default" ), equalTo( InetAddress.getByName( hostName ).getHostAddress() ) );
+    	
+    	String unknownHost = "unknownHost";
+    	// should return host if its IP address is unknown
+    	boolean unknownHostUnknown = false;
+    	try
+    	{
+    		InetAddress.getByName( unknownHost );
+    	} 
+    	catch ( UnknownHostException e )
+    	{
+    		unknownHostUnknown = true;
+    	}    	
+    	// unknownHost should be unknown
+    	assumeTrue( unknownHostUnknown );
+    	
+    	assertThat( HostnamePort.getHostAddress( "unknownHost", "default" ), equalTo( "unknownHost" ) );
+    	
+    }
+    
+    @Test
+    public void testMatchesUnknownHosts() throws Exception
+    {
+    	String unknownHost1 = "unknownHost1";
+    	String unknownHost2 = "unknownHost2";
+    	
+    	// first we make sure hosts are unknown
+    	boolean unknownHost1Unknown = false;
+    	try
+    	{
+    		InetAddress.getByName( unknownHost1 );
+    	}
+    	catch ( UnknownHostException e)
+    	{
+    		unknownHost1Unknown = true;
+    	}
 
-        HostnamePort hostnamePortWithRange = new HostnamePort( "host1:1234-1236" );
+    	boolean unknownHost2Unknown = false;
+    	try
+    	{
+    		InetAddress.getByName( unknownHost2 );
+    	}
+    	catch ( UnknownHostException e)
+    	{
+    		unknownHost2Unknown = true;
+    	}    	
+    	// skipping if they're not unknown: test doesn't make sense
+    	assumeTrue( unknownHost1Unknown && unknownHost2Unknown);
+    	
+        HostnamePort hostnamePortSinglePort = new HostnamePort( unknownHost1 + ":1234" );
+
+        // Should match, same host and port
+        assertTrue( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost1 + ":1234" ) ) );
+        // Should fail, different host or port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost1 + ":1235" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost2 + ":1234" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost2 + ":1235" ) ) );
+        // Should fail, no port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost1 + "" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost2 + "" ) ) );
+       
+    	// Unknown host should never match with any IP or known host
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://1.2.3.4:1234" ) ) );
+        
+        // Should return false with any other known host
+        String knownHost = InetAddress.getLocalHost().getHostName();
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + knownHost + ":1234" ) ) );
+        
+        HostnamePort hostnamePortWithRange = new HostnamePort( "" + unknownHost1 + ":1234-1236" );
         // Should match, port in range and host the same
-        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://host1:1234" ) ) );
-        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://host1:1235" ) ) );
-        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://host1:1236" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost1 + ":1234" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost1 + ":1235" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost1 + ":1236" ) ) );
         // Should not match, different host
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host2:1234" ) ) );
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host2:1235" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost2 + ":1234" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost2 + ":1235" ) ) );
         // Should not match, port outside of range
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host1:1233" ) ) );
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host1:1237" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost1 + ":1233" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost1 + ":1237" ) ) );
         // Should not match, no port
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host1" ) ) );
-        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://host2" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost1 ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + unknownHost2 ) ) );
+
     }
 
     @Test
-    public void testMatchesNullHost() throws Exception
+    public void testMatchesKnownHostWithIP() throws Exception
     {
-        HostnamePort hostnamePortSinglePort = new HostnamePort( ":1234" );
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://host1:1234" ) ) );
-        // no scheme means no ports and no host, so both null therefore comparison fails
-        assertFalse( hostnamePortSinglePort.matches( URI.create( "host1:1234" ) ) );
+    	String hostname1 = InetAddress.getLocalHost().getHostName();
+    	String host1 = InetAddress.getLocalHost().getHostAddress();
+    	// Building fake IP for host2
+    	StringBuilder host2 = new StringBuilder();
+    	String [] host1Parts = host1.split( "\\." );
+    	for ( String part : host1Parts )
+    	{
+    		int partnum = Integer.parseInt( part );
+    		host2.append( ++partnum % 256 + "." );
+    	}
+    	host2.deleteCharAt( host2.length() - 1 );
+    	// Should differ, in order to test
+    	assertFalse( host1.equals( host2 ) );
+    	
+        HostnamePort hostnamePortSinglePort = new HostnamePort( hostname1 + ":1234" );
+        // Should match, same host and port
+        assertTrue( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
+        // Should fail, different host or port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1235" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host2 + ":1234" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host2 + ":1235" ) ) );
+        // Should fail, no port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host2 ) ) );
+
+        HostnamePort hostnamePortWithRange = new HostnamePort( hostname1 + ":1234-1236" );
+        // Should match, port in range and host the same
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1235" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1236" ) ) );
+        // Should not match, different host
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host2 + ":1234" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host2 + ":1235" ) ) );
+        // Should not match, port outside of range
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1233" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1237" ) ) );
+        // Should not match, no port
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host2 ) ) );
     }
 
+    @Test
+    public void testMatchesIPWithHost() throws Exception
+    {
+    	String hostname1 = InetAddress.getLocalHost().getHostName();
+    	String host1 = InetAddress.getLocalHost().getHostAddress();
+    	String hostname2 = "neo4j.org";
+    	
+    	boolean host2Known = true;
+    	try
+    	{
+    		InetAddress.getByName( hostname2 );
+    	}
+    	catch ( UnknownHostException e)
+    	{
+    		host2Known = false;    		
+    	}    	
+    	assumeTrue( host2Known );    	
+    	assumeFalse( hostname1.equals( hostname2 ) );
+    	
+        HostnamePort hostnamePortSinglePort = new HostnamePort( host1 + ":1234" );
+        // Should match, same host and port
+        assertTrue( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname1 + ":1234" ) ) );
+        // Should fail, different host or port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname1 + ":1235" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname2 + ":1234" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname2 + ":1235" ) ) );
+        // Should fail, no port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname1 ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + hostname2 ) ) );
+
+        HostnamePort hostnamePortWithRange = new HostnamePort( host1 + ":1234-1236" );
+        // Should match, port in range and host the same
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1234" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1235" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1236" ) ) );
+        // Should not match, different host
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname2 + ":1234" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname2 + ":1235" ) ) );
+        // Should not match, port outside of range
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1233" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 + ":1237" ) ) );
+        // Should not match, no port
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname1 ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + hostname2 ) ) );
+        
+       	String unknownHost = "unknownHost";
+    	
+    	boolean unknownHostUnknown = false;
+    	try
+    	{
+    		InetAddress.getByName( unknownHost );
+    	}
+    	catch( UnknownHostException e)
+    	{
+    		unknownHostUnknown = true;
+    	}    	
+    	assumeTrue( unknownHostUnknown );
+    	
+        // should return false if matched with any unknown host
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost + ":1234") ) );
+    }
+
+    @Test
+    public void testMatchesKnownHostWithHost() throws Exception
+    {
+    	String host1 = InetAddress.getLocalHost().getHostName();
+    	// any other hostname?
+    	String host2 = "neo4j.org";
+    	
+    	boolean host2Known = true;
+    	try
+    	{
+    		InetAddress.getByName( host2 );
+    	}
+    	catch ( UnknownHostException e)
+    	{
+    		host2Known = false;    		
+    	}
+    	assumeTrue( host2Known );
+    	assumeFalse( host1.equals( host2 ) );
+    	    	
+        HostnamePort hostnamePortSinglePort = new HostnamePort( host1 + ":1234" );
+        // Should match, same host and port
+        assertTrue( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
+        // Should fail, different host or port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1235" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host2 + ":1234" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host2 + ":1235" ) ) );
+        // Should fail, no port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host2 ) ) );
+
+        HostnamePort hostnamePortWithRange = new HostnamePort( host1 + ":1234-1236" );
+        // Should match, port in range and host the same
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1235" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1236" ) ) );
+        // Should not match, different host
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host2 + ":1234" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host2 + ":1235" ) ) );
+        // Should not match, port outside of range
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1233" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 + ":1237" ) ) );
+        // Should not match, no port
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host1 ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://" + host2 ) ) );
+		
+        String unknownHost = "unknownHost";
+	
+    	boolean unknownHostUnknown = false;
+    	try
+    	{
+    		InetAddress.getByName( unknownHost );
+    	}
+    	catch ( UnknownHostException e )
+    	{
+    		unknownHostUnknown = true;
+    	}
+    	assumeTrue( unknownHostUnknown ); 
+
+        // should return false if matched with any unknown host
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost + ":1234") ) );
+    }
+
+    @Test
+    public void testMatchesIP() throws Exception
+    {
+        HostnamePort hostnamePortSinglePort = new HostnamePort( "1.2.3.4:1234" );
+        // Should match, same host and port
+        assertTrue( hostnamePortSinglePort.matches( URI.create( "ha://1.2.3.4:1234" ) ) );
+        // Should fail, different host or port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://1.2.3.4:1235" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://5.6.7.8:1234" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://5.6.7.8:1235" ) ) );
+        // Should fail, no port
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://1.2.3.4" ) ) );
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://5.6.7.8" ) ) );
+
+        HostnamePort hostnamePortWithRange = new HostnamePort( "1.2.3.4:1234-1236" );
+        // Should match, port in range and host the same
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://1.2.3.4:1234" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://1.2.3.4:1235" ) ) );
+        assertTrue( hostnamePortWithRange.matches( URI.create( "ha://1.2.3.4:1236" ) ) );
+        // Should not match, different host
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://5.6.7.8:1234" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://5.6.7.8:1235" ) ) );
+        // Should not match, port outside of range
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://1.2.3.4:1233" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://1.2.3.4:1237" ) ) );
+        // Should not match, no port
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://1.2.3.4" ) ) );
+        assertFalse( hostnamePortWithRange.matches( URI.create( "ha://5.6.7.8" ) ) );
+    }
+    
+    @Test
+    public void testMatchesNullHostWithUnknownHost() throws Exception
+    {    	
+        HostnamePort hostnamePortSinglePort = new HostnamePort( ":1234" );
+        String unknownHost = "unknownHost";
+        boolean unknownHostUnknown = false;
+    	try
+    	{
+    		InetAddress.getByName( unknownHost );
+    	}
+    	catch ( UnknownHostException e)
+    	{
+    		unknownHostUnknown = true;
+    	}    	
+    	assumeTrue( unknownHostUnknown );
+    	
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + unknownHost + ":1234" ) ) );
+        // no scheme means no ports and no host, so both null therefore comparison fails
+        assertFalse( hostnamePortSinglePort.matches( URI.create( unknownHost + ":1234" ) ) );
+    }
+
+    @Test
+    public void testMatchesNullHostWithIP() throws Exception
+    {
+        HostnamePort hostnamePortSinglePort = new HostnamePort( ":1234" );
+        String host1IP = InetAddress.getLocalHost().getHostAddress();
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1IP + ":1234" ) ) );
+    }
+
+    @Test
+    public void testMatchesNullHostWithKnownHost() throws Exception
+    {
+        HostnamePort hostnamePortSinglePort = new HostnamePort( ":1234" );
+        String host1 = InetAddress.getLocalHost().getHostName();
+        assertFalse( hostnamePortSinglePort.matches( URI.create( "ha://" + host1 + ":1234" ) ) );
+        // no scheme means no ports and no host, so both null therefore comparison fails
+        assertFalse( hostnamePortSinglePort.matches( URI.create( host1 + ":1234" ) ) );
+    }
+    
     @Test
     public void testHostnameLookup() throws Exception
     {
