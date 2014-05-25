@@ -19,7 +19,7 @@ Here follows a short explanation of all different methods that can modify or add
 * _Evaluator_ -- decide what to return and whether to stop or continue traversal beyond the current position. 
 * _Starting nodes_ where the traversal will begin.
 
-["dot", "graphdb-traversal-description.svg", "meta", scaledwidth="100%"]
+["dot", "graphdb-traversal-description.svg", "meta"]
 ----
 "Traversal Description" [fillcolor="NODEHIGHLIGHT"]
 Uniqueness -> "Traversal Description" [label="avoid duplicates"]

@@ -1,4 +1,4 @@
-["dot", "graphdb-compare-docdb-g.svg", "meta", scaledwidth="75%"]
+["dot", "graphdb-compare-docdb-g.svg", "meta"]
 ----
 rankdir="LR"
 

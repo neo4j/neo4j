@@ -1,4 +1,4 @@
-["dot", "graphdb-compare-rdbms-g.svg", "meta", scaledwidth="100%"]
+["dot", "graphdb-compare-rdbms-g.svg", "meta"]
 ----
 edge [arrowhead="none" arrowtail="none"]
 

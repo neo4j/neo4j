@@ -14,17 +14,17 @@
 
 <!-- Syntax Highlighter -->
 
-<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/codemirror.min.css" />
-<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/codemirror.min.js"></script>
-<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/addon/runmode/runmode.min.js"></script>
-<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/mode/javascript/javascript.min.js"></script>
-<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/mode/shell/shell.min.js"></script>
-<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/mode/sql/sql.min.js"></script>
-<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/mode/xml/xml.min.js"></script>
-<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.0.3/mode/clike/clike.min.js"></script>
+<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.2.0/codemirror.css" />
+<link rel="stylesheet" href="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.2.0/theme/neo.css" />
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.2.0/codemirror.min.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.2.0/addon/runmode/runmode.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.2.0/mode/javascript/javascript.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.2.0/mode/shell/shell.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.2.0/mode/sql/sql.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.2.0/mode/xml/xml.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.2.0/mode/clike/clike.js"></script>
+<script src="http://cdnjs.cloudflare.com/ajax/libs/codemirror/4.2.0/mode/cypher/cypher.js"></script>
 
-<link rel="stylesheet" href="http://gist.neo4j.org/css/codemirror-neo.css" />
-<script src="http://gist.neo4j.org/js/codemirror-cypher.js"></script>
 <script src="js/colorize.js"></script>
  
 <script type="text/javascript">
