@@ -99,7 +99,7 @@ Neo4j is a commercially supported open-source graph database.
 It was designed and built from the ground-up to be a reliable database, optimized for graph structures instead of tables. 
 Working with Neo4j, your application gets all the expressiveness of a graph, with all the dependability you expect out of a database.
 
-["dot", "graphdb-overview.svg", "meta", scaledwidth="75%"]
+["dot", "graphdb-overview.svg", "meta"]
 ----
 "Graph Database" [fillcolor="NODEHIGHLIGHT"]
 "Graph" [fillcolor="NODE2HIGHLIGHT"]

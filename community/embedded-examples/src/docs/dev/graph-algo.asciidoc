@@ -28,7 +28,7 @@ tag=dijkstraUsage
 Using http://en.wikipedia.org/wiki/A*_search_algorithm[A*] to calculate the cheapest path between node A and B, where cheapest is for example the path in a network of roads which has the shortest length between node A and B.
 Here's our example graph:
 
-image::graphalgo-astar.png[scaledwidth="50%", alt="A* algorithm example graph"]
+image::graphalgo-astar.png[alt="A* algorithm example graph"]
 
 [snippet,java]
 ----
