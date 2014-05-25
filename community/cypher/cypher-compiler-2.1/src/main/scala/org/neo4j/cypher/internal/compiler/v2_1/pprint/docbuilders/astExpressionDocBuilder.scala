@@ -27,6 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.quoteString
 
 case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
 
@@ -74,5 +75,23 @@ case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
 
     case GreaterThanOrEqual(left, right) => (inner) =>
       inner(left) :/: ">=" :/: inner(right)
+
+    case lit: NumberLiteral => (inner) =>
+      text(lit.stringVal)
+
+    case lit: StringLiteral => (inner) =>
+      text(quoteString(lit.value))
+
+    case True() => (inner) => text("true")
+
+    case False() => (inner) => text("false")
+
+    case Null() => (inner) => text("NULL")
+
+    case FunctionInvocation(FunctionName(name), false, args) => (inner) =>
+      block(name)(sepList(args.map(inner)))
+
+    case FunctionInvocation(FunctionName(name), true, args) => (inner) =>
+      "DISTINCT" :/: block(name)(sepList(args.map(inner)))
   }
 }

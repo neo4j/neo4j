@@ -95,4 +95,45 @@ class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
     val expr: Expression = GreaterThanOrEqual(ident("a"), ident("b"))_
     format(expr) should equal("a >= b")
   }
+
+  test("Number literals are printed as string value") {
+    val expr: Expression = SignedIntegerLiteral("1")_
+    format(expr) should equal("1")
+  }
+
+  test("True()") {
+    val expr: Expression = True()_
+    format(expr) should equal("true")
+  }
+
+  test("False()") {
+    val expr: Expression = False()_
+    format(expr) should equal("false")
+  }
+
+  test("Null()") {
+    val expr: Expression = Null()_
+    format(expr) should equal("NULL")
+  }
+
+  test("string literals are printed quoted") {
+    val expr: Expression = StringLiteral("a")_
+    format(expr) should equal("\"a\"")
+  }
+
+  test("FunctionInvocation(FunctionName(\"split\"), distinct = false, Vector(fst, snd)) => split(fst, snd)") {
+    val name: FunctionName = FunctionName("split")(pos)
+    val args: IndexedSeq[Expression] = Vector(SignedIntegerLiteral("1")_, SignedIntegerLiteral("2")_)
+    val expr: Expression = FunctionInvocation( functionName = name, distinct = false, args = args)_
+
+    format(expr) should equal("split(1, 2)")
+  }
+
+  test("FunctionInvocation(FunctionName(\"split\"), distinct = true, Vector(fst, snd)) => split(fst, snd)") {
+    val name: FunctionName = FunctionName("split")(pos)
+    val args: IndexedSeq[Expression] = Vector(SignedIntegerLiteral("1")_, SignedIntegerLiteral("2")_)
+    val expr: Expression = FunctionInvocation( functionName = name, distinct = true, args = args)_
+
+    format(expr) should equal("DISTINCT split(1, 2)")
+  }
 }
