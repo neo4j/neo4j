@@ -30,12 +30,16 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan,
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
-case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: PlanningMonitor) extends PipeBuilder {
-  val tokenResolver = new SimpleTokenResolver()
-  val plannerQueryBuilder = new SimplePlannerQueryBuilder
-  val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
-  val strategy = new QueryPlanningStrategy()
-  val queryGraphSolver = new GreedyQueryGraphSolver()
+case class Planner(monitors: Monitors,
+                   metricsFactory: MetricsFactory,
+                   monitor: PlanningMonitor,
+                   tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
+                   plannerQueryBuilder: PlannerQueryBuilder = new SimplePlannerQueryBuilder,
+                   maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
+                   strategy: PlanningStrategy = new QueryPlanningStrategy(),
+                   queryGraphSolver: QueryGraphSolver = new GreedyQueryGraphSolver()) extends PipeBuilder {
+
+  val executionPlanBuilder:PipeExecutionPlanBuilder = maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(monitors))
 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
     producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)

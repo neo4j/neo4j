@@ -21,9 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.mockito.Mockito._
-import org.mockito.stubbing.Answer
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.mockito.invocation.InvocationOnMock
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
@@ -96,10 +94,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
     when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(15))
-    when(planContext.indexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
-      def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
-    })
-    when(planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator())
+    when(planContext.getIndexRule("Awesome", "prop")).thenReturn(Some(new IndexDescriptor(12, 15)))
+    when(planContext.getUniqueIndexRule("Awesome", "prop")).thenReturn(None)
 
     produceLogicalPlan("MATCH (n:Awesome) WHERE n.prop = 42 RETURN n") should equal(
       NodeIndexSeek("n", LabelId(12), PropertyKeyId(15), SignedIntegerLiteral("42")_)
@@ -120,10 +116,8 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
     when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
     when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(15))
-    when(planContext.indexesGetForLabel(12)).thenReturn(Iterator())
-    when(planContext.uniqueIndexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
-      def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
-    })
+    when(planContext.getIndexRule("Awesome", "prop")).thenReturn(None)
+    when(planContext.getUniqueIndexRule("Awesome", "prop")).thenReturn(Some(new IndexDescriptor(12, 15)))
 
     produceLogicalPlan("MATCH (n:Awesome) WHERE n.prop = 42 RETURN n") should equal(
       NodeIndexUniqueSeek("n", LabelId(12), PropertyKeyId(15), SignedIntegerLiteral("42")_)

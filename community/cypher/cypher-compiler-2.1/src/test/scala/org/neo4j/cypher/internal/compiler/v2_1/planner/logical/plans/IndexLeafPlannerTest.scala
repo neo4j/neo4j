@@ -30,9 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 import org.mockito.Mockito._
-import org.mockito.stubbing.Answer
 import org.mockito.Matchers._
-import org.mockito.invocation.InvocationOnMock
 import scala.collection.mutable
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -70,10 +68,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       planContext = newMockedPlanContext,
       query = qg,
       metrics = factory.newMetrics(statistics, semanticTable))
-    when(context.planContext.indexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
-      override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
-    })
-    when(context.planContext.uniqueIndexesGetForLabel(12)).thenReturn(Iterator())
+
+    when(context.planContext.getIndexRule("Awesome", "prop")).thenReturn(Some(new IndexDescriptor(12, 15)))
+    when(context.planContext.getUniqueIndexRule("Awesome", "prop")).thenReturn(None)
 
     // when
     val resultPlans = indexSeekLeafPlanner(qg)
@@ -115,10 +112,8 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       planContext = newMockedPlanContext,
       query = qg,
       metrics = factory.newMetrics(statistics, semanticTable))
-    when(context.planContext.indexesGetForLabel(12)).thenReturn(Iterator())
-    when(context.planContext.uniqueIndexesGetForLabel(12)).thenAnswer(new Answer[Iterator[IndexDescriptor]] {
-      override def answer(invocation: InvocationOnMock) = Iterator(new IndexDescriptor(12, 15))
-    })
+    when(context.planContext.getIndexRule("Awesome", "prop")).thenReturn(None)
+    when(context.planContext.getUniqueIndexRule("Awesome", "prop")).thenReturn(Some(new IndexDescriptor(12, 15)))
 
     // when
     val resultPlans = uniqueIndexSeekLeafPlanner(qg)
