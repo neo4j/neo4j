@@ -22,15 +22,39 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders.defaultDocBuilder
 
 trait Pretty {
+  def toDoc: Doc
 
+  def format(docFormatter: DocFormatter)
+            (implicit docGenerator: DocGenerator[this.type]) =
+    pformat(this, docFormatter)
+}
+
+trait HasFormatter {
+  def docFormatter: DocFormatter = DocFormatters.defaultFormatter
+}
+
+trait HasLineFormatter extends HasFormatter {
+  override def docFormatter: DocFormatter = DocFormatters.defaultLineFormatter
+}
+
+trait HasPageFormatter extends HasFormatter {
+  override def docFormatter: DocFormatter = DocFormatters.defaultPageFormatter
+}
+
+trait PlainlyPretty extends Pretty with HasFormatter {
+  override def toString = printToString(docFormatter(toDoc))
+
+  override def format(docFormatter: DocFormatter = docFormatter)
+                     (implicit docGenerator: DocGenerator[this.type]) =
+    super.format(docFormatter)
+}
+
+trait GeneratedPretty extends Pretty with HasFormatter {
   def toDoc = docGenerator(this)
 
-  override def toString = format()
-
-  def format(docFormatter: DocFormatter = docFormatter)
+  override def format(docFormatter: DocFormatter = docFormatter)
             (implicit docGenerator: DocGenerator[this.type] = docGenerator) =
-    pformat(this, docFormatter)
+    super.format(docFormatter)
 
   def docGenerator: DocGenerator[this.type] = defaultDocBuilder.docGenerator
-  def docFormatter: DocFormatter = DocFormatters.defaultPageFormatter
 }

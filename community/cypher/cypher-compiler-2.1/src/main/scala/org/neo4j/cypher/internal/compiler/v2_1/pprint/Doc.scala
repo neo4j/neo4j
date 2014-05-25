@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.LineDocFormatter
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders.docStructureDocBuilder
-import scala.text.{DocBreak, DocText, DocCons, Document}
 
 /**
  * Class of pretty-printable documents.
@@ -30,18 +28,20 @@ import scala.text.{DocBreak, DocText, DocCons, Document}
  * (cf. http://citeseerx.ist.psu.edu/viewdoc/download?doi=10.1.1.34.2200&rep=rep1&type=pdf)
  *
  */
-sealed abstract class Doc {
+sealed abstract class Doc extends GeneratedPretty with HasLineFormatter {
 
   import Doc._
 
-  override def toString = pformat(this, formatter = LineDocFormatter)(docStructureDocBuilder.docGenerator)
-
   def ::(hd: Doc): Doc = cons(hd, this)
   def :/:(hd: Doc): Doc = cons(hd, cons(break, this))
-  def :?:(hd: Doc): Doc = replaceNil(hd, this)
+  def :?:(hd: Doc): Doc = replaceIfNil(hd, this)
   def :+:(hd: Doc): Doc = appendWithBreak(hd, this)
 
+  def isNil = false
+
   def toOption: Option[Doc] = Some(this)
+
+  override def docGenerator: DocGenerator[Doc] = docStructureDocBuilder.docGenerator
 }
 
 object Doc {
@@ -50,23 +50,15 @@ object Doc {
   def cons(head: Doc, tail: Doc = nil): Doc = if (head == nil) tail else ConsDoc(head, tail)
   def nil: Doc = NilDoc
 
-  // replace nil with default document
+  // replace nil tail with default document
 
-  def replaceNil(head: Doc, tail: Doc) = tail match {
-    case NilDoc                => head
-    case other                 => tail
-  }
+  def replaceIfNil(default: Doc, tail: Doc) =
+    if (tail.isNil) default else tail
 
-  // append doc with breaks but replace away nils
+  // append docs with breaks but remove any nils
 
-  def appendWithBreak(head: Doc, tail: Doc) =
-    if (head == nil)
-      tail
-    else
-      tail match {
-        case NilDoc                => head
-        case other                 => ConsDoc(head, ConsDoc(BreakDoc, other))
-      }
+  def appendWithBreak(head: Doc, tail: Doc, break: BreakingDoc = break) =
+    if (head.isNil) tail else if (tail.isNil) head else ConsDoc(head, breakBefore(tail, break = break))
 
   // unbreakable text doc
 
@@ -75,12 +67,15 @@ object Doc {
   // breaks are either expanded to their value or a line break
 
   val break: BreakingDoc = BreakDoc
-  val breakHere: BreakingDoc = BreakWith("")
+  val breakSilent: BreakingDoc = BreakWith("")
   def breakWith(value: String): BreakingDoc = BreakWith(value)
 
   // useful to force a page break if a group is in PageMode and print nothing otherwise
 
-  def breakBefore(doc: Doc): Doc = if (doc == nil) nil else breakHere :: doc
+  def breakSilentBefore(doc: Doc): Doc = breakBefore(doc, break = breakSilent)
+
+  def breakBefore(doc: Doc, break: BreakingDoc = break): Doc =
+    if (doc.isNil) doc else break :: doc
 
   // *all* breaks in a group are either expanded to their value or a line break
 
@@ -101,18 +96,13 @@ object Doc {
 
   // helper
 
-  implicit def opt(optDoc: Option[Doc]) = optDoc.getOrElse(NilDoc)
+  implicit def opt(optDoc: Option[Doc]) = optDoc.getOrElse(nil)
 
   implicit def list(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil)(cons)
 
   def breakList(docs: TraversableOnce[Doc], break: BreakingDoc = break): Doc = docs.foldRight(nil) {
     case (hd, NilDoc) => hd :: nil
     case (hd, tail)   => hd :: break :: tail
-  }
-
-  def breakBeforeList(docs: TraversableOnce[Doc]): Doc = docs.foldRight(nil) {
-    case (hd, NilDoc) => hd :: nil
-    case (hd, tail)   => hd :: breakBefore(tail)
   }
 
   def sepList(docs: TraversableOnce[Doc], sep: Doc = ",", break: BreakingDoc = break): Doc = docs.foldRight(nil) {
@@ -124,20 +114,19 @@ object Doc {
     group(
       name ::
       open ::
-      nest(group(breakBefore(innerDoc))) ::
-      breakBefore(close)
+      nest(group(breakSilentBefore(innerDoc))) ::
+      breakSilentBefore(close)
     )
 
-  def section(start: Doc, inner: Doc): Doc = inner match {
-    case NilDoc => nil
-    case _      => group(start :: nest(nil :/: inner))
-  }
+  def section(start: Doc, inner: Doc, break: BreakingDoc = break): Doc =
+    if (inner.isNil) inner else group(start :: nest(breakBefore(inner, break = break)))
 }
 
 final case class ConsDoc(head: Doc, tail: Doc = NilDoc) extends Doc
 
 case object NilDoc extends Doc {
   override def toOption = None
+  override def isNil = true
 }
 
 sealed abstract class ValueDoc extends Doc {
@@ -175,9 +164,8 @@ final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
   def optIndent = Some(indent)
 }
 
-final case class DocLiteral(doc: Doc) {
-  override def toString =
-    pformat(doc, formatter = DocFormatters.defaultLineFormatter)(docStructureDocBuilder.docGenerator)
+final case class DocLiteral(doc: Doc) extends PlainlyPretty {
+  override def toDoc = docStructureDocBuilder.docGenerator(doc)
 }
 
 

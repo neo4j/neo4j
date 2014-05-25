@@ -43,7 +43,7 @@ case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
       ":" :: name
 
     case HasLabels(expr, labels) => (inner) =>
-      inner(expr) :: breakBeforeList(labels.map(inner))
+      inner(expr) :: breakList(labels.map(inner), break = breakSilent)
 
     case Not(expr) => (inner) =>
       "NOT" :/: inner(expr)

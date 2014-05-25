@@ -22,9 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{Pretty, pformat}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{GeneratedPretty, Pretty, pformat}
 
-trait QueryGraph extends Pretty {
+trait QueryGraph extends GeneratedPretty {
   def patternRelationships: Set[PatternRelationship]
   def patternNodes: Set[IdName]
   def argumentIds: Set[IdName]

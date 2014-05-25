@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{Pretty, pformat}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{GeneratedPretty, Pretty, pformat}
 
-trait PlannerQuery extends Pretty {
+trait PlannerQuery extends GeneratedPretty {
   def graph: QueryGraph
   def projection: QueryProjection
   def tail: Option[PlannerQuery]

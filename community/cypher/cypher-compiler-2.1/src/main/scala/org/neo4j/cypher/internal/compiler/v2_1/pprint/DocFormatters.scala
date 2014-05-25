@@ -27,6 +27,8 @@ object DocFormatters {
   val defaultLineFormatter = LineDocFormatter
   val defaultPageFormatter = PageDocFormatter(defaultLineWidth)
 
+  val defaultFormatter = defaultPageFormatter
+
   def pageFormatter(lineWidth: Int = defaultLineWidth) =
     if (lineWidth == defaultLineWidth) defaultPageFormatter else PageDocFormatter(lineWidth)
 }

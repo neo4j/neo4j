@@ -57,7 +57,7 @@ case object plannerDocBuilder extends DocBuilderChain[Any] {
 
   val forNestedPredicate = asDocBuilder[Any] {
     case Predicate(dependencies, expr) => (inner) =>
-      val pred = sepList(dependencies.map(inner), break = breakHere)
+      val pred = sepList(dependencies.map(inner), break = breakSilent)
       val predBlock = block("Predicate", open = "[", close = "]")(pred)
       block(predBlock)(inner(expr))
   }
