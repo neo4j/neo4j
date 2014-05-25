@@ -31,8 +31,8 @@ class IndexLookupBuilder extends PlanBuilder {
     plan.query.start.exists(interestingFilter)
 
   def apply(plan: ExecutionPlanInProgress, ctx: PlanContext)(implicit pipeMonitor: PipeMonitor): ExecutionPlanInProgress = {
-    val querylessHint = extractInterestingStartItem(plan)
-    val hint = querylessHint.token
+    val querylessHint: QueryToken[SchemaIndex] = extractInterestingStartItem(plan)
+    val hint: SchemaIndex = querylessHint.token
     val propertyPredicates = findPropertyPredicates(plan, hint)
     val labelPredicates = findLabelPredicates(plan, hint)
 
@@ -59,13 +59,16 @@ class IndexLookupBuilder extends PlanBuilder {
         if identifier == hint.identifier && label.name == hint.label => predicate
     }
 
-  private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(QueryToken[Predicate], Expression)] =
+  private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(QueryToken[Predicate], QueryExpression)] =
     plan.query.where.collect {
       case predicate@QueryToken(Equals(Property(Identifier(id), prop), expression))
-        if id == hint.identifier && prop.name == hint.property => (predicate, expression)
+        if id == hint.identifier && prop.name == hint.property => (predicate, SingleQueryExpression(expression))
 
       case predicate@QueryToken(Equals(expression, Property(Identifier(id), prop)))
-        if id == hint.identifier && prop.name == hint.property => (predicate, expression)
+        if id == hint.identifier && prop.name == hint.property => (predicate, SingleQueryExpression(expression))
+
+      case predicate@QueryToken(AnyInCollection(expression, _, Equals(Property(Identifier(id), prop),Identifier(_))))
+        if id == hint.identifier && prop.name == hint.property => (predicate, ManyQueryExpression(expression))
     }
 
   private def extractInterestingStartItem(plan: ExecutionPlanInProgress): QueryToken[SchemaIndex] =

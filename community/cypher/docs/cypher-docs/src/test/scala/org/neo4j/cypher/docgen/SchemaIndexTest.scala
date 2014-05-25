@@ -25,11 +25,18 @@ import org.junit.Test
 import org.neo4j.cypher.internal.helpers.GraphIcing
 
 class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSupport with GraphIcing {
+
   override def graphDescription = List(
-    "root X A",
-    "root X B",
-    "root X C",
-    "A KNOWS C"
+    "andres:Person KNOWS mark:Person"
+  )
+
+  override val properties = Map(
+    "andres" -> Map("name" -> "Andres"),
+    "mark" -> Map("name" -> "Mark")
+  )
+
+  override val setupConstraintQueries = List(
+    "CREATE INDEX ON :Person(name)"
   )
 
   def section = "Schema Index"
@@ -63,9 +70,43 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       text = "There is usually no need to specify which indexes to use in a query, Cypher will figure that out by itself. " +
         "For example the query below will use the `Person(name)` index, if it exists. " +
         "If you for some reason want to hint to specific indexes, see <<query-using>>.",
-      queryText = "match (n:Person {name: 'Andres'}) return n",
+      queryText = "match (person:Person {name: 'Andres'}) return person",
       optionalResultExplanation = "",
-      assertions = (p) => assertEquals(0, p.size)
+      assertions = {
+        (p) =>
+          assertEquals(1, p.size)
+          assertTrue(p.executionPlanDescription().toString contains "SchemaIndex")
+      }
+    )
+  }
+  @Test def use_index_with_where() {
+    testQuery(
+      title = "Use index with WHERE",
+      text = "Indexes are also automatically used for equality comparisons of a indexed property in the WHERE clause." +
+        "If you for some reason want to hint to specific indexes, see <<query-using>>.",
+      queryText = "match (person:Person) WHERE person.name = 'Andres' return person",
+      optionalResultExplanation = "",
+      assertions = {
+        (p) =>
+          assertEquals(1, p.size)
+          assertTrue(p.executionPlanDescription().toString contains "SchemaIndex")
+      }
+    )
+  }
+
+  @Test def use_index_with_in() {
+    testQuery(
+      title = "Use index with IN",
+      text =
+        "The IN predicate on `person.name` in the following query will use the `Person(name)` index, if it exists. " +
+        "If you for some reason want Cypher to use specific indexes, you can enforce it using hints. See <<query-using>>.",
+      queryText = "match (person:Person) WHERE person.name IN ['Andres','Mark'] return person",
+      optionalResultExplanation = "",
+      assertions = {
+        (p) =>
+          assertEquals(2, p.size)
+          assertTrue(p.executionPlanDescription().toString contains "SchemaIndex")
+      }
     )
   }
 
