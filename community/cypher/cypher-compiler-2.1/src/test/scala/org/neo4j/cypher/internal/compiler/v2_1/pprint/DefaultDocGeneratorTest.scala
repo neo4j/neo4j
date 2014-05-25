@@ -120,6 +120,15 @@ class DefaultDocGeneratorTest extends CypherFunSuite {
     render(literal("a" :: "b")) should equal("DocLiteral(\"a\"·\"b\")")
   }
 
+  test("DocGenerator uses toDoc as a fallback") {
+    object Rick extends PlainlyPretty {
+      def toDoc = "NEVER GONNA" :/: "GIVE YOU UP"
+      override def toString = fail("Called toString when expected to be rendered using toDoc")
+    }
+
+    render(Rick) should equal("NEVER GONNA GIVE YOU UP")
+  }
+
   private def render[T](v: T) =
     pformat(v, formatter = DocFormatters.defaultLineFormatter)(docGen)
 }

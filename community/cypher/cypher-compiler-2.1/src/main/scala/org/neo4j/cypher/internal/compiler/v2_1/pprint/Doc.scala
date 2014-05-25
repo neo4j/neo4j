@@ -165,7 +165,8 @@ final case class NestWith(indent: Int, content: Doc) extends NestingDoc {
 }
 
 final case class DocLiteral(doc: Doc) extends PlainlyPretty {
-  override def toDoc = docStructureDocBuilder.docGenerator(doc)
+  override def toDoc =
+    Doc.block("DocLiteral")(docStructureDocBuilder.docGenerator(doc))
 }
 
 

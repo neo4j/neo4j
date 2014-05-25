@@ -19,16 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint._
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{Pretty, CachingDocBuilder}
 
-case object simpleDocBuilder extends DocBuilderChain[Any] {
-
-  val builders = Seq(
-    docStructureDocBuilder.uplifted[Any],
-    prettyDocBuilder.uplifted[Any],
-    scalaDocBuilder,
-    toStringDocBuilder
-  )
-
-  override protected def newNestedDocGenerator = catchNotImplemented(super.newNestedDocGenerator)
+case object prettyDocBuilder extends CachingDocBuilder[Pretty] {
+  override protected def newNestedDocGenerator = {
+    case v: Pretty => (_) => v.toDoc
+  }
 }
