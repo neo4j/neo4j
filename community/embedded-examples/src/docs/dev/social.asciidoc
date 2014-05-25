@@ -13,7 +13,7 @@ https://github.com/neo4j/neo4j/tree/{neo4j-git-tag}/community/embedded-examples/
 
 == Simple social model ==
 
-image::socnet-model.png[title="Social network data model"]
+image::socnet-model.svg[title="Social network data model"]
 
 The data model for a social network is pretty simple: +Persons+ with names and +StatusUpdates+ with timestamped text.
 These entities are then connected by specific relationships.
