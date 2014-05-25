@@ -53,7 +53,7 @@ trait GeneratedPretty extends Pretty with HasFormatter {
   def toDoc = docGenerator(this)
 
   override def format(docFormatter: DocFormatter = docFormatter)
-            (implicit docGenerator: DocGenerator[this.type] = docGenerator) =
+                     (implicit docGenerator: DocGenerator[this.type] = docGenerator) =
     super.format(docFormatter)
 
   def docGenerator: DocGenerator[this.type] = defaultDocBuilder.docGenerator

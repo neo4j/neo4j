@@ -39,20 +39,24 @@ class DefaultDocGeneratorTest extends CypherFunSuite {
     render("") should equal("\"\"")
     render("a") should equal("\"a\"")
     render("\\") should equal("\"\\\\\"")
+    render("'") should equal("\"\\'\"")
     render("\"") should equal("\"\\\"\"")
     render("\t") should equal("\"\\t\"")
     render("\b") should equal("\"\\b\"")
     render("\n") should equal("\"\\n\"")
     render("\r") should equal("\"\\r\"")
+    render("\f") should equal("\"\\f\"")
   }
 
   test("DocGenerator quotes chars") {
     render('a') should equal("'a'")
     render('\'') should equal("'\\''")
+    render('\"') should equal("'\\\"'")
     render('\t') should equal("'\\t'")
     render('\b') should equal("'\\b'")
     render('\n') should equal("'\\n'")
     render('\r') should equal("'\\r'")
+    render('\f') should equal("'\\f'")
   }
 
   test("DocGenerator renders maps") {
