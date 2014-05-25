@@ -130,7 +130,7 @@ object Doc {
 
   def section(start: Doc, inner: Doc): Doc = inner match {
     case NilDoc => nil
-    case _      => group(start :/: nest(inner))
+    case _      => group(start :: nest(nil :/: inner))
   }
 }
 
