@@ -34,7 +34,7 @@ public class RWLockLeakTest
     public void assertWriteLockDoesNotLeakMemory() throws InterruptedException
     {
         final TransactionManager tm = mock( TransactionManager.class );
-        final RagManager ragManager = new RagManager( tm );
+        final RagManager ragManager = new RagManager();
         final Object resource = new Object();
         final RWLock lock = new RWLock( resource, ragManager );
         final Transaction tx1 = mock( Transaction.class );
@@ -52,7 +52,7 @@ public class RWLockLeakTest
     public void assertReadLockDoesNotLeakMemory() throws InterruptedException
     {
         final TransactionManager tm = mock( TransactionManager.class );
-        final RagManager ragManager = new RagManager( tm );
+        final RagManager ragManager = new RagManager();
         final Object resource = new Object();
         final RWLock lock = new RWLock( resource, ragManager );
         final Transaction tx1 = mock( Transaction.class );
