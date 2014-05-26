@@ -63,6 +63,7 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
@@ -145,6 +146,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, Provid
     private final RemoteTxHook remoteTxHook;
     private final TxIdGenerator txIdGenerator;
     private final TransactionHeaderInformation transactionHeaderInformation;
+    private final StartupStatisticsProvider startupStatistics;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -241,7 +243,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, Provid
                                  StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
                                  KernelHealth kernelHealth, TransactionAppender transactionAppender,
                                  NeoTransactionStoreApplier storeApplier, RemoteTxHook remoteTxHook,
-                                 TxIdGenerator txIdGenerator, TransactionHeaderInformation transactionHeaderInformation )
+                                 TxIdGenerator txIdGenerator, TransactionHeaderInformation transactionHeaderInformation,
+                                 StartupStatisticsProvider startupStatistics )
     {
         this.config = config;
         this.tokenNameLookup = tokenNameLookup;
@@ -264,6 +267,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, Provid
         this.remoteTxHook = remoteTxHook;
         this.txIdGenerator = txIdGenerator;
         this.transactionHeaderInformation = transactionHeaderInformation;
+        this.startupStatistics = startupStatistics;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -351,7 +355,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, Provid
                             new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
                         persistenceCache, indexingService, schemaCache, nodeManager ),
                     scheduler, transactionMonitor, kernelHealth, readOnly, cacheAccess, integrityValidator,
-                    locks, lockService, remoteTxHook, txIdGenerator, transactionHeaderInformation, this, logging ) );
+                    locks, lockService, remoteTxHook, txIdGenerator, transactionHeaderInformation, this,
+                    startupStatistics, logging ) );
 
             kernel.registerTransactionHook( transactionEventHandlers );
 

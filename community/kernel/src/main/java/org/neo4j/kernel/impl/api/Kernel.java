@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -45,6 +46,7 @@ import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
+import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -162,6 +164,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final TransactionRepresentationCommitProcess commitProcess;
     private final TransactionHeaderInformation transactionHeaderInformation;
     private final TransactionStore transactionStore;
+    private final StartupStatisticsProvider startupStatistics;
 
     public Kernel( PropertyKeyTokenHolder propertyKeyTokenHolder, UpdateableSchemaState schemaState,
                    SchemaWriteGuard schemaWriteGuard,
@@ -173,7 +176,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                    boolean readOnly, CacheAccessBackDoor cacheAccess, IntegrityValidator integrityValidator,
                    Locks locks, LockService lockService, RemoteTxHook remoteTxHook, TxIdGenerator txIdGenerator,
                    TransactionHeaderInformation transactionHeaderInformation, LogRotationControl logRotationControl,
-                   Logging logging )
+                   StartupStatisticsProvider startupStatistics, Logging logging )
     {
         this.nodeManager = nodeManager;
         this.fs = fs;
@@ -190,6 +193,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.remoteTxHook = remoteTxHook;
         this.txIdGenerator = txIdGenerator;
         this.transactionHeaderInformation = transactionHeaderInformation;
+        this.startupStatistics = startupStatistics;
         this.neoStore = neoStoreProvider.instance();
         this.schemaCache = schemaCache;
         this.labelScanStore = labelScanStore;
@@ -225,6 +229,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public void init() throws Throwable
     {
+        final AtomicInteger recoveredCount = new AtomicInteger();
         transactionStore.open( new Visitor<TransactionRepresentation, IOException>()
         {
             @Override
@@ -233,6 +238,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 try
                 {
                     commitProcess.commit( transaction );
+                    recoveredCount.incrementAndGet();
                     return true;
                 }
                 catch ( TransactionFailureException e )
@@ -241,6 +247,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 }
             }
         } );
+        startupStatistics.setNumberOfRecoveredTransactions( recoveredCount.get() );
     }
 
     @Override

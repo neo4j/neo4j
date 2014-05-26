@@ -31,23 +31,19 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
-import com.sun.management.OperatingSystemMXBean;
-
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcSettings;
-import org.neo4j.graphdb.Label;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.core.StartupStatistics;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+
+import com.sun.management.OperatingSystemMXBean;
 
 import static org.neo4j.ext.udc.UdcConstants.CLUSTER_HASH;
 import static org.neo4j.ext.udc.UdcConstants.DISTRIBUTION;
@@ -76,39 +72,35 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     private final Config config;
     @SuppressWarnings("deprecation")
     private final KernelData kernel;
-    private final NodeManager nodeManager;
+    private final IdGeneratorFactory idGeneratorFactory;
     private String storeId;
     private boolean crashPing;
 
-    public DefaultUdcInformationCollector( Config config, XaDataSourceManager xadsm,
+    public DefaultUdcInformationCollector( Config config, DataSourceManager xadsm,
                                            @SuppressWarnings("deprecation") KernelData kernel )
     {
         this.config = config;
         this.kernel = kernel;
-        nodeManager = kernel.graphDatabase().getDependencyResolver().resolveDependency( NodeManager.class );
+        idGeneratorFactory = kernel.graphDatabase().getDependencyResolver().resolveDependency( IdGeneratorFactory.class );
+        final StartupStatistics startupStatistics = kernel.graphDatabase().getDependencyResolver().resolveDependency(
+                StartupStatistics.class );
 
         if ( xadsm != null )
         {
-            xadsm.addDataSourceRegistrationListener( new DataSourceRegistrationListener()
+            xadsm.addListener( new DataSourceManager.Listener()
             {
                 @Override
-                public void registeredDataSource( XaDataSource ds )
+                public void registered( NeoStoreXaDataSource ds )
                 {
-                    if ( ds instanceof NeoStoreXaDataSource )
-                    {
-                        crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
-                        storeId = Long.toHexString( ds.getRandomIdentifier() );
-                    }
+                    crashPing = startupStatistics.numberOfRecoveredTransactions() > 0;
+                    storeId = Long.toHexString( ds.getRandomIdentifier() );
                 }
 
                 @Override
-                public void unregisteredDataSource( XaDataSource ds )
+                public void unregistered( NeoStoreXaDataSource ds )
                 {
-                    if ( ds instanceof NeoStoreXaDataSource )
-                    {
-                        crashPing = false;
-                        storeId = null;
-                    }
+                    crashPing = false;
+                    storeId = null;
                 }
             } );
         }
@@ -315,27 +307,27 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
 
     private long determineNodesIdsInUse()
     {
-        return getNumberOfIdsInUse( Node.class );
+        return getNumberOfIdsInUse( IdType.NODE );
     }
 
     private long determineLabelIdsInUse()
     {
-        return getNumberOfIdsInUse( Label.class );
+        return getNumberOfIdsInUse( IdType.LABEL_TOKEN );
     }
 
     private long determinePropertyIdsInUse()
     {
-        return getNumberOfIdsInUse( PropertyStore.class );
+        return getNumberOfIdsInUse( IdType.PROPERTY );
     }
 
     private long determineRelationshipIdsInUse()
     {
-        return getNumberOfIdsInUse( Relationship.class );
+        return getNumberOfIdsInUse( IdType.RELATIONSHIP );
     }
 
-    private long getNumberOfIdsInUse( Class<?> clazz )
+    private long getNumberOfIdsInUse( IdType type )
     {
-        return nodeManager.getNumberOfIdsInUse( clazz );
+        return idGeneratorFactory.get( type ).getNumberOfIdsInUse();
     }
 
     private String toCommaString( Object values )

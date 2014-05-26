@@ -109,6 +109,8 @@ import org.neo4j.kernel.impl.core.ReadOnlyNodeManager;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.StartupStatistics;
+import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
@@ -268,6 +270,7 @@ public abstract class InternalAbstractGraphDatabase
     protected StoreUpgrader storeMigrationProcess;
     protected TransactionHeaderInformation transactionHeaderInformation;
     private DataSourceManager dataSourceManager;
+    private StartupStatisticsProvider startupStatistics;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
     {
@@ -515,6 +518,8 @@ public abstract class InternalAbstractGraphDatabase
 
         // Factories for things that needs to be created later
         storeFactory = createStoreFactory();
+
+        startupStatistics = new StartupStatisticsProvider();
 
         transactionHeaderInformation = createTransactionHeaderInformation();
         transactionMonitor = new TransactionMonitorImpl();
@@ -860,7 +865,7 @@ public abstract class InternalAbstractGraphDatabase
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
                 storeMigrationProcess, transactionMonitor, kernelHealth, null, null, txHook, txIdGenerator,
-                transactionHeaderInformation );
+                transactionHeaderInformation, startupStatistics );
         dataSourceManager.register( neoDataSource );
     }
 
@@ -1320,11 +1325,15 @@ public abstract class InternalAbstractGraphDatabase
             }
             else if ( AvailabilityGuard.class.isAssignableFrom( type ) )
             {
-                return (T) availabilityGuard;
+                return type.cast( availabilityGuard );
             }
             else if ( AvailabilityGuard.class.isAssignableFrom( type ) )
             {
-                return (T) availabilityGuard;
+                return type.cast( availabilityGuard );
+            }
+            else if ( StartupStatistics.class.isAssignableFrom( type ) )
+            {
+                return type.cast( startupStatistics );
             }
             return null;
         }
