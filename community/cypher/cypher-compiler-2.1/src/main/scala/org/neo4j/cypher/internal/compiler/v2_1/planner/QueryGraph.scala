@@ -77,6 +77,8 @@ trait QueryGraph {
   }
 
   def covers(other: QueryGraph): Boolean = other.isCoveredBy(this)
+
+  def hasOptionalPatterns = optionalMatches.nonEmpty
 }
 
 object QueryGraph {

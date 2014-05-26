@@ -197,10 +197,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
           produceQueryGraphFromClauses(newQuery, subQueryLookupTable ++ subQueries, tl)
 
-        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl if querySoFar.graph.optionalMatches.nonEmpty =>
-          throw new CantHandleQueryException
-
-        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl =>
+        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl if !querySoFar.graph.hasOptionalPatterns =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
           val newQuery = querySoFar
