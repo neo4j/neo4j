@@ -102,6 +102,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionStore;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -1307,7 +1308,9 @@ public class NeoStoreTransactionTest
         Future<Long> futureMock = mock( Future.class );
         when( futureMock.get() ).thenReturn( 3l );
         when( appenderMock.append( Matchers.<TransactionRepresentation>any()) ).thenReturn( futureMock );
-    	return new TransactionRepresentationCommitProcess( appenderMock, mock( KernelHealth.class ),
+        TransactionStore txStoreMock = mock ( TransactionStore.class );
+        when( txStoreMock.getAppender() ).thenReturn(appenderMock);
+    	return new TransactionRepresentationCommitProcess( txStoreMock, mock( KernelHealth.class ),
                 indexing, mock( LabelScanStore.class ), neoStore, cacheAccessBackDoor, locks, false );
     }
 
