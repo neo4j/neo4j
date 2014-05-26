@@ -38,6 +38,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   val lit42: SignedIntegerLiteral = SignedIntegerLiteral("42")_
   val lit43: SignedIntegerLiteral = SignedIntegerLiteral("43")_
 
+  val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
   def buildPlannerQuery(query: String, normalize:Boolean = false): (PlannerQuery, Map[PatternExpression, QueryGraph]) = {
     val ast = parser.parse(query)
@@ -184,8 +185,6 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match p = (a)-[r]->(b) return a,r") {
-    val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-
     val (query, _) = buildPlannerQuery("match p = (a)-[r]->(b) return a,r", normalize = true)
     query.graph.patternRelationships should equal(Set(patternRel))
     query.graph.patternNodes should equal(Set[IdName]("a", "b"))
@@ -597,8 +596,46 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.tail should equal(None)
   }
 
-  test("should fail when the first pattern is optional") {
-    evaluating(buildPlannerQuery("optional match (a:Foo) with a match (a)-->() return a", normalize = true)) should produce[CantHandleQueryException]
+  test("MATCH a WITH a LIMIT 1 MATCH a-[r]->b RETURN a, b") {
+    val (query, _) = buildPlannerQuery("MATCH a WITH a LIMIT 1 MATCH a-[r]->b RETURN a, b", normalize = true)
+    query.graph should equal(
+      QueryGraph
+      .empty
+      .addPatternNodes(IdName("a"))
+    )
+    query.projection.limit should equal(Some(UnsignedIntegerLiteral("1")(pos)))
+    query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    query.tail should not be empty
+    query.tail.get.graph should equal(
+      QueryGraph
+      .empty
+      .addArgumentId(Seq("a"))
+      .addPatternNodes("a", "b")
+      .addPatternRel(patternRel)
+    )
+  }
+
+  test("optional match (a:Foo) with a match (a)-[r]->(b) return a") {
+    val (query, _) = buildPlannerQuery("optional match (a:Foo) with a match (a)-[r]->(b) return a", normalize = true)
+
+    query.graph should equal(
+      QueryGraph
+      .empty
+      .withAddedOptionalMatch(
+        QueryGraph
+        .empty
+        .addPatternNodes(IdName("a"))
+        .addSelections(Selections(Set(Predicate(Set("a"), HasLabels(ident("a"), Seq(LabelName("Foo")_))_))))
+    ))
+    query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    query.tail should not be empty
+    query.tail.get.graph should equal(
+      QueryGraph
+      .empty
+      .addArgumentId(Seq("a"))
+      .addPatternNodes("a", "b")
+      .addPatternRel(patternRel)
+    )
   }
 
   test("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {
