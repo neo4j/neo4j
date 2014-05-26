@@ -24,6 +24,7 @@ import java.io.File;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Provider;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
@@ -65,6 +66,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
@@ -158,6 +160,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final TxIdGenerator txIdGenerator;
     private final TransactionRepresentationCommitProcess commitProcess;
     private final TransactionHeaderInformation transactionHeaderInformation;
+    private final TransactionStore transactionStore;
 
     public Kernel( PropertyKeyTokenHolder propertyKeyTokenHolder, UpdateableSchemaState schemaState,
                    SchemaWriteGuard schemaWriteGuard,
@@ -200,6 +203,13 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.statisticsService = new StatisticsServiceRepository( fs, config, storeLayer, scheduler ).loadStatistics();
         this.neoStoreTransactionContextSupplier = new NeoStoreTransactionContextSupplier( neoStore );
 
+        this.transactionStore = createTransactionStore( logRotationControl, logging );
+        this.commitProcess = new TransactionRepresentationCommitProcess( transactionStore,
+                kernelHealth, indexService, labelScanStore, neoStore, cacheAccess, lockService, false );
+    }
+
+    private TransactionStore createTransactionStore( LogRotationControl logRotationControl, Logging logging )
+    {
         File directory = config.get( GraphDatabaseSettings.store_dir );
         LogPositionCache logPositionCache = new LogPositionCache( 1000, 100_000 );
         LogFile logFile = new PhysicalLogFile( fs, directory, PhysicalLogFile.DEFAULT_NAME,
@@ -207,11 +217,22 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 LogPruneStrategies.fromConfigValue( fs, config.get( GraphDatabaseSettings.keep_logical_logs ) ),
                 neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
                 logRotationControl, logPositionCache );
-        TransactionStore transactionStore = new PhysicalTransactionStore( logFile, txIdGenerator, logPositionCache,
+        return new PhysicalTransactionStore( logFile, txIdGenerator, logPositionCache,
                 new VersionAwareLogEntryReader( XaCommandReaderFactory.DEFAULT ) );
+    }
 
-        this.commitProcess = new TransactionRepresentationCommitProcess( transactionStore.getAppender(),
-                kernelHealth, indexService, labelScanStore, neoStore, cacheAccess, lockService, false );
+    @Override
+    public void init() throws Throwable
+    {
+        transactionStore.open( new Visitor<TransactionRepresentation, TransactionFailureException>()
+        {
+            @Override
+            public boolean visit( TransactionRepresentation element ) throws TransactionFailureException
+            {
+                commitProcess.commit( element );
+                return true;
+            }
+        } );
     }
 
     @Override
@@ -359,6 +380,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 // TODO 2.2-future do the TxIdGenerator#committed thing
                 success = true;
             }
+        }
+        catch ( final Throwable t )
+        {
+            t.printStackTrace();
+            throw t;
         }
         finally
         {

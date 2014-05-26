@@ -832,6 +832,12 @@ public class NeoStore extends AbstractStore implements TransactionIdStore
     @Override
     public long nextCommittingTransactionId()
     {
+        ensureLastCommittingTransactionIdRead();
+        return lastCommittingTx.incrementAndGet();
+    }
+
+    private void ensureLastCommittingTransactionIdRead()
+    {
         long txId = lastCommittingTx.get();
         if ( txId == -1 )
         {
@@ -841,13 +847,12 @@ public class NeoStore extends AbstractStore implements TransactionIdStore
                 lastCommittingTx.compareAndSet( -1, txId ); // CAS since multiple threads may pass the if check above
             }
         }
-
-        return lastCommittingTx.incrementAndGet();
     }
 
     @Override
     public long getLastCommittingTransactionId()
     {
+        ensureLastCommittingTransactionIdRead();
         return lastCommittingTx.get();
     }
 

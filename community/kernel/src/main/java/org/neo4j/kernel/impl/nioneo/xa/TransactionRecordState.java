@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-
 import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -70,6 +68,8 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
 /**
  * Transaction containing {@link org.neo4j.kernel.impl.nioneo.xa.command.Command commands} reflecting the operations
@@ -1013,5 +1013,15 @@ public class TransactionRecordState
     public interface PropertyReceiver
     {
         void receive( DefinedProperty property, long propertyRecordId );
+    }
+
+    public long nextNodeId()
+    {
+        return getNodeStore().nextId();
+    }
+
+    public long nextRelationshipId()
+    {
+        return getRelationshipStore().nextId();
     }
 }

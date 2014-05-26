@@ -125,6 +125,10 @@ public class TopLevelTransaction implements Transaction
                 throw new TransactionFailureException( "Unable to rollback transaction", e );
             }
         }
+        finally
+        {
+            stmtProvider.unbindTransactionFromCurrentThread( this );
+        }
     }
 
     @Override

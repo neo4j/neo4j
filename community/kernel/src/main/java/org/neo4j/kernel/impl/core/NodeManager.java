@@ -49,7 +49,6 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
@@ -164,83 +163,10 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         relCache.clear();
     }
 
-    public long createNode() throws AcquireLockTimeoutException
-    {
-        long id = idGeneratorFactory.get( IdType.NODE ).nextId();
-        NodeImpl node = new NodeImpl( id, true );
-        TransactionState transactionState = getTransactionState();
-        transactionState.locks().acquireExclusive( ResourceTypes.NODE, id );
-        boolean success = false;
-        try
-        {
-            threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true ).nodeCreate( id );
-            transactionState.createNode( id );
-            nodeCache.put( node );
-            success = true;
-            return id;
-        }
-        finally
-        {
-            if ( !success )
-            {
-                setRollbackOnly();
-            }
-        }
-    }
-
     @Override
     public NodeProxy newNodeProxyById( long id )
     {
         return new NodeProxy( id, nodeLookup, relationshipLookups, threadToTransactionBridge );
-    }
-
-    public long createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode,
-                                            long relationshipTypeId )
-    {
-        if ( startNode == null || endNode == null || relationshipTypeId > Integer.MAX_VALUE )
-        {
-            throw new IllegalArgumentException( "Bad parameter, startNode="
-                    + startNode + ", endNode=" + endNode + ", typeId=" + relationshipTypeId );
-        }
-
-        int typeId = (int)relationshipTypeId;
-        long startNodeId = startNode.getId();
-        long endNodeId = endNode.getId();
-        NodeImpl secondNode = getLightNode( endNodeId );
-        if ( secondNode == null )
-        {
-            setRollbackOnly();
-            throw new NotFoundException( "Second node[" + endNode.getId()
-                    + "] deleted" );
-        }
-        long id = idGeneratorFactory.get( IdType.RELATIONSHIP ).nextId();
-        RelationshipImpl rel = new RelationshipImpl( id, startNodeId, endNodeId, typeId, true );
-        TransactionState tx = getTransactionState();
-        tx.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, id );
-        boolean success = false;
-        try
-        {
-            tx.createRelationship( id );
-            if ( startNodeId == endNodeId )
-            {
-                tx.getOrCreateCowRelationshipAddMap( startNode, typeId ).add( id, DirectionWrapper.BOTH );
-            }
-            else
-            {
-                tx.getOrCreateCowRelationshipAddMap( startNode, typeId ).add( id, DirectionWrapper.OUTGOING );
-                tx.getOrCreateCowRelationshipAddMap( secondNode, typeId ).add( id, DirectionWrapper.INCOMING );
-            }
-            relCache.put( rel );
-            success = true;
-            return id;
-        }
-        finally
-        {
-            if ( !success )
-            {
-                setRollbackOnly();
-            }
-        }
     }
 
     public Node getNodeByIdOrNull( long nodeId )
@@ -845,7 +771,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     public TransactionState getTransactionState()
     {
         // TODO 2.2-future
-//        return transactionManager.getTransactionState();
         throw new UnsupportedOperationException( "Please implement" );
     }
 

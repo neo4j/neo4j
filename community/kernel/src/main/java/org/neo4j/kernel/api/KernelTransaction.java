@@ -39,13 +39,6 @@ import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
  */
 public interface KernelTransaction
 {
-    /*
-     * TODO 2.2-future TransactionRecordState should not be visible anywhere. The problem is that there is
-     * TODO 2.2-future some inversion happening at some places where KernelTransaction should delegate down to
-     * TODO 2.2-future TRS instead. This must be fixed
-     */
-    TransactionRecordState getTransactionRecordState();
-
     Statement acquireStatement();
 
     void prepare() throws TransactionFailureException;
@@ -58,4 +51,11 @@ public interface KernelTransaction
 
     /** Roll back this transaction, undoing any changes that have been made. */
     void rollback() throws TransactionFailureException;
+
+    /*
+     * TODO 2.2-future TransactionRecordState should not be visible anywhere. The problem is that there is
+     * TODO 2.2-future some inversion happening at some places where KernelTransaction should delegate down to
+     * TODO 2.2-future TRS instead. This must be fixed. This sentiment applies to all accessor methods below.
+     */
+    TransactionRecordState getTransactionRecordState();
 }

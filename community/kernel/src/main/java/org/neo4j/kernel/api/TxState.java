@@ -141,9 +141,9 @@ public interface TxState
 
     // ENTITY RELATED
 
-    long relationshipDoCreate( int relationshipTypeId, long startNodeId, long endNodeId );
+    void relationshipDoCreate( long id, int relationshipTypeId, long startNodeId, long endNodeId );
 
-    long nodeDoCreate();
+    void nodeDoCreate( long id );
 
     DiffSets<Long> labelStateNodeDiffSets( int labelId );
 

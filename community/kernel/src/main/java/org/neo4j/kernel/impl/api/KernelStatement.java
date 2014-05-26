@@ -42,7 +42,7 @@ public class KernelStatement implements TxState.Holder, Statement
     protected final TxState.Holder txStateHolder;
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
-    protected TransactionRecordState neoStoreTransaction;
+    protected TransactionRecordState recordState;
     
     private LabelScanReader labelScanReader;
     private int referenceCount;
@@ -59,7 +59,7 @@ public class KernelStatement implements TxState.Holder, Statement
         this.indexReaderFactory = indexReaderFactory;
         this.txStateHolder = txStateHolder;
         this.labelScanStore = labelScanStore;
-        this.neoStoreTransaction = neoStoreTransaction;
+        this.recordState = neoStoreTransaction;
         this.facade = new OperationsFacade( this, operations );
     }
 

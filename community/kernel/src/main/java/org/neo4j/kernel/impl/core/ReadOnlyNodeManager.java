@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.core;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.cache.Cache;
@@ -41,18 +40,6 @@ public class ReadOnlyNodeManager extends NodeManager
         super( logger, graphDb,
                 relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, nodeLookup, relationshipLookups,
                 nodeCache, relCache, statementCtxProvider, idGeneratorFactory );
-    }
-
-    @Override
-    public long createNode()
-    {
-        throw new ReadOnlyDbException();
-    }
-
-    @Override
-    public long createRelationship( Node startNodeProxy, NodeImpl startNode, Node endNode, long typeId )
-    {
-        throw new ReadOnlyDbException();
     }
 
     @Override

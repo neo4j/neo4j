@@ -356,12 +356,10 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public long nodeDoCreate()
+    public void nodeDoCreate( long id )
     {
-        long id = legacyState.nodeCreate();
         addedAndRemovedNodes().add( id );
         hasChanges = true;
-        return id;
     }
 
     @Override
@@ -391,13 +389,11 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public long relationshipDoCreate( int relationshipTypeId, long startNodeId, long endNodeId )
+    public void relationshipDoCreate( long id, int relationshipTypeId, long startNodeId, long endNodeId )
     {
-        long id = legacyState.relationshipCreate( relationshipTypeId, startNodeId, endNodeId );
-
         addedAndRemovedRels().add( id );
 
-        if(startNodeId == endNodeId)
+        if ( startNodeId == endNodeId )
         {
             getOrCreateNodeState( startNodeId ).addRelationship( id, relationshipTypeId, Direction.BOTH );
         }
@@ -410,7 +406,6 @@ public final class TxStateImpl implements TxState
         getOrCreateRelationshipState( id ).setMetaData( startNodeId, endNodeId, relationshipTypeId );
 
         hasChanges = true;
-        return id;
     }
 
     @Override

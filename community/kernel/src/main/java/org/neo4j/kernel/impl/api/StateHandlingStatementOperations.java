@@ -96,9 +96,12 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long nodeCreate( KernelStatement statement )
+    public long nodeCreate( KernelStatement state )
     {
-        return statement.txState().nodeDoCreate();
+        long nodeId = state.recordState.nextNodeId();
+        state.recordState.nodeCreate( nodeId );
+        state.txState().nodeDoCreate( nodeId );
+        return nodeId;
     }
 
     @Override
@@ -111,8 +114,9 @@ public class StateHandlingStatementOperations implements
     @Override
     public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
     {
-        long id = state.txState().relationshipDoCreate( relationshipTypeId, startNodeId, endNodeId );
-        state.neoStoreTransaction.relationshipCreate( id, relationshipTypeId, startNodeId, endNodeId );
+        long id = state.recordState.nextRelationshipId();
+        state.recordState.relationshipCreate( id, relationshipTypeId, startNodeId, endNodeId );
+        state.txState().relationshipDoCreate( id, relationshipTypeId, startNodeId, endNodeId );
         return id;
     }
 

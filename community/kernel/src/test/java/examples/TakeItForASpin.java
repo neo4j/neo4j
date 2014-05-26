@@ -1,32 +1,49 @@
+/**
+ * Copyright (c) 2002-2014 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
 package examples;
 import java.io.File;
-import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.test.TargetDirectory;
 
 public class TakeItForASpin
 {
-    public static void main( String[] args ) throws IOException
+    public static void main( String[] args )
     {
-        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( cleared( "the-path" ) );
+        File dir = TargetDirectory.forTest( TakeItForASpin.class ).makeGraphDbDir();
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir.getAbsolutePath() );
         try ( Transaction tx = db.beginTx() )
         {
             db.createNode();
             tx.success();
         }
+        catch ( final Throwable t )
+        {
+            t.printStackTrace();
+            throw t;
+        }
         finally
         {
             db.shutdown();
         }
-    }
-
-    private static String cleared( String string ) throws IOException
-    {
-        File directory = new File( string ).getAbsoluteFile();
-        FileUtils.deleteRecursively( directory );
-        return directory.getAbsolutePath();
     }
 }

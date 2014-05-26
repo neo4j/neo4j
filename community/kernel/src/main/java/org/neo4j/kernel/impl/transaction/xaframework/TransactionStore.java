@@ -22,13 +22,15 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
 /**
  * Uses {@link LogFile} and using the bytes it provides, sees the bytes as transactions.
  */
 public interface TransactionStore
 {
-    void open( Visitor<TransactionRepresentation, IOException> recoveredTransactionVisitor ) throws IOException;
+    void open( Visitor<TransactionRepresentation, TransactionFailureException> recoveredTransactionVisitor )
+            throws IOException, TransactionFailureException;
 
     TransactionAppender getAppender();
 

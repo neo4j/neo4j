@@ -17,35 +17,29 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import java.util.concurrent.atomic.AtomicInteger;
 
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-@Deprecated
-class TransactionBuilderImpl implements TransactionBuilder
+public class TransactionMonitorImpl implements TransactionMonitor
 {
-    private final InternalAbstractGraphDatabase db;
-    private final ForceMode forceMode;
+    private final AtomicInteger activeTransactionCount = new AtomicInteger();
 
-    TransactionBuilderImpl( InternalAbstractGraphDatabase db, ForceMode forceMode )
-    {
-        this.db = db;
-        this.forceMode = forceMode;
-    }
-    
     @Override
-    public Transaction begin()
+    public void transactionStarted()
     {
-        return this.db.beginTx( forceMode );
+        activeTransactionCount.incrementAndGet();
     }
 
     @Override
-    public TransactionBuilder unforced()
+    public void transactionFinished( boolean successful )
     {
-        return new TransactionBuilderImpl( db, ForceMode.unforced );
+        activeTransactionCount.decrementAndGet();
+    }
+
+    @Override
+    public int getNumberOfActiveTransactions()
+    {
+        return activeTransactionCount.get();
     }
 }

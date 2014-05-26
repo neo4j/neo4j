@@ -138,10 +138,10 @@ import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressM
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.traversal.BidirectionalTraversalDescriptionImpl;
 import org.neo4j.kernel.impl.traversal.MonoDirectionalTraversalDescription;
@@ -219,7 +219,6 @@ public abstract class InternalAbstractGraphDatabase
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();
     private static final long MAX_RELATIONSHIP_ID = IdType.RELATIONSHIP.getMaxValue();
 
-    private final TransactionBuilder defaultTxBuilder = new TransactionBuilderImpl( this, ForceMode.forced );
     protected final KernelExtensions kernelExtensions;
 
     protected final DependencyResolver dependencyResolver = new DependencyResolverImpl();
@@ -518,7 +517,7 @@ public abstract class InternalAbstractGraphDatabase
         storeFactory = createStoreFactory();
 
         transactionHeaderInformation = createTransactionHeaderInformation();
-
+        transactionMonitor = new TransactionMonitorImpl();
         createNeoDataSource();
         neoStoreDataSourceRelocator.setDelegate( neoDataSource );
 
@@ -634,21 +633,6 @@ public abstract class InternalAbstractGraphDatabase
                     guard.check();
                     return super.getRelationshipByIdOrNull( relId );
                 }
-
-                @Override
-                public long createNode()
-                {
-                    guard.check();
-                    return super.createNode();
-                }
-
-                @Override
-                public long createRelationship( Node startNodeProxy, NodeImpl startNode,
-                                                        Node endNode, long relationshipTypeId )
-                {
-                    guard.check();
-                    return super.createRelationship( startNodeProxy, startNode, endNode, relationshipTypeId );
-                }
             };
         }
 
@@ -682,21 +666,6 @@ public abstract class InternalAbstractGraphDatabase
             {
                 guard.check();
                 return super.getRelationshipByIdOrNull( relId );
-            }
-
-            @Override
-            public long createNode()
-            {
-                guard.check();
-                return super.createNode();
-            }
-
-            @Override
-            public long createRelationship( Node startNodeProxy, NodeImpl startNode,
-                                                    Node endNode, long relationshipTypeId )
-            {
-                guard.check();
-                return super.createRelationship( startNodeProxy, startNode, endNode, relationshipTypeId );
             }
         };
     }
@@ -922,11 +891,6 @@ public abstract class InternalAbstractGraphDatabase
     @Override
     public Transaction beginTx()
     {
-        return tx().begin();
-    }
-
-    protected Transaction beginTx( ForceMode forceMode )
-    {
         if ( !availabilityGuard.isAvailable( accessTimeout ) )
         {
             throw new TransactionFailureException( "Database is currently not available. "
@@ -934,14 +898,17 @@ public abstract class InternalAbstractGraphDatabase
         }
 
         KernelAPI kernel = neoDataSource.getKernel();
-        TopLevelTransaction runningTransaction = threadToTransactionBridge.getTopLevelTransactionBoundToThisThread( false );
-        if ( runningTransaction != null )
+        TopLevelTransaction topLevelTransaction =
+                threadToTransactionBridge.getTopLevelTransactionBoundToThisThread( false );
+        if ( topLevelTransaction != null )
         {
-            return new PlaceboTransaction( runningTransaction );
+            return new PlaceboTransaction( topLevelTransaction );
         }
 
         KernelTransaction transaction = kernel.newTransaction();
-        return new TopLevelTransaction( kernel, transaction, threadToTransactionBridge );
+        topLevelTransaction = new TopLevelTransaction( kernel, transaction, threadToTransactionBridge );
+        threadToTransactionBridge.bindTransactionToCurrentThread( topLevelTransaction );
+        return topLevelTransaction;
     }
 
     @Override
@@ -1063,12 +1030,6 @@ public abstract class InternalAbstractGraphDatabase
             throw new NotFoundException( format( "Relationship %d not found", id));
         }
         return nodeManager.getRelationshipById( id );
-    }
-
-    @Override
-    public TransactionBuilder tx()
-    {
-        return defaultTxBuilder;
     }
 
     @Override

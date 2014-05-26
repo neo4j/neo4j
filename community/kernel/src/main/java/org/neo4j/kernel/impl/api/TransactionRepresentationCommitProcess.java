@@ -33,12 +33,12 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionStore;
 
 public class TransactionRepresentationCommitProcess
 {
-    private final TransactionAppender transactionAppender;
+    private final TransactionStore transactionStore;
     private final KernelHealth kernelHealth;
     private final IndexingService indexingService;
     private final NeoStore neoStore;
@@ -47,11 +47,11 @@ public class TransactionRepresentationCommitProcess
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
 
-    public TransactionRepresentationCommitProcess( TransactionAppender transactionAppender,
+    public TransactionRepresentationCommitProcess( TransactionStore transactionStore,
             KernelHealth kernelHealth, IndexingService indexingService, LabelScanStore labelScanStore, NeoStore neoStore,
             CacheAccessBackDoor cacheAccess, LockService lockService, boolean recovery )
     {
-        this.transactionAppender = transactionAppender;
+        this.transactionStore = transactionStore;
         this.labelScanStore = labelScanStore;
         this.neoStore = neoStore;
         this.cacheAccess = cacheAccess;
@@ -67,7 +67,7 @@ public class TransactionRepresentationCommitProcess
         Future<Long> commitFuture;
         try
         {
-            commitFuture = transactionAppender.append( representation );
+            commitFuture = transactionStore.getAppender().append( representation );
         }
         catch ( IOException e )
         {

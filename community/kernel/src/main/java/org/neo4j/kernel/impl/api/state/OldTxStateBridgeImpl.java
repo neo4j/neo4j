@@ -29,7 +29,6 @@ import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
-import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.DiffSets;
 
@@ -104,20 +103,6 @@ public class OldTxStateBridgeImpl implements OldTxStateBridge
     private static DefinedProperty propertyChange( ArrayMap<Integer, DefinedProperty> propertyDataMap, long propertyKeyId )
     {
         return propertyDataMap == null ? null : propertyDataMap.get( (int) propertyKeyId );
-    }
-
-    @Override
-    public long relationshipCreate( int relationshipTypeId, long startNodeId, long endNodeId )
-    {
-        NodeImpl startNode = nodeManager.getNodeForProxy( startNodeId );
-        return nodeManager.createRelationship( nodeManager.newNodeProxyById( startNodeId ), startNode,
-                nodeManager.newNodeProxyById( endNodeId ), relationshipTypeId );
-    }
-
-    @Override
-    public long nodeCreate() throws AcquireLockTimeoutException
-    {
-        return nodeManager.createNode();
     }
 
     @Override

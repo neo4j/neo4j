@@ -376,11 +376,6 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
     <dependency>
-      <groupId>org.ow2.jotm</groupId>
-      <artifactId>jotm-core</artifactId>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
       <groupId>geronimo-spec</groupId>
       <artifactId>geronimo-spec-j2ee</artifactId>
       <scope>test</scope>

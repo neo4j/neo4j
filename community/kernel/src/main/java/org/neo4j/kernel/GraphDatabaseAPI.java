@@ -40,9 +40,6 @@ public interface GraphDatabaseAPI extends GraphDatabaseService
     /** Provides the unique id assigned to this database. */
     StoreId storeId();
 
-    /** A more fine-grained mechanism for creating transactions, allows modifying transaction-global behavior. */
-    TransactionBuilder tx();
-
     @Deprecated
     String getStoreDir();
 }

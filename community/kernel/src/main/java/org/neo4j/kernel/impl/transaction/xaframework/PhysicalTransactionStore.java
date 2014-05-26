@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
 public class PhysicalTransactionStore implements TransactionStore
 {
@@ -41,7 +42,8 @@ public class PhysicalTransactionStore implements TransactionStore
     }
 
     @Override
-    public void open( Visitor<TransactionRepresentation, IOException> recoveredTransactionVisitor ) throws IOException
+    public void open( Visitor<TransactionRepresentation, TransactionFailureException> recoveredTransactionVisitor )
+            throws IOException, TransactionFailureException
     {
         logFile.open( new Visitor<ReadableLogChannel, IOException>()
         {
