@@ -24,6 +24,10 @@ o Fix problem where LOAD CSV stops indexes from being used
 o Add LOAD CSV
 o Add USING PERIODIC COMMIT
 
+2.0.5
+-----
+o Fixes problem where predicates are evaluated wrongly in NOT
+
 2.0.4
 -----
 o Adds UNWIND
