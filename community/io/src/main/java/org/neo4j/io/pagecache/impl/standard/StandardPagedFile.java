@@ -164,6 +164,7 @@ public class StandardPagedFile implements PagedFile
     @Override
     public void flush() throws IOException
     {
+        table.flush( pageIO );
         pageIO.force();
     }
 }

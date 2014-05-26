@@ -25,8 +25,6 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.io.fs.StoreChannel;
 
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.readAndFlip;
-
 public class ChannelInputStream extends InputStream
 {
     private final StoreChannel channel;
@@ -41,8 +39,18 @@ public class ChannelInputStream extends InputStream
     @Override
     public int read() throws IOException
     {
-        if ( !readAndFlip( channel, buffer, 1 ) )
-            return -1;
+        buffer.clear();
+        buffer.limit( 1 );
+        while ( buffer.hasRemaining())
+        {
+            int read = channel.read( buffer );
+
+            if ( read == -1 )
+            {
+                return -1;
+            }
+        }
+        buffer.flip();
         position++;
         return buffer.get();
     }

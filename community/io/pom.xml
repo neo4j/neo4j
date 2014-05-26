@@ -56,6 +56,8 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-primitive-collections</artifactId>
       <version>${project.version}</version>
     </dependency>
+
+    <!-- Test dependencies -->
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>
@@ -64,6 +66,11 @@ the relevant Commercial Agreement.
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-all</artifactId>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>commons-codec</groupId>
+      <artifactId>commons-codec</artifactId>
       <scope>test</scope>
     </dependency>
   </dependencies>

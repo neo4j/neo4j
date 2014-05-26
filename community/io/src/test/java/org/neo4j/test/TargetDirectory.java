@@ -27,8 +27,7 @@ import org.apache.commons.codec.digest.DigestUtils;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
 
