@@ -198,7 +198,7 @@ public class NeoStoreTransactionTest
 
         // WHEN
         writeTransaction.dropSchemaRule( rule );
-        commitProcess.commit(writeTransaction.doPrepare());
+        commitProcess.commit( writeTransaction.doPrepare() );
 
         // THEN
         verify( cacheAccessBackDoor ).removeSchemaRuleFromCache( ruleId );

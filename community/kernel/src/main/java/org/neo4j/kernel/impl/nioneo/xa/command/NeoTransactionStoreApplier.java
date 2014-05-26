@@ -276,13 +276,12 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
         switch ( command.getMode() )
         {
             case DELETE:
-                cacheAccess.removeSchemaRuleFromCache( command.getKey() );
+            	invalidateCache( command );
                 break;
             default:
                 cacheAccess.addSchemaRule( command.getSchemaRule() );
+                invalidateCache(command);
         }
-
-        invalidateCache( command );
         return true;
     }
 
