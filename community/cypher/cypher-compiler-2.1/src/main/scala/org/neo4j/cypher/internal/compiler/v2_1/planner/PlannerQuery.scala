@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{GeneratedPretty, Pretty, pformat}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{PrettyToString, GeneratedPretty, Pretty, pformat}
 
-trait PlannerQuery extends GeneratedPretty {
+trait PlannerQuery {
   def graph: QueryGraph
   def projection: QueryProjection
   def tail: Option[PlannerQuery]
@@ -73,7 +73,8 @@ object PlannerQuery {
 
 case class PlannerQueryImpl(graph: QueryGraph,
                             projection: QueryProjection,
-                            tail: Option[PlannerQuery] = None) extends PlannerQuery {
+                            tail: Option[PlannerQuery] = None)
+  extends PlannerQuery with GeneratedPretty with PrettyToString {
 
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
     case None => copy(tail = Some(newTail))

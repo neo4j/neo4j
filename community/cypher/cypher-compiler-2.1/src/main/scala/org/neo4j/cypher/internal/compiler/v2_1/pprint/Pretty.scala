@@ -42,8 +42,6 @@ trait HasPageFormatter extends HasFormatter {
 }
 
 trait PlainlyPretty extends Pretty with HasFormatter {
-  override def toString = printToString(docFormatter(toDoc))
-
   override def format(docFormatter: DocFormatter = docFormatter)
                      (implicit docGenerator: DocGenerator[this.type]) =
     super.format(docFormatter)
@@ -57,4 +55,10 @@ trait GeneratedPretty extends Pretty with HasFormatter {
     super.format(docFormatter)
 
   def docGenerator: DocGenerator[this.type] = defaultDocBuilder.docGenerator
+}
+
+trait PrettyToString {
+  self: Pretty with HasFormatter =>
+
+  override def toString = printToString(docFormatter(toDoc))
 }
