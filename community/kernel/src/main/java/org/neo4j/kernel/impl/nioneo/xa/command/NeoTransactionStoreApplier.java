@@ -92,6 +92,10 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
         // acquire lock
         lockGroup.add( lockService.acquireNodeLock( command.getKey(), LockService.LockType.WRITE_LOCK ) );
 
+        if ( recovery )
+        {
+        	neoStore.getNodeStore().setHighId( command.getAfter().getId() );
+        }
         // update store
         neoStore.getNodeStore().updateRecord( command.getAfter() );
 
@@ -111,6 +115,14 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
         {
             toUpdate.add( new DynamicRecord( id ) );
         }
+
+        if ( recovery )
+        {
+        	for ( DynamicRecord record : toUpdate )
+        	{
+        		neoStore.getNodeStore().getDynamicLabelStore().setHighId( record.getId() );
+        	}
+        }
         neoStore.getNodeStore().updateDynamicLabelRecords( toUpdate );
 
         invalidateCache( command );
@@ -129,6 +141,12 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
     public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
     {
         RelationshipRecord record = command.getRecord();
+
+        if ( recovery )
+        {
+        	neoStore.getRelationshipStore().setHighId( record.getId() );
+        }
+
         if ( recovery && !record.inUse() )
         {
             /*
@@ -154,6 +172,11 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
             lockGroup.add( lockService.acquireNodeLock( nodeId, LockService.LockType.WRITE_LOCK ) );
         }
 
+        if ( recovery )
+        {
+        	neoStore.getPropertyStore().setHighId( command.getAfter().getId() );
+        }
+
         // update store
         neoStore.getPropertyStore().updateRecord( command.getAfter() );
         invalidateCache( command );
@@ -163,14 +186,11 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
     @Override
     public boolean visitRelationshipGroupCommand( Command.RelationshipGroupCommand command ) throws IOException
     {
-        if ( recovery )
-        {
-            neoStore.getRelationshipGroupStore().updateRecord( command.getRecord(), true );
-        }
-        else
-        {
-            neoStore.getRelationshipGroupStore().updateRecord( command.getRecord() );
-        }
+    	if ( recovery )
+    	{
+    		neoStore.getRelationshipGroupStore().setHighId(command.getRecord().getId() );
+    	}
+        neoStore.getRelationshipGroupStore().updateRecord( command.getRecord() );
         invalidateCache( command );
         return true;
     }
@@ -179,33 +199,48 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
     public boolean visitRelationshipTypeTokenCommand( Command.RelationshipTypeTokenCommand command ) throws
             IOException
     {
+    	if ( recovery )
+    	{
+    		neoStore.getRelationshipTypeTokenStore().setHighId(command.getRecord().getId() );
+    	}
         neoStore.getRelationshipTypeTokenStore().updateRecord( command.getRecord() );
         if ( recovery )
         {
             addRelationshipType( (int) command.getKey() );
         }
+        invalidateCache( command );
         return true;
     }
 
     @Override
     public boolean visitLabelTokenCommand( Command.LabelTokenCommand command ) throws IOException
     {
+    	if ( recovery )
+    	{
+    		neoStore.getLabelTokenStore().setHighId( command.getRecord().getId() );
+    	}
         neoStore.getLabelTokenStore().updateRecord( command.getRecord() );
         if ( recovery )
         {
             addLabel( (int) command.getKey() );
         }
+        invalidateCache( command );
         return true;
     }
 
     @Override
     public boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException
     {
+    	if ( recovery )
+    	{
+    		neoStore.getPropertyKeyTokenStore().setHighId( command.getRecord().getId() );
+    	}
         neoStore.getPropertyStore().getPropertyKeyTokenStore().updateRecord( command.getRecord() );
         if ( recovery )
         {
             addPropertyKey( (int) command.getKey() );
         }
+        invalidateCache( command );
         return true;
     }
 
@@ -224,7 +259,11 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
 
         for ( DynamicRecord record : command.getRecordsAfter() )
         {
-            neoStore.getSchemaStore().updateRecord( record );
+        	if ( recovery )
+        	{
+        		neoStore.getSchemaStore().setHighId( record.getId() );
+        	}
+        	neoStore.getSchemaStore().updateRecord( record );
         }
 
         if ( command.getSchemaRule() instanceof IndexRule )
@@ -291,7 +330,7 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
         neoStore.setGraphNextProp( command.getRecord().getNextProp() );
         if ( recovery )
         {
-            cacheAccess.removeGraphPropertiesFromCache();
+        	cacheAccess.removeGraphPropertiesFromCache();
         }
         invalidateCache( command );
         return true;
@@ -299,6 +338,10 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
 
     public void done()
     {
+    	if ( recovery )
+    	{
+    		neoStore.updateIdGenerators();
+    	}
         lockGroup.close();
     }
 }

@@ -658,7 +658,7 @@ public abstract class CommonAbstractStore implements IdSequence
 
     protected void registerIdFromUpdateRecord( long id )
     {
-        if ( isInRecoveryMode() )
+//        if ( isInRecoveryMode() )
         {
             highestUpdateRecordId = Math.max( highestUpdateRecordId, id + 1 );
         }

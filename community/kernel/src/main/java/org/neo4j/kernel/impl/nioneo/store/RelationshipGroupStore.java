@@ -147,21 +147,6 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         }
     }
 
-    public void updateRecord( RelationshipGroupRecord record, boolean recovered )
-    {
-        assert recovered;
-        setRecovered();
-        try
-        {
-            updateRecord( record );
-            registerIdFromUpdateRecord( record.getId() );
-        }
-        finally
-        {
-            unsetRecovered();
-        }
-    }
-
     private void updateRecord( RelationshipGroupRecord record, PersistenceWindow window, boolean force )
     {
         long id = record.getId();

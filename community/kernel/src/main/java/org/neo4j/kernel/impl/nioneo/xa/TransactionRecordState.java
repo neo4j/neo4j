@@ -98,6 +98,7 @@ public class TransactionRecordState
     private final NeoStore neoStore;
     private final IntegrityValidator integrityValidator;
     private final NeoStoreTransactionContext context;
+    private boolean prepared;
 
     /**
      * @param lastCommittedTxWhenTransactionStarted is the highest committed transaction id when this transaction
@@ -134,6 +135,8 @@ public class TransactionRecordState
 
     public PhysicalTransactionRepresentation doPrepare() throws TransactionFailureException
     {
+    	assert !prepared : "Transaction has already been prepared";
+
         int noOfCommands = context.getNodeRecords().changeSize() +
                            context.getRelRecords().changeSize() +
                            context.getPropertyRecords().changeSize() +
@@ -235,6 +238,7 @@ public class TransactionRecordState
         }
 
         integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
+        prepared = true;
         return new PhysicalTransactionRepresentation( commands, false );
     }
 
