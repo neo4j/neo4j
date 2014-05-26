@@ -50,7 +50,6 @@ public class PhysicalLogFile implements LogFile,
     private char currentLog = CLEAN;
     private final long rotateAtSize;
     private final FileSystemAbstraction fileSystem;
-    private final File directory;
     private final File fileName;
     private final LogPruneStrategy pruneStrategy;
     private final TransactionIdStore transactionIdStore;
@@ -67,7 +66,6 @@ public class PhysicalLogFile implements LogFile,
             LogRotationControl logRotationControl, LogPositionCache positionCache )
     {
         this.fileSystem = fileSystem;
-        this.directory = directory;
         this.rotateAtSize = rotateAtSize;
         this.pruneStrategy = pruneStrategy;
         this.transactionIdStore = transactionIdStore;
