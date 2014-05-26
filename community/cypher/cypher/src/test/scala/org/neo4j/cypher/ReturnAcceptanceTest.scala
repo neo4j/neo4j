@@ -500,4 +500,17 @@ return coalesce(a.title, a.name)""")
     val result = execute("MATCH n RETURN n, count(n) + 3")
     result.toList should equal(List(Map("n" -> n, "count(n) + 3" -> 4)))
   }
+
+  test("renaming in multiple steps should still work") {
+    val result = execute(
+      """CREATE (m)
+        |WITH {FIRST: id(m)} AS m
+        |WITH {SECOND: m.FIRST} AS m
+        |RETURN m.SECOND""".stripMargin)
+      .columnAs[Any]("m.SECOND")
+      .toList
+
+    result shouldNot contain(null)
+  }
+
 }

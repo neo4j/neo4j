@@ -27,12 +27,26 @@ import symbols._
 object ExtractPipe {
   def apply(source: Pipe, expressions: Map[String, Expression]): ExtractPipe = source match {
       // If we can merge the two pipes together, do it
-    case p: ExtractPipe if expressions.values.forall(_.symbolDependenciesMet(p.source.symbols)) =>
+    case p: ExtractPipe if canMerge(p, expressions) =>
       new ExtractPipe(p.source, p.expressions ++ expressions)
 
     case _              =>
       new ExtractPipe(source, expressions)
   }
+
+  private def canMerge(source:ExtractPipe, expressions: Map[String, Expression]) = {
+    val symbols = source.source.symbols.identifiers.keySet
+    val expressionsDependenciesMet = expressions.values.forall(_.symbolDependenciesMet(source.source.symbols))
+    val expressionsDependOnIntroducedSymbols = expressions.values.exists {
+      case e => e.exists {
+        case Identifier(x) => symbols.contains(x)
+        case _             => false
+      }
+    }
+
+    expressionsDependenciesMet && !expressionsDependOnIntroducedSymbols
+  }
+
 }
 
 class ExtractPipe(val source: Pipe, val expressions: Map[String, Expression]) extends PipeWithSource(source) {
