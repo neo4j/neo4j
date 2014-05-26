@@ -126,7 +126,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.nioneo.xa.LifecycleRelocator;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
@@ -267,6 +267,7 @@ public abstract class InternalAbstractGraphDatabase
     protected long accessTimeout;
     protected StoreUpgrader storeMigrationProcess;
     protected TransactionHeaderInformation transactionHeaderInformation;
+    private DataSourceManager dataSourceManager;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
     {
@@ -456,12 +457,11 @@ public abstract class InternalAbstractGraphDatabase
         // this was the place of the XaDataSourceManager. NeoStoreXaDataSource is create further down than
         // (specifically) KernelExtensions, which creates an interesting out-of-order issue with #doAfterRecovery().
         // Anyways please fix this.
-        LifecycleRelocator neoStoreDataSourceRelocator = life.add( new LifecycleRelocator() );
+        dataSourceManager = life.add( new DataSourceManager() );
 
         txHook = createTxHook();
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
-
 
         updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
 
@@ -519,7 +519,6 @@ public abstract class InternalAbstractGraphDatabase
         transactionHeaderInformation = createTransactionHeaderInformation();
         transactionMonitor = new TransactionMonitorImpl();
         createNeoDataSource();
-        neoStoreDataSourceRelocator.setDelegate( neoDataSource );
 
         life.add( new MonitorGc( config, msgLog ) );
 
@@ -862,6 +861,7 @@ public abstract class InternalAbstractGraphDatabase
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
                 storeMigrationProcess, transactionMonitor, kernelHealth, null, null, txHook, txIdGenerator,
                 transactionHeaderInformation );
+        dataSourceManager.register( neoDataSource );
     }
 
     protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
@@ -1190,6 +1190,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( IndexStore.class.isAssignableFrom( type ) && type.isInstance( indexStore ) )
             {
                 return type.cast( indexStore );
+            }
+            else if ( DataSourceManager.class.isAssignableFrom( type ) && type.isInstance( dataSourceManager ) )
+            {
+                return type.cast( dataSourceManager );
             }
             else if ( FileSystemAbstraction.class.isAssignableFrom( type ) && type.isInstance( fileSystem ) )
             {
