@@ -39,7 +39,7 @@ import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 import static org.neo4j.io.pagecache.impl.standard.PageTable.PinnablePage;
 
-public class StandardPageTableTest
+public class ClockSweepPageTableTest
 {
     private ClockSweepPageTable table;
     private Thread sweeperThread;
