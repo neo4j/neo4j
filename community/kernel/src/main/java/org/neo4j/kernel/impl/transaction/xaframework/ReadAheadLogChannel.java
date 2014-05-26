@@ -52,6 +52,26 @@ public class ReadAheadLogChannel implements ReadableLogChannel
     }
 
     @Override
+    public boolean hasMoreData() throws IOException
+    {
+        if ( aheadBuffer.hasRemaining() )
+        {
+            return true;
+        }
+
+        try
+        {
+            ensureDataExists( 1 );
+            return true;
+        }
+        catch ( ReadPastEndException e )
+        {
+            return false;
+        }
+        // let through IOException (which points to real I/O error
+    }
+
+    @Override
     public byte get() throws IOException
     {
         ensureDataExists( 1 );

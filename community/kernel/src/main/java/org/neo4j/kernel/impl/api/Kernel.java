@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.api;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -224,13 +225,20 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public void init() throws Throwable
     {
-        transactionStore.open( new Visitor<TransactionRepresentation, TransactionFailureException>()
+        transactionStore.open( new Visitor<TransactionRepresentation, IOException>()
         {
             @Override
-            public boolean visit( TransactionRepresentation element ) throws TransactionFailureException
+            public boolean visit( TransactionRepresentation transaction ) throws IOException
             {
-                commitProcess.commit( element );
-                return true;
+                try
+                {
+                    commitProcess.commit( transaction );
+                    return true;
+                }
+                catch ( TransactionFailureException e )
+                {
+                    throw new IOException( "Unable to recover transaction " + transaction, e );
+                }
             }
         } );
     }

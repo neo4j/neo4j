@@ -63,6 +63,12 @@ public class PhysicalTransactionAppender implements TransactionAppender
         return FutureAdapter.present( transactionId );
     }
 
+    @Override
+    public void close() throws IOException
+    {
+        channel.close();
+    }
+
 //    private class PhysicalLogWriterSPI implements LogHandler.SPI
 //    {
 //        private ForceMode forceMode;

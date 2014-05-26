@@ -23,13 +23,14 @@ import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.util.Consumer;
 
 public class PhysicalTransactionStore implements TransactionStore
 {
     private final LogFile logFile;
     private final LogPositionCache positionCache;
     private final TxIdGenerator txIdGenerator;
-    private PhysicalTransactionAppender appender;
+    private TransactionAppender appender;
     private final LogEntryReader<ReadableLogChannel> logEntryReader;
 
     public PhysicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator, LogPositionCache positionCache,
@@ -42,18 +43,30 @@ public class PhysicalTransactionStore implements TransactionStore
     }
 
     @Override
-    public void open( Visitor<TransactionRepresentation, TransactionFailureException> recoveredTransactionVisitor )
+    public void open( final Visitor<TransactionRepresentation, IOException> recoveredTransactionVisitor )
             throws IOException, TransactionFailureException
     {
+        final Consumer<TransactionRepresentation, IOException> consumer =
+                new Consumer<TransactionRepresentation, IOException>()
+        {
+            @Override
+            public boolean accept( TransactionRepresentation transaction ) throws IOException
+            {
+                return recoveredTransactionVisitor.visit( transaction );
+            }
+        };
+
         logFile.open( new Visitor<ReadableLogChannel, IOException>()
         {
             @Override
-            public boolean visit( ReadableLogChannel element ) throws IOException
+            public boolean visit( ReadableLogChannel channel ) throws IOException
             {
-                // while more data
-                //  read next transaction
-                //  hand it over to recoveredTransactionVisitor
-                throw new UnsupportedOperationException( "Please implement" );
+                TransactionCursor cursor = new PhysicalTransactionCursor( channel, logEntryReader );
+                while ( cursor.next( consumer ) )
+                {
+                    // Just do through the recovery data, handing it on to the consumer.
+                }
+                return true;
             }
         } );
 
@@ -82,5 +95,15 @@ public class PhysicalTransactionStore implements TransactionStore
         // TODO 2.2-future play forward and cache that position
         TransactionCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
         return cursor;
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        if ( appender != null )
+        {
+            appender.close();
+            appender = null;
+        }
     }
 }

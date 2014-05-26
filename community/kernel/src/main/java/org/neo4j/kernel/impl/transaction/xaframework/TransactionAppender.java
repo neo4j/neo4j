@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.util.concurrent.Future;
 
@@ -26,7 +27,7 @@ import java.util.concurrent.Future;
  * Writing groups of commands, in a way that is guaranteed to be recoverable, i.e. consistently readable,
  * in the event of failure.
  */
-public interface TransactionAppender
+public interface TransactionAppender extends Closeable
 {
     /**
      * @param commands commands to write.

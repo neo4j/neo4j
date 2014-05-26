@@ -43,11 +43,19 @@ public class PhysicalTransactionCursor implements TransactionCursor
     {
         entries.clear();
         LogEntry entry = entryReader.readLogEntry( channel );
+        if ( entry == null )
+        {
+            return false;
+        }
         assert entry instanceof LogEntry.Start;
         LogEntry.Start startEntry = (LogEntry.Start) entry;
         while ( true )
         {
             entry = entryReader.readLogEntry( channel );
+            if ( entry == null )
+            {
+                return false;
+            }
             if ( entry instanceof LogEntry.Commit )
             {
                 break;

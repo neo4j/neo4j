@@ -174,6 +174,12 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
 //    }
 
     @Override
+    public boolean hasMoreData()
+    {
+        return asReader.hasRemaining();
+    }
+
+    @Override
     public byte get()
     {
         return asReader.get();
@@ -224,6 +230,27 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     @Override
     public LogPosition getCurrentPosition()
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        // Hmm, this would be for the writer.
+        return new LogPosition( 0, asWriter.position() );
+    }
+
+    public void positionWriter( int position )
+    {
+        asWriter.position( position );
+    }
+
+    public void positionReader( int position )
+    {
+        asReader.position( position );
+    }
+
+    public int readerPosition()
+    {
+        return asReader.position();
+    }
+
+    public int writerPosition()
+    {
+        return asWriter.position();
     }
 }

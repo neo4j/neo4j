@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.Closeable;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
@@ -28,7 +29,7 @@ import org.neo4j.helpers.collection.Visitor;
  * In order to get hold of {@link #getReader(LogPosition) readers} and {@link #getWriter() writer},
  * {@link #open()} needs to be called first.
  */
-public interface LogFile
+public interface LogFile extends Closeable
 {
     /**
      * Opens the log file to make readers and writers available.
@@ -51,6 +52,4 @@ public interface LogFile
      * A slight leak from {@link TransactionStore} since {@link LogFile} isn't supposed to know about transaction ids.
      */
     LogPosition findRoughPositionOf( long transactionId ) throws NoSuchTransactionException;
-
-    void close() throws IOException;
 }

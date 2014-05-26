@@ -18,6 +18,7 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 package examples;
+
 import java.io.File;
 
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,11 +36,6 @@ public class TakeItForASpin
         {
             db.createNode();
             tx.success();
-        }
-        catch ( final Throwable t )
-        {
-            t.printStackTrace();
-            throw t;
         }
         finally
         {
