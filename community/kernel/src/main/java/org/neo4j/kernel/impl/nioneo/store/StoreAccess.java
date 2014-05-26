@@ -23,6 +23,7 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
@@ -71,7 +72,8 @@ public class StoreAccess
     @SuppressWarnings( "deprecation" )
     private static NeoStore getNeoStoreFrom( GraphDatabaseAPI graphdb )
     {
-        return graphdb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore();
+        DependencyResolver resolver = graphdb.getDependencyResolver();
+        return resolver.resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore();
     }
 
     public StoreAccess( NeoStore store )

@@ -19,29 +19,37 @@
  */
 package org.neo4j.consistency.repair;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.RecordStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
 
 public class RelationshipChainExplorerTest
 {
     private static final TargetDirectory target = TargetDirectory.forTest( RelationshipChainExplorerTest.class );
     private static final int NDegreeTwoNodes = 10;
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public TargetDirectory.TestDirectory storeLocation = target.testDirectory();
     private StoreAccess store;
@@ -132,6 +140,7 @@ public class RelationshipChainExplorerTest
             transaction.finish();
         }
         database.shutdown();
-        return new StoreAccess( storeDirectory.getPath() );
+        PageCache pageCache = pageCacheRule.getPageCache( new DefaultFileSystemAbstraction(), new Config() );
+        return new StoreAccess( pageCache, storeDirectory.getPath() );
     }
 }

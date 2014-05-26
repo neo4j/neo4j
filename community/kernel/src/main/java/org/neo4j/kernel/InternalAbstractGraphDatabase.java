@@ -1362,6 +1362,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( fileSystem );
             }
+            else if ( PageCache.class.isAssignableFrom( type ) && type.isInstance( pageCache ) )
+            {
+                return type.cast( pageCache );
+            }
             else if ( Guard.class.isAssignableFrom( type ) && type.isInstance( guard ) )
             {
                 return type.cast( guard );
