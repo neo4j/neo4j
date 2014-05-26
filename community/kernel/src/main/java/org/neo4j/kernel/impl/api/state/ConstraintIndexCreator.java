@@ -138,6 +138,7 @@ public class ConstraintIndexCreator
     private IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
     {
         KernelTransaction transaction = kernel.newTransaction();
+        boolean success = false;
         try ( Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
@@ -149,7 +150,19 @@ public class ConstraintIndexCreator
             // internal implementation of Statement. However it is currently used by the external
             // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
             ((KernelStatement) statement).txState().constraintIndexRuleDoAdd( descriptor );
+            success = true;
             return descriptor;
+        }
+        finally
+        {
+            try
+            {
+                kernel.finish( transaction, success );
+            }
+            catch ( TransactionFailureException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 }

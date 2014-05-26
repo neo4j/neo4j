@@ -25,6 +25,7 @@ import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -48,6 +49,7 @@ public class RemoveOrphanConstraintIndexesOnStartup
     public void perform()
     {
         KernelTransaction transaction = kernel.newTransaction();
+        boolean success = false;
         try ( Statement statement = transaction.acquireStatement() )
         {
             for ( Iterator<IndexDescriptor> indexes = statement.readOperations().uniqueIndexesGetAll();
@@ -59,10 +61,22 @@ public class RemoveOrphanConstraintIndexesOnStartup
                     statement.schemaWriteOperations().uniqueIndexDrop( index );
                 }
             }
+            success = true;
         }
         catch ( KernelException e )
         {
             log.error( "Failed to execute orphan index checking transaction.", e );
+        }
+        finally
+        {
+            try
+            {
+                kernel.finish( transaction, success );
+            }
+            catch ( TransactionFailureException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 }

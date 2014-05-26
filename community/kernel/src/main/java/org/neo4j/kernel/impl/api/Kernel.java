@@ -248,6 +248,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
             }
         } );
         startupStatistics.setNumberOfRecoveredTransactions( recoveredCount.get() );
+        indexService.startIndexes();
     }
 
     @Override

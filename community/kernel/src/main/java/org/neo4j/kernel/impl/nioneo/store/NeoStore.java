@@ -845,6 +845,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore
             {
                 txId = getRecord( LATEST_TX_POSITION );
                 lastCommittingTx.compareAndSet( -1, txId ); // CAS since multiple threads may pass the if check above
+                lastAppliedTx.compareAndSet( -1, txId ); // also initialize "last applied"
             }
         }
     }
@@ -861,7 +862,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore
     {
         // For now just assert that transactions are applied in order
         boolean set = lastAppliedTx.compareAndSet( transactionId-1, transactionId );
-        assert set;
+        assert set : "Got notified about transaction " + transactionId + " was applied and expected " + (transactionId-1) +
+                " to be the previous one, but it was " + lastAppliedTx.get();
     }
 
     @Override

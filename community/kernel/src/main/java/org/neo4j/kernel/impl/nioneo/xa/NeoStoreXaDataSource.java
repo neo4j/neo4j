@@ -363,7 +363,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, Provid
             life.init();
 
 
-
 //            // TODO 2.2-future: Why isn't this done in the init() method of the indexing service?
 //            if ( !readOnly )
 //            {
@@ -545,11 +544,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, Provid
     public NeoStore evaluate()
     {
         return neoStore;
-    }
-
-    public void recoveryCompleted() throws IOException
-    {
-        indexingService.startIndexes();
     }
 
     @Override

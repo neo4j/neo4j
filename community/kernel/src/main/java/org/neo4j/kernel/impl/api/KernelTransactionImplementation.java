@@ -182,7 +182,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public void release() throws ReleaseLocksFailedKernelException
     {
-        // TODO: Move lock releasing here once TransactionState has been removed.
+        locks.close();
     }
 
     /** Implements reusing the same underlying {@link KernelStatement} for overlapping statements. */
