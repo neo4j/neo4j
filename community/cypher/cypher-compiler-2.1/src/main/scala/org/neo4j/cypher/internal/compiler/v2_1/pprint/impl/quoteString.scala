@@ -26,11 +26,13 @@ object quoteString extends (String => String) {
     var i = 0
     while (i < v.length) {
       v.charAt(i) match {
+        case '\'' => builder += '\\' += '\''
         case '\"' => builder += '\\' += '\"'
         case '\t' => builder += '\\' += 't'
         case '\b' => builder += '\\' += 'b'
         case '\n' => builder += '\\' += 'n'
         case '\r' => builder += '\\' += 'r'
+        case '\f' => builder += '\\' += 'f'
         case '\\' => builder += '\\' += '\\'
         case ch   => builder += ch
       }

@@ -22,8 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SortItem, Expression}
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{GeneratedPretty, Pretty, pformat}
 
-trait QueryProjection {
+trait QueryProjection extends GeneratedPretty {
   def projections: Map[String, Expression]
   def sortItems: Seq[SortItem]
   def limit: Option[Expression]
@@ -54,7 +55,7 @@ object QueryProjection {
 }
 
 case class QueryProjectionImpl(projections: Map[String, Expression], sortItems: Seq[SortItem], limit: Option[Expression],
-                          skip: Option[Expression]) extends QueryProjection {
+                               skip: Option[Expression]) extends QueryProjection {
   def withProjections(projections: Map[String, Expression]): QueryProjection = copy(projections = projections)
 
   def withSortItems(sortItems: Seq[SortItem]): QueryProjection = copy(sortItems = sortItems)

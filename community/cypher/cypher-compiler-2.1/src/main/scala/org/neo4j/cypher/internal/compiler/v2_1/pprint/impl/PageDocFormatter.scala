@@ -53,6 +53,9 @@ final case class PageDocFormatter(width: Int,
     case DocIndent(indent, mode, doc: ValueDoc) :: rest =>
       build(consumed + doc.size, rest, builder += PrintText(doc.value))
 
+    case DocIndent(indent, mode, PageDoc(content)) :: rest =>
+      build(indent, DocIndent(indent, PageFormat, content) :: rest, builder)
+
     case DocIndent(indent, mode, doc: ContentDoc) :: rest =>
       val remaining = width - consumed
       val lineTail = DocIndent(indent, LineFormat, doc.content) :: rest

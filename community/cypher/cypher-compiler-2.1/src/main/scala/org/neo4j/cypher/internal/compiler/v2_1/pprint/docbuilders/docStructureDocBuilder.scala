@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.quoteString
 
-case object docStructureDocGenerator extends NestedDocGenerator[Doc] {
+case object docStructureDocBuilder extends CachingDocBuilder[Doc] {
 
   import Doc._
 
-  protected val instance: RecursiveDocGenerator[Doc] = {
+  override protected def newNestedDocGenerator = {
     case ConsDoc(hd, tl)       => (inner) => inner(hd) :: "·" :: inner(tl)
     case NilDoc                => (inner) => "ø"
 
@@ -37,5 +37,7 @@ case object docStructureDocGenerator extends NestedDocGenerator[Doc] {
     case GroupDoc(doc)         => (inner) => group("[" :: inner(doc) :: "]")
     case NestDoc(doc)          => (inner) => group("<" :: inner(doc) :: ">")
     case NestWith(indent, doc) => (inner) => group(s"($indent)<" :: inner(doc) :: ">")
+
+    case PageDoc(doc)          => (inner) => group("(|" :: inner(doc) :: "|)")
   }
 }

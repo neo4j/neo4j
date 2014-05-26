@@ -17,24 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.LineDocFormatter
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 
-class DocStructureDocGeneratorTest extends DocGeneratorTest[Doc] {
+class DocStructureDocBuilderTest extends DocGeneratorTestSuite[Doc] {
 
   import Doc._
 
-  val docGen = docStructureDocGenerator.docGen
+  val docGen = docStructureDocBuilder.docGenerator
 
   test("end => \"ø\"") {
     format(nil) should equal("ø")
   }
 
   test("break => \"_\"") {
-    format(breakHere) should equal("_")
+    format(break) should equal("_")
   }
 
   test("breakWith(...) => \"_..._\"") {
@@ -59,5 +57,13 @@ class DocStructureDocGeneratorTest extends DocGeneratorTest[Doc] {
 
   test("nest(text(\"a\")) => (3)<\"a\">") {
     format(nest("a")) should equal("<\"a\">")
+  }
+
+  test("page(group(\"a\"))) => (|[\"a\"]|)") {
+    format(page(group("a"))) should equal("(|[\"a\"]|)")
+  }
+
+  test("group(page(\"a\"))) => [(|\"a\"|)]") {
+    format(group(page("a"))) should equal("[(|\"a\"|)]")
   }
 }

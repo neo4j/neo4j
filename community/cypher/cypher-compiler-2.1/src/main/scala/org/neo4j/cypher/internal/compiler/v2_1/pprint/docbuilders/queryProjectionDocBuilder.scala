@@ -17,16 +17,16 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryProjection
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{DescSortItem, AscSortItem}
 
-case class queryProjectionDocGenerator(prefix: String = "WITH") extends NestedDocGenerator[Any] {
+case class queryProjectionDocBuilder(prefix: String = "WITH") extends CachingDocBuilder[Any] {
   import Doc._
 
-  val instance: RecursiveDocGenerator[Any] = {
+  override protected def newNestedDocGenerator = {
     case queryProjection: QueryProjection => (inner: DocGenerator[Any]) =>
       val projectionMapDoc = queryProjection.projections.collect {
         case (k, v) => group( inner(v) :/: "AS " :: s"`$k`" )

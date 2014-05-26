@@ -39,7 +39,7 @@ class PageDocFormatterTest extends CypherFunSuite {
   }
 
   test("format BreakDoc") {
-    PageDocFormatter(10)(breakHere) should equal(Seq(PrintText(" ")))
+    PageDocFormatter(10)(break) should equal(Seq(PrintText(" ")))
   }
 
   test("format BreakWith") {
@@ -62,5 +62,15 @@ class PageDocFormatterTest extends CypherFunSuite {
   test("honors nesting when introducing newlines") {
     val result = PageDocFormatter(6)(nest(2, group("hello" :/: "world")))
     result should equal(Seq(PrintText("hello"), PrintNewLine(2), PrintText("world")))
+  }
+
+  test("converts breaks to newline in page") {
+    val result = PageDocFormatter(100)(page("a" :/: "b"))
+    result should equal(Seq(PrintText("a"), PrintNewLine(0), PrintText("b")))
+  }
+
+  test("does not convert breaks to newline in group in page but on outside of it") {
+    val result = PageDocFormatter(100)(page(group("a" :: "b") :/: "c"))
+    result should equal(Seq(PrintText("a"), PrintText("b"), PrintNewLine(0), PrintText("c")))
   }
 }

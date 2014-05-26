@@ -17,17 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{DescSortItem, AscSortItem, SignedIntegerLiteral}
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.NestedDocGenerator
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryProjection
 
-class QueryProjectionDocGeneratorTest extends NestedDocGeneratorTest[Any] {
+class QueryProjectionDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  object nestedDocGen extends NestedDocGenerator[Any] {
-    val instance = queryProjectionDocGenerator("WITH") orElse plannerDocGenerator orElse scalaDocGenerator orElse toStringDocGenerator
-  }
+  val docBuilder =
+    queryProjectionDocBuilder("WITH") orElse
+    plannerDocBuilder orElse
+    scalaDocBuilder orElse
+    toStringDocBuilder
 
   test("renders star projections") {
     format(QueryProjection.empty) should equal("WITH *")

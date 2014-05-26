@@ -21,9 +21,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.pformat
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{GeneratedPretty, Pretty, pformat}
 
-trait PlannerQuery extends Visitable[PlannerQuery] {
+trait PlannerQuery extends GeneratedPretty {
   def graph: QueryGraph
   def projection: QueryProjection
   def tail: Option[PlannerQuery]
@@ -51,10 +51,6 @@ trait PlannerQuery extends Visitable[PlannerQuery] {
       tail = either(tail, other.tail)
     )
 
-  def accept[R](visitor: Visitor[PlannerQuery, R]): R = visitor.visit(this)
-
-  override def toString = pformat(this)
-
   private def either[T](a: Option[T], b: Option[T]): Option[T] = (a, b) match {
     case (Some(_), Some(_)) => throw new InternalException("Can't join two query graphs with different SKIP")
     case (s@Some(_), None) => s
@@ -77,7 +73,7 @@ object PlannerQuery {
 
 case class PlannerQueryImpl(graph: QueryGraph,
                             projection: QueryProjection,
-                            tail: Option[PlannerQuery] = None) extends PlannerQuery with Visitable[PlannerQuery] {
+                            tail: Option[PlannerQuery] = None) extends PlannerQuery {
 
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
     case None => copy(tail = Some(newTail))

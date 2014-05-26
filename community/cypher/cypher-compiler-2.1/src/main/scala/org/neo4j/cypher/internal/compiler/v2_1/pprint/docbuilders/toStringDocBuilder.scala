@@ -17,15 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.Doc._
 
-case object defaultDocGenerator extends NestedDocGenerator[Any] {
-  val instance: RecursiveDocGenerator[Any] = catchNotImplemented(
-    astExpressionDocGenerator orElse
-    astDocGenerator orElse
-    plannerDocGenerator orElse
-    simpleDocGenerator
-  )
+case object toStringDocBuilder extends CachingDocBuilder[Any] {
+  override protected def newNestedDocGenerator = {
+    case v: Any => (_) => if (v == null) "null" else v.toString
+  }
 }

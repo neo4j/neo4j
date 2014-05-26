@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, SimplePatternLength, VarPatternLength, IdName}
@@ -25,22 +25,23 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, Predicate}
 
-case object plannerDocGenerator extends NestedDocGenerator[Any] {
+case object plannerDocBuilder extends DocBuilderChain[Any] {
 
   import Doc._
+  import DocBuilder._
 
-  val forNestedIdName: RecursiveDocGenerator[Any] = {
+  val forNestedIdName = asDocBuilder[Any] {
     case idName: IdName => (inner) =>
       text(idName.name)
   }
 
-  val forNestedPatternLength: RecursiveDocGenerator[Any] = {
+  val forNestedPatternLength = asDocBuilder[Any] {
     case VarPatternLength(min, None)      => (inner) => text(s"*${min.toString}..")
     case VarPatternLength(min, Some(max)) => (inner) => text(s"*${min.toString}..${max.toString}")
     case SimplePatternLength              => (inner) => nil
   }
 
-  val forNestedPatternRelationship: RecursiveDocGenerator[Any] = {
+  val forNestedPatternRelationship = asDocBuilder[Any] {
     case patRel: PatternRelationship => (inner) =>
       val leftEnd = if (patRel.dir == Direction.INCOMING) "<-[" else "-["
       val rightEnd = if (patRel.dir == Direction.OUTGOING) "]->" else "]-"
@@ -54,15 +55,14 @@ case object plannerDocGenerator extends NestedDocGenerator[Any] {
       )
   }
 
-  val forNestedPredicate: RecursiveDocGenerator[Any] = {
+  val forNestedPredicate = asDocBuilder[Any] {
     case Predicate(dependencies, expr) => (inner) =>
-
-      val pred = sepList(dependencies.map(inner))
+      val pred = sepList(dependencies.map(inner), break = breakSilent)
       val predBlock = block("Predicate", open = "[", close = "]")(pred)
       block(predBlock)(inner(expr))
   }
 
-  val forNestedSelections: RecursiveDocGenerator[Any] = {
+  val forNestedSelections = asDocBuilder[Any] {
     case Selections(predicates) => (inner) =>
       sepList(predicates.map(inner).toList)
   }
@@ -72,13 +72,17 @@ case object plannerDocGenerator extends NestedDocGenerator[Any] {
     case (hd, tail)   => ":" :: hd :: "|" :: tail
   }
 
-  protected val instance =
-    forNestedIdName orElse
-    forNestedPatternLength orElse
-    forNestedPatternRelationship orElse
-    forNestedPredicate orElse
-    forNestedSelections orElse
-    queryProjectionDocGenerator("WITH") orElse
-    queryGraphDocGenerator orElse
-    plannerQueryDocGenerator
+  val builders =
+    Seq(
+      forNestedIdName,
+      forNestedPatternLength,
+      forNestedPatternRelationship,
+      forNestedPredicate,
+      forNestedSelections,
+      queryProjectionDocBuilder("WITH"),
+      queryGraphDocBuilder,
+      queryGraphDocBuilder,
+      logicalPlanDocBuilder,
+      plannerQueryDocBuilder
+    )
 }

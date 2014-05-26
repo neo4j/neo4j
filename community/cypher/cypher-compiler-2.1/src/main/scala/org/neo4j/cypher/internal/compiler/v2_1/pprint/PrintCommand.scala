@@ -19,8 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.quoteString
+
 sealed abstract class PrintCommand
-case class PrintText(value: String) extends PrintCommand
+
+case class PrintText(value: String) extends PrintCommand {
+  override def toString = s"PrintText(${quoteString(value)})"
+}
+
 case class PrintNewLine(indent: Int) extends PrintCommand
 
 

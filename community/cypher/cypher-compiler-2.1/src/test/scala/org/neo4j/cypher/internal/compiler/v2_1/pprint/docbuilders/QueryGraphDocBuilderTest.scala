@@ -17,26 +17,26 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{VarPatternLength, SimplePatternLength}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{HasLabels, LabelName, RelTypeName}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.PageDocFormatter
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{PrintNewLine, PrintText, condense}
 
-class QueryGraphDocGeneratorTest extends NestedDocGeneratorTest[Any] {
+class QueryGraphDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  object nestedDocGen extends NestedDocGenerator[Any] {
-    val instance =
-      queryGraphDocGenerator orElse
-      astDocGenerator orElse
-      plannerDocGenerator orElse
-      scalaDocGenerator orElse
-      toStringDocGenerator
-  }
+  val docBuilder =
+      queryGraphDocBuilder orElse
+      astExpressionDocBuilder orElse
+      astDocBuilder orElse
+      plannerDocBuilder orElse
+      scalaDocBuilder orElse
+      toStringDocBuilder
 
   private val rel1 = PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(), SimplePatternLength)
   private val rel2 = PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.INCOMING, Seq(RelTypeName("X")(null)), SimplePatternLength)
@@ -82,7 +82,7 @@ class QueryGraphDocGeneratorTest extends NestedDocGeneratorTest[Any] {
     format(QueryGraph(
       patternNodes = Set(IdName("a")),
       selections = Selections( predicates = Set(Predicate(Set(IdName("a")), HasLabels(ident("a"), Seq(LabelName("Person")_))_)))
-    )) should equal("GIVEN * MATCH (a) WHERE Predicate[a](HasLabels(Identifier(\"a\"), LabelName(\"Person\") ⸬ ⬨))")
+    )) should equal("GIVEN * MATCH (a) WHERE Predicate[a](a:Person)")
   }
 
   test("renders optional query graphs") {
@@ -100,5 +100,19 @@ class QueryGraphDocGeneratorTest extends NestedDocGeneratorTest[Any] {
         QueryGraph(patternNodes = Set(IdName("b")))
       )
     )) should equal("GIVEN * OPTIONAL { GIVEN * MATCH (a), GIVEN * MATCH (b) }")
+  }
+
+  test("indents sections correctly") {
+    val result = condense(build(QueryGraph(
+      patternNodes = Set(IdName("a"))
+    ), formatter = PageDocFormatter(8)))
+
+    result should equal(Seq(
+      PrintText("GIVEN *"),
+      PrintNewLine(0),
+      PrintText("MATCH"),
+      PrintNewLine(2),
+      PrintText("(a)")
+    ))
   }
 }

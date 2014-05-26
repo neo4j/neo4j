@@ -17,13 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
-import scala.reflect.ClassTag
+import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 
-abstract class NestedDocGenerator[T: ClassTag] extends SimpleRecursiveDocGenerator[T] {
-  protected def instance: RecursiveDocGenerator[T]
+case object simpleDocBuilder extends DocBuilderChain[Any] {
 
-  def isDefinedAt(v: T) = instance.isDefinedAt(v)
-  def apply(v: T) = instance(v)
+  val builders = Seq(
+    docStructureDocBuilder.uplifted[Any],
+    prettyDocBuilder.uplifted[Any],
+    scalaDocBuilder,
+    toStringDocBuilder
+  )
+
+  override protected def newNestedDocGenerator = catchNotImplemented(super.newNestedDocGenerator)
 }

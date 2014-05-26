@@ -21,11 +21,11 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import scala.collection.mutable
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.defaultDocGenerator
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders.defaultDocBuilder
 
 class DefaultDocGeneratorTest extends CypherFunSuite {
 
-  val docGen = defaultDocGenerator.docGen
+  val docGen = defaultDocBuilder.docGenerator
 
   import Doc._
 
@@ -39,20 +39,24 @@ class DefaultDocGeneratorTest extends CypherFunSuite {
     render("") should equal("\"\"")
     render("a") should equal("\"a\"")
     render("\\") should equal("\"\\\\\"")
+    render("'") should equal("\"\\'\"")
     render("\"") should equal("\"\\\"\"")
     render("\t") should equal("\"\\t\"")
     render("\b") should equal("\"\\b\"")
     render("\n") should equal("\"\\n\"")
     render("\r") should equal("\"\\r\"")
+    render("\f") should equal("\"\\f\"")
   }
 
   test("DocGenerator quotes chars") {
     render('a') should equal("'a'")
     render('\'') should equal("'\\''")
+    render('\"') should equal("'\\\"'")
     render('\t') should equal("'\\t'")
     render('\b') should equal("'\\b'")
     render('\n') should equal("'\\n'")
     render('\r') should equal("'\\r'")
+    render('\f') should equal("'\\f'")
   }
 
   test("DocGenerator renders maps") {
@@ -114,6 +118,15 @@ class DefaultDocGeneratorTest extends CypherFunSuite {
 
   test("DocGenerator renders literal docs") {
     render(literal("a" :: "b")) should equal("DocLiteral(\"a\"·\"b\")")
+  }
+
+  test("DocGenerator uses toDoc as a fallback") {
+    object Rick extends PlainlyPretty {
+      def toDoc = "NEVER GONNA" :/: "GIVE YOU UP"
+      override def toString = fail("Called toString when expected to be rendered using toDoc")
+    }
+
+    render(Rick) should equal("NEVER GONNA GIVE YOU UP")
   }
 
   private def render[T](v: T) =

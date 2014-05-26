@@ -17,18 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.NestedDocGenerator
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryProjection, QueryGraph, PlannerQueryImpl}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 
-class PlannerQueryDocGeneratorTest extends NestedDocGeneratorTest[Any] {
+class PlannerQueryDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  object nestedDocGen extends NestedDocGenerator[Any] {
-    val instance = plannerQueryDocGenerator orElse plannerDocGenerator orElse scalaDocGenerator orElse toStringDocGenerator
-  }
+  val docBuilder = plannerQueryDocBuilder orElse plannerDocBuilder orElse scalaDocBuilder orElse toStringDocBuilder
 
   test("renders tail free empty planner query") {
     format(PlannerQueryImpl(

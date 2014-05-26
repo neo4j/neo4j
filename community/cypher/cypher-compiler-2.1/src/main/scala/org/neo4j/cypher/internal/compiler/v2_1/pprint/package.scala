@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import scala.collection.mutable
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.{PageDocFormatter, LineDocFormatter}
 import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.{docStructureDocGenerator, scalaDocGenerator}
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders.{docStructureDocBuilder, scalaDocBuilder}
 
 /**
  * See pp.Doc
@@ -30,7 +30,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen.{docStructureDocGen
 package object pprint {
   type DocFormatter = Doc => Seq[PrintCommand]
   type DocGenerator[-T] = PartialFunction[T, Doc]
-  type RecursiveDocGenerator[T] = PartialFunction[T, DocGenerator[T] => Doc]
+  type NestedDocGenerator[T] = PartialFunction[T, DocGenerator[T] => Doc]
   type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
 }
 

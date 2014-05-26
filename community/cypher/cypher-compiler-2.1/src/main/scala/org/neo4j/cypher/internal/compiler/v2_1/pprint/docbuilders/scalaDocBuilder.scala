@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.pprint._
 import scala.collection.immutable
 import scala.collection.mutable
 import org.neo4j.cypher.internal.compiler.v2_1.pprint.impl.{quoteString, quoteChar}
 
-case object scalaDocGenerator extends NestedDocGenerator[Any] {
+case object scalaDocBuilder extends CachingDocBuilder[Any] {
 
   import Doc._
 
-  protected val instance: RecursiveDocGenerator[Any] = {
+  override protected def newNestedDocGenerator = {
     case v: String => (inner) =>
       quoteString(v)
 

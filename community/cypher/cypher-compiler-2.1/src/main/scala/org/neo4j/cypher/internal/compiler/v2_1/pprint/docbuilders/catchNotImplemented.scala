@@ -17,25 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{Doc, RecursiveDocGenerator, NestedDocGenerator}
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.{NestedDocGenerator, Doc}
+import scala.reflect.ClassTag
 
-case object astExpressionDocGenerator extends NestedDocGenerator[Any] {
+case class catchNotImplemented[T: ClassTag](instance: NestedDocGenerator[T]) extends NestedDocGenerator[T] {
 
   import Doc._
 
-  protected val instance: RecursiveDocGenerator[Any] = {
-    case Identifier(name) => (inner) =>
-      text(name)
+  override def isDefinedAt(v: T) =
+    try { instance.isDefinedAt(v) } catch { case _: NotImplementedError => true }
 
-    case (Equals(left, right)) => (inner) =>
-      inner(left) :/: "=" :/: inner(right)
-
-    case (Property(map, PropertyKeyName(name))) => (inner) =>
-      inner(map) :: "." :: name
-  }
+  override def apply(v: T) =
+    (inner) => try { instance(v)(inner) } catch { case _: NotImplementedError => text("???") }
 }

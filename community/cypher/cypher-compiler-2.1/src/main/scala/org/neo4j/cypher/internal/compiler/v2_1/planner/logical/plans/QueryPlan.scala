@@ -20,14 +20,13 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_1.pprint.pformat
 
-case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) extends Visitable[QueryPlan] {
+case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
 
   def availableSymbols: Set[IdName] = plan.availableSymbols
 
-  def accept[R](visitor: Visitor[QueryPlan, R]): R = visitor.visit(this)
-
-  override def toString = "\n" + new QueryPlanTreeStringVisitor().visit(this)
+  override def toString = pformat(this)
 }
 
 

@@ -17,15 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.pprint.docgen
+package org.neo4j.cypher.internal.compiler.v2_1.pprint
 
-import org.neo4j.cypher.internal.compiler.v2_1.pprint._
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.Doc._
+import scala.annotation.tailrec
 
-case object toStringDocGenerator extends SimpleRecursiveDocGenerator[Any] {
+object condense extends (Seq[PrintCommand] => Seq[PrintCommand]) {
+  def apply(commands: Seq[PrintCommand]) = apply(Seq.newBuilder, commands).result()
 
-  def isDefinedAt(v: Any) = true
-
-  def apply(v: Any) =
-   (_: DocGenerator[Any]) => if (v == null) "null" else v.toString
+  @tailrec
+  def apply(builder: PrintingConverter[Seq[PrintCommand]],
+            commands: Seq[PrintCommand]): PrintingConverter[Seq[PrintCommand]]= commands match {
+    case PrintText(lhs) +: PrintText(rhs) +: tail => apply(builder, PrintText(lhs ++ rhs) +: tail)
+    case head +: tail                             => apply(builder += head, tail)
+    case _                                        => builder
+  }
 }

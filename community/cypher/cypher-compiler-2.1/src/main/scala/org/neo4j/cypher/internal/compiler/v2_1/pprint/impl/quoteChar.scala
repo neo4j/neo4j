@@ -22,10 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.pprint.impl
 object quoteChar extends (Char => String) {
   def apply(ch: Char): String = ch match {
     case '\'' => "'\\''"
+    case '\"' => "'\\\"'"
     case '\t' => "'\\t'"
     case '\b' => "'\\b'"
     case '\n' => "'\\n'"
     case '\r' => "'\\r'"
+    case '\f' => "'\\f'"
     case _    => s"'$ch'"
   }
 }
