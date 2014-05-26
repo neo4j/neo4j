@@ -171,6 +171,22 @@ class FunctionsTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(List(Map("reduction" -> 117)), p.toList))
   }
 
+  @Test def zip() {
+    testThis(
+      title = "ZIP",
+      syntax = "ZIP( collection1, collection2 )",
+      arguments = List(
+        "collection1" -> "An expression that gives the first collection to zip",
+        "collection2" -> "An expression that gives the second collection to zip"
+      ),
+      text =
+        """Zip merges two collections into a collection of the pairs of zipped values. If either collection is longer than the other
+ the result is truncated at the shorter collection's length.""".stripMargin,
+      queryText = """WITH [1,2,3] AS coll1, [4,5] as coll2 RETURN zip(coll1, coll2) AS zip""",
+      returns = """The age property of all nodes in the path are summed and returned as a single value.""",
+      assertions = (p) => assertEquals(List(Map("zip" -> List(List(1,4), List(2,5)))), p.toList))
+  }
+
   @Test def head() {
     testThis(
       title = "HEAD",
