@@ -21,6 +21,7 @@ package org.neo4j.io.pagecache.impl.standard;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
@@ -29,25 +30,32 @@ import org.junit.Test;
 
 import org.neo4j.io.pagecache.PageLock;
 
-
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
-import static org.neo4j.io.pagecache.impl.standard.PageTable.PinnablePage;
+
+import static org.neo4j.io.pagecache.impl.standard.RecordingMonitor.Fault;
+import static org.neo4j.io.pagecache.impl.standard.RecordingMonitor.Evict;
 
 public class ClockSweepPageTableTest
 {
+    private static final int TEST_PAGE_SIZE = 1024;
+    private final byte[] bytesA = "the A bytes".getBytes();
+    private final byte[] bytesB = "the B bytes".getBytes();
+
+    private RecordingMonitor monitor;
     private ClockSweepPageTable table;
     private Thread sweeperThread;
 
     @Before
     public void startPageTable()
     {
-        table = new ClockSweepPageTable( 1, 1024, StandardPageCache.NO_MONITOR );
+        monitor = new RecordingMonitor();
+        table = new ClockSweepPageTable( 1, TEST_PAGE_SIZE, monitor );
         sweeperThread = new Thread( table );
         sweeperThread.start();
     }
@@ -62,28 +70,27 @@ public class ClockSweepPageTableTest
     public void loading_must_read_file() throws Exception
     {
         // Given
-        byte[] expected = "Hello, cruel world!".getBytes( "UTF-8" );
-        BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( expected ) );
+        BufferPageIO io = new BufferPageIO( bytesA );
 
         // When
         PinnablePage page = table.load( io, 1, PageLock.EXCLUSIVE );
 
         // Then
-        byte[] actual = new byte[expected.length];
+        byte[] actual = new byte[bytesA.length];
         page.getBytes( actual, 0 );
 
-        assertThat( actual, equalTo( expected ) );
+        assertThat( actual, equalTo( bytesA ) );
     }
 
     @Test
     public void evicting_must_flush_file() throws Exception
     {
         // Given a table with 1 entry, which I've modified
-        ByteBuffer storageBuffer = ByteBuffer.allocate( 1024 );
+        ByteBuffer storageBuffer = ByteBuffer.allocate( TEST_PAGE_SIZE );
         BufferPageIO io = new BufferPageIO( storageBuffer );
 
         PinnablePage page = table.load( io, 12, PageLock.EXCLUSIVE );
-        page.putBytes( "Muaha".getBytes("UTF-8"), 0 );
+        page.putBytes( bytesA, 0 );
         page.unpin( PageLock.EXCLUSIVE );
 
         // When I perform an operation that will force eviction
@@ -108,17 +115,17 @@ public class ClockSweepPageTableTest
         thread.join();
 
         // Then my changes should've been forced to disk
-        byte[] actual = new byte[5];
+        byte[] actual = new byte[bytesA.length];
         storageBuffer.position(0);
         storageBuffer.get( actual );
-        assertThat( actual, equalTo("Muaha".getBytes("UTF-8")) );
+        assertThat( actual, equalTo( bytesA ) );
     }
 
     @Test
     public void loading_with_shared_lock_allows_other_shared() throws Exception
     {
         // Given
-        BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( "expected".getBytes("UTF-8") ) );
+        BufferPageIO io = new BufferPageIO( bytesA );
 
         // When
         PinnablePage page = table.load( io, 12, PageLock.SHARED );
@@ -131,7 +138,7 @@ public class ClockSweepPageTableTest
     public void loading_with_shared_lock_stops_exclusive_pinners() throws Exception
     {
         // Given
-        final BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( "expected".getBytes("UTF-8") ) );
+        final BufferPageIO io = new BufferPageIO( bytesA );
 
         // When
         final PinnablePage page = table.load( io, 12, PageLock.SHARED );
@@ -139,7 +146,7 @@ public class ClockSweepPageTableTest
         // Then we should have to wait for the page to be unpinned if we want an
         // exclusive lock on it.
         final AtomicBoolean acquiredPage = new AtomicBoolean( false );
-        Thread otherThread = new Thread( new Runnable()
+        Thread otherThread = fork( new Runnable()
         {
             @Override
             public void run()
@@ -148,7 +155,6 @@ public class ClockSweepPageTableTest
                 acquiredPage.set( true );
             }
         } );
-        otherThread.start();
         awaitThreadState( otherThread, Thread.State.WAITING );
 
         assertFalse( acquiredPage.get() );
@@ -165,8 +171,8 @@ public class ClockSweepPageTableTest
     public void loading_with_exclusive_lock_stops_all_others() throws Exception
     {
         // Given
-        ClockSweepPageTable table = new ClockSweepPageTable( 1, 1024, StandardPageCache.NO_MONITOR );
-        final BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( "expected".getBytes("UTF-8") ) );
+        ClockSweepPageTable table = new ClockSweepPageTable( 1, TEST_PAGE_SIZE, StandardPageCache.NO_MONITOR );
+        final BufferPageIO io = new BufferPageIO( bytesA );
 
         // When
         final PinnablePage page = table.load( io, 12, PageLock.EXCLUSIVE );
@@ -174,7 +180,7 @@ public class ClockSweepPageTableTest
         // Then we should have to wait for the page to be unpinned if we want an
         // exclusive lock on it.
         final AtomicBoolean acquiredPage = new AtomicBoolean( false );
-        Thread otherThread = new Thread( new Runnable()
+        Thread otherThread = fork( new Runnable()
         {
             @Override
             public void run()
@@ -183,7 +189,6 @@ public class ClockSweepPageTableTest
                 acquiredPage.set( true );
             }
         } );
-        otherThread.start();
         awaitThreadState( otherThread, Thread.State.WAITING );
 
         assertFalse( acquiredPage.get() );
@@ -200,9 +205,7 @@ public class ClockSweepPageTableTest
     public void pinning_replaced_page_must_fail() throws Exception
     {
         // Given
-        final byte[] expectedBytes = "expected".getBytes( "UTF-8" );
-        final byte[] otherBytes = "rare brand string".getBytes( "UTF-8" );
-        BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( expectedBytes ) );
+        BufferPageIO io = new BufferPageIO( bytesA );
 
         PinnablePage page = table.load( io, 12, PageLock.SHARED );
         page.unpin( PageLock.SHARED );
@@ -214,7 +217,7 @@ public class ClockSweepPageTableTest
             public void run()
             {
                 // This thread will cause the single page in the cache to be replaced
-                BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( otherBytes ) );
+                BufferPageIO io = new BufferPageIO( ByteBuffer.wrap( bytesB ) );
                 try
                 {
                     table.load( io, 3, PageLock.SHARED ).unpin( PageLock.SHARED );
@@ -232,26 +235,23 @@ public class ClockSweepPageTableTest
         assertFalse( page.pin( io, 12, PageLock.SHARED ) );
     }
 
-    // TODO evicting page should not allow readers or writers access
-
     @Test
     public void must_notify_io_object_on_eviction() throws Exception
     {
         // Given
-        final byte[] expectedBytes = "expected".getBytes( "UTF-8" );
-        BufferPageIO io = spy(new BufferPageIO( ByteBuffer.wrap( expectedBytes ) ));
+        BufferPageIO io = spy(new BufferPageIO( bytesA ));
 
         PinnablePage page = table.load( io, 12, PageLock.SHARED );
         page.unpin( PageLock.SHARED );
 
         // When
-        Thread thread = new Thread(new Runnable()
+        Thread thread = fork( new Runnable()
         {
             @Override
             public void run()
             {
                 // This thread will cause the single page in the cache to be replaced
-                BufferPageIO io = new BufferPageIO( ByteBuffer.allocate( 1024 ) );
+                BufferPageIO io = new BufferPageIO( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
                 try
                 {
                     table.load( io, 3, PageLock.SHARED ).unpin( PageLock.SHARED );
@@ -261,26 +261,103 @@ public class ClockSweepPageTableTest
                     e.printStackTrace();
                 }
             }
-        });
-        thread.start();
+        } );
         thread.join();
 
         // Then
         verify( io ).evicted( 12 );
     }
 
+    @Test
+    public void must_notify_monitor_of_evicted_pages() throws Exception
+    {
+        // If we load a page ...
+        PageIO io = new BufferPageIO( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
+        long pageId = 12;
+        PinnablePage page = table.load( io, pageId, PageLock.EXCLUSIVE );
+        page.unpin( PageLock.EXCLUSIVE );
+
+        // ... then we should observe its page fault
+        assertThat( monitor.observeFault(), is( new Fault( io, pageId ) ) );
+
+        // ... and when it sits idle for long enough, we should observe its eviction
+        assertThat( monitor.observeEvict(), is( new Evict( io, pageId ) ) );
+    }
+
+    @Test( timeout = 1000 )
+    public void readers_and_writers_must_block_on_evicting_page() throws Exception
+    {
+        // If we have a loaded page ...
+        PageIO io = new BufferPageIO( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
+        long pageId = 12;
+        PinnablePage page = table.load( io, pageId, PageLock.EXCLUSIVE );
+        monitor.observeFault();
+
+        // ... a page that will take a long time to evict
+        CountDownLatch latch = monitor.trap( new Evict( io, pageId ) );
+
+        // ... and a page that is soon up for eviction
+        page.unpin( PageLock.EXCLUSIVE );
+
+        // ... then when we observe the eviction taking place
+        monitor.observeEvict();
+
+        // ... other threads should not be able to pin that page
+        Thread pinForShared = fork( $pinUnpin( page, io, pageId, PageLock.SHARED ) );
+        Thread pinForExclusive = fork( $pinUnpin( page, io, pageId, PageLock.EXCLUSIVE ) );
+        awaitThreadState( pinForShared, Thread.State.WAITING );
+        awaitThreadState( pinForExclusive, Thread.State.WAITING );
+
+        // ... until the eviction finishes
+        latch.countDown();
+        pinForShared.join();
+        pinForExclusive.join();
+    }
+
+    // TODO closing a paged file will flush with a particular PageIO - this must not race with eviction!
 
     private void awaitThreadState( Thread otherThread, Thread.State state ) throws InterruptedException
     {
-        do
+        while( otherThread.getState() != state )
         {
-            otherThread.join( 100 );
-        } while(otherThread.getState() != state );
+            otherThread.join( 1 );
+        }
     }
 
-    private class BufferPageIO implements PageTable.PageIO
+    private Thread fork( Runnable runnable )
+    {
+        Thread thread = new Thread( runnable );
+        thread.start();
+        return thread;
+    }
+
+    private Runnable $pinUnpin(
+            final PinnablePage page,
+            final PageIO io,
+            final long pageId,
+            final PageLock pageLock )
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                if ( page.pin( io, pageId, pageLock ) )
+                {
+                    page.unpin( pageLock );
+                }
+            }
+        };
+    }
+
+    private class BufferPageIO implements PageIO
     {
         private final ByteBuffer buffer;
+
+        private BufferPageIO( byte[] bytes )
+        {
+            this( ByteBuffer.wrap( bytes ) );
+        }
 
         private BufferPageIO( ByteBuffer buffer )
         {
@@ -290,7 +367,7 @@ public class ClockSweepPageTableTest
         @Override
         public void read( long pageId, ByteBuffer into )
         {
-            buffer.position(0);
+            buffer.position( 0 );
             into.put( buffer );
         }
 

@@ -20,28 +20,24 @@
 package org.neo4j.io.pagecache.impl.standard;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
-import org.neo4j.io.pagecache.PageLock;
-
-public interface PageTable
+/**
+ * <strong>Implementation note:</strong> These methods must NEVER swallow a thread-interrupt.
+ * If the thread is interrupted when these methods are called, or gets interrupted while they are
+ * executing, then they must either throw an InterruptedException, or leave the interrupted-status
+ * flag alone.
+ */
+public interface PageIO
 {
+    void read( long pageId, ByteBuffer into ) throws IOException;
+    void write( long pageId, ByteBuffer from ) throws IOException;
+
     /**
-     * Load a new page into the table. This does not guarantee avoiding duplicate
-     * pages loaded into the cache, it is up to the callee to ensure pages do not get
-     * duplicated into the table.
-     *
-     * The page returned is pre-locked with the lock specified in the call.
+     * Notification that a page has been evicted, used to clean up state in structures
+     * outside the page table.
      */
-    PinnablePage load( PageIO io, long pageId, PageLock lock ) throws IOException;
+    void evicted( long pageId );
 
-    /** Flush all dirty pages. */
-    void flush() throws IOException;
-
-    /** Flush all dirty pages backed by the specified io. */
-    void flush( PageIO io ) throws IOException;
-
-    int pageSize();
-
-    int maxCachedPages();
-
+    String fileName();
 }

@@ -26,7 +26,7 @@ import java.nio.ByteBuffer;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.io.fs.StoreChannel;
 
-public class StandardPageIO implements PageTable.PageIO
+public class StandardPageIO implements PageIO
 {
     private final File file;
     private final StoreChannel channel;
