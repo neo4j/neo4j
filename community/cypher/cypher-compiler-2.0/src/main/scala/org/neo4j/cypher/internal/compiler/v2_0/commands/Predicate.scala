@@ -106,7 +106,6 @@ case class Or(a: Predicate, b: Predicate) extends Predicate {
 }
 
 case class Not(a: Predicate) extends Predicate {
-  override def atoms: Seq[Predicate] = a.atoms.map(Not)
   def isMatch(m: ExecutionContext)(implicit state: QueryState): Option[Boolean] = a.isMatch(m) match {
     case Some(x) => Some(!x)
     case None    => None
