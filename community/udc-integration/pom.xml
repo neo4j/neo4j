@@ -6,10 +6,16 @@
     <version>2.1-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
+
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-udc-integration</artifactId>
   <name>Neo4j - UDC Integration</name>
   <version>2.1-SNAPSHOT</version>
+
+  <properties>
+    <license-text.header>GPL-3-header.txt</license-text.header>
+    <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
+  </properties>
 
   <description>Integration test for UDC component.</description>
 
@@ -67,6 +73,11 @@
   </build>
 
   <dependencies>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+    </dependency>
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-udc</artifactId>
