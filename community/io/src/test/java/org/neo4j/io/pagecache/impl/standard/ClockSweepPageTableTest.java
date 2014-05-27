@@ -295,7 +295,7 @@ public class ClockSweepPageTableTest
         monitor.observe( Fault.class );
 
         // ... a page that will take a long time to evict
-        CountDownLatch latch = monitor.trap( new Evict( io, pageId ) );
+        CountDownLatch latch = monitor.trap( is( new Evict( io, pageId ) ) );
 
         // ... and a page that is soon up for eviction
         page.unpin( PageLock.EXCLUSIVE );
