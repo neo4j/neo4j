@@ -32,8 +32,14 @@ import java.util.List;
 import ch.qos.logback.classic.Level;
 import ch.qos.logback.classic.Logger;
 import ch.qos.logback.classic.LoggerContext;
-import org.neo4j.cluster.*;
+import org.slf4j.impl.StaticLoggerBinder;
+
+import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.MultiPaxosServerFactory;
+import org.neo4j.cluster.NetworkedServerFactory;
+import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastListener;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastSerializer;
@@ -57,7 +63,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
-import org.slf4j.impl.StaticLoggerBinder;
 
 /**
  * Multi Paxos test server
@@ -123,7 +128,7 @@ public class MultiPaxosServer
                 }
 
                 @Override
-                public void leftCluster( InstanceId instanceId )
+                public void leftCluster( InstanceId instanceId, URI member )
                 {
                     System.out.println( "Left cluster:" + instanceId );
                 }
