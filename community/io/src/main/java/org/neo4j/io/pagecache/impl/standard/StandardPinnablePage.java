@@ -28,6 +28,7 @@ import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
 
 public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
 {
+    static final long UNBOUND_PAGE_ID = -1;
     static final byte MAX_USAGE_COUNT = 5;
 
     /** Used when the page is part of the free-list, points to next free page */
@@ -37,13 +38,13 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private PageIO io;
-    private long pageId = -1;
+    private long pageId = UNBOUND_PAGE_ID;
     private boolean dirty;
     private int pageSize;
 
     public StandardPinnablePage( int pageSize )
     {
-        super(null);
+        super( null );
         this.pageSize = pageSize;
         dirty = false;
     }
@@ -52,7 +53,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     public boolean pin( PageIO assertIO, long assertPageId, PageLock lockType )
     {
         lock( lockType );
-        if( assertionsHold( assertIO, assertPageId ) )
+        if( verifyPageBindings( assertIO, assertPageId ) )
         {
             byte stamp = usageStamp;
             if ( stamp < MAX_USAGE_COUNT )
@@ -75,7 +76,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
         unlock( lock );
     }
 
-    public void lock( PageLock lockType )
+    void lock( PageLock lockType )
     {
         if(lockType == PageLock.SHARED)
         {
@@ -92,7 +93,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
         }
     }
 
-    public void unlock( PageLock lockType )
+    void unlock( PageLock lockType )
     {
         if( lockType == PageLock.SHARED)
         {
@@ -112,19 +113,31 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
      * Must be called while holding either a SHARED or an EXCLUSIVE lock, in order to prevent
      * racing with eviction.
      */
-    private boolean assertionsHold( PageIO assertIO, long assertPageId )
+    private boolean verifyPageBindings( PageIO assertIO, long assertPageId )
     {
-        return assertPageId == pageId && io != null && io.equals( assertIO );
+        return assertPageId == pageId && io == assertIO;
     }
 
-    public ByteBuffer buffer()
+    private void assertLocked()
     {
-        if(buffer == null)
+        // HotSpot will optimise this away completely, if assertions are not enabled
+        // This is mostly here to fail our tests, if we do naughty stuff with locks
+        assert lock.isWriteLockedByCurrentThread() || lock.getReadHoldCount() > 0: "Unsynchronised access";
+    }
+
+    /**
+     * Must be call under lock
+     */
+    private ByteBuffer buffer()
+    {
+        assertLocked();
+        if( buffer == null )
         {
             try
             {
                 buffer = ByteBuffer.allocateDirect( pageSize );
-            } catch(OutOfMemoryError e)
+            }
+            catch( OutOfMemoryError e )
             {
                 buffer = ByteBuffer.allocate( pageSize );
             }
@@ -132,27 +145,35 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
         return buffer;
     }
 
-    public void reset( PageIO io, long pageId )
+    /**
+     * Must be call under lock
+     */
+    void reset( PageIO io, long pageId )
     {
+        assertLocked();
         this.io = io;
         this.pageId = pageId;
     }
 
     /** Attempt to lock this page exclusively, used by page table during house keeping. */
-    public boolean tryExclusiveLock()
+    boolean tryExclusiveLock()
     {
         return lock.getReadLockCount() == 0
                 && !lock.isWriteLocked()
                 && lock.writeLock().tryLock();
     }
 
-    public void releaseExclusiveLock()
+    void releaseExclusiveLock()
     {
         lock.writeLock().unlock();
     }
 
-    public void flush() throws IOException
+    /**
+     * Must be call under lock
+     */
+    void flush() throws IOException
     {
+        assertLocked();
         if ( dirty )
         {
             buffer().position(0);
@@ -161,33 +182,56 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
         }
     }
 
-    public void load() throws IOException
+    /**
+     * Must be call under lock
+     */
+    void load() throws IOException
     {
+        assertLocked();
         buffer().position(0);
         io.read( pageId, buffer );
         loaded = true;
     }
 
-    public void evicted()
+    /**
+     * Must be call under lock
+     */
+    void evicted()
     {
+        assertLocked();
         io.evicted( pageId );
     }
 
-    public boolean isBackedBy( PageIO io )
+    /**
+     * Must be call under lock
+     */
+    boolean isBackedBy( PageIO io )
     {
+        assertLocked();
         return this.io != null && this.io.equals( io );
     }
 
-    public PageIO io()
+    /**
+     * Must be call under lock
+     */
+    PageIO io()
     {
+        assertLocked();
         return io;
     }
 
-    public long pageId()
+    /**
+     * Must be call under lock
+     */
+    long pageId()
     {
+        assertLocked();
         return pageId;
     }
 
+    /**
+     * Should be call under lock
+     */
     @Override
     public String toString()
     {

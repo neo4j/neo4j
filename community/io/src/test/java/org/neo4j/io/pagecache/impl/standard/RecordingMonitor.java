@@ -45,14 +45,14 @@ public class RecordingMonitor implements StandardPageCache.Monitor
         trip( event );
     }
 
-    public Fault observeFault() throws InterruptedException
+    public <T extends Event> T observe( Class<T> type ) throws InterruptedException
     {
-        return (Fault) record.take();
+        return type.cast( record.take() );
     }
 
-    public Evict observeEvict() throws InterruptedException
+    public <T extends Event> T tryObserve( Class<T> type )
     {
-        return (Evict) record.take();
+        return type.cast( record.poll() );
     }
 
     /**
