@@ -26,9 +26,9 @@ public class StandardPageCursor extends OffsetTrackingCursor
 {
     private PageLock lockTypeHeld;
 
-    public PageTable.PinnablePage page()
+    public PinnablePage page()
     {
-        return (PageTable.PinnablePage)page;
+        return (PinnablePage)page;
     }
 
     /** The type of lock the cursor holds */
@@ -37,7 +37,7 @@ public class StandardPageCursor extends OffsetTrackingCursor
         return lockTypeHeld;
     }
 
-    public void reset( PageTable.PinnablePage page, PageLock lockTypeHeld )
+    public void reset( PinnablePage page, PageLock lockTypeHeld )
     {
         this.lockTypeHeld = lockTypeHeld;
         super.reset( page );

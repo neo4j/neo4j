@@ -38,22 +38,22 @@ public class StandardPageCache implements PageCache, Runnable
     public interface Monitor
     {
         /** A page not in the cache was loaded */
-        void pageFault( long pageId, PageTable.PageIO io );
+        void pageFault( long pageId, PageIO io );
 
         /** A page was evicted. */
-        void evict( long pageId, PageTable.PageIO io );
+        void evict( long pageId, PageIO io );
     }
 
     public static final Monitor NO_MONITOR = new Monitor()
     {
         @Override
-        public void pageFault( long pageId, PageTable.PageIO io )
+        public void pageFault( long pageId, PageIO io )
         {
 
         }
 
         @Override
-        public void evict( long pageId, PageTable.PageIO io )
+        public void evict( long pageId, PageIO io )
         {
 
         }

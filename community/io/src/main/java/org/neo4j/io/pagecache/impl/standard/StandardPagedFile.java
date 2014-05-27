@@ -31,8 +31,6 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.PagedFile;
 
-import static org.neo4j.io.pagecache.impl.standard.PageTable.PinnablePage;
-
 public class StandardPagedFile implements PagedFile
 {
     static final Object NULL = new Object();
@@ -51,8 +49,8 @@ public class StandardPagedFile implements PagedFile
      * @param file
      * @param channel
      * @param filePageSize is the page size used by this file, NOT the page size used by
- *                     the cache. This value is always smaller than the page size used
- *                     by the cache. The remaining space in the page cache buffers are
+     *                     the cache. This value is always smaller than the page size used
+     *                     by the cache. The remaining space in the page cache buffers are
      */
     public StandardPagedFile( PageTable table, File file, StoreChannel channel, int filePageSize )
     {
@@ -62,8 +60,9 @@ public class StandardPagedFile implements PagedFile
     }
 
     @Override
-    public void pin( PageCursor cursor, PageLock lock, long pageId ) throws IOException
+    public void pin( PageCursor pinToCursor, PageLock lock, long pageId ) throws IOException
     {
+        StandardPageCursor cursor = (StandardPageCursor) pinToCursor;
         for (;;)
         {
             Object pageRef = filePages.get( pageId );
@@ -80,7 +79,7 @@ public class StandardPagedFile implements PagedFile
                     filePages.put( pageId, page );
                     latch.countDown();
 
-                    ((StandardPageCursor)cursor).reset( page, lock );
+                    cursor.reset( page, lock );
 
                     return; // yay!
                 }
@@ -103,7 +102,7 @@ public class StandardPagedFile implements PagedFile
                 PinnablePage page = (PinnablePage) pageRef;
                 if ( page.pin( pageIO, pageId, lock ) )
                 {
-                    ((StandardPageCursor)cursor).reset( page, lock );
+                    cursor.reset( page, lock );
                     return; // yay!
                 }
                 filePages.replace( pageId, page, NULL );

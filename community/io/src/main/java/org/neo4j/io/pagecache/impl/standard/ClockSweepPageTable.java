@@ -92,7 +92,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
     {
         for ( StandardPinnablePage page : pages )
         {
-            if( page.isBackedBy( io ) )
+            if( page.isBackedBy( io ) ) // TODO this is racy with the eviction
             {
                 page.lock( PageLock.SHARED );
                 try
@@ -199,7 +199,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
             catch(Exception e)
             {
                 // Aviod having this thread crash at all cost.
-                // TODO: If we get IOEXception here, we may be failing to flush pages
+                // TODO: If we get IOException here, we may be failing to flush pages
                 // to disk. Need to shut database down if that happens. Perhaps with
                 // some retries.
                 e.printStackTrace();
@@ -209,6 +209,9 @@ public class ClockSweepPageTable implements PageTable, Runnable
 
     private void evict( StandardPinnablePage page ) throws IOException
     {
+        long pageId = page.pageId();
+        PageIO io = page.io();
+
         page.flush();
         page.evicted();
         page.reset( null, 0 );
@@ -216,7 +219,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
         do {
             page.next = freeList.get();
         } while ( !freeList.compareAndSet( page.next, page ) );
-        monitor.evict( page.pageId(), page.io() );
+        monitor.evict( pageId, io );
     }
 
     private int parkUntilEvictionRequired( int minLoadedPages )

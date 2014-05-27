@@ -26,7 +26,7 @@ import java.util.concurrent.locks.ReentrantReadWriteLock;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
 
-public class StandardPinnablePage extends ByteBufferPage implements PageTable.PinnablePage
+public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
 {
     static final byte MAX_USAGE_COUNT = 5;
 
@@ -36,7 +36,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
     public volatile boolean loaded = false;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private PageTable.PageIO io;
+    private PageIO io;
     private long pageId = -1;
     private boolean dirty;
     private int pageSize;
@@ -49,25 +49,22 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
     }
 
     @Override
-    public boolean pin( PageTable.PageIO assertIO, long assertPageId, PageLock lockType )
+    public boolean pin( PageIO assertIO, long assertPageId, PageLock lockType )
     {
-        if(assertionsHold( assertIO, assertPageId ))
+        lock( lockType );
+        if( assertionsHold( assertIO, assertPageId ) )
         {
-            lock(lockType);
-            if(assertionsHold( assertIO, assertPageId ))
+            byte stamp = usageStamp;
+            if ( stamp < MAX_USAGE_COUNT )
             {
-                byte stamp = usageStamp;
-                if ( stamp < MAX_USAGE_COUNT )
-                {
-                    // Racy, but we don't care
-                    usageStamp = (byte) (stamp + 1);
-                }
-                return true;
+                // Racy, but we don't care
+                usageStamp = (byte) (stamp + 1);
             }
-            else
-            {
-                unpin( lockType );
-            }
+            return true;
+        }
+        else
+        {
+            unpin( lockType );
         }
         return false;
     }
@@ -111,7 +108,11 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
         }
     }
 
-    private boolean assertionsHold( PageTable.PageIO assertIO, long assertPageId )
+    /**
+     * Must be called while holding either a SHARED or an EXCLUSIVE lock, in order to prevent
+     * racing with eviction.
+     */
+    private boolean assertionsHold( PageIO assertIO, long assertPageId )
     {
         return assertPageId == pageId && io != null && io.equals( assertIO );
     }
@@ -131,7 +132,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
         return buffer;
     }
 
-    public void reset( PageTable.PageIO io, long pageId )
+    public void reset( PageIO io, long pageId )
     {
         this.io = io;
         this.pageId = pageId;
@@ -172,12 +173,12 @@ public class StandardPinnablePage extends ByteBufferPage implements PageTable.Pi
         io.evicted( pageId );
     }
 
-    public boolean isBackedBy( PageTable.PageIO io )
+    public boolean isBackedBy( PageIO io )
     {
         return this.io != null && this.io.equals( io );
     }
 
-    public PageTable.PageIO io()
+    public PageIO io()
     {
         return io;
     }
