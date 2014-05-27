@@ -159,7 +159,7 @@ A node may be labeled with any number of labels, including none, making labels a
 "A Label" -> "Node" [label="groups"]
 ----
 
-Labels are used when defining contraints and adding indexes for properties.
+Labels are used when defining constraints and adding indexes for properties.
 
 An example would be a label named +User+ that you label all your nodes representing users with.
 With that in place, you can ask Neo4j to perform operations only on your user nodes, such as finding all users with a given name.
@@ -170,7 +170,7 @@ You might create an +Offline+ label for phones that are offline, a +Happy+ label
 
 === Label names ===
 
-Any non-empty unicode string can be used as a label name.
+Any non-empty Unicode string can be used as a label name.
 In Cypher, you may need to use the backtick (++`++) syntax to avoid clashes with Cypher identifier rules.
 By convention, labels are written with CamelCase notation, with the first letter in upper case.
 For instance, +User+ or +CarOwner+.

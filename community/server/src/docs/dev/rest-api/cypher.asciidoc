@@ -16,7 +16,7 @@ include::create-a-node.asciidoc[]
 
 include::create-a-node-with-multiple-properties.asciidoc[]
 
-include::create-mutiple-nodes-with-properties.asciidoc[]
+include::create-multiple-nodes-with-properties.asciidoc[]
 
 include::set-all-properties-on-a-node-using-cypher.asciidoc[]
 
