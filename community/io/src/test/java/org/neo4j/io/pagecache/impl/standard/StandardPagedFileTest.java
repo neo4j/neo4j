@@ -19,10 +19,13 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
+import java.io.IOException;
+
 import org.junit.Test;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageLock;
 
+import static junit.framework.TestCase.fail;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.mockito.Mockito.*;
@@ -68,5 +71,30 @@ public class StandardPagedFileTest
 
         // Then
         verify(page).unpin( PageLock.SHARED );
+    }
+
+    @Test
+    public void shouldThrowIfCursorIsAlreadyUsed() throws Exception
+    {
+        // Given
+        when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
+        when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
+
+        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512);
+
+        // And given I've pinned a page already
+        file.pin( cursor, PageLock.SHARED, 12 );
+
+        // When
+        try
+        {
+            file.pin( cursor, PageLock.SHARED, 12 );
+            fail("Should have thrown when re-using an active cursor");
+
+        // Then
+        } catch(IOException e)
+        {
+            assertThat(e.getMessage(), equalTo("The cursor is already in use, you need to unpin the cursor before using it again."));
+        }
     }
 }
