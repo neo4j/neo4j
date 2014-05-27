@@ -19,6 +19,8 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
+import java.io.IOException;
+
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
 
@@ -41,6 +43,13 @@ public class StandardPageCursor extends OffsetTrackingCursor
     {
         this.lockTypeHeld = lockTypeHeld;
         super.reset( page );
+    }
 
+    public void assertNotInUse() throws IOException
+    {
+        if(lockTypeHeld != null)
+        {
+            throw new IOException( "The cursor is already in use, you need to unpin the cursor before using it again." );
+        }
     }
 }
