@@ -23,23 +23,57 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class TransactionMonitorImpl implements TransactionMonitor
 {
+    private final AtomicInteger startedTransactionCount = new AtomicInteger();
     private final AtomicInteger activeTransactionCount = new AtomicInteger();
+    private final AtomicInteger rolledBackTransactionCount = new AtomicInteger();
+    private int peakTransactionCount; // hard to have absolutely atomic, and it doesn't need to be.
 
     @Override
     public void transactionStarted()
     {
-        activeTransactionCount.incrementAndGet();
+        // TODO offload stats keeping somehow from executing thread?
+        startedTransactionCount.incrementAndGet();
+        int active = activeTransactionCount.incrementAndGet();
+        peakTransactionCount = Math.max( peakTransactionCount, active );
     }
 
     @Override
     public void transactionFinished( boolean successful )
     {
         activeTransactionCount.decrementAndGet();
+        if ( !successful )
+        {
+            rolledBackTransactionCount.incrementAndGet();
+        }
     }
 
     @Override
     public int getNumberOfActiveTransactions()
     {
         return activeTransactionCount.get();
+    }
+
+    @Override
+    public int getPeakConcurrentNumberOfTransactions()
+    {
+        return peakTransactionCount;
+    }
+
+    @Override
+    public int getNumberOfStartedTransactions()
+    {
+        return startedTransactionCount.get();
+    }
+
+    @Override
+    public long getNumberOfCommittedTransactions()
+    {
+        return startedTransactionCount.get() - activeTransactionCount.get();
+    }
+
+    @Override
+    public long getNumberOfRolledbackTransactions()
+    {
+        return rolledBackTransactionCount.get();
     }
 }

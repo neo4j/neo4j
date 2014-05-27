@@ -1335,6 +1335,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( startupStatistics );
             }
+            else if ( TransactionMonitor.class.isAssignableFrom( type ) )
+            {
+                return type.cast( transactionMonitor );
+            }
             return null;
         }
 

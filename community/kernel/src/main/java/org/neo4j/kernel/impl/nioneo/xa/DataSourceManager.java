@@ -93,6 +93,11 @@ public class DataSourceManager implements Lifecycle
         life.remove( dataSource );
     }
 
+    public NeoStoreXaDataSource getDataSource()
+    {
+        return dataSource;
+    }
+
     @Override
     public void init() throws Throwable
     {

@@ -21,9 +21,19 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 public interface TransactionMonitor
 {
+    // Inputs
     void transactionStarted();
 
     void transactionFinished( boolean successful );
 
+    // Outputs
     int getNumberOfActiveTransactions();
+
+    int getPeakConcurrentNumberOfTransactions();
+
+    int getNumberOfStartedTransactions();
+
+    long getNumberOfCommittedTransactions();
+
+    long getNumberOfRolledbackTransactions();
 }
