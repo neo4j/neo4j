@@ -124,15 +124,15 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     @Override
     public NodeRecord getRecord( long id )
     {
-        return getRecord( id, new NodeRecord( id ) );
+        return getRecord( id, new NodeRecord( id ), RecordLoad.NORMAL );
     }
 
-    public NodeRecord getRecord( long id, NodeRecord record )
+    public NodeRecord getRecord( long id, NodeRecord record, RecordLoad load )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            return getRecord( id, window, RecordLoad.NORMAL, record );
+            return getRecord( id, window, load, record );
         }
         finally
         {

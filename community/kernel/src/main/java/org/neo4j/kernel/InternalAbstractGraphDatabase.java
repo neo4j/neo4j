@@ -506,7 +506,7 @@ public abstract class InternalAbstractGraphDatabase
 
         schema = new SchemaImpl( threadToTransactionBridge );
 
-        indexManager = new IndexManagerImpl( config, indexStore, threadToTransactionBridge, neoDataSource );
+        indexManager = new IndexManagerImpl( config, indexStore, threadToTransactionBridge, dataSourceManager );
         nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexManager, nodeManager ) );
         relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexManager, nodeManager ) );
 
@@ -570,17 +570,17 @@ public abstract class InternalAbstractGraphDatabase
 
     protected TokenCreator createRelationshipTypeCreator()
     {
-        return new DefaultRelationshipTypeCreator( neoDataSource, idGeneratorFactory );
+        return new DefaultRelationshipTypeCreator( dataSourceManager, idGeneratorFactory );
     }
 
     protected TokenCreator createPropertyKeyCreator()
     {
-        return new DefaultPropertyTokenCreator( neoDataSource, idGeneratorFactory );
+        return new DefaultPropertyTokenCreator( dataSourceManager, idGeneratorFactory );
     }
 
     protected TokenCreator createLabelIdCreator()
     {
-        return new DefaultLabelIdCreator( neoDataSource, idGeneratorFactory );
+        return new DefaultLabelIdCreator( dataSourceManager, idGeneratorFactory );
     }
 
     private NodeManager createNodeManager( final boolean readOnly, final CacheProvider cacheType,

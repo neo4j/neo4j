@@ -20,11 +20,9 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.Collection;
-import java.util.HashSet;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -34,15 +32,9 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.index.Index;
-import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.helpers.collection.CombiningIterator;
-import org.neo4j.helpers.collection.FilteringIterator;
-import org.neo4j.helpers.collection.IteratorWrapper;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -198,94 +190,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         return new RelationshipProxy( id, relationshipLookups, threadToTransactionBridge );
     }
 
-    public Iterator<Node> getAllNodes()
-    {
-        Iterator<Node> committedNodes = new PrefetchingIterator<Node>()
-        {
-            private long highId = idGeneratorFactory.get( IdType.NODE ).getHighestPossibleIdInUse();
-            private long currentId;
-
-            @Override
-            protected Node fetchNextOrNull()
-            {
-                while ( true )
-                {   // This outer loop is for checking if highId has changed since we started.
-                    while ( currentId <= highId )
-                    {
-                        try
-                        {
-                            Node node = getNodeByIdOrNull( currentId );
-                            if ( node != null )
-                            {
-                                return node;
-                            }
-                        }
-                        finally
-                        {
-                            currentId++;
-                        }
-                    }
-
-                    long newHighId = idGeneratorFactory.get( IdType.NODE ).getHighestPossibleIdInUse();
-                    if ( newHighId > highId )
-                    {
-                        highId = newHighId;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                return null;
-            }
-        };
-
-        final TransactionState txState = getTransactionState();
-        if ( !txState.hasChanges() )
-        {
-            return committedNodes;
-        }
-
-        /* Created nodes are put in the cache right away, even before the transaction is committed.
-         * We want this iterator to include nodes that have been created, but not yes committed in
-         * this transaction. The thing with the cache is that stuff can be evicted at any point in time
-         * so we can't rely on created nodes to be there during the whole life time of this iterator.
-         * That's why we filter them out from the "committed/cache" iterator and add them at the end instead.*/
-        final Set<Long> createdNodes = new HashSet<>( txState.getCreatedNodes() );
-        if ( !createdNodes.isEmpty() )
-        {
-            committedNodes = new FilteringIterator<>( committedNodes, new Predicate<Node>()
-            {
-                @Override
-                public boolean accept( Node node )
-                {
-                    return !createdNodes.contains( node.getId() );
-                }
-            } );
-        }
-
-        // Filter out nodes deleted in this transaction
-        Iterator<Node> filteredRemovedNodes = new FilteringIterator<>( committedNodes, new Predicate<Node>()
-        {
-            @Override
-            public boolean accept( Node node )
-            {
-                return !txState.nodeIsDeleted( node.getId() );
-            }
-        } );
-
-        // Append nodes created in this transaction
-        return new CombiningIterator<>( asList( filteredRemovedNodes,
-                new IteratorWrapper<Node, Long>( createdNodes.iterator() )
-                {
-                    @Override
-                    protected Node underlyingObjectToObject( Long id )
-                    {
-                        return getNodeById( id );
-                    }
-                } ) );
-    }
-
     public NodeImpl getNodeForProxy( long nodeId )
     {
         NodeImpl node = getLightNode( nodeId );
@@ -311,96 +215,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
             throw new NotFoundException( format( "Relationship %d not found", id ) );
         }
         return relationship;
-    }
-
-    public Iterator<Relationship> getAllRelationships()
-    {
-        Iterator<Relationship> committedRelationships = new PrefetchingIterator<Relationship>()
-        {
-            private long highId = idGeneratorFactory.get( IdType.RELATIONSHIP ).getHighestPossibleIdInUse();
-            private long currentId;
-
-            @Override
-            protected Relationship fetchNextOrNull()
-            {
-                while ( true )
-                {   // This outer loop is for checking if highId has changed since we started.
-                    while ( currentId <= highId )
-                    {
-                        try
-                        {
-                            Relationship relationship = getRelationshipByIdOrNull( currentId );
-                            if ( relationship != null )
-                            {
-                                return relationship;
-                            }
-                        }
-                        finally
-                        {
-                            currentId++;
-                        }
-                    }
-
-                    long newHighId = idGeneratorFactory.get( IdType.RELATIONSHIP ).getHighestPossibleIdInUse();
-                    if ( newHighId > highId )
-                    {
-                        highId = newHighId;
-                    }
-                    else
-                    {
-                        break;
-                    }
-                }
-                return null;
-            }
-        };
-
-        final TransactionState txState = getTransactionState();
-        if ( !txState.hasChanges() )
-        {
-            return committedRelationships;
-        }
-
-        /* Created relationships are put in the cache right away, even before the transaction is committed.
-         * We want this iterator to include relationships that have been created, but not yes committed in
-         * this transaction. The thing with the cache is that stuff can be evicted at any point in time
-         * so we can't rely on created relationships to be there during the whole life time of this iterator.
-         * That's why we filter them out from the "committed/cache" iterator and add them at the end instead.*/
-        final Set<Long> createdRelationships = new HashSet<>( txState.getCreatedRelationships() );
-        if ( !createdRelationships.isEmpty() )
-        {
-            committedRelationships = new FilteringIterator<>( committedRelationships,
-                    new Predicate<Relationship>()
-                    {
-                        @Override
-                        public boolean accept( Relationship relationship )
-                        {
-                            return !createdRelationships.contains( relationship.getId() );
-                        }
-                    } );
-        }
-
-        // Filter out relationships deleted in this transaction
-        Iterator<Relationship> filteredRemovedRelationships =
-                new FilteringIterator<>( committedRelationships, new Predicate<Relationship>()
-                {
-                    @Override
-                    public boolean accept( Relationship relationship )
-                    {
-                        return !txState.relationshipIsDeleted( relationship.getId() );
-                    }
-                } );
-
-        // Append relationships created in this transaction
-        return new CombiningIterator<>( asList( filteredRemovedRelationships,
-                new IteratorWrapper<Relationship, Long>( createdRelationships.iterator() )
-                {
-                    @Override
-                    protected Relationship underlyingObjectToObject( Long id )
-                    {
-                        return getRelationshipById( id );
-                    }
-                } ) );
     }
 
     RelationshipType getRelationshipTypeById( int id ) throws TokenNotFoundException

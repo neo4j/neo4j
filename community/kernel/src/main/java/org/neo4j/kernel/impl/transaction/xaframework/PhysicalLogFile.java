@@ -271,7 +271,7 @@ public class PhysicalLogFile implements LogFile,
     // TODO 2.2-future ideally, we should reorder stuff so less variables are needed
     private synchronized VersionedStoreChannel rotate( VersionedStoreChannel channel ) throws IOException
     {
-        logRotationControl.awaitAllTransactionsApplied();
+        logRotationControl.awaitAllTransactionsClosed();
         logRotationControl.forceEverything();
 
         File newLogFile = logFiles.getLog2FileName();
@@ -556,7 +556,7 @@ public class PhysicalLogFile implements LogFile,
     @Override
     public synchronized void close() throws IOException
     {
-        logRotationControl.awaitAllTransactionsApplied();
+        logRotationControl.awaitAllTransactionsClosed();
         logRotationControl.forceEverything();
 
         LogPosition endPosition = writer.getCurrentPosition();

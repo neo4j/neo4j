@@ -287,10 +287,10 @@ public class TestCacheUpdateDeadlock
         }
 
         @Override
-        public void commitCows()
+        public void applyChangesToCache()
         {
             latch.startAndAwaitFinish();
-            super.commitCows();
+            super.applyChangesToCache();
         }
     }
 }

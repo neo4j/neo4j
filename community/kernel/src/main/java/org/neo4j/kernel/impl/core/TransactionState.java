@@ -53,11 +53,7 @@ public interface TransactionState
 
     SetAndDirectionCounter getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type );
 
-    void commit();
-
-    void commitCows();
-
-    void rollback();
+    void applyChangesToCache( boolean success );
 
     ArrayMap<Integer, DefinedProperty> getCowPropertyRemoveMap( Primitive primitive );
 

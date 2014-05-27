@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 public interface LogRotationControl
 {
-    void awaitAllTransactionsApplied();
+    void awaitAllTransactionsClosed();
 
     void forceEverything();
 }

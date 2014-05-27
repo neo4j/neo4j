@@ -47,13 +47,13 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionIdApplied( long transactionId )
+    public void transactionClosed( long transactionId )
     {
         appliedTransactionId = transactionId;
     }
 
     @Override
-    public boolean appliedTransactionIsOnParWithCommittingTransactionId()
+    public boolean closedTransactionIdIsOnParWithCommittingTransactionId()
     {
         return appliedTransactionId == transactionId;
     }

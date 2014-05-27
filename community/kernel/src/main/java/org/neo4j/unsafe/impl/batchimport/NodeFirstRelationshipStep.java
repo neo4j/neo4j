@@ -21,6 +21,7 @@ package org.neo4j.unsafe.impl.batchimport;
 
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.RecordLoad;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
@@ -67,7 +68,7 @@ public class NodeFirstRelationshipStep extends LonelyProcessingStep implements G
                 continue;
             }
 
-            NodeRecord record = nodeStore.getRecord( nodeId, heavilyReusedRecord );
+            NodeRecord record = nodeStore.getRecord( nodeId, heavilyReusedRecord, RecordLoad.NORMAL );
             record.setNextRel( firstRel );
             if ( nodeRelationshipLink.isDense( nodeId ) )
             {

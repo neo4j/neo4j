@@ -40,13 +40,23 @@ interface DataRead
     PrimitiveLongIterator nodesGetForLabel( int labelId );
 
     /**
-     * Returns an iterable with the matched nodes.
+     * Returns an iterator with the matched nodes.
      *
      * @throws org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException
      *          if no such index found.
      */
     PrimitiveLongIterator nodesGetFromIndexLookup( IndexDescriptor index, Object value )
             throws IndexNotFoundKernelException;
+
+    /**
+     * @return an iterator over all nodes in the database.
+     */
+    PrimitiveLongIterator nodesGetAll();
+
+    /**
+     * @return an iterator over all relationships in the database.
+     */
+    PrimitiveLongIterator relationshipsGetAll();
 
     PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction, int... relTypes ) throws EntityNotFoundException;
 
@@ -74,6 +84,7 @@ interface DataRead
     boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException;
 
     int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
+
     int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
 
     /**

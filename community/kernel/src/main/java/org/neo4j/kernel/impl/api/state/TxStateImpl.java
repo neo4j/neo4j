@@ -1031,4 +1031,26 @@ public final class TxStateImpl implements TxState
         return propertyChangesForNodes == null ?
                 propertyChangesForNodes = new PropertyChanges() : propertyChangesForNodes;
     }
+
+    @Override
+    public PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed )
+    {
+        if ( !hasChanges() )
+        {
+            return committed;
+        }
+
+        return nodes.augment( committed );
+    }
+
+    @Override
+    public PrimitiveLongIterator augmentRelationshipsGetAll( PrimitiveLongIterator committed )
+    {
+        if ( !hasChanges() )
+        {
+            return committed;
+        }
+
+        return relationships.augment( committed );
+    }
 }

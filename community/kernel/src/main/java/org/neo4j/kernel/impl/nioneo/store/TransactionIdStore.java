@@ -23,7 +23,7 @@ package org.neo4j.kernel.impl.nioneo.store;
  * Keeps a latest transaction id. There's one counter for {@code committing transaction id} and one for
  * {@code applied transaction id}. The committing transaction id is for writing into a log before making
  * the changes to be made. After that the application of those transactions might be asynchronous and
- * completion of those are marked using {@link #transactionIdApplied(long)}.
+ * completion of those are marked using {@link #transactionClosed(long)}.
  */
 public interface TransactionIdStore
 {
@@ -40,7 +40,7 @@ public interface TransactionIdStore
      * may come in out-of-transaction-id order.
      * @param transactionId the applied transaction id.
      */
-    void transactionIdApplied( long transactionId );
+    void transactionClosed( long transactionId );
 
     /**
      * Should be called in a place where no more committing transaction ids are returned, so that
@@ -49,7 +49,7 @@ public interface TransactionIdStore
      * @return {@code true} if the latest applied transaction (without any lower transaction id gaps)
      * is the same as the highest returned {@code committing transaction id}.
      */
-    boolean appliedTransactionIsOnParWithCommittingTransactionId();
+    boolean closedTransactionIdIsOnParWithCommittingTransactionId();
 
     long nextLogVersion();
 

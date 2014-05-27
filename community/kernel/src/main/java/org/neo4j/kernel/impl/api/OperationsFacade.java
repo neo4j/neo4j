@@ -114,6 +114,21 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     // <DataRead>
+
+    @Override
+    public PrimitiveLongIterator nodesGetAll()
+    {
+        statement.assertOpen();
+        return dataRead().nodesGetAll( statement );
+    }
+
+    @Override
+    public PrimitiveLongIterator relationshipsGetAll()
+    {
+        statement.assertOpen();
+        return dataRead().relationshipsGetAll( statement );
+    }
+
     @Override
     public PrimitiveLongIterator nodesGetForLabel( int labelId )
     {

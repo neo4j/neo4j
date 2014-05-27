@@ -87,11 +87,6 @@ public class NeoStoreTransactionContext
         return relationshipCreator.getUpgradedDenseNodes();
     }
 
-    public void commitCows()
-    {
-        txState.commitCows();
-    }
-
     public ArrayMap<Integer, DefinedProperty>  getAndDeletePropertyChain( NodeRecord nodeRecord )
     {
         return propertyDeleter.getAndDeletePropertyChain( nodeRecord,

@@ -25,6 +25,25 @@ import java.util.Map;
 import org.neo4j.kernel.impl.util.CopyOnWriteHashMap;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+/**
+ *
+ * Exists:
+ *   get from map
+ *
+ * Previously when it doesn't exist:
+ *   tokenCreator.create
+ *     record changes
+ *       command execution
+ *
+ * Doesn't exist:
+ *   tokenCreator.create( name, id )
+ *     new kernel transaction
+ *       change in statement
+ *         commit
+ *           record changes
+ *             command execution
+ *               add to holder
+ */
 public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
 {
     public static final int NO_ID = -1;

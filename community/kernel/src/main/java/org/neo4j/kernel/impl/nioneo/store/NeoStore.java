@@ -858,7 +858,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore
     }
 
     @Override
-    public void transactionIdApplied( long transactionId )
+    public void transactionClosed( long transactionId )
     {
         // For now just assert that transactions are applied in order
         boolean set = lastAppliedTx.compareAndSet( transactionId-1, transactionId );
@@ -867,7 +867,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore
     }
 
     @Override
-    public boolean appliedTransactionIsOnParWithCommittingTransactionId()
+    public boolean closedTransactionIdIsOnParWithCommittingTransactionId()
     {
         return lastAppliedTx.get() == lastCommittingTx.get();
     }

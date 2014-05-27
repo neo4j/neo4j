@@ -20,14 +20,19 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import org.neo4j.helpers.Listeners;
+import org.neo4j.helpers.Provider;
+import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleStatus;
 
 /**
  * Adds change listener features to a {@link NeoStoreXaDataSource}.
+ *
+ * TODO This being a {@link KernelAPI} {@link Provider} is a smell, it comes from established bad dependency hierarchy
+ * where {@link NeoStoreXaDataSource} and {@link KernelAPI} are needed before they exist.
  */
-public class DataSourceManager implements Lifecycle
+public class DataSourceManager implements Lifecycle, Provider<KernelAPI>
 {
     public interface Listener
     {
@@ -136,5 +141,11 @@ public class DataSourceManager implements Lifecycle
     {
         life.shutdown();
         dataSource = null;
+    }
+
+    @Override
+    public KernelAPI instance()
+    {
+        return dataSource.getKernel();
     }
 }

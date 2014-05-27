@@ -261,4 +261,8 @@ public interface TxState
     boolean constraintIndexDoUnRemove( IndexDescriptor index );
 
     Long indexCreatedForConstraint( UniquenessConstraint constraint );
+
+    PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
+
+    PrimitiveLongIterator augmentRelationshipsGetAll( PrimitiveLongIterator committed );
 }

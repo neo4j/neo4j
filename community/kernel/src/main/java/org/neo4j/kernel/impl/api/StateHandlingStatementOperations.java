@@ -203,6 +203,18 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public PrimitiveLongIterator nodesGetAll( KernelStatement state )
+    {
+        return state.txState().augmentNodesGetAll( storeLayer.nodesGetAll() );
+    }
+
+    @Override
+    public PrimitiveLongIterator relationshipsGetAll( KernelStatement state )
+    {
+        return state.txState().augmentRelationshipsGetAll( storeLayer.relationshipsGetAll() );
+    }
+
+    @Override
     public PrimitiveIntIterator nodeGetCommittedLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException
     {
         if( state.hasTxStateWithChanges() && state.txState().nodeIsAddedInThisTx( nodeId ))

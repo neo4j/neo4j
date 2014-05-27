@@ -94,7 +94,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 
-public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, Provider<KernelAPI>, LogRotationControl
+public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl
 {
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
@@ -547,16 +547,10 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, Provid
     }
 
     @Override
-    public KernelAPI instance()
-    {
-        return kernel;
-    }
-
-    @Override
-    public void awaitAllTransactionsApplied()
+    public void awaitAllTransactionsClosed()
     {
         // TODO 2.2-future what if this will never happen?
-        while ( neoStore.appliedTransactionIsOnParWithCommittingTransactionId() )
+        while ( neoStore.closedTransactionIdIsOnParWithCommittingTransactionId() )
         {
             try
             {

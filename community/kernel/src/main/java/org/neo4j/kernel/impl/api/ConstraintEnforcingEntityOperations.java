@@ -389,4 +389,16 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     {
         return entityWriteOperations.nodeCreate( statement );
     }
+
+    @Override
+    public PrimitiveLongIterator nodesGetAll( KernelStatement state )
+    {
+        return entityReadOperations.nodesGetAll( state );
+    }
+
+    @Override
+    public PrimitiveLongIterator relationshipsGetAll( KernelStatement state )
+    {
+        return entityReadOperations.relationshipsGetAll( state );
+    }
 }

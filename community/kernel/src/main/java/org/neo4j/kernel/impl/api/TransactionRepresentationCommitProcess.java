@@ -113,7 +113,7 @@ public class TransactionRepresentationCommitProcess
                 indexApplier.done();
             }
 
-            neoStore.transactionIdApplied( transactionId );
+            neoStore.transactionClosed( transactionId );
             // TODO 2.2-future remove updateIdGenerators and setRecovered as a whole
             if ( recovery )
             {

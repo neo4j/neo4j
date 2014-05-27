@@ -82,15 +82,15 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     @Override
     public RelationshipRecord getRecord( long id )
     {
-        return getRecord( id, new RelationshipRecord( id ) );
+        return getRecord( id, new RelationshipRecord( id ), RecordLoad.NORMAL );
     }
 
-    public RelationshipRecord getRecord( long id, RelationshipRecord target )
+    public RelationshipRecord getRecord( long id, RelationshipRecord target, RecordLoad load )
     {
         PersistenceWindow window = acquireWindow( id, OperationType.READ );
         try
         {
-            return getRecord( id, window, RecordLoad.NORMAL, target );
+            return getRecord( id, window, load, target );
         }
         finally
         {

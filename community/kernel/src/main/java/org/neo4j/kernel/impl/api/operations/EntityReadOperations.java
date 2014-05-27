@@ -133,4 +133,8 @@ public interface EntityReadOperations
             EntityNotFoundException;
 
     PrimitiveIntIterator nodeGetCommittedLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException;
+
+    PrimitiveLongIterator nodesGetAll( KernelStatement state );
+
+    PrimitiveLongIterator relationshipsGetAll( KernelStatement state );
 }

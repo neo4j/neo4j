@@ -391,16 +391,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 commitProcess.commit( transactionRepresentation );
 
                 TransactionState transactionState = transactionImplementation.getLegacyTransactionState();
-                transactionState.commitCows();
+                transactionState.applyChangesToCache( true );
 
                 // TODO 2.2-future do the TxIdGenerator#committed thing
                 success = true;
             }
-        }
-        catch ( final Throwable t )
-        {
-            t.printStackTrace();
-            throw t;
         }
         finally
         {
@@ -418,6 +413,30 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     @Override
     public void rollback( KernelTransaction transaction ) throws TransactionFailureException
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        try
+        {
+            // deferred creation of records
+            transaction.prepare();
+
+            KernelTransactionImplementation transactionImplementation = (KernelTransactionImplementation)transaction;
+            if ( !transactionImplementation.isReadOnly() )
+            {
+                TransactionState transactionState = transactionImplementation.getLegacyTransactionState();
+                transactionState.applyChangesToCache( false );
+
+                // TODO 2.2-future do the TxIdGenerator#committed thing
+            }
+        }
+        finally
+        {
+            try
+            {
+                transaction.rollback();
+            }
+            finally
+            {
+                transactionMonitor.transactionFinished( false );
+            }
+        }
     }
 }

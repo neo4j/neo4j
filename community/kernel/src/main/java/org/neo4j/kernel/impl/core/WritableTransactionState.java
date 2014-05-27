@@ -28,7 +28,6 @@ import java.util.Map.Entry;
 import java.util.Set;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.api.properties.DefinedProperty;
@@ -342,31 +341,7 @@ public class WritableTransactionState implements TransactionState
     }
 
     @Override
-    public void commit()
-    {
-        locks.close();
-    }
-
-    @Override
-    public void commitCows()
-    {
-        applyTransactionStateToCache( Status.STATUS_COMMITTED );
-    }
-
-    @Override
-    public void rollback()
-    {
-        try
-        {
-            applyTransactionStateToCache( Status.STATUS_ROLLEDBACK );
-        }
-        finally
-        {
-            locks.close();
-        }
-    }
-
-    private void applyTransactionStateToCache( int param )
+    public void applyChangesToCache( boolean success )
     {
         if ( primitiveElement == null )
         {
@@ -381,15 +356,10 @@ public class WritableTransactionState implements TransactionState
             if ( node != null )
             {
                 CowNodeElement nodeElement = entry.getValue();
-                if ( param == Status.STATUS_COMMITTED )
+                if ( success )
                 {
                     node.commitRelationshipMaps( nodeElement.relationshipAddMap, nodeElement.relationshipRemoveMap );
                     node.commitPropertyMaps( nodeElement.propertyAddMap, nodeElement.propertyRemoveMap );
-                }
-                else if ( param != Status.STATUS_ROLLEDBACK )
-                {
-                    throw new TransactionFailureException(
-                            "Unknown transaction status: " + param );
                 }
                 int sizeAfter = node.sizeOfObjectInBytesIncludingOverhead();
                 nodeManager.updateCacheSize( node, sizeAfter );
@@ -404,20 +374,15 @@ public class WritableTransactionState implements TransactionState
             if ( rel != null )
             {
                 CowRelElement relElement = entry.getValue();
-                if ( param == Status.STATUS_COMMITTED )
+                if ( success )
                 {
                     rel.commitPropertyMaps( relElement.propertyAddMap, relElement.propertyRemoveMap );
-                }
-                else if ( param != Status.STATUS_ROLLEDBACK )
-                {
-                    throw new TransactionFailureException(
-                            "Unknown transaction status: " + param );
                 }
                 int sizeAfter = rel.sizeOfObjectInBytesIncludingOverhead();
                 nodeManager.updateCacheSize( rel, sizeAfter );
             }
         }
-        if ( primitiveElement.graph != null && param == Status.STATUS_COMMITTED )
+        if ( primitiveElement.graph != null && success )
         {
             nodeManager.getGraphProperties().commitPropertyMaps( primitiveElement.graph.getPropertyAddMap( false ),
                     primitiveElement.graph.getPropertyRemoveMap( false ) );

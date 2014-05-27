@@ -153,4 +153,8 @@ public interface StoreReadLayer
     {
         void visit( long relId, long startNode, long endNode, int type );
     }
+
+    PrimitiveLongIterator nodesGetAll();
+
+    PrimitiveLongIterator relationshipsGetAll();
 }

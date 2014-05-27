@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static java.util.Collections.emptySet;
-
 import java.util.Set;
 
 import org.neo4j.graphdb.NotInTransactionException;
@@ -34,6 +32,8 @@ import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
+
+import static java.util.Collections.emptySet;
 
 public class NoTransactionState implements TransactionState
 {
@@ -62,18 +62,7 @@ public class NoTransactionState implements TransactionState
     }
 
     @Override
-    public void commit()
-    {
-
-    }
-
-    @Override
-    public void commitCows()
-    {
-    }
-
-    @Override
-    public void rollback()
+    public void applyChangesToCache( boolean success )
     {
     }
 

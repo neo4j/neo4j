@@ -483,4 +483,16 @@ public class CacheLayer implements StoreReadLayer
     {
         return diskLayer.highestNodeIdInUse();
     }
+
+    @Override
+    public PrimitiveLongIterator nodesGetAll()
+    {
+        return diskLayer.nodesGetAll();
+    }
+
+    @Override
+    public PrimitiveLongIterator relationshipsGetAll()
+    {
+        return diskLayer.nodesGetAll();
+    }
 }
