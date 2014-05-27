@@ -17,17 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.perty
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_1.perty.pformat
+import org.neo4j.cypher.internal.compiler.v2_1.perty.impl.quoteString
 
-case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
+sealed abstract class PrintCommand
 
-  def availableSymbols: Set[IdName] = plan.availableSymbols
-
-  override def toString = pformat(this)
+case class PrintText(value: String) extends PrintCommand {
+  override def toString = s"PrintText(${quoteString(value)})"
 }
+
+case class PrintNewLine(indent: Int) extends PrintCommand
 
 
 

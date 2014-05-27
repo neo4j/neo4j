@@ -22,14 +22,19 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{GeneratedPretty, Pretty}
+import org.neo4j.cypher.internal.compiler.v2_1.perty.GeneratedPretty
+import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
 
-case class Predicate(dependencies: Set[IdName], exp: Expression) extends GeneratedPretty {
+case class Predicate(dependencies: Set[IdName], exp: Expression)
+  extends internalDocBuilder.AsPrettyToString {
+
   def hasDependenciesMet(symbols: Set[IdName]): Boolean =
     (dependencies -- symbols).isEmpty
 }
 
-case class Selections(predicates: Set[Predicate] = Set.empty) extends GeneratedPretty {
+case class Selections(predicates: Set[Predicate] = Set.empty)
+  extends internalDocBuilder.AsPrettyToString {
+
   def predicatesGiven(ids: Set[IdName]): Seq[Expression] = predicates.collect {
     case p@Predicate(_, predicate) if p.hasDependenciesMet(ids) => predicate
   }.toSeq

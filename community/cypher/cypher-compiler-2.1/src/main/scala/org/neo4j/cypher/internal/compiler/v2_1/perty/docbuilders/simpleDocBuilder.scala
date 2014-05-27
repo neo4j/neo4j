@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_1.perty.pformat
+import org.neo4j.cypher.internal.compiler.v2_1.perty._
 
-case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
+case object simpleDocBuilder extends DocBuilderChain[Any] with TopLevelDocBuilder[Any] {
 
-  def availableSymbols: Set[IdName] = plan.availableSymbols
+  val builders = Seq(
+    docStructureDocBuilder.uplifted[Any],
+    prettyDocBuilder.uplifted[Any],
+    scalaDocBuilder,
+    toStringDocBuilder
+  )
 
-  override def toString = pformat(this)
+  override protected def newNestedDocGenerator = catchNotImplemented(super.newNestedDocGenerator)
 }
-
-
-
-
