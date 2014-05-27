@@ -45,10 +45,14 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
 
     public void bindTransactionToCurrentThread( TopLevelTransaction transaction )
     {
+        if ( threadToTransactionMap.get() != null )
+        {
+            throw new IllegalStateException( Thread.currentThread() + " already has a transaction bound" );
+        }
         threadToTransactionMap.set( transaction );
     }
 
-    public void unbindTransactionFromCurrentThread( TopLevelTransaction transaction )
+    public void unbindTransactionFromCurrentThread()
     {
         threadToTransactionMap.remove();
     }

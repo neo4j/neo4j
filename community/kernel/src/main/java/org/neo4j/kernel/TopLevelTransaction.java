@@ -127,7 +127,7 @@ public class TopLevelTransaction implements Transaction
         }
         finally
         {
-            stmtProvider.unbindTransactionFromCurrentThread( this );
+            stmtProvider.unbindTransactionFromCurrentThread();
         }
     }
 
