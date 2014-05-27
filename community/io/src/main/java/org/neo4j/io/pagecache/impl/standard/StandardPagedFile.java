@@ -63,6 +63,7 @@ public class StandardPagedFile implements PagedFile
     public void pin( PageCursor pinToCursor, PageLock lock, long pageId ) throws IOException
     {
         StandardPageCursor cursor = (StandardPageCursor) pinToCursor;
+        cursor.assertNotInUse();
         for (;;)
         {
             Object pageRef = filePages.get( pageId );
@@ -165,6 +166,7 @@ public class StandardPagedFile implements PagedFile
     @Override
     public void flush() throws IOException
     {
+        table.flush( pageIO );
         pageIO.force();
     }
 }

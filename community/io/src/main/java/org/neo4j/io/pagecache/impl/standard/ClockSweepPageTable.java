@@ -43,7 +43,9 @@ public class ClockSweepPageTable implements PageTable, Runnable
     private final StandardPinnablePage[] pages;
     private final int pageSize;
     private final StandardPageCache.Monitor monitor;
+
     private volatile Thread sweeperThread;
+    private volatile IOException sweeperException;
 
     public ClockSweepPageTable( int maxPages, int pageSize, StandardPageCache.Monitor monitor )
     {
@@ -80,43 +82,6 @@ public class ClockSweepPageTable implements PageTable, Runnable
         return page;
     }
 
-    @Override
-    public void flush() throws IOException
-    {
-        for ( StandardPinnablePage page : pages )
-        {
-            page.lock( PageLock.SHARED );
-            try
-            {
-                page.flush();
-            }
-            finally
-            {
-                page.unlock(PageLock.SHARED);
-            }
-        }
-    }
-
-    @Override
-    public void flush( PageIO io ) throws IOException
-    {
-        for ( StandardPinnablePage page : pages )
-        {
-            page.lock( PageLock.SHARED );
-            try
-            {
-                if( page.isBackedBy( io ) )
-                {
-                    page.flush();
-                }
-            }
-            finally
-            {
-                page.unlock( PageLock.SHARED );
-            }
-        }
-    }
-
     private StandardPinnablePage nextFreePage()
     {
         StandardPinnablePage page;
@@ -130,6 +95,54 @@ public class ClockSweepPageTable implements PageTable, Runnable
         return page;
     }
 
+    @Override
+    public void flush() throws IOException
+    {
+        assertNoSweeperException();
+        for ( StandardPinnablePage page : pages )
+        {
+            page.lock( PageLock.SHARED );
+            try
+            {
+                page.flush();
+            }
+            finally
+            {
+                page.unlock( PageLock.SHARED );
+            }
+        }
+    }
+
+    @Override
+    public void flush( PageIO io ) throws IOException
+    {
+        assertNoSweeperException();
+        for ( StandardPinnablePage page : pages )
+        {
+            page.lock( PageLock.SHARED );
+            try
+            {
+                if( page.isBackedBy( io ) )
+                {
+                    assertNoSweeperException();
+                    page.flush();
+                }
+            }
+            finally
+            {
+                page.unlock( PageLock.SHARED );
+            }
+        }
+    }
+
+    private void assertNoSweeperException() throws IOException
+    {
+        if(sweeperException != null)
+        {
+            throw new IOException( "Cannot safely flush, page eviction thread has hit IO problems.", sweeperException );
+        }
+    }
+
     /**
      * This is the continuous background page replacement and flushing job.
      * This method runs concurrently with the page loading.
@@ -141,6 +154,9 @@ public class ClockSweepPageTable implements PageTable, Runnable
         continuouslySweepPages();
     }
 
+    /**
+     * This is the eviction algorithm, run in a background thread.
+     */
     private void continuouslySweepPages()
     {
         /**
@@ -155,6 +171,8 @@ public class ClockSweepPageTable implements PageTable, Runnable
         {
             try
             {
+                // A rather strange loop, it is done like this to allow us to stop in the middle of the movement
+                // of the "clock hand", and then come back to this for loop and pick up where we left off.
                 int loadedPages = 0;
                 for ( ; clockHand < pages.length; clockHand++ )
                 {
@@ -163,19 +181,21 @@ public class ClockSweepPageTable implements PageTable, Runnable
                     {
                         loadedPages++;
 
+                        // If we can't lock the page, someone is using it, and there is no reason for us to bother.
                         if( page.tryExclusiveLock() )
                         {
                             try
                             {
+                                // If this pages usageStamp has reached 0, it's time for it to leave the party.
                                 byte stamp = page.usageStamp;
                                 if ( stamp == 0 )
                                 {
                                     evict( page );
+
                                     maxPagesToEvict--;
                                     loadedPages--;
 
-                                    // Stop the clock if we're down to a sensible
-                                    // number of free pages.
+                                    // Stop the clock if we're down to a sensible number of free pages.
                                     if( maxPagesToEvict <= 0  )
                                     {
                                         break;
@@ -206,12 +226,16 @@ public class ClockSweepPageTable implements PageTable, Runnable
                 }
                 maxPagesToEvict = loadedPages - minLoadedPages;
             }
+            catch(IOException e)
+            {
+                // Failed to write to disk, this is fatal, shut down.
+                sweeperException = e;
+                return;
+            }
             catch(Exception e)
             {
-                // Aviod having this thread crash at all cost.
-                // TODO: If we get IOException here, we may be failing to flush pages
-                // to disk. Need to shut database down if that happens. Perhaps with
-                // some retries.
+                // Other than IO Exception, avoid having this thread die at all cost.
+                // TODO: Report this via a monitor rather than like this
                 e.printStackTrace();
             }
         }
@@ -232,15 +256,15 @@ public class ClockSweepPageTable implements PageTable, Runnable
         monitor.evict( pageId, io );
     }
 
-    private int parkUntilEvictionRequired( int minLoadedPages )
+    private void parkUntilEvictionRequired( int minLoadedPages )
     {
         int loadedPages;
         outerLoop: do
         {
             LockSupport.parkNanos( TimeUnit.MILLISECONDS.toNanos( 5 ) );
-            if(Thread.currentThread().isInterrupted())
+            if(Thread.currentThread().isInterrupted() || freeList.get() == null)
             {
-                return 0;
+                return;
             }
 
             loadedPages = 0;
@@ -257,7 +281,6 @@ public class ClockSweepPageTable implements PageTable, Runnable
                 }
             }
         } while( loadedPages <= minLoadedPages );
-        return loadedPages;
     }
 
     @Override

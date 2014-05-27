@@ -53,17 +53,7 @@ public class MonitorGc implements Lifecycle
     @Override
     public void start() throws Throwable
     {
-        String name = "GC-Monitor";
-        // For debugging, remove this if you see it.
-//        for ( StackTraceElement stackTraceElement : Thread.currentThread().getStackTrace() )
-//        {
-//            if(stackTraceElement.getClassName().contains( "Test" ))
-//            {
-//                name = "GC[" + stackTraceElement.getClassName() + "." + stackTraceElement.getMethodName() + "]";
-//            }
-//        }
-
-        monitorGc = new MeasureDoNothing( name, logger, config.get( Configuration.gc_monitor_wait_time ),
+        monitorGc = new MeasureDoNothing( "GC-Monitor", logger, config.get( Configuration.gc_monitor_wait_time ),
                 config.get( Configuration.gc_monitor_threshold ) );
         monitorGc.start();
     }
