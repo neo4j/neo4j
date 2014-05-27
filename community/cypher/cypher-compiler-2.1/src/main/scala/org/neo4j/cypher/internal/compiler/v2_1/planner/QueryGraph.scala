@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{PrettyToString, GeneratedPretty, Pretty, pformat}
+import org.neo4j.cypher.internal.compiler.v2_1.perty.{PrettyToString, GeneratedPretty, Pretty, pformat}
+import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{internalDocBuilder, queryGraphDocBuilder}
 
 trait QueryGraph {
   def patternRelationships: Set[PatternRelationship]
@@ -102,7 +103,7 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
                           argumentIds: Set[IdName] = Set.empty,
                           selections: Selections = Selections(),
                           optionalMatches: Seq[QueryGraph] = Seq.empty)
-  extends QueryGraph with GeneratedPretty with PrettyToString {
+  extends QueryGraph with internalDocBuilder.AsPrettyToString {
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = coveredIds intersect optionalMatch.coveredIds

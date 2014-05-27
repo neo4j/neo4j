@@ -17,18 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_1.perty.pformat
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.AstConstructionTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.perty._
 
-case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
+abstract class DocGeneratorTestSuite[T]
+  extends CypherFunSuite
+  with AstConstructionTestSupport
+  with HasDocGenerator[T]
+  with HasLineDocFormatter {
 
-  def availableSymbols: Set[IdName] = plan.availableSymbols
+  def format(value: T, formatter: DocFormatter = docFormatter): String = pformat[T](value, formatter)(docGenerator)
 
-  override def toString = pformat(this)
+  def build(value: T, formatter: DocFormatter = docFormatter): Seq[PrintCommand] = formatter(docGenerator(value))
 }
-
-
-
-

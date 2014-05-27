@@ -22,7 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SortItem, Expression}
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{PrettyToString, GeneratedPretty, Pretty, pformat}
+import org.neo4j.cypher.internal.compiler.v2_1.perty.PrettyToString
+import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{internalDocBuilder, plannerQueryDocBuilder, queryProjectionDocBuilder}
 
 trait QueryProjection {
   def projections: Map[String, Expression]
@@ -55,7 +56,9 @@ object QueryProjection {
 }
 
 case class QueryProjectionImpl(projections: Map[String, Expression], sortItems: Seq[SortItem], limit: Option[Expression],
-                               skip: Option[Expression]) extends QueryProjection with GeneratedPretty with PrettyToString {
+                               skip: Option[Expression])
+  extends QueryProjection with internalDocBuilder.AsPrettyToString {
+
   def withProjections(projections: Map[String, Expression]): QueryProjection = copy(projections = projections)
 
   def withSortItems(sortItems: Seq[SortItem]): QueryProjection = copy(sortItems = sortItems)
@@ -84,7 +87,7 @@ case class AggregationProjection(groupingKeys: Map[String, Expression] = Map.emp
                                  sortItems: Seq[SortItem] = Seq.empty,
                                  limit: Option[Expression] = None,
                                  skip: Option[Expression] = None)
-  extends QueryProjection with GeneratedPretty with PrettyToString {
+  extends QueryProjection with internalDocBuilder.AsPrettyToString {
 
   assert(
     !(groupingKeys.isEmpty && aggregationExpressions.isEmpty),

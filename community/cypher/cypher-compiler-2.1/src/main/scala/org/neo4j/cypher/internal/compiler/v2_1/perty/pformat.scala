@@ -17,18 +17,13 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.perty
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_1.perty.pformat
+import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.simpleDocBuilder
 
-case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
-
-  def availableSymbols: Set[IdName] = plan.availableSymbols
-
-  override def toString = pformat(this)
+object pformat {
+  // Convert value to String after converting to a doc using the given generator and formatter
+  def apply[T](value: T, formatter: DocFormatter = DocFormatters.defaultPageFormatter)
+              (implicit generator: DocGenerator[T] = simpleDocBuilder.docGenerator): String =
+    printToString(formatter(generator(value)))
 }
-
-
-
-

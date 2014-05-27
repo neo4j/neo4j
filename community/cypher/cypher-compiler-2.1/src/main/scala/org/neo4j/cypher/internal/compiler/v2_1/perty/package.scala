@@ -17,18 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_1.perty.pformat
+import scala.collection.mutable
+import org.neo4j.cypher.internal.compiler.v2_1.perty.impl.{PageDocFormatter, LineDocFormatter}
+import org.neo4j.cypher.internal.helpers.PartialFunctionSupport
+import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{docStructureDocBuilder, scalaDocBuilder}
 
-case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
-
-  def availableSymbols: Set[IdName] = plan.availableSymbols
-
-  override def toString = pformat(this)
+/**
+ * See pp.Doc
+ */
+package object perty {
+  type DocFormatter = Doc => Seq[PrintCommand]
+  type DocGenerator[-T] = PartialFunction[T, Doc]
+  type NestedDocGenerator[T] = PartialFunction[T, DocGenerator[T] => Doc]
+  type PrintingConverter[+T] = mutable.Builder[PrintCommand, T]
 }
-
-
 
 
