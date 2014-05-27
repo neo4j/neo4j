@@ -1,3 +1,8 @@
+2.0.4
+-----
+o Fixes potential leak of transaction state in entity locks that could
+  lead to excess GC activity
+
 2.0.2
 -----
 o Fixes an issue with tx log reading in severely damaged log files.
