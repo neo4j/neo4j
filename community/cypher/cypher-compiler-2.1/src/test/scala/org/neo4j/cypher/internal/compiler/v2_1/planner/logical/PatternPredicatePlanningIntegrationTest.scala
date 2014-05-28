@@ -74,12 +74,12 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           AllNodesScan("a"),
           Expand(
             SingleRow(Set("a"))(),
-            "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
+            "a", Direction.OUTGOING, Seq(RelTypeName("Y")_), "  UNNAMED44", "  UNNAMED36", SimplePatternLength
           )
         ),
         Expand(
           SingleRow(Set("a"))(),
-          "a", Direction.OUTGOING, Seq(RelTypeName("Y")_), "  UNNAMED44", "  UNNAMED36", SimplePatternLength
+          "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
         )
       )
     )
@@ -106,7 +106,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED42", "  UNNAMED34", SimplePatternLength
         ),
-        Ors(List(
+        Ors(Set(
           Equals(Property(Identifier("a")_, PropertyKeyName("prop2")_)_, SignedIntegerLiteral("9")_)_,
           GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("4")_)_
         ))_
@@ -127,4 +127,73 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
     )
   }
 
+  test("should build plans containing let select or semi apply and select or semi apply for two pattern predicates") {
+    produceLogicalPlan("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a") should equal(
+      Projection(
+        SelectOrAntiSemiApply(
+          LetSelectOrSemiApply(
+            AllNodesScan("a"),
+            Expand(
+              SingleRow(Set("a"))(),
+              "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED33", SimplePatternLength
+            ),
+            "  FRESHID30",
+            Equals(Property(Identifier("a") _, PropertyKeyName("prop") _) _, SignedIntegerLiteral("9") _) _
+          ),
+          Expand(
+            SingleRow(Set("a"))(),
+            "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED61", "  UNNAMED53", SimplePatternLength
+          ),
+          ident("  FRESHID30")
+        ),
+        Map("a" -> ident("a"))
+      )
+    )
+  }
+
+  test("should build plans containing let semi apply and select or semi apply for two pattern predicates") {
+    produceLogicalPlan("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a") should equal(
+      Projection(
+        SelectOrAntiSemiApply(
+          LetSemiApply(
+            AllNodesScan("a"),
+            Expand(
+              SingleRow(Set("a"))(),
+              "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED27", "  UNNAMED19", SimplePatternLength
+            ),
+            "  FRESHID16"
+          ),
+          Expand(
+            SingleRow(Set("a"))(),
+            "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED47", "  UNNAMED39", SimplePatternLength
+          ),
+          ident("  FRESHID16")
+        ),
+        Map("a" -> ident("a"))
+      )
+    )
+  }
+
+  test("should build plans containing let anti semi apply and select or semi apply for two pattern predicates") {
+    produceLogicalPlan("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a") should equal(
+      Projection(
+        SelectOrAntiSemiApply(
+          LetAntiSemiApply(
+            AllNodesScan("a"),
+            Expand(
+              SingleRow(Set("a"))(),
+              "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED31", "  UNNAMED23", SimplePatternLength
+            ),
+            "  FRESHID20"
+          ),
+          Expand(
+            SingleRow(Set("a"))(),
+            "a", Direction.OUTGOING, Seq(RelTypeName("X") _), "  UNNAMED51", "  UNNAMED43", SimplePatternLength
+          ),
+          ident("  FRESHID20")
+        ),
+        Map("a" -> ident("a"))
+      )
+    )
+  }
 }

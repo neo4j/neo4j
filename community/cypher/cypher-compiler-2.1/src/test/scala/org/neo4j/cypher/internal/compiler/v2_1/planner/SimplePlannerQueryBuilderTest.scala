@@ -97,7 +97,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     ))
 
     query.graph.selections should equal(Selections(Set(
-      Predicate(Set(IdName("n")), Ors(List(
+      Predicate(Set(IdName("n")), Ors(Set(
         HasLabels(nIdent, Seq(X))(pos),
         HasLabels(nIdent, Seq(Y))(pos)
       ))_
@@ -113,9 +113,9 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     ))
 
     query.graph.selections should equal(Selections(Set(
-      Predicate(Set(IdName("n")), Ors(List(
+      Predicate(Set(IdName("n")), Ors(Set(
         HasLabels(nIdent, Seq(X))(pos),
-        Ands(List(
+        Ands(Set(
           HasLabels(nIdent, Seq(A))(pos),
           HasLabels(nIdent, Seq(B))(pos)
         ))(pos)))_
@@ -486,7 +486,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
       SignedIntegerLiteral("42")_
     )_
-    val orPredicate = Predicate(Set(IdName("a")), Ors(List(exp1, exp2))_)
+    val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2))_)
     val subQueriesTable = Map(exp1 ->
       QueryGraph(
         patternRelationships = Set(relationship),
@@ -517,7 +517,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       Property(Identifier("a") _, PropertyKeyName("prop")_)_,
       SignedIntegerLiteral("42") _
     ) _
-    val orPredicate = Predicate(Set(IdName("a")), Ors(List(exp1, exp2))_)
+    val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2))_)
     val subQueriesTable = Map(exp1 ->
       QueryGraph(
         patternRelationships = Set(relationship),
@@ -552,7 +552,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       Property(Identifier("a") _, PropertyKeyName("prop")_)_,
       SignedIntegerLiteral("21")_
     )_
-    val orPredicate = Predicate(Set(IdName("a")), Ors(List(exp1, exp3, exp2))_)
+    val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp3, exp2))_)
     val subQueriesTable = Map(exp1 ->
       QueryGraph(
         patternRelationships = Set(relationship),
@@ -595,14 +595,6 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.patternNodes should equal(Set(IdName("a")))
     query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
     query.tail should equal(None)
-  }
-
-  test("should fail with one or more pattern expression in or") {
-    evaluating(buildPlannerQuery("match (a) where (a)-->() OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
-    evaluating(buildPlannerQuery("match (a) where not (a)-->() OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
-    evaluating(buildPlannerQuery("match (a) where (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
-    evaluating(buildPlannerQuery("match (a) where not (a)-->() OR not (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
-    evaluating(buildPlannerQuery("match (a) where (a)-->() OR id(a) = 12 OR (a)-[:X]->() return a", normalize = true)) should produce[CantHandleQueryException]
   }
 
   test("should fail when the first pattern is optional") {

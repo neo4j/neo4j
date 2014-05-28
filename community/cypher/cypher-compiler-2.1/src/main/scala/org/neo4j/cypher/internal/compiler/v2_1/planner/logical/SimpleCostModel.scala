@@ -77,14 +77,26 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
     case applyOp: SemiApply =>
       applyCost(outer = applyOp.left, inner = applyOp.right)
 
+    case applyOp: LetSemiApply =>
+      applyCost(outer = applyOp.left, inner = applyOp.right)
+
     case applyOp: AntiSemiApply =>
+      applyCost(outer = applyOp.left, inner = applyOp.right)
+
+    case applyOp: LetAntiSemiApply =>
       applyCost(outer = applyOp.left, inner = applyOp.right)
 
     case applyOp: SelectOrSemiApply =>
       selectOrSemiApplyCost(outer = applyOp.left, inner = applyOp.right)
 
+    case applyOp: LetSelectOrSemiApply =>
+      selectOrSemiApplyCost(outer = applyOp.left, inner = applyOp.right)
+
     case applyOp: SelectOrAntiSemiApply =>
-      selectOrSemiApplyCost(outer = applyOp.outer, inner = applyOp.inner)
+      selectOrSemiApplyCost(outer = applyOp.left, inner = applyOp.right)
+
+    case applyOp: LetSelectOrAntiSemiApply =>
+      selectOrSemiApplyCost(outer = applyOp.left, inner = applyOp.right)
 
     case expand: Expand =>
       cost(expand.left) + cardinality(expand)
