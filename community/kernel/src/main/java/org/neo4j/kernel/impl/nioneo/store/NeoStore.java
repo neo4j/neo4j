@@ -291,11 +291,6 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    public void flushAll()
-    {
-        super.flush();
-    }
-
     public void flushNeoStoreOnly()
     {
         try
