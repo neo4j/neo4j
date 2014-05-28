@@ -22,15 +22,18 @@ package org.neo4j.server.configuration;
 import java.io.File;
 import java.io.IOException;
 import java.util.List;
+import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TemporaryFolder;
 
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.logging.BufferingConsoleLogger;
 import org.neo4j.server.configuration.validation.Validator;
 import org.neo4j.test.Mute;
 
+import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
@@ -119,5 +122,20 @@ public class PropertyFileConfiguratorTest
         assertEquals( "/extension2", thirdpartyJaxRsPackages.get( 1 ).getMountPoint() );
         assertEquals( "/extension3", thirdpartyJaxRsPackages.get( 2 ).getMountPoint() );
 
+    }
+
+    @Test
+    public void shouldSetStoreDirSetting() throws Exception
+    {
+        // Given
+        String dbLocation = "/tmp/deosntmatter";
+        File propertyFile = PropertyFileBuilder.builder( folder.getRoot() ).withNameValue( Configurator.DATABASE_LOCATION_PROPERTY_KEY, dbLocation ).build();
+        PropertyFileConfigurator serverConfig = new PropertyFileConfigurator( propertyFile );
+
+        // When
+        Map<String, String> properties = serverConfig.getDatabaseTuningProperties();
+
+        // Then
+        assertThat(properties.get( GraphDatabaseSettings.store_dir.name()), equalTo(dbLocation) );
     }
 }
