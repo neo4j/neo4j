@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.anyInt;
-import static org.mockito.Mockito.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.api.properties.Property.stringProperty;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,12 +28,21 @@ import java.util.List;
 import org.hamcrest.Matcher;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+
+import static java.util.Arrays.asList;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+
+import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class TxStateVisitorTest
 {
@@ -83,8 +83,6 @@ public class TxStateVisitorTest
     public void before() throws Exception
     {
         legacyState = mock( OldTxStateBridge.class );
-        when(legacyState.relationshipCreate( anyInt(), anyLong(), anyLong() ))
-                .thenReturn( 1l, 2l, 3l, 4l, 5l, 6l, 7l, 8l, 9l, 10l, 11l );
         state = new TxStateImpl( legacyState,
                 mock( TransactionRecordState.class ), mock( TxState.IdGeneration.class )
         );

@@ -57,13 +57,14 @@ import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestGraphProperties
 {
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TestGraphDatabaseFactory factory;
-    
+
     @Before
     public void before() throws Exception
     {
@@ -108,7 +109,7 @@ public class TestGraphProperties
     public void setManyGraphProperties() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
-        
+
         Transaction tx = db.beginTx();
         Object[] values = new Object[]{10, "A string value", new float[]{1234.567F, 7654.321F},
                 "A rather longer string which wouldn't fit inlined #!)(&¤"};
@@ -183,10 +184,10 @@ public class TestGraphProperties
         tx.finish();
         db.shutdown();
 
-        NeoStore neoStore = new StoreFactory( new Config( Collections.<String, String>emptyMap(),
-                GraphDatabaseSettings.class ),
+        NeoStore neoStore = new StoreFactory( configForStoreDir( new Config( Collections.<String, String>emptyMap(),
+                GraphDatabaseSettings.class ), new File( storeDir ) ),
                 new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                null ).newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
+                null ).newNeoStore( false );
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
         neoStore.close();
@@ -196,7 +197,7 @@ public class TestGraphProperties
     public void graphPropertiesAreLockedPerTx() throws Exception
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newImpermanentDatabase();
-        
+
         Worker worker1 = new Worker( "W1", new State( db ) );
         Worker worker2 = new Worker( "W2", new State( db ) );
 
@@ -300,7 +301,7 @@ public class TestGraphProperties
         EphemeralFileSystemAbstraction snapshot = produceUncleanStore( fs.get(), storeDir );
         snapshot = produceUncleanStore( snapshot, storeDir );
         snapshot = produceUncleanStore( snapshot, storeDir );
-        
+
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( snapshot ).newImpermanentDatabase( storeDir );
         assertThat( nodeManager( db ).getGraphProperties(), inTx( db, hasProperty( "prop" ).withValue( "Some value" ) ) );
         db.shutdown();
@@ -405,7 +406,7 @@ public class TestGraphProperties
             } );
         }
     }
-    
+
     private EphemeralFileSystemAbstraction produceUncleanStore( EphemeralFileSystemAbstraction fileSystem,
             String storeDir )
     {

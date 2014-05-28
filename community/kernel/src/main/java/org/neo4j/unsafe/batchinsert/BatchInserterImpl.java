@@ -51,7 +51,6 @@ import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.StoreLocker;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.KernelException;
@@ -221,27 +220,25 @@ public class BatchInserterImpl implements BatchInserter
         logging = new SingleLoggingService( msgLog );
         Map<String, String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), Settings.FALSE );
-        params.put( InternalAbstractGraphDatabase.Configuration.store_dir.name(), storeDir );
         params.putAll( stringParams );
 
         storeLocker = new StoreLocker( fileSystem );
         storeLocker.checkLock( this.storeDir );
 
-        config = new Config( params, GraphDatabaseSettings.class );
+        config = StoreFactory.configForStoreDir( new Config( params, GraphDatabaseSettings.class ),
+                new File( storeDir ) );
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();
 
         StoreFactory sf = new StoreFactory( config, idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem,
                                             msgLog, null );
 
-        File store = fixPath( this.storeDir, sf );
-
         if ( dump )
         {
             dumpConfiguration( params );
         }
         msgLog.logMessage( Thread.currentThread() + " Starting BatchInserter(" + this + ")" );
-        neoStore = sf.newNeoStore( store );
+        neoStore = sf.newNeoStore( true );
         if ( !neoStore.isStoreOk() )
         {
             throw new IllegalStateException( storeDir + " store is not cleanly shutdown." );
@@ -946,27 +943,6 @@ public class BatchInserterImpl implements BatchInserter
             throw new NotFoundException( "id=" + id );
         }
         return recordAccess.getRelRecords().getOrLoad( id, null );
-    }
-
-    private File fixPath( File dir, StoreFactory sf )
-    {
-        try
-        {
-            fileSystem.mkdirs( dir );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException(
-                    "Unable to create directory path["
-                    + storeDir + "] for Neo4j kernel store." );
-        }
-
-        File store = new File( dir, NeoStore.DEFAULT_NAME );
-        if ( !fileSystem.fileExists( store ) )
-        {
-            sf.createNeoStore( store ).close();
-        }
-        return store;
     }
 
     @Override

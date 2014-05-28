@@ -292,7 +292,10 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
         storeDir = config.get( Configuration.store_dir );
         File store = config.get( Configuration.neo_store );
-        storeFactory.ensureStoreExists();
+        if ( !storeFactory.storeExists() )
+        {
+            storeFactory.createNeoStore().close();
+        }
 
         indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                 SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
@@ -303,7 +306,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
         storeMigrationProcess.migrateIfNeeded( store.getParentFile() );
 
-        neoStore = storeFactory.newNeoStore( store );
+        neoStore = storeFactory.newNeoStore( false );
 
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 

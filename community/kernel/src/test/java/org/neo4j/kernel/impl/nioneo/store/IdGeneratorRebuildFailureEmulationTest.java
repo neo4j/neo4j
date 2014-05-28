@@ -58,6 +58,8 @@ import org.neo4j.tooling.GlobalGraphOperations;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+
 @RunWith(Suite.class)
 @SuiteClasses({IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class,
         IdGeneratorRebuildFailureEmulationTest.FailureDuringRebuild.class})
@@ -119,7 +121,7 @@ public class IdGeneratorRebuildFailureEmulationTest
         NeoStore neostore = null;
         try
         {
-            neostore = factory.newNeoStore( new File( prefix + File.separator + "neostore") );
+            neostore = factory.newNeoStore( false );
             // emulate a failure during rebuild:
             emulateFailureOnRebuildOf( neostore );
         }
@@ -155,10 +157,9 @@ public class IdGeneratorRebuildFailureEmulationTest
         prefix = graphdb.getStoreDir();
         createInitialData( graphdb );
         graphdb.shutdown();
-        Map<String, String> config = new HashMap<String, String>();
+        Map<String, String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
-        config.put( GraphDatabaseSettings.store_dir.name(), prefix );
-        factory = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
+        factory = new StoreFactory( configForStoreDir( new Config( config, GraphDatabaseSettings.class ), new File( prefix ) ),
                 new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, null );
     }
 

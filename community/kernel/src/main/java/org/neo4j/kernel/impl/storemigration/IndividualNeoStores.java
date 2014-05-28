@@ -20,8 +20,6 @@
 package org.neo4j.kernel.impl.storemigration;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
 
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -58,21 +56,9 @@ public class IndividualNeoStores
             Config config, IdGeneratorFactory idGeneratorFactory )
     {
         this.storageFileName = storageFileName;
-        this.config = patchedConfig( config );
+        this.config = StoreFactory.configForNeoStore( config, storageFileName );
         this.storeFactory = new StoreFactory( this.config, idGeneratorFactory,
                 new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL, new DefaultTxHook() );
-    }
-
-    private Config patchedConfig( Config config )
-    {
-        Map<String, String> map = new HashMap<>( config.getParams() );
-        map.put( "neo_store", storageFileName.getPath() );
-        return new Config( map );
-    }
-
-    private File storeFile( String part )
-    {
-        return new File( storageFileName.getParentFile(), storageFileName.getName() + part );
     }
 
     public File getNeoStoreFileName()
@@ -87,23 +73,20 @@ public class IndividualNeoStores
 
     public NodeStore createNodeStore()
     {
-        File nodeStoreFileName = storeFile( StoreFactory.NODE_STORE_NAME );
-        storeFactory.createNodeStore( nodeStoreFileName );
-        return nodeStore = storeFactory.newNodeStore( nodeStoreFileName );
+        storeFactory.createNodeStore();
+        return nodeStore = storeFactory.newNodeStore();
     }
 
     public RelationshipStore createRelationshipStore()
     {
-        File relStoreFileName = storeFile( StoreFactory.RELATIONSHIP_STORE_NAME );
-        storeFactory.createRelationshipStore( relStoreFileName );
-        return relationshipStore = storeFactory.newRelationshipStore( relStoreFileName );
+        storeFactory.createRelationshipStore();
+        return relationshipStore = storeFactory.newRelationshipStore();
     }
 
     public RelationshipGroupStore createRelationshipGroupStore()
     {
-        File relGroupStoreFileName = storeFile( StoreFactory.RELATIONSHIP_GROUP_STORE_NAME );
-        storeFactory.createRelationshipGroupStore( relGroupStoreFileName, parseInt( dense_node_threshold.getDefaultValue() ) );
-        return relationshipGroupStore = storeFactory.newRelationshipGroupStore( relGroupStoreFileName );
+        storeFactory.createRelationshipGroupStore( parseInt( dense_node_threshold.getDefaultValue() ) );
+        return relationshipGroupStore = storeFactory.newRelationshipGroupStore();
     }
 
     // ... add more stores as you see fit

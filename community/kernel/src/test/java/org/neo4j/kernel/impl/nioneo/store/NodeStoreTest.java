@@ -104,13 +104,14 @@ public class NodeStoreTest
         // GIVEN
         // -- a store
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        Config config = new Config();
+        File storeDir = new File( "dir" );
+        fs.mkdirs( storeDir );
+        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         WindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
         StoreFactory factory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fs, DEV_NULL, new DefaultTxHook() );
-        File nodeStoreFileName = new File( "nodestore" );
-        factory.createNodeStore( nodeStoreFileName );
-        NodeStore nodeStore = factory.newNodeStore( nodeStoreFileName );
+        factory.createNodeStore();
+        NodeStore nodeStore = factory.newNodeStore();
 
         // -- a record with the msb carrying a negative value
         long nodeId = 0, labels = 0x8000000001L;

@@ -119,15 +119,13 @@ public class StoreAccess
                                 new DefaultIdGeneratorFactory(),
                                 new DefaultWindowPoolFactory(),
                                 fileSystem, StringLogger.DEV_NULL,
-                                new DefaultTxHook() ).newNeoStore( new File( path, "neostore" ) ) );
+                                new DefaultTxHook() ).newNeoStore( false ) );
         this.closeable = true;
     }
 
     private static Map<String, String> requiredParams( Map<String, String> params, String path )
     {
-        params = new HashMap<>( params );
-        params.put( "neo_store", new File( path, "neostore" ).getPath() );
-        return params;
+        return StoreFactory.configForStoreDir( new Config(), new File( path ) ).getParams();
     }
 
     public NeoStore getRawNeoStore()

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.io.File;
+import java.util.Collection;
 
 import org.junit.Test;
 
@@ -28,13 +29,22 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 /**
  * Tests for handling many property keys (even after restart of database)
@@ -91,17 +101,21 @@ public class ManyPropertyKeysIT
 
     private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )
     {
-        GraphDatabaseAPI db = database();
-        try ( Transaction tx = db.beginTx() )
+        StoreFactory storeFactory = new StoreFactory( storeDir, StringLogger.DEV_NULL );
+        NeoStore neoStore = storeFactory.newNeoStore( true );
+        PropertyKeyTokenStore store = neoStore.getPropertyKeyTokenStore();
+        for ( int i = 0; i < propertyKeyCount; i++ )
         {
-            Node node = db.createNode();
-            for ( int i = 0; i < propertyKeyCount; i++ )
-            {
-                node.setProperty( key( i ), true );
-            }
-            tx.success();
-            return db;
+            PropertyKeyTokenRecord record = new PropertyKeyTokenRecord( (int) store.nextId() );
+            record.setInUse( true );
+            Collection<DynamicRecord> nameRecords = store.allocateNameRecords( PropertyStore.encodeString( key( i ) ) );
+            record.addNameRecords( nameRecords );
+            record.setNameId( (int) first( nameRecords ).getId() );
+            store.updateRecord( record );
         }
+        neoStore.close();
+
+        return database();
     }
 
     private String key( int i )
@@ -122,8 +136,8 @@ public class ManyPropertyKeysIT
 
     private int propertyKeyCount( GraphDatabaseAPI db )
     {
-        return (int) db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                .getNeoStoreDataSource().getNeoStore().getPropertyKeyTokenStore().getHighId();
+        return (int) db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate()
+                .getPropertyKeyTokenStore().getHighId();
     }
 
     private static class WorkerState

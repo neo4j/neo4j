@@ -70,7 +70,6 @@ import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
 import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
-import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.findOldFormatStoreDirectory;
 import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
@@ -100,7 +99,7 @@ public class StoreMigratorIT
 
         database.shutdown();
 
-        NeoStore neoStore = cleanup.add( storeFactory.newNeoStore( storeFileName ) );
+        NeoStore neoStore = cleanup.add( storeFactory.newNeoStore( false ) );
         verifyNeoStore( neoStore );
         neoStore.close();
     }
@@ -141,7 +140,7 @@ public class StoreMigratorIT
         // THEN
         // verify that there are no duplicate keys in the store
         PropertyKeyTokenStore tokenStore = cleanup.add(
-                storeFactory.newPropertyKeyTokenStore( new File( storeFileName + PROPERTY_KEY_TOKEN_STORE_NAME ) ) );
+                storeFactory.newPropertyKeyTokenStore() );
         Token[] tokens = tokenStore.getTokens( MAX_VALUE );
         tokenStore.close();
         assertNuDuplicates( tokens );
@@ -198,13 +197,11 @@ public class StoreMigratorIT
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
     private final IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
     private StoreFactory storeFactory;
-    private File storeFileName;
 
     @Before
     public void setUp()
     {
-        Config config = MigrationTestUtils.defaultConfig();
-        storeFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
+        Config config = StoreFactory.configForStoreDir( MigrationTestUtils.defaultConfig(), storeDir );
         storeFactory = new StoreFactory( config, idGeneratorFactory,
                 new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
     }
@@ -213,9 +210,9 @@ public class StoreMigratorIT
     {
         assertEquals( 1317392957120L, neoStore.getCreationTime() );
         assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
-        assertEquals( 3l, neoStore.getVersion() );
+        assertEquals( 3l, neoStore.getCurrentLogVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1007l, neoStore.getLastCommittedTx() );
+        assertEquals( 1007l, neoStore.getLastCommittingTransactionId() );
     }
 
     private static class DatabaseContentVerifier

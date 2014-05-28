@@ -40,7 +40,7 @@ import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
@@ -329,7 +329,7 @@ public class IndexQueryTransactionStateTest
 
         oldTxState = mock( OldTxStateBridge.class );
 
-        TxState txState = new TxStateImpl( oldTxState, mock( PersistenceManager.class ),
+        TxState txState = new TxStateImpl( oldTxState, mock( TransactionRecordState.class ),
                 mock( TxState.IdGeneration.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
 

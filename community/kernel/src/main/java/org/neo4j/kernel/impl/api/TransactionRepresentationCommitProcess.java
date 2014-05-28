@@ -71,9 +71,7 @@ public class TransactionRepresentationCommitProcess
         }
         catch ( IOException e )
         {
-        	e.printStackTrace();
             kernelHealth.panic( e );
-            System.exit(0);
             throw new TransactionFailureException( Status.Transaction.CouldNotWriteToLog, e,
                     "Could not write transaction representation to log" );
         }

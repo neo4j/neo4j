@@ -53,12 +53,15 @@ public class RelationshipGroupCommandTest
     @Before
     public void before() throws Exception
     {
+        File storeDir = new File( "dir" );
+        fs.get().mkdirs( storeDir );
+
         @SuppressWarnings("deprecation")
-        StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
+        StoreFactory storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ),
+                new DefaultIdGeneratorFactory(),
                 new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, new DefaultTxHook() );
-        File storeFile = new File( "story" );
-        storeFactory.createNodeStore( storeFile );
-        nodeStore = storeFactory.newNodeStore( storeFile );
+        storeFactory.createNodeStore();
+        nodeStore = storeFactory.newNodeStore();
     }
 
     @After

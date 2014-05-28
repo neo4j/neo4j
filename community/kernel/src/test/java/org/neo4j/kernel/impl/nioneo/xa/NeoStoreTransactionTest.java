@@ -42,10 +42,10 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -59,7 +59,6 @@ import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -70,7 +69,6 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -84,8 +82,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NeoStoreCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
@@ -96,20 +92,19 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionStore;
 import org.neo4j.kernel.logging.SingleLoggingService;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.Mute.System;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.lang.Integer.parseInt;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -126,6 +121,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -143,7 +139,6 @@ import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
 import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class NeoStoreTransactionTest
@@ -235,7 +230,7 @@ public class NeoStoreTransactionTest
 
         writeTransaction.removeLabelFromNode( 11, nodeId );
         writeTransaction.removeLabelFromNode( 23, nodeId );
-        
+
         transactionCommands = writeTransaction.doPrepare();
 
         commitProcess().commit( transactionCommands );
@@ -247,7 +242,7 @@ public class NeoStoreTransactionTest
         transactionCommands.execute(new NeoCommandVisitor.Adapter()
         {
         	@Override
-        	public boolean visitNodeCommand(NodeCommand command) throws IOException 
+        	public boolean visitNodeCommand(NodeCommand command) throws IOException
         	{
         		nodeCommandsExist.set( true );
                 Collection<DynamicRecord> beforeDynLabels = command.getAfter().getDynamicLabelRecords();
@@ -256,7 +251,7 @@ public class NeoStoreTransactionTest
         		return true;
         	}
         });
-        
+
         assertTrue( "No node commands found", nodeCommandsExist.get() );
     }
 
@@ -303,7 +298,7 @@ public class NeoStoreTransactionTest
         transactionCommands.execute(new NeoCommandVisitor.Adapter()
         {
         	@Override
-        	public boolean visitNodeCommand(NodeCommand command) throws IOException 
+        	public boolean visitNodeCommand(NodeCommand command) throws IOException
         	{
         		nodeCommandsExist.set( true );
         		DynamicRecord before = command.getBefore().getDynamicLabelRecords().iterator().next();
@@ -315,10 +310,10 @@ public class NeoStoreTransactionTest
         		return true;
         	}
         });
-        
+
         assertTrue( "No node commands found", nodeCommandsExist.get() );
     }
-    
+
     @Test
     public void shouldRemoveSchemaRuleWhenRollingBackTransaction() throws Exception
     {
@@ -665,11 +660,11 @@ public class NeoStoreTransactionTest
         // WHEN
         tx.createSchemaRule( rule );
         PhysicalTransactionRepresentation transactionCommands = tx.doPrepare();
-        
+
         transactionCommands.execute( new NeoCommandVisitor.Adapter()
         {
         	@Override
-        	public boolean visitSchemaRuleCommand(SchemaRuleCommand command) throws IOException 
+        	public boolean visitSchemaRuleCommand(SchemaRuleCommand command) throws IOException
         	{
         		for ( DynamicRecord record : command.getRecordsAfter() )
                 {
@@ -1055,7 +1050,7 @@ public class NeoStoreTransactionTest
         // THEN
         // The dynamic label record in before should be the same id as in after, and should be in use
         final AtomicBoolean foundRelationshipGroupInUse = new AtomicBoolean();
-        
+
         tx.execute(new NeoCommandVisitor.Adapter()
         {
         	@Override
@@ -1075,7 +1070,7 @@ public class NeoStoreTransactionTest
         		return true;
         	}
           });
-        
+
         assertTrue( "Did not create relationship group command", foundRelationshipGroupInUse.get() );
     }
 
@@ -1261,11 +1256,13 @@ public class NeoStoreTransactionTest
 
         config = new Config( stringMap(
                 GraphDatabaseSettings.dense_node_threshold.name(), "" + denseNodeThreshold ) );
+        File storeDir = new File( "dir" );
+        config = StoreFactory.configForStoreDir( config, storeDir );
 
         @SuppressWarnings("deprecation")
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
                 fs.get(), DEV_NULL, new DefaultTxHook() );
-        neoStore = storeFactory.createNeoStore( new File( "neostore" ) );
+        neoStore = storeFactory.createNeoStore();
         lockMocks.clear();
         locks = mock( LockService.class, new Answer()
         {
@@ -1296,12 +1293,12 @@ public class NeoStoreTransactionTest
         cacheAccessBackDoor = mock( CacheAccessBackDoor.class );
         mockIndexing = mock( IndexingService.class );
 	}
-    
+
     private TransactionRepresentationCommitProcess commitProcess() throws InterruptedException, ExecutionException, IOException
     {
     	return commitProcess( mockIndexing );
     }
-    
+
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws InterruptedException, ExecutionException, IOException
     {
     	TransactionAppender appenderMock = mock( TransactionAppender.class );
@@ -1327,7 +1324,7 @@ public class NeoStoreTransactionTest
     {
         return newWriteTransaction( mockIndexing );
     }
-    
+
     private Pair<TransactionRecordState, NeoStoreTransactionContext> newWriteTransaction( IndexingService indexing )
     {
         NeoStoreTransactionContext context =
@@ -1369,15 +1366,15 @@ public class NeoStoreTransactionTest
         PhysicalTransactionRepresentation toCommit = tx.doPrepare();
         RecoveryCreatingCopyingNeoCommandVisitor recoverer = new RecoveryCreatingCopyingNeoCommandVisitor();
         toCommit.execute(recoverer);
-        
+
         NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
                 neoStore, mockIndexing, cacheAccessBackDoor, locks, txId, true );
-        
+
         NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( mockIndexing,
                 mock( LabelScanStore.class ), neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccessBackDoor );
-        
+
         TransactionRepresentation recoveredTx = recoverer.getAsRecovered();
-        
+
         recoveredTx.execute( storeApplier );
         recoveredTx.execute( indexApplier );
 
@@ -1482,7 +1479,7 @@ public class NeoStoreTransactionTest
             }
         }
     }
-    
+
     public static class RecoveryCreatingCopyingNeoCommandVisitor implements NeoCommandVisitor
     {
     	private final List<Command> commands = new LinkedList<Command>();
@@ -1548,7 +1545,7 @@ public class NeoStoreTransactionTest
 			commands.add(command);
 			return true;
 		}
-    	
+
 		public TransactionRepresentation getAsRecovered()
 		{
 			return new PhysicalTransactionRepresentation(commands, true);

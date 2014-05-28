@@ -19,16 +19,30 @@
  */
 package org.neo4j.kernel.impl.api.state;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.Set;
+
+import org.junit.Before;
+import org.junit.Test;
+
+import org.neo4j.graphdb.Direction;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.TxState;
+import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.index.IndexDescriptor;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.util.DiffSets;
+
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.graphdb.Direction.BOTH;
 import static org.neo4j.graphdb.Direction.INCOMING;
@@ -37,20 +51,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.kernel.api.properties.Property.noNodeProperty;
 import static org.neo4j.kernel.api.properties.Property.stringProperty;
 import static org.neo4j.kernel.impl.util.PrimitiveIteratorMatchers.containsLongs;
-
-import java.util.Arrays;
-import java.util.Collections;
-import java.util.Set;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.api.TxState;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
-import org.neo4j.kernel.impl.util.DiffSets;
 
 public class TxStateTest
 {
@@ -277,7 +277,8 @@ public class TxStateTest
     public void shouldListRelationshipsAsCreatedIfCreated() throws Exception
     {
         // When
-        long relId = state.relationshipDoCreate( 0, 1, 2 );
+        long relId = 10;
+        state.relationshipDoCreate( relId, 0, 1, 2 );
         when(legacyState.relationshipIsAddedInThisTx( relId )).thenReturn( true ); // Temp until we move this out of legacy
 
         // Then
@@ -290,7 +291,8 @@ public class TxStateTest
     {
         // When
         int startNode = 1, endNode = 2, relType = 0;
-        long relId = state.relationshipDoCreate( relType, startNode, endNode );
+        long relId = 10;
+        state.relationshipDoCreate( relId, relType, startNode, endNode );
 
         // Then
         long otherRel = relId + 1;
@@ -310,7 +312,8 @@ public class TxStateTest
     {
         // Given
         int startNode = 1, endNode = 2, relType = 0;
-        long relId = state.relationshipDoCreate( relType, startNode, endNode );
+        long relId = 10;
+        state.relationshipDoCreate( relId, relType, startNode, endNode );
 
         // When
         state.relationshipDoDelete( relId, startNode, endNode, relType );
@@ -334,10 +337,10 @@ public class TxStateTest
         int startNode = 1, endNode = 2, relType = 0;
 
         // When
-        state.relationshipDoCreate( relType, startNode, endNode );
-        state.relationshipDoCreate( relType, startNode, endNode );
-        state.relationshipDoCreate( relType + 1, startNode, endNode );
-        state.relationshipDoCreate( relType + 1, endNode, startNode );
+        state.relationshipDoCreate( 10, relType, startNode, endNode );
+        state.relationshipDoCreate( 11, relType, startNode, endNode );
+        state.relationshipDoCreate( 12, relType + 1, startNode, endNode );
+        state.relationshipDoCreate( 13, relType + 1, endNode, startNode );
 
         state.relationshipDoDelete( 1337, startNode, endNode, relType );
         state.relationshipDoDelete( 1338, startNode, startNode, relType + 1 );
@@ -355,9 +358,10 @@ public class TxStateTest
         int startNode = 1, endNode = 2, relType = 0;
 
         // When
-        long relA = state.relationshipDoCreate( relType, startNode, endNode );
-        long relB = state.relationshipDoCreate( relType, startNode, endNode );
-        long relC = state.relationshipDoCreate( relType + 1, startNode, endNode );
+        long relA = 10, relB = 11, relC = 12;
+        state.relationshipDoCreate( relA, relType, startNode, endNode );
+        state.relationshipDoCreate( relB, relType, startNode, endNode );
+        state.relationshipDoCreate( relC, relType + 1, startNode, endNode );
 
         state.relationshipDoDelete( relB, startNode, endNode, relType );
         state.relationshipDoDelete( relC, startNode, endNode, relType + 1 );
@@ -374,8 +378,6 @@ public class TxStateTest
     public void before() throws Exception
     {
         legacyState = mock( OldTxStateBridge.class );
-        when(legacyState.relationshipCreate( anyInt(), anyLong(), anyLong() ))
-                .thenReturn( 1l, 2l, 3l, 4l, 5l, 6l, 7l, 8l, 9l, 10l, 11l );
         state = new TxStateImpl( legacyState,
                 mock( TransactionRecordState.class ), mock( TxState.IdGeneration.class )
         );

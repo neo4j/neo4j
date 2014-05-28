@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.Integer.parseInt;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -32,6 +27,7 @@ import java.util.Set;
 
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
@@ -45,14 +41,20 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TargetDirectory;
 
+import static java.lang.Integer.parseInt;
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 public class TestRelationshipGroupStore
 {
     private File directory;
-    private String neostoreFileName;
     private int defaultThreshold;
     private FileSystemAbstraction fs;
     private GraphDatabaseAPI db;
@@ -61,7 +63,6 @@ public class TestRelationshipGroupStore
     public void before() throws Exception
     {
         directory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
-        neostoreFileName = new File( directory, "neostore" ).getAbsolutePath();
         defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
     }
 
@@ -127,18 +128,18 @@ public class TestRelationshipGroupStore
     {
         int expectedThreshold = customThreshold != null ? customThreshold : defaultThreshold;
         StoreFactory factory = factory( customThreshold );
-        NeoStore neoStore = factory.createNeoStore( new File( neostoreFileName ) );
+        NeoStore neoStore = factory.newNeoStore( true );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
 
         // Next time we open it it should be the same
-        neoStore = factory.newNeoStore( new File( neostoreFileName ) );
+        neoStore = factory.newNeoStore( false );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
 
         // Even if we open with a different config setting it should just ignore it
         factory = factory( 999999 );
-        neoStore = factory.newNeoStore( new File( neostoreFileName ) );
+        neoStore = factory.newNeoStore( false );
         assertEquals( expectedThreshold, neoStore.getDenseNodeThreshold() );
         neoStore.close();
     }
@@ -150,9 +151,9 @@ public class TestRelationshipGroupStore
         {
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
-        return new StoreFactory( config( customConfig ), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL,
-                new DefaultTxHook() );
+        return new StoreFactory( StoreFactory.configForStoreDir( config( customConfig ), directory ),
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
+                StringLogger.DEV_NULL, new DefaultTxHook() );
     }
 
     private Config config( Map<String, String> customConfig )
@@ -205,7 +206,7 @@ public class TestRelationshipGroupStore
             tx.success();
         }
 
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStore.class );
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
         NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
@@ -239,7 +240,7 @@ public class TestRelationshipGroupStore
             tx.success();
         }
 
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStore.class );
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
         NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();
@@ -272,7 +273,7 @@ public class TestRelationshipGroupStore
         tx.success();
         tx.finish();
 
-        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStore.class );
+        NeoStore neoStore = db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
         NodeStore nodeStore = neoStore.getNodeStore();
         NodeRecord nodeRecord = nodeStore.getRecord( node.getId() );
         long group = nodeRecord.getNextRel();

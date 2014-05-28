@@ -209,11 +209,13 @@ public class PropertyPhysicalToLogicalConverterTest
     @Before
     public void before() throws Exception
     {
-        StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, new DefaultTxHook() );
-        File storeFile = new File( "propertystore" );
-        storeFactory.createPropertyStore( storeFile );
-        store = storeFactory.newPropertyStore( storeFile );
+        File storeDir = new File( "dir" );
+        fs.get().mkdirs( storeDir );
+        StoreFactory storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ),
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
+                new DefaultTxHook() );
+        storeFactory.createPropertyStore();
+        store = storeFactory.newPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );
     }
 

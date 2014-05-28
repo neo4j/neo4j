@@ -131,94 +131,64 @@ public class KernelSchemaStateFlushingTest
 
     private UniquenessConstraint createConstraint() throws KernelException
     {
-        KernelTransaction transaction = kernel.newTransaction();
-        boolean success = false;
-        try ( Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction();
+              Statement statement = transaction.acquireStatement() )
         {
             UniquenessConstraint descriptor = statement.schemaWriteOperations().uniquenessConstraintCreate( 1, 1 );
-            success = true;
+            transaction.success();
             return descriptor;
-        }
-        finally
-        {
-            kernel.finish( transaction, success );
         }
     }
 
     private void dropConstraint( UniquenessConstraint descriptor ) throws KernelException
     {
-        KernelTransaction transaction = kernel.newTransaction();
-        boolean success = true;
-        try ( Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction();
+             Statement statement = transaction.acquireStatement() )
         {
             statement.schemaWriteOperations().constraintDrop( descriptor );
-        }
-        finally
-        {
-            kernel.finish( transaction, success );
+            transaction.success();
         }
     }
 
     private IndexDescriptor createIndex() throws KernelException
     {
-        KernelTransaction transaction = kernel.newTransaction();
-        boolean success = false;
-        try ( Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction();
+             Statement statement = transaction.acquireStatement() )
         {
             IndexDescriptor descriptor = statement.schemaWriteOperations().indexCreate( 1, 1 );
-            success = true;
+            transaction.success();
             return descriptor;
-        }
-        finally
-        {
-            kernel.finish( transaction, success );
         }
     }
 
     private void dropIndex( IndexDescriptor descriptor ) throws KernelException
     {
-        KernelTransaction transaction = kernel.newTransaction();
-        boolean success = false;
-        try ( Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction();
+             Statement statement = transaction.acquireStatement() )
         {
             statement.schemaWriteOperations().indexDrop( descriptor );
-            success = true;
-        }
-        finally
-        {
-            kernel.finish( transaction, success );
+            transaction.success();
         }
     }
 
     private void awaitIndexOnline( IndexDescriptor descriptor )
             throws IndexNotFoundKernelException, TransactionFailureException
     {
-        KernelTransaction transaction = kernel.newTransaction();
-        boolean success = false;
-        try ( Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction();
+             Statement statement = transaction.acquireStatement() )
         {
             SchemaIndexTestHelper.awaitIndexOnline( statement.readOperations(), descriptor );
-            success = true;
-        }
-        finally
-        {
-            kernel.finish( transaction, success );
+            transaction.success();
         }
     }
 
     private String commitToSchemaState( String key, String value ) throws TransactionFailureException
     {
-        KernelTransaction transaction = kernel.newTransaction();
-        boolean success = false;
-        try
+        try ( KernelTransaction transaction = kernel.newTransaction() )
         {
             String result = getOrCreateFromState( transaction, key, value );
-            success = true;
+            transaction.success();
             return result;
-        }
-        finally
-        {
-            kernel.finish( transaction, success );
         }
     }
 

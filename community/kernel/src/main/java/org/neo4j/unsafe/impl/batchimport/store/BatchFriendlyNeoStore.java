@@ -64,13 +64,11 @@ public class BatchFriendlyNeoStore implements AutoCloseable
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private final StringLogger logger;
     private final Config neo4jConfig;
-    private final File neoStoreFileName;
 
     public BatchFriendlyNeoStore( FileSystemAbstraction fileSystem, String storeDir,
             Configuration config, Monitor writeMonitor, Logging logging )
     {
         this.fileSystem = life.add( new ChannelReusingFileSystemAbstraction( fileSystem ) );
-        this.neoStoreFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
 
         this.config = config;
         this.writeMonitor = writeMonitor;
@@ -91,11 +89,7 @@ public class BatchFriendlyNeoStore implements AutoCloseable
     {
         StoreFactory storeFactory = new StoreFactory( neo4jConfig, new BatchingIdGeneratorFactory(),
                 windowPoolFactory, fileSystem, logger, new DefaultTxHook() );
-        if ( fileSystem.fileExists( neoStoreFileName ) )
-        {
-            return storeFactory.newNeoStore( neoStoreFileName );
-        }
-        return storeFactory.createNeoStore( neoStoreFileName );
+        return storeFactory.newNeoStore( true );
     }
 
     private NeoStore newBatchWritingNeoStore()

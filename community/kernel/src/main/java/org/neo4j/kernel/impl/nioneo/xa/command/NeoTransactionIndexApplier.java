@@ -112,7 +112,7 @@ public class NeoTransactionIndexApplier extends NeoCommandVisitor.Adapter
         {
             long[] labelsBefore = labelFieldBefore.getIfLoaded();
             long[] labelsAfter = labelFieldAfter.getIfLoaded();
-            if ( labelsBefore != null && labelsAfter == null )
+            if ( labelsBefore != null && labelsAfter != null )
             {
                 labelUpdates.add( NodeLabelUpdate.labelChanges( command.getKey(), labelsBefore, labelsAfter ) );
             }
