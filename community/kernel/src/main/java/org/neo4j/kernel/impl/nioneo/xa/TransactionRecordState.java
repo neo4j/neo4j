@@ -24,8 +24,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.EnumMap;
-import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -36,10 +34,7 @@ import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.DenseNodeChainPosition;
 import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
-import org.neo4j.kernel.impl.core.SingleChainPosition;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
@@ -53,9 +48,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
@@ -94,7 +87,6 @@ public class TransactionRecordState
 {
     private RecordChanges<Long, NeoStoreRecord, Void> neoStoreRecord;
     private final long lastCommittedTxWhenTransactionStarted;
-    private final CacheAccessBackDoor cacheAccess;
     private final NeoStore neoStore;
     private final IntegrityValidator integrityValidator;
     private final NeoStoreTransactionContext context;
@@ -111,13 +103,11 @@ public class TransactionRecordState
      *                                              constraints are checked.
      */
     public TransactionRecordState( long lastCommittedTxWhenTransactionStarted,
-                         NeoStore neoStore, CacheAccessBackDoor cacheAccess,
-                         IntegrityValidator integrityValidator,
+                         NeoStore neoStore, IntegrityValidator integrityValidator,
                          NeoStoreTransactionContext context )
     {
         this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
         this.neoStore = neoStore;
-        this.cacheAccess = cacheAccess;
         this.integrityValidator = integrityValidator;
         this.context = context;
     }
@@ -228,14 +218,6 @@ public class TransactionRecordState
         assert commands.size() == noOfCommands : "Expected " + noOfCommands
                                                  + " final commands, got "
                                                  + commands.size() + " instead";
-        if ( context.getUpgradedDenseNodes() != null )
-        {
-            for ( NodeRecord node : context.getUpgradedDenseNodes() )
-            {
-                // TODO 2.2-future
-                cacheAccess.removeNodeFromCache( node.getId() );
-            }
-        }
 
         integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
         prepared = true;
@@ -267,11 +249,6 @@ public class TransactionRecordState
         }
     }
 
-    private int getRelGrabSize()
-    {
-        return neoStore.getRelationshipGrabSize();
-    }
-
     private NodeStore getNodeStore()
     {
         return neoStore.getNodeStore();
@@ -285,11 +262,6 @@ public class TransactionRecordState
     private RelationshipStore getRelationshipStore()
     {
         return neoStore.getRelationshipStore();
-    }
-
-    private RelationshipGroupStore getRelationshipGroupStore()
-    {
-        return neoStore.getRelationshipGroupStore();
     }
 
     private PropertyStore getPropertyStore()
@@ -358,17 +330,11 @@ public class TransactionRecordState
         return context.getAndDeletePropertyChain( nodeRecord );
     }
 
-    /*
-     * List<Iterable<RelationshipRecord>> is a list with three items:
-     * 0: outgoing relationships
-     * 1: incoming relationships
-     * 2: loop relationships
-     */
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> getMoreRelationships(
             long nodeId, RelationshipLoadingPosition position, DirectionWrapper direction,
             int[] types )
     {
-        return getMoreRelationships( nodeId, position, getRelGrabSize(), direction, types, getRelationshipStore() );
+        return context.getMoreRelationships( nodeId, position, direction, types, getRelationshipStore() );
     }
 
     /**
@@ -774,76 +740,6 @@ public class TransactionRecordState
         records.addAll( getSchemaStore().allocateFrom( indexRule ) );
     }
 
-    private static Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition>
-            getMoreRelationships( long nodeId, RelationshipLoadingPosition originalPosition, int grabSize,
-                    DirectionWrapper direction, int[] types, RelationshipStore relStore )
-    {
-        // initialCapacity=grabSize saves the lists the trouble of resizing
-        List<RelationshipRecord> out = new ArrayList<>();
-        List<RelationshipRecord> in = new ArrayList<>();
-        List<RelationshipRecord> loop = null;
-        Map<DirectionWrapper, Iterable<RelationshipRecord>> result = new EnumMap<>( DirectionWrapper.class );
-        result.put( DirectionWrapper.OUTGOING, out );
-        result.put( DirectionWrapper.INCOMING, in );
-        RelationshipLoadingPosition loadPosition = originalPosition.clone();
-        long position = loadPosition.position( direction, types );
-        for ( int i = 0; i < grabSize && position != Record.NO_NEXT_RELATIONSHIP.intValue(); i++ )
-        {
-            RelationshipRecord relRecord = relStore.getChainRecord( position );
-            if ( relRecord == null )
-            {
-                // return what we got so far
-                return Pair.of( result, loadPosition );
-            }
-            long firstNode = relRecord.getFirstNode();
-            long secondNode = relRecord.getSecondNode();
-            if ( relRecord.inUse() )
-            {
-                if ( firstNode == secondNode )
-                {
-                    if ( loop == null )
-                    {
-                        // This is done lazily because loops are probably quite
-                        // rarely encountered
-                        loop = new ArrayList<>();
-                        result.put( DirectionWrapper.BOTH, loop );
-                    }
-                    loop.add( relRecord );
-                }
-                else if ( firstNode == nodeId )
-                {
-                    out.add( relRecord );
-                }
-                else if ( secondNode == nodeId )
-                {
-                    in.add( relRecord );
-                }
-            }
-            else
-            {
-                i--;
-            }
-
-            long next = 0;
-            if ( firstNode == nodeId )
-            {
-                next = relRecord.getFirstNextRel();
-            }
-            else if ( secondNode == nodeId )
-            {
-                next = relRecord.getSecondNextRel();
-            }
-            else
-            {
-                throw new InvalidRecordException( "Node[" + nodeId +
-                        "] is neither firstNode[" + firstNode +
-                        "] nor secondNode[" + secondNode + "] for Relationship[" + relRecord.getId() + "]" );
-            }
-            position = loadPosition.nextPosition( next, direction, types );
-        }
-        return Pair.of( result, loadPosition );
-    }
-
     private static void loadPropertyChain( Collection<PropertyRecord> chain, PropertyStore propertyStore,
                                    PropertyReceiver receiver )
     {
@@ -869,123 +765,14 @@ public class TransactionRecordState
         }
     }
 
-    static Map<Integer, RelationshipGroupRecord> loadRelationshipGroups( long firstGroup, RelationshipGroupStore store )
-    {
-        long groupId = firstGroup;
-        long previousGroupId = Record.NO_NEXT_RELATIONSHIP.intValue();
-        Map<Integer, RelationshipGroupRecord> result = new HashMap<>();
-        while ( groupId != Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            RelationshipGroupRecord record = store.getRecord( groupId );
-            record.setPrev( previousGroupId );
-            result.put( record.getType(), record );
-            previousGroupId = groupId;
-            groupId = record.getNext();
-        }
-        return result;
-    }
-
-    private Map<Integer, RelationshipGroupRecord> loadRelationshipGroups( NodeRecord node )
-    {
-        assert node.isDense();
-        return loadRelationshipGroups( node.getNextRel(), getRelationshipGroupStore() );
-    }
-
     public int getRelationshipCount( long id, int type, DirectionWrapper direction )
     {
-        NodeRecord node = getNodeStore().getRecord( id );
-        long nextRel = node.getNextRel();
-        if ( nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            return 0;
-        }
-        if ( !node.isDense() )
-        {
-            assert type == -1;
-            assert direction == DirectionWrapper.BOTH;
-            return getRelationshipCount( node, nextRel );
-        }
-
-        // From here on it's only dense node specific
-
-        Map<Integer, RelationshipGroupRecord> groups = loadRelationshipGroups( node );
-        if ( type == -1 && direction == DirectionWrapper.BOTH )
-        {   // Count for all types/directions
-            int count = 0;
-            for ( RelationshipGroupRecord group : groups.values() )
-            {
-                count += getRelationshipCount( node, group.getFirstOut() );
-                count += getRelationshipCount( node, group.getFirstIn() );
-                count += getRelationshipCount( node, group.getFirstLoop() );
-            }
-            return count;
-        }
-        else if ( type == -1 )
-        {   // Count for all types with a given direction
-            int count = 0;
-            for ( RelationshipGroupRecord group : groups.values() )
-            {
-                count += getRelationshipCount( node, group, direction );
-            }
-            return count;
-        }
-        else if ( direction == DirectionWrapper.BOTH )
-        {   // Count for a type
-            RelationshipGroupRecord group = groups.get( type );
-            if ( group == null )
-            {
-                return 0;
-            }
-            int count = 0;
-            count += getRelationshipCount( node, group.getFirstOut() );
-            count += getRelationshipCount( node, group.getFirstIn() );
-            count += getRelationshipCount( node, group.getFirstLoop() );
-            return count;
-        }
-        else
-        {   // Count for one type and direction
-            RelationshipGroupRecord group = groups.get( type );
-            if ( group == null )
-            {
-                return 0;
-            }
-            return getRelationshipCount( node, group, direction );
-        }
-    }
-
-    private int getRelationshipCount( NodeRecord node, RelationshipGroupRecord group, DirectionWrapper direction )
-    {
-        if ( direction == DirectionWrapper.BOTH )
-        {
-            return getRelationshipCount( node, DirectionWrapper.OUTGOING.getNextRel( group ) ) +
-                    getRelationshipCount( node, DirectionWrapper.INCOMING.getNextRel( group ) ) +
-                    getRelationshipCount( node, DirectionWrapper.BOTH.getNextRel( group ) );
-        }
-
-        return getRelationshipCount( node, direction.getNextRel( group ) ) +
-                getRelationshipCount( node, DirectionWrapper.BOTH.getNextRel( group ) );
-    }
-
-    private int getRelationshipCount( NodeRecord node, long relId )
-    {   // Relationship count is in a PREV field of the first record in a chain
-        if ( relId == Record.NO_NEXT_RELATIONSHIP.intValue() )
-        {
-            return 0;
-        }
-        RelationshipRecord rel = getRelationshipStore().getRecord( relId );
-        return (int) (node.getId() == rel.getFirstNode() ? rel.getFirstPrevRel() : rel.getSecondPrevRel());
+        return context.getRelationshipCount( id, type, direction );
     }
 
     public Integer[] getRelationshipTypes( long id )
     {
-        Map<Integer, RelationshipGroupRecord> groups = loadRelationshipGroups( getNodeStore().getRecord( id ) );
-        Integer[] types = new Integer[groups.size()];
-        int i = 0;
-        for ( Integer type : groups.keySet() )
-        {
-            types[i++] = type;
-        }
-        return types;
+        return context.getRelationshipTypes( id );
     }
 
     public RelationshipLoadingPosition getRelationshipChainPosition( long id )
@@ -996,22 +783,7 @@ public class TransactionRecordState
             return RelationshipLoadingPosition.EMPTY;
         }
 
-        NodeRecord node = getNodeStore().getRecord( id );
-        if ( node.isDense() )
-        {
-            long firstGroup = node.getNextRel();
-            if ( firstGroup == Record.NO_NEXT_RELATIONSHIP.intValue() )
-            {
-                return RelationshipLoadingPosition.EMPTY;
-            }
-            Map<Integer, RelationshipGroupRecord> groups = loadRelationshipGroups( firstGroup,
-                    neoStore.getRelationshipGroupStore() );
-            return new DenseNodeChainPosition( groups );
-        }
-
-        long firstRel = node.getNextRel();
-        return firstRel == Record.NO_NEXT_RELATIONSHIP.intValue() ?
-                RelationshipLoadingPosition.EMPTY : new SingleChainPosition( firstRel );
+        return context.getRelationshipLoadingChainPoisition( id );
     }
 
     public interface PropertyReceiver

@@ -21,9 +21,12 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.util.Collection;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -35,10 +38,12 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 public class NeoStoreTransactionContext
 {
@@ -50,6 +55,7 @@ public class NeoStoreTransactionContext
     private final PropertyDeleter propertyDeleter;
     private final TransactionalRelationshipLocker locker;
     private final RelationshipGroupGetter relationshipGroupGetter;
+    private final RelationshipChainLoader relationshipLoader;
 
     private TransactionState txState;
 
@@ -70,6 +76,7 @@ public class NeoStoreTransactionContext
         propertyDeleter = new PropertyDeleter( neoStore.getPropertyStore(), propertyTraverser );
         relationshipCreator = new RelationshipCreator( locker, relationshipGroupGetter, neoStore.getDenseNodeThreshold() );
         relationshipDeleter = new RelationshipDeleter( locker, relationshipGroupGetter, propertyDeleter );
+        relationshipLoader = new RelationshipChainLoader( neoStore );
     }
 
     public ArrayMap<Integer, DefinedProperty> relationshipDelete( long relId )
@@ -80,11 +87,6 @@ public class NeoStoreTransactionContext
     public void relationshipCreate( long id, int typeId, long startNodeId, long endNodeId )
     {
         relationshipCreator.relationshipCreate( id, typeId, startNodeId, endNodeId, recordChangeSet );
-    }
-
-    public Collection<NodeRecord> getUpgradedDenseNodes()
-    {
-        return relationshipCreator.getUpgradedDenseNodes();
     }
 
     public ArrayMap<Integer, DefinedProperty>  getAndDeletePropertyChain( NodeRecord nodeRecord )
@@ -211,5 +213,27 @@ public class NeoStoreTransactionContext
     public TransactionState getTransactionState()
     {
         return txState;
+    }
+
+    public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> getMoreRelationships(
+            long nodeId, RelationshipLoadingPosition position, DirectionWrapper direction,
+            int[] types, RelationshipStore relationshipStore )
+    {
+        return relationshipLoader.getMoreRelationships( nodeId, position, direction, types );
+    }
+
+    public int getRelationshipCount( long id, int type, DirectionWrapper direction )
+    {
+        return relationshipLoader.getRelationshipCount( id, type, direction );
+    }
+
+    public Integer[] getRelationshipTypes( long id )
+    {
+        return relationshipLoader.getRelationshipTypes( id );
+    }
+
+    public RelationshipLoadingPosition getRelationshipLoadingChainPoisition( long id )
+    {
+        return relationshipLoader.getRelationshipChainPosition( id );
     }
 }

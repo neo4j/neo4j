@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
 
 public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
 {
@@ -126,7 +127,18 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
         neoStore.getNodeStore().updateDynamicLabelRecords( toUpdate );
 
         invalidateCache( command );
+        // Additional cache invalidation check for nodes that have just been upgraded to dense
+        if ( nodeHasBeenUpgradedToDense( command ) )
+        {
+            command.invalidateCache( cacheAccess );
+        }
         return true;
+    }
+
+    private boolean nodeHasBeenUpgradedToDense( NodeCommand command )
+    {
+        return command.getBefore().inUse() && !command.getBefore().isDense() &&
+                command.getAfter().inUse() && command.getAfter().isDense();
     }
 
     private void invalidateCache( Command command )

@@ -27,31 +27,33 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 
+/**
+ * Loads relationships from store, instantiating high level cache objects as it goes.
+ * Grunt work is done by {@link RelationshipChainLoader}.
+ */
 public class RelationshipLoader
 {
-    private final ThreadToStatementContextBridge threadToTransactionBridge;
     private final Cache<RelationshipImpl> relationshipCache;
 
-    public RelationshipLoader( ThreadToStatementContextBridge threadToTransactionBridge,
-            Cache<RelationshipImpl> relationshipCache )
+    public RelationshipLoader( Cache<RelationshipImpl> relationshipCache )
     {
-        this.threadToTransactionBridge = threadToTransactionBridge;
         this.relationshipCache = relationshipCache;
     }
 
     public Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition>
-            getMoreRelationships( NodeImpl node, DirectionWrapper direction, int[] types )
+            getMoreRelationships( NodeImpl node, DirectionWrapper direction, int[] types,
+                    RelationshipChainLoader loader )
     {
         long nodeId = node.getId();
         RelationshipLoadingPosition position = node.getRelChainPosition();
         Pair<Map<RelIdArray.DirectionWrapper, Iterable<RelationshipRecord>>,RelationshipLoadingPosition> rels =
-                threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
-                .getMoreRelationships( nodeId, position, direction, types );
+                loader.getMoreRelationships( nodeId, position, direction, types );
         ArrayMap<Integer, RelIdArray> newRelationshipMap = new ArrayMap<>();
 
         List<RelationshipImpl> relsList = new ArrayList<>( 150 );

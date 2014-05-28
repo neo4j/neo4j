@@ -25,6 +25,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
@@ -44,10 +45,11 @@ class RelationshipIterator implements PrimitiveLongIterator
     private boolean nextHasBeenComputed = false;
     private boolean hasNext;
     private long nextElement;
+    private final RelationshipChainLoader loader;
 
     RelationshipIterator( RelIdIterator[] rels, NodeImpl fromNode,
         DirectionWrapper direction, int[] types, NodeManager nodeManager,
-        boolean hasMoreToLoad, boolean allTypes )
+        boolean hasMoreToLoad, boolean allTypes, RelationshipChainLoader loader )
     {
         initializeRels( rels );
         this.lastTimeILookedThereWasMoreToLoad = hasMoreToLoad;
@@ -56,6 +58,7 @@ class RelationshipIterator implements PrimitiveLongIterator
         this.types = types;
         this.nodeManager = nodeManager;
         this.allTypes = allTypes;
+        this.loader = loader;
     }
 
     private void initializeRels( RelIdIterator[] rels )
@@ -108,7 +111,7 @@ class RelationshipIterator implements PrimitiveLongIterator
                     // There are other relationship types to try to get relationships from, go to the next type
                     currentTypeIterator = rels[++currentTypeIndex];
                 }
-                else if ( (status = fromNode.getMoreRelationships( nodeManager, direction, types )).loaded()
+                else if ( (status = fromNode.getMoreRelationships( nodeManager, direction, types, loader )).loaded()
                         // This is here to guard for that someone else might have loaded
                         // stuff in this relationship chain (and exhausted it) while I
                         // iterated over my batch of relationships. It will only happen

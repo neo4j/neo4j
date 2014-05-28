@@ -70,6 +70,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static org.neo4j.helpers.collection.Iterables.filter;
@@ -107,6 +108,7 @@ public class DiskLayer
     private final PropertyStore propertyStore;
     private final SchemaStorage schemaStorage;
     private final Provider<PropertyStore> propertyStoreProvider;
+    private final RelationshipChainLoader relationshipChainLoader;
 
     private static class PropertyStoreProvider implements Provider<PropertyStore>
     {
@@ -137,7 +139,6 @@ public class DiskLayer
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
-
         this.indexService = indexService;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
@@ -145,7 +146,8 @@ public class DiskLayer
         this.nodeStore = this.neoStore.getNodeStore();
         this.relationshipStore = this.neoStore.getRelationshipStore();
         this.propertyStore = this.neoStore.getPropertyStore();
-        this.propertyStoreProvider = new PropertyStoreProvider(neoStoreProvider);
+        this.propertyStoreProvider = new PropertyStoreProvider( neoStoreProvider );
+        this.relationshipChainLoader = new RelationshipChainLoader( neoStore );
     }
 
     public int labelGetOrCreateForName( String label ) throws TooManyLabelsException
@@ -621,5 +623,16 @@ public class DiskLayer
                 return false;
             }
         };
+    }
+
+    /**
+     * This getter sits here to serve as a logic which is able to inject into NodeImpl as it pulls
+     * relationships and other things as it goes, blending with the cache. It was added as part of
+     * untangling relationship loading from NodeManager.
+     * TODO rethink later.
+     */
+    public RelationshipChainLoader relationshipChainLoader()
+    {
+        return relationshipChainLoader;
     }
 }

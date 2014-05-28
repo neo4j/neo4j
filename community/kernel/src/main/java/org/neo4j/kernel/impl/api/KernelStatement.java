@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.api;
 
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.kernel.api.DataWriteOperations;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
 import org.neo4j.kernel.api.Statement;
@@ -33,6 +32,7 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexReader;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 public class KernelStatement implements TxState.Holder, Statement
@@ -43,7 +43,7 @@ public class KernelStatement implements TxState.Holder, Statement
     protected final IndexReaderFactory indexReaderFactory;
     protected final LabelScanStore labelScanStore;
     protected TransactionRecordState recordState;
-    
+
     private LabelScanReader labelScanReader;
     private int referenceCount;
     private final OperationsFacade facade;

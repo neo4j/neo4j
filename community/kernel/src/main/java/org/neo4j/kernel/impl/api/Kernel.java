@@ -276,7 +276,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         context.bind( legacyState );
         TransactionRecordState neoStoreTransaction = new TransactionRecordState(
                 neoStore.getLastCommittingTransactionId(),
-                neoStore, cacheAccess, integrityValidator, context );
+                neoStore, integrityValidator, context );
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( this, indexService );
         return new KernelTransactionImplementation( statementOperations, readOnly,
                 schemaWriteGuard, labelScanStore, indexService,

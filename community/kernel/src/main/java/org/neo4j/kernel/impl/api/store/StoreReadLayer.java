@@ -54,14 +54,20 @@ public interface StoreReadLayer
 
     PrimitiveIntIterator nodeGetLabels( long nodeId ) throws EntityNotFoundException;
 
-    PrimitiveLongIterator nodeListRelationships( KernelStatement state, long nodeId, Direction direction) throws EntityNotFoundException;
+    PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction)
+            throws EntityNotFoundException;
 
-    PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction, int[] relTypes ) throws EntityNotFoundException;
+    PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction,
+            int[] relTypes ) throws EntityNotFoundException;
 
-    int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException;
-    int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException;
+    int nodeGetDegree( long nodeId, Direction direction )
+            throws EntityNotFoundException;
 
-    PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException;
+    int nodeGetDegree( long nodeId, Direction direction, int relType )
+            throws EntityNotFoundException;
+
+    PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId )
+            throws EntityNotFoundException;
 
     Iterator<IndexDescriptor> indexesGetForLabel( int labelId );
 
@@ -74,7 +80,8 @@ public interface StoreReadLayer
     Long indexGetOwningUniquenessConstraintId( IndexDescriptor index )
             throws SchemaRuleNotFoundException;
 
-    long indexGetCommittedId( IndexDescriptor index, SchemaStorage.IndexRuleKind kind ) throws SchemaRuleNotFoundException;
+    long indexGetCommittedId( IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
+            throws SchemaRuleNotFoundException;
 
     IndexRule indexRule( IndexDescriptor index, SchemaStorage.IndexRuleKind kind );
 

@@ -1001,11 +1001,11 @@ public class StateHandlingStatementOperations implements
             }
             else
             {
-                stored = storeLayer.nodeListRelationships( state, nodeId, direction );
+                stored = storeLayer.nodeListRelationships( nodeId, direction );
             }
             return txState.augmentRelationships( nodeId, direction, stored );
         }
-        return storeLayer.nodeListRelationships( state, nodeId, direction );
+        return storeLayer.nodeListRelationships( nodeId, direction );
     }
 
     @Override
@@ -1058,12 +1058,12 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement statement, long nodeId )
+    public PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement state, long nodeId )
             throws EntityNotFoundException
     {
-        if(statement.hasTxStateWithChanges() && statement.txState().nodeModifiedInThisTx(nodeId))
+        if(state.hasTxStateWithChanges() && state.txState().nodeModifiedInThisTx(nodeId))
         {
-            TxState tx = statement.txState();
+            TxState tx = state.txState();
             if(tx.nodeIsDeletedInThisTx( nodeId ))
             {
                 return PrimitiveIntCollections.emptyIterator();
@@ -1089,7 +1089,7 @@ public class StateHandlingStatementOperations implements
             while(committedTypes.hasNext())
             {
                 int current = committedTypes.next();
-                if(!types.contains( current ) && nodeGetDegree( statement, nodeId, Direction.BOTH, current ) > 0)
+                if(!types.contains( current ) && nodeGetDegree( state, nodeId, Direction.BOTH, current ) > 0)
                 {
                     types.add( current );
                 }

@@ -440,34 +440,42 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public PrimitiveLongIterator nodeListRelationships( KernelStatement state, long nodeId, Direction direction ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction )
+            throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetRelationships( nodeId, direction );
+        return persistenceCache.nodeGetRelationships( diskLayer.relationshipChainLoader(), nodeId, direction );
     }
 
     @Override
     public PrimitiveLongIterator nodeListRelationships( long nodeId, Direction direction,
                                                         int[] relTypes ) throws EntityNotFoundException
     {
-        return persistenceCache.nodeGetRelationships( nodeId, direction, relTypes );
+        return persistenceCache.nodeGetRelationships( diskLayer.relationshipChainLoader(),
+                nodeId, direction, relTypes );
     }
 
     @Override
-    public int nodeGetDegree( long nodeId, Direction direction ) throws EntityNotFoundException
+    public int nodeGetDegree( long nodeId, Direction direction )
+            throws EntityNotFoundException
     {
-        return persistenceCache.getNode( nodeId ).getDegree( nodeManager, direction );
+        return persistenceCache.getNode( nodeId ).getDegree( nodeManager, direction,
+                diskLayer.relationshipChainLoader() );
     }
 
     @Override
-    public int nodeGetDegree( long nodeId, Direction direction, int relType ) throws EntityNotFoundException
+    public int nodeGetDegree( long nodeId, Direction direction, int relType )
+            throws EntityNotFoundException
     {
-        return persistenceCache.getNode( nodeId ).getDegree( nodeManager, relType, direction );
+        return persistenceCache.getNode( nodeId ).getDegree( nodeManager, relType, direction,
+                diskLayer.relationshipChainLoader() );
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId ) throws EntityNotFoundException
+    public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId )
+            throws EntityNotFoundException
     {
-        return PrimitiveIntCollections.toPrimitiveIterator( persistenceCache.getNode( nodeId ).getRelationshipTypes( nodeManager ) );
+        return PrimitiveIntCollections.toPrimitiveIterator( persistenceCache.getNode( nodeId )
+                .getRelationshipTypes( nodeManager, diskLayer.relationshipChainLoader() ) );
     }
 
     @Override

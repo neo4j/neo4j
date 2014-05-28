@@ -37,6 +37,7 @@ import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Primitive;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 
 import static org.neo4j.kernel.impl.api.store.CacheUpdateListener.NO_UPDATES;
 
@@ -195,13 +196,16 @@ public class PersistenceCache
         return graphProperties.evaluate().getProperty( cacheLoader, NO_UPDATES, propertyKeyId );
     }
 
-    public PrimitiveLongIterator nodeGetRelationships( long node, Direction direction, int[] relTypes ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetRelationships( RelationshipChainLoader loader, long node,
+            Direction direction, int[] relTypes ) throws EntityNotFoundException
     {
-        return getNode( node ).getRelationships( nodeManager, direction, relTypes );
+        return getNode( node ).getRelationships( nodeManager, direction, relTypes, loader );
     }
 
-    public PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetRelationships( RelationshipChainLoader loader,
+            long nodeId, Direction direction )
+            throws EntityNotFoundException
     {
-        return getNode( nodeId ).getRelationships( nodeManager, direction );
+        return getNode( nodeId ).getRelationships( nodeManager, direction, loader );
     }
 }

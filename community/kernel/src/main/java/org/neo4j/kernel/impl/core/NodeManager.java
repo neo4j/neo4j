@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -126,7 +127,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         this.relCache = new AutoLoadingCache<>( relCache, relLoader );
         this.nodePropertyTrackers = new LinkedList<>();
         this.relationshipPropertyTrackers = new LinkedList<>();
-        this.relationshipLoader = new RelationshipLoader( threadToTransactionBridge, relCache );
+        this.relationshipLoader = new RelationshipLoader( relCache );
         this.graphProperties = instantiateGraphProperties();
     }
 
@@ -456,10 +457,14 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         }
     }
 
+    /*
+     * This method will sit here as long as we have the high level object cache
+     */
     Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition>
-            getMoreRelationships( NodeImpl node, DirectionWrapper direction, int[] types )
+            getMoreRelationships( NodeImpl node, DirectionWrapper direction, int[] types,
+                    RelationshipChainLoader loader )
     {
-        return relationshipLoader.getMoreRelationships( node, direction, types );
+        return relationshipLoader.getMoreRelationships( node, direction, types, loader );
     }
 
     public NodeImpl getNodeIfCached( long nodeId )
@@ -588,15 +593,15 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         throw new UnsupportedOperationException( "Please implement" );
     }
 
-    public int getRelationshipCount( NodeImpl nodeImpl, int type, DirectionWrapper direction )
-    {
-        return threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
-                .getRelationshipCount( nodeImpl.getId(), type, direction );
-    }
-
-    public Iterator<Integer> getRelationshipTypes( DenseNodeImpl node )
-    {
-        return asList( threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
-                .getRelationshipTypes( node.getId() ) ).iterator();
-    }
+//    public int getRelationshipCount( NodeImpl nodeImpl, int type, DirectionWrapper direction )
+//    {
+//        return threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
+//                .getRelationshipCount( nodeImpl.getId(), type, direction );
+//    }
+//
+//    public Iterator<Integer> getRelationshipTypes( DenseNodeImpl node )
+//    {
+//        return asList( threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
+//                .getRelationshipTypes( node.getId() ) ).iterator();
+//    }
 }
