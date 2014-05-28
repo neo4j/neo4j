@@ -36,6 +36,7 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.atLeast;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
@@ -83,16 +84,15 @@ public class PageCacheTest
     public void shouldCloseAllFiles() throws Exception
     {
         // Given
-        FileSystemAbstraction fs = mock(FileSystemAbstraction.class);
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
         StandardPageCache cache = new StandardPageCache( fs, 16, 512 );
         File file1Name = new File( "file1" );
         File file2Name = new File( "file2" );
 
-        StoreChannel channel1 = mock(StoreChannel.class);
-        StoreChannel channel2 = mock(StoreChannel.class);
+        StoreChannel channel1 = mock( StoreChannel.class );
+        StoreChannel channel2 = mock( StoreChannel.class );
         when( fs.open( file1Name, "rw" ) ).thenReturn( channel1 );
         when( fs.open( file2Name, "rw" ) ).thenReturn( channel2 );
-
 
         // When
         PagedFile file1 = cache.map( file1Name, 64 );
@@ -103,6 +103,7 @@ public class PageCacheTest
         // Then
         verify( fs ).open( file1Name, "rw" );
         verify( fs ).open( file2Name, "rw" );
+        verify( channel2, atLeast( 1 ) ).force( false );
         verify( channel2 ).close();
         verifyNoMoreInteractions( channel1, channel2, fs );
 
@@ -110,6 +111,7 @@ public class PageCacheTest
         cache.close();
 
         // Then
+        verify( channel1, atLeast( 1 ) ).force( false );
         verify( channel1 ).close();
         verifyNoMoreInteractions( channel1, channel2, fs );
     }
