@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.nio.ByteBuffer.allocate;
 import static java.util.Arrays.asList;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
@@ -50,16 +49,17 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
-import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandSerializer;
+import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 
 public class NodeCommandTest
 {
     private NodeStore nodeStore;
-    private XaCommandReader commandReader = new PhysicalLogNeoXaCommandReaderV1( allocate( 64 ));
-    private XaCommandWriter commandWriter = new PhysicalLogNeoXaCommandWriter();
+    InMemoryLogChannel channel = new InMemoryLogChannel();
+    private XaCommandReader commandReader = new PhysicalLogNeoXaCommandReaderV1();
+    private CommandSerializer commandWriter = new CommandSerializer( channel );
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
@@ -69,7 +69,6 @@ public class NodeCommandTest
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
-
         // When
         Command.NodeCommand nodeCommand = new Command.NodeCommand();
         nodeCommand.init( before, after );
@@ -84,7 +83,6 @@ public class NodeCommandTest
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setCreated();
         after.setInUse( true );
-
         // When
         Command.NodeCommand nodeCommand = new Command.NodeCommand();
         nodeCommand.init( before, after );
@@ -99,7 +97,6 @@ public class NodeCommandTest
         before.setInUse( true );
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
-
         // When
         Command.NodeCommand nodeCommand = new Command.NodeCommand();
         nodeCommand.init( before, after );
@@ -112,12 +109,10 @@ public class NodeCommandTest
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         before.setInUse( true );
-
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
         nodeLabels.add( 1337, nodeStore, nodeStore.getDynamicLabelStore() );
-
         // When
         Command.NodeCommand nodeCommand = new Command.NodeCommand();
         nodeCommand.init( before, after );
@@ -130,7 +125,6 @@ public class NodeCommandTest
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         before.setInUse( true );
-
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
         NodeLabels nodeLabels = parseLabelsField( after );
@@ -138,7 +132,6 @@ public class NodeCommandTest
         {
             nodeLabels.add( i, nodeStore, nodeStore.getDynamicLabelStore() );
         }
-
         // When
         Command.NodeCommand nodeCommand = new Command.NodeCommand();
         nodeCommand.init( before, after );
@@ -148,53 +141,49 @@ public class NodeCommandTest
     @Test
     public void shouldSerializeDynamicRecordsRemoved() throws Exception
     {
+        channel.reset();
         // Given
         NodeRecord before = new NodeRecord( 12, false, 1, 2 );
         before.setInUse( true );
-        List<DynamicRecord> beforeDyn = asList( dynamicRecord( 0, true, true, -1l, LONG.intValue(), new byte[]{1,2,3,4,5,6,7,8}));
+        List<DynamicRecord> beforeDyn = asList( dynamicRecord( 0, true, true, -1l, LONG.intValue(), new byte[] { 1, 2,
+                3, 4, 5, 6, 7, 8 } ) );
         before.setLabelField( dynamicPointer( beforeDyn ), beforeDyn );
-
         NodeRecord after = new NodeRecord( 12, false, 2, 1 );
         after.setInUse( true );
-        List<DynamicRecord> dynamicRecords = asList( dynamicRecord( 0, false, true, -1l, LONG.intValue(), new byte[]{1,2,3,4,5,6,7,8}));
+        List<DynamicRecord> dynamicRecords = asList( dynamicRecord( 0, false, true, -1l, LONG.intValue(), new byte[] {
+                1, 2, 3, 4, 5, 6, 7, 8 } ) );
         after.setLabelField( dynamicPointer( dynamicRecords ), dynamicRecords );
-
         // When
         Command.NodeCommand cmd = new Command.NodeCommand();
         cmd.init( before, after );
-        InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-        commandWriter.write( cmd, buffer );
-        Command.NodeCommand result = (Command.NodeCommand) commandReader.read( buffer );
-
+        cmd.accept( commandWriter );
+        Command.NodeCommand result = (Command.NodeCommand) commandReader.read( channel );
         // Then
         assertThat( result, equalTo( cmd ) );
         assertThat( result.getMode(), equalTo( cmd.getMode() ) );
         assertThat( result.getBefore(), equalTo( cmd.getBefore() ) );
         assertThat( result.getAfter(), equalTo( cmd.getAfter() ) );
-
         // And dynamic records should be the same
-        assertThat( result.getBefore().getDynamicLabelRecords(), equalTo( cmd.getBefore().getDynamicLabelRecords()));
+        assertThat( result.getBefore().getDynamicLabelRecords(), equalTo( cmd.getBefore().getDynamicLabelRecords() ) );
         assertThat( result.getAfter().getDynamicLabelRecords(), equalTo( cmd.getAfter().getDynamicLabelRecords() ) );
     }
 
-    private void assertSerializationWorksFor( org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand cmd ) throws IOException
+    private void assertSerializationWorksFor( org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand cmd )
+            throws IOException
     {
-        InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-        commandWriter.write( cmd, buffer );
-        Command.NodeCommand result = (Command.NodeCommand) commandReader.read( buffer );
-
+        channel.reset();
+        cmd.accept( commandWriter );
+        Command.NodeCommand result = (Command.NodeCommand) commandReader.read( channel );
         // Then
         assertThat( result, equalTo( cmd ) );
         assertThat( result.getMode(), equalTo( cmd.getMode() ) );
         assertThat( result.getBefore(), equalTo( cmd.getBefore() ) );
         assertThat( result.getAfter(), equalTo( cmd.getAfter() ) );
-
         // And labels should be the same
         assertThat( labels( result.getBefore() ), equalTo( labels( cmd.getBefore() ) ) );
         assertThat( labels( result.getAfter() ), equalTo( labels( cmd.getAfter() ) ) );
-
         // And dynamic records should be the same
-        assertThat( result.getBefore().getDynamicLabelRecords(), equalTo( result.getBefore().getDynamicLabelRecords()));
+        assertThat( result.getBefore().getDynamicLabelRecords(), equalTo( result.getBefore().getDynamicLabelRecords() ) );
         assertThat( result.getAfter().getDynamicLabelRecords(), equalTo( result.getAfter().getDynamicLabelRecords() ) );
     }
 
@@ -212,7 +201,7 @@ public class NodeCommandTest
     @Before
     public void before() throws Exception
     {
-        @SuppressWarnings("deprecation")
+        @SuppressWarnings( "deprecation" )
         StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
                 new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, new DefaultTxHook() );
         File storeFile = new File( "nodestore" );

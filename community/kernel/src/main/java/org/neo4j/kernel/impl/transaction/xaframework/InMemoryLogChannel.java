@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChannel
 {
-    private byte[] bytes = new byte[100];
+    private byte[] bytes = new byte[1000];
     private ByteBuffer asWriter = ByteBuffer.wrap( bytes );
     private ByteBuffer asReader = ByteBuffer.wrap( bytes );
     private ByteBuffer bufferForConversions = ByteBuffer.wrap( new byte[100] );
