@@ -225,7 +225,7 @@ public class CypherDocIT extends AbstractRestFunctionalTestBase {
      */
     @Test
     @Documented
-    @Title( "Create mutiple nodes with properties" )
+    @Title( "Create multiple nodes with properties" )
     @Graph
     public void send_query_to_create_multipe_nodes_from_a_map() throws Exception
     {

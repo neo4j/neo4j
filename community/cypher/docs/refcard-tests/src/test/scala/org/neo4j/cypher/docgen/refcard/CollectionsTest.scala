@@ -41,13 +41,14 @@ class CollectionsTest extends RefcardTest with QueryStatisticsTestSupport {
     }
   }
 
-
   override def parameters(name: String): Map[String, Any] =
     name match {
       case "parameters=name" =>
         Map("value" -> "Bob")
+      case "parameters=names" =>
+        Map("names" -> List("A", "B"))
       case "parameters=coll" =>
-        Map("coll" -> List(1,2,3))
+        Map("coll" -> List(1, 2, 3))
       case "parameters=range" =>
         Map("first_num" -> 1, "last_num" -> 10, "step" -> 2)
       case "parameters=subscript" =>
@@ -57,8 +58,8 @@ class CollectionsTest extends RefcardTest with QueryStatisticsTestSupport {
     }
 
   override val properties: Map[String, Map[String, Any]] = Map(
-    "A" -> Map("name" -> "Alice","coll"->Array(1,2,3)),
-    "B" -> Map("name" -> "Bob","coll"->Array(1,2,3)))
+    "A" -> Map("name" -> "Alice", "coll" -> Array(1, 2, 3), "age" -> 30),
+    "B" -> Map("name" -> "Bob", "coll" -> Array(1, 2, 3), "age" -> 40))
 
   def text = """
 ###assertion=returns-one
@@ -122,5 +123,17 @@ Collection elements can be accessed with +idx+ subscripts in square brackets.
 Invalid indexes return +NULL+.
 Slices can be retrieved with intervals from +start_idx+ to +end_idx+ each of which can be omitted or negative.
 Out of range elements are ignored.
+
+###assertion=returns-one parameters=names
+//
+
+UNWIND {names} AS name
+MATCH (n {name:name})
+RETURN avg(n.age)
+
+###
+
+With +UNWIND+, you can transform any collection back into individual rows.
+The example matches all names from a list of names.
 """
 }
