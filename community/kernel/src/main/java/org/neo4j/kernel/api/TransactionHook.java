@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.api;
 
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+
 /**
  * A mechanism to augment and monitor transactions before and after commit/rollback.
  */
@@ -30,7 +32,7 @@ public interface TransactionHook<OUTCOME extends TransactionHook.Outcome>
         Throwable failure();
     }
 
-    OUTCOME beforeCommit( TxState state, KernelTransaction transaction );
+    OUTCOME beforeCommit( TxState state, KernelTransaction transaction, StoreReadLayer storeReadLayer );
     void afterCommit( TxState state, KernelTransaction transaction, OUTCOME outcome );
     void afterRollback( TxState state, KernelTransaction transaction, OUTCOME outcome );
 }

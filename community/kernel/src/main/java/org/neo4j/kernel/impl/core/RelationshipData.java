@@ -19,31 +19,31 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-
-public class NoTransactionState implements TransactionState
+public class RelationshipData
 {
-    @Override
-    public RemoteTxHook getTxHook()
+    private long startNode;
+    private long endNode;
+    private int type;
+
+    public void set( long startNode, long endNode, int type )
     {
-        return null;
+        this.startNode = startNode;
+        this.endNode = endNode;
+        this.type = type;
     }
 
-    @Override
-    public TxIdGenerator getTxIdGenerator()
+    public long getStartNode()
     {
-        return null;
+        return startNode;
     }
 
-    @Override
-    public boolean isRemotelyInitialized()
+    public long getEndNode()
     {
-        return false;
+        return endNode;
     }
 
-    @Override
-    public void markAsRemotelyInitialized()
+    public int getType()
     {
+        return type;
     }
 }

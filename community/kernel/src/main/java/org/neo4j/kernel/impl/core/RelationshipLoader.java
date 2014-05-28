@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -40,20 +41,21 @@ import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 public class RelationshipLoader
 {
     private final Cache<RelationshipImpl> relationshipCache;
+    private final RelationshipChainLoader chainLoader;
 
-    public RelationshipLoader( Cache<RelationshipImpl> relationshipCache )
+    public RelationshipLoader( Cache<RelationshipImpl> relationshipCache, RelationshipChainLoader chainLoader )
     {
         this.relationshipCache = relationshipCache;
+        this.chainLoader = chainLoader;
     }
 
     public Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition>
-            getMoreRelationships( NodeImpl node, DirectionWrapper direction, int[] types,
-                    RelationshipChainLoader loader )
+            getMoreRelationships( NodeImpl node, DirectionWrapper direction, int[] types )
     {
         long nodeId = node.getId();
         RelationshipLoadingPosition position = node.getRelChainPosition();
         Pair<Map<RelIdArray.DirectionWrapper, Iterable<RelationshipRecord>>,RelationshipLoadingPosition> rels =
-                loader.getMoreRelationships( nodeId, position, direction, types );
+                chainLoader.getMoreRelationships( nodeId, position, direction, types );
         ArrayMap<Integer, RelIdArray> newRelationshipMap = new ArrayMap<>();
 
         List<RelationshipImpl> relsList = new ArrayList<>( 150 );
@@ -98,7 +100,8 @@ public class RelationshipLoader
         }
     }
 
-    private RelIdArray getOrCreateRelationships( boolean hasLoops, int typeId, ArrayMap<Integer, RelIdArray> loadedRelationships )
+    private RelIdArray getOrCreateRelationships( boolean hasLoops, int typeId,
+            ArrayMap<Integer, RelIdArray> loadedRelationships )
     {
         RelIdArray relIdArray = loadedRelationships.get( typeId );
         if ( relIdArray != null )
@@ -111,7 +114,7 @@ public class RelationshipLoader
     }
 
     private RelationshipImpl getOrCreateRelationshipFromCache( List<RelationshipImpl> newlyCreatedRelationships,
-                                                               RelationshipRecord rel, long relId )
+            RelationshipRecord rel, long relId )
     {
         RelationshipImpl relImpl = relationshipCache.get( relId );
         if (relImpl != null)
@@ -120,8 +123,28 @@ public class RelationshipLoader
         }
 
         RelationshipImpl loadedRelImpl = new RelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(),
-                rel.getType(), false );
+                rel.getType()  );
         newlyCreatedRelationships.add( loadedRelImpl );
         return loadedRelImpl;
+    }
+
+    public void putAllInRelCache( Collection<RelationshipImpl> relationships )
+    {
+        relationshipCache.putAll( relationships );
+    }
+
+    public int getRelationshipCount( long id, int i, DirectionWrapper direction )
+    {
+        return chainLoader.getRelationshipCount( id, i, direction );
+    }
+
+    public Integer[] getRelationshipTypes( long id )
+    {
+        return chainLoader.getRelationshipTypes( id );
+    }
+
+    public RelationshipLoadingPosition getRelationshipChainPosition( long id )
+    {
+        return chainLoader.getRelationshipChainPosition( id );
     }
 }

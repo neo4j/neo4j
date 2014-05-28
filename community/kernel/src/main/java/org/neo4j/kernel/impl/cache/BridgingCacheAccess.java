@@ -26,21 +26,18 @@ import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 
 public class BridgingCacheAccess implements CacheAccessBackDoor
 {
-    private final NodeManager nodeManager;
     private final SchemaCache schemaCache;
     private final SchemaState schemaState;
     private final PersistenceCache persistenceCache;
 
-    public BridgingCacheAccess( NodeManager nodeManager, SchemaCache schemaCache, SchemaState schemaState,
+    public BridgingCacheAccess( SchemaCache schemaCache, SchemaState schemaState,
                                 PersistenceCache persistenceCache )
     {
-        this.nodeManager = nodeManager;
         this.schemaCache = schemaCache;
         this.schemaState = schemaState;
         this.persistenceCache = persistenceCache;
@@ -49,38 +46,37 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     @Override
     public void removeNodeFromCache( long nodeId )
     {
-        nodeManager.removeNodeFromCache( nodeId );
         persistenceCache.evictNode( nodeId );
     }
 
     @Override
     public void removeRelationshipFromCache( long id )
     {
-        nodeManager.removeRelationshipFromCache( id );
+        persistenceCache.evictRelationship( id );
     }
 
     @Override
     public void removeRelationshipTypeFromCache( int id )
     {
-        nodeManager.removeRelationshipTypeFromCache( id );
+        persistenceCache.evictRelationshipType( id );
     }
 
     @Override
     public void removePropertyKeyFromCache( int id )
     {
-        nodeManager.removePropertyKeyFromCache( id );
+        persistenceCache.evictPropertyKey( id );
     }
 
     @Override
     public void removeLabelFromCache( int id )
     {
-        nodeManager.removeLabelFromCache( id );
+        persistenceCache.evictLabel( id );
     }
 
     @Override
     public void removeGraphPropertiesFromCache()
     {
-        nodeManager.removeGraphPropertiesFromCache();
+        persistenceCache.evictGraphProperties();
     }
 
     @Override
@@ -99,26 +95,26 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     @Override
     public void addRelationshipTypeToken( Token type )
     {
-        nodeManager.addRelationshipTypeToken( type );
+        persistenceCache.cacheRelationshipType( type );
     }
 
     @Override
     public void addLabelToken( Token label )
     {
-        nodeManager.addLabelToken( label );
+        persistenceCache.cacheLabel( label );
     }
 
     @Override
     public void addPropertyKeyToken( Token propertyKey )
     {
-        nodeManager.addPropertyKeyToken( propertyKey );
+        persistenceCache.cachePropertyKey( propertyKey );
     }
 
     @Override
     public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId,
             long secondNodeId, long secondNodeNextRelId )
     {
-        nodeManager.patchDeletedRelationshipNodes( relId, firstNodeId, firstNodeNextRelId, secondNodeId,
+        persistenceCache.patchDeletedRelationshipNodes( relId, firstNodeId, firstNodeNextRelId, secondNodeId,
                 secondNodeNextRelId );
     }
 

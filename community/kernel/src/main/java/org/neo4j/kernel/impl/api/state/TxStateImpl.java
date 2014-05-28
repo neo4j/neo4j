@@ -39,6 +39,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.util.DiffSets;
 
@@ -137,16 +138,12 @@ public final class TxStateImpl implements TxState
 
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
 
-    private final OldTxStateBridge legacyState;
     private final TransactionRecordState neoStoreTransaction;
-    private final IdGeneration idGeneration; // needed when we move createNode() and createRelationship() to here...
     private boolean hasChanges;
 
-    public TxStateImpl( OldTxStateBridge legacyState, TransactionRecordState neoStoreTransaction, IdGeneration idGeneration )
+    public TxStateImpl( TransactionRecordState neoStoreTransaction, IdGeneration idGeneration )
     {
-        this.legacyState = legacyState;
         this.neoStoreTransaction = neoStoreTransaction;
-        this.idGeneration = idGeneration;
     }
 
     @Override
@@ -236,6 +233,13 @@ public final class TxStateImpl implements TxState
             {
                 visitor.visitNodePropertyChanges( entityId, added, changed, removed );
             }
+
+            @Override
+            public void visitRelationshipChanges( long nodeId, RelationshipChangesForNode added,
+                    RelationshipChangesForNode removed )
+            {
+                visitor.visitNodeRelationshipChanges( nodeId, added, removed );
+            }
         };
     }
 
@@ -268,7 +272,7 @@ public final class TxStateImpl implements TxState
     @Override
     public boolean hasChanges()
     {
-        return hasChanges || legacyState.hasChanges();
+        return hasChanges;
     }
 
     @Override
@@ -365,17 +369,15 @@ public final class TxStateImpl implements TxState
     @Override
     public void nodeDoDelete( long nodeId )
     {
-        legacyState.deleteNode( nodeId );
-        if(addedAndRemovedNodes().remove( nodeId ))
+        if ( addedAndRemovedNodes().remove( nodeId ) )
         {
             nodesCreatedAndDeletedInTx.add(nodeId);
         }
 
-        if(hasNodeStatesMap())
+        if ( hasNodeStatesMap() )
         {
             NodeState nodeState = nodeStatesMap.remove( nodeId );
-
-            if(nodeState != null)
+            if ( nodeState != null )
             {
                 DiffSets<Integer> diff = nodeState.labelDiffSets();
                 for ( Integer label : diff.getAdded() )
@@ -425,13 +427,12 @@ public final class TxStateImpl implements TxState
     @Override
     public void relationshipDoDelete( long id, long startNodeId, long endNodeId, int type )
     {
-        legacyState.deleteRelationship( id );
-        if(addedAndRemovedRels().remove( id ))
+        if ( addedAndRemovedRels().remove( id ) )
         {
             relsCreatedAndDeletedInTx.add( id );
         }
 
-        if(startNodeId == endNodeId)
+        if ( startNodeId == endNodeId )
         {
             getOrCreateNodeState( startNodeId ).removeRelationship( id, type, Direction.BOTH );
         }
@@ -441,10 +442,10 @@ public final class TxStateImpl implements TxState
             getOrCreateNodeState( endNodeId ).removeRelationship( id, type, Direction.INCOMING );
         }
 
-        if(hasRelationshipsStatesMap())
+        if ( hasRelationshipsStatesMap() )
         {
             RelationshipState removed = relationshipStatesMap.remove( id );
-            if(removed != null)
+            if ( removed != null )
             {
                 removed.clear();
             }
@@ -471,7 +472,7 @@ public final class TxStateImpl implements TxState
     @Override
     public void nodeDoReplaceProperty( long nodeId, Property replacedProperty, DefinedProperty newProperty )
     {
-        if(replacedProperty.isDefined())
+        if ( replacedProperty.isDefined() )
         {
             getOrCreateNodeState( nodeId ).changeProperty( newProperty );
             nodePropertyChanges().changeProperty( nodeId, replacedProperty.propertyKeyId(),
@@ -482,7 +483,6 @@ public final class TxStateImpl implements TxState
             getOrCreateNodeState( nodeId ).addProperty( newProperty );
             nodePropertyChanges().addProperty(nodeId, newProperty.propertyKeyId(), newProperty.value());
         }
-        legacyState.nodeSetProperty( nodeId, newProperty );
         hasChanges = true;
     }
 
@@ -497,7 +497,6 @@ public final class TxStateImpl implements TxState
         {
             getOrCreateRelationshipState( relationshipId ).addProperty( newProperty );
         }
-        legacyState.relationshipSetProperty( relationshipId, newProperty );
         hasChanges = true;
     }
 
@@ -512,7 +511,6 @@ public final class TxStateImpl implements TxState
         {
             getOrCreateGraphState().addProperty( newProperty );
         }
-        legacyState.graphSetProperty( newProperty );
         hasChanges = true;
     }
 
@@ -522,7 +520,6 @@ public final class TxStateImpl implements TxState
         getOrCreateNodeState( nodeId ).removeProperty( removedProperty.propertyKeyId() );
         nodePropertyChanges().removeProperty( nodeId, removedProperty.propertyKeyId(),
                 removedProperty.value() );
-        legacyState.nodeRemoveProperty( nodeId, removedProperty );
         hasChanges = true;
     }
 
@@ -530,7 +527,6 @@ public final class TxStateImpl implements TxState
     public void relationshipDoRemoveProperty( long relationshipId, DefinedProperty removedProperty )
     {
         getOrCreateRelationshipState( relationshipId ).removeProperty( removedProperty.propertyKeyId() );
-        legacyState.relationshipRemoveProperty( relationshipId, removedProperty );
         hasChanges = true;
     }
 
@@ -538,7 +534,6 @@ public final class TxStateImpl implements TxState
     public void graphDoRemoveProperty( DefinedProperty removedProperty )
     {
         getOrCreateGraphState().removeProperty( removedProperty.propertyKeyId() );
-        legacyState.graphRemoveProperty( removedProperty );
         hasChanges = true;
     }
 
@@ -1052,5 +1047,17 @@ public final class TxStateImpl implements TxState
         }
 
         return relationships.augment( committed );
+    }
+
+    @Override
+    public boolean relationshipVisit( long relId, RelationshipVisitor visitor )
+    {
+        if ( relationshipIsAddedInThisTx( relId ) )
+        {
+            RelationshipState relationship = relationshipStatesMap.get( relId );
+            visitor.visit( relId, relationship.startNode(), relationship.endNode(), relationship.type() );
+            return true;
+        }
+        return false;
     }
 }

@@ -46,8 +46,11 @@ import org.junit.runners.model.Statement;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.util.FileUtils;
@@ -227,6 +230,11 @@ public abstract class AbstractNeo4jTestCase
     public NodeManager getNodeManager()
     {
         return graphDb.getDependencyResolver().resolveDependency( NodeManager.class );
+    }
+
+    public IdGenerator getIdGenerator( IdType idType )
+    {
+        return graphDb.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( idType );
     }
 
     public static void deleteFileOrDirectory( String dir )

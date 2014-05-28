@@ -56,14 +56,17 @@ public class LazyIndexUpdates implements IndexUpdates
     private final Collection<List<PropertyCommand>> propCommands;
     private final Map<Long, NodeCommand> nodeCommands;
     private Collection<NodePropertyUpdate> updates;
+    private final PropertyLoader propertyLoader;
 
     public LazyIndexUpdates( NodeStore nodeStore, PropertyStore propertyStore,
-                             Collection<List<PropertyCommand>> propCommands, Map<Long, NodeCommand> nodeCommands )
+                             Collection<List<PropertyCommand>> propCommands,
+                             Map<Long, NodeCommand> nodeCommands, PropertyLoader propertyLoader )
     {
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
         this.propCommands = propCommands;
         this.nodeCommands = nodeCommands;
+        this.propertyLoader = propertyLoader;
     }
 
     @Override
@@ -195,7 +198,7 @@ public class LazyIndexUpdates implements IndexUpdates
     private Iterator<DefinedProperty> nodeFullyLoadProperties( long nodeId )
     {
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        TransactionRecordState.loadProperties( propertyStore, nodeCommands.get( nodeId ).getAfter().getNextProp(), receiver );
+        propertyLoader.nodeLoadProperties( nodeId, receiver );
         return receiver;
     }
 

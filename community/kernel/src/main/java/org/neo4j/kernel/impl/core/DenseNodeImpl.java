@@ -22,40 +22,44 @@ package org.neo4j.kernel.impl.core;
 import java.util.Iterator;
 
 import org.neo4j.graphdb.Direction;
-import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
+import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.util.RelIdArray;
 
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 
 public class DenseNodeImpl extends NodeImpl
 {
-    DenseNodeImpl( long id )
+    public DenseNodeImpl( long id )
     {
         super( id );
     }
 
     @Override
-    public int getDegree( NodeManager nm, int type, RelationshipChainLoader loader )
+    public int getDegree( RelationshipLoader relationshipLoader, int type,
+            CacheUpdateListener cacheUpdateListener )
     {
-        return getDegree( nm, type, Direction.BOTH, loader );
+        return getDegree( relationshipLoader, type, Direction.BOTH, cacheUpdateListener );
     }
 
     @Override
-    public int getDegree( NodeManager nm, Direction direction, RelationshipChainLoader loader )
+    public int getDegree( RelationshipLoader relationshipLoader, Direction direction,
+            CacheUpdateListener cacheUpdateListener )
     {
-        return loader.getRelationshipCount( getId(), -1, RelIdArray.wrap( direction ) );
+        return relationshipLoader.getRelationshipCount( getId(), -1, RelIdArray.wrap( direction ) );
     }
 
     @Override
-    public int getDegree( NodeManager nm, int type, Direction direction, RelationshipChainLoader loader )
+    public int getDegree( RelationshipLoader relationshipLoader, int type, Direction direction,
+            CacheUpdateListener cacheUpdateListener )
     {
-        return loader.getRelationshipCount( getId(), type, RelIdArray.wrap( direction ) );
+        return relationshipLoader.getRelationshipCount( getId(), type, RelIdArray.wrap( direction ) );
     }
 
     @Override
-    public Iterator<Integer> getRelationshipTypes( NodeManager nm, RelationshipChainLoader loader )
+    public Iterator<Integer> getRelationshipTypes( RelationshipLoader relationshipLoader,
+            CacheUpdateListener cacheUpdateListener )
     {
-        return hasMoreRelationshipsToLoad() ? iterator( loader.getRelationshipTypes( getId() ) ) :
-            super.getRelationshipTypes( nm, loader );
+        return hasMoreRelationshipsToLoad() ? iterator( relationshipLoader.getRelationshipTypes( getId() ) ) :
+            super.getRelationshipTypes( relationshipLoader, cacheUpdateListener );
     }
 }

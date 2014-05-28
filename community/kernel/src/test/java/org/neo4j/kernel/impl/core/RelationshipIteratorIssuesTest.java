@@ -31,6 +31,7 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
 
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdIterator;
@@ -60,12 +61,12 @@ public class RelationshipIteratorIssuesTest
         // -- a node that says it cannot load any more relationships
         NodeImpl node = mock( NodeImpl.class );
         when( node.getMoreRelationships( eq( nodeManager ), any( DirectionWrapper.class ),
-                any( int[].class )) ).thenReturn( LoadStatus.NOTHING );
+                any( int[].class ), any( RelationshipChainLoader.class )) ).thenReturn( LoadStatus.NOTHING );
 
         // -- a type iterator that at this point contains one relationship (0)
         ControlledRelIdIterator typeIterator = new ControlledRelIdIterator( 0L );
         RelationshipIterator iterator = new RelationshipIterator( new RelIdIterator[] { typeIterator },
-                node, OUTGOING, new int[0], nodeManager, false, false );
+                node, OUTGOING, new int[0], nodeManager, false, false, null );
         // -- go forth one step in the iterator
         iterator.next();
 

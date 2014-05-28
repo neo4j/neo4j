@@ -19,35 +19,26 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.List;
-import java.util.Map;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
-import org.neo4j.collection.primitive.PrimitiveLongIterator;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
-import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
@@ -60,7 +51,6 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
@@ -157,7 +147,6 @@ public class TransactionRecordState
         }
 
         // Collect nodes, relationships, properties
-        CommandSorter sorter = new CommandSorter();
         List<Command> nodeCommands = new ArrayList<>();
         for ( RecordChange<Long, NodeRecord, Void> change : context.getNodeRecords().changes() )
         {
@@ -167,7 +156,7 @@ public class TransactionRecordState
             command.init( change.getBefore(), record );
             nodeCommands.add( command );
         }
-        Collections.sort( nodeCommands, sorter );
+        Collections.sort( nodeCommands, COMMAND_SORTER );
 
         List<Command> relCommands = new ArrayList<>();
         for ( RecordProxy<Long, RelationshipRecord, Void> record : context.getRelRecords().changes() )
@@ -176,7 +165,7 @@ public class TransactionRecordState
             command.init(  record.forReadingLinkage()  );
             relCommands.add( command );
         }
-        Collections.sort( relCommands, sorter );
+        Collections.sort( relCommands, COMMAND_SORTER );
 
         List<Command> propCommands = new ArrayList<>();
         for ( RecordChange<Long, PropertyRecord, PrimitiveRecord> change : context.getPropertyRecords().changes() )
@@ -185,7 +174,7 @@ public class TransactionRecordState
             command.init( change.getBefore(), change.forReadingLinkage() );
             propCommands.add( command );
         }
-        Collections.sort( propCommands, sorter );
+        Collections.sort( propCommands, COMMAND_SORTER );
 
         List<Command> relGroupCommands = new ArrayList<>();
         for ( RecordProxy<Long, RelationshipGroupRecord, Integer> change : context.getRelGroupRecords().changes() )
@@ -194,7 +183,7 @@ public class TransactionRecordState
             command.init( change.forReadingData() );
             relGroupCommands.add( command );
         }
-        Collections.sort( relGroupCommands, sorter );
+        Collections.sort( relGroupCommands, COMMAND_SORTER );
         addFiltered( commands, Mode.CREATE, propCommands, relCommands, nodeCommands, relGroupCommands );
         addFiltered( commands, Mode.UPDATE, propCommands, relCommands, nodeCommands, relGroupCommands );
         addFiltered( commands, Mode.DELETE, propCommands, relCommands, nodeCommands, relGroupCommands );
@@ -264,48 +253,6 @@ public class TransactionRecordState
         return neoStore.getRelationshipStore();
     }
 
-    private PropertyStore getPropertyStore()
-    {
-        return neoStore.getPropertyStore();
-    }
-
-    /**
-     * Tries to load the light node with the given id, returns true on success.
-     *
-     * @param nodeId The id of the node to load.
-     * @return True iff the node record can be found.
-     */
-    public NodeRecord nodeLoadLight( long nodeId )
-    {
-        try
-        {
-            return context.getNodeRecords().getOrLoad( nodeId, null ).forReadingLinkage();
-        }
-        catch ( InvalidRecordException e )
-        {
-            return null;
-        }
-    }
-
-    /**
-     * Tries to load the light relationship with the given id, returns the
-     * record on success.
-     *
-     * @param id The id of the relationship to load.
-     * @return The light RelationshipRecord if it was found, null otherwise.
-     */
-    public RelationshipRecord relLoadLight( long id )
-    {
-        try
-        {
-            return context.getRelRecords().getOrLoad( id, null ).forReadingLinkage();
-        }
-        catch ( InvalidRecordException e )
-        {
-            return null;
-        }
-    }
-
     /**
      * Deletes a node by its id, returning its properties which are now removed.
      *
@@ -330,13 +277,6 @@ public class TransactionRecordState
         return context.getAndDeletePropertyChain( nodeRecord );
     }
 
-    public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> getMoreRelationships(
-            long nodeId, RelationshipLoadingPosition position, DirectionWrapper direction,
-            int[] types )
-    {
-        return context.getMoreRelationships( nodeId, position, direction, types, getRelationshipStore() );
-    }
-
     /**
      * Removes the given property identified by its index from the relationship
      * with the given id.
@@ -355,68 +295,6 @@ public class TransactionRecordState
                                              relId + "] illegal since it has been deleted." );
         }
         context.removeProperty( rel, propertyKey );
-    }
-
-    /**
-     * Loads the complete property chain for the given relationship and returns
-     * it as a map from property index id to property data.
-     *
-     * @param relId The id of the relationship whose properties to load.
-     * @param light If the properties should be loaded light or not.
-     * @param receiver receiver of loaded properties.
-     */
-    public void relLoadProperties( long relId, boolean light, PropertyReceiver receiver )
-    {
-        RecordChange<Long, RelationshipRecord, Void> rel = context.getRelRecords().getIfLoaded( relId );
-        if ( rel != null )
-        {
-            if ( rel.isCreated() )
-            {
-                return;
-            }
-            if ( !rel.forReadingLinkage().inUse() && !light )
-            {
-                throw new IllegalStateException( "Relationship[" + relId + "] has been deleted in this tx" );
-            }
-        }
-
-        RelationshipRecord relRecord = getRelationshipStore().getRecord( relId );
-        if ( !relRecord.inUse() )
-        {
-            throw new InvalidRecordException( "Relationship[" + relId + "] not in use" );
-        }
-        loadProperties( getPropertyStore(), relRecord.getNextProp(), receiver );
-    }
-
-    /**
-     * Loads the complete property chain for the given node and returns it as a
-     * map from property index id to property data.
-     *
-     * @param nodeId The id of the node whose properties to load.
-     * @param light If the properties should be loaded light or not.
-     * @param receiver receiver of loaded properties.
-     */
-    public void nodeLoadProperties( long nodeId, boolean light, PropertyReceiver receiver )
-    {
-        RecordChange<Long, NodeRecord, Void> node = context.getNodeRecords().getIfLoaded( nodeId );
-        if ( node != null )
-        {
-            if ( node.isCreated() )
-            {
-                return;
-            }
-            if ( !node.forReadingLinkage().inUse() && !light )
-            {
-                throw new IllegalStateException( "Node[" + nodeId + "] has been deleted in this tx" );
-            }
-        }
-
-        NodeRecord nodeRecord = getNodeStore().getRecord( nodeId );
-        if ( !nodeRecord.inUse() )
-        {
-            throw new IllegalStateException( "Node[" + nodeId + "] has been deleted in this tx" );
-        }
-        loadProperties( getPropertyStore(), nodeRecord.getNextProp(), receiver );
     }
 
     /**
@@ -570,7 +448,7 @@ public class TransactionRecordState
         context.createRelationshipTypeToken( name, id );
     }
 
-    static class CommandSorter implements Comparator<Command>, Serializable
+    private static class CommandSorter implements Comparator<Command>
     {
         @Override
         public int compare( Command o1, Command o2 )
@@ -604,6 +482,8 @@ public class TransactionRecordState
             return 3217;
         }
     }
+
+    private static final CommandSorter COMMAND_SORTER = new CommandSorter();
 
     private RecordProxy<Long, NeoStoreRecord, Void> getOrLoadNeoStoreRecord()
     {
@@ -677,18 +557,6 @@ public class TransactionRecordState
         context.removeProperty( recordChange, propertyKey );
     }
 
-    /**
-     * Loads the complete property chain for the graph and returns it as a
-     * map from property index id to property data.
-     *
-     * @param light If the properties should be loaded light or not.
-     * @param records receiver of loaded properties.
-     */
-    public void graphLoadProperties( boolean light, PropertyReceiver records )
-    {
-        loadProperties( getPropertyStore(), neoStore.asRecord().getNextProp(), records );
-    }
-
     public void createSchemaRule( SchemaRule schemaRule )
     {
         for(DynamicRecord change : context.getSchemaRuleChanges().create( schemaRule.getId(), schemaRule ).forChangingData())
@@ -721,13 +589,6 @@ public class TransactionRecordState
         parseLabelsField( nodeRecord ).remove( labelId, getNodeStore() );
     }
 
-    public PrimitiveLongIterator getLabelsForNode( long nodeId )
-    {
-        // Don't consider changes in this transaction
-        NodeRecord node = getNodeStore().getRecord( nodeId );
-        return PrimitiveLongCollections.iterator( parseLabelsField( node ).get( getNodeStore() ) );
-    }
-
     public void setConstraintIndexOwner( IndexRule indexRule, long constraintId )
     {
         RecordProxy<Long, Collection<DynamicRecord>, SchemaRule> change =
@@ -738,52 +599,6 @@ public class TransactionRecordState
 
         records.clear();
         records.addAll( getSchemaStore().allocateFrom( indexRule ) );
-    }
-
-    private static void loadPropertyChain( Collection<PropertyRecord> chain, PropertyStore propertyStore,
-                                   PropertyReceiver receiver )
-    {
-        if ( chain != null )
-        {
-            for ( PropertyRecord propRecord : chain )
-            {
-                for ( PropertyBlock propBlock : propRecord.getPropertyBlocks() )
-                {
-                    receiver.receive( propBlock.newPropertyData( propertyStore ), propRecord.getId() );
-                }
-            }
-        }
-    }
-
-    static void loadProperties(
-            PropertyStore propertyStore, long nextProp, PropertyReceiver receiver )
-    {
-        Collection<PropertyRecord> chain = propertyStore.getPropertyRecordChain( nextProp );
-        if ( chain != null )
-        {
-            loadPropertyChain( chain, propertyStore, receiver );
-        }
-    }
-
-    public int getRelationshipCount( long id, int type, DirectionWrapper direction )
-    {
-        return context.getRelationshipCount( id, type, direction );
-    }
-
-    public Integer[] getRelationshipTypes( long id )
-    {
-        return context.getRelationshipTypes( id );
-    }
-
-    public RelationshipLoadingPosition getRelationshipChainPosition( long id )
-    {
-        RecordChange<Long, NodeRecord, Void> nodeChange = context.getNodeRecords().getIfLoaded( id );
-        if ( nodeChange != null && nodeChange.isCreated() )
-        {
-            return RelationshipLoadingPosition.EMPTY;
-        }
-
-        return context.getRelationshipLoadingChainPoisition( id );
     }
 
     public interface PropertyReceiver

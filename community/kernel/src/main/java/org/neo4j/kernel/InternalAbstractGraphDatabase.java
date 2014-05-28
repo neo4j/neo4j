@@ -83,6 +83,7 @@ import org.neo4j.kernel.extension.KernelExtensions;
 import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
@@ -103,16 +104,19 @@ import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.NodeProxy;
+import org.neo4j.kernel.impl.core.NodeProxy.NodeLookup;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
-import org.neo4j.kernel.impl.core.ReadOnlyNodeManager;
+import org.neo4j.kernel.impl.core.RelationshipData;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
+import org.neo4j.kernel.impl.core.RelationshipProxy.RelationshipLookups;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatistics;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenCreator;
+import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
@@ -271,6 +275,7 @@ public abstract class InternalAbstractGraphDatabase
     protected TransactionHeaderInformation transactionHeaderInformation;
     private DataSourceManager dataSourceManager;
     private StartupStatisticsProvider startupStatistics;
+    private CacheProvider cacheProvider;
 
     protected InternalAbstractGraphDatabase( String storeDir, Map<String, String> params, Dependencies dependencies )
     {
@@ -434,7 +439,7 @@ public abstract class InternalAbstractGraphDatabase
         boolean readOnly = config.get( Configuration.read_only );
 
         String cacheTypeName = config.get( Configuration.cache_type );
-        CacheProvider cacheProvider = cacheProviders.get( cacheTypeName );
+        cacheProvider = cacheProviders.get( cacheTypeName );
         if ( cacheProvider == null )
         {
             throw new IllegalArgumentException( "No provider for cache type '" + cacheTypeName + "'. " +
@@ -465,6 +470,7 @@ public abstract class InternalAbstractGraphDatabase
         txHook = createTxHook();
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
+        assert guard == null : "Guard not properly implemented for the time being";
 
         updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
 
@@ -488,13 +494,10 @@ public abstract class InternalAbstractGraphDatabase
 
         threadToTransactionBridge = life.add( new ThreadToStatementContextBridge() );
 
-        nodeManager = guard != null ?
-                createGuardedNodeManager( readOnly, cacheProvider, nodeCache, relCache ) :
-                createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
+        nodeManager = createNodeManager( readOnly, cacheProvider, nodeCache, relCache );
 
         transactionEventHandlers = new TransactionEventHandlers( createNodeLookup(), createRelationshipLookups(),
                 threadToTransactionBridge  );
-
 
         indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
 
@@ -586,92 +589,11 @@ public abstract class InternalAbstractGraphDatabase
     private NodeManager createNodeManager( final boolean readOnly, final CacheProvider cacheType,
                                            Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
     {
-        if ( readOnly )
-        {
-            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this,
-                    relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
-                    createNodeLookup(), createRelationshipLookups(), nodeCache, relCache, threadToTransactionBridge,
-                    idGeneratorFactory );
-        }
-
+        NodeLookup nodeLookup = createNodeLookup();
+        RelationshipLookups relationshipLookup = createRelationshipLookups();
         return new NodeManager(
-                logging.getMessagesLog( NodeManager.class ), this,
-                relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder,
-                createNodeLookup(), createRelationshipLookups(), nodeCache, relCache,
-                threadToTransactionBridge, idGeneratorFactory );
-    }
-
-    private NodeManager createGuardedNodeManager( final boolean readOnly, final CacheProvider cacheType,
-                                                  Cache<NodeImpl> nodeCache, Cache<RelationshipImpl> relCache )
-    {
-        if ( readOnly )
-        {
-            return new ReadOnlyNodeManager( logging.getMessagesLog( NodeManager.class ), this,
-                    relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
-                    createRelationshipLookups(), nodeCache, relCache, threadToTransactionBridge, idGeneratorFactory )
-            {
-                @Override
-                public Node getNodeByIdOrNull( final long nodeId )
-                {
-                    guard.check();
-                    return super.getNodeByIdOrNull( nodeId );
-                }
-
-                @Override
-                public NodeImpl getNodeForProxy( final long nodeId )
-                {
-                    guard.check();
-                    return super.getNodeForProxy( nodeId );
-                }
-
-                @Override
-                public RelationshipImpl getRelationshipForProxy( final long relId )
-                {
-                    guard.check();
-                    return super.getRelationshipForProxy( relId );
-                }
-
-                @Override
-                protected Relationship getRelationshipByIdOrNull( final long relId )
-                {
-                    guard.check();
-                    return super.getRelationshipByIdOrNull( relId );
-                }
-            };
-        }
-
-        return new NodeManager( logging.getMessagesLog( NodeManager.class ), this,
-                relationshipTypeTokenHolder, cacheType, propertyKeyTokenHolder, labelTokenHolder, createNodeLookup(),
-                createRelationshipLookups(), nodeCache, relCache, threadToTransactionBridge, idGeneratorFactory )
-        {
-            @Override
-            public Node getNodeByIdOrNull( final long nodeId )
-            {
-                guard.check();
-                return super.getNodeByIdOrNull( nodeId );
-            }
-
-            @Override
-            public NodeImpl getNodeForProxy( final long nodeId )
-            {
-                guard.check();
-                return super.getNodeForProxy( nodeId );
-            }
-
-            @Override
-            public RelationshipImpl getRelationshipForProxy( final long relId )
-            {
-                guard.check();
-                return super.getRelationshipForProxy( relId );
-            }
-
-            @Override
-            protected Relationship getRelationshipByIdOrNull( final long relId )
-            {
-                guard.check();
-                return super.getRelationshipByIdOrNull( relId );
-            }
-        };
+                logging.getMessagesLog( NodeManager.class ), this, nodeLookup, relationshipLookup,
+                threadToTransactionBridge );
     }
 
     @Override
@@ -740,12 +662,23 @@ public abstract class InternalAbstractGraphDatabase
     {
         return new RelationshipProxy.RelationshipLookups()
         {
-            @Override
-            public RelationshipImpl lookupRelationship( long relationshipId )
+            private final ThreadLocal<RelationshipData> relationshipData = new ThreadLocal<RelationshipData>()
             {
-                assertDatabaseRunning();
-                return nodeManager.getRelationshipForProxy( relationshipId );
-            }
+                @Override
+                protected RelationshipData initialValue()
+                {
+                    return new RelationshipData();
+                }
+            };
+
+            private final RelationshipVisitor visitor = new RelationshipVisitor()
+            {
+                @Override
+                public void visit( long relId, long startNode, long endNode, int type )
+                {
+                    relationshipData.get().set( startNode, endNode, type );
+                }
+            };
 
             @Override
             public GraphDatabaseService getGraphDatabaseService()
@@ -754,16 +687,37 @@ public abstract class InternalAbstractGraphDatabase
             }
 
             @Override
-            public NodeManager getNodeManager()
-            {
-                return nodeManager;
-            }
-
-            @Override
             public Node newNodeProxy( long nodeId )
             {
                 // only used by relationship already checked as valid in cache
                 return nodeManager.newNodeProxyById( nodeId );
+            }
+
+            @Override
+            public RelationshipData getRelationshipData( long relationshipId )
+            {
+                try ( Statement statement = threadToTransactionBridge.instance() )
+                {
+                    statement.readOperations().relationshipVisit( relationshipId, visitor );
+                    return relationshipData.get();
+                }
+                catch ( EntityNotFoundException e )
+                {
+                    throw new NotFoundException( e );
+                }
+            }
+
+            @Override
+            public RelationshipType getRelationshipTypeById( int type )
+            {
+                try
+                {
+                    return relationshipTypeTokenHolder.getTokenById( type );
+                }
+                catch ( TokenNotFoundException e )
+                {
+                    throw new NotFoundException( e );
+                }
             }
         };
     }
@@ -783,13 +737,6 @@ public abstract class InternalAbstractGraphDatabase
             public NodeManager getNodeManager()
             {
                 return nodeManager;
-            }
-
-            @Override
-            public NodeImpl lookup( long nodeId )
-            {
-                assertDatabaseRunning();
-                return nodeManager.getNodeForProxy( nodeId );
             }
         };
     }
@@ -864,8 +811,8 @@ public abstract class InternalAbstractGraphDatabase
                 dependencyResolver, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
-                storeMigrationProcess, transactionMonitor, kernelHealth, null, null, txHook, txIdGenerator,
-                transactionHeaderInformation, startupStatistics );
+                storeMigrationProcess, transactionMonitor, kernelHealth, txHook, txIdGenerator,
+                transactionHeaderInformation, startupStatistics, cacheProvider, monitors );
         dataSourceManager.register( neoDataSource );
     }
 
@@ -1024,7 +971,8 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Node %d not found", id ) );
         }
-        return nodeManager.getNodeById( id );
+        threadToTransactionBridge.assertInTransaction();
+        return nodeManager.newNodeProxyById( id );
     }
 
     @Override
@@ -1034,7 +982,8 @@ public abstract class InternalAbstractGraphDatabase
         {
             throw new NotFoundException( format( "Relationship %d not found", id));
         }
-        return nodeManager.getRelationshipById( id );
+        threadToTransactionBridge.assertInTransaction();
+        return nodeManager.newRelationshipProxyById( id );
     }
 
     @Override

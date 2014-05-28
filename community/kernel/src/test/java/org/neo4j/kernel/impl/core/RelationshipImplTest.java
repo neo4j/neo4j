@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import static org.junit.Assert.assertEquals;
-
 import java.util.ArrayList;
 import java.util.Collection;
 
@@ -28,6 +26,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
+import static org.junit.Assert.assertEquals;
 
 @RunWith( Parameterized.class )
 public class RelationshipImplTest
@@ -42,18 +41,18 @@ public class RelationshipImplTest
         }
         return data;
     }
-    
+
     private final int typeId;
 
     public RelationshipImplTest( int typeId )
     {
         this.typeId = typeId;
     }
-    
+
     @Test
     public void typeIdCanUse16Bits()
     {
-        RelationshipImpl rel = new RelationshipImpl( 10, 10, 10, typeId, true );
+        RelationshipImpl rel = new RelationshipImpl( 10, 10, 10, typeId );
         assertEquals( typeId, rel.getTypeId() );
     }
 }

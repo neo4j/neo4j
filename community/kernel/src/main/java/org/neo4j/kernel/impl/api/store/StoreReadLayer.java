@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
@@ -155,11 +156,6 @@ public interface StoreReadLayer
     void visit( long relationshipId, RelationshipVisitor relationshipVisitor ) throws EntityNotFoundException;
 
     long highestNodeIdInUse();
-
-    public interface RelationshipVisitor
-    {
-        void visit( long relId, long startNode, long endNode, int type );
-    }
 
     PrimitiveLongIterator nodesGetAll();
 

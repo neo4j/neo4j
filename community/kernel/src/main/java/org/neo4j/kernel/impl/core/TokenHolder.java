@@ -70,9 +70,14 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         idToToken.putAll( newIdToToken );
     }
 
-    void addToken( String name, int id )
+    public void addToken( String name, int id )
     {
         addToken( name, id, nameToId, idToToken );
+    }
+
+    public void addToken( Token token )
+    {
+        addToken( token.name(), token.id() );
     }
 
     void addToken( String name, int id, Map<String, Integer> nameToIdMap, Map<Integer, TOKEN> idToTokenMap )
@@ -82,7 +87,7 @@ public abstract class TokenHolder<TOKEN extends Token> extends LifecycleAdapter
         idToTokenMap.put( id, token );
     }
 
-    void removeToken( int id )
+    public void removeToken( int id )
     {
         TOKEN token = idToToken.remove( id );
         nameToId.remove( token.name() );

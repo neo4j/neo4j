@@ -30,6 +30,7 @@ import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TransactionHook.Outcome;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.TransactionHookException;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 
 public class TransactionHooks
 {
@@ -45,7 +46,7 @@ public class TransactionHooks
         hooks.remove( hook );
     }
 
-    public TransactionHooksState beforeCommit( TxState state, KernelTransaction tx )
+    public TransactionHooksState beforeCommit( TxState state, KernelTransaction tx, StoreReadLayer storeReadLayer )
     {
         if ( hooks.size() == 0 )
         {
@@ -55,7 +56,7 @@ public class TransactionHooks
         TransactionHooksState hookState = new TransactionHooksState();
         for ( TransactionHook hook : hooks )
         {
-            hookState.add( hook, hook.beforeCommit( state, tx ) );
+            hookState.add( hook, hook.beforeCommit( state, tx, storeReadLayer ) );
         }
         return hookState;
     }

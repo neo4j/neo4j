@@ -36,11 +36,13 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.Token;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.cast;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.emptyIterator;
 
@@ -51,6 +53,7 @@ public class GlobalGraphOperations
 {
     private final NodeManager nodeManager;
     private final ThreadToStatementContextBridge statementCtxProvider;
+    private final RelationshipTypeTokenHolder relationshipTypes;
 
     private GlobalGraphOperations( GraphDatabaseService db )
     {
@@ -58,6 +61,7 @@ public class GlobalGraphOperations
         DependencyResolver resolver = dbApi.getDependencyResolver();
         this.nodeManager = resolver.resolveDependency( NodeManager.class );
         this.statementCtxProvider = resolver.resolveDependency( ThreadToStatementContextBridge.class );
+        this.relationshipTypes = resolver.resolveDependency( RelationshipTypeTokenHolder.class );
     }
 
     /**
@@ -97,7 +101,7 @@ public class GlobalGraphOperations
                     @Override
                     protected Node fetchNextOrNull()
                     {
-                        return ids.hasNext() ? nodeManager.getNodeById( ids.next() ) : null;
+                        return ids.hasNext() ? nodeManager.newNodeProxyById( ids.next() ) : null;
                     }
                 };
             }
@@ -130,7 +134,7 @@ public class GlobalGraphOperations
                     @Override
                     protected Relationship fetchNextOrNull()
                     {
-                        return ids.hasNext() ? nodeManager.getRelationshipById( ids.next() ) : null;
+                        return ids.hasNext() ? nodeManager.newRelationshipProxyById( ids.next() ) : null;
                     }
                 };
             }
@@ -150,7 +154,7 @@ public class GlobalGraphOperations
     public Iterable<RelationshipType> getAllRelationshipTypes()
     {
         assertInTransaction();
-        return nodeManager.getRelationshipTypes();
+        return cast( relationshipTypes.getAllTokens() );
     }
 
     /**
@@ -255,7 +259,7 @@ public class GlobalGraphOperations
             @Override
             public Node apply( long nodeId )
             {
-                return nodeManager.getNodeById( nodeId );
+                return nodeManager.newNodeProxyById( nodeId );
             }
         }, nodeIds ) );
     }

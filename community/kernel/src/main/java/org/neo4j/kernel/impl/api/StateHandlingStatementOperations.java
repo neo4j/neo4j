@@ -108,6 +108,7 @@ public class StateHandlingStatementOperations implements
     public void nodeDelete( KernelStatement state, long nodeId )
     {
         legacyPropertyTrackers.nodeDelete( nodeId );
+        state.recordState.nodeDelete( nodeId );
         state.txState().nodeDoDelete( nodeId );
     }
 
@@ -121,26 +122,35 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public void relationshipDelete( KernelStatement state, long relationshipId )
+    public void relationshipDelete( final KernelStatement state, long relationshipId )
     {
         // NOTE: We implicitly delegate to neoStoreTransaction via txState.legacyState here. This is because that
         // call returns modified properties, which node manager uses to update legacy tx state. This will be cleaned up
         // once we've removed legacy tx state.
         legacyPropertyTrackers.relationshipDelete( relationshipId );
         final TxState txState = state.txState();
-        if(txState.relationshipIsAddedInThisTx( relationshipId ))
+        if ( txState.relationshipIsAddedInThisTx( relationshipId ) )
         {
+            txState.relationshipVisit( relationshipId, new RelationshipVisitor()
+            {
+                @Override
+                public void visit( long relId, long startNode, long endNode, int type )
+                {
+                    state.recordState.relDelete( relId );
+                }
+            } );
             txState.relationshipDoDeleteAddedInThisTx( relationshipId );
         }
         else
         {
             try
             {
-                storeLayer.visit( relationshipId, new StoreReadLayer.RelationshipVisitor()
+                storeLayer.visit( relationshipId, new RelationshipVisitor()
                 {
                     @Override
                     public void visit( long relId, long startNode, long endNode, int type )
                     {
+                        state.recordState.relDelete( relId );
                         txState.relationshipDoDelete( relId, startNode, endNode, type );
                     }
                 });
@@ -1220,5 +1230,16 @@ public class StateHandlingStatementOperations implements
             types = Arrays.copyOf( types, unique );
         }
         return types;
+    }
+
+    @Override
+    public void relationshipVisit( KernelStatement statement, long relId, RelationshipVisitor visitor )
+            throws EntityNotFoundException
+    {
+        TxState txState = statement.txState();
+        if ( !txState.relationshipVisit( relId, visitor ) )
+        {
+            storeLayer.visit( relId, visitor );
+        }
     }
 }

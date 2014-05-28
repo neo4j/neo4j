@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
@@ -46,6 +47,7 @@ public class TransactionRepresentationCommitProcess
     private final LabelScanStore labelScanStore;
     private final CacheAccessBackDoor cacheAccess;
     private final LockService lockService;
+    private final PropertyLoader propertyLoader;
 
     public TransactionRepresentationCommitProcess( TransactionStore transactionStore,
             KernelHealth kernelHealth, IndexingService indexingService, LabelScanStore labelScanStore, NeoStore neoStore,
@@ -59,6 +61,7 @@ public class TransactionRepresentationCommitProcess
         this.recovery = recovery;
         this.kernelHealth = kernelHealth;
         this.indexingService = indexingService;
+        this.propertyLoader = new PropertyLoader( neoStore );
     }
 
     public void commit( TransactionRepresentation representation ) throws TransactionFailureException
@@ -103,7 +106,7 @@ public class TransactionRepresentationCommitProcess
 
             // apply changes to the schema indexes
             NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( indexingService,
-                    labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess );
+                    labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess, propertyLoader );
             try
             {
                 representation.execute( indexApplier );

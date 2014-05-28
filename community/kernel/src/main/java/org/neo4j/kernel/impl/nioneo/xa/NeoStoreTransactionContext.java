@@ -27,7 +27,7 @@ import java.util.Set;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
-import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.Locks.Client;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -56,8 +56,6 @@ public class NeoStoreTransactionContext
     private final TransactionalRelationshipLocker locker;
     private final RelationshipGroupGetter relationshipGroupGetter;
     private final RelationshipChainLoader relationshipLoader;
-
-    private TransactionState txState;
 
     private final RecordChangeSet recordChangeSet;
     private final NeoStore neoStore;
@@ -133,10 +131,9 @@ public class NeoStoreTransactionContext
         creator.createToken( name, id, getRelationshipTypeTokenRecords() );
     }
 
-    public void bind( TransactionState txState )
+    public void bind( Client locksClient )
     {
-        this.txState = txState;
-        locker.setLockClient( txState.locks() );
+        locker.setLockClient( locksClient );
     }
 
     public void close()
@@ -144,7 +141,6 @@ public class NeoStoreTransactionContext
         recordChangeSet.close();
 
         locker.setLockClient( null );
-        txState = null;
         supplier.release( this );
     }
 
@@ -208,11 +204,6 @@ public class NeoStoreTransactionContext
             groupId = record.getNext();
         }
         return null;
-    }
-
-    public TransactionState getTransactionState()
-    {
-        return txState;
     }
 
     public Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> getMoreRelationships(

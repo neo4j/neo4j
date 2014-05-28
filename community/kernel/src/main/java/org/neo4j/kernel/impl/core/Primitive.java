@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.core;
 
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -30,24 +31,14 @@ import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.store.CacheLoader;
 import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.cache.SizeOfObject;
-import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
-import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.util.ArrayMap;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
 
 public abstract class Primitive implements SizeOfObject
 {
     // Used for marking that properties have been loaded but there just wasn't any.
     // Saves an extra trip down to the store layer.
     protected static final DefinedProperty[] NO_PROPERTIES = new DefinedProperty[0];
-
-    Primitive( boolean newPrimitive )
-    {
-        if ( newPrimitive )
-        {
-            setEmptyProperties();
-        }
-    }
 
     public abstract long getId();
 
@@ -112,9 +103,8 @@ public abstract class Primitive implements SizeOfObject
 
     protected abstract DefinedProperty getPropertyForIndex( int keyId );
 
-    protected abstract void commitPropertyMaps(
-            ArrayMap<Integer, DefinedProperty> cowPropertyAddMap,
-            ArrayMap<Integer, DefinedProperty> cowPropertyRemoveMap );
+    public abstract void commitPropertyMaps(
+            PrimitiveIntObjectMap<DefinedProperty> cowPropertyAddMap, Iterator<Integer> removed );
 
     @Override
     public int hashCode()
@@ -127,48 +117,7 @@ public abstract class Primitive implements SizeOfObject
     @Override
     public abstract boolean equals(Object other);
 
-    private void ensurePropertiesLoaded( NodeManager nodeManager )
-    {
-        // double checked locking
-        if ( !hasLoadedProperties() )
-        {
-            synchronized ( this )
-            {
-                if ( !hasLoadedProperties() )
-                {
-                    try
-                    {
-                        setProperties( loadProperties( nodeManager ) );
-                    }
-                    catch ( InvalidRecordException e )
-                    {
-                        throw new NotFoundException( asProxy( nodeManager ) + " not found. This can be because someone " +
-                                "else deleted this entity while we were trying to read properties from it, or because of " +
-                                "concurrent modification of other properties on this entity. The problem should be temporary.", e );
-                    }
-                }
-            }
-        }
-    }
-
-    protected abstract Iterator<DefinedProperty> loadProperties( NodeManager nodeManager );
-
-    protected Object getCommittedPropertyValue( NodeManager nodeManager, String key )
-    {
-        ensurePropertiesLoaded( nodeManager );
-        Token index = nodeManager.getPropertyKeyTokenOrNull( key );
-        if ( index != null )
-        {
-            DefinedProperty property = getPropertyForIndex( index.id() );
-            if ( property != null )
-            {
-                return property.value();
-            }
-        }
-        return null;
-    }
-
-    public abstract CowEntityElement getEntityElement( PrimitiveElement element, boolean create );
+    protected abstract Iterator<DefinedProperty> loadProperties( PropertyLoader loader );
 
     abstract PropertyContainer asProxy( NodeManager nm );
 }

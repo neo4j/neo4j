@@ -40,11 +40,10 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.api.state.OldTxStateBridge;
-import org.neo4j.kernel.impl.api.state.OldTxStateBridgeImpl;
 import org.neo4j.kernel.impl.api.state.TxStateImpl;
+import org.neo4j.kernel.impl.api.store.PersistenceCache;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -72,7 +71,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final ConstraintIndexCreator constraintIndexCreator;
     private final SchemaIndexProviderMap providerMap;
     private final UpdateableSchemaState schemaState;
-    private final OldTxStateBridge legacyStateBridge;
     private final StatementOperationParts operations;
     private final boolean readOnly;
 
@@ -83,7 +81,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private TxStateImpl txState;
     private TransactionHooks.TransactionHooksState hooksState;
     private final TransactionRecordState recordState;
-    private final TransactionState legacyTxState;
     private boolean success, failure;
 
     // For committing
@@ -91,6 +88,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionRepresentationCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final TransactionIdStore transactionIdStore;
+    private final PersistenceCache persistenceCache;
+    private final StoreReadLayer storeLayer;
 
     public KernelTransactionImplementation( StatementOperationParts operations, boolean readOnly,
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
@@ -99,12 +98,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             UpdateableSchemaState schemaState,
                                             TransactionRecordState neoStoreTransaction,
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
-                                            TransactionState legacyTxState, TransactionHooks hooks,
+                                            Locks.Client locks, TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
                                             TransactionHeaderInformation transactionHeaderInformation,
                                             TransactionRepresentationCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
-                                            TransactionIdStore transactionIdStore )
+                                            TransactionIdStore transactionIdStore,
+                                            PersistenceCache persistenceCache,
+                                            StoreReadLayer storeLayer )
     {
         this.operations = operations;
         this.readOnly = readOnly;
@@ -114,16 +115,16 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.recordState = neoStoreTransaction;
         this.providerMap = providerMap;
         this.schemaState = schemaState;
-        this.legacyTxState = legacyTxState;
         this.hooks = hooks;
+        this.locks = locks;
         this.constraintIndexCreator = constraintIndexCreator;
         this.headerInformation = transactionHeaderInformation;
         this.commitProcess = commitProcess;
         this.transactionMonitor = transactionMonitor;
         this.transactionIdStore = transactionIdStore;
+        this.persistenceCache = persistenceCache;
+        this.storeLayer = storeLayer;
         this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
-        this.legacyStateBridge = new OldTxStateBridgeImpl( nodeManager, legacyTxState );
-        this.locks = legacyTxState.locks();
     }
 
     @Override
@@ -233,7 +234,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( !hasTxState() )
         {
-            txState = new TxStateImpl( legacyStateBridge, recordState, null );
+            txState = new TxStateImpl( recordState, null );
         }
         return txState;
     }
@@ -247,7 +248,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public boolean hasTxStateWithChanges()
     {
-        return legacyStateBridge.hasChanges() || (hasTxState() && txState.hasChanges());
+        return hasTxState() && txState.hasChanges();
     }
 
     private void closeTransactionStuffage()
@@ -283,7 +284,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         if ( hasTxStateWithChanges() )
         {
             final AtomicBoolean clearState = new AtomicBoolean( false );
-            txState().accept( new TxState.Visitor()
+            txState().accept( new TxState.VisitorAdapter()
             {
                 @Override
                 public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed, Iterator<Integer> removed )
@@ -340,11 +341,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         DefinedProperty prop = added.next();
                         recordState.graphAddProperty( prop.propertyKeyId(), prop.value() );
                     }
-                }
-
-                @Override
-                public void visitNodeLabelChanges( long id, Iterator<Integer> added, Iterator<Integer> removed )
-                {
                 }
 
                 @Override
@@ -523,7 +519,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try
         {
             // Trigger transaction "before" hooks
-            if ( (hooksState = hooks.beforeCommit( txState, this )) != null && hooksState.failed() )
+            if ( (hooksState = hooks.beforeCommit( txState, this, storeLayer )) != null && hooksState.failed() )
             {
                 throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(), "" );
             }
@@ -542,7 +538,11 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
                 // TODO 2.2-future do the TxIdGenerator#committed thing
             }
-            legacyTxState.applyChangesToCache( true );
+
+            if ( hasTxStateWithChanges() )
+            {
+                persistenceCache.apply( txState );
+            }
             success = true;
         }
         finally
@@ -564,9 +564,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 throw new TransactionFailureException( Status.Transaction.CouldNotRollback, e,
                         "Could not drop created constraint indexes" );
             }
-
-            // Oddly we call this, but it updates cache sizes.
-            legacyTxState.applyChangesToCache( false );
         }
         finally
         {

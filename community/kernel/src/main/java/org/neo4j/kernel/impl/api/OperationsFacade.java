@@ -230,28 +230,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Property nodeGetCommittedProperty( long nodeId, int propertyKeyId ) throws EntityNotFoundException
-    {
-        statement.assertOpen();
-        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
-        {
-            return Property.noRelationshipProperty( nodeId, propertyKeyId );
-        }
-        return dataRead().nodeGetCommittedProperty( statement, nodeId, propertyKeyId );
-    }
-
-    @Override
-    public Property relationshipGetCommittedProperty( long relationshipId, int propertyKeyId ) throws EntityNotFoundException
-    {
-        statement.assertOpen();
-        if ( propertyKeyId == StatementConstants.NO_SUCH_PROPERTY_KEY )
-        {
-            return Property.noRelationshipProperty( relationshipId, propertyKeyId );
-        }
-        return dataRead().relationshipGetCommittedProperty( statement, relationshipId, propertyKeyId );
-    }
-
-    @Override
     public Property graphGetProperty( int propertyKeyId )
     {
         statement.assertOpen();
@@ -285,24 +263,10 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public Iterator<DefinedProperty> nodeGetAllCommittedProperties( long nodeId ) throws EntityNotFoundException
+    public void relationshipVisit( long relId, RelationshipVisitor visitor ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        return dataRead().nodeGetAllCommittedProperties( statement, nodeId );
-    }
-
-    @Override
-    public Iterator<DefinedProperty> relationshipGetAllCommittedProperties( long relId ) throws EntityNotFoundException
-    {
-        statement.assertOpen();
-        return dataRead().relationshipGetAllCommittedProperties( statement, relId );
-    }
-
-    @Override
-    public PrimitiveIntIterator nodeGetCommittedLabels( long nodeId ) throws EntityNotFoundException
-    {
-        statement.assertOpen();
-        return dataRead().nodeGetCommittedLabels( statement, nodeId );
+        dataRead().relationshipVisit( statement, relId, visitor );
     }
 
     // </DataRead>

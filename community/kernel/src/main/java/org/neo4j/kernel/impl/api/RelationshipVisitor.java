@@ -17,33 +17,9 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.core;
+package org.neo4j.kernel.impl.api;
 
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-
-public class NoTransactionState implements TransactionState
+public interface RelationshipVisitor
 {
-    @Override
-    public RemoteTxHook getTxHook()
-    {
-        return null;
-    }
-
-    @Override
-    public TxIdGenerator getTxIdGenerator()
-    {
-        return null;
-    }
-
-    @Override
-    public boolean isRemotelyInitialized()
-    {
-        return false;
-    }
-
-    @Override
-    public void markAsRemotelyInitialized()
-    {
-    }
+    void visit( long relId, long startNode, long endNode, int type );
 }

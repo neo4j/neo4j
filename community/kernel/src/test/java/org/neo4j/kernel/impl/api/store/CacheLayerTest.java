@@ -32,6 +32,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -113,8 +114,8 @@ public class CacheLayerTest
         long nodeId = 3;
         int[] relTypes = new int[] {1,2};
         PrimitiveLongIterator rels = PrimitiveLongCollections.iterator( 1l, 2l, 3l );
-        when( persistenceCache.nodeGetRelationships( eq( nodeId ), eq( Direction.BOTH ), eq(relTypes) ) )
-                .thenReturn( rels );
+        when( persistenceCache.nodeGetRelationships( any( RelationshipChainLoader.class ), eq( nodeId ),
+                eq( Direction.BOTH ), eq(relTypes) ) ) .thenReturn( rels );
 
         // WHEN
         PrimitiveLongIterator recievedRels = context.nodeListRelationships( nodeId, Direction.BOTH, relTypes );

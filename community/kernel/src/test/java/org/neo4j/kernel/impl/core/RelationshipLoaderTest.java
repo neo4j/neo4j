@@ -25,18 +25,24 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
 import static java.util.Arrays.asList;
+
 import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.eq;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class RelationshipLoaderTest
 {
@@ -57,14 +63,15 @@ public class RelationshipLoaderTest
         Pair<Map<DirectionWrapper, Iterable<RelationshipRecord>>, RelationshipLoadingPosition> moreRelationships =
                 Pair.<Map<DirectionWrapper, Iterable<RelationshipRecord>>,RelationshipLoadingPosition>of(
                         relsFromDisk, new SingleChainPosition( 1 ) );
-        when( persistenceManager.getMoreRelationships( eq( 1337l ), any( RelationshipLoadingPosition.class ),
-                any( DirectionWrapper.class ),any( int[].class ) ) ).thenReturn( moreRelationships );
 
-        RelationshipLoader loader = new RelationshipLoader( persistenceManager, relCache );
+        RelationshipLoader loader = new RelationshipLoader( relCache );
+        RelationshipChainLoader chainLoader = mock( RelationshipChainLoader.class );
+        when( chainLoader.getMoreRelationships( eq( 1337l ), any( RelationshipLoadingPosition.class ),
+                any( DirectionWrapper.class ),any( int[].class ) ) ).thenReturn( moreRelationships );
 
         // When
         Triplet<ArrayMap<Integer,RelIdArray>,List<RelationshipImpl>,RelationshipLoadingPosition> result =
-                loader.getMoreRelationships( node, DirectionWrapper.BOTH, new int[0] );
+                loader.getMoreRelationships( node, DirectionWrapper.BOTH, new int[0], chainLoader );
 
         // Then
         List<RelationshipImpl> relsThatWereNotInCache = result.second();

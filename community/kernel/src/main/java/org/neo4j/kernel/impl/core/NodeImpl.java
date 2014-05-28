@@ -27,8 +27,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
@@ -37,11 +40,9 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.store.CacheLoader;
-import org.neo4j.kernel.impl.core.WritableTransactionState.CowEntityElement;
-import org.neo4j.kernel.impl.core.WritableTransactionState.PrimitiveElement;
-import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
+import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -80,30 +81,18 @@ public class NodeImpl extends ArrayBasedPrimitive
     private volatile RelationshipLoadingPosition relChainPosition;
     private final long id;
 
+    // newNode will only be true for NodeManager.createNode
     public NodeImpl( long id )
     {
-        this( id, false );
-    }
-
-    // newNode will only be true for NodeManager.createNode
-    public NodeImpl( long id, boolean newNode )
-    {
-        /* TODO firstRel/firstProp isn't used yet due to some unresolved issue with clearing
-         * of cache and keeping those first ids in the node instead of loading on demand.
-         */
-        super( newNode );
         this.id = id;
-        if ( newNode )
-        {
-            relationships = NO_RELATIONSHIPS;
-            relChainPosition = RelationshipLoadingPosition.EMPTY;
-        }
     }
 
     @Override
-    protected Iterator<DefinedProperty> loadProperties( NodeManager nodeManager )
+    protected Iterator<DefinedProperty> loadProperties( PropertyLoader loader )
     {
-        return nodeManager.loadProperties( this, false );
+        IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
+        loader.nodeLoadProperties( id, receiver );
+        return receiver;
     }
 
     @Override
@@ -147,10 +136,10 @@ public class NodeImpl extends ArrayBasedPrimitive
         return this == obj || (obj instanceof NodeImpl && ((NodeImpl) obj).getId() == getId());
     }
 
-    PrimitiveLongIterator getAllRelationships( NodeManager nodeManager, DirectionWrapper direction,
-            RelationshipChainLoader loader )
+    PrimitiveLongIterator getAllRelationships( RelationshipLoader relationshipLoader, DirectionWrapper direction,
+            CacheUpdateListener cacheUpdateListener )
     {
-        ensureRelationshipMapNotNull( nodeManager, direction, NO_RELATIONSHIP_TYPES, loader );
+        ensureRelationshipMapNotNull( relationshipLoader, direction, NO_RELATIONSHIP_TYPES, cacheUpdateListener );
 
         // We need to check if there are more relationships to load before grabbing
         // the references to the RelIdArrays since otherwise there could be
@@ -174,13 +163,13 @@ public class NodeImpl extends ArrayBasedPrimitive
             return PrimitiveLongCollections.emptyIterator();
         }
         return new RelationshipIterator( result, this, direction, NO_RELATIONSHIP_TYPES,
-                nodeManager, hasMore, true, loader );
+                relationshipLoader, hasMore, true, cacheUpdateListener );
     }
 
-    PrimitiveLongIterator getAllRelationshipsOfType( NodeManager nodeManager,
-            DirectionWrapper direction, int[] types, RelationshipChainLoader loader )
+    PrimitiveLongIterator getAllRelationshipsOfType( RelationshipLoader relationshipLoader,
+            DirectionWrapper direction, int[] types, CacheUpdateListener cacheUpdateListener )
     {
-        ensureRelationshipMapNotNull( nodeManager, direction, types, loader );
+        ensureRelationshipMapNotNull( relationshipLoader, direction, types, cacheUpdateListener );
 
         // We need to check if there are more relationships to load before grabbing
         // the references to the RelIdArrays. Otherwise there could be
@@ -211,7 +200,8 @@ public class NodeImpl extends ArrayBasedPrimitive
         {
             return PrimitiveLongCollections.emptyIterator();
         }
-        return new RelationshipIterator( result, this, direction, types, nodeManager, hasMore, false, loader );
+        return new RelationshipIterator( result, this, direction, types, relationshipLoader, hasMore, false,
+                cacheUpdateListener );
     }
 
     private boolean typeIn( int typeId, int actualLength, RelIdIterator[] result )
@@ -232,16 +222,16 @@ public class NodeImpl extends ArrayBasedPrimitive
         return src != null ? src.iterator( direction ) : empty( type ).iterator( direction );
     }
 
-    public PrimitiveLongIterator getRelationships( NodeManager nodeManager, Direction dir,
-            RelationshipChainLoader loader )
+    public PrimitiveLongIterator getRelationships( RelationshipLoader relationshipLoader, Direction dir,
+            CacheUpdateListener cacheUpdateListener )
     {
-        return getAllRelationships( nodeManager, wrap( dir ), loader );
+        return getAllRelationships( relationshipLoader, wrap( dir ), cacheUpdateListener );
     }
 
-    public PrimitiveLongIterator getRelationships( NodeManager nodeManager,
-            Direction direction, int[] types, RelationshipChainLoader loader )
+    public PrimitiveLongIterator getRelationships( RelationshipLoader relationshipLoader,
+            Direction direction, int[] types, CacheUpdateListener cacheUpdateListener )
     {
-        return getAllRelationshipsOfType( nodeManager, wrap( direction ), types, loader );
+        return getAllRelationshipsOfType( relationshipLoader, wrap( direction ), types, cacheUpdateListener );
     }
 
     /**
@@ -255,22 +245,24 @@ public class NodeImpl extends ArrayBasedPrimitive
         return getClass().getSimpleName() + "#" + this.getId();
     }
 
-    private void ensureRelationshipMapNotNull( NodeManager nodeManager, DirectionWrapper direction,
-            int[] types, RelationshipChainLoader loader )
+    private void ensureRelationshipMapNotNull( RelationshipLoader relationshipLoader,
+            DirectionWrapper direction, int[] types, CacheUpdateListener cacheUpdateListener )
     {
         if ( relationships == null )
         {
-            loadInitialRelationships( nodeManager, direction, types, loader );
+            loadInitialRelationships( relationshipLoader, direction, types, cacheUpdateListener );
         }
     }
 
-    private void ensureRelationshipMapNotNull( NodeManager nm, RelationshipChainLoader loader )
+    private void ensureRelationshipMapNotNull( RelationshipLoader relationshipLoader,
+            CacheUpdateListener cacheUpdateListener )
     {
-        ensureRelationshipMapNotNull( nm, DirectionWrapper.BOTH, NO_RELATIONSHIP_TYPES, loader );
+        ensureRelationshipMapNotNull( relationshipLoader, DirectionWrapper.BOTH, NO_RELATIONSHIP_TYPES,
+                cacheUpdateListener );
     }
 
-    private void loadInitialRelationships( NodeManager nodeManager, DirectionWrapper direction,
-            int[] types, RelationshipChainLoader loader )
+    private void loadInitialRelationships( RelationshipLoader relationshipLoader, DirectionWrapper direction,
+            int[] types, CacheUpdateListener cacheUpdateListener )
     {
         Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition> rels = null;
         synchronized ( this )
@@ -279,31 +271,26 @@ public class NodeImpl extends ArrayBasedPrimitive
             {
                 try
                 {
-                    relChainPosition = nodeManager.getRelationshipChainPosition( this );
+                    relChainPosition = relationshipLoader.getRelationshipChainPosition( getId() );
                 }
                 catch ( InvalidRecordException e )
                 {
-                    throw new NotFoundException( asProxy( nodeManager ) +
+                    throw new NotFoundException( "Node[" + id + "]" +
                             " concurrently deleted while loading its relationships?", e );
                 }
 
                 ArrayMap<Integer, RelIdArray> tmpRelMap = new ArrayMap<>();
-                rels = getMoreRelationships( nodeManager, tmpRelMap, direction, types, loader );
+                rels = getMoreRelationships( relationshipLoader, tmpRelMap, direction, types );
                 this.relationships = toRelIdArray( tmpRelMap );
                 this.relChainPosition = rels == null ? RelationshipLoadingPosition.EMPTY : rels.third();
                 moreRelationshipsLoaded();
-                updateSize( nodeManager );
+                cacheUpdateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
             }
         }
         if ( rels != null && rels.second().size() > 0 )
         {
-            nodeManager.putAllInRelCache( rels.second() );
+            relationshipLoader.putAllInRelCache( rels.second() );
         }
-    }
-
-    private void updateSize( NodeManager nodeManager )
-    {
-        nodeManager.updateCacheSize( this, sizeOfObjectInBytesIncludingOverhead() );
     }
 
     private RelIdArray[] toRelIdArray( ArrayMap<Integer, RelIdArray> tmpRelMap )
@@ -350,8 +337,8 @@ public class NodeImpl extends ArrayBasedPrimitive
     }
 
     private Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>,RelationshipLoadingPosition> getMoreRelationships(
-            NodeManager nodeManager, ArrayMap<Integer, RelIdArray> tmpRelMap, DirectionWrapper direction,
-            int[] types, RelationshipChainLoader loader )
+            RelationshipLoader relationshipLoader, ArrayMap<Integer, RelIdArray> tmpRelMap, DirectionWrapper direction,
+            int[] types )
     {
         if ( !hasMoreRelationshipsToLoad( direction, types ) )
         {
@@ -359,7 +346,7 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
 
         Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>,RelationshipLoadingPosition> rels =
-                loadMoreRelationships( nodeManager, direction, types, loader );
+                loadMoreRelationships( relationshipLoader, direction, types );
 
         ArrayMap<Integer, RelIdArray> addMap = rels.first();
         if ( addMap.size() == 0 )
@@ -424,8 +411,8 @@ public class NodeImpl extends ArrayBasedPrimitive
         }
     }
 
-    LoadStatus getMoreRelationships( NodeManager nodeManager, DirectionWrapper direction, int[] types,
-            RelationshipChainLoader loader )
+    LoadStatus getMoreRelationships( RelationshipLoader relationshipLoader, DirectionWrapper direction,
+            int[] types, CacheUpdateListener cacheUpdateListener )
     {
         Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>,RelationshipLoadingPosition> rels;
         if ( !hasMoreRelationshipsToLoad( direction, types ) )
@@ -439,7 +426,7 @@ public class NodeImpl extends ArrayBasedPrimitive
             {
                 return LoadStatus.NOTHING;
             }
-            rels = loadMoreRelationships( nodeManager, direction, types, loader );
+            rels = loadMoreRelationships( relationshipLoader, direction, types );
             ArrayMap<Integer, RelIdArray> addMap = rels.first();
             if ( addMap.size() == 0 )
             {
@@ -466,23 +453,24 @@ public class NodeImpl extends ArrayBasedPrimitive
             relChainPosition = rels.third();
             moreRelationshipsLoaded();
             more = hasMoreRelationshipsToLoad( direction, types );
-            updateSize( nodeManager );
+            cacheUpdateListener.newSize( this, sizeOfObjectInBytesIncludingOverhead() );
+
         }
-        nodeManager.putAllInRelCache( rels.second() );
+        relationshipLoader.putAllInRelCache( rels.second() );
         return more ? LoadStatus.LOADED_MORE : LoadStatus.LOADED_END;
     }
 
     private Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>,RelationshipLoadingPosition>
-            loadMoreRelationships( NodeManager nodeManager, DirectionWrapper direction,
-                                                  int[] types, RelationshipChainLoader loader )
+            loadMoreRelationships( RelationshipLoader relationshipLoader, DirectionWrapper direction,
+                    int[] types )
     {
         try
         {
-            return nodeManager.getMoreRelationships( this, direction, types, loader );
+            return relationshipLoader.getMoreRelationships( this, direction, types );
         }
         catch ( InvalidRecordException e )
         {
-            throw new NotFoundException( "Unable to load one or more relationships from " + asProxy( nodeManager ) +
+            throw new NotFoundException( "Unable to load one or more relationships from Node[" + id + "]" +
                     ". This usually happens when relationships are deleted by someone else just as we are about to " +
                     "load them. Please try again.", e );
         }
@@ -522,9 +510,9 @@ public class NodeImpl extends ArrayBasedPrimitive
         relationships = array;
     }
 
-    protected void commitRelationshipMaps(
-            ArrayMap<Integer, RelIdArray> cowRelationshipAddMap,
-            ArrayMap<Integer, SetAndDirectionCounter> relationshipRemoveMap )
+    public void commitRelationshipMaps(
+            PrimitiveIntObjectMap<RelIdArray> cowRelationshipAddMap,
+            PrimitiveIntObjectMap<PrimitiveLongSet> removeMap )
     {
         if ( relationships == null )
         {
@@ -536,22 +524,26 @@ public class NodeImpl extends ArrayBasedPrimitive
         {
             if ( cowRelationshipAddMap != null )
             {
-                for ( int type : cowRelationshipAddMap.keySet() )
+                PrimitiveIntIterator typeIterator = cowRelationshipAddMap.iterator();
+                while ( typeIterator.hasNext() )
                 {
+                    int type = typeIterator.next();
                     RelIdArray add = cowRelationshipAddMap.get( type );
-                    SetAndDirectionCounter remove = null;
-                    if ( relationshipRemoveMap != null )
+                    PrimitiveLongSet remove = null;
+                    if ( removeMap != null )
                     {
-                        remove = relationshipRemoveMap.get( type );
+                        remove = removeMap.get( type );
                     }
                     RelIdArray src = getRelIdArray( type );
-                    putRelIdArray( RelIdArray.from( src, add, remove != null ? remove.set : null ) );
+                    putRelIdArray( RelIdArray.from( src, add, remove ) );
                 }
             }
-            if ( relationshipRemoveMap != null )
+            if ( removeMap != null )
             {
-                for ( int type : relationshipRemoveMap.keySet() )
+                PrimitiveIntIterator typeIterator = removeMap.iterator();
+                while ( typeIterator.hasNext() )
                 {
+                    int type = typeIterator.next();
                     if ( cowRelationshipAddMap != null &&
                             cowRelationshipAddMap.get( type ) != null )
                     {
@@ -560,15 +552,15 @@ public class NodeImpl extends ArrayBasedPrimitive
                     RelIdArray src = getRelIdArray( type );
                     if ( src != null )
                     {
-                        SetAndDirectionCounter remove = relationshipRemoveMap.get( type );
-                        putRelIdArray( RelIdArray.from( src, null, remove != null ? remove.set : null ) );
+                        PrimitiveLongSet remove = removeMap.get( type );
+                        putRelIdArray( RelIdArray.from( src, null, remove ) );
                     }
                 }
             }
         }
     }
 
-    RelationshipLoadingPosition getRelChainPosition()
+    public RelationshipLoadingPosition getRelChainPosition()
     {
         return this.relChainPosition;
     }
@@ -602,12 +594,6 @@ public class NodeImpl extends ArrayBasedPrimitive
     RelIdArray[] getRelationshipIds()
     {
         return relationships;
-    }
-
-    @Override
-    public CowEntityElement getEntityElement( PrimitiveElement element, boolean create )
-    {
-        return element.nodeElement( getId(), create );
     }
 
     @Override
@@ -648,38 +634,42 @@ public class NodeImpl extends ArrayBasedPrimitive
         return Property.noNodeProperty( getId(), key );
     }
 
-    private void ensureAllRelationshipsAreLoaded( NodeManager nm, RelationshipChainLoader loader )
+    private void ensureAllRelationshipsAreLoaded( RelationshipLoader relationshipLoader,
+            CacheUpdateListener cacheUpdateListener )
     {
-        ensureRelationshipMapNotNull( nm, loader );
+        ensureRelationshipMapNotNull( relationshipLoader, cacheUpdateListener );
         while ( hasMoreRelationshipsToLoad() )
         {
-            getMoreRelationships( nm, DirectionWrapper.BOTH, NO_RELATIONSHIP_TYPES, loader );
+            getMoreRelationships( relationshipLoader, DirectionWrapper.BOTH, NO_RELATIONSHIP_TYPES,
+                    cacheUpdateListener );
         }
     }
 
-    public int getDegree( NodeManager nm, RelationshipChainLoader loader )
+    public int getDegree( RelationshipLoader relationshipLoader )
     {
-        return loader.getRelationshipCount( getId(), -1, DirectionWrapper.BOTH );
+        return relationshipLoader.getRelationshipCount( getId(), -1, DirectionWrapper.BOTH );
     }
 
-    public int getDegree( NodeManager nm, int type, RelationshipChainLoader loader )
+    public int getDegree( RelationshipLoader relationshipLoader, int type,
+            CacheUpdateListener cacheUpdateListener )
     {
-        return getDegree( nm, type, Direction.BOTH, loader );
+        return getDegree( relationshipLoader, type, Direction.BOTH, cacheUpdateListener );
     }
 
-    public int getDegree( NodeManager nm, Direction direction, RelationshipChainLoader loader )
+    public int getDegree( RelationshipLoader relationshipLoader, Direction direction,
+            CacheUpdateListener cacheUpdateListener )
     {
         if ( direction == Direction.BOTH )
         {
-            return getDegree( nm, loader );
+            return getDegree( relationshipLoader );
         }
-        return getDegreeByDirection( nm, wrap( direction ), loader );
+        return getDegreeByDirection( relationshipLoader, wrap( direction ), cacheUpdateListener );
     }
 
-    private int getDegreeByDirection( NodeManager nm, DirectionWrapper direction,
-            RelationshipChainLoader loader )
+    private int getDegreeByDirection( RelationshipLoader relationshipLoader, DirectionWrapper direction,
+            CacheUpdateListener cacheUpdateListener )
     {
-        ensureAllRelationshipsAreLoaded( nm, loader );
+        ensureAllRelationshipsAreLoaded( relationshipLoader, cacheUpdateListener );
         int count = 0;
         if ( relationships != null )
         {
@@ -691,16 +681,18 @@ public class NodeImpl extends ArrayBasedPrimitive
         return count;
     }
 
-    public int getDegree( NodeManager nm, int typeId, Direction direction, RelationshipChainLoader loader )
+    public int getDegree( RelationshipLoader relationshipLoader, int typeId, Direction direction,
+            CacheUpdateListener cacheUpdateListener )
     {
-        ensureAllRelationshipsAreLoaded( nm, loader );
+        ensureAllRelationshipsAreLoaded( relationshipLoader, cacheUpdateListener );
         RelIdArray ids = getRelationshipIds( typeId );
         return ids != null ? ids.length( wrap( direction ) ) : 0;
     }
 
-    public Iterator<Integer> getRelationshipTypes( final NodeManager nm, RelationshipChainLoader loader )
+    public Iterator<Integer> getRelationshipTypes( RelationshipLoader relationshipLoader,
+            CacheUpdateListener cacheUpdateListener )
     {
-        ensureAllRelationshipsAreLoaded( nm, loader );
+        ensureAllRelationshipsAreLoaded( relationshipLoader, cacheUpdateListener );
         Set<Integer> types = new HashSet<>();
         for ( RelIdArray ids : relationships )
         {

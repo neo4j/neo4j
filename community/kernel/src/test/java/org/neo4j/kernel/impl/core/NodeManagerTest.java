@@ -20,10 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
@@ -48,7 +45,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class NodeManagerTest
 {
@@ -59,7 +55,7 @@ public class NodeManagerTest
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
-    
+
     @After
     public void stop()
     {
@@ -120,71 +116,6 @@ public class NodeManagerTest
         //THEN prop is removed from tracker
         assertThat( tracker.removed, is( "0:wut" ) );
     }
-    
-    @Test
-    public void getAllNodesShouldConsiderTxState() throws Exception
-    {
-        // GIVEN
-        // Three nodes
-        Transaction tx = db.beginTx();
-        Node firstCommittedNode = db.createNode();
-        Node secondCommittedNode = db.createNode();
-        Node thirdCommittedNode = db.createNode();
-        tx.success();
-        tx.finish();
-        
-        // Second one deleted, just to create a hole
-        tx = db.beginTx();
-        secondCommittedNode.delete();
-        tx.success();
-        tx.finish();
-        
-        // WHEN
-        tx = db.beginTx();
-        Node firstAdditionalNode = db.createNode();
-        Node secondAdditionalNode = db.createNode();
-        thirdCommittedNode.delete();
-        List<Node> allNodes = addToCollection( getNodeManager().getAllNodes(), new ArrayList<Node>() );
-        Set<Node> allNodesSet = new HashSet<>( allNodes );
-        tx.finish();
-
-        // THEN
-        assertEquals( allNodes.size(), allNodesSet.size() );
-        assertEquals( asSet( firstCommittedNode, firstAdditionalNode, secondAdditionalNode ), allNodesSet );
-    }
-    
-    @Test
-    public void getAllRelationshipsShouldConsiderTxState() throws Exception
-    {
-        // GIVEN
-        // Three relationships
-        Transaction tx = db.beginTx();
-        Relationship firstCommittedRelationship = createRelationshipAssumingTxWith( "committed", 1 );
-        Relationship secondCommittedRelationship = createRelationshipAssumingTxWith( "committed", 2 );
-        Relationship thirdCommittedRelationship = createRelationshipAssumingTxWith( "committed", 3 );
-        tx.success();
-        tx.finish();
-        
-        tx = db.beginTx();
-        secondCommittedRelationship.delete();
-        tx.success();
-        tx.finish();
-        
-        // WHEN
-        tx = db.beginTx();
-        Relationship firstAdditionalRelationship = createRelationshipAssumingTxWith( "additional", 1 );
-        Relationship secondAdditionalRelationship = createRelationshipAssumingTxWith( "additional", 2 );
-        thirdCommittedRelationship.delete();
-        List<Relationship> allRelationships = addToCollection( getNodeManager().getAllRelationships(),
-                new ArrayList<Relationship>() );
-        Set<Relationship> allRelationshipsSet = new HashSet<>( allRelationships );
-        tx.finish();
-
-        // THEN
-        assertEquals( allRelationships.size(), allRelationshipsSet.size() );
-        assertEquals( asSet( firstCommittedRelationship, firstAdditionalRelationship, secondAdditionalRelationship ),
-                allRelationshipsSet );
-    }
 
     @Test
     public void getAllNodesIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
@@ -224,7 +155,7 @@ public class NodeManagerTest
         assertThat( addToCollection( allNodes, new ArrayList<Node>() ).size(), is( 2 ) );
         transaction.finish();
     }
-    
+
     @Test
     public void getAllRelationshipsIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
     {
@@ -234,7 +165,7 @@ public class NodeManagerTest
         Relationship relationship2 = createRelationshipAssumingTxWith( "key", 2 );
         tx.success();
         tx.finish();
-        
+
         // WHEN
         tx = db.beginTx();
         Iterator<Relationship> allRelationships = GlobalGraphOperations.at( db ).getAllRelationships().iterator();

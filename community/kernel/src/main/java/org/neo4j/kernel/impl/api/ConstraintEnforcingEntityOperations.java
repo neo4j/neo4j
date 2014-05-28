@@ -401,4 +401,11 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     {
         return entityReadOperations.relationshipsGetAll( state );
     }
+
+    @Override
+    public void relationshipVisit( KernelStatement statement, long relId, RelationshipVisitor visitor )
+            throws EntityNotFoundException
+    {
+        entityReadOperations.relationshipVisit( statement, relId, visitor );
+    }
 }

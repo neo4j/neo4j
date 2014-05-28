@@ -47,8 +47,6 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -162,6 +160,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final TransactionHeaderInformation transactionHeaderInformation;
     private final TransactionStore transactionStore;
     private final StartupStatisticsProvider startupStatistics;
+    private final PersistenceCache persistenceCache;
 
     public Kernel( PropertyKeyTokenHolder propertyKeyTokenHolder, UpdateableSchemaState schemaState,
                    SchemaWriteGuard schemaWriteGuard,
@@ -176,6 +175,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                    StartupStatisticsProvider startupStatistics, Logging logging )
     {
         this.nodeManager = nodeManager;
+        this.persistenceCache = persistenceCache;
         this.fs = fs;
         this.config = config;
         this.schemaState = schemaState;
@@ -271,17 +271,18 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         checkIfShutdown();
         NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
-        TransactionState legacyState = new WritableTransactionState(
-                locks.newClient(), nodeManager, remoteTxHook, txIdGenerator );
-        context.bind( legacyState );
+        Locks.Client locksClient = locks.newClient();
+        context.bind( locksClient );
         TransactionRecordState neoStoreTransaction = new TransactionRecordState(
                 neoStore.getLastCommittingTransactionId(),
                 neoStore, integrityValidator, context );
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( this, indexService );
+
         return new KernelTransactionImplementation( statementOperations, readOnly,
                 schemaWriteGuard, labelScanStore, indexService,
-                nodeManager, schemaState, neoStoreTransaction, providerMap, neoStore, legacyState, hooks,
-                constraintIndexCreator, transactionHeaderInformation, commitProcess, transactionMonitor, neoStore );
+                nodeManager, schemaState, neoStoreTransaction, providerMap, neoStore, locksClient, hooks,
+                constraintIndexCreator, transactionHeaderInformation, commitProcess, transactionMonitor, neoStore,
+                persistenceCache, storeLayer );
     }
 
     @Override
@@ -344,7 +345,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                 parts.entityWriteOperations(),
                 parts.schemaReadOperations(),
                 parts.schemaWriteOperations(),
-                parts.schemaStateOperations() );
+                parts.schemaStateOperations(),
+                storeLayer );
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext, lockingContext );
 
         return parts;

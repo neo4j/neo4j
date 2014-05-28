@@ -29,7 +29,9 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.state.NodeState;
+import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
 import org.neo4j.kernel.impl.util.DiffSets;
 
@@ -106,16 +108,17 @@ public interface TxState
      */
     public interface IdGeneration
     {
-
         long newNodeId();
         long newRelationshipId();
-
     }
 
     public interface Visitor
     {
         void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                                        Iterator<Integer> removed );
+
+        void visitNodeRelationshipChanges( long id, RelationshipChangesForNode added,
+                RelationshipChangesForNode removed );
 
         void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
                                       Iterator<Integer> removed );
@@ -132,6 +135,58 @@ public interface TxState
         void visitAddedConstraint( UniquenessConstraint element );
 
         void visitRemovedConstraint( UniquenessConstraint element );
+    }
+
+    public static class VisitorAdapter implements Visitor
+    {
+        @Override
+        public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitNodeRelationshipChanges( long id, RelationshipChangesForNode added,
+                RelationshipChangesForNode removed )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added,
+                Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitGraphPropertyChanges( Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed,
+                Iterator<Integer> removed )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitNodeLabelChanges( long id, Iterator<Integer> added, Iterator<Integer> removed )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitAddedConstraint( UniquenessConstraint element )
+        {   // Ignore
+        }
+
+        @Override
+        public void visitRemovedConstraint( UniquenessConstraint element )
+        {   // Ignore
+        }
     }
 
     boolean hasChanges();
@@ -265,4 +320,11 @@ public interface TxState
     PrimitiveLongIterator augmentNodesGetAll( PrimitiveLongIterator committed );
 
     PrimitiveLongIterator augmentRelationshipsGetAll( PrimitiveLongIterator committed );
+
+    /**
+     * @return {@code true} if the relationship was visited in this state, i.e. if it was created
+     * by this current transaction, otherwise {@code false} where the relationship might need to be
+     * visited from the store.
+     */
+    boolean relationshipVisit( long relId, RelationshipVisitor visitor );
 }

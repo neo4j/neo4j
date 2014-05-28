@@ -43,6 +43,7 @@ import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
@@ -60,17 +61,20 @@ public class LockingStatementOperations implements
     private final SchemaReadOperations schemaReadDelegate;
     private final SchemaWriteOperations schemaWriteDelegate;
     private final SchemaStateOperations schemaStateDelegate;
+    private final StoreReadLayer storeReadLayer;
 
     public LockingStatementOperations(
             EntityWriteOperations entityWriteDelegate,
             SchemaReadOperations schemaReadDelegate,
             SchemaWriteOperations schemaWriteDelegate,
-            SchemaStateOperations schemaStateDelegate )
+            SchemaStateOperations schemaStateDelegate,
+            StoreReadLayer storeReadLayer )
     {
         this.entityWriteDelegate = entityWriteDelegate;
         this.schemaReadDelegate = schemaReadDelegate;
         this.schemaWriteDelegate = schemaWriteDelegate;
         this.schemaStateDelegate = schemaStateDelegate;
+        this.storeReadLayer = storeReadLayer;
     }
 
     @Override
@@ -217,8 +221,24 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public void relationshipDelete( KernelStatement state, long relationshipId )
+    public void relationshipDelete( final KernelStatement state, long relationshipId )
     {
+        try
+        {
+            storeReadLayer.visit( relationshipId, new RelationshipVisitor()
+            {
+                @Override
+                public void visit( long relId, long startNode, long endNode, int type )
+                {
+                    state.locks().acquireExclusive( ResourceTypes.NODE, startNode );
+                    state.locks().acquireExclusive( ResourceTypes.NODE, endNode );
+                }
+            });
+        }
+        catch ( EntityNotFoundException e )
+        {
+            // Fine, the relationship is already gone
+        }
         state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         entityWriteDelegate.relationshipDelete( state, relationshipId );
     }

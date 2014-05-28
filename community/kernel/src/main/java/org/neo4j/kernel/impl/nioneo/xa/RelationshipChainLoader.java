@@ -230,7 +230,16 @@ public class RelationshipChainLoader
 
     public RelationshipLoadingPosition getRelationshipChainPosition( long id )
     {
-        NodeRecord node = nodeStore.getRecord( id );
+        NodeRecord node;
+        try
+        {
+            node = nodeStore.getRecord( id );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return RelationshipLoadingPosition.EMPTY;
+        }
+
         if ( node.isDense() )
         {
             long firstGroup = node.getNextRel();

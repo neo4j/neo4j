@@ -80,9 +80,6 @@ public class NodeProxy implements Node
         GraphDatabaseService getGraphDatabase();
 
         NodeManager getNodeManager();
-
-        NodeImpl lookup( long nodeId );
-
     }
 
     private final NodeLookup nodeLookup;
@@ -245,7 +242,6 @@ public class NodeProxy implements Node
     @Override
     public void setProperty( String key, Object value )
     {
-        boolean requireRollback = true; // TODO: this seems like the wrong level to do this on...
         try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
@@ -255,10 +251,8 @@ public class NodeProxy implements Node
             }
             catch ( ConstraintValidationKernelException e )
             {
-                requireRollback = false;
                 throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
             }
-            requireRollback = false;
         }
         catch ( EntityNotFoundException e )
         {
@@ -275,13 +269,6 @@ public class NodeProxy implements Node
         catch ( ReadOnlyDatabaseKernelException e )
         {
             throw new ReadOnlyDbException();
-        }
-        finally
-        {
-            if ( requireRollback )
-            {
-                nodeLookup.getNodeManager().setRollbackOnly();
-            }
         }
     }
 

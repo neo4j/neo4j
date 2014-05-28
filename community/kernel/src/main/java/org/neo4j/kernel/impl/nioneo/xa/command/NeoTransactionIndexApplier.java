@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.xa.LazyIndexUpdates;
+import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
@@ -57,15 +58,18 @@ public class NeoTransactionIndexApplier extends NeoCommandVisitor.Adapter
     private final PropertyStore propertyStore;
     private final LabelScanStore labelScanStore;
     private final CacheAccessBackDoor cacheAccess;
+    private final PropertyLoader propertyLoader;
 
     public NeoTransactionIndexApplier( IndexingService indexingService, LabelScanStore labelScanStore,
-            NodeStore nodeStore, PropertyStore propertyStore, CacheAccessBackDoor cacheAccess )
+            NodeStore nodeStore, PropertyStore propertyStore, CacheAccessBackDoor cacheAccess,
+            PropertyLoader propertyLoader )
     {
         this.indexingService = indexingService;
         this.labelScanStore = labelScanStore;
         this.nodeStore = nodeStore;
         this.propertyStore = propertyStore;
         this.cacheAccess = cacheAccess;
+        this.propertyLoader = propertyLoader;
     }
 
     public void done()
@@ -79,7 +83,7 @@ public class NeoTransactionIndexApplier extends NeoCommandVisitor.Adapter
         if ( !nodeCommands.isEmpty() || !propertyCommands.isEmpty() )
         {
             indexingService.updateIndexes( new LazyIndexUpdates(
-                    nodeStore, propertyStore, propertyCommands.values(), nodeCommands ) );
+                    nodeStore, propertyStore, propertyCommands.values(), nodeCommands, propertyLoader ) );
         }
     }
 

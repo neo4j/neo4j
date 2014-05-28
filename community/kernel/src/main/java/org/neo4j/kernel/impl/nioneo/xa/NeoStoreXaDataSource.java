@@ -33,7 +33,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Provider;
-import org.neo4j.helpers.Thunk;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionEventHandlers;
@@ -52,16 +51,18 @@ import org.neo4j.kernel.impl.api.store.CacheLayer;
 import org.neo4j.kernel.impl.api.store.DiskLayer;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
-import org.neo4j.kernel.impl.cache.Cache;
+import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
+import org.neo4j.kernel.impl.core.DenseNodeImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.core.RelationshipLoader;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
 import org.neo4j.kernel.impl.locking.LockService;
@@ -69,20 +70,23 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -93,6 +97,7 @@ import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl
 {
@@ -141,12 +146,13 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private final StoreUpgrader storeMigrationProcess;
     private final TransactionMonitor transactionMonitor;
     private final KernelHealth kernelHealth;
-    private final TransactionAppender transactionAppender;
-    private final NeoTransactionStoreApplier storeApplier;
     private final RemoteTxHook remoteTxHook;
     private final TxIdGenerator txIdGenerator;
     private final TransactionHeaderInformation transactionHeaderInformation;
     private final StartupStatisticsProvider startupStatistics;
+    private CacheLayer storeLayer;
+    private final CacheProvider cacheProvider;
+    private final Monitors monitors;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -241,10 +247,10 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                  IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
                                  Function <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory,
                                  StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
-                                 KernelHealth kernelHealth, TransactionAppender transactionAppender,
-                                 NeoTransactionStoreApplier storeApplier, RemoteTxHook remoteTxHook,
+                                 KernelHealth kernelHealth, RemoteTxHook remoteTxHook,
                                  TxIdGenerator txIdGenerator, TransactionHeaderInformation transactionHeaderInformation,
-                                 StartupStatisticsProvider startupStatistics )
+                                 StartupStatisticsProvider startupStatistics,
+                                 CacheProvider cacheProvider, Monitors monitors )
     {
         this.config = config;
         this.tokenNameLookup = tokenNameLookup;
@@ -262,12 +268,12 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         this.storeMigrationProcess = storeMigrationProcess;
         this.transactionMonitor = transactionMonitor;
         this.kernelHealth = kernelHealth;
-        this.transactionAppender = transactionAppender;
-        this.storeApplier = storeApplier;
         this.remoteTxHook = remoteTxHook;
         this.txIdGenerator = txIdGenerator;
         this.transactionHeaderInformation = transactionHeaderInformation;
         this.startupStatistics = startupStatistics;
+        this.cacheProvider = cacheProvider;
+        this.monitors = monitors;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -311,18 +317,18 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
         final NodeManager nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
-        Iterator<? extends Cache<?>> caches = nodeManager.caches().iterator();
+
+        AutoLoadingCache<NodeImpl> nodeCache = new AutoLoadingCache<>(
+                cacheProvider.newNodeCache( msgLog, config, monitors ), nodeLoader( neoStore.getNodeStore() ) );
+        AutoLoadingCache<RelationshipImpl> relationshipCache = new AutoLoadingCache<>(
+                cacheProvider.newRelationshipCache( msgLog, config, monitors ),
+                relationshipLoader( neoStore.getRelationshipStore() ) );
+        RelationshipLoader relationshipLoader = new RelationshipLoader( relationshipCache,
+                new RelationshipChainLoader( neoStore ) );
         persistenceCache = new PersistenceCache(
-                (AutoLoadingCache<NodeImpl>)caches.next(),
-                (AutoLoadingCache<RelationshipImpl>)caches.next(), new Thunk<GraphPropertiesImpl>()
-        {
-            @Override
-            public GraphPropertiesImpl evaluate()
-            {
-                return nodeManager.getGraphProperties();
-            }
-        }, nodeManager );
-        cacheAccess = new BridgingCacheAccess( nodeManager, schemaCache, updateableSchemaState, persistenceCache );
+                nodeCache, relationshipCache, nodeManager.newGraphProperties(), relationshipLoader,
+                propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
+        cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState, persistenceCache );
 
         try
         {
@@ -350,13 +356,14 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 }
             };
 
-            kernel = life.add( new Kernel( propertyKeyTokenHolder,
-                    updateableSchemaState, schemaWriteGuard,
-                    indexingService, nodeManager, neoStoreProvider, persistenceCache, schemaCache, providerMap, fs, config, labelScanStore,
-                    new CacheLayer(
-                        new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
-                            new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
-                        persistenceCache, indexingService, schemaCache, nodeManager ),
+            storeLayer = new CacheLayer(
+                new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+                    new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
+                persistenceCache, indexingService, schemaCache );
+
+            kernel = life.add( new Kernel( propertyKeyTokenHolder, updateableSchemaState, schemaWriteGuard,
+                    indexingService, nodeManager, neoStoreProvider, persistenceCache, schemaCache, providerMap,
+                    fs, config, labelScanStore, storeLayer,
                     scheduler, transactionMonitor, kernelHealth, readOnly, cacheAccess, integrityValidator,
                     locks, lockService, remoteTxHook, txIdGenerator, transactionHeaderInformation, this,
                     startupStatistics, logging ) );
@@ -397,6 +404,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             life.start();
 
             propertyKeyTokenHolder.addTokens( ((TokenStore<?>) neoStore.getPropertyKeyTokenStore()).getTokens( Integer.MAX_VALUE ) );
+            relationshipTypeTokens.addTokens( ((TokenStore<?>) neoStore.getRelationshipTypeTokenStore()).getTokens( Integer.MAX_VALUE ) );
+            labelTokens.addTokens( ((TokenStore<?>) neoStore.getLabelTokenStore()).getTokens( Integer.MAX_VALUE ) );
         }
         catch ( Throwable e )
         {   // Something unexpected happened during startup
@@ -410,6 +419,48 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             }
             throw Exceptions.launderedException( e );
         }
+    }
+
+    private AutoLoadingCache.Loader<RelationshipImpl> relationshipLoader(
+            final RelationshipStore relationshipStore )
+    {
+        return new AutoLoadingCache.Loader<RelationshipImpl>()
+        {
+            @Override
+            public RelationshipImpl loadById( long id )
+            {
+                try
+                {
+                    RelationshipRecord record = relationshipStore.getRecord( id );
+                    return new RelationshipImpl( id, record.getFirstNode(), record.getSecondNode(),
+                            record.getType() );
+                }
+                catch ( InvalidRecordException e )
+                {
+                    return null;
+                }
+            }
+        };
+    }
+
+    private AutoLoadingCache.Loader<NodeImpl> nodeLoader( final NodeStore nodeStore )
+    {
+        return new AutoLoadingCache.Loader<NodeImpl>()
+        {
+            @Override
+            public NodeImpl loadById( long id )
+            {
+                try
+                {
+                    NodeRecord record = nodeStore.getRecord( id );
+                    return record.isDense() ? new DenseNodeImpl( id ) : new NodeImpl( id );
+                }
+                catch ( InvalidRecordException e )
+                {
+                    return null;
+                }
+            }
+        };
     }
 
     // TODO 2.2-future: In TransactionFactory (now gone) was (#onRecoveryComplete)
@@ -542,6 +593,11 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     public NeoStore evaluate()
     {
         return neoStore;
+    }
+
+    public StoreReadLayer getStoreLayer()
+    {
+        return storeLayer;
     }
 
     @Override

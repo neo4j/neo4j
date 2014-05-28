@@ -19,16 +19,8 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import java.util.Set;
-
-import org.neo4j.graphdb.event.TransactionData;
-import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.core.WritableTransactionState.SetAndDirectionCounter;
-import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.util.ArrayMap;
-import org.neo4j.kernel.impl.util.RelIdArray;
 
 /**
  * Keeps transaction state for a single transaction, such as:
@@ -42,53 +34,17 @@ import org.neo4j.kernel.impl.util.RelIdArray;
  *
  * This is slowly being replaced / merged with the new KernelTransaction transaction state,
  * {@link org.neo4j.kernel.impl.api.state.TxState}, please avoid adding more functionality to this class.
+ *
+ * TODO Even if this state class isn't used for the time being there might be use of the snapshoting of
+ * services for HA. So keep for reference until everything is working.
  */
 public interface TransactionState
 {
     TransactionState NO_STATE = new NoTransactionState();
 
-    RelIdArray getOrCreateCowRelationshipAddMap( NodeImpl node, int type );
-
-    ArrayMap<Integer, SetAndDirectionCounter> getCowRelationshipRemoveMap( NodeImpl node );
-
-    SetAndDirectionCounter getOrCreateCowRelationshipRemoveMap( NodeImpl node, int type );
-
-    void applyChangesToCache( boolean success );
-
-    ArrayMap<Integer, DefinedProperty> getCowPropertyRemoveMap( Primitive primitive );
-
-    ArrayMap<Integer, DefinedProperty> getCowPropertyAddMap( Primitive primitive );
-
-    ArrayMap<Integer, DefinedProperty> getOrCreateCowPropertyAddMap( Primitive primitive );
-
-    ArrayMap<Integer, DefinedProperty> getOrCreateCowPropertyRemoveMap( Primitive primitive );
-
-    void createNode( long id );
-
-    void createRelationship( long id );
-
-    void deleteNode( long id );
-
-    void deleteRelationship( long id );
-
-    TransactionData getTransactionData();
-
-    boolean nodeIsDeleted( long nodeId );
-
-    boolean relationshipIsDeleted( long relationshpId );
-
-    boolean hasChanges();
-
     RemoteTxHook getTxHook();
 
     TxIdGenerator getTxIdGenerator();
-
-    Set<Long> getCreatedNodes();
-
-    Set<Long> getCreatedRelationships();
-
-    // Tech debt, this is here waiting for transaction state to move to the TxState class
-    Iterable<WritableTransactionState.CowNodeElement> getChangedNodes();
 
     /**
      * A history of slave transactions and their cultural impact on Graph Databases.
@@ -143,13 +99,4 @@ public interface TransactionState
     boolean isRemotelyInitialized();
 
     void markAsRemotelyInitialized();
-
-    ArrayMap<Integer,RelIdArray> getCowRelationshipAddMap( NodeImpl node );
-
-    /**
-     * For a transitional period, until all locks are managed via the new kernel, we use this as the owner of the lock
-     * client. Once the kernel is the sole owner of locking (right now it is shared with our friend {@link NodeManager},
-     * the locks client should be owner by it.
-     */
-    Locks.Client locks();
 }

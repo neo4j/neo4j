@@ -25,8 +25,10 @@ import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 
+import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntSet;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Function;
@@ -126,6 +128,7 @@ public class RelationshipChangesForNode
     private Map<Integer /* Type */, Set<Long /* Id */>> outgoing;
     private Map<Integer /* Type */, Set<Long /* Id */>> incoming;
     private Map<Integer /* Type */, Set<Long /* Id */>> loops;
+    private PrimitiveIntSet typesChanged;
 
     private int totalOutgoing = 0;
     private int totalIncoming = 0;
@@ -139,7 +142,7 @@ public class RelationshipChangesForNode
     public void addRelationship( long relId, int typeId, Direction direction )
     {
         Map<Integer, Set<Long>> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-
+        typeChanged( typeId );
         Set<Long> rels = relTypeToRelsMap.get( typeId );
         if(rels == null)
         {
@@ -163,10 +166,19 @@ public class RelationshipChangesForNode
         }
     }
 
+    private void typeChanged( int type )
+    {
+        if ( typesChanged == null )
+        {
+            typesChanged = Primitive.intSet();
+        }
+        typesChanged.add( type );
+    }
+
     public boolean removeRelationship( long relId, int typeId, Direction direction)
     {
         Map<Integer, Set<Long>> relTypeToRelsMap = getTypeToRelMapForDirection( direction );
-
+        typeChanged( typeId );
         Set<Long> rels = relTypeToRelsMap.get( typeId );
         if(rels != null)
         {
@@ -312,15 +324,15 @@ public class RelationshipChangesForNode
 
     public void clear()
     {
-        if(outgoing != null)
+        if ( outgoing != null )
         {
             outgoing.clear();
         }
-        if(incoming != null)
+        if ( incoming != null )
         {
             incoming.clear();
         }
-        if(loops != null)
+        if ( loops != null )
         {
             loops.clear();
         }
@@ -328,16 +340,40 @@ public class RelationshipChangesForNode
 
     private Map<Integer /* Type */, Set<Long /* Id */>> outgoing()
     {
-        if(outgoing == null)
+        if ( outgoing == null )
         {
             outgoing = new VersionedHashMap<>();
         }
         return outgoing;
     }
 
+    /**
+     * TODO Should perhaps be a visitor of some sort instead?
+     */
+    public Iterator<Long> outgoingChanges( int type )
+    {
+        return outgoing != null ? outgoing.get( type ).iterator() : null;
+    }
+
+    /**
+     * TODO Should perhaps be a visitor of some sort instead?
+     */
+    public Iterator<Long> incomingChanges( int type )
+    {
+        return incoming != null ? incoming.get( type ).iterator() : null;
+    }
+
+    /**
+     * TODO Should perhaps be a visitor of some sort instead?
+     */
+    public Iterator<Long> loopsChanges( int type )
+    {
+        return loops != null ? loops.get( type ).iterator() : null;
+    }
+
     private Map<Integer /* Type */, Set<Long /* Id */>> incoming()
     {
-        if(incoming == null)
+        if ( incoming == null )
         {
             incoming = new VersionedHashMap<>();
         }
@@ -346,7 +382,7 @@ public class RelationshipChangesForNode
 
     private Map<Integer /* Type */, Set<Long /* Id */>> loops()
     {
-        if(loops == null)
+        if ( loops == null )
         {
             loops = new VersionedHashMap<>();
         }
@@ -369,6 +405,11 @@ public class RelationshipChangesForNode
                 break;
         }
         return relTypeToRelsMap;
+    }
+
+    public PrimitiveIntIterator getTypesChanged()
+    {
+        return typesChanged != null ? typesChanged.iterator() : PrimitiveIntCollections.emptyIterator();
     }
 
     private Function<Map<Integer, Set<Long>>, Iterator<Set<Long>>> typeFilter( final int[] types )

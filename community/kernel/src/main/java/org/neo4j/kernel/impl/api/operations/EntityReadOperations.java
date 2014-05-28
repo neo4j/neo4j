@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.KernelStatement;
+import org.neo4j.kernel.impl.api.RelationshipVisitor;
 
 public interface EntityReadOperations
 {
@@ -137,4 +138,7 @@ public interface EntityReadOperations
     PrimitiveLongIterator nodesGetAll( KernelStatement state );
 
     PrimitiveLongIterator relationshipsGetAll( KernelStatement state );
+
+    void relationshipVisit( KernelStatement statement, long relId, RelationshipVisitor visitor )
+            throws EntityNotFoundException;
 }
