@@ -159,7 +159,7 @@ public class StandardPagedFile implements PagedFile
     @Override
     public void close() throws IOException
     {
-        table.flush( pageIO );
+        force();
         pageIO.close();
     }
 
@@ -167,6 +167,12 @@ public class StandardPagedFile implements PagedFile
     public void flush() throws IOException
     {
         table.flush( pageIO );
+        force();
+    }
+
+    @Override
+    public void force() throws IOException
+    {
         pageIO.force();
     }
 }

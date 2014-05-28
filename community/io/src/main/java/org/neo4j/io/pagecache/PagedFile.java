@@ -33,5 +33,9 @@ public interface PagedFile
 
     int numberOfCachedPages();
 
+    /** Flush all dirty pages into the file channel, and force the file channel to disk. */
     void flush() throws IOException;
+
+    /** Force all changes to this file handle down to disk. Does not flush dirty pages. */
+    void force() throws IOException;
 }
