@@ -387,9 +387,9 @@ public class HostnamePortTest
     }
 
     @Test
-    public void testMatchesKnownHostWithHostUnknown(){
-    	// Given	
-    	
+    public void testMatchesKnownHostWithHostUnknown() throws Exception
+    {
+    	// Given	   	
     	String host1 = InetAddress.getLocalHost().getHostName();    	
         String unknownHost = "unknownHost";
     	
