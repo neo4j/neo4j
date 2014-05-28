@@ -498,11 +498,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         return neoStore.getCurrentLogVersion();
     }
 
-    public long incrementAndGetLogVersion()
-    {
-        return neoStore.nextLogVersion();
-    }
-
     public boolean isReadOnly()
     {
         return readOnly;

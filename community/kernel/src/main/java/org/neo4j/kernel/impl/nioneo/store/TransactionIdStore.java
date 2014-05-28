@@ -51,12 +51,6 @@ public interface TransactionIdStore
      */
     boolean closedTransactionIdIsOnParWithCommittingTransactionId();
 
-    long nextLogVersion();
-
-    long getCurrentLogVersion();
-
-    void setCurrentLogVersion( long logVersion );
-
     /**
      * Forces the transaction id to persistent storage.
      */

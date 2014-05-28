@@ -30,6 +30,7 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogRecoveryCheck;
 
@@ -52,7 +53,7 @@ public class StoreRecoverer
         this.fs = fs;
     }
 
-    public boolean recoveryNeededAt( File dataDir, Map<String, String> params ) throws IOException
+    public boolean recoveryNeededAt( File dataDir, LogVersionRepository logVersionRepository, Map<String, String> params ) throws IOException
     {
         // We need config to determine where the logical log files are
         params.put( GraphDatabaseSettings.store_dir.name(), dataDir.getPath() );
@@ -61,28 +62,7 @@ public class StoreRecoverer
         File baseLogPath = config.get( GraphDatabaseSettings.logical_log );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( baseLogPath, fs );
 
-        File log;
-        switch ( logFiles.determineState() )
-        {
-        case CLEAN:
-            return false;
-
-        case NO_ACTIVE_FILE:
-        case DUAL_LOGS_LOG_1_ACTIVE:
-        case DUAL_LOGS_LOG_2_ACTIVE:
-            return true;
-
-        case LOG_1_ACTIVE:
-            log = logFiles.getLog1FileName();
-            break;
-
-        case LOG_2_ACTIVE:
-            log = logFiles.getLog2FileName();
-            break;
-
-        default:
-            return true;
-        }
+        File log = logFiles.getHistoryFileName(logVersionRepository.getCurrentLogVersion());
 
         StoreChannel logChannel = null;
         try

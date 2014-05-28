@@ -19,9 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static java.util.Arrays.asList;
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -37,65 +41,60 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-
-import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.*;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandSerializer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 
 /**
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands
- * need to be able to handl the log ending mid-way through reading it.
+ * need to be able to handle the log ending mid-way through reading it.
  */
 public class LogTruncationTest
 {
     private final InMemoryLogBuffer inMemoryBuffer = new InMemoryLogBuffer();
-    private final PhysicalLogNeoXaCommandReaderV1 reader = new PhysicalLogNeoXaCommandReaderV1( ByteBuffer.allocate( 100 ) );
-    private final PhysicalLogNeoXaCommandWriter writer = new PhysicalLogNeoXaCommandWriter();
+    private final PhysicalLogNeoXaCommandReaderV1 reader = new PhysicalLogNeoXaCommandReaderV1();
+    private final LogEntryWriter writer = new LogEntryWriterv1(inMemoryBuffer, new CommandSerializer(inMemoryBuffer));
 
     /** Stores all known commands, and an arbitrary set of different permutations for them */
-    private final Map<Class<?>, XaCommand[]> permutations = new HashMap<>();
+    private final Map<Class<?>, Command[]> permutations = new HashMap<>();
 
     {
-        permutations.put( Command.NeoStoreCommand.class, new XaCommand[]{
+        permutations.put( Command.NeoStoreCommand.class, new Command[]{
             new Command.NeoStoreCommand().init( new NeoStoreRecord() )
         });
 
-        permutations.put( Command.NodeCommand.class, new XaCommand[]{
+        permutations.put( Command.NodeCommand.class, new Command[]{
             new Command.NodeCommand().init( new NodeRecord( 12l, false, 13l, 13l ), new NodeRecord( 0,false, 0,0 ) )
         });
-        permutations.put( Command.RelationshipCommand.class, new XaCommand[]{
+        permutations.put( Command.RelationshipCommand.class, new Command[]{
             new Command.RelationshipCommand().init( new RelationshipRecord( 1l, 2l, 3l, 4 ) )
         });
-        permutations.put( Command.PropertyCommand.class, new XaCommand[]{
+        permutations.put( Command.PropertyCommand.class, new Command[]{
             new Command.PropertyCommand().init(
                 new PropertyRecord( 1, new NodeRecord(12l, false, 13l, 13) ),
                 new PropertyRecord( 1, new NodeRecord(12l, false, 13l, 13) ) )
         });
-        permutations.put( Command.RelationshipGroupCommand.class, new XaCommand[]{
+        permutations.put( Command.RelationshipGroupCommand.class, new Command[]{
             new Command.LabelTokenCommand().init( new LabelTokenRecord( 1 ) )
         });
 
-        permutations.put( Command.SchemaRuleCommand.class, new XaCommand[]{
+        permutations.put( Command.SchemaRuleCommand.class, new Command[]{
             new Command.SchemaRuleCommand().init(
                 asList( dynamicRecord( 1l, false, true, -1l, 1, "hello".getBytes() )),
-                asList( dynamicRecord( 1l, true, true, -1l, 1, "hello".getBytes() )),
-                new IndexRule(1l, 2, 3, new SchemaIndexProvider.Descriptor( "myIdx", "12" ), 12l), 1l)
-        });
+                asList( dynamicRecord( 1l, true, true, -1l, 1, "hello".getBytes() )), new IndexRule(1, 3, 4, new SchemaIndexProvider.Descriptor("1", "2"), null))});
 
-        permutations.put( Command.RelationshipTypeTokenCommand.class, new XaCommand[]{
+        permutations.put( Command.RelationshipTypeTokenCommand.class, new Command[]{
             new Command.RelationshipTypeTokenCommand().init( new RelationshipTypeTokenRecord( 1 ) )
         });
-        permutations.put( Command.PropertyKeyTokenCommand.class, new XaCommand[]{
+        permutations.put( Command.PropertyKeyTokenCommand.class, new Command[]{
             new Command.PropertyKeyTokenCommand().init( new PropertyKeyTokenRecord( 1 ) )
         });
-        permutations.put( Command.LabelTokenCommand.class, new XaCommand[]{
+        permutations.put( Command.LabelTokenCommand.class, new Command[]{
             new Command.LabelTokenCommand().init( new LabelTokenRecord( 1 ) )
         });
     }
@@ -103,23 +102,23 @@ public class LogTruncationTest
     @Test
     public void testSerializationInFaceOfLogTruncation() throws Exception
     {
-        for ( XaCommand cmd : enumerateCommands() )
+        for ( Command cmd : enumerateCommands() )
         {
             assertHandlesLogTruncation( cmd );
         }
     }
 
-    private Iterable<XaCommand> enumerateCommands()
+    private Iterable<Command> enumerateCommands()
     {
         // We use this reflection approach rather than just iterating over the permutation map to force developers
         // writing new commands to add the new commands to this test. If you came here because of a test failure from
         // missing commands, add all permutations you can think of of the command to the permutations map in the
         // beginning of this class.
 
-        List<XaCommand> commands = new ArrayList<>();
+        List<Command> commands = new ArrayList<>();
         for ( Class<?> cmd : Command.class.getClasses() )
         {
-            if( XaCommand.class.isAssignableFrom( cmd ) )
+            if( Command.class.isAssignableFrom( cmd ) )
             {
                 if(permutations.containsKey( cmd ))
                 {
@@ -135,11 +134,11 @@ public class LogTruncationTest
         return commands;
     }
 
-    private void assertHandlesLogTruncation( XaCommand cmd ) throws IOException
+    private void assertHandlesLogTruncation( Command cmd ) throws IOException
     {
         inMemoryBuffer.reset();
 
-        writer.write( cmd, inMemoryBuffer );
+        writer.writeCommandEntry( cmd );
 
         int bytesSuccessfullyWritten = inMemoryBuffer.bytesWritten();
 
@@ -157,17 +156,17 @@ public class LogTruncationTest
         while(bytesSuccessfullyWritten --> 0)
         {
             inMemoryBuffer.reset();
-            writer.write( cmd, inMemoryBuffer );
+            writer.writeCommandEntry( cmd );
             inMemoryBuffer.truncateTo( bytesSuccessfullyWritten );
 
-            XaCommand deserialized = reader.read( inMemoryBuffer );
+            Command deserialized = reader.read( inMemoryBuffer );
 
             assertNull( "Deserialization did not detect log truncation! Record: " + cmd +
                         ", deserialized: " + deserialized, deserialized );
         }
     }
 
-    public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
+    public class InMemoryLogBuffer implements ReadableLogChannel, WritableLogChannel
     {
         private byte[] bytes = new byte[1000];
         private int writeIndex;
@@ -203,7 +202,7 @@ public class LogTruncationTest
             }
         }
 
-        private LogBuffer flipAndPut()
+        private WritableLogChannel flipAndPut()
         {
             ensureArrayCapacityPlus( bufferForConversions.limit() );
             System.arraycopy( bufferForConversions.flip().array(), 0, bytes, writeIndex,
@@ -213,7 +212,7 @@ public class LogTruncationTest
         }
 
         @Override
-        public LogBuffer put( byte b ) throws IOException
+        public WritableLogChannel put( byte b ) throws IOException
         {
             ensureArrayCapacityPlus( 1 );
             bytes[writeIndex++] = b;
@@ -221,42 +220,42 @@ public class LogTruncationTest
         }
 
         @Override
-        public LogBuffer putShort( short s ) throws IOException
+        public WritableLogChannel putShort( short s ) throws IOException
         {
             ((ByteBuffer) bufferForConversions.clear()).putShort( s );
             return flipAndPut();
         }
 
         @Override
-        public LogBuffer putInt( int i ) throws IOException
+        public WritableLogChannel putInt( int i ) throws IOException
         {
             ((ByteBuffer) bufferForConversions.clear()).putInt( i );
             return flipAndPut();
         }
 
         @Override
-        public LogBuffer putLong( long l ) throws IOException
+        public WritableLogChannel putLong( long l ) throws IOException
         {
             ((ByteBuffer) bufferForConversions.clear()).putLong( l );
             return flipAndPut();
         }
 
         @Override
-        public LogBuffer putFloat( float f ) throws IOException
+        public WritableLogChannel putFloat( float f ) throws IOException
         {
             ((ByteBuffer) bufferForConversions.clear()).putFloat( f );
             return flipAndPut();
         }
 
         @Override
-        public LogBuffer putDouble( double d ) throws IOException
+        public WritableLogChannel putDouble( double d ) throws IOException
         {
             ((ByteBuffer) bufferForConversions.clear()).putDouble( d );
             return flipAndPut();
         }
 
         @Override
-        public LogBuffer put( byte[] bytes ) throws IOException
+        public WritableLogChannel put( byte[] bytes, int length ) throws IOException
         {
             ensureArrayCapacityPlus( bytes.length );
             System.arraycopy( bytes, 0, this.bytes, writeIndex, bytes.length );
@@ -265,7 +264,7 @@ public class LogTruncationTest
         }
 
         @Override
-        public LogBuffer put( char[] chars ) throws IOException
+        public WritableLogChannel put( char[] chars, int length ) throws IOException
         {
             ensureConversionBufferCapacity( chars.length*2 );
             bufferForConversions.clear();
@@ -285,31 +284,8 @@ public class LogTruncationTest
         }
 
         @Override
-        public void writeOut() throws IOException
-        {
-        }
-
-        @Override
         public void force() throws IOException
         {
-        }
-
-        @Override
-        public long getFileChannelPosition() throws IOException
-        {
-            return this.readIndex;
-        }
-
-        @Override
-        public StoreChannel getFileChannel()
-        {
-            throw new UnsupportedOperationException();
-        }
-
-        @Override
-        public boolean isOpen()
-        {
-            return true;
         }
 
         @Override
@@ -317,7 +293,6 @@ public class LogTruncationTest
         {
         }
 
-        @Override
         public int read( ByteBuffer dst ) throws IOException
         {
             if ( readIndex >= writeIndex )
@@ -336,5 +311,65 @@ public class LogTruncationTest
                 readIndex += actualLengthToRead;
             }
         }
+
+		@Override
+		public boolean hasMoreData() throws IOException {
+			// TODO Auto-generated method stub
+			return false;
+		}
+
+		@Override
+		public byte get() throws IOException {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public short getShort() throws IOException {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public int getInt() throws IOException {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public long getLong() throws IOException {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public float getFloat() throws IOException {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public double getDouble() throws IOException {
+			// TODO Auto-generated method stub
+			return 0;
+		}
+
+		@Override
+		public void get(byte[] bytes, int length) throws IOException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public void get(char[] chars, int length) throws IOException {
+			// TODO Auto-generated method stub
+			
+		}
+
+		@Override
+		public LogPosition getCurrentPosition() throws IOException {
+			// TODO Auto-generated method stub
+			return null;
+		}
     }
 }

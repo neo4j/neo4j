@@ -184,7 +184,7 @@ public class ThirdPartyDSStoreCopyIT
 
             // We need to mock these implementation components, since LogExtractor is not an interface.
             LogExtractor.LogLoader logLoader = mock( LogExtractor.LogLoader.class );
-            when(logLoader.getHighestLogVersion()).thenReturn( 1l );
+            when(logLoader.getCurrentLogVersion()).thenReturn( 1l );
             when(logLoader.getLogicalLogOrMyselfCommitted( anyLong(), anyLong())).thenReturn( mock( ReadableByteChannel.class) );
 
             LogExtractor.LogPositionCache logPositionCache = mock( LogExtractor.LogPositionCache.class );

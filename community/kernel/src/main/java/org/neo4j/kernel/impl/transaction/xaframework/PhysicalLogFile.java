@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -26,92 +29,51 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 
 /**
  * {@link LogFile} backup by one or more files in a {@link FileSystemAbstraction}.
  */
-public class PhysicalLogFile implements LogFile,
-        LogVersionRepository,       /* as an intermediary step, since LogPruneStrategies uses it, although log pruning should be
-                            implemented inside here or something*/
-        LogVersionBridge
+public class PhysicalLogFile implements LogFile, LogVersionBridge
 {
     public static final String DEFAULT_NAME = "nioneo_logical.log";
-    private static final char LOG1 = '1';
-    private static final char LOG2 = '2';
-    private static final char CLEAN = 'C';
 
-    private char currentLog = CLEAN;
     private final long rotateAtSize;
     private final FileSystemAbstraction fileSystem;
-    private final File fileName;
     private final LogPruneStrategy pruneStrategy;
     private final TransactionIdStore transactionIdStore;
     private final PhysicalLogFiles logFiles;
-    private long currentLogVersion;
     private final LogPositionCache positionCache;
     private final Monitor monitor;
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( 16 );
     private final LogRotationControl logRotationControl;
     private WritableLogChannel writer;
+	private final LogVersionRepository logVersionRepository;
 
     public PhysicalLogFile( FileSystemAbstraction fileSystem, File directory, String name, long rotateAtSize,
-            LogPruneStrategy pruneStrategy, TransactionIdStore transactionIdStore, Monitor monitor,
+            LogPruneStrategy pruneStrategy, TransactionIdStore transactionIdStore, 
+            LogVersionRepository logVersionRepository, Monitor monitor,
             LogRotationControl logRotationControl, LogPositionCache positionCache )
     {
         this.fileSystem = fileSystem;
         this.rotateAtSize = rotateAtSize;
         this.pruneStrategy = pruneStrategy;
         this.transactionIdStore = transactionIdStore;
+        this.logVersionRepository = logVersionRepository;
         this.monitor = monitor;
         this.logRotationControl = logRotationControl;
         this.positionCache = positionCache;
-        this.fileName = new File( directory, name );
         this.logFiles = new PhysicalLogFiles( directory, name, fileSystem );
     }
 
     @Override
     public void open( Visitor<ReadableLogChannel, IOException> recoveredDataVisitor ) throws IOException
-    {
-        PhysicalLogVersionedStoreChannel channel = null;
-        switch ( logFiles.determineState() )
-        {
-        case NO_ACTIVE_FILE:
-            channel = open( logFiles.getLog1FileName(), recoveredDataVisitor );
-            setActiveLog( LOG1 );
-            break;
+    {        
+        long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
 
-        case CLEAN:
-            File newLog = logFiles.getLog1FileName();
-            renameIfExists( newLog );
-            renameIfExists( logFiles.getLog2FileName() );
-            channel = open( newLog, recoveredDataVisitor );
-            setActiveLog( LOG1 );
-            break;
-
-        case DUAL_LOGS_LOG_1_ACTIVE:
-            fixDualLogFiles( logFiles.getLog1FileName(), logFiles.getLog2FileName() );
-        case LOG_1_ACTIVE:
-            currentLog = LOG1;
-            channel = open( logFiles.getLog1FileName(), recoveredDataVisitor );
-            break;
-
-        case DUAL_LOGS_LOG_2_ACTIVE:
-            fixDualLogFiles( logFiles.getLog2FileName(), logFiles.getLog1FileName() );
-        case LOG_2_ACTIVE:
-            currentLog = LOG2;
-            channel = open( logFiles.getLog2FileName(), recoveredDataVisitor );
-            break;
-
-        default:
-            throw new IllegalStateException( "FATAL: Unrecognized logical log state." );
-        }
+        PhysicalLogVersionedStoreChannel channel = openLogChannelForVersion( lastLogVersionUsed );
+        doRecoveryOn( channel, recoveredDataVisitor );
 
         writer = new PhysicalWritableLogChannel( channel, new LogVersionBridge()
         {
@@ -129,16 +91,31 @@ public class PhysicalLogFile implements LogFile,
         } );
     }
 
-    private PhysicalLogVersionedStoreChannel open( File fileToOpen, Visitor<ReadableLogChannel, IOException> recoveredDataVisitor )
+    private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
+    {
+    	File toOpen = logFiles.getHistoryFileName( forVersion );
+    	PhysicalLogVersionedStoreChannel channel = openFileChannel( toOpen, "rw" );
+        long[] header = readLogHeader( headerBuffer, channel, false );
+    	if ( header == null )
+    	{
+    		// Either the header is not there in full or the file was new. Don't care
+    		long lastTxId = transactionIdStore.getLastCommittingTransactionId();
+            writeLogHeader( headerBuffer, forVersion, lastTxId );
+            positionCache.putHeader( forVersion, lastTxId );
+            channel.writeAll( headerBuffer );
+            channel.setVersion(forVersion);
+            monitor.opened( toOpen, forVersion, lastTxId, true );
+    	}
+    	return channel;
+    }
+
+    private void doRecoveryOn( PhysicalLogVersionedStoreChannel toRecover, Visitor<ReadableLogChannel, IOException> recoveredDataVisitor )
             throws IOException
     {
-        PhysicalLogVersionedStoreChannel channel = openFileChannel( fileToOpen, "rw" );
-        if ( new XaLogicalLogRecoveryCheck( channel ).recoveryRequired() )
+        if ( new XaLogicalLogRecoveryCheck( toRecover ).recoveryRequired() )
         {   // There are already data in here, which means recovery will need to be performed.
-            long[] header = readLogHeader( headerBuffer, channel, true );
-            transactionIdStore.setCurrentLogVersion( currentLogVersion = header[0] );
 
-            ReadableLogChannel recoveredDataChannel = new ReadAheadLogChannel( channel, NO_MORE_CHANNELS,
+            ReadableLogChannel recoveredDataChannel = new ReadAheadLogChannel( toRecover, NO_MORE_CHANNELS,
                     ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE );
             recoveredDataVisitor.visit( recoveredDataChannel );
             // intentionally keep it open since we're continuing using the underlying channel for the writer below
@@ -146,184 +123,36 @@ public class PhysicalLogFile implements LogFile,
             logRotationControl.forceEverything();
             // TODO rotate after recovery?
         }
-        else
-        {   // This is a new log file, write a header in it
-            currentLogVersion = transactionIdStore.getCurrentLogVersion();
-            long version = logFiles.determineNextLogVersion(/*default=*/currentLogVersion );
-            if ( version != currentLogVersion )
-            {
-                transactionIdStore.setCurrentLogVersion( currentLogVersion = version );
-            }
-
-            long lastTxId = transactionIdStore.getLastCommittingTransactionId();
-            writeLogHeader( headerBuffer, currentLogVersion, lastTxId );
-            positionCache.putHeader( currentLogVersion, lastTxId );
-            channel.writeAll( headerBuffer );
-            monitor.opened( fileToOpen, currentLogVersion, lastTxId, true );
-        }
-        channel.setVersion( currentLogVersion );
-        return channel;
     }
 
-    private void setActiveLog( char c ) throws IOException
+    private synchronized VersionedStoreChannel rotate( VersionedStoreChannel currentLog ) throws IOException
     {
-        if ( c != CLEAN && c != LOG1 && c != LOG2 )
-        {
-            throw new IllegalArgumentException( "Log must be either clean, " +
-                    "1 or 2" );
-        }
-        if ( c == currentLog )
-        {
-            throw new IllegalStateException( "Log should not be equal to " +
-                    "current " + currentLog );
-        }
-        ByteBuffer bb = ByteBuffer.wrap( new byte[4] );
-        bb.asCharBuffer().put( c ).flip();
-        StoreChannel fc = fileSystem.open( new File( fileName.getPath() + ".active"), "rw" );
-        int wrote = fc.write( bb );
-        if ( wrote != 4 )
-        {
-            throw new IllegalStateException( "Expected to write 4 -> " + wrote );
-        }
-        fc.force( false );
-        fc.close();
-        currentLog = c;
-    }
-
-    private void renameIfExists( File fileName ) throws IOException
-    {
-        if ( fileSystem.fileExists( fileName ) )
-        {
-            renameLogFileToRightVersion( fileName, fileSystem.getFileSize( fileName ) );
-            // TODO don't do anything with the returned value?
-            transactionIdStore.nextLogVersion();
-        }
-    }
-
-    private void renameLogFileToRightVersion( File logFileName, long endPosition ) throws IOException
-    {
-        if ( !fileSystem.fileExists( logFileName ) )
-        {
-            throw new IOException( "Logical log[" + logFileName + "] not found" );
-        }
-
-        StoreChannel channel = fileSystem.open( logFileName, "rw" );
-        long[] header = VersionAwareLogEntryReader.readLogHeader( ByteBuffer.allocate( 16 ), channel, false );
-        try
-        {
-            FileUtils.truncateFile( channel, endPosition );
-        }
-        catch ( IOException e )
-        {
-            monitor.failureToTruncate( logFileName, e );
-        }
-        channel.close();
-        File newName;
-        newName = logFiles.getHistoryFileName( header[0] );
-        if ( !fileSystem.renameFile( logFileName, newName ) )
-        {
-            throw new IOException( "Failed to rename log to: " + newName );
-        }
-    }
-
-    private void fixDualLogFiles( File activeLog, File oldLog ) throws IOException
-    {
-        StoreChannel activeLogChannel = fileSystem.open( activeLog, "r" );
-        long[] activeLogHeader = VersionAwareLogEntryReader.readLogHeader( ByteBuffer.allocate( 16 ),
-                activeLogChannel, false );
-        activeLogChannel.close();
-
-        StoreChannel oldLogChannel = fileSystem.open( oldLog, "r" );
-        long[] oldLogHeader = VersionAwareLogEntryReader.readLogHeader( ByteBuffer.allocate( 16 ), oldLogChannel, false );
-        oldLogChannel.close();
-
-        if ( oldLogHeader == null )
-        {
-            if ( !fileSystem.deleteFile( oldLog ) )
-            {
-                throw new IOException( "Unable to delete " + oldLog );
-            }
-        }
-        else if ( activeLogHeader == null || activeLogHeader[0] > oldLogHeader[0] )
-        {
-            // we crashed in rotate after setActive but did not move the old log to the right name
-            // (and we do not know if keepLogs is true or not so play it safe by keeping it)
-            File newName = logFiles.getHistoryFileName( oldLogHeader[0] );
-            if ( !fileSystem.renameFile( oldLog, newName ) )
-            {
-                throw new IOException( "Unable to rename " + oldLog + " to " + newName );
-            }
-        }
-        else
-        {
-            assert activeLogHeader[0] < oldLogHeader[0];
-            // we crashed in rotate before setActive, do the rotate work again and delete old
-            if ( !fileSystem.deleteFile( oldLog ) )
-            {
-                throw new IOException( "Unable to delete " + oldLog );
-            }
-        }
-    }
-
-    // TODO 2.2-future please, for the name of $DEITY, at the very least revisit the version variable names
-    // TODO 2.2-future ideally, we should reorder stuff so less variables are needed
-    private synchronized VersionedStoreChannel rotate( VersionedStoreChannel channel ) throws IOException
-    {
+    	/*
+    	 * First we flush the store. If we fail now or during the flush, on
+    	 * recovery we'll discover the current log file and replay it. Everything
+    	 * will be ok.
+    	 */
         logRotationControl.awaitAllTransactionsClosed();
         logRotationControl.forceEverything();
+        /*
+         * The store is now flushed. If we fail now the recovery code will open the
+         * current log file and replay everything. That's unnecessary but totally ok.
+         */
+        long newLogVersion = logVersionRepository.incrementAndGetVersion();
+        /*
+         * The log version is now in the store, flushed and persistent. If we crash
+         * now, on recovery we'll attempt to open the version we're about to create
+         * (but haven't yet), discover it's not there. That will lead to creating
+         * the file, setting the header and continuing. We'll do just that now.
+         * Note that by this point, rotation is done. The next few lines are
+         * "simply overhead" for continuing to work with the new file. 
+         */
+        PhysicalLogVersionedStoreChannel newLog = openLogChannelForVersion( newLogVersion );
+        currentLog.close();
 
-        File newLogFile = logFiles.getLog2FileName();
-        File currentLogFile = logFiles.getLog1FileName();
-        char newActiveLog = LOG2;
-        long previousLogVersion = transactionIdStore.getCurrentLogVersion();
-
-        File oldCopy = logFiles.getHistoryFileName( previousLogVersion );
-        if ( currentLog == CLEAN || currentLog == LOG2 )
-        {
-            newActiveLog = LOG1;
-            newLogFile = logFiles.getLog1FileName();
-            currentLogFile = logFiles.getLog2FileName();
-        }
-        else
-        {
-            assert currentLog == LOG1;
-        }
-        assertFileDoesntExist( newLogFile, "New log file" );
-        assertFileDoesntExist( oldCopy, "Copy log file" );
-        PhysicalLogVersionedStoreChannel newLog = openFileChannel( newLogFile, "rw" );
-        long lastTx = transactionIdStore.getLastCommittingTransactionId();
-        VersionAwareLogEntryReader.writeLogHeader( headerBuffer, previousLogVersion + 1, lastTx );
-        if ( newLog.write( headerBuffer ) != 16 )
-        {
-            throw new IOException( "Unable to write log version to new" );
-        }
-
-        long endPosition = channel.position();
-        channel.close();
-        setActiveLog( newActiveLog );
-
-        renameLogFileToRightVersion( currentLogFile, endPosition );
-        currentLogVersion = transactionIdStore.nextLogVersion();
-        if ( currentLogVersion != (previousLogVersion + 1) )
-        {
-            throw new IOException( "Version change failed, expected " + (previousLogVersion + 1) + ", but was " +
-                    currentLogVersion );
-        }
-
-        newLog.setVersion( currentLogVersion );
-
-        pruneStrategy.prune( this );
-        positionCache.putHeader( currentLogVersion, lastTx );
         return newLog;
     }
 
-    private void assertFileDoesntExist( File file, String description ) throws IOException
-    {
-        if ( fileSystem.fileExists( file ) )
-        {
-            throw new IOException( description + ": " + file + " already exist" );
-        }
-    }
 
 //    @Override
 //    public Long getFirstCommittedTxId( long version )
@@ -444,16 +273,7 @@ public class PhysicalLogFile implements LogFile,
     private PhysicalLogVersionedStoreChannel openLogChannel( LogPosition position ) throws IOException
     {
         long version = position.getLogVersion();
-        File fileToOpen;
-        if ( version == currentLogVersion )
-        {   // This is the current one
-            fileToOpen = getCurrentActiveLogFileName();
-        }
-        else
-        {   // This is a historical one
-            fileToOpen = logFiles.getHistoryFileName( version );
-        }
-
+        File fileToOpen = logFiles.getHistoryFileName(version);
         PhysicalLogVersionedStoreChannel channel = openFileChannel( fileToOpen, "r", version );
         channel.position( position.getByteOffset() );
         return channel;
@@ -468,57 +288,6 @@ public class PhysicalLogFile implements LogFile,
             throws IOException
     {
         return new PhysicalLogVersionedStoreChannel( fileSystem.open( file, mode ), version );
-    }
-
-    private File getCurrentActiveLogFileName()
-    {
-        switch ( currentLog )
-        {
-        case LOG1:
-            return logFiles.getLog1FileName();
-        case LOG2:
-            return logFiles.getLog2FileName();
-        default:
-            throw new IllegalStateException( "Invalid log " + currentLog );
-        }
-    }
-
-    @Override
-    public LogPosition findRoughPositionOf( long transactionId ) throws NoSuchTransactionException
-    {
-        throw new UnsupportedOperationException( "Please implement" );
-    }
-
-    // -- Ohoy traveller, LogVersion repo stuff ahead (temporary I hope)
-
-    @Override
-    public long getHighestLogVersion()
-    {
-        throw new UnsupportedOperationException( "Please implement" );
-    }
-
-    @Override
-    public File getFileName( long version )
-    {
-        throw new UnsupportedOperationException( "Please implement" );
-    }
-
-    @Override
-    public Long getFirstCommittedTxId( long version )
-    {
-        throw new UnsupportedOperationException( "Please implement" );
-    }
-
-    @Override
-    public long getLastCommittedTxId()
-    {
-        throw new UnsupportedOperationException( "Please implement" );
-    }
-
-    @Override
-    public Long getFirstStartRecordTimestamp( long version ) throws IOException
-    {
-        throw new UnsupportedOperationException( "Please implement" );
     }
 
     public interface Monitor
@@ -557,17 +326,20 @@ public class PhysicalLogFile implements LogFile,
         logRotationControl.awaitAllTransactionsClosed();
         logRotationControl.forceEverything();
 
-        LogPosition endPosition = writer.getCurrentPosition();
-        writer.close();
-        File currentLogFile = currentLog == LOG1 ? logFiles.getLog1FileName() : logFiles.getLog2FileName();
-        if ( currentLog != CLEAN )
-        {
-            setActiveLog( CLEAN );
-        }
+        /*
+         *  We simply increment the version, essentially "rotating" away
+         *  the current active log file, to avoid having a recovery on
+         *  next startup. Not necessary, simply speeds up the startup
+         *  process.
+         */
+        logVersionRepository.incrementAndGetVersion();
 
-        renameLogFileToRightVersion( currentLogFile, endPosition.getByteOffset() );
-        transactionIdStore.nextLogVersion();
-
-        pruneStrategy.prune( this );
+//        pruneStrategy.prune( this );
+    }
+    
+    @Override
+    public LogPosition findRoughPositionOf( long transactionId ) throws NoSuchTransactionException
+    {
+        throw new UnsupportedOperationException( "Please implement" );
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.hamcrest.number.OrderingComparison.lessThan;
+import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.mockito.Mockito.CALLS_REAL_METHODS;
 import static org.mockito.Mockito.mock;
@@ -104,7 +105,7 @@ public class XaLogicalLogTest
         }
 
         // then
-        assertThat( "should not read from the logical log file channel", reads, lessThan( 1 ) );
+        assertEquals( 0, reads );
     }
 
     @Test

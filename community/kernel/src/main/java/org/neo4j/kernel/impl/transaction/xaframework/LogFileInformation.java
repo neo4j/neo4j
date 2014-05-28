@@ -19,21 +19,35 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-
-public class XaLogicalLogRecoveryCheck
+interface LogFileInformation
 {
-    private final StoreChannel fileChannel;
 
-    public XaLogicalLogRecoveryCheck( StoreChannel fileChannel )
-    {
-        this.fileChannel = fileChannel;
-    }
+    File getFileName( long version );
 
-    public boolean recoveryRequired() throws IOException
-    {
-        return fileChannel.size() > 16;
-    }
+    /**
+     * @param version the log version to get first committed tx for.
+     * @return the first committed transaction id for the log with {@code version}.
+     * If that log doesn't exist {@code null} is returned.
+     */
+    Long getFirstCommittedTxId( long version );
+
+    /**
+     * @return the last committed transaction id for this Log
+     */
+    long getLastCommittedTxId();
+
+    /**
+     * @param version the log version to get first tx timestamp for.
+     * @return the timestamp for the start record for the first encountered transaction
+     * in the log {@code version}.
+     */
+    Long getFirstStartRecordTimestamp( long version ) throws IOException;
+
+    /**
+     * @return The current log version for this log file set
+     */
+	int getCurrentLogVersion();
 }

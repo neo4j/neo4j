@@ -33,7 +33,7 @@ public class LogPruneStrategies
     public static final LogPruneStrategy NO_PRUNING = new LogPruneStrategy()
     {
         @Override
-        public void prune( LogVersionRepository source )
+        public void prune( LogFileInformation source )
         {   // Don't prune logs at all.
         }
 
@@ -46,7 +46,7 @@ public class LogPruneStrategies
 
     static interface Threshold
     {
-        boolean reached( File file, long version, LogVersionRepository source );
+        boolean reached( File file, long version, LogFileInformation source );
     }
 
     private abstract static class AbstractPruneStrategy implements LogPruneStrategy
@@ -59,14 +59,14 @@ public class LogPruneStrategies
         }
 
         @Override
-        public void prune( LogVersionRepository source )
+        public void prune( LogFileInformation source )
         {
-            if ( source.getHighestLogVersion() == 0 )
+            if ( source.getCurrentLogVersion() == 0 )
             {
                 return;
             }
 
-            long upper = source.getHighestLogVersion()-1;
+            long upper = source.getCurrentLogVersion()-1;
             Threshold threshold = newThreshold();
             boolean exceeded = false;
             while ( upper >= 0 )
@@ -139,7 +139,7 @@ public class LogPruneStrategies
                 int nonEmptyLogCount = 0;
 
                 @Override
-                public boolean reached( File file, long version, LogVersionRepository source )
+                public boolean reached( File file, long version, LogFileInformation source )
                 {
                     return ++nonEmptyLogCount >= maxNonEmptyLogCount;
                 }
@@ -176,7 +176,7 @@ public class LogPruneStrategies
                 private int size;
 
                 @Override
-                public boolean reached( File file, long version, LogVersionRepository source )
+                public boolean reached( File file, long version, LogFileInformation source )
                 {
                     size += fileSystem.getFileSize( file );
                     return size >= maxSize;
@@ -208,7 +208,7 @@ public class LogPruneStrategies
                 private Long highest;
 
                 @Override
-                public boolean reached( File file, long version, LogVersionRepository source )
+                public boolean reached( File file, long version, LogFileInformation source )
                 {
                     try
                     {
@@ -262,7 +262,7 @@ public class LogPruneStrategies
                 private final long lowerLimit = System.currentTimeMillis() - unit.toMillis( timeToKeep );
 
                 @Override
-                public boolean reached( File file, long version, LogVersionRepository source )
+                public boolean reached( File file, long version, LogFileInformation source )
                 {
                     try
                     {

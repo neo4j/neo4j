@@ -68,9 +68,9 @@ public class TestLogPruneStrategy
         for ( int i = 0; i < 100; i++ )
         {
             log.addTransactionsUntilRotationHappens();
-            assertLogsRangeExists( log, 0, log.getHighestLogVersion()-1 );
+            assertLogsRangeExists( log, 0, log.getCurrentLogVersion()-1 );
         }
-        assertEquals( 100, log.getHighestLogVersion() );
+        assertEquals( 100, log.getCurrentLogVersion() );
     }
     
     @Test
@@ -81,8 +81,8 @@ public class TestLogPruneStrategy
         for ( int i = 0; i < 100; i++ )
         {
             log.addTransactionsUntilRotationHappens();
-            long from = Math.max( 0, log.getHighestLogVersion()-fileCount );
-            assertLogsRangeExists( log, from, log.getHighestLogVersion()-1 );
+            long from = Math.max( 0, log.getCurrentLogVersion()-fileCount );
+            assertLogsRangeExists( log, from, log.getCurrentLogVersion()-1 );
         }
     }
     
@@ -221,7 +221,7 @@ public class TestLogPruneStrategy
             long lastTimestamp )
     {
         long lowerLimit = lastTimestamp - millisToKeep;
-        for ( long version = log.getHighestLogVersion() - 1; version >= 0; version-- )
+        for ( long version = log.getCurrentLogVersion() - 1; version >= 0; version-- )
         {
             Long firstTimestamp = log.getFirstStartRecordTimestamp( version+1 );
             if ( firstTimestamp == null )
@@ -229,7 +229,7 @@ public class TestLogPruneStrategy
                 break;
             }
             assertTrue( "Log " + version + " should've been deleted by now. first of " + (version+1) + ":" + firstTimestamp + ", highestVersion:" +
-                    log.getHighestLogVersion() + ", lowerLimit:" + lowerLimit + ", timestamp:" + lastTimestamp,
+                    log.getCurrentLogVersion() + ", lowerLimit:" + lowerLimit + ", timestamp:" + lastTimestamp,
                     firstTimestamp >= lowerLimit );
         }
     }
@@ -241,17 +241,17 @@ public class TestLogPruneStrategy
     
     private void assertLogsRangeExists( MockedLogLoader log, long from, long to, Set<Long> empty )
     {
-        assertTrue( log.getHighestLogVersion() >= to );
+        assertTrue( log.getCurrentLogVersion() >= to );
         for ( long i = 0; i < from; i++ )
         {
-            assertFalse( "Log v" + i + " shouldn't exist when highest version is " + log.getHighestLogVersion() +
+            assertFalse( "Log v" + i + " shouldn't exist when highest version is " + log.getCurrentLogVersion() +
                     " and prune strategy " + log.pruning, FS.fileExists( log.getFileName( i ) ) );
         }
         
         for ( long i = from; i <= to; i++ )
         {
             File file = log.getFileName( i );
-            assertTrue( "Log v" + i + " should exist when highest version is " + log.getHighestLogVersion() +
+            assertTrue( "Log v" + i + " should exist when highest version is " + log.getCurrentLogVersion() +
                     " and prune strategy " + log.pruning, FS.fileExists( file ) );
             if ( empty.contains( i ) )
             {
@@ -327,7 +327,7 @@ public class TestLogPruneStrategy
         }
         
         @Override
-        public long getHighestLogVersion()
+        public long getCurrentLogVersion()
         {
             return version;
         }
@@ -381,7 +381,7 @@ public class TestLogPruneStrategy
         }
         
         /**
-         * @return the total size of the previous log (currently {@link #getHighestLogVersion()}-1
+         * @return the total size of the previous log (currently {@link #getCurrentLogVersion()}-1
          */
         public void addTransactionsUntilRotationHappens() throws IOException
         {
@@ -425,7 +425,7 @@ public class TestLogPruneStrategy
         public int getTotalSizeOfAllExistingLogFiles()
         {
             int size = 0;
-            for ( long version = getHighestLogVersion()-1; version >= 0; version-- )
+            for ( long version = getCurrentLogVersion()-1; version >= 0; version-- )
             {
                 File file = getFileName( version );
                 if ( FS.fileExists( file ) )
@@ -442,11 +442,11 @@ public class TestLogPruneStrategy
         
         public int getTotalTransactionCountOfAllExistingLogFiles()
         {
-            if ( getHighestLogVersion() == 0 )
+            if ( getCurrentLogVersion() == 0 )
             {
                 return 0;
             }
-            long upper = getHighestLogVersion()-1;
+            long upper = getCurrentLogVersion()-1;
             long lower = upper;
             while ( lower >= 0 )
             {

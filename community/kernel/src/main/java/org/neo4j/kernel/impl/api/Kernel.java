@@ -217,7 +217,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         LogFile logFile = new PhysicalLogFile( fs, directory, PhysicalLogFile.DEFAULT_NAME,
                 config.get( GraphDatabaseSettings.logical_log_rotation_threshold ),
                 LogPruneStrategies.fromConfigValue( fs, config.get( GraphDatabaseSettings.keep_logical_logs ) ),
-                neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
+                neoStore, neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
                 logRotationControl, logPositionCache );
         return new PhysicalTransactionStore( logFile, txIdGenerator, logPositionCache,
                 new VersionAwareLogEntryReader( XaCommandReaderFactory.DEFAULT ) );

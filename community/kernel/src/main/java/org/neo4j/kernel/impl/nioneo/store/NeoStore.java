@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.String.format;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,10 +35,9 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.lang.String.format;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -44,7 +45,7 @@ import static java.lang.String.format;
  * anything but extends the AbstractStore for the "type and version" validation
  * performed in there.
  */
-public class NeoStore extends AbstractStore implements TransactionIdStore
+public class NeoStore extends AbstractStore implements TransactionIdStore, LogVersionRepository
 {
     public RelationshipTypeTokenStore getRelationshipTypeTokenStore()
     {
@@ -459,10 +460,18 @@ public class NeoStore extends AbstractStore implements TransactionIdStore
         return getRecord( 2 );
     }
 
-    @Override
     public void setCurrentLogVersion( long version )
     {
         setRecord( 2, version );
+    }
+
+    @Override
+    public synchronized long incrementAndGetVersion()
+    {
+    	long current = getCurrentLogVersion();
+        long newLogVersion = current + 1;
+        setCurrentLogVersion( newLogVersion );
+        return newLogVersion;
     }
 
 //    public synchronized void setLastCommittedTx( long txId )
@@ -509,14 +518,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore
     {
         setRecord( LATEST_CONSTRAINT_TX_POSITION, latestConstraintIntroducingTx );
         this.latestConstraintIntroducingTx.set( latestConstraintIntroducingTx );
-    }
-
-    @Override
-    public long nextLogVersion()
-    {
-        long current = getCurrentLogVersion();
-        setCurrentLogVersion( current + 1 );
-        return current;
     }
 
     private long getRecord( long id )

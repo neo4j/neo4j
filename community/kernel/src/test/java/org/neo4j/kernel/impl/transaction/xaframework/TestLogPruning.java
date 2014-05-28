@@ -159,7 +159,7 @@ public class TestLogPruning
     {
         XaLogicalLog log = neoDataSource().getXaContainer().getLogicalLog();
         int count = 0;
-        for ( long i = log.getHighestLogVersion()-1; i >= 0; i-- )
+        for ( long i = log.getCurrentLogVersion()-1; i >= 0; i-- )
         {
             if ( fs.fileExists( log.getFileName( i ) ) )
             {

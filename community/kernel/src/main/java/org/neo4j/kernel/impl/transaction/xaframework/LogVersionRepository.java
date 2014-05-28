@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.File;
 import java.io.IOException;
 
 /*
@@ -28,27 +27,14 @@ import java.io.IOException;
  */
 public interface LogVersionRepository
 {
-    long getHighestLogVersion();
-
-    File getFileName( long version );
-
+	/**
+	 * Returns the current log version. It is non blocking. 
+	 */
+    long getCurrentLogVersion();
+    
     /**
-     * @param version the log version to get first committed tx for.
-     * @return the first committed transaction id for the log with {@code version}.
-     * If that log doesn't exist {@code null} is returned.
+     * Increments and returns the latest log version for this repository. It does so
+     * atomically and can potentially block.
      */
-    Long getFirstCommittedTxId( long version );
-
-    /**
-     * @return the first committed transaction id for the log with {@code version}.
-     * If that log doesn't exist {@code null} is returned.
-     */
-    long getLastCommittedTxId();
-
-    /**
-     * @param version the log version to get first tx timestamp for.
-     * @return the timestamp for the start record for the first encountered transaction
-     * in the log {@code version}.
-     */
-    Long getFirstStartRecordTimestamp( long version ) throws IOException;
+    long incrementAndGetVersion() throws IOException;
 }
