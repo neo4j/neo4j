@@ -50,7 +50,7 @@ public class RelationshipLoader
         long nodeId = node.getId();
         RelationshipLoadingPosition position = node.getRelChainPosition();
         Pair<Map<RelIdArray.DirectionWrapper, Iterable<RelationshipRecord>>,RelationshipLoadingPosition> rels =
-                threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+                threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
                 .getMoreRelationships( nodeId, position, direction, types );
         ArrayMap<Integer, RelIdArray> newRelationshipMap = new ArrayMap<>();
 

@@ -29,7 +29,6 @@ import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
-import org.neo4j.kernel.api.exceptions.ReleaseLocksFailedKernelException;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -50,8 +49,13 @@ import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+
+import static java.lang.System.currentTimeMillis;
 
 /**
  * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon as
@@ -59,6 +63,7 @@ import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
  */
 public class KernelTransactionImplementation implements KernelTransaction, TxState.Holder
 {
+    // Logic
     private final SchemaWriteGuard schemaWriteGuard;
     private final IndexingService indexService;
     private final TransactionHooks hooks;
@@ -71,13 +76,21 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final StatementOperationParts operations;
     private final boolean readOnly;
 
+    // State
     private final Locks.Client locks;
     private TransactionType transactionType = TransactionType.ANY;
     private boolean closing, closed;
     private TxStateImpl txState;
     private TransactionHooks.TransactionHooksState hooksState;
-    private final TransactionRecordState neoStoreTransaction;
+    private final TransactionRecordState recordState;
     private final TransactionState legacyTxState;
+    private boolean success, failure;
+
+    // For committing
+    private final TransactionHeaderInformation headerInformation;
+    private final TransactionRepresentationCommitProcess commitProcess;
+    private final TransactionMonitor transactionMonitor;
+    private final TransactionIdStore transactionIdStore;
 
     public KernelTransactionImplementation( StatementOperationParts operations, boolean readOnly,
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
@@ -87,100 +100,45 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionRecordState neoStoreTransaction,
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
                                             TransactionState legacyTxState, TransactionHooks hooks,
-                                            ConstraintIndexCreator constraintIndexCreator )
+                                            ConstraintIndexCreator constraintIndexCreator,
+                                            TransactionHeaderInformation transactionHeaderInformation,
+                                            TransactionRepresentationCommitProcess commitProcess,
+                                            TransactionMonitor transactionMonitor,
+                                            TransactionIdStore transactionIdStore )
     {
         this.operations = operations;
         this.readOnly = readOnly;
         this.schemaWriteGuard = schemaWriteGuard;
         this.labelScanStore = labelScanStore;
         this.indexService = indexService;
-        this.neoStoreTransaction = neoStoreTransaction;
+        this.recordState = neoStoreTransaction;
         this.providerMap = providerMap;
         this.schemaState = schemaState;
         this.legacyTxState = legacyTxState;
         this.hooks = hooks;
         this.constraintIndexCreator = constraintIndexCreator;
-        schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
-        legacyStateBridge = new OldTxStateBridgeImpl( nodeManager, legacyTxState );
-        locks = legacyTxState.locks();
+        this.headerInformation = transactionHeaderInformation;
+        this.commitProcess = commitProcess;
+        this.transactionMonitor = transactionMonitor;
+        this.transactionIdStore = transactionIdStore;
+        this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
+        this.legacyStateBridge = new OldTxStateBridgeImpl( nodeManager, legacyTxState );
+        this.locks = legacyTxState.locks();
     }
 
     @Override
-    public void prepare() throws TransactionFailureException
+    public void success()
     {
-        // Trigger transaction hooks
-        if ( (hooksState = hooks.beforeCommit( txState, this )) != null && hooksState.failed() )
-        {
-            throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(), "" );
-        }
-
-        beginClose();
-        try
-        {
-            createTransactionCommands();
-        }
-        finally
-        {
-            closing = false;
-        }
+        this.success = true;
     }
 
     @Override
-    public void commit() throws TransactionFailureException
+    public void failure()
     {
-        try
-        {
-            release();
-            close();
-            hooks.afterCommit( txState, this, hooksState );
-        }
-        catch ( ReleaseLocksFailedKernelException e )
-        {
-            throw new TransactionFailureException( Status.Transaction.CouldNotCommit, e,
-                    "Failure to release after commit" );
-        }
-        finally
-        {
-            closing = false;
-        }
+        this.failure = true;
     }
 
-    @Override
-    public void rollback() throws TransactionFailureException
-    {
-        beginClose();
-        try
-        {
-            try
-            {
-                dropCreatedConstraintIndexes();
-            }
-            catch ( IllegalStateException | SecurityException e )
-            {
-                throw new TransactionFailureException( Status.Transaction.CouldNotRollback, e,
-                        "Could not drop created constraint indexes" );
-            }
-            finally
-            {
-                try
-                {
-                    release();
-                }
-                catch ( ReleaseLocksFailedKernelException e )
-                {
-                    throw new TransactionFailureException( Status.Transaction.ReleaseLocksFailed, e, "" );
-                }
-            }
-            close();
-            hooks.afterRollback( txState, this, hooksState );
-        }
-        finally
-        {
-            closing = false;
-        }
-    }
-
-    public void release() throws ReleaseLocksFailedKernelException
+    private void release()
     {
         locks.close();
     }
@@ -191,19 +149,19 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     @Override
     public TransactionRecordState getTransactionRecordState()
     {
-        return neoStoreTransaction;
+        return recordState;
     }
 
     @Override
     public KernelStatement acquireStatement()
     {
-        assertOpen();
+        assertTransactionOpen();
         if ( currentStatement == null )
         {
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
                     labelScanStore, this, locks, operations,
                     // Just use forReading since read/write has been decided prior to this
-                    neoStoreTransaction );
+                    recordState );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -275,7 +233,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( !hasTxState() )
         {
-            txState = new TxStateImpl( legacyStateBridge, neoStoreTransaction, null );
+            txState = new TxStateImpl( legacyStateBridge, recordState, null );
         }
         return txState;
     }
@@ -292,9 +250,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return legacyStateBridge.hasChanges() || (hasTxState() && txState.hasChanges());
     }
 
-    private void close()
+    private void closeTransactionStuffage()
     {
-        assertOpen();
+        assertTransactionOpen();
         closed = true;
         if ( currentStatement != null )
         {
@@ -303,22 +261,24 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void beginClose()
+    private void closeCurrentStatementIfAny()
     {
-        assertOpen();
-        if ( closing )
-        {
-            throw new IllegalStateException( "This transaction is already being closed." );
-        }
         if ( currentStatement != null )
         {
             currentStatement.forceClose();
             currentStatement = null;
         }
-        closing = true;
     }
 
-    private void createTransactionCommands()
+    private void assertTransactionNotClosing()
+    {
+        if ( closing )
+        {
+            throw new IllegalStateException( "This transaction is already being closed." );
+        }
+    }
+
+    private void prepareRecordChangesFromTransactionState()
     {
         if ( hasTxStateWithChanges() )
         {
@@ -330,17 +290,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 {
                     while(removed.hasNext())
                     {
-                        neoStoreTransaction.nodeRemoveProperty( id, removed.next() );
+                        recordState.nodeRemoveProperty( id, removed.next() );
                     }
                     while(changed.hasNext())
                     {
                         DefinedProperty prop = changed.next();
-                        neoStoreTransaction.nodeChangeProperty( id, prop.propertyKeyId(), prop.value() );
+                        recordState.nodeChangeProperty( id, prop.propertyKeyId(), prop.value() );
                     }
                     while(added.hasNext())
                     {
                         DefinedProperty prop = added.next();
-                        neoStoreTransaction.nodeAddProperty( id, prop.propertyKeyId(), prop.value() );
+                        recordState.nodeAddProperty( id, prop.propertyKeyId(), prop.value() );
                     }
                 }
 
@@ -349,17 +309,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 {
                     while(removed.hasNext())
                     {
-                        neoStoreTransaction.relRemoveProperty( id, removed.next() );
+                        recordState.relRemoveProperty( id, removed.next() );
                     }
                     while(changed.hasNext())
                     {
                         DefinedProperty prop = changed.next();
-                        neoStoreTransaction.relChangeProperty( id, prop.propertyKeyId(), prop.value() );
+                        recordState.relChangeProperty( id, prop.propertyKeyId(), prop.value() );
                     }
                     while(added.hasNext())
                     {
                         DefinedProperty prop = added.next();
-                        neoStoreTransaction.relAddProperty( id, prop.propertyKeyId(), prop.value() );
+                        recordState.relAddProperty( id, prop.propertyKeyId(), prop.value() );
                     }
                 }
 
@@ -368,17 +328,17 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                 {
                     while(removed.hasNext())
                     {
-                        neoStoreTransaction.graphRemoveProperty( removed.next() );
+                        recordState.graphRemoveProperty( removed.next() );
                     }
                     while(changed.hasNext())
                     {
                         DefinedProperty prop = changed.next();
-                        neoStoreTransaction.graphChangeProperty( prop.propertyKeyId(), prop.value() );
+                        recordState.graphChangeProperty( prop.propertyKeyId(), prop.value() );
                     }
                     while(added.hasNext())
                     {
                         DefinedProperty prop = added.next();
-                        neoStoreTransaction.graphAddProperty( prop.propertyKeyId(), prop.value() );
+                        recordState.graphAddProperty( prop.propertyKeyId(), prop.value() );
                     }
                 }
 
@@ -404,7 +364,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         rule = IndexRule.indexRule( schemaStorage.newRuleId(), element.getLabelId(),
                                 element.getPropertyKeyId(), providerDescriptor );
                     }
-                    neoStoreTransaction.createSchemaRule( rule );
+                    recordState.createSchemaRule( rule );
                 }
 
                 @Override
@@ -415,7 +375,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         SchemaStorage.IndexRuleKind kind = isConstraintIndex?
                                 SchemaStorage.IndexRuleKind.CONSTRAINT : SchemaStorage.IndexRuleKind.INDEX;
                         IndexRule rule = schemaStorage.indexRule( element.getLabelId(), element.getPropertyKeyId(), kind );
-                        neoStoreTransaction.dropSchemaRule( rule );
+                        recordState.dropSchemaRule( rule );
                     }
                     catch ( SchemaRuleNotFoundException e )
                     {
@@ -445,9 +405,9 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                 "Jacob Hansson",
                                 "Index is always created for the constraint before this point.", e );
                     }
-                    neoStoreTransaction.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
+                    recordState.createSchemaRule( UniquenessConstraintRule.uniquenessConstraintRule(
                             constraintId, element.label(), element.propertyKeyId(), indexRule.getId() ) );
-                    neoStoreTransaction.setConstraintIndexOwner( indexRule, constraintId );
+                    recordState.setConstraintIndexOwner( indexRule, constraintId );
                 }
 
                 @Override
@@ -458,7 +418,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                         clearState.set( true );
                         UniquenessConstraintRule rule = schemaStorage
                                 .uniquenessConstraint( element.label(), element.propertyKeyId() );
-                        neoStoreTransaction.dropSchemaRule( rule );
+                        recordState.dropSchemaRule( rule );
                     }
                     catch ( SchemaRuleNotFoundException e )
                     {
@@ -478,7 +438,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void assertOpen()
+    private void assertTransactionOpen()
     {
         if ( closed )
         {
@@ -488,7 +448,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public boolean isReadOnly()
     {
-        return (!hasTxState() || !txState.hasChanges()) && neoStoreTransaction.isReadOnly();
+        return (!hasTxState() || !txState.hasChanges()) && recordState.isReadOnly();
     }
 
     private enum TransactionType
@@ -524,8 +484,121 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    TransactionState getLegacyTransactionState()
+    @Override
+    public void close() throws TransactionFailureException
     {
-        return legacyTxState;
+        assertTransactionOpen();
+        assertTransactionNotClosing();
+        closeCurrentStatementIfAny();
+        closing = true;
+        try
+        {
+            if ( failure || !success )
+            {
+                rollback();
+                if ( success )
+                {
+                    // Success was called, but also failure which means that the client code using this
+                    // transaction passed through a happy path, but the transaction was still marked as
+                    // failed for one or more reasons. Tell the user that although it looked happy it
+                    // wasn't committed, but was instead rolled back.
+                    throw new TransactionFailureException( Status.Transaction.MarkedAsFailed, "" );
+                }
+            }
+            else
+            {
+                commit();
+            }
+        }
+        finally
+        {
+            closed = true;
+            closing = false;
+        }
+    }
+
+    private void commit() throws TransactionFailureException
+    {
+        boolean success = false;
+        try
+        {
+            // Trigger transaction "before" hooks
+            if ( (hooksState = hooks.beforeCommit( txState, this )) != null && hooksState.failed() )
+            {
+                throw new TransactionFailureException( Status.Transaction.HookFailed, hooksState.failure(), "" );
+            }
+
+            prepareRecordChangesFromTransactionState();
+
+            // Convert changes into commands and commit
+            if ( !isReadOnly() )
+            {
+                PhysicalTransactionRepresentation transactionRepresentation = recordState.doPrepare();
+                transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
+                        headerInformation.getMasterId(),
+                        headerInformation.getAuthorId(), currentTimeMillis(),
+                        transactionIdStore.getLastCommittingTransactionId() );
+                commitProcess.commit( transactionRepresentation );
+
+                // TODO 2.2-future do the TxIdGenerator#committed thing
+            }
+            legacyTxState.applyChangesToCache( true );
+            success = true;
+        }
+        finally
+        {
+            afterCommit( success );
+        }
+    }
+
+    private void rollback() throws TransactionFailureException
+    {
+        try
+        {
+            try
+            {
+                dropCreatedConstraintIndexes();
+            }
+            catch ( IllegalStateException | SecurityException e )
+            {
+                throw new TransactionFailureException( Status.Transaction.CouldNotRollback, e,
+                        "Could not drop created constraint indexes" );
+            }
+
+            // Oddly we call this, but it updates cache sizes.
+            legacyTxState.applyChangesToCache( false );
+        }
+        finally
+        {
+            afterRollback();
+        }
+    }
+
+    private void afterCommit( boolean success )
+    {
+        try
+        {
+            release();
+            closeTransactionStuffage();
+            hooks.afterCommit( txState, this, hooksState );
+        }
+        finally
+        {
+            transactionMonitor.transactionFinished( success );
+        }
+    }
+
+    private void afterRollback()
+    {
+        try
+        {
+            release();
+            closeTransactionStuffage();
+            hooks.afterRollback( txState, this, hooksState );
+        }
+        finally
+        {
+            transactionMonitor.transactionFinished( false );
+        }
     }
 }

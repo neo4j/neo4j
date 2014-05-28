@@ -137,9 +137,8 @@ public class ConstraintIndexCreator
 
     private IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
     {
-        KernelTransaction transaction = kernel.newTransaction();
-        boolean success = false;
-        try ( Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction();
+              Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
             // write lock. It is assumed that the transaction that invoked this "inner" transaction
@@ -150,19 +149,12 @@ public class ConstraintIndexCreator
             // internal implementation of Statement. However it is currently used by the external
             // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
             ((KernelStatement) statement).txState().constraintIndexRuleDoAdd( descriptor );
-            success = true;
+            transaction.success();
             return descriptor;
         }
-        finally
+        catch ( TransactionFailureException e )
         {
-            try
-            {
-                kernel.finish( transaction, success );
-            }
-            catch ( TransactionFailureException e )
-            {
-                throw new RuntimeException( e );
-            }
+            throw new RuntimeException( e );
         }
     }
 }

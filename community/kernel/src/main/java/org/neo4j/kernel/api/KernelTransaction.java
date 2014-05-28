@@ -36,21 +36,71 @@ import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
  *
  * This class has a 1-1 relationship with{@link org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState}, please see its'
  * javadoc for details.
+ *
+ * Typical usage:
+ * <pre>
+ * try ( KernelTransaction transaction = kernel.newTransaction() )
+ * {
+ *      try ( Statement statement = transaction.acquireStatement() )
+ *      {
+ *          ...
+ *      }
+ *      ...
+ *      transaction.success();
+ * }
+ * catch ( SomeException e )
+ * {
+ *      ...
+ * }
+ * catch ( SomeOtherExceptionException e )
+ * {
+ *      ...
+ * }
+ * </pre>
+ *
+ * Typical usage of failure if failure isn't controlled with exceptions:
+ * <pre>
+ * try ( KernelTransaction transaction = kernel.newTransaction() )
+ * {
+ *      ...
+ *      if ( ... some condition )
+ *      {
+ *          transaction.failure();
+ *      }
+ *
+ *      transaction.success();
+ * }
+ * </pre>
  */
-public interface KernelTransaction
+public interface KernelTransaction extends AutoCloseable
 {
+    /**
+     * Acquires a new {@link Statement} for this transaction which allows for reading and writing data from and
+     * to the underlying database. After the group of reads and writes have been performed the statement
+     * must be {@link Statement#close() released}.
+     * @return a {@link Statement} with access to underlying database.
+     */
     Statement acquireStatement();
 
-    void prepare() throws TransactionFailureException;
+    /**
+     * Marks this transaction as successful. When this transaction later gets {@link #close() closed}
+     * its changes, if any, will be committed. If this method hasn't been called or if {@link #failure()}
+     * has been called then any changes in this transaction will be rolled back as part of {@link #close() closing}.
+     */
+    void success();
 
     /**
-     * Commit this transaction, this will make the changes in this context visible to other
-     * transactions.
+     * Marks this transaction as failed. No amount of calls to {@link #success()} will clear this flag.
+     * When {@link #close() closing} this transaction any changes will be rolled back.
      */
-    void commit() throws TransactionFailureException;
+    void failure();
 
-    /** Roll back this transaction, undoing any changes that have been made. */
-    void rollback() throws TransactionFailureException;
+    /**
+     * Closes this transaction, committing its changes iff {@link #success()} has been called and
+     * {@link #failure()} has NOT been called. Otherwise its changes will be rolled back.
+     */
+    @Override
+    public void close() throws TransactionFailureException;
 
     /*
      * TODO 2.2-future TransactionRecordState should not be visible anywhere. The problem is that there is

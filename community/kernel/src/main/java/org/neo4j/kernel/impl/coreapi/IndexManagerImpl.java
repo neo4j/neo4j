@@ -273,17 +273,11 @@ public class IndexManagerImpl implements IndexManager, IndexProviders
 //            }
 
             KernelAPI kernel = kernelProvider.instance();
-            KernelTransaction transaction = kernel.newTransaction();
-            boolean success = false;
-            try
+            try ( KernelTransaction transaction = kernel.newTransaction() )
             {
                 // TODO 2.2-future
 //                transaction.createIndex( cls, indexName, config );
-                success = true;
-            }
-            finally
-            {
-                kernel.finish( transaction, success );
+                transaction.success();
             }
             return null;
         }

@@ -47,28 +47,16 @@ public abstract class IsolatedTransactionTokenCreator implements TokenCreator
     public synchronized int getOrCreate( String name )
     {
         KernelAPI kernel = kernelProvider.instance();
-        KernelTransaction transaction = kernel.newTransaction();
-        boolean success = false;
-        try
+        try ( KernelTransaction transaction = kernel.newTransaction() )
         {
             int id = createKey( transaction.getTransactionRecordState(), name );
-            success = true;
+            transaction.success();
             return id;
         }
-        finally
+        catch ( TransactionFailureException e )
         {
-            if ( !success )
-            {
-                try
-                {
-                    kernel.finish( transaction, success );
-                }
-                catch ( TransactionFailureException e )
-                {
-                    throw new org.neo4j.graphdb.TransactionFailureException(
-                            "Failure to rollback after creating token failed", e );
-                }
-            }
+            throw new org.neo4j.graphdb.TransactionFailureException(
+                    "Failure to rollback after creating token failed", e );
         }
     }
 

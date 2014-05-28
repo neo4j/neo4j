@@ -19,27 +19,111 @@
  */
 package org.neo4j.kernel.api;
 
-import static org.mockito.Mockito.mock;
-
+import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 public class KernelTransactionImplementationTest
 {
     @Test
-    public void shouldBeAbleToRollbackPreparedTransaction() throws Exception
+    public void shouldCommitSuccessfulTransaction() throws Exception
     {
-        // given
-        KernelTransactionImplementation tx = new KernelTransactionImplementation( null, false, null, null,
-                null, null, null, null, null, mock( NeoStore.class ),
-                mock(TransactionState.class), new TransactionHooks(), null );
-        // when
-        tx.prepare();
+        // GIVEN
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.success();
+        }
 
-        // then (no exception)
-        tx.rollback();
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackUnsuccessfulTransaction() throws Exception
+    {
+        // GIVEN
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+        }
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackFailedTransaction() throws Exception
+    {
+        // GIVEN
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.failure();
+        }
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackAndThrowOnFailedAndSuccess() throws Exception
+    {
+        // GIVEN
+        boolean exceptionReceived = false;
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.failure();
+            transaction.success();
+        }
+        catch ( TransactionFailureException e )
+        {
+            // Expected.
+            exceptionReceived = true;
+        }
+
+        // THEN
+        assertTrue( exceptionReceived );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    private final NeoStore neoStore = mock( NeoStore.class );
+    private final TransactionState txState = mock( TransactionState.class );
+    private final TransactionHooks hooks = new TransactionHooks();
+    private final TransactionRecordState recordState = mock( TransactionRecordState.class );
+    private final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
+
+    @Before
+    public void before()
+    {
+        when( txState.locks() ).thenReturn( new NoOpClient() );
+        when( recordState.isReadOnly() ).thenReturn( true );
+    }
+
+    private KernelTransactionImplementation newTransaction()
+    {
+        return new KernelTransactionImplementation( null, false, null, null, null,
+                null, null, recordState, null, neoStore, txState, hooks, null, null, null,
+                transactionMonitor, neoStore );
     }
 }

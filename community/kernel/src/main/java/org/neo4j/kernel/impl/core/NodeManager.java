@@ -80,7 +80,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         @Override
         public NodeImpl loadById( long id )
         {
-            NodeRecord record = threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true ).nodeLoadLight( id );
+            NodeRecord record = threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true ).nodeLoadLight( id );
             if ( record == null )
             {
                 return null;
@@ -93,7 +93,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
         @Override
         public RelationshipImpl loadById( long id )
         {
-            RelationshipRecord data = threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true ).relLoadLight( id );
+            RelationshipRecord data = threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true ).relLoadLight( id );
             if ( data == null )
             {
                 return null;
@@ -264,7 +264,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
 
     RelationshipLoadingPosition getRelationshipChainPosition( NodeImpl node )
     {
-        return threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+        return threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
                 .getRelationshipChainPosition( node.getId() );
     }
 
@@ -276,7 +276,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     Iterator<DefinedProperty> loadGraphProperties( boolean light )
     {
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+        threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
                 .graphLoadProperties( light, receiver );
         return receiver;
     }
@@ -284,7 +284,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     Iterator<DefinedProperty> loadProperties( NodeImpl node, boolean light )
     {
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+        threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
                 .nodeLoadProperties( node.getId(), light, receiver );
         return receiver;
     }
@@ -292,7 +292,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     Iterator<DefinedProperty> loadProperties( RelationshipImpl relationship, boolean light )
     {
         IteratingPropertyReceiver receiver = new IteratingPropertyReceiver();
-        threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+        threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
                 .relLoadProperties( relationship.getId(), light, receiver );
         return receiver;
     }
@@ -392,7 +392,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     public ArrayMap<Integer, DefinedProperty> deleteNode( NodeImpl node, TransactionState tx )
     {
         tx.deleteNode( node.getId() );
-        return threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true ).nodeDelete( node.getId() );
+        return threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true ).nodeDelete( node.getId() );
         // remove from node cache done via event
     }
 
@@ -423,7 +423,7 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
 
             tx.deleteRelationship( rel.getId() );
             ArrayMap<Integer,DefinedProperty> removedProps =
-                    threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true ).relDelete( rel.getId() );
+                    threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true ).relDelete( rel.getId() );
 
             if ( removedProps.size() > 0 )
             {
@@ -590,13 +590,13 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
 
     public int getRelationshipCount( NodeImpl nodeImpl, int type, DirectionWrapper direction )
     {
-        return threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+        return threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
                 .getRelationshipCount( nodeImpl.getId(), type, direction );
     }
 
     public Iterator<Integer> getRelationshipTypes( DenseNodeImpl node )
     {
-        return asList( threadToTransactionBridge.getNeoStoreTransactionBoundToThisThread( true )
+        return asList( threadToTransactionBridge.getTransactionRecordStateBoundToThisThread( true )
                 .getRelationshipTypes( node.getId() ) ).iterator();
     }
 }

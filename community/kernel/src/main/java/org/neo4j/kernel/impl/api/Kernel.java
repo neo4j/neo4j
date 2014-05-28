@@ -66,7 +66,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogPositionCache;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
@@ -76,8 +75,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-
-import static java.lang.System.currentTimeMillis;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
@@ -284,7 +281,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         return new KernelTransactionImplementation( statementOperations, readOnly,
                 schemaWriteGuard, labelScanStore, indexService,
                 nodeManager, schemaState, neoStoreTransaction, providerMap, neoStore, legacyState, hooks,
-                constraintIndexCreator );
+                constraintIndexCreator, transactionHeaderInformation, commitProcess, transactionMonitor, neoStore );
     }
 
     @Override
@@ -351,92 +348,5 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext, lockingContext );
 
         return parts;
-    }
-
-    /**
-     * Convenience for either commit or rollback, where the advantage of it is that it's more natural to
-     * put it in a finally block.
-     */
-    @Override
-    public void finish( KernelTransaction tx, boolean success ) throws TransactionFailureException
-    {
-        if ( success )
-        {
-            commit( tx );
-        }
-        else
-        {
-            rollback( tx );
-        }
-    }
-
-    @Override
-    public void commit( KernelTransaction transaction ) throws TransactionFailureException
-    {
-        boolean success = false;
-        try
-        {
-            // deferred creation of records
-            transaction.prepare();
-
-            KernelTransactionImplementation transactionImplementation = (KernelTransactionImplementation)transaction;
-            if ( !transactionImplementation.isReadOnly() )
-            {   // generate a transaction representation out of it
-                PhysicalTransactionRepresentation transactionRepresentation =
-                        transactionImplementation.getTransactionRecordState().doPrepare();
-                transactionRepresentation.setHeader( transactionHeaderInformation.getAdditionalHeader(),
-                        transactionHeaderInformation.getMasterId(),
-                        transactionHeaderInformation.getAuthorId(), currentTimeMillis(),
-                        neoStore.getLastCommittingTransactionId() );
-                commitProcess.commit( transactionRepresentation );
-
-                TransactionState transactionState = transactionImplementation.getLegacyTransactionState();
-                transactionState.applyChangesToCache( true );
-
-                // TODO 2.2-future do the TxIdGenerator#committed thing
-                success = true;
-            }
-        }
-        finally
-        {
-            try
-            {
-                transaction.commit();
-            }
-            finally
-            {
-                transactionMonitor.transactionFinished( success );
-            }
-        }
-    }
-
-    @Override
-    public void rollback( KernelTransaction transaction ) throws TransactionFailureException
-    {
-        try
-        {
-            // deferred creation of records
-            transaction.prepare();
-
-            KernelTransactionImplementation transactionImplementation = (KernelTransactionImplementation)transaction;
-            if ( !transactionImplementation.isReadOnly() )
-            {
-                TransactionState transactionState = transactionImplementation.getLegacyTransactionState();
-                transactionState.applyChangesToCache( false );
-
-                // TODO 2.2-future do the TxIdGenerator#committed thing
-            }
-        }
-        finally
-        {
-            try
-            {
-                transaction.rollback();
-            }
-            finally
-            {
-                transactionMonitor.transactionFinished( false );
-            }
-        }
     }
 }

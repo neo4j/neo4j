@@ -117,7 +117,9 @@ public interface Status
 
         ValidationFailed( ClientError, "Transaction changes did not pass validation checks" ),
         HookFailed( ClientError, "Transaction hook failure." ),
-
+        MarkedAsFailed( ClientError, "Transaction was marked as both successful and failed. Failure takes precedence" +
+                " and so this transaction was rolled back although it may have looked like it was going to be " +
+                "committed" ),
         ;
 
 

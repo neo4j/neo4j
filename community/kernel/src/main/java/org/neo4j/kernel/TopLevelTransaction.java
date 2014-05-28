@@ -23,7 +23,6 @@ import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.coreapi.PropertyContainerLocker;
@@ -68,13 +67,11 @@ public class TopLevelTransaction implements Transaction
     private final static PropertyContainerLocker locker = new PropertyContainerLocker();
     private final ThreadToStatementContextBridge stmtProvider;
     private final TransactionOutcome transactionOutcome = new TransactionOutcome();
-    private final KernelAPI kernel;
     private final KernelTransaction transaction;
 
-    public TopLevelTransaction( KernelAPI kernel, KernelTransaction transaction,
+    public TopLevelTransaction( KernelTransaction transaction,
                                 ThreadToStatementContextBridge stmtProvider )
     {
-        this.kernel = kernel;
         this.transaction = transaction;
         this.stmtProvider = stmtProvider;
     }
@@ -83,12 +80,14 @@ public class TopLevelTransaction implements Transaction
     public void failure()
     {
         transactionOutcome.failed();
+        transaction.failure();
     }
 
     @Override
     public void success()
     {
     	transactionOutcome.success();
+        transaction.success();
     }
 
     @Override
@@ -102,17 +101,7 @@ public class TopLevelTransaction implements Transaction
     {
         try
         {
-            if ( transaction != null )
-            {
-                if ( transactionOutcome.canCommit()  )
-                {
-                    kernel.commit( transaction );
-                }
-                else
-                {
-                    kernel.rollback( transaction );
-                }
-            }
+            transaction.close();
         }
         catch ( Exception e )
         {

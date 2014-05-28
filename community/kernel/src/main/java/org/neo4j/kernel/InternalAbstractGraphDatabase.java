@@ -911,7 +911,7 @@ public abstract class InternalAbstractGraphDatabase
         }
 
         KernelTransaction transaction = kernel.newTransaction();
-        topLevelTransaction = new TopLevelTransaction( kernel, transaction, threadToTransactionBridge );
+        topLevelTransaction = new TopLevelTransaction( transaction, threadToTransactionBridge );
         threadToTransactionBridge.bindTransactionToCurrentThread( topLevelTransaction );
         return topLevelTransaction;
     }

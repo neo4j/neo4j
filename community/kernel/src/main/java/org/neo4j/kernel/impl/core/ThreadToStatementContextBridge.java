@@ -108,7 +108,7 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         return tx != null ? tx.getTransaction() : null;
     }
 
-    public TransactionRecordState getNeoStoreTransactionBoundToThisThread( boolean strict )
+    public TransactionRecordState getTransactionRecordStateBoundToThisThread( boolean strict )
     {
         KernelTransaction tx = getKernelTransactionBoundToThisThread( strict );
         return tx != null ? tx.getTransactionRecordState() : null;
