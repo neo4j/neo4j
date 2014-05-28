@@ -19,15 +19,17 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
-import java.util.Vector;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.LinkedBlockingQueue;
 
+import org.hamcrest.Matcher;
+
 public class RecordingMonitor implements StandardPageCache.Monitor
 {
     private final BlockingQueue<Event> record = new LinkedBlockingQueue<>();
-    private final Vector<Trap> traps = new Vector<>( 1 );
+    private CountDownLatch trapLatch;
+    private Matcher<? extends Event> trap;
 
     @Override
     public void pageFault( long pageId, PageIO io )
@@ -45,14 +47,14 @@ public class RecordingMonitor implements StandardPageCache.Monitor
         trip( event );
     }
 
-    public Fault observeFault() throws InterruptedException
+    public <T extends Event> T observe( Class<T> type ) throws InterruptedException
     {
-        return (Fault) record.take();
+        return type.cast( record.take() );
     }
 
-    public Evict observeEvict() throws InterruptedException
+    public <T extends Event> T tryObserve( Class<T> type )
     {
-        return (Evict) record.take();
+        return type.cast( record.poll() );
     }
 
     /**
@@ -60,30 +62,28 @@ public class RecordingMonitor implements StandardPageCache.Monitor
      * When the eviction thread performs the given trap-event, it will block on the latch after
      * making the event observable.
      */
-    public CountDownLatch trap( Event trap )
+    public synchronized CountDownLatch trap( Matcher<? extends Event> trap )
     {
         assert trap != null;
-        CountDownLatch latch = new CountDownLatch( 1 );
-        traps.add( new Trap( trap, latch ) );
-        return latch;
+        trapLatch = new CountDownLatch( 1 );
+        this.trap = trap;
+        return trapLatch;
     }
 
-    private void trip( Event event )
+    private synchronized void trip( Event event )
     {
-        Trap trap = null;
 
-        synchronized ( traps )
+        if ( trap != null && trap.matches( event ) )
         {
-            int index = traps.indexOf( new Trap( event, null ) );
-            if ( index != -1 )
+            try
             {
-                trap = traps.remove( index );
+                trapLatch.await();
             }
-        }
-
-        if ( trap != null )
-        {
-            trap.await();
+            catch ( InterruptedException e )
+            {
+                Thread.currentThread().interrupt();
+                throw new RuntimeException( "Unexpected interrupt in RecordingMonitor", e );
+            }
         }
     }
 
@@ -145,51 +145,6 @@ public class RecordingMonitor implements StandardPageCache.Monitor
         Evict( PageIO io, long pageId )
         {
             super( io, pageId );
-        }
-    }
-
-    private static class Trap
-    {
-        private final Event trap;
-        private final CountDownLatch latch;
-
-        public Trap( Event trap, CountDownLatch latch )
-        {
-            this.trap = trap;
-            this.latch = latch;
-        }
-
-        public void await()
-        {
-            try
-            {
-                latch.await();
-            }
-            catch ( InterruptedException e )
-            {
-                Thread.currentThread().interrupt();
-                throw new RuntimeException( "Unexpected interrupt in RecordingMonitor", e );
-            }
-        }
-
-        @Override
-        public boolean equals( Object o )
-        {
-            if ( o == null || getClass() != o.getClass() )
-            {
-                return false;
-            }
-
-            Trap trap1 = (Trap) o;
-
-            return trap.equals( trap1.trap );
-
-        }
-
-        @Override
-        public int hashCode()
-        {
-            return trap.hashCode();
         }
     }
 }

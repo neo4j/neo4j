@@ -21,9 +21,11 @@ package org.neo4j.io.pagecache.impl.standard;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.concurrent.CountDownLatch;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.mockfs.LimitedFilesystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCursor;
@@ -32,6 +34,7 @@ import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.TargetDirectory;
 
 import static junit.framework.TestCase.fail;
+import static org.hamcrest.CoreMatchers.any;
 
 public class OutOfDiskSpaceTest
 {
@@ -43,7 +46,8 @@ public class OutOfDiskSpaceTest
     {
         // Given
         LimitedFilesystemAbstraction fs = new LimitedFilesystemAbstraction( new DefaultFileSystemAbstraction() );
-        StandardPageCache cache = new StandardPageCache( fs, 2, 512 );
+        RecordingMonitor monitor = new RecordingMonitor();
+        StandardPageCache cache = new StandardPageCache( fs, 2, 512, monitor );
 
         PagedFile file = cache.map( new File( testDir.directory(), "storefile" ), 512 );
         PageCursor cursor = cache.newCursor();
@@ -53,15 +57,15 @@ public class OutOfDiskSpaceTest
         sweeperThread.start();
 
         // And given we've "changed" some pages
+        CountDownLatch evictionThreadLatch = monitor.trap( any( RecordingMonitor.Evict.class ) );
         file.pin( cursor, PageLock.EXCLUSIVE, 1 );
         file.unpin( cursor );
         file.pin( cursor, PageLock.EXCLUSIVE, 2 );
         file.unpin( cursor );
-        file.pin( cursor, PageLock.EXCLUSIVE, 3 );
-        file.unpin( cursor );
 
         // When
         fs.runOutOfDiskSpace();
+        evictionThreadLatch.countDown();
 
         // Then
         // 1: Explicit flushing should throw IO exception
@@ -76,12 +80,7 @@ public class OutOfDiskSpaceTest
         }
 
         // 2: The background eviction thread should give up and shut down
-        while(sweeperThread.isAlive())
-        {
-            Thread.sleep( 10 );
-            file.pin( cursor, PageLock.EXCLUSIVE, 1 );
-            file.unpin( cursor );
-        }
+        sweeperThread.join();
     }
 
 }

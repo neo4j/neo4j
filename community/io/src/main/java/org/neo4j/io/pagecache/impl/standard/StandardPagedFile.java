@@ -134,7 +134,7 @@ public class StandardPagedFile implements PagedFile
     /**
      * @return true if this file is still open and we managed to claim a reference to it.
      */
-    public boolean claimReference()
+    boolean claimReference()
     {
         int refs;
         do
@@ -151,11 +151,12 @@ public class StandardPagedFile implements PagedFile
     /**
      * @return true if this was the last reference to the file.
      */
-    public boolean releaseReference()
+    boolean releaseReference()
     {
         return references.decrementAndGet() == 0;
     }
 
+    @Override
     public void close() throws IOException
     {
         table.flush( pageIO );

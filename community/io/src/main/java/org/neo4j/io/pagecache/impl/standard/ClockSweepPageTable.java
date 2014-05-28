@@ -26,6 +26,8 @@ import java.util.concurrent.locks.LockSupport;
 
 import org.neo4j.io.pagecache.PageLock;
 
+import static org.neo4j.io.pagecache.impl.standard.StandardPinnablePage.UNBOUND_PAGE_ID;
+
 /**
  * An implementation of {@link org.neo4j.io.pagecache.impl.standard.PageTable} which uses
  * a variant of the ClockSweep algorithm to attempt to keep popular pages in RAM based on
@@ -65,10 +67,18 @@ public class ClockSweepPageTable implements PageTable, Runnable
     public PinnablePage load( PageIO io, long pageId, PageLock lock ) throws IOException
     {
         StandardPinnablePage page = nextFreePage();
-        page.reset( io, pageId );
-        page.pin( io, pageId, lock );
-        page.load();
-        monitor.pageFault( pageId, io );
+        if ( page.pin( null, UNBOUND_PAGE_ID, lock ) )
+        {
+            page.reset( io, pageId );
+            page.load();
+            monitor.pageFault( pageId, io );
+        }
+        else
+        {
+            throw new IOException(
+                    "Tried to load a page (page fault) but the page in the free-list " +
+                    "was already bound to a file and a pageId: " + page );
+        }
         return page;
     }
 
@@ -91,7 +101,15 @@ public class ClockSweepPageTable implements PageTable, Runnable
         assertNoSweeperException();
         for ( StandardPinnablePage page : pages )
         {
-            flush( page );
+            page.lock( PageLock.SHARED );
+            try
+            {
+                page.flush();
+            }
+            finally
+            {
+                page.unlock( PageLock.SHARED );
+            }
         }
     }
 
@@ -101,24 +119,19 @@ public class ClockSweepPageTable implements PageTable, Runnable
         assertNoSweeperException();
         for ( StandardPinnablePage page : pages )
         {
-            if( page.isBackedBy( io ) ) // TODO this is racy with the eviction
+            page.lock( PageLock.SHARED );
+            try
             {
-                flush( page );
+                if( page.isBackedBy( io ) )
+                {
+                    assertNoSweeperException();
+                    page.flush();
+                }
             }
-        }
-    }
-
-    private void flush( StandardPinnablePage page ) throws IOException
-    {
-        assertNoSweeperException();
-        page.lock( PageLock.SHARED );
-        try
-        {
-            page.flush();
-        }
-        finally
-        {
-            page.unlock( PageLock.SHARED );
+            finally
+            {
+                page.unlock( PageLock.SHARED );
+            }
         }
     }
 
@@ -235,7 +248,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
 
         page.flush();
         page.evicted();
-        page.reset( null, 0 );
+        page.reset( null, UNBOUND_PAGE_ID );
         page.loaded = false;
         do {
             page.next = freeList.get();

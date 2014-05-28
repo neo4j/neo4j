@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.locks.LockSupport;
 
 import org.junit.After;
 import org.junit.Before;
@@ -278,10 +279,10 @@ public class ClockSweepPageTableTest
         page.unpin( PageLock.EXCLUSIVE );
 
         // ... then we should observe its page fault
-        assertThat( monitor.observeFault(), is( new Fault( io, pageId ) ) );
+        assertThat( monitor.observe( Fault.class ), is( new Fault( io, pageId ) ) );
 
         // ... and when it sits idle for long enough, we should observe its eviction
-        assertThat( monitor.observeEvict(), is( new Evict( io, pageId ) ) );
+        assertThat( monitor.observe( Evict.class ), is( new Evict( io, pageId ) ) );
     }
 
     @Test( timeout = 1000 )
@@ -291,16 +292,16 @@ public class ClockSweepPageTableTest
         PageIO io = new BufferPageIO( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
         long pageId = 12;
         PinnablePage page = table.load( io, pageId, PageLock.EXCLUSIVE );
-        monitor.observeFault();
+        monitor.observe( Fault.class );
 
         // ... a page that will take a long time to evict
-        CountDownLatch latch = monitor.trap( new Evict( io, pageId ) );
+        CountDownLatch latch = monitor.trap( is( new Evict( io, pageId ) ) );
 
         // ... and a page that is soon up for eviction
         page.unpin( PageLock.EXCLUSIVE );
 
         // ... then when we observe the eviction taking place
-        monitor.observeEvict();
+        monitor.observe( Evict.class );
 
         // ... other threads should not be able to pin that page
         Thread pinForShared = fork( $pinUnpin( page, io, pageId, PageLock.SHARED ) );
@@ -315,6 +316,28 @@ public class ClockSweepPageTableTest
     }
 
     // TODO closing a paged file will flush with a particular PageIO - this must not race with eviction!
+
+    @Test
+    public void flushing_pages_with_specific_pageio_must_not_race_with_eviction() throws Exception
+    {
+        // The idea is that we repeatedly load a page with an EXCLUSIVE lock, and unpin it so it can
+        // be evicted. As soon as we have unpinned, we repeatedly try to flush it with our given
+        // PageIO. If this causes an exception to be thrown, then we've raced with the eviction
+        // where we shouldn't.
+        PageIO io = new BufferPageIO( ByteBuffer.allocate( TEST_PAGE_SIZE ) );
+        long pageId = 12;
+
+        PinnablePage page = table.load( io, pageId, PageLock.EXCLUSIVE );
+        monitor.observe( Fault.class );
+        page.unpin( PageLock.EXCLUSIVE ); // eviction is now possible
+        LockSupport.unpark( sweeperThread );
+
+        while ( monitor.tryObserve( Evict.class ) == null )
+        {
+            table.flush( io );
+        }
+    }
+
 
     private void awaitThreadState( Thread otherThread, Thread.State state ) throws InterruptedException
     {
