@@ -293,15 +293,18 @@ public class NeoStore extends AbstractStore
 
     public void flushAll()
     {
+        super.flush();
+    }
+
+    public void flushNeoStoreOnly()
+    {
         try
         {
-            pageCache.flush();
+            storeFile.flush();
         }
         catch ( IOException e )
         {
-            // Temporary, let this trickle up when there's time to refactor. For now,
-            // the system expects underlyingstorageexception
-            throw new UnderlyingStorageException( e );
+            throw new UnderlyingStorageException( "Failed to flush and force the NeoStore", e );
         }
     }
 
