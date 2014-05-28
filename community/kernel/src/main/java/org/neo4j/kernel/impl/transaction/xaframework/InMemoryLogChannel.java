@@ -26,7 +26,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChannel
 {
-    private byte[] bytes = new byte[1000];
+    private byte[] bytes = new byte[100];
     private ByteBuffer asWriter = ByteBuffer.wrap( bytes );
     private ByteBuffer asReader = ByteBuffer.wrap( bytes );
     private ByteBuffer bufferForConversions = ByteBuffer.wrap( new byte[100] );
@@ -35,34 +35,12 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     {
         asWriter.clear();
         asReader.clear();
-    }
-
-    private void ensureArrayCapacityPlus( int plus )
-    {
-        while ( asWriter.remaining() < plus )
-        {
-            byte[] tmp = bytes;
-            bytes = new byte[bytes.length*2];
-            System.arraycopy( tmp, 0, bytes, 0, tmp.length );
-            asWriter = duplicateByteBufferMetadata( asWriter, tmp );
-            asReader = duplicateByteBufferMetadata( asReader, tmp );
-        }
-    }
-
-    private ByteBuffer duplicateByteBufferMetadata( ByteBuffer source, byte[] array )
-    {
-        int position = source.position();
-        int limit = source.limit();
-        ByteBuffer result = ByteBuffer.wrap( array );
-        result.limit( limit );
-        result.position( position );
-        return result;
+        bytes = new byte[100];
     }
 
     @Override
     public InMemoryLogChannel put( byte b ) throws IOException
     {
-        ensureArrayCapacityPlus( 1 );
         asWriter.put( b );
         return this;
     }
@@ -70,7 +48,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     @Override
     public InMemoryLogChannel putShort( short s ) throws IOException
     {
-        ensureArrayCapacityPlus( 2 );
         asWriter.putShort( s );
         return this;
     }
@@ -78,7 +55,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     @Override
     public InMemoryLogChannel putInt( int i ) throws IOException
     {
-        ensureArrayCapacityPlus( 4 );
         asWriter.putInt( i );
         return this;
     }
@@ -86,7 +62,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     @Override
     public InMemoryLogChannel putLong( long l ) throws IOException
     {
-        ensureArrayCapacityPlus( 8 );
         asWriter.putLong( l );
         return this;
     }
@@ -94,7 +69,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     @Override
     public InMemoryLogChannel putFloat( float f ) throws IOException
     {
-        ensureArrayCapacityPlus( 4 );
         asWriter.putFloat( f );
         return this;
     }
@@ -102,7 +76,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     @Override
     public InMemoryLogChannel putDouble( double d ) throws IOException
     {
-        ensureArrayCapacityPlus( 8 );
         asWriter.putDouble( d );
         return this;
     }
@@ -110,7 +83,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     @Override
     public InMemoryLogChannel put( byte[] bytes, int length ) throws IOException
     {
-        ensureArrayCapacityPlus( length );
         asWriter.put( bytes, 0, length );
         return this;
     }
@@ -118,7 +90,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     @Override
     public InMemoryLogChannel put( char[] chars, int length ) throws IOException
     {
-        ensureConversionBufferCapacity( length*2 );
+        ensureConversionBufferCapacity( length * 2 );
         for ( int i = 0; i < length; i++ )
         {
             asWriter.putChar( chars[i] );
@@ -130,7 +102,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     {
         if ( bufferForConversions.capacity() < length )
         {
-            bufferForConversions = ByteBuffer.wrap( new byte[length*2] );
+            bufferForConversions = ByteBuffer.wrap( new byte[length * 2] );
         }
     }
 
@@ -153,25 +125,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public void close() throws IOException
     {
     }
-//
-//    public int read( ByteBuffer dst ) throws IOException
-//    {
-//        if ( readIndex >= writeIndex )
-//        {
-//            return -1;
-//        }
-//
-//        int actualLengthToRead = Math.min( dst.limit(), writeIndex-readIndex );
-//        try
-//        {
-//            dst.put( bytes, readIndex, actualLengthToRead );
-//            return actualLengthToRead;
-//        }
-//        finally
-//        {
-//            readIndex += actualLengthToRead;
-//        }
-//    }
 
     @Override
     public boolean hasMoreData()
@@ -180,53 +133,69 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     }
 
     @Override
-    public byte get()
+    public byte get() throws ReadPastEndException
     {
+        ensureAvailableToRead( 1 );
         return asReader.get();
     }
 
     @Override
-    public short getShort()
+    public short getShort() throws ReadPastEndException
     {
+        ensureAvailableToRead( 2 );
         return asReader.getShort();
     }
 
     @Override
-    public int getInt()
+    public int getInt() throws ReadPastEndException
     {
+        ensureAvailableToRead( 4 );
         return asReader.getInt();
     }
 
     @Override
-    public long getLong()
+    public long getLong() throws ReadPastEndException
     {
+        ensureAvailableToRead( 8 );
         return asReader.getLong();
     }
 
     @Override
-    public float getFloat()
+    public float getFloat() throws ReadPastEndException
     {
+        ensureAvailableToRead( 4 );
         return asReader.getFloat();
     }
 
     @Override
-    public double getDouble()
+    public double getDouble() throws ReadPastEndException
     {
+        ensureAvailableToRead( 8 );
         return asReader.getDouble();
     }
 
     @Override
-    public void get( byte[] bytes, int length )
+    public void get( byte[] bytes, int length ) throws ReadPastEndException
     {
+        ensureAvailableToRead( length );
         asReader.get( bytes, 0, length );
     }
 
     @Override
     public void get( char[] chars, int length ) throws IOException
     {
+        ensureAvailableToRead( length * 2 );
         asReader.asCharBuffer().get( chars, 0, length );
     }
 
+    private void ensureAvailableToRead( int i ) throws ReadPastEndException
+    {
+        if ( asReader.remaining() < i )
+        {
+            throw new ReadPastEndException();
+        }
+    }
+    
     @Override
     public LogPosition getCurrentPosition()
     {
@@ -252,5 +221,10 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public int writerPosition()
     {
         return asWriter.position();
+    }
+
+    public void truncateTo( int bytesSuccessfullyWritten )
+    {
+        asReader.limit( bytesSuccessfullyWritten );
     }
 }

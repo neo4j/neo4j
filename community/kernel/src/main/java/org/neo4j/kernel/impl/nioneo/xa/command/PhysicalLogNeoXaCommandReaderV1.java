@@ -330,7 +330,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             record.setInUse( inUse );
             record.setPropertyCount( channel.getInt() );
             record.setNameId( channel.getInt() );
-            if ( !readDynamicRecords( record, PROPERTY_INDEX_DYNAMIC_RECORD_ADDER ) )
+            if ( readDynamicRecords( record, PROPERTY_INDEX_DYNAMIC_RECORD_ADDER ) == -1 )
             {
                 return false;
             }
@@ -440,20 +440,21 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
             return record;
         }
 
-        <T> boolean readDynamicRecords( T target, DynamicRecordAdder<T> adder ) throws IOException
+        <T> int readDynamicRecords( T target, DynamicRecordAdder<T> adder ) throws IOException
         {
             int numberOfRecords = channel.getInt();
             assert numberOfRecords >= 0;
-            while ( numberOfRecords-- > 0 )
+            while ( numberOfRecords > 0 )
             {
                 DynamicRecord read = readDynamicRecord();
                 if ( read == null )
                 {
-                    return false;
+                    return -1;
                 }
                 adder.add( target, read );
+                numberOfRecords--;
             }
-            return true;
+            return numberOfRecords;
         }
 
         private final DynamicRecordAdder<PropertyBlock> PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER =
@@ -523,14 +524,14 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
                 record.addPropertyBlock( block );
             }
 
-            if ( !readDynamicRecords( record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER ) )
+            int deletedRecords =  readDynamicRecords( record, PROPERTY_DELETED_DYNAMIC_RECORD_ADDER );
+            
+            if ( deletedRecords == -1 )
             {
                 return null;
             }
 
-            // TODO 2.2-future
-//            channel.flip();
-            int deletedRecords = channel.getInt(); // 4
+             
             assert deletedRecords >= 0;
             while ( deletedRecords-- > 0 )
             {
@@ -578,7 +579,7 @@ public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
          * Read in existence of DynamicRecords. Remember, this has already been
          * read in the buffer with the blocks, above.
          */
-            if ( !readDynamicRecords( toReturn, PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER ) )
+            if ( readDynamicRecords( toReturn, PROPERTY_BLOCK_DYNAMIC_RECORD_ADDER ) == -1 )
             {
                 return null;
             }

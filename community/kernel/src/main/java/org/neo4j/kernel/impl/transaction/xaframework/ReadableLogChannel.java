@@ -26,21 +26,21 @@ public interface ReadableLogChannel extends Closeable
 {
     boolean hasMoreData() throws IOException;
 
-    byte get() throws IOException;
+    byte get() throws IOException, ReadPastEndException;
 
-    short getShort() throws IOException;
+    short getShort() throws IOException, ReadPastEndException;
 
-    int getInt() throws IOException;
+    int getInt() throws IOException, ReadPastEndException;
 
-    long getLong() throws IOException;
+    long getLong() throws IOException, ReadPastEndException;
 
-    float getFloat() throws IOException;
+    float getFloat() throws IOException, ReadPastEndException;
 
-    double getDouble() throws IOException;
+    double getDouble() throws IOException, ReadPastEndException;
 
-    void get( byte[] bytes, int length ) throws IOException;
+    void get( byte[] bytes, int length ) throws IOException, ReadPastEndException;
 
-    void get( char[] chars, int length ) throws IOException;
+    void get( char[] chars, int length ) throws IOException, ReadPastEndException;
 
     LogPosition getCurrentPosition() throws IOException;
 }

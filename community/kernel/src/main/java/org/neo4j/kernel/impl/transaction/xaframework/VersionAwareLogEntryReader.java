@@ -102,18 +102,19 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
     @Override
     public LogEntry readLogEntry( ReadableLogChannel channel ) throws IOException
     {
-        /*
-         * This is a hack particular to switching from unversioned to versioned LogEntries. Negative bytes
-         * at the beginning indicate that the indeed exists version info and must be consumed before we get
-         * to the actual type. But, for rolling upgrades from unversioned entries, that does not exist, so the
-         * first byte is the actual type. That is a mismatch that can be resolved externally, hence this conditional
-         * extra byte read. After 2.1 is released we can remove it.
-         */
-
-        byte version = channel.get();
-        byte type = channel.get();
         try
         {
+            /*
+             * This is a hack particular to switching from unversioned to versioned LogEntries. Negative bytes
+             * at the beginning indicate that the indeed exists version info and must be consumed before we get
+             * to the actual type. But, for rolling upgrades from unversioned entries, that does not exist, so the
+             * first byte is the actual type. That is a mismatch that can be resolved externally, hence this conditional
+             * extra byte read. After 2.1 is released we can remove it.
+             */
+    
+            byte version = channel.get();
+            byte type = channel.get();
+        
             switch ( type )
             {
                 case LogEntry.TX_START:
@@ -130,6 +131,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         }
         catch ( ReadPastEndException e )
         {
+            e.printStackTrace();
             return null;
         }
     }
