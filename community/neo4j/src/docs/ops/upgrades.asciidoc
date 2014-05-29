@@ -28,6 +28,9 @@ Automatic
 1.9 -> 2.0::
 Explicit
 
+2.0 -> 2.1::
+Explicit
+
 [NOTE]
 Downgrade is supported only between versions which do not have incompatible store layouts.
 That means that if you did an upgrade where you didn't have to explicitly set the +allow_store_upgrade+ flag to false then you can downgrade without any problems to the previous version used.
@@ -56,6 +59,13 @@ To perform a special upgrade (for significant changes to the database store):
 . The upgrade will happen during startup and the process is done when the database has been successfully started.
 . The +allow_store_upgrade+ configuration parameter should be removed, set to +false+ or commented out.
 . Information about the upgrade and progress indicator is printed in 'messages.log'.
+
+[[deployment-upgrading-two-one]]
+== Upgrade 2.0 -> 2.1 ==
+
+This edition uses a new store format that supports grouping of relationships by type, for substantially increased performance in many situations.
+
+The upgrade is explicit, as described above, and will occur at first startup. This will take some time and will require extra disk space.
 
 [[deployment-upgrading-two-zero]]
 == Upgrade 1.9 -> 2.0 ==
