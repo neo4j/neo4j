@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
@@ -29,6 +26,9 @@ import java.util.HashMap;
 import org.junit.Test;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.*;
 
 public class TestStoreRecoverer
 {
