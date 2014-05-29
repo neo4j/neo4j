@@ -34,7 +34,7 @@ import org.apache.commons.configuration.Configuration;
 import org.apache.commons.configuration.ConfigurationException;
 import org.apache.commons.configuration.PropertiesConfiguration;
 import org.apache.commons.configuration.SystemConfiguration;
-
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.server.configuration.validation.Validator;
@@ -91,6 +91,7 @@ public class PropertyFileConfigurator extends Configurator.Adapter
     {
         String databaseTuningPropertyFileLocation = serverConfiguration.getString( DB_TUNING_PROPERTY_FILE_KEY );
 
+        // Try and find the file automatically
         if ( databaseTuningPropertyFileLocation == null )
         {
             if ( propertyFileDirectoryContainsDBTuningFile() )
@@ -104,27 +105,41 @@ public class PropertyFileConfigurator extends Configurator.Adapter
                 log.log(
                         "No database tuning properties (org.neo4j.server.db.tuning.properties) found in [%s], using defaults.",
                         configFile.getPath() );
-                return;
             }
         }
 
-        File databaseTuningPropertyFile = new File( databaseTuningPropertyFileLocation );
-
-        if ( !databaseTuningPropertyFile.exists() )
+        // Load the file if we found it
+        if( databaseTuningPropertyFileLocation != null )
         {
-            log.warn( "The specified file for database performance tuning properties [%s] does not exist.",
-                    databaseTuningPropertyFileLocation );
-            return;
+            File databaseTuningPropertyFile = new File( databaseTuningPropertyFileLocation );
+
+            if ( !databaseTuningPropertyFile.exists() )
+            {
+                log.warn( "The specified file for database performance tuning properties [%s] does not exist.",
+                        databaseTuningPropertyFileLocation );
+            }
+            else
+            {
+                try
+                {
+                    databaseTuningProperties = MapUtil.load( databaseTuningPropertyFile );
+                }
+                catch ( IOException e )
+                {
+                    log.warn( "Unable to load database tuning file: " + e.getMessage() );
+                }
+            }
         }
 
-        try
-        {
-            databaseTuningProperties = MapUtil.load(databaseTuningPropertyFile);
-        }
-        catch( IOException e )
+        // Default to no user-defined config if no config was found
+        if(databaseTuningProperties == null )
         {
             databaseTuningProperties = new HashMap<>();
         }
+
+        // Always override the store dir property
+        databaseTuningProperties.put( GraphDatabaseSettings.store_dir.name(),
+                serverConfiguration.getString( Configurator.DATABASE_LOCATION_PROPERTY_KEY ) );
     }
 
     private void loadPropertiesConfig( File configFile, ConsoleLogger log ) throws ConfigurationException
