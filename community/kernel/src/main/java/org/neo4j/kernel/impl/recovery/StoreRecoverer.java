@@ -61,7 +61,7 @@ public class StoreRecoverer
 
         File neoStorePath = config.get( GraphDatabaseSettings.neo_store );
 
-        if(!neoStorePath.exists())
+        if(!fs.fileExists( neoStorePath ))
         {
             // No database in the specified directory.
             return false;

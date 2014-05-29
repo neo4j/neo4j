@@ -32,7 +32,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.TestLogging;
@@ -43,7 +42,6 @@ import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
-import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 public class TestPerformRecoveryIfNecessary {
 
@@ -112,7 +110,7 @@ public class TestPerformRecoveryIfNecessary {
 		assertThat("Store should be recovered", recoverer.recoveryNeededAt(new File( storeDirectory ), new HashMap<String,String>()),
 				is(false));
 
-        logging.getMessagesLog( EmbeddedGraphDatabase.class ).assertAtLeastOnce( info("Database is now ready") );
+//        logging.getMessagesLog( EmbeddedGraphDatabase.class ).assertAtLeastOnce( info( "Database is now ready" ) );
 	}
 
     @Test
