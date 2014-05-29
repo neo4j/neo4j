@@ -28,24 +28,39 @@ import java.util.HashMap;
 import java.util.Properties;
 
 import org.apache.commons.configuration.Configuration;
+import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
+import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
+import static org.junit.Assert.*;
+import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 
 public class TestPerformRecoveryIfNecessary {
 
-	public static final String HOME_DIRECTORY = "target/" + TestPerformRecoveryIfNecessary.class.getSimpleName();
-    public static final String STORE_DIRECTORY = HOME_DIRECTORY + "/data/graph.db";
+    @Rule
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+
+	public String homeDirectory;
+    public String storeDirectory;
 
     private static final String LINEBREAK = System.getProperty("line.separator");
+
+    @Before
+    public void createDirs()
+    {
+        homeDirectory = testDir.directory().getAbsolutePath();
+        storeDirectory = new File(homeDirectory, "data" + File.separator + "graph.db").getAbsolutePath();
+    }
 
 	@Test
 	public void shouldNotDoAnythingIfNoDBPresent() throws Exception
@@ -55,7 +70,7 @@ public class TestPerformRecoveryIfNecessary {
 		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream), DevNullLoggingService.DEV_NULL);
 
 		assertThat("Recovery task runs successfully.", task.run(), is(true));
-		assertThat("No database should have been created.", new File(STORE_DIRECTORY).exists(), is(false));
+		assertThat("No database should have been created.", new File( storeDirectory ).exists(), is(false));
 		assertThat("Recovery task should not print anything.", outputStream.toString(), is(""));
 	}
 
@@ -65,12 +80,12 @@ public class TestPerformRecoveryIfNecessary {
 		// Given
 		Configuration config = buildProperties();
 		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		new GraphDatabaseFactory().newEmbeddedDatabase(STORE_DIRECTORY).shutdown();
+		new GraphDatabaseFactory().newEmbeddedDatabase( storeDirectory ).shutdown();
 
 		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream), DevNullLoggingService.DEV_NULL);
 
 		assertThat("Recovery task should run successfully.", task.run(), is(true));
-		assertThat("Database should exist.", new File(STORE_DIRECTORY).exists(), is(true));
+		assertThat("Database should exist.", new File( storeDirectory ).exists(), is(true));
 		assertThat("Recovery should not print anything.", outputStream.toString(), is(""));
 	}
 
@@ -78,37 +93,56 @@ public class TestPerformRecoveryIfNecessary {
 	public void shouldPerformRecoveryIfNecessary() throws Exception
 	{
 		// Given
-		StoreRecoverer recoverer = new StoreRecoverer();
-		Configuration config = buildProperties();
-		ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
-		new GraphDatabaseFactory().newEmbeddedDatabase(STORE_DIRECTORY).shutdown();
-		// Make this look incorrectly shut down
-		new File(STORE_DIRECTORY, "nioneo_logical.log.active").delete();
+        TestLogging logging = new TestLogging();
+        StoreRecoverer recoverer = new StoreRecoverer();
+        Configuration config = buildProperties();
+        ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+        new GraphDatabaseFactory().newEmbeddedDatabase( storeDirectory ).shutdown();
+        // Make this look incorrectly shut down
+        new File( storeDirectory, "nioneo_logical.log.active").delete();
 
-		assertThat("Store should not be recovered", recoverer.recoveryNeededAt(new File(STORE_DIRECTORY), new HashMap<String,String>()),
+        assertThat("Store should not be recovered", recoverer.recoveryNeededAt(new File( storeDirectory ), new HashMap<String,String>()),
 				is(true));
 
-		// Run recovery
-		PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream), DevNullLoggingService.DEV_NULL);
+        // Run recovery
+        PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream), logging );
 		assertThat("Recovery task should run successfully.", task.run(), is(true));
-		assertThat("Database should exist.", new File(STORE_DIRECTORY).exists(), is(true));
+		assertThat("Database should exist.", new File( storeDirectory ).exists(), is(true));
 		assertThat("Recovery should print status message.", outputStream.toString(), is("Detected incorrectly shut down database, performing recovery.." + LINEBREAK));
-		assertThat("Store should be recovered", recoverer.recoveryNeededAt(new File(STORE_DIRECTORY), new HashMap<String,String>()),
+		assertThat("Store should be recovered", recoverer.recoveryNeededAt(new File( storeDirectory ), new HashMap<String,String>()),
 				is(false));
+
+        logging.getMessagesLog( EmbeddedGraphDatabase.class ).assertAtLeastOnce( info("Database is now ready") );
 	}
+
+    @Test
+    public void shouldNotPerformRecoveryIfNoNeostorePresent() throws Exception
+    {
+        // Given
+        new File( storeDirectory ).mkdirs();
+        new File( storeDirectory, "unrelated_file").createNewFile();
+
+        // When
+        boolean actual = new StoreRecoverer().recoveryNeededAt( new File( storeDirectory ), new HashMap<String,
+                String>() );
+
+        // Then
+        assertThat("Recovery should not be needed", actual,
+                is(false));
+    }
 
     private Configuration buildProperties() throws IOException
     {
-        FileUtils.deleteRecursively( new File( HOME_DIRECTORY ) );
-        new File( HOME_DIRECTORY + "/conf" ).mkdirs();
+        FileUtils.deleteRecursively( new File( homeDirectory ) );
+        new File( homeDirectory + "/conf" ).mkdirs();
 
         Properties databaseProperties = new Properties();
 
-        String databasePropertiesFileName = HOME_DIRECTORY + "/conf/neo4j.properties";
+        String databasePropertiesFileName = homeDirectory + "/conf/neo4j.properties";
         databaseProperties.store( new FileWriter( databasePropertiesFileName ), null );
 
         Configuration serverProperties = new MapBasedConfiguration();
-        serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, STORE_DIRECTORY );
+        serverProperties.setProperty( Configurator.DATABASE_LOCATION_PROPERTY_KEY, storeDirectory );
         serverProperties.setProperty( Configurator.DB_TUNING_PROPERTY_FILE_KEY, databasePropertiesFileName );
 
         return serverProperties;
