@@ -27,4 +27,6 @@ import javacompat.{PlanDescription => JPlanDescription}
 trait PlanDescription {
   def name: String
   def asJava: JPlanDescription
+  def render(builder: StringBuilder, separator: String, levelSuffix: String)
+  def render(builder: StringBuilder)
 }
