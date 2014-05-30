@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.core;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -39,7 +38,6 @@ import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
 
 public class NodeManager extends LifecycleAdapter implements EntityFactory
 {
-    private final GraphDatabaseService graphDbService;
     private final ThreadToStatementContextBridge threadToTransactionBridge;
     private final NodeProxy.NodeLookup nodeLookup;
     private final RelationshipProxy.RelationshipLookups relationshipLookups;
@@ -47,21 +45,15 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     private final List<PropertyTracker<Relationship>> relationshipPropertyTrackers;
     private long epoch;
 
-    public NodeManager( StringLogger logger, GraphDatabaseService graphDb,
+    public NodeManager( StringLogger logger,
                         NodeProxy.NodeLookup nodeLookup, RelationshipProxy.RelationshipLookups relationshipLookups,
                         ThreadToStatementContextBridge threadToTransactionBridge )
     {
-        this.graphDbService = graphDb;
         this.nodeLookup = nodeLookup;
         this.relationshipLookups = relationshipLookups;
         this.threadToTransactionBridge = threadToTransactionBridge;
         this.nodePropertyTrackers = new LinkedList<>();
         this.relationshipPropertyTrackers = new LinkedList<>();
-    }
-
-    public GraphDatabaseService getGraphDbService()
-    {
-        return graphDbService;
     }
 
 //    @Override

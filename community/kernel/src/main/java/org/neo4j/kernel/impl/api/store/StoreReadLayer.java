@@ -92,6 +92,8 @@ public interface StoreReadLayer
 
     Iterator<DefinedProperty> nodeGetAllProperties( long nodeId ) throws EntityNotFoundException;
 
+    boolean relationshipExists( long relationshipId );
+
     PrimitiveLongIterator relationshipGetPropertyKeys( long relationshipId )
                     throws EntityNotFoundException;
 

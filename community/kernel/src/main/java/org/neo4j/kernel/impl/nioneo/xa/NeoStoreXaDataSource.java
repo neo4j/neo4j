@@ -151,6 +151,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private final StartupStatisticsProvider startupStatistics;
     private CacheLayer storeLayer;
     private final Caches cacheProvider;
+    private final NodeManager nodeManager;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -248,7 +249,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                  KernelHealth kernelHealth, RemoteTxHook remoteTxHook,
                                  TxIdGenerator txIdGenerator, TransactionHeaderInformation transactionHeaderInformation,
                                  StartupStatisticsProvider startupStatistics,
-                                 Caches cacheProvider )
+                                 Caches cacheProvider, NodeManager nodeManager )
     {
         this.config = config;
         this.tokenNameLookup = tokenNameLookup;
@@ -271,6 +272,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         this.transactionHeaderInformation = transactionHeaderInformation;
         this.startupStatistics = startupStatistics;
         this.cacheProvider = cacheProvider;
+        this.nodeManager = nodeManager;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -312,8 +314,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         neoStore = storeFactory.newNeoStore( false );
 
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
-
-        final NodeManager nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
 
         AutoLoadingCache<NodeImpl> nodeCache = new AutoLoadingCache<>(
                 cacheProvider.node(), nodeLoader( neoStore.getNodeStore() ) );

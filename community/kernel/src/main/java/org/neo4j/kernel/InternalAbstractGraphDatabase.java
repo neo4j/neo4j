@@ -591,7 +591,7 @@ public abstract class InternalAbstractGraphDatabase
         NodeLookup nodeLookup = createNodeLookup();
         RelationshipLookups relationshipLookup = createRelationshipLookups();
         return new NodeManager(
-                logging.getMessagesLog( NodeManager.class ), this, nodeLookup, relationshipLookup,
+                logging.getMessagesLog( NodeManager.class ), nodeLookup, relationshipLookup,
                 threadToTransactionBridge );
     }
 
@@ -801,7 +801,7 @@ public abstract class InternalAbstractGraphDatabase
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
                 storeMigrationProcess, transactionMonitor, kernelHealth, txHook, txIdGenerator,
-                transactionHeaderInformation, startupStatistics, caches );
+                transactionHeaderInformation, startupStatistics, caches, nodeManager );
         dataSourceManager.register( neoDataSource );
     }
 

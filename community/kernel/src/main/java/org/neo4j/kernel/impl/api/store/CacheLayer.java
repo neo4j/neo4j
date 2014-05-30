@@ -496,4 +496,19 @@ public class CacheLayer implements StoreReadLayer
     {
         return diskLayer.relationshipsGetAll();
     }
+
+    @Override
+    public boolean relationshipExists( long relationshipId )
+    {
+        // Write a proper implementation later
+        try
+        {
+            persistenceCache.getRelationship( relationshipId );
+            return true;
+        }
+        catch ( EntityNotFoundException e )
+        {
+            return false;
+        }
+    }
 }
