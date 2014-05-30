@@ -520,7 +520,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
     private void forceEverything()
     {
-        neoStore.flushAll();
+        neoStore.flush();
         indexingService.flushAll();
         labelScanStore.force();
     }
@@ -578,7 +578,9 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         @Override
         public long getAndSetNewVersion()
         {
-            return neoStore.incrementVersion();
+            long incrementedVersion = neoStore.incrementVersion();
+            neoStore.flushNeoStoreOnly();
+            return incrementedVersion;
         }
 
         @Override

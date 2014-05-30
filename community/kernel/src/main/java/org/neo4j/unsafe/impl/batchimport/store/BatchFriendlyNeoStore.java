@@ -165,7 +165,7 @@ public class BatchFriendlyNeoStore implements AutoCloseable
     {
         if(neoStore != null)
         {
-            neoStore.flushAll();
+            neoStore.flush();
         }
     }
 

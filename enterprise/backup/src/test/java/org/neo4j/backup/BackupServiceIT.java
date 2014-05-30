@@ -485,7 +485,8 @@ public class BackupServiceIT
                     finally
                     {
                         tx.finish();
-                        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flushAll();
+                        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flush();
+
                         transactionCommitted.countDown();
                     }
                 }

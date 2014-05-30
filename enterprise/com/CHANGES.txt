@@ -1,3 +1,9 @@
+2.2-SNAPSHOT
+------------
+
+o BREAKING CHANGE: A number of classes and interfaces have moved from the org.neo4j.kernel.impl.nioneo.store to the
+  org.neo4j.io.fs package. This change has rippled out through a few APIs.
+
 1.9.3
 -----
 o Fix for a race between Slave shutting down a channel and Master reaping it, which led to exceptions on the Master side

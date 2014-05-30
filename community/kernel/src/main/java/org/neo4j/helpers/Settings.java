@@ -29,9 +29,6 @@ import java.util.EnumSet;
 import java.util.List;
 import java.util.regex.Pattern;
 
-import org.neo4j.function.Function;
-import org.neo4j.function.Function2;
-import org.neo4j.function.Functions;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.io.fs.FileUtils;
