@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import org.neo4j.kernel.impl.util.StringLogger;
-
 /**
  * Common interface for the node,relationship,property and relationship type
  * stores.
@@ -39,8 +37,4 @@ public interface Store
     long getHighestPossibleIdInUse();
 
     long getNumberOfIdsInUse();
-
-    WindowPoolStats getWindowPoolStats();
-
-    void logIdUsage( StringLogger.LineLogger logger );
 }

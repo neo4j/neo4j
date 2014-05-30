@@ -26,7 +26,7 @@ import java.util.Arrays;
 import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static java.nio.ByteBuffer.allocateDirect;

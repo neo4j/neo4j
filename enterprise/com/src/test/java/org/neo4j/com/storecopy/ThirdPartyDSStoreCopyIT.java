@@ -51,7 +51,7 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
+import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;

@@ -19,13 +19,15 @@
  */
 package org.neo4j.helpers;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.helpers.Functions.map;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import org.hamcrest.CoreMatchers;
 import org.junit.Test;
+import org.neo4j.function.Function;
+import org.neo4j.function.Functions;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.Functions.map;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class FunctionsTest
 {

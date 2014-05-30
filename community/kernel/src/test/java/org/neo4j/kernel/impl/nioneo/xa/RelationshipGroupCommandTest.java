@@ -19,21 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.nio.ByteBuffer.allocate;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
@@ -42,7 +39,14 @@ import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
+
+import static java.nio.ByteBuffer.allocate;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
 
 public class RelationshipGroupCommandTest
 {
@@ -50,15 +54,24 @@ public class RelationshipGroupCommandTest
     private XaCommandReader commandReader = new PhysicalLogNeoXaCommandReaderV1( allocate( 64 ));
     private XaCommandWriter commandWriter = new PhysicalLogNeoXaCommandWriter();
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     @Before
     public void before() throws Exception
     {
-        @SuppressWarnings("deprecation")
-        StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, new DefaultTxHook() );
+        Monitors monitors = new Monitors();
+        Config config = new Config();
+        StoreFactory storeFactory = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fs.get(), config ),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                new DefaultTxHook(),
+                monitors );
         File storeFile = new File( "story" );
         storeFactory.createNodeStore( storeFile );
         nodeStore = storeFactory.newNodeStore( storeFile );

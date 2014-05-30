@@ -53,12 +53,12 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
-import org.neo4j.helpers.Function;
+import org.neo4j.function.Function;
 import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.nioneo.store.FileLock;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
+import org.neo4j.io.fs.FileLock;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.Math.max;
@@ -67,6 +67,7 @@ import static java.util.Arrays.asList;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
+// TODO: Move this to org.neo4j.io
 public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
 {
     private final Set<File> directories = Collections.newSetFromMap( new ConcurrentHashMap<File, Boolean>() );

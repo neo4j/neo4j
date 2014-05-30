@@ -54,7 +54,7 @@ import static org.neo4j.graphdb.Neo4jMatchers.inTx;
 public class BatchInsertDocTest
 {
     @Test
-    public void insert()
+    public void insert() throws InterruptedException
     {
         // START SNIPPET: insert
         BatchInserter inserter = BatchInserters.inserter( "target/batchinserter-example", fileSystem );

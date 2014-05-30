@@ -26,6 +26,7 @@ import java.util.Collections;
 import java.util.concurrent.Future;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -34,14 +35,18 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.GraphProperties;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.OtherThreadExecutor;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -183,10 +188,17 @@ public class TestGraphProperties
         tx.finish();
         db.shutdown();
 
-        NeoStore neoStore = new StoreFactory( new Config( Collections.<String, String>emptyMap(),
-                GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                null ).newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
+        Monitors monitors = new Monitors();
+        Config config = new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class );
+        StoreFactory storeFactory = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fs.get(), config ),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                null,
+                monitors );
+        NeoStore neoStore = storeFactory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         long prop = neoStore.getGraphNextProp();
         assertTrue( prop != 0 );
         neoStore.close();
@@ -420,4 +432,7 @@ public class TestGraphProperties
         db.shutdown();
         return snapshot;
     }
+
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
 }

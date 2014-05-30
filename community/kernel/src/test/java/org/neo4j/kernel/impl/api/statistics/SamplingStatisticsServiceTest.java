@@ -26,7 +26,7 @@ import org.junit.Test;
 
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 
 import static org.hamcrest.CoreMatchers.equalTo;

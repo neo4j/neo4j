@@ -29,7 +29,7 @@ import org.junit.runners.model.Statement;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
-import static org.neo4j.kernel.impl.util.FileUtils.path;
+import static org.neo4j.io.fs.FileUtils.path;
 
 public class DocsIncludeFile implements TestRule
 {

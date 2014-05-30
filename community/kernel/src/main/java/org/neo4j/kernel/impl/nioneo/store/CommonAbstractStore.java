@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.nio.ByteBuffer.wrap;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.UTF8.encode;
-import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,15 +27,24 @@ import java.nio.channels.OverlappingFileLockException;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.io.fs.FileLock;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
-import org.neo4j.kernel.impl.util.FileUtils.FileOperation;
+import org.neo4j.io.fs.FileUtils.FileOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.nio.ByteBuffer.wrap;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -63,7 +67,7 @@ public abstract class CommonAbstractStore implements IdSequence
 
     protected Config configuration;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final WindowPoolFactory windowPoolFactory;
+    protected final PageCache pageCache;
     protected FileSystemAbstraction fileSystemAbstraction;
 
     protected final File storageFileName;
@@ -71,7 +75,7 @@ public abstract class CommonAbstractStore implements IdSequence
     protected StringLogger stringLogger;
     private IdGenerator idGenerator = null;
     private StoreChannel fileChannel = null;
-    private WindowPool windowPool;
+    protected PagedFile storeFile;
     private boolean storeOk = true;
     private Throwable causeOfStoreNotOk;
     private FileLock fileLock;
@@ -80,6 +84,7 @@ public abstract class CommonAbstractStore implements IdSequence
     private boolean backupSlave = false;
     private long highestUpdateRecordId = -1;
     private final StoreVersionMismatchHandler versionMismatchHandler;
+    private final Monitors monitors;
 
     /**
      * Opens and validates the store contained in <CODE>fileName</CODE>
@@ -96,19 +101,26 @@ public abstract class CommonAbstractStore implements IdSequence
      *
      * @param idType The Id used to index into this store
      */
-    public CommonAbstractStore( File fileName, Config configuration, IdType idType,
-                                IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                                FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                                StoreVersionMismatchHandler versionMismatchHandler )
+    public CommonAbstractStore(
+            File fileName,
+            Config configuration,
+            IdType idType,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
         this.storageFileName = fileName;
         this.configuration = configuration;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.windowPoolFactory = windowPoolFactory;
+        this.pageCache = pageCache;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.idType = idType;
         this.stringLogger = stringLogger;
         this.versionMismatchHandler = versionMismatchHandler;
+        this.monitors = monitors;
 
         try
         {
@@ -202,15 +214,32 @@ public abstract class CommonAbstractStore implements IdSequence
         {
             readAndVerifyBlockSize();
             verifyFileSizeAndTruncate();
+            loadIdGenerator();
+            try
+            {
+                int filePageSize = pageCache.pageSize() - pageCache.pageSize() % getEffectiveRecordSize();
+                storeFile = pageCache.map( getStorageFileName(), filePageSize );
+            }
+            catch ( IOException e )
+            {
+                // TODO: Just throw IOException, add proper handling further up
+                throw new UnderlyingStorageException( e );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( "Unable to load storage " + getStorageFileName(), e );
         }
-        loadIdGenerator();
+    }
 
-        this.windowPool = windowPoolFactory.create( getStorageFileName(), getEffectiveRecordSize(),
-                getFileChannel(), configuration, stringLogger, getNumberOfReservedLowIds() );
+    protected long pageIdForRecord( long id )
+    {
+        return id * getEffectiveRecordSize() / storeFile.pageSize();
+    }
+
+    protected int offsetForId( long id )
+    {
+        return (int) (id * getEffectiveRecordSize() % storeFile.pageSize());
     }
 
     protected abstract int getEffectiveRecordSize();
@@ -416,16 +445,7 @@ public abstract class CommonAbstractStore implements IdSequence
         return configuration.get( Configuration.store_dir );
     }
 
-    /**
-     * Acquires a {@link PersistenceWindow} for <CODE>position</CODE> and
-     * operation <CODE>type</CODE>. Window must be released after operation
-     * has been performed via {@link #releaseWindow(PersistenceWindow)}.
-     *
-     * @param position The record position
-     * @param type     The operation type
-     * @return a persistence window encapsulating the record
-     */
-    protected PersistenceWindow acquireWindow( long position, OperationType type )
+    protected void assertIdExists( long position )
     {
         if ( !isInRecoveryMode() && (position > getHighId() || !storeOk) )
         {
@@ -433,23 +453,6 @@ public abstract class CommonAbstractStore implements IdSequence
                     "Position[" + position + "] requested for high id[" + getHighId() + "], store is ok[" + storeOk +
                     "] recovery[" + isInRecoveryMode() + "]", causeOfStoreNotOk );
         }
-        return windowPool.acquire( position, type );
-    }
-
-    /**
-     * Releases the window and writes the data (async) if the
-     * <CODE>window</CODE> was a {@link PersistenceRow}.
-     *
-     * @param window The window to be released
-     */
-    protected void releaseWindow( PersistenceWindow window )
-    {
-        windowPool.release( window );
-    }
-
-    public void flushAll()
-    {
-        windowPool.flushAll();
     }
 
     private boolean isRecovered = false;
@@ -527,6 +530,18 @@ public abstract class CommonAbstractStore implements IdSequence
         }
     }
 
+    public void flush()
+    {
+        try
+        {
+            pageCache.flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Failed to flush", e );
+        }
+    }
+
     /**
      * Closes this store. This will cause all buffers and channels to be closed.
      * Requesting an operation from after this method has been invoked is
@@ -543,10 +558,13 @@ public abstract class CommonAbstractStore implements IdSequence
             return;
         }
         closeStorage();
-        if ( windowPool != null )
+        try
         {
-            windowPool.close();
-            windowPool = null;
+            pageCache.unmap( getStorageFileName() );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Failed to close store file: " + getStorageFileName(), e );
         }
         if ( (isReadOnly() && !isBackupSlave()) || idGenerator == null || !storeOk )
         {
@@ -646,11 +664,6 @@ public abstract class CommonAbstractStore implements IdSequence
         return idGenerator.getNumberOfIdsInUse();
     }
 
-    public WindowPoolStats getWindowPoolStats()
-    {
-        return windowPool.getStats();
-    }
-
     public IdType getIdType()
     {
         return idType;
@@ -689,10 +702,5 @@ public abstract class CommonAbstractStore implements IdSequence
     public String toString()
     {
         return getClass().getSimpleName();
-    }
-
-    public int getNumberOfReservedLowIds()
-    {
-        return 0;
     }
 }

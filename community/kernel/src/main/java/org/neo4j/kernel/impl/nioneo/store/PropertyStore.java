@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
-
 import java.io.File;
+import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -32,14 +30,23 @@ import java.util.List;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageLock;
+import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
+import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.index.PropertyPhysicalToLogicalConverter;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyRecordChange;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
 
 /**
  * Implementation of the property store. This implementation has two dynamic
@@ -68,14 +75,21 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     private DynamicArrayStore arrayPropertyStore;
     private final PropertyPhysicalToLogicalConverter physicalToLogicalConverter;
 
-    public PropertyStore( File fileName, Config configuration,
-                         IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                         FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                         DynamicStringStore stringPropertyStore, PropertyKeyTokenStore propertyKeyTokenStore,
-                         DynamicArrayStore arrayPropertyStore, StoreVersionMismatchHandler versionMismatchHandler )
+    public PropertyStore(
+            File fileName,
+            Config configuration,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            DynamicStringStore stringPropertyStore,
+            PropertyKeyTokenStore propertyKeyTokenStore,
+            DynamicArrayStore arrayPropertyStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler );
+        super( fileName, configuration, IdType.PROPERTY, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
         this.stringPropertyStore = stringPropertyStore;
         this.propertyKeyTokenStore = propertyKeyTokenStore;
         this.arrayPropertyStore = arrayPropertyStore;
@@ -138,15 +152,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     }
 
     @Override
-    public void flushAll()
-    {
-        stringPropertyStore.flushAll();
-        propertyKeyTokenStore.flushAll();
-        arrayPropertyStore.flushAll();
-        super.flushAll();
-    }
-
-    @Override
     public String getTypeDescriptor()
     {
         return TYPE_DESCRIPTOR;
@@ -182,15 +187,22 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     @Override
     public void updateRecord( PropertyRecord record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
-            OperationType.WRITE );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            updateRecord( record, window );
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            updateRecord( record, cursor );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
@@ -200,11 +212,11 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         updateRecord( record ); // TODO: should we do something special for property records?
     }
 
-    private void updateRecord( PropertyRecord record, PersistenceWindow window )
+    private void updateRecord( PropertyRecord record, PageCursor cursor )
     {
         long id = record.getId();
         registerIdFromUpdateRecord( id );
-        Buffer buffer = window.getOffsettedBuffer( id );
+        cursor.setOffset( (int) (id * RECORD_SIZE % storeFile.pageSize()) );
         if ( record.inUse() )
         {
             // Set up the record header
@@ -216,9 +228,9 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             /*
              * [pppp,nnnn] previous, next high bits
              */
-            buffer.put( modifiers );
-            buffer.putInt( (int) record.getPrevProp() ).putInt(
-                    (int) record.getNextProp() );
+            cursor.putByte( modifiers );
+            cursor.putInt( (int) record.getPrevProp() );
+            cursor.putInt( (int) record.getNextProp() );
 
             // Then go through the blocks
             int longsAppended = 0; // For marking the end of blocks
@@ -227,7 +239,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
                 long[] propBlockValues = block.getValueBlocks();
                 for ( long propBlockValue : propBlockValues )
                 {
-                    buffer.putLong( propBlockValue );
+                    cursor.putLong( propBlockValue );
                 }
 
                 longsAppended += propBlockValues.length;
@@ -245,7 +257,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
             }
             if ( longsAppended < PropertyType.getPayloadSizeLongs() )
             {
-                buffer.putLong( 0 );
+                cursor.putLong( 0 );
             }
         }
         else
@@ -255,8 +267,8 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
                 freeId( id );
             }
             // skip over the record header, nothing useful there
-            buffer.setOffset( buffer.getOffset() + 9 );
-            buffer.putLong( 0 );
+            cursor.setOffset( cursor.getOffset() + 9 );
+            cursor.putLong( 0 );
         }
         updateDynamicRecords( record.getDeletedRecords() );
     }
@@ -283,15 +295,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
 
     public PropertyRecord getLightRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
-        try
-        {
-            return getRecord( id, window, RecordLoad.NORMAL );
-        }
-        finally
-        {
-            releaseWindow( window );
-        }
+        return getRecord( id );
     }
 
     public void ensureHeavy( PropertyBlock block )
@@ -333,39 +337,44 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     @Override
     public PropertyRecord getRecord( long id )
     {
-        PropertyRecord record;
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            record = getRecord( id, window, RecordLoad.NORMAL );
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            return getRecord( id, cursor, RecordLoad.NORMAL );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
-        return record;
     }
 
     @Override
     public PropertyRecord forceGetRecord( long id )
     {
-        PersistenceWindow window;
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            window = acquireWindow( id, OperationType.READ );
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
         }
-        catch ( InvalidRecordException e )
+        catch ( IOException e )
         {
-            return new PropertyRecord( id );
+            throw new UnderlyingStorageException( e );
         }
-
         try
         {
-            return getRecord( id, window, RecordLoad.FORCE );
+            return getRecord( id, cursor, RecordLoad.FORCE );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
@@ -381,25 +390,25 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         return forceGetRecord( id );
     }
 
-    private PropertyRecord getRecordFromBuffer( long id, Buffer buffer )
+    private PropertyRecord getRecordFromBuffer( long id, PageCursor cursor )
     {
-        int offsetAtBeggining = buffer.getOffset();
+        int offsetAtBeggining = cursor.getOffset();
         PropertyRecord record = new PropertyRecord( id );
 
         /*
          * [pppp,nnnn] previous, next high bits
          */
-        byte modifiers = buffer.get();
+        byte modifiers = cursor.getByte();
         long prevMod = ( modifiers & 0xF0L ) << 28;
         long nextMod = ( modifiers & 0x0FL ) << 32;
-        long prevProp = buffer.getUnsignedInt();
-        long nextProp = buffer.getUnsignedInt();
+        long prevProp = cursor.getUnsignedInt();
+        long nextProp = cursor.getUnsignedInt();
         record.setPrevProp( longFromIntAndMod( prevProp, prevMod ) );
         record.setNextProp( longFromIntAndMod( nextProp, nextMod ) );
 
-        while ( buffer.getOffset() - offsetAtBeggining < RECORD_SIZE )
+        while ( cursor.getOffset() - offsetAtBeggining < RECORD_SIZE )
         {
-            PropertyBlock newBlock = getPropertyBlock( buffer );
+            PropertyBlock newBlock = getPropertyBlock( cursor );
             if ( newBlock != null )
             {
                 record.addPropertyBlock( newBlock );
@@ -414,10 +423,10 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         return record;
     }
 
-    private PropertyRecord getRecord( long id, PersistenceWindow window, RecordLoad load )
+    private PropertyRecord getRecord( long id, PageCursor cursor, RecordLoad load )
     {
-        Buffer buffer = window.getOffsettedBuffer( id );
-        PropertyRecord toReturn = getRecordFromBuffer( id, buffer );
+        cursor.setOffset( (int) (id * RECORD_SIZE % storeFile.pageSize()) );
+        PropertyRecord toReturn = getRecordFromBuffer( id, cursor );
         if ( !toReturn.inUse() && load != RecordLoad.FORCE )
         {
             throw new InvalidRecordException( "PropertyRecord[" + id + "] not in use" );
@@ -431,9 +440,9 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
      * result is returned, that has inUse() return false. Also, the argument is not
      * touched.
      */
-    private PropertyBlock getPropertyBlock( Buffer buffer )
+    private PropertyBlock getPropertyBlock( PageCursor cursor )
     {
-        long header = buffer.getLong();
+        long header = cursor.getLong();
         PropertyType type = PropertyType.getPropertyType( header, true );
         if ( type == null )
         {
@@ -446,7 +455,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         blockData[0] = header; // we already have that
         for ( int i = 1; i < numBlocks; i++ )
         {
-            blockData[i] = buffer.getLong();
+            blockData[i] = cursor.getLong();
         }
         toReturn.setValueBlocks( blockData );
         return toReturn;
@@ -455,36 +464,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     public Object getValue( PropertyBlock propertyBlock )
     {
         return propertyBlock.getType().getValue( propertyBlock, this );
-    }
-
-    public void makeHeavyIfLight( PropertyBlock record )
-    {
-        if ( record.isLight() )
-        {
-            /*
-             * This will add the value records without checking if they are already
-             * in the block - so we only call this after checking isLight() or
-             * else we will end up with duplicates.
-             */
-            if ( record.getType() == PropertyType.STRING )
-            {
-                Collection<DynamicRecord> stringRecords = stringPropertyStore.getLightRecords( record.getSingleValueLong() );
-                for ( DynamicRecord stringRecord : stringRecords )
-                {
-                    stringRecord.setType( PropertyType.STRING.intValue() );
-                    record.addValueRecord( stringRecord );
-                }
-            }
-            else if ( record.getType() == PropertyType.ARRAY )
-            {
-                Collection<DynamicRecord> arrayRecords = arrayPropertyStore.getLightRecords( record.getSingleValueLong() );
-                for ( DynamicRecord arrayRecord : arrayRecords )
-                {
-                    arrayRecord.setType( PropertyType.ARRAY.intValue() );
-                    record.addValueRecord( arrayRecord );
-                }
-            }
-        }
     }
 
     @Override
@@ -658,25 +637,6 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         return getRightArray( arrayPropertyStore.readFullByteArray( records, PropertyType.ARRAY ) );
     }
 
-    @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
-    {
-        List<WindowPoolStats> list = new ArrayList<>();
-        list.add( stringPropertyStore.getWindowPoolStats() );
-        list.add( arrayPropertyStore.getWindowPoolStats() );
-        list.add( getWindowPoolStats() );
-        return list;
-    }
-
-    @Override
-    public void logAllWindowPoolStats( StringLogger.LineLogger logger )
-    {
-        super.logAllWindowPoolStats( logger );
-        propertyKeyTokenStore.logAllWindowPoolStats( logger );
-        logger.logLine( stringPropertyStore.getWindowPoolStats().toString() );
-        logger.logLine( arrayPropertyStore.getWindowPoolStats().toString() );
-    }
-
     public int getStringBlockSize()
     {
         return stringPropertyStore.getBlockSize();
@@ -691,8 +651,8 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     protected boolean isRecordInUse( ByteBuffer buffer )
     {
         // TODO: The next line is an ugly hack, but works.
-        Buffer fromByteBuffer = new Buffer( null, buffer );
-        return buffer.limit() >= RECORD_SIZE && getRecordFromBuffer( 0, fromByteBuffer ).inUse();
+        OffsetTrackingCursor cursor = new OffsetTrackingCursor().reset(new ByteBufferPage( buffer ));
+        return buffer.limit() >= RECORD_SIZE && getRecordFromBuffer( 0, cursor ).inUse();
     }
 
     @Override

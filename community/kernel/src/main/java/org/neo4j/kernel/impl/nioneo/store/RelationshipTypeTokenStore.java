@@ -23,11 +23,14 @@ import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Implementation of the relationship type store. Uses a dynamic store to store
@@ -44,13 +47,19 @@ public class RelationshipTypeTokenStore extends TokenStore<RelationshipTypeToken
     public static final String TYPE_DESCRIPTOR = "RelationshipTypeStore";
     private static final int RECORD_SIZE = 1/*inUse*/ + 4/*nameId*/;
 
-    public RelationshipTypeTokenStore( File fileName, Config config,
-                                       IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                                       FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                                       DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler )
+    public RelationshipTypeTokenStore(
+            File fileName,
+            Config config,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            DynamicStringStore nameStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler );
+        super( fileName, config, IdType.RELATIONSHIP_TYPE_TOKEN, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
     @Override

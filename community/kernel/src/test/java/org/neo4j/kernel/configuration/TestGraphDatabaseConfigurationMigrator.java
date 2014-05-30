@@ -19,12 +19,15 @@
  */
 package org.neo4j.kernel.configuration;
 
+import java.util.Map;
+
 import org.junit.Test;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.*;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.all_stores_total_mapped_memory_size;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
 
@@ -85,5 +88,27 @@ public class TestGraphDatabaseConfigurationMigrator
                 equalTo( stringMap( "cache_type", "hpc" ) ) );
 
         log.assertAtLeastOnce( warn( "'gcr' cache type has been renamed to 'hpc', High Performance Cache." ) );
+    }
+
+    @Test
+    public void testMemoryMappingIsTotalConfiguredForAllStores() throws Exception
+    {
+        ConfigurationMigrator migrator = new GraphDatabaseConfigurationMigrator(  );
+        TestLogger log = new TestLogger();
+
+        Map<String, String> oldConfig = stringMap(
+                "neostore.nodestore.db.mapped_memory", "12M",
+                "neostore.propertystore.db.mapped_memory", "1G",
+                "neostore.propertystore.db.index.mapped_memory", "1M",
+                "neostore.propertystore.db.index.keys.mapped_memory", "13",
+                "neostore.propertystore.db.strings.mapped_memory", "2",
+                "neostore.propertystore.db.arrays.mapped_memory", "1",
+                "neostore.relationshipstore.db.mapped_memory", "0" );
+
+        // When & Then
+        assertThat( migrator.apply( oldConfig, log ).get(all_stores_total_mapped_memory_size.name() ),
+            equalTo( "1074790416" ) );
+
+        log.assertAtLeastOnce( warn( "The neostore.*.db.mapped_memory settings have been replaced by the single 'all_stores_total_mapped_memory_size'. The sum of the old configuration will be used as the value for the new setting." ) );
     }
 }

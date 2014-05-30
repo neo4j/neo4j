@@ -37,7 +37,7 @@ import static java.lang.System.getProperty;
 
 import static org.junit.Assert.assertEquals;
 
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestRecoveryMultipleDataSources

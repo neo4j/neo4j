@@ -43,12 +43,6 @@ public class DelegatingRecordStore<R extends AbstractBaseRecord> implements Reco
     }
 
     @Override
-    public WindowPoolStats getWindowPoolStats()
-    {
-        return delegate.getWindowPoolStats();
-    }
-
-    @Override
     public long getHighId()
     {
         return delegate.getHighId();

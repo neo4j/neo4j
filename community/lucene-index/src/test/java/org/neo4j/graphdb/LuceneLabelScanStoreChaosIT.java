@@ -30,7 +30,7 @@ import java.util.Set;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.DatabaseRule.RestartAction;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -45,7 +45,7 @@ import static org.junit.Assert.fail;
 import static org.neo4j.helpers.Exceptions.exceptionsOfType;
 import static org.neo4j.helpers.Exceptions.peel;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 /**
  * Tests functionality around missing or corrupted lucene label scan store index, and that

@@ -88,7 +88,7 @@ import static java.util.Collections.emptyMap;
 import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
+import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
 public class ClusterManager
         extends LifecycleAdapter

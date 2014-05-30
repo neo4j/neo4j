@@ -41,7 +41,7 @@ import javax.tools.FileObject;
 import javax.tools.StandardLocation;
 
 import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
-import static org.neo4j.kernel.impl.util.FileUtils.newFilePrintWriter;
+import static org.neo4j.io.fs.FileUtils.newFilePrintWriter;
 
 public abstract class AnnotationProcessor extends AbstractProcessor
 {

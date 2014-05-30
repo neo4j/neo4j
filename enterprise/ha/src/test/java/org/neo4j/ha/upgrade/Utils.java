@@ -32,16 +32,16 @@ import java.util.List;
 import java.util.zip.ZipEntry;
 import java.util.zip.ZipFile;
 
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 
 import static java.lang.Runtime.getRuntime;
 import static java.util.Arrays.asList;
 import static org.apache.commons.io.FileUtils.copyURLToFile;
 import static org.apache.commons.io.IOUtils.closeQuietly;
 import static org.apache.commons.io.IOUtils.copy;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteFile;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-import static org.neo4j.kernel.impl.util.FileUtils.moveFile;
+import static org.neo4j.io.fs.FileUtils.deleteFile;
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
+import static org.neo4j.io.fs.FileUtils.moveFile;
 
 public class Utils
 {
