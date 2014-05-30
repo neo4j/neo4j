@@ -99,7 +99,7 @@ public class TestRelationshipGroupStore
         try ( Transaction tx = db.beginTx() )
         {
             assertEquals( NodeImpl.class, db.getDependencyResolver().resolveDependency( NodeManager.class )
-                    .getNodeForProxy( node.getId() ).getClass() );
+                    .newNodeProxyById( node.getId() ).getClass() );
             tx.success();
         }
 

@@ -41,7 +41,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -60,7 +60,7 @@ public class TestIdGenerator
 {
     @Rule public EphemeralFileSystemRule fsRule = new EphemeralFileSystemRule();
     private EphemeralFileSystemAbstraction fs;
-    
+
     @Before
     public void doBefore()
     {
@@ -671,7 +671,7 @@ public class TestIdGenerator
         tx.finish();
 
         // Verify by loading everything from scratch
-        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Caches.class ).clear();
         tx = db.beginTx();
         for ( Node node : GlobalGraphOperations.at( db ).getAllNodes() )
         {
@@ -712,9 +712,13 @@ public class TestIdGenerator
             {
                 Set<Long> ids = new HashSet<Long>();
                 for ( int j = 0; j < grabSize; j++ )
+                {
                     ids.add( idGenerator.nextId() );
+                }
                 for ( Long id : ids )
+                {
                     idGenerator.freeId( id );
+                }
             }
             long newId = idGenerator.nextId();
             assertTrue( "Expected IDs to be reused (" + grabSize + " at a time). high ID was: " + newId,
@@ -723,10 +727,14 @@ public class TestIdGenerator
         finally
         {
             if ( idGenerator != null )
+            {
                 closeIdGenerator( idGenerator );
+            }
             File file = idGeneratorFile();
             if ( file.exists() )
+            {
                 assertTrue( file.delete() );
+            }
         }
     }
 }

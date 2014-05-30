@@ -63,7 +63,6 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -844,7 +843,8 @@ public class NeoStoreTransactionTest
                 newWriteTransaction();
         TransactionRecordState tx = transactionContextPair.first();
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
-        int nodeId = (int) nextId( NODE ), typeA = 0, typeB = 1, typeC = 2;
+        long nodeId = nextId( NODE );
+        int typeA = 0, typeB = 1, typeC = 2;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( typeA, "A" );
         createRelationships( tx, nodeId, typeA, OUTGOING, 6 );
@@ -858,13 +858,13 @@ public class NeoStoreTransactionTest
         createRelationships( tx, nodeId, typeC, OUTGOING, 10 );
         createRelationships( tx, nodeId, typeC, INCOMING, 10 );
         // here we're at the edge
-        assertFalse( tx.nodeLoadLight( nodeId ).isDense() );
+        assertFalse( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
 
         // WHEN creating the relationship that pushes us over the threshold
         createRelationships( tx, nodeId, typeC, INCOMING, 1 );
 
         // THEN the node should have been converted into a dense node
-        assertTrue( tx.nodeLoadLight( nodeId ).isDense() );
+        assertTrue( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeA, 6, 7 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeB, 8, 9 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 10, 11 );
@@ -880,20 +880,21 @@ public class NeoStoreTransactionTest
                 newWriteTransaction();
         TransactionRecordState tx = transactionContextPair.first();
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
-        int nodeId = (int) nextId( NODE ), typeA = 0;
+        long nodeId = nextId( NODE );
+        int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( typeA, "A" );
         createRelationships( tx, nodeId, typeA, OUTGOING, 24 );
         createRelationships( tx, nodeId, typeA, INCOMING, 25 );
 
         // here we're at the edge
-        assertFalse( tx.nodeLoadLight( nodeId ).isDense() );
+        assertFalse( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
 
         // WHEN creating the relationship that pushes us over the threshold
         createRelationships( tx, nodeId, typeA, INCOMING, 1 );
 
         // THEN the node should have been converted into a dense node
-        assertTrue( tx.nodeLoadLight( nodeId ).isDense() );
+        assertTrue( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeA, 24, 26 );
     }
 
@@ -907,19 +908,20 @@ public class NeoStoreTransactionTest
                 newWriteTransaction();
         TransactionRecordState tx = transactionContextPair.first();
         NeoStoreTransactionContext txCtx = transactionContextPair.other();
-        int nodeId = (int) nextId( NODE ), typeA = 0;
+        long nodeId = nextId( NODE );
+        int typeA = 0;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( typeA, "A" );
         createRelationships( tx, nodeId, typeA, OUTGOING, 8 );
 
         // here we're at the edge
-        assertFalse( tx.nodeLoadLight( nodeId ).isDense() );
+        assertFalse( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
 
         // WHEN creating the relationship that pushes us over the threshold
         createRelationships( tx, nodeId, typeA, OUTGOING, 1 );
 
         // THEN the node should have been converted into a dense node
-        assertTrue( tx.nodeLoadLight( nodeId ).isDense() );
+        assertTrue( txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData().isDense() );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeA, 9, 0 );
     }
 
@@ -953,7 +955,8 @@ public class NeoStoreTransactionTest
                 newWriteTransaction();
         TransactionRecordState tx = transactionAndContextPair.first();
         NeoStoreTransactionContext txCtx = transactionAndContextPair.other();
-        int nodeId = (int) nextId( NODE ), typeA = 0, typeB = 12, typeC = 600;
+        long nodeId = nextId( NODE );
+        int typeA = 0, typeB = 12, typeC = 600;
         tx.nodeCreate( nodeId );
         tx.createRelationshipTypeToken( typeA, "A" );
         long[] relationshipsCreatedAIncoming = createRelationships( tx, nodeId, typeA, INCOMING, 1 );
@@ -979,7 +982,7 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedAOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeB, 1, 1 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
@@ -987,7 +990,7 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedBIncoming[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeB, 1, 0 );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
@@ -995,25 +998,25 @@ public class NeoStoreTransactionTest
         deleteRelationship( tx, relationshipsCreatedBOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeB );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 1 );
 
         // WHEN
         deleteRelationship( tx, relationshipsCreatedCIncoming[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeB );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
         assertDenseRelationshipCounts( tx, txCtx, nodeId, typeC, 1, 0 );
 
         // WHEN
         deleteRelationship( tx, relationshipsCreatedCOutgoing[0] );
 
         // THEN
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeA );
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeB );
-        assertRelationshipGroupDoesNotExist( txCtx, tx.nodeLoadLight( nodeId ), typeC );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeA );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeB );
+        assertRelationshipGroupDoesNotExist( txCtx, txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), typeC );
     }
 
     @Test
@@ -1154,38 +1157,40 @@ public class NeoStoreTransactionTest
     private static void assertDenseRelationshipCounts( TransactionRecordState tx, NeoStoreTransactionContext txCtx,
                                                        long nodeId, int type, int outCount, int inCount )
     {
-        RelationshipGroupRecord group = txCtx.getRelationshipGroup( tx.nodeLoadLight( nodeId ), type ).forReadingData();
+        RelationshipGroupRecord group = txCtx.getRelationshipGroup(
+                txCtx.getNodeRecords().getOrLoad( nodeId, null ).forReadingData(), type ).forReadingData();
         assertNotNull( group );
 
         RelationshipRecord rel;
         long relId = group.getFirstOut();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            rel = tx.relLoadLight( relId );
+            rel = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
             // count is stored in the back pointer of the first relationship in the chain
             assertEquals( "Stored relationship count for OUTGOING differs", outCount, rel.getFirstPrevRel() );
             assertEquals( "Manually counted relationships for OUTGOING differs", outCount,
-                    manuallyCountRelationships( tx, nodeId, relId ) );
+                    manuallyCountRelationships( txCtx, nodeId, relId ) );
         }
 
         relId = group.getFirstIn();
         if ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            rel = tx.relLoadLight( relId );
+            rel = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
             assertEquals( "Stored relationship count for INCOMING differs", inCount, rel.getSecondPrevRel() );
             assertEquals( "Manually counted relationships for INCOMING differs", inCount,
-                    manuallyCountRelationships( tx, nodeId, relId ) );
+                    manuallyCountRelationships( txCtx, nodeId, relId ) );
         }
     }
 
-    private static int manuallyCountRelationships( TransactionRecordState tx, long nodeId, long firstRelId )
+    private static int manuallyCountRelationships( NeoStoreTransactionContext txCtx, long nodeId,
+            long firstRelId )
     {
         int count = 0;
         long relId = firstRelId;
         while ( relId != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
             count++;
-            RelationshipRecord record = tx.relLoadLight( relId );
+            RelationshipRecord record = txCtx.getRelRecords().getOrLoad( relId, null ).forReadingData();
             relId = record.getFirstNode() == nodeId ? record.getFirstNextRel() : record.getSecondNextRel();
         }
         return count;
@@ -1229,7 +1234,6 @@ public class NeoStoreTransactionTest
     }
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final TransactionState transactionState = mock( TransactionState.class );
     private Config config;
     @SuppressWarnings("deprecation")
     private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
@@ -1240,6 +1244,7 @@ public class NeoStoreTransactionTest
     private final List<Lock> lockMocks = new ArrayList<>();
 
     private IndexingService mockIndexing;
+    private PropertyLoader propertyLoader;
 
     @Before
     public void before() throws Exception
@@ -1263,6 +1268,7 @@ public class NeoStoreTransactionTest
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
                 fs.get(), DEV_NULL, new DefaultTxHook() );
         neoStore = storeFactory.createNeoStore();
+        propertyLoader = new PropertyLoader( neoStore );
         lockMocks.clear();
         locks = mock( LockService.class, new Answer()
         {
@@ -1329,10 +1335,9 @@ public class NeoStoreTransactionTest
     {
         NeoStoreTransactionContext context =
                 new NeoStoreTransactionContext( mock( NeoStoreTransactionContextSupplier.class ), neoStore );
-        when(transactionState.locks()).thenReturn( mock(Locks.Client.class) );
-        context.bind( transactionState );
-        TransactionRecordState result = new TransactionRecordState( 0l,neoStore,
-                cacheAccessBackDoor, new IntegrityValidator( neoStore, indexing ), context );
+        context.bind( mock( Locks.Client.class ) );
+        TransactionRecordState result = new TransactionRecordState( 0l, neoStore,
+                new IntegrityValidator( neoStore, indexing ), context );
 
         return Pair.of( result, context );
     }
@@ -1371,7 +1376,8 @@ public class NeoStoreTransactionTest
                 neoStore, mockIndexing, cacheAccessBackDoor, locks, txId, true );
 
         NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( mockIndexing,
-                mock( LabelScanStore.class ), neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccessBackDoor );
+                mock( LabelScanStore.class ), neoStore.getNodeStore(), neoStore.getPropertyStore(),
+                cacheAccessBackDoor, propertyLoader );
 
         TransactionRepresentation recoveredTx = recoverer.getAsRecovered();
 

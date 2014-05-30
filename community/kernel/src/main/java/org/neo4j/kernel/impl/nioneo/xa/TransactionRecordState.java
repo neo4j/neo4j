@@ -124,7 +124,8 @@ public class TransactionRecordState
                            context.getPropertyKeyTokenRecords().changeSize() +
                            context.getLabelTokenRecords().changeSize() +
                            context.getRelationshipTypeTokenRecords().changeSize() +
-                           context.getRelGroupRecords().changeSize();
+                           context.getRelGroupRecords().changeSize() +
+                           (neoStoreRecord != null ? 1 : 0);
         List<Command> commands = new ArrayList<>( noOfCommands );
         for ( RecordProxy<Integer, LabelTokenRecord, Void> record : context.getLabelTokenRecords().changes() )
         {

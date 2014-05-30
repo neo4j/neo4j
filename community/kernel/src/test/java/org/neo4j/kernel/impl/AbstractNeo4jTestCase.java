@@ -54,6 +54,7 @@ import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
@@ -317,7 +318,7 @@ public abstract class AbstractNeo4jTestCase
 
     protected PropertyStore propertyStore()
     {
-        NeoStore neoStore = graphDb.getDependencyResolver().resolveDependency( NeoStore.class );
+        NeoStore neoStore = graphDb.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
         return neoStore.getPropertyStore();
     }
 
