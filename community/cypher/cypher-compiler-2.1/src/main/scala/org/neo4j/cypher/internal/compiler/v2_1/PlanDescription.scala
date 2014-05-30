@@ -43,50 +43,22 @@ sealed trait PlanDescription extends cypher.PlanDescription {
 }
 
 sealed abstract class Argument extends Product {
-  def value: Any
   def name = productPrefix
-
-  // values returned from calling serializableValue must be serializable to JSON by REST server
-
-  def serializableValue: AnyRef
-}
-
-sealed abstract class LongArgument extends Argument {
-  override def value: Long
-  def serializableValue: AnyRef = Long.box(value)
-}
-
-sealed abstract class ToStringArgument extends Argument {
- override def serializableValue: String = value.toString
-}
-
-sealed abstract class StringSeqArgument extends Argument {
-  override def value: Seq[String]
-  override def serializableValue: Array[String] = value.toArray
-}
-
-sealed abstract class ExpressionSeqArgument extends Argument {
-  override def value: Seq[commands.expressions.Expression]
-  override def serializableValue: Array[String] = value.map(_.toString).toArray
 }
 
 object PlanDescription {
   object Arguments {
-    case class Rows(value: Long) extends LongArgument
-    case class DbHits(value: Long) extends LongArgument
-    case class IntroducedIdentifier(value: String) extends ToStringArgument
-    case class ColumnsLeft(value: Seq[String]) extends StringSeqArgument
-    case class Expression(value: ast.Expression) extends ToStringArgument
-    case class LegacyExpression(value: commands.expressions.Expression) extends ToStringArgument
-    case class UpdateActionName(value: String) extends ToStringArgument
-    case class LegacyIndex(value: String) extends ToStringArgument
-    case class Index(value: String, property: String) extends Argument {
-      override def serializableValue = s".$property = $value"
-    }
-    case class LabelName(value: String) extends ToStringArgument
-    case class KeyNames(value: Seq[String]) extends StringSeqArgument
-    case class KeyExpressions(value: Seq[commands.expressions.Expression]) extends ExpressionSeqArgument
-    case class LimitCount(value: Long) extends LongArgument
+    case class Rows(value: Long) extends Argument
+    case class DbHits(value: Long) extends Argument
+    case class IntroducedIdentifier(value: String) extends Argument
+    case class ColumnsLeft(value: Seq[String]) extends Argument
+    case class LegacyExpression(value: commands.expressions.Expression) extends Argument
+    case class UpdateActionName(value: String) extends Argument
+    case class LegacyIndex(value: String) extends Argument
+    case class Index(label: String, property: String) extends Argument
+    case class LabelName(label: String) extends Argument
+    case class KeyNames(keys: Seq[String]) extends Argument
+    case class KeyExpressions(expressions: Seq[commands.expressions.Expression]) extends Argument
   }
 }
 
@@ -141,7 +113,9 @@ final case class PlanDescriptionImpl(pipe: Pipe,
 
   lazy val asJava: JPlanDescription = new JPlanDescription {
     def getChildren: util.List[JPlanDescription] = children.toSeq.toList.map(_.asJava).asJava
-    def getArguments: util.Map[String, AnyRef] = arguments.map(arg => arg.name -> arg.serializableValue).toMap.asJava
+    def getArguments: util.Map[String, AnyRef] = arguments.map(arg =>
+      arg.name -> PlandescriptionArgumentSerializer.serialize(arg).asInstanceOf[AnyRef]
+    ).toMap.asJava
 
     def hasProfilerStatistics: Boolean = arguments.exists(_.isInstanceOf[DbHits])
 
@@ -169,7 +143,7 @@ final case class PlanDescriptionImpl(pipe: Pipe,
 
 }
 
-final case class NullPlanDescription(pipe:Pipe) extends PlanDescription {
+final case class NullPlanDescription(pipe: Pipe) extends PlanDescription {
   override def andThen(pipe: Pipe, name: String, arguments: Argument*) = new PlanDescriptionImpl(pipe, name, NoChildren, arguments)
 
   def args = Seq.empty

@@ -55,6 +55,7 @@ import org.neo4j.kernel.ha.cluster.DefaultElectionCredentialsProvider;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberState;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 class ClusterInstance
 {
@@ -80,34 +81,39 @@ class ClusterInstance
 
     private boolean online = true;
 
-    public static ClusterInstance newClusterInstance( InstanceId id, URI uri, ClusterConfiguration configuration, Logging logging )
+    public static ClusterInstance newClusterInstance( InstanceId id, URI uri, Monitors monitors,
+                                                      ClusterConfiguration configuration, Logging logging )
     {
-        MultiPaxosServerFactory factory = new MultiPaxosServerFactory( configuration, logging);
+        MultiPaxosServerFactory factory = new MultiPaxosServerFactory( monitors, configuration, logging );
 
         ClusterInstanceInput input = new ClusterInstanceInput();
-        ClusterInstanceOutput output = new ClusterInstanceOutput(uri);
+        ClusterInstanceOutput output = new ClusterInstanceOutput( uri );
 
         ObjectStreamFactory objStreamFactory = new ObjectStreamFactory();
 
-        ProverTimeouts timeouts = new ProverTimeouts(uri);
+        ProverTimeouts timeouts = new ProverTimeouts( uri );
 
         InMemoryAcceptorInstanceStore acceptorInstances = new InMemoryAcceptorInstanceStore();
 
         DelayedDirectExecutor executor = new DelayedDirectExecutor();
         final MultiPaxosContext context = new MultiPaxosContext( id,
-                Iterables.<ElectionRole,ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
+                Iterables.<ElectionRole, ElectionRole>iterable( new ElectionRole( ClusterConfiguration.COORDINATOR ) ),
                 new ClusterConfiguration( configuration.getName(), logging.getMessagesLog( ClusterConfiguration.class ),
                         configuration.getMemberURIs() ),
                 executor, logging, objStreamFactory, objStreamFactory, acceptorInstances, timeouts,
-                new DefaultElectionCredentialsProvider( id, new StateVerifierLastTxIdGetter(), new MemberInfoProvider() ));
+                new DefaultElectionCredentialsProvider( id, new StateVerifierLastTxIdGetter(),
+                        new MemberInfoProvider() )
+        );
         context.getClusterContext().setBoundAt( uri );
 
-        SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(),context.getLearnerContext());
+        SnapshotContext snapshotContext = new SnapshotContext( context.getClusterContext(),
+                context.getLearnerContext() );
 
         ProtocolServer ps = factory.newProtocolServer( id,
-                input, output, DIRECT_EXECUTOR, new DelayedDirectExecutor(), timeouts, context, snapshotContext);
+                input, output, DIRECT_EXECUTOR, new DelayedDirectExecutor(), timeouts, context, snapshotContext );
 
-        return new ClusterInstance( DIRECT_EXECUTOR, logging, factory, ps, context, acceptorInstances, timeouts, input, output, uri );
+        return new ClusterInstance( DIRECT_EXECUTOR, logging, factory, ps, context, acceptorInstances, timeouts,
+                input, output, uri );
     }
 
     public ClusterInstance( Executor stateMachineExecutor, Logging logging, MultiPaxosServerFactory factory,
@@ -133,10 +139,12 @@ class ClusterInstance
         return server.getServerId();
     }
 
-    /** Process a message, returns all messages generated as output. */
+    /**
+     * Process a message, returns all messages generated as output.
+     */
     public Iterable<Message<? extends MessageType>> process( Message<? extends MessageType> message )
     {
-        if(online)
+        if ( online )
         {
             input.process( message );
             return output.messages();
@@ -215,35 +223,35 @@ class ClusterInstance
 
         Object ctx;
         Class<? extends MessageType> msgType = stateMachine.getMessageType();
-        if(msgType == AtomicBroadcastMessage.class)
+        if ( msgType == AtomicBroadcastMessage.class )
         {
             ctx = snapshotCtx.getAtomicBroadcastContext();
         }
-        else if(msgType == AcceptorMessage.class)
+        else if ( msgType == AcceptorMessage.class )
         {
             ctx = snapshotCtx.getAcceptorContext();
         }
-        else if(msgType == ProposerMessage.class)
+        else if ( msgType == ProposerMessage.class )
         {
             ctx = snapshotCtx.getProposerContext();
         }
-        else if(msgType == LearnerMessage.class)
+        else if ( msgType == LearnerMessage.class )
         {
             ctx = snapshotCtx.getLearnerContext();
         }
-        else if(msgType == HeartbeatMessage.class)
+        else if ( msgType == HeartbeatMessage.class )
         {
             ctx = snapshotCtx.getHeartbeatContext();
         }
-        else if(msgType == ElectionMessage.class)
+        else if ( msgType == ElectionMessage.class )
         {
             ctx = snapshotCtx.getElectionContext();
         }
-        else if(msgType == SnapshotMessage.class)
+        else if ( msgType == SnapshotMessage.class )
         {
             ctx = new SnapshotContext( snapshotCtx.getClusterContext(), snapshotCtx.getLearnerContext() );
         }
-        else if(msgType == ClusterMessage.class)
+        else if ( msgType == ClusterMessage.class )
         {
             ctx = snapshotCtx.getClusterContext();
         }
@@ -265,7 +273,7 @@ class ClusterInstance
         ProverTimeouts timeoutsSnapshot = timeouts.snapshot();
         InMemoryAcceptorInstanceStore snapshotAcceptorInstances = acceptorInstanceStore.snapshot();
 
-        ClusterInstanceOutput output = new ClusterInstanceOutput(uri);
+        ClusterInstanceOutput output = new ClusterInstanceOutput( uri );
         ClusterInstanceInput input = new ClusterInstanceInput();
 
         DelayedDirectExecutor executor = new DelayedDirectExecutor();
@@ -274,7 +282,8 @@ class ClusterInstance
         MultiPaxosContext snapshotCtx = ctx.snapshot( logging, timeoutsSnapshot, executor, snapshotAcceptorInstances,
                 objectStreamFactory, objectStreamFactory,
                 new DefaultElectionCredentialsProvider( server.getServerId(), new StateVerifierLastTxIdGetter(),
-                        new MemberInfoProvider() ) );
+                        new MemberInfoProvider() )
+        );
 
 
         List<StateMachine> snapshotMachines = new ArrayList<>();
@@ -288,7 +297,7 @@ class ClusterInstance
                 snapshotCtx, snapshotMachines.toArray( new StateMachine[snapshotMachines.size()] ) );
 
         return new ClusterInstance( stateMachineExecutor, logging, factory, snapshotProtocolServer, snapshotCtx,
-                                    snapshotAcceptorInstances, timeoutsSnapshot, input, output, uri );
+                snapshotAcceptorInstances, timeoutsSnapshot, input, output, uri );
     }
 
     public URI uri()
@@ -306,7 +315,9 @@ class ClusterInstance
         return timeouts.pop();
     }
 
-    /** Make this instance stop responding to calls, and cancel all pending timeouts. */
+    /**
+     * Make this instance stop responding to calls, and cancel all pending timeouts.
+     */
     public void crash()
     {
         timeouts.cancelAllTimeouts();
@@ -322,7 +333,7 @@ class ClusterInstance
         {
             for ( MessageProcessor processor : processors )
             {
-                if(!processor.process( message ))
+                if ( !processor.process( message ) )
                 {
                     return false;
                 }

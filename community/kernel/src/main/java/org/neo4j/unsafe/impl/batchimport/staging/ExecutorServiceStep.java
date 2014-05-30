@@ -129,5 +129,6 @@ public abstract class ExecutorServiceStep<T> extends AbstractStep<T>
     protected void done()
     {
         executor.shutdown();
+        super.done();
     }
 }

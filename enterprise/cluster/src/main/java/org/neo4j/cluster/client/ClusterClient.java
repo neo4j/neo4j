@@ -80,11 +80,13 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class ClusterClient extends LifecycleAdapter
         implements ClusterMonitor, Cluster, AtomicBroadcast, Snapshot, Election, BindingNotifier
 {
-    public static final Setting<Long> clusterJoinTimeout = Settings.setting("ha.cluster_join_timeout", Settings.DURATION, "0s");
+    public static final Setting<Long> clusterJoinTimeout = Settings.setting( "ha.cluster_join_timeout",
+            Settings.DURATION, "0s" );
 
     public interface Configuration
     {
@@ -238,7 +240,7 @@ public class ClusterClient extends LifecycleAdapter
             @Override
             public long clusterJoinTimeout()
             {
-                return config.get(clusterJoinTimeout);
+                return config.get( clusterJoinTimeout );
             }
 
             @Override
@@ -258,7 +260,7 @@ public class ClusterClient extends LifecycleAdapter
 
     private final ProtocolServer server;
 
-    public ClusterClient( final Configuration config, final Logging logging,
+    public ClusterClient( Monitors monitors, final Configuration config, final Logging logging,
                           ElectionCredentialsProvider electionCredentialsProvider,
                           ObjectInputStreamFactory objectInputStreamFactory,
                           ObjectOutputStreamFactory objectOutputStreamFactory )
@@ -276,15 +278,17 @@ public class ClusterClient extends LifecycleAdapter
                 .timeout( ClusterMessage.leaveTimedout, config.leaveTimeout() )
                 .timeout( ElectionMessage.electionTimeout, config.electionTimeout() );
 
-        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory(
+        MultiPaxosServerFactory protocolServerFactory = new MultiPaxosServerFactory( monitors,
                 new ClusterConfiguration( config
-                .getClusterName(), logging.getMessagesLog( ClusterConfiguration.class ) ), logging );
+                        .getClusterName(), logging.getMessagesLog( ClusterConfiguration.class ) ), logging
+        );
 
         InMemoryAcceptorInstanceStore acceptorInstanceStore = new InMemoryAcceptorInstanceStore();
 
-        InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory(logging) );
+        InternalLoggerFactory.setDefaultFactory( new NettyLoggerFactory( logging ) );
 
-        NetworkReceiver receiver = new NetworkReceiver( new NetworkReceiver.Configuration()
+        NetworkReceiver receiver = new NetworkReceiver( monitors.newMonitor( NetworkReceiver.Monitor.class ),
+                new NetworkReceiver.Configuration()
         {
             @Override
             public HostnamePort clusterServer()
@@ -305,7 +309,8 @@ public class ClusterClient extends LifecycleAdapter
             }
         }, logging );
 
-        NetworkSender sender = new NetworkSender(new NetworkSender.Configuration()
+        NetworkSender sender = new NetworkSender( monitors.newMonitor( NetworkSender.Monitor.class ),
+                new NetworkSender.Configuration()
         {
             @Override
             public int defaultPort()
@@ -318,7 +323,7 @@ public class ClusterClient extends LifecycleAdapter
             {
                 return config.getAddress().getPort();
             }
-        }, receiver, logging);
+        }, receiver, logging );
 
         ExecutorLifecycleAdapter stateMachineExecutor = new ExecutorLifecycleAdapter( new Factory<ExecutorService>()
         {
@@ -331,7 +336,8 @@ public class ClusterClient extends LifecycleAdapter
 
         server = protocolServerFactory.newProtocolServer( config.getServerId(), timeoutStrategy,
                 receiver, sender,
-                acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor, objectInputStreamFactory, objectOutputStreamFactory );
+                acceptorInstanceStore, electionCredentialsProvider, stateMachineExecutor, objectInputStreamFactory,
+                objectOutputStreamFactory );
 
         receiver.addNetworkChannelsListener( new NetworkReceiver.NetworkChannelsListener()
         {
@@ -341,7 +347,7 @@ public class ClusterClient extends LifecycleAdapter
             public void listeningAt( URI me )
             {
                 server.listeningAt( me );
-                if (logger == null)
+                if ( logger == null )
                 {
                     logger = new StateTransitionLogger( logging );
                     server.addStateTransitionListener( logger );
@@ -357,7 +363,8 @@ public class ClusterClient extends LifecycleAdapter
             @Override
             public void channelClosed( URI to )
             {
-                logging.getMessagesLog( NetworkReceiver.class ).info( to + " disconnected from me at " + server.boundAt() );
+                logging.getMessagesLog( NetworkReceiver.class ).info( to + " disconnected from me at " + server
+                        .boundAt() );
             }
         } );
 
@@ -514,7 +521,7 @@ public class ClusterClient extends LifecycleAdapter
     {
         server.addBindingListener( bindingListener );
     }
-    
+
     @Override
     public void removeBindingListener( BindingListener listener )
     {

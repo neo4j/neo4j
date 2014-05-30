@@ -21,17 +21,28 @@ package org.neo4j.ext.udc;
 
 public class UdcConstants {
     public static final String ID = "id";
-    public static final String VERSION = "v";
-    public static final String REVISION = "revision";
-    public static final String EDITION = "edition";
     public static final String TAGS = "tags";
     public static final String CLUSTER_HASH = "cluster";
-    public static final String SOURCE = "source";
     public static final String REGISTRATION = "reg";
-    public static final String MAC = "mac";
     public static final String PING = "p";
     public static final String DISTRIBUTION = "dist";
     public static final String USER_AGENTS = "ua";
+
+    public static final String VERSION = "v";
+    public static final String REVISION = "revision";
+    public static final String EDITION = "edition";
+    public static final String SOURCE = "source";
+
+    public static final String MAC = "mac";
+    public static final String NUM_PROCESSORS = "numprocs";
+    public static final String TOTAL_MEMORY = "totalmem";
+    public static final String HEAP_SIZE = "heapsize";
+
+    public static final String NODE_IDS_IN_USE = "nodeids";
+    public static final String RELATIONSHIP_IDS_IN_USE = "relids";
+    public static final String PROPERTY_IDS_IN_USE = "propids";
+    public static final String LABEL_IDS_IN_USE = "labelids";
+
     public static final String UDC_PROPERTY_PREFIX = "neo4j.ext.udc";
     public static final String OS_PROPERTY_PREFIX = "os";
     public static final String UNKNOWN_DIST = "unknown";

@@ -33,6 +33,8 @@ import java.util.concurrent.Future;
 import ch.qos.logback.classic.LoggerContext;
 import ch.qos.logback.classic.joran.JoranConfigurator;
 import ch.qos.logback.core.joran.spi.JoranException;
+import org.slf4j.LoggerFactory;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.InMemoryAcceptorInstanceStore;
@@ -44,7 +46,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
-import org.slf4j.LoggerFactory;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * This mocks message delivery, message loss, and time for timeouts and message latency
@@ -57,6 +59,7 @@ public class NetworkMock
     private List<MessageDelivery> messageDeliveries = new ArrayList<MessageDelivery>();
 
     private long now = 0;
+    private Monitors monitors;
     private long tickDuration;
     private final MultipleFailureLatencyStrategy strategy;
     private MessageTimeoutStrategy timeoutStrategy;
@@ -65,9 +68,10 @@ public class NetworkMock
     private final List<Pair<Future<?>, Runnable>> futureWaiter;
 
 
-    public NetworkMock( long tickDuration, MultipleFailureLatencyStrategy strategy,
+    public NetworkMock( Monitors monitors, long tickDuration, MultipleFailureLatencyStrategy strategy,
                         MessageTimeoutStrategy timeoutStrategy )
     {
+        this.monitors = monitors;
         this.tickDuration = tickDuration;
         this.strategy = strategy;
         this.timeoutStrategy = timeoutStrategy;
@@ -105,7 +109,7 @@ public class NetworkMock
 
         Logging logging = new LogbackService( null, loggerContext );
 
-        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory(
+        ProtocolServerFactory protocolServerFactory = new MultiPaxosServerFactory( monitors,
                 new ClusterConfiguration( "default", StringLogger.SYSTEM ), logging );
 
         ServerIdElectionCredentialsProvider electionCredentialsProvider = new ServerIdElectionCredentialsProvider();
@@ -127,9 +131,9 @@ public class NetworkMock
         participants.remove( serverId );
     }
 
-    public void addFutureWaiter(Future<?> future, Runnable toRun)
+    public void addFutureWaiter( Future<?> future, Runnable toRun )
     {
-        futureWaiter.add( Pair.<Future<?>, Runnable>of(future, toRun) );
+        futureWaiter.add( Pair.<Future<?>, Runnable>of( future, toRun ) );
     }
 
     public int tick()

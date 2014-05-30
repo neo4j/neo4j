@@ -25,6 +25,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.MultipleFailureLatencyStrategy;
 import org.neo4j.cluster.NetworkMock;
 import org.neo4j.cluster.ScriptableNetworkFailureLatencyStrategy;
@@ -35,6 +36,7 @@ import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
 import org.neo4j.cluster.protocol.cluster.Cluster;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * TODO
@@ -85,7 +87,7 @@ public class MultiPaxosTest
     public void testFailure() throws Exception
     {
         ScriptableNetworkFailureLatencyStrategy networkLatency = new ScriptableNetworkFailureLatencyStrategy();
-        NetworkMock network = new NetworkMock( 50,
+        NetworkMock network = new NetworkMock( new Monitors(), 50,
                 new MultipleFailureLatencyStrategy( networkLatency ),
                 new MessageTimeoutStrategy( new FixedTimeoutStrategy( 1000 ) ) );
 
@@ -127,5 +129,6 @@ public class MultiPaxosTest
     }
 
     private static final class DaPayload implements Serializable
-    {}
+    {
+    }
 }

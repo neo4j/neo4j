@@ -32,17 +32,19 @@ import org.neo4j.cluster.protocol.cluster.ClusterMessage;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.util.Arrays.asList;
+
 import static org.neo4j.ha.correctness.ClusterInstance.newClusterInstance;
 import static org.neo4j.helpers.collection.IteratorUtil.emptySetOf;
 
 public class Prover
 {
-    private final Queue<ClusterState> unexploredKnownStates = new LinkedList<>(  );
-    private final ProofDatabase db = new ProofDatabase("./clusterproof");
+    private final Queue<ClusterState> unexploredKnownStates = new LinkedList<>();
+    private final ProofDatabase db = new ProofDatabase( "./clusterproof" );
 
-    public static void main(String ... args) throws Exception
+    public static void main( String... args ) throws Exception
     {
         new Prover().prove();
     }
@@ -51,12 +53,12 @@ public class Prover
     {
         try
         {
-            System.out.println("Bootstrap genesis state..");
+            System.out.println( "Bootstrap genesis state.." );
             bootstrapCluster();
-            System.out.println("Begin exploring delivery orders.");
+            System.out.println( "Begin exploring delivery orders." );
             exploreUnexploredStates();
-            System.out.println("Exporting graphviz..");
-            db.export(new GraphVizExporter(new File("./proof.gs")));
+            System.out.println( "Exporting graphviz.." );
+            db.export( new GraphVizExporter( new File( "./proof.gs" ) ) );
         }
         finally
         {
@@ -81,15 +83,24 @@ public class Prover
 
         ClusterState state = new ClusterState(
                 asList(
-                        newClusterInstance( new InstanceId( 1 ), new URI( instance1 ), config, logging ),
-                        newClusterInstance( new InstanceId( 2 ), new URI( instance2 ), config, logging ),
-                        newClusterInstance( new InstanceId( 3 ), new URI( instance3 ), config, logging )),
-                emptySetOf( ClusterAction.class ));
+                        newClusterInstance( new InstanceId( 1 ), new URI( instance1 ), new Monitors(), config,
+                                logging ),
+                        newClusterInstance( new InstanceId( 2 ), new URI( instance2 ), new Monitors(), config,
+                                logging ),
+                        newClusterInstance( new InstanceId( 3 ), new URI( instance3 ), new Monitors(), config,
+                                logging ) ),
+                emptySetOf( ClusterAction.class )
+        );
 
         state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.create,
-                new URI( instance3 ), "defaultcluster" ).setHeader( Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, instance3 ) ) );
-        state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join, new URI( instance2 ), new Object[]{"defaultcluster", new URI[]{new URI( instance3 )}} ).setHeader( Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, instance2 ) ) );
-        state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join, new URI( instance1 ), new Object[]{"defaultcluster", new URI[]{new URI( instance3 )}} ).setHeader( Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, instance1 ) ) );
+                new URI( instance3 ), "defaultcluster" ).setHeader( Message.CONVERSATION_ID,
+                "-1" ).setHeader( Message.FROM, instance3 ) ) );
+        state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join,
+                new URI( instance2 ), new Object[]{"defaultcluster", new URI[]{new URI( instance3 )}} ).setHeader(
+                Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, instance2 ) ) );
+        state = state.performAction( new MessageDeliveryAction( Message.to( ClusterMessage.join,
+                new URI( instance1 ), new Object[]{"defaultcluster", new URI[]{new URI( instance3 )}} ).setHeader(
+                Message.CONVERSATION_ID, "-1" ).setHeader( Message.FROM, instance1 ) ) );
 
         state.addPendingActions( new InstanceCrashedAction( instance3 ) );
 
@@ -100,25 +111,25 @@ public class Prover
 
     private void exploreUnexploredStates()
     {
-        while(!unexploredKnownStates.isEmpty())
+        while ( !unexploredKnownStates.isEmpty() )
         {
             ClusterState state = unexploredKnownStates.poll();
 
             Iterator<Pair<ClusterAction, ClusterState>> newStates = state.transitions();
-            while(newStates.hasNext())
+            while ( newStates.hasNext() )
             {
                 Pair<ClusterAction, ClusterState> next = newStates.next();
-                System.out.println( db.numberOfKnownStates() + " ("+unexploredKnownStates.size()+")" );
+                System.out.println( db.numberOfKnownStates() + " (" + unexploredKnownStates.size() + ")" );
 
                 ClusterState nextState = next.other();
-                if(!db.isKnownState( nextState ))
+                if ( !db.isKnownState( nextState ) )
                 {
                     db.newStateTransition( state, next );
                     unexploredKnownStates.offer( nextState );
 
-                    if(nextState.isDeadEnd())
+                    if ( nextState.isDeadEnd() )
                     {
-                        System.out.println("DEAD END: " + nextState.toString() + " (" + db.id(nextState) + ")");
+                        System.out.println( "DEAD END: " + nextState.toString() + " (" + db.id( nextState ) + ")" );
                     }
                 }
             }

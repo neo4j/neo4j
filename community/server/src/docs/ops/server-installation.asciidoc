@@ -19,7 +19,7 @@ For information on High Availability, please refer to <<ha>>.
 == Prerequisites ==
 
 With the exception of our Windows Installer, you'll need a Java Virtual Machine installed on your computer.
-We recommend that you install the Java JDK 7 from the http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Website].
+We recommend that you install http://openjdk.java.net/[OpenJDK 7] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 7].
 
 [[windows-install]]
 == Windows ==

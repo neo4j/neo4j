@@ -19,13 +19,6 @@
  */
 package org.neo4j.test.ha;
 
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.io.fs.FileUtils.copyRecursively;
-
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -45,11 +38,12 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
-
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import ch.qos.logback.classic.LoggerContext;
+import org.w3c.dom.Document;
+
 import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
@@ -85,7 +79,16 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
-import org.w3c.dom.Document;
+import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -93,8 +96,8 @@ public class ClusterManager
     public static class Builder
     {
         private final File root;
-        private final Provider provider = clusterOfSize( 3 );
-        private final Map<String, String> commonConfig = emptyMap();
+        private Provider provider = clusterOfSize( 3 );
+        private Map<String, String> commonConfig = emptyMap();
         private final Map<Integer, Map<String,String>> instanceConfig = new HashMap<>();
         private HighlyAvailableGraphDatabaseFactory factory = new HighlyAvailableGraphDatabaseFactory();
         private StoreDirInitializer initializer;
@@ -125,6 +128,18 @@ public class ClusterManager
         public Builder withDbFactory( HighlyAvailableGraphDatabaseFactory dbFactory )
         {
             this.factory = dbFactory;
+            return this;
+        }
+
+        public Builder withProvider( Provider provider )
+        {
+            this.provider = provider;
+            return this;
+        }
+
+        public Builder withCommonConfig( Map<String, String> commonConfig )
+        {
+            this.commonConfig = commonConfig;
             return this;
         }
 
@@ -560,7 +575,7 @@ public class ClusterManager
                 Config config1 = new Config( config );
                 Logging clientLogging =life.add( new LogbackService( config1, new LoggerContext()  ) );
                 ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
-                ClusterClient clusterClient = new ClusterClient( ClusterClient.adapt( config1 ),
+                ClusterClient clusterClient = new ClusterClient( new Monitors(), ClusterClient.adapt( config1 ),
                         clientLogging, new NotElectableElectionCredentialsProvider(), objectStreamFactory,
                         objectStreamFactory );
 

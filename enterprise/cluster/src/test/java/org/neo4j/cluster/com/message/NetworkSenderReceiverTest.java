@@ -83,7 +83,8 @@ public class NetworkSenderReceiverTest
 
         // when
 
-        server1.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ), "Hello World" ) );
+        server1.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ),
+                "Hello World" ) );
 
         // then
 
@@ -122,7 +123,7 @@ public class NetworkSenderReceiverTest
                 }
             } ).when( loggerMock ).warn( anyString() );
 
-            receiver = new NetworkReceiver( new NetworkReceiver.Configuration()
+            receiver = new NetworkReceiver( mock( NetworkReceiver.Monitor.class ), new NetworkReceiver.Configuration()
             {
                 @Override
                 public HostnamePort clusterServer()
@@ -151,7 +152,7 @@ public class NetworkSenderReceiverTest
                 }
             };
 
-            sender = new NetworkSender( new NetworkSender.Configuration()
+            sender = new NetworkSender( mock( NetworkSender.Monitor.class ), new NetworkSender.Configuration()
             {
                 @Override
                 public int port()
@@ -206,16 +207,19 @@ public class NetworkSenderReceiverTest
 
             sem.acquire(); // wait for start from listeningAt() in the NetworkChannelsListener
 
-            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ), "Hello World" ) );
+            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ),
+                    "Hello World" ) );
 
-            sem.acquire(); // wait for the listeningAt trigger on receive (same as the previous but with real URI this time)
+            sem.acquire(); // wait for the listeningAt trigger on receive (same as the previous but with real URI
+            // this time)
             sem.acquire(); // wait for process from the MessageProcessor
 
             receiver.stop();
 
             sem.acquire(); // wait for overridden stop method in receiver
 
-            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ), "Hello World2" ) );
+            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ),
+                    "Hello World2" ) );
 
             sem.acquire(); // wait for the warn from the sender
 
@@ -225,7 +229,8 @@ public class NetworkSenderReceiverTest
 
             received.set( false );
 
-            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ), "Hello World3" ) );
+            sender.process( Message.to( TestMessage.helloWorld, URI.create( "cluster://127.0.0.1:1235" ),
+                    "Hello World3" ) );
 
             sem.acquire(); // wait for receiver.process();
 
@@ -258,7 +263,8 @@ public class NetworkSenderReceiverTest
         private Server( final CountDownLatch latch, final Map<String, String> config )
         {
             final Config conf = new Config( config, ClusterSettings.class );
-            networkReceiver = life.add(new NetworkReceiver(new NetworkReceiver.Configuration()
+            networkReceiver = life.add( new NetworkReceiver( mock( NetworkReceiver.Monitor.class ),
+                    new NetworkReceiver.Configuration()
             {
                 @Override
                 public HostnamePort clusterServer()
@@ -277,9 +283,10 @@ public class NetworkSenderReceiverTest
                 {
                     return null;
                 }
-            }, new DevNullLoggingService()));
+            }, new DevNullLoggingService() ) );
 
-            networkSender = life.add(new NetworkSender(new NetworkSender.Configuration()
+            networkSender = life.add( new NetworkSender( mock( NetworkSender.Monitor.class ),
+                    new NetworkSender.Configuration()
             {
                 @Override
                 public int defaultPort()
@@ -292,7 +299,7 @@ public class NetworkSenderReceiverTest
                 {
                     return conf.get( ClusterSettings.cluster_server ).getPort();
                 }
-            }, networkReceiver, new DevNullLoggingService()));
+            }, networkReceiver, new DevNullLoggingService() ) );
 
             life.add( new LifecycleAdapter()
             {
@@ -305,7 +312,7 @@ public class NetworkSenderReceiverTest
                         public boolean process( Message<? extends MessageType> message )
                         {
                             // server receives a message
-                            processedMessage.set(true);
+                            processedMessage.set( true );
                             latch.countDown();
                             return true;
                         }
@@ -341,7 +348,7 @@ public class NetworkSenderReceiverTest
         public boolean process( Message<? extends MessageType> message )
         {
             // server sends a message
-            this.processedMessage.set(true);
+            this.processedMessage.set( true );
             return networkSender.process( message );
         }
 
