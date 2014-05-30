@@ -97,6 +97,7 @@ public class StandardPageCache implements PageCache, Runnable
         StandardPagedFile file = pagedFiles.get( fileName );
         if(file != null && file.releaseReference())
         {
+            file.flush();
             file.close();
             pagedFiles.remove( fileName );
         }
@@ -114,13 +115,14 @@ public class StandardPageCache implements PageCache, Runnable
         table.flush();
         for ( StandardPagedFile file : pagedFiles.values() )
         {
-            file.flush();
+            file.force();
         }
     }
 
     @Override
     public synchronized void close() throws IOException
     {
+        table.flush();
         for ( StandardPagedFile file : pagedFiles.values() )
         {
             file.close();

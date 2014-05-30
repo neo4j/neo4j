@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.config;
 
-import org.neo4j.function.Function;
+import org.neo4j.helpers.Function;
 
 /**
  * Settings that can be provided in configurations are represented by instances of this interface, and are available

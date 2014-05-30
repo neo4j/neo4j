@@ -1276,7 +1276,7 @@ public class TestNeoStore
 
 
         // when
-        neoStore.flushAll();
+        neoStore.flush();
         neoStore.close();
         neoStore = sf.newNeoStore( new File( testDir.absolutePath(), NeoStore.DEFAULT_NAME ) );
 

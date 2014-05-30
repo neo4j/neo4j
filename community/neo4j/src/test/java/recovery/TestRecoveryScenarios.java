@@ -229,7 +229,7 @@ public class TestRecoveryScenarios
     private void flushAll()
     {
         db.getDependencyResolver().resolveDependency(
-                XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flushAll();
+                XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flush();
     }
 
     private void deleteNode( Node node )

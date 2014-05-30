@@ -32,7 +32,6 @@ import static org.mockito.Mockito.when;
 
 public class StandardPageIOTest
 {
-
     @Test
     public void shouldNotGoToDiskIfReadingPageBeyondFileSize() throws Exception
     {
