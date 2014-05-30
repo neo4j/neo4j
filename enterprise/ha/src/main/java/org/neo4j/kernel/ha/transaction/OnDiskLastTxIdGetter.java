@@ -19,31 +19,45 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import java.io.File;
-
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 
 public class OnDiskLastTxIdGetter implements LastTxIdGetter
 {
-    private final File storeDirectory;
+    private final InternalAbstractGraphDatabase graphdb;
+    private volatile NeoStore neoStore;
 
-    public OnDiskLastTxIdGetter( File storeDirectory )
+    public OnDiskLastTxIdGetter( InternalAbstractGraphDatabase graphdb )
     {
-        this.storeDirectory = storeDirectory;
+        this.graphdb = graphdb;
     }
 
     @Override
     public long getLastTxId()
     {
-        if ( new File(storeDirectory, NeoStore.DEFAULT_NAME).exists() )
+        NeoStore neoStore = getNeoStore();
+        return neoStore.getLastCommittedTx();
+    }
+
+    private NeoStore getNeoStore()
+    {
+        NeoStore store = neoStore;
+        if ( store == null )
         {
-            return new NeoStoreUtil( storeDirectory ).getLastCommittedTx();
+            synchronized ( this )
+            {
+                store = neoStore;
+                if ( store == null )
+                {
+                    NeoStoreProvider neoStoreProvider =
+                            graphdb.getDependencyResolver().resolveDependency( NeoStoreProvider.class );
+                    store = neoStoreProvider.evaluate();
+                    neoStore = store;
+                }
+            }
         }
-        else
-        {
-            return -1;
-        }
+        return store;
     }
 }

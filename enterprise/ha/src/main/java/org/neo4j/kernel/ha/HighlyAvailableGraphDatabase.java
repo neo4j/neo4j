@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;
@@ -314,7 +313,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
                 new NotElectableElectionCredentialsProvider() :
                 new DefaultElectionCredentialsProvider( config.get( ClusterSettings.server_id ),
-                        new OnDiskLastTxIdGetter( new File( getStoreDir() ) ), new HighAvailabilityMemberInfoProvider()
+                        new OnDiskLastTxIdGetter( this ), new HighAvailabilityMemberInfoProvider()
                 {
                     @Override
                     public HighAvailabilityMemberState getHighAvailabilityMemberState()
@@ -564,10 +563,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected KernelData createKernelData()
     {
         this.lastUpdateTime = new LastUpdateTime();
-        return new HighlyAvailableKernelData( this, members,
-                new ClusterDatabaseInfoProvider( members, new OnDiskLastTxIdGetter( new File( getStoreDir() ) ),
-                        lastUpdateTime )
-        );
+        OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( this );
+        ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider(
+                members, txIdGetter, lastUpdateTime );
+        return new HighlyAvailableKernelData( this, members, databaseInfo );
     }
 
     @Override

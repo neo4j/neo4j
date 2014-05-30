@@ -489,6 +489,9 @@ public abstract class InternalAbstractGraphDatabase
         jobScheduler =
             life.add( new Neo4jJobScheduler( this.toString() ));
 
+        pageCache = createPageCache();
+        life.add( pageCache );
+
         kernelEventHandlers = new KernelEventHandlers(logging.getMessagesLog( KernelEventHandlers.class ));
 
         caches = createCaches();
@@ -591,9 +594,6 @@ public abstract class InternalAbstractGraphDatabase
         recoveryVerifier = createRecoveryVerifier();
 
         // Factories for things that needs to be created later
-        pageCache = createPageCache();
-        life.add( pageCache );
-
         storeFactory = createStoreFactory();
         String keepLogicalLogsConfig = config.get( GraphDatabaseSettings.keep_logical_logs );
         xaFactory = new XaFactory( config, txIdGenerator, txManager, fileSystem,
@@ -975,7 +975,6 @@ public abstract class InternalAbstractGraphDatabase
     protected void createNeoDataSource()
     {
         // Create DataSource
-
         neoDataSource = new NeoStoreXaDataSource( config,
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
