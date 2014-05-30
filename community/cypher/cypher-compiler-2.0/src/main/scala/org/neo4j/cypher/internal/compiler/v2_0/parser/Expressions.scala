@@ -73,21 +73,24 @@ trait Expressions extends Parser
     ))
   }
 
-  private def Expression7 = Expression6
+  private def Expression7: Rule1[ast.Expression] = rule("an expression") {
+    Expression6 ~ zeroOrMore(WS ~ (
+        group(operator("+") ~~ Expression6) ~~>> (ast.Add(_: ast.Expression, _))
+      | group(operator("-") ~~ Expression6) ~~>> (ast.Subtract(_: ast.Expression, _))
+    ))
+  }
 
   private def Expression6: Rule1[ast.Expression] = rule("an expression") {
     Expression5 ~ zeroOrMore(WS ~ (
-        group(operator("+") ~~ Expression5) ~~>> (ast.Add(_: ast.Expression, _))
-      | group(operator("-") ~~ Expression5) ~~>> (ast.Subtract(_: ast.Expression, _))
+        group(operator("*") ~~ Expression5) ~~>> (ast.Multiply(_: ast.Expression, _))
+      | group(operator("/") ~~ Expression5) ~~>> (ast.Divide(_: ast.Expression, _))
+      | group(operator("%") ~~ Expression5) ~~>> (ast.Modulo(_: ast.Expression, _))
     ))
   }
 
   private def Expression5: Rule1[ast.Expression] = rule("an expression") {
     Expression4 ~ zeroOrMore(WS ~ (
-        group(operator("*") ~~ Expression4) ~~>> (ast.Multiply(_: ast.Expression, _))
-      | group(operator("/") ~~ Expression4) ~~>> (ast.Divide(_: ast.Expression, _))
-      | group(operator("%") ~~ Expression4) ~~>> (ast.Modulo(_: ast.Expression, _))
-      | group(operator("^") ~~ Expression4) ~~>> (ast.Pow(_: ast.Expression, _))
+        group(operator("^") ~~ Expression4) ~~>> (ast.Pow(_: ast.Expression, _))
     ))
   }
 
