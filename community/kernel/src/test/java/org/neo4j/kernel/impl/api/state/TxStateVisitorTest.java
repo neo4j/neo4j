@@ -31,8 +31,6 @@ import org.junit.Test;
 
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.TxState;
-import org.neo4j.kernel.api.constraints.UniquenessConstraint;
-import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
@@ -75,20 +73,16 @@ public class TxStateVisitorTest
 
 
     private TxState state;
-    private OldTxStateBridge legacyState;
     private final Collection<DefinedProperty> noProperty = Collections.emptySet();
     private final Collection<Integer> noRemoved = Collections.emptySet();
 
     @Before
     public void before() throws Exception
     {
-        legacyState = mock( OldTxStateBridge.class );
-        state = new TxStateImpl( legacyState,
-                mock( TransactionRecordState.class ), mock( TxState.IdGeneration.class )
-        );
+        state = new TxStateImpl( mock( TransactionRecordState.class ), mock( TxState.IdGeneration.class ) );
     }
 
-    static class GatheringVisitor implements TxState.Visitor
+    static class GatheringVisitor extends TxState.VisitorAdapter
     {
         static class PropertyChange
         {
@@ -194,31 +188,6 @@ public class TxStateVisitorTest
                                                Iterator<Integer> removed )
         {
             graphPropertyChanges.add( new PropertyChange( -1, added, changed, removed ) );
-        }
-
-        @Override
-        public void visitNodeLabelChanges( long id, Iterator<Integer> added, Iterator<Integer> removed )
-        {
-        }
-
-        @Override
-        public void visitAddedIndex( IndexDescriptor element, boolean isConstraintIndex )
-        {
-        }
-
-        @Override
-        public void visitRemovedIndex( IndexDescriptor element, boolean isConstraintIndex )
-        {
-        }
-
-        @Override
-        public void visitAddedConstraint( UniquenessConstraint element )
-        {
-        }
-
-        @Override
-        public void visitRemovedConstraint( UniquenessConstraint element )
-        {
         }
     }
 }

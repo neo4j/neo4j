@@ -84,4 +84,10 @@ public class DefaultCaches implements Caches
     public void invalidate()
     {
     }
+
+    @Override
+    public CacheProvider getProvider()
+    {
+        return provider;
+    }
 }

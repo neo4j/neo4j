@@ -39,9 +39,6 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
 
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
 import static org.neo4j.graphdb.Direction.BOTH;
@@ -224,9 +221,6 @@ public class TxStateTest
         state.nodeDoDelete( nodeId );
 
         // Then
-        verify( legacyState ).deleteNode( nodeId );
-        verifyNoMoreInteractions( legacyState );
-
         assertThat( asSet( state.addedAndRemovedNodes().getRemoved() ), equalTo( asSet( nodeId ) ) );
     }
 
@@ -279,7 +273,6 @@ public class TxStateTest
         // When
         long relId = 10;
         state.relationshipDoCreate( relId, 0, 1, 2 );
-        when(legacyState.relationshipIsAddedInThisTx( relId )).thenReturn( true ); // Temp until we move this out of legacy
 
         // Then
         assertTrue( state.hasChanges() );
@@ -371,15 +364,12 @@ public class TxStateTest
     }
 
     private TxState state;
-    private OldTxStateBridge legacyState;
     private final Set<Long> emptySet = Collections.emptySet();
 
     @Before
     public void before() throws Exception
     {
-        legacyState = mock( OldTxStateBridge.class );
-        state = new TxStateImpl( legacyState,
-                mock( TransactionRecordState.class ), mock( TxState.IdGeneration.class )
+        state = new TxStateImpl( mock( TransactionRecordState.class ), mock( TxState.IdGeneration.class )
         );
     }
 }

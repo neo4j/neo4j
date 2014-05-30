@@ -21,16 +21,22 @@ package org.neo4j.kernel.impl.api.store;
 
 import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.helpers.Thunk;
+
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
+import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.core.RelationshipLoader;
 
 import static java.util.Arrays.asList;
-import static org.junit.Assert.*;
-import static org.mockito.Mockito.*;
+
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
 
 public class PersistenceCacheTest
@@ -92,6 +98,7 @@ public class PersistenceCacheTest
     {
         nodeCache = mock( AutoLoadingCache.class );
         AutoLoadingCache<RelationshipImpl> relCache = mock( AutoLoadingCache.class );
-        persistenceCache = new PersistenceCache( nodeCache, relCache, mock( Thunk.class ), mock(NodeManager.class) );
+        persistenceCache = new PersistenceCache( nodeCache, relCache, mock( GraphPropertiesImpl.class ),
+                mock( RelationshipLoader.class ), null, null, null );
     }
 }

@@ -151,7 +151,7 @@ public class BigJumpingStoreIT
                 assertProperties( map( "number", nodeCount++, "string", stringValue, "array", arrayValue ), node );
                 relCount += count( node.getRelationships( Direction.OUTGOING ) );
             }
-            nodeManager().clearCache();
+            caches().clear();
         }
         assertEquals( numberOfRels, relCount );
         //noinspection deprecation
@@ -265,15 +265,15 @@ public class BigJumpingStoreIT
                 }
                 nodeCount++;
             }
-            nodeManager().clearCache();
+            caches().clear();
         }
         //noinspection deprecation
         tx.finish();
     }
 
-    private NodeManager nodeManager()
+    private Caches caches()
     {
-        return db.getDependencyResolver().resolveDependency( NodeManager.class );
+        return db.getDependencyResolver().resolveDependency( Caches.class );
     }
 
     private void setPropertyOnAll( Iterable<Relationship> relationships, String key,

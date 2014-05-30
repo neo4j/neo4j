@@ -122,7 +122,7 @@ public class GlobalGraphOperations
             public ResourceIterator<Relationship> iterator()
             {
                 final Statement statement = statementCtxProvider.instance();
-                final PrimitiveLongIterator ids = statement.readOperations().nodesGetAll();
+                final PrimitiveLongIterator ids = statement.readOperations().relationshipsGetAll();
                 return new PrefetchingResourceIterator<Relationship>()
                 {
                     @Override

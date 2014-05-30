@@ -98,8 +98,8 @@ public class StateHandlingStatementOperations implements
     @Override
     public long nodeCreate( KernelStatement state )
     {
-        long nodeId = state.recordState.nextNodeId();
-        state.recordState.nodeCreate( nodeId );
+        long nodeId = state.recordState().nextNodeId();
+        state.recordState().nodeCreate( nodeId );
         state.txState().nodeDoCreate( nodeId );
         return nodeId;
     }
@@ -108,15 +108,15 @@ public class StateHandlingStatementOperations implements
     public void nodeDelete( KernelStatement state, long nodeId )
     {
         legacyPropertyTrackers.nodeDelete( nodeId );
-        state.recordState.nodeDelete( nodeId );
+        state.recordState().nodeDelete( nodeId );
         state.txState().nodeDoDelete( nodeId );
     }
 
     @Override
     public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
     {
-        long id = state.recordState.nextRelationshipId();
-        state.recordState.relationshipCreate( id, relationshipTypeId, startNodeId, endNodeId );
+        long id = state.recordState().nextRelationshipId();
+        state.recordState().relationshipCreate( id, relationshipTypeId, startNodeId, endNodeId );
         state.txState().relationshipDoCreate( id, relationshipTypeId, startNodeId, endNodeId );
         return id;
     }
@@ -136,7 +136,7 @@ public class StateHandlingStatementOperations implements
                 @Override
                 public void visit( long relId, long startNode, long endNode, int type )
                 {
-                    state.recordState.relDelete( relId );
+                    state.recordState().relDelete( relId );
                 }
             } );
             txState.relationshipDoDeleteAddedInThisTx( relationshipId );
@@ -150,7 +150,7 @@ public class StateHandlingStatementOperations implements
                     @Override
                     public void visit( long relId, long startNode, long endNode, int type )
                     {
-                        state.recordState.relDelete( relId );
+                        state.recordState().relDelete( relId );
                         txState.relationshipDoDelete( relId, startNode, endNode, type );
                     }
                 });

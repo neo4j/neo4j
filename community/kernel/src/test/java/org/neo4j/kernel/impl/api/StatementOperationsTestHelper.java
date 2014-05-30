@@ -36,6 +36,7 @@ import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.locking.Locks;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
@@ -85,6 +86,8 @@ public abstract class StatementOperationsTestHelper
             }
         } );
         when( state.locks() ).thenReturn( lockHolder );
+        TransactionRecordState recordState = mock( TransactionRecordState.class );
+        when( state.recordState() ).thenReturn( recordState );
         return state;
     }
 

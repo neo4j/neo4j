@@ -31,8 +31,6 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -51,9 +49,7 @@ public class CacheLayerTest
     private final PersistenceCache persistenceCache = mock( PersistenceCache.class );
     private final SchemaCache schemaCache = mock( SchemaCache.class );
     private final IndexingService indexingService = mock( IndexingService.class );
-    private final NodeManager nodeManager = mock( NodeManager.class );
-    private final CacheLayer context = new CacheLayer( diskLayer, persistenceCache, indexingService, schemaCache,
-            nodeManager );
+    private final CacheLayer context = new CacheLayer( diskLayer, persistenceCache, indexingService, schemaCache );
 
     @Test
     public void shouldGetCachedLabelsIfCached() throws EntityNotFoundException
@@ -114,7 +110,7 @@ public class CacheLayerTest
         long nodeId = 3;
         int[] relTypes = new int[] {1,2};
         PrimitiveLongIterator rels = PrimitiveLongCollections.iterator( 1l, 2l, 3l );
-        when( persistenceCache.nodeGetRelationships( any( RelationshipChainLoader.class ), eq( nodeId ),
+        when( persistenceCache.nodeGetRelationships( eq( nodeId ),
                 eq( Direction.BOTH ), eq(relTypes) ) ) .thenReturn( rels );
 
         // WHEN

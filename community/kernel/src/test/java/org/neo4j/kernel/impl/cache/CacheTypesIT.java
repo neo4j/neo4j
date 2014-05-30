@@ -20,13 +20,15 @@
 package org.neo4j.kernel.impl.cache;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
 
 public class CacheTypesIT extends AbstractNeo4jTestCase
 {
@@ -39,7 +41,7 @@ public class CacheTypesIT extends AbstractNeo4jTestCase
     public void testDefaultCache()
     {
         GraphDatabaseAPI db = newDb( null );
-        assertEquals( SoftCacheProvider.NAME, nodeManager( db ).getCacheType().getName() );
+        assertEquals( SoftCacheProvider.NAME, caches( db ).getProvider().getName() );
         db.shutdown();
     }
 
@@ -47,7 +49,7 @@ public class CacheTypesIT extends AbstractNeo4jTestCase
     public void testWeakRefCache()
     {
         GraphDatabaseAPI db = newDb( WeakCacheProvider.NAME );
-        assertEquals( WeakCacheProvider.NAME, nodeManager( db ).getCacheType().getName() );
+        assertEquals( WeakCacheProvider.NAME, caches( db ).getProvider().getName() );
         db.shutdown();
     }
 
@@ -55,7 +57,7 @@ public class CacheTypesIT extends AbstractNeo4jTestCase
     public void testSoftRefCache()
     {
         GraphDatabaseAPI db = newDb( SoftCacheProvider.NAME );
-        assertEquals( SoftCacheProvider.NAME, nodeManager( db ).getCacheType().getName() );
+        assertEquals( SoftCacheProvider.NAME, caches( db ).getProvider().getName() );
         db.shutdown();
     }
 
@@ -63,7 +65,7 @@ public class CacheTypesIT extends AbstractNeo4jTestCase
     public void testNoCache()
     {
         GraphDatabaseAPI db = newDb( NoCacheProvider.NAME );
-        assertEquals( NoCacheProvider.NAME, nodeManager( db ).getCacheType().getName() );
+        assertEquals( NoCacheProvider.NAME, caches( db ).getProvider().getName() );
         db.shutdown();
     }
 
@@ -71,10 +73,10 @@ public class CacheTypesIT extends AbstractNeo4jTestCase
     public void testStrongCache()
     {
         GraphDatabaseAPI db = newDb( StrongCacheProvider.NAME );
-        assertEquals( StrongCacheProvider.NAME, nodeManager( db ).getCacheType().getName() );
+        assertEquals( StrongCacheProvider.NAME, caches( db ).getProvider().getName() );
         db.shutdown();
     }
-    
+
     @Test
     public void testInvalidCache()
     {
@@ -91,8 +93,8 @@ public class CacheTypesIT extends AbstractNeo4jTestCase
         }
     }
 
-    private NodeManager nodeManager( GraphDatabaseAPI db )
+    private Caches caches( GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( NodeManager.class );
+        return db.getDependencyResolver().resolveDependency( Caches.class );
     }
 }

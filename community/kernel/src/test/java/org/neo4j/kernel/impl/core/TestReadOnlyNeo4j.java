@@ -83,7 +83,7 @@ public class TestReadOnlyNeo4j
         tx.finish();
         readGraphDb.shutdown();
     }
-    
+
     private DbRepresentation createSomeData()
     {
         DynamicRelationshipType type = withName( "KNOWS" );
@@ -119,7 +119,7 @@ public class TestReadOnlyNeo4j
         rel.setProperty( "key1", "value1" );
         tx.success();
         tx.finish();
-        
+
         // make sure write operations still throw exception
         try
         {
@@ -154,16 +154,16 @@ public class TestReadOnlyNeo4j
         catch ( NotInTransactionException e )
         { // good
         }
-        
+
         // clear caches and try reads
-        nodeManager( db ).clearCache();
+        clearCache( db );
 
         Transaction transaction = db.beginTx();
         assertEquals( node1, db.getNodeById( node1.getId() ) );
         assertEquals( node2, db.getNodeById( node2.getId() ) );
         assertEquals( rel, db.getRelationshipById( rel.getId() ) );
-        nodeManager( db ).clearCache();
-        
+        clearCache( db );
+
         assertThat( node1, inTx( db, hasProperty( "key1" ).withValue( "value1" ) ) );
         Relationship loadedRel = node1.getSingleRelationship(
                 DynamicRelationshipType.withName( "TEST" ), Direction.OUTGOING );
@@ -173,8 +173,8 @@ public class TestReadOnlyNeo4j
         db.shutdown();
     }
 
-    private NodeManager nodeManager( GraphDatabaseService db )
+    private void clearCache( GraphDatabaseService db )
     {
-        return ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( NodeManager.class );
+        ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 }

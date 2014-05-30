@@ -494,6 +494,6 @@ public class CacheLayer implements StoreReadLayer
     @Override
     public PrimitiveLongIterator relationshipsGetAll()
     {
-        return diskLayer.nodesGetAll();
+        return diskLayer.relationshipsGetAll();
     }
 }

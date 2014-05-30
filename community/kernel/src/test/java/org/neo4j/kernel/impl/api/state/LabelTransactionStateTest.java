@@ -262,7 +262,6 @@ public class LabelTransactionStateTest
     private final long nodeId = 20;
 
     private StoreReadLayer store;
-    private OldTxStateBridge oldTxState;
     private TxState txState;
     private StateHandlingStatementOperations txContext;
 
@@ -278,9 +277,7 @@ public class LabelTransactionStateTest
                 .<IndexDescriptor>emptyList() ) );
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
 
-        oldTxState = mock( OldTxStateBridge.class );
-
-        txState = new TxStateImpl( oldTxState, mock( TransactionRecordState.class ),
+        txState = new TxStateImpl( mock( TransactionRecordState.class ),
                 mock( TxState.IdGeneration.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),

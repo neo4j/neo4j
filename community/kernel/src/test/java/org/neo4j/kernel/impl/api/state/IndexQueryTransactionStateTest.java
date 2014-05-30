@@ -41,13 +41,13 @@ import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
-import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 
 import static java.util.Arrays.asList;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -64,15 +64,12 @@ import static org.neo4j.kernel.api.properties.Property.stringProperty;
 
 public class IndexQueryTransactionStateTest
 {
-
     @Test
     public void shouldExcludeRemovedNodesFromIndexQuery() throws Exception
     {
         // Given
         when( store.nodesGetFromIndexLookup( state, indexDescriptor, value ) )
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 1l, 2l, 3l ) ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
-        when( oldTxState.hasChanges() ).thenReturn( true );
 
         txContext.nodeDelete( state, 2l );
 
@@ -89,8 +86,6 @@ public class IndexQueryTransactionStateTest
         // Given
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator( 1l ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
-        when( oldTxState.hasChanges() ).thenReturn( true );
 
         txContext.nodeDelete( state, 1l );
 
@@ -109,15 +104,18 @@ public class IndexQueryTransactionStateTest
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
-        when( oldTxState.hasChanges() ).thenReturn( true );
+//        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
+//                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
+//        when( oldTxState.hasChanges() ).thenReturn( true );
 
         // When
         PrimitiveLongIterator result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
+
+        fail( "Shouldn't work. Above is a commented piece of code that mocks a removal of something. " +
+                "With that kept as commented code this test works, so it's a false green" );
     }
 
     @Test
@@ -127,15 +125,18 @@ public class IndexQueryTransactionStateTest
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
-        when( oldTxState.hasChanges() ).thenReturn( true );
+//        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
+//                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
+//        when( oldTxState.hasChanges() ).thenReturn( true );
 
         // When
         long result = txContext.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
 
         // Then
         assertNoSuchNode( result );
+
+        fail( "Shouldn't work. Above is a commented piece of code that mocks a removal of something. " +
+                "With that kept as commented code this test works, so it's a false green" );
     }
 
     @Test
@@ -173,9 +174,6 @@ public class IndexQueryTransactionStateTest
                 .<DefinedProperty>emptyIterator() );
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
 
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
-
         state.txState().nodeDoReplaceProperty( 1l, noNodeProperty( 1l, propertyKeyId ),
                                                    stringProperty( propertyKeyId, value ) );
         txContext.nodeAddLabel( state, 1l, labelId );
@@ -198,7 +196,6 @@ public class IndexQueryTransactionStateTest
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
         when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty );
         when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         txContext.nodeAddLabel( state, 1l, labelId );
 
@@ -220,7 +217,6 @@ public class IndexQueryTransactionStateTest
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
         when( store.nodeGetProperty( 2l, propertyKeyId ) ).thenReturn( stringProperty );
         when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         txContext.nodeAddLabel( state, 2l, labelId );
 
@@ -242,7 +238,6 @@ public class IndexQueryTransactionStateTest
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
         when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty );
         when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         txContext.nodeRemoveLabel( state, 1l, labelId );
 
@@ -264,7 +259,6 @@ public class IndexQueryTransactionStateTest
         DefinedProperty stringProperty = stringProperty( propertyKeyId, value );
         when( store.nodeGetProperty( 1l, propertyKeyId ) ).thenReturn( stringProperty );
         when( store.nodeGetAllProperties( anyLong() ) ).thenReturn( iterator( stringProperty ) );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn( new DiffSets<Long>() );
 
         txContext.nodeRemoveLabel( state, 1l, labelId );
 
@@ -283,8 +277,8 @@ public class IndexQueryTransactionStateTest
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
-        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-                new DiffSets<>( Collections.<Long>emptySet(), asSet( 1l ) ) );
+//        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
+//                new DiffSets<>( Collections.<Long>emptySet(), asSet( 1l ) ) );
 
         txContext.nodeAddLabel( state, 1l, labelId );
 
@@ -293,6 +287,9 @@ public class IndexQueryTransactionStateTest
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
+
+        fail( "Shouldn't work. Above is a commented piece of code that mocks a removal of something. " +
+                "With that kept as commented code this test works, so it's a false green" );
     }
 
     @Test
@@ -319,17 +316,13 @@ public class IndexQueryTransactionStateTest
     IndexDescriptor indexDescriptor = new IndexDescriptor( labelId, propertyKeyId );
 
     private StoreReadLayer store;
-    private OldTxStateBridge oldTxState;
     private EntityOperations txContext;
     private KernelStatement state;
 
     @Before
     public void before() throws Exception
     {
-
-        oldTxState = mock( OldTxStateBridge.class );
-
-        TxState txState = new TxStateImpl( oldTxState, mock( TransactionRecordState.class ),
+        TxState txState = new TxStateImpl( mock( TransactionRecordState.class ),
                 mock( TxState.IdGeneration.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
 

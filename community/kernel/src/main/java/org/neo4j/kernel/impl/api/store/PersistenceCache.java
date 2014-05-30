@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 
 import static org.neo4j.kernel.impl.api.store.CacheUpdateListener.NO_UPDATES;
 
@@ -162,7 +163,7 @@ public class PersistenceCache
                 NodeImpl node = nodeCache.getIfCached( id );
                 if ( node != null )
                 {
-                    node.commitPropertyMaps( translateChangedProperties( changed ), removed );
+                    node.commitPropertyMaps( translateAddedAndChangedProperties( added, changed ), removed );
                 }
             }
 
@@ -185,7 +186,7 @@ public class PersistenceCache
                 RelationshipImpl relationship = relationshipCache.getIfCached( id );
                 if ( relationship != null )
                 {
-                    relationship.commitPropertyMaps( translateChangedProperties( changed ), removed );
+                    relationship.commitPropertyMaps( translateAddedAndChangedProperties( added, changed ), removed );
                 }
             }
 
@@ -193,26 +194,36 @@ public class PersistenceCache
             public void visitGraphPropertyChanges( Iterator<DefinedProperty> added,
                     Iterator<DefinedProperty> changed, Iterator<Integer> removed )
             {
-                graphProperties.commitPropertyMaps( translateChangedProperties( changed ), removed );
+                graphProperties.commitPropertyMaps( translateAddedAndChangedProperties( added, changed ), removed );
             }
 
             // TODO Below are translators from TxState into what Primitive and friends expects.
             // Ideally there should not be any translation since it's a bit unnecessary and costly.
-            private PrimitiveIntObjectMap<DefinedProperty> translateChangedProperties(
-                    Iterator<DefinedProperty> properties )
+            private PrimitiveIntObjectMap<DefinedProperty> translateAddedAndChangedProperties(
+                    Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed )
             {
-                if ( properties == null )
+                if ( added == null && changed == null )
                 {
                     return null;
                 }
 
                 PrimitiveIntObjectMap<DefinedProperty> result = org.neo4j.collection.primitive.Primitive.intObjectMap();
-                while ( properties.hasNext() )
-                {
-                    DefinedProperty property = properties.next();
-                    result.put( property.propertyKeyId(), property );
-                }
+                translateProperties( added, result );
+                translateProperties( changed, result );
                 return result;
+            }
+
+            private void translateProperties( Iterator<DefinedProperty> properties,
+                    PrimitiveIntObjectMap<DefinedProperty> result )
+            {
+                if ( properties != null )
+                {
+                    while ( properties.hasNext() )
+                    {
+                        DefinedProperty property = properties.next();
+                        result.put( property.propertyKeyId(), property );
+                    }
+                }
             }
 
             private PrimitiveIntObjectMap<RelIdArray> translateAddedRelationships(
@@ -228,19 +239,24 @@ public class PersistenceCache
                 while ( types.hasNext() )
                 {
                     int type = types.next();
-                    RelIdArray idArray = new RelIdArray( type );
+                    Iterator<Long> loopsChanges = added.loopsChanges( type );
+                    RelIdArray idArray = loopsChanges == null ? new RelIdArray( type ) :
+                        new RelIdArrayWithLoops( type );
                     addIds( idArray, added.outgoingChanges( type ), DirectionWrapper.OUTGOING );
                     addIds( idArray, added.incomingChanges( type ), DirectionWrapper.INCOMING );
-                    addIds( idArray, added.loopsChanges( type ), DirectionWrapper.BOTH );
+                    addIds( idArray, loopsChanges, DirectionWrapper.BOTH );
                 }
                 return result;
             }
 
             private void addIds( RelIdArray idArray, Iterator<Long> ids, DirectionWrapper direction )
             {
-                while ( ids.hasNext() )
+                if ( ids != null )
                 {
-                    idArray.add( ids.next(), direction );
+                    while ( ids.hasNext() )
+                    {
+                        idArray.add( ids.next(), direction );
+                    }
                 }
             }
 
@@ -268,9 +284,12 @@ public class PersistenceCache
 
             private void addIds( PrimitiveLongSet set, Iterator<Long> ids )
             {
-                while ( ids.hasNext() )
+                if ( ids != null )
                 {
-                    set.add( ids.next() );
+                    while ( ids.hasNext() )
+                    {
+                        set.add( ids.next() );
+                    }
                 }
             }
         } );

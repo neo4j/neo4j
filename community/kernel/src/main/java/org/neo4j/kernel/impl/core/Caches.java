@@ -41,4 +41,6 @@ public interface Caches
     void invalidate();
 
     void clear();
+
+    CacheProvider getProvider();
 }

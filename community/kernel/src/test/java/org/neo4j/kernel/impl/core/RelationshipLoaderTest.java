@@ -64,14 +64,14 @@ public class RelationshipLoaderTest
                 Pair.<Map<DirectionWrapper, Iterable<RelationshipRecord>>,RelationshipLoadingPosition>of(
                         relsFromDisk, new SingleChainPosition( 1 ) );
 
-        RelationshipLoader loader = new RelationshipLoader( relCache );
         RelationshipChainLoader chainLoader = mock( RelationshipChainLoader.class );
         when( chainLoader.getMoreRelationships( eq( 1337l ), any( RelationshipLoadingPosition.class ),
                 any( DirectionWrapper.class ),any( int[].class ) ) ).thenReturn( moreRelationships );
+        RelationshipLoader loader = new RelationshipLoader( relCache, chainLoader );
 
         // When
         Triplet<ArrayMap<Integer,RelIdArray>,List<RelationshipImpl>,RelationshipLoadingPosition> result =
-                loader.getMoreRelationships( node, DirectionWrapper.BOTH, new int[0], chainLoader );
+                loader.getMoreRelationships( node, DirectionWrapper.BOTH, new int[0] );
 
         // Then
         List<RelationshipImpl> relsThatWereNotInCache = result.second();

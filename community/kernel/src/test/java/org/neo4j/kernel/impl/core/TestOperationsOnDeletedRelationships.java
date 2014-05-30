@@ -24,7 +24,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
-import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 
@@ -43,22 +42,21 @@ public class TestOperationsOnDeletedRelationships
             throws Exception
     {
         // Given
-        NodeImpl nodeImpl = new NodeImpl( 1337l, false );
+        NodeImpl nodeImpl = new NodeImpl( 1337l );
         RelationshipLoader loader = mock( RelationshipLoader.class );
-        RelationshipChainLoader chainLoader = mock( RelationshipChainLoader.class );
         CacheUpdateListener cacheUpdateListener = mock( CacheUpdateListener.class );
 
         // Given something tries to load relationships, throw InvalidRecordException
         when( loader.getRelationshipChainPosition( anyLong() ) ).thenReturn(
                 new SingleChainPosition( 1 ) );
         when( loader.getMoreRelationships( any( NodeImpl.class ),
-                any( DirectionWrapper.class ), any( int[].class ), any( RelationshipChainLoader.class ) ) )
+                any( DirectionWrapper.class ), any( int[].class ) ) )
                 .thenThrow( new InvalidRecordException( "LURING!" ) );
 
         // When
         try
         {
-            nodeImpl.getAllRelationships( loader, RelIdArray.DirectionWrapper.BOTH, chainLoader, cacheUpdateListener );
+            nodeImpl.getAllRelationships( loader, RelIdArray.DirectionWrapper.BOTH, cacheUpdateListener );
             fail( "Should throw exception" );
         }
         catch ( NotFoundException e )
@@ -71,17 +69,19 @@ public class TestOperationsOnDeletedRelationships
     public void shouldThrowNotFoundWhenIteratingOverDeletedRelationship() throws Exception
     {
         // Given
-        NodeImpl fromNode = new NodeImpl( 1337l, false );
+        NodeImpl fromNode = new NodeImpl( 1337l );
+        RelationshipLoader loader = mock( RelationshipLoader.class );
+        CacheUpdateListener cacheUpdateListener = mock( CacheUpdateListener.class );
 
         // This makes nodeManager pretend that relationships have been deleted
-        when( nodeManager.getMoreRelationships( any( NodeImpl.class ), any( DirectionWrapper.class ),
+        when( loader.getMoreRelationships( any( NodeImpl.class ), any( DirectionWrapper.class ),
                 any( int[].class ) ) ).thenThrow( new InvalidRecordException( "LURING!" ) );
         fromNode.setRelChainPosition( new SingleChainPosition( 1 ) );
 
         // When
         try
         {
-            fromNode.getMoreRelationships( nodeManager, DirectionWrapper.BOTH, new int[0] );
+            fromNode.getMoreRelationships( loader, DirectionWrapper.BOTH, new int[0], cacheUpdateListener );
             fail( "Should throw exception" );
         }
         catch ( NotFoundException e )

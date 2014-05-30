@@ -203,9 +203,15 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( tx != null )
         {
-            tx.success();
-            tx.finish();
-            tx = null;
+            try
+            {
+                tx.success();
+                tx.finish();
+            }
+            finally
+            {
+                tx = null;
+            }
         }
     }
 
@@ -213,8 +219,14 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( tx != null )
         {
-            tx.finish();
-            tx = null;
+            try
+            {
+                tx.finish();
+            }
+            finally
+            {
+                tx = null;
+            }
         }
     }
 
@@ -222,9 +234,15 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( tx != null )
         {
-            tx.failure();
-            tx.finish();
-            tx = null;
+            try
+            {
+                tx.failure();
+                tx.finish();
+            }
+            finally
+            {
+                tx = null;
+            }
         }
     }
 
