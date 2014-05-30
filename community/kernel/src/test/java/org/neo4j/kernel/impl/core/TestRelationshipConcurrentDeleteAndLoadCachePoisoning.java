@@ -108,7 +108,7 @@ public class TestRelationshipConcurrentDeleteAndLoadCachePoisoning
         tx.finish();
 
         // This is required, otherwise relChainPosition is never consulted, everything will already be in mem.
-        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        db.getDependencyResolver().resolveDependency( Caches.class ).clear();
 
         Runnable writer = new Runnable()
         {
