@@ -26,7 +26,9 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
-import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.api.store.PersistenceCache;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
@@ -42,10 +44,11 @@ public class KernelTransactionFactory
 
         return new KernelTransactionImplementation( mock( StatementOperationParts.class ), false,
                 mock( SchemaWriteGuard.class ), null, null,
-                null, null, mock( TransactionRecordState.class ),
-                null, mock( NeoStore.class ), mock( TransactionState.class ), new TransactionHooks(),
+                null, mock( TransactionRecordState.class ),
+                null, mock( NeoStore.class ), new NoOpClient(), new TransactionHooks(),
                 mock( ConstraintIndexCreator.class ), headerInformation,
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
-                mock( TransactionIdStore.class ) );
+                mock( TransactionIdStore.class ), mock( PersistenceCache.class ),
+                mock( StoreReadLayer.class ) );
     }
 }

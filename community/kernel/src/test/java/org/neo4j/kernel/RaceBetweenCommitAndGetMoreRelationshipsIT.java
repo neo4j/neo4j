@@ -31,7 +31,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 
 public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
@@ -39,9 +39,9 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
     private static final RelationshipType TYPE = DynamicRelationshipType.withName( "TYPE" );
     private static RaceBetweenCommitAndGetMoreRelationshipsIT instance;
     private final GraphDatabaseService graphdb;
-    private final NodeManager nodeManager;
     private final Timer timer;
-    private final Exchanger<Throwable> error = new Exchanger<Throwable>();
+    private final Exchanger<Throwable> error = new Exchanger<>();
+    private final Caches caches;
 
     /**
      * A hack to transport the test to the main thread through the debugger
@@ -49,21 +49,24 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
     public static boolean exception( Throwable err )
     {
         RaceBetweenCommitAndGetMoreRelationshipsIT race = instance;
-        if ( race != null ) try
+        if ( race != null )
         {
-            race.error.exchange( err );
-        }
-        catch ( InterruptedException e )
-        {
-            // ignore
+            try
+            {
+                race.error.exchange( err );
+            }
+            catch ( InterruptedException e )
+            {
+                // ignore
+            }
         }
         return false;
     }
 
-    private RaceBetweenCommitAndGetMoreRelationshipsIT(GraphDatabaseService graphdb, NodeManager nodeManager)
+    private RaceBetweenCommitAndGetMoreRelationshipsIT( GraphDatabaseService graphdb, Caches caches )
     {
         this.graphdb = graphdb;
-        this.nodeManager = nodeManager;
+        this.caches = caches;
         this.timer = new Timer( /*daemon:*/true );
     }
 
@@ -77,7 +80,7 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
         delete( new File( path ) );
         GraphDatabaseAPI graphdb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( path );
         RaceBetweenCommitAndGetMoreRelationshipsIT race = instance = new RaceBetweenCommitAndGetMoreRelationshipsIT(
-                graphdb, graphdb.getDependencyResolver().resolveDependency( NodeManager.class ) );
+                graphdb, graphdb.getDependencyResolver().resolveDependency( Caches.class ) );
         try
         {
             race.execute();
@@ -97,7 +100,9 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
         if ( file.isDirectory() )
         {
             for ( File child : file.listFiles() )
+            {
                 delete( child );
+            }
         }
         else if ( !file.exists() )
         {
@@ -114,7 +119,7 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
             tx.success();
         }
         setup( 1000 );
-        nodeManager.clearCache();
+        caches.clear();
 
         timer.schedule( this, 10, 10 );
         Worker[] threads = { new Worker( "writer", error )
@@ -123,7 +128,10 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
             void perform()
             {
                 setup( 100 );
-                if ( assertions() ) System.out.println( "created 100" );
+                if ( assertions() )
+                {
+                    System.out.println( "created 100" );
+                }
             }
         }, new Worker( "reader", error )
         {
@@ -138,13 +146,25 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
                     {
                         count++;
                     }
-                    if ( count % 100 != 0 ) throw new IllegalStateException( "Not atomic!" );
-                    if ( assertions() ) System.out.println( "counted relationships" );
+                    if ( count % 100 != 0 )
+                    {
+                        throw new IllegalStateException( "Not atomic!" );
+                    }
+                    if ( assertions() )
+                    {
+                        System.out.println( "counted relationships" );
+                    }
                 }
                 catch ( InvalidRecordException ire )
                 {
-                    if ( assertions() ) ire.printStackTrace();
-                    else System.err.println( ire );
+                    if ( assertions() )
+                    {
+                        ire.printStackTrace();
+                    }
+                    else
+                    {
+                        System.err.println( ire );
+                    }
                 }
             }
         } };
@@ -156,7 +176,9 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
         {
             cancel();
             for ( Worker worker : threads )
+            {
                 worker.done();
+            }
         }
     }
 
@@ -190,8 +212,11 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
     @Override
     public void run()
     {
-        nodeManager.clearCache();
-        if ( assertions() ) System.out.println( "cleared cache" );
+        caches.clear();
+        if ( assertions() )
+        {
+            System.out.println( "cleared cache" );
+        }
     }
 
     private static abstract class Worker extends Thread
@@ -208,7 +233,10 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
 
         void done()
         {
-            if ( done ) interrupt();
+            if ( done )
+            {
+                interrupt();
+            }
             this.done = true;
         }
 

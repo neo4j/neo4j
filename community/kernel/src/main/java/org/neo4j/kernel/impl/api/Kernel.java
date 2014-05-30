@@ -280,7 +280,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
         return new KernelTransactionImplementation( statementOperations, readOnly,
                 schemaWriteGuard, labelScanStore, indexService,
-                nodeManager, schemaState, neoStoreTransaction, providerMap, neoStore, locksClient, hooks,
+                schemaState, neoStoreTransaction, providerMap, neoStore, locksClient, hooks,
                 constraintIndexCreator, transactionHeaderInformation, commitProcess, transactionMonitor, neoStore,
                 persistenceCache, storeLayer );
     }
@@ -342,11 +342,11 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
 
         // + Locking
         LockingStatementOperations lockingContext = new LockingStatementOperations(
+                parts.entityReadOperations(),
                 parts.entityWriteOperations(),
                 parts.schemaReadOperations(),
                 parts.schemaWriteOperations(),
-                parts.schemaStateOperations(),
-                storeLayer );
+                parts.schemaStateOperations() );
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext, lockingContext );
 
         return parts;

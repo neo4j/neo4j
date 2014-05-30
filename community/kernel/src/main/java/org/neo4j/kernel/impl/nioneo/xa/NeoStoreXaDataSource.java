@@ -54,8 +54,8 @@ import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
-import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DenseNodeImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -97,7 +97,6 @@ import org.neo4j.kernel.info.DiagnosticsPhase;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
-import org.neo4j.kernel.monitoring.Monitors;
 
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl
 {
@@ -151,8 +150,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private final TransactionHeaderInformation transactionHeaderInformation;
     private final StartupStatisticsProvider startupStatistics;
     private CacheLayer storeLayer;
-    private final CacheProvider cacheProvider;
-    private final Monitors monitors;
+    private final Caches cacheProvider;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -250,7 +248,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                  KernelHealth kernelHealth, RemoteTxHook remoteTxHook,
                                  TxIdGenerator txIdGenerator, TransactionHeaderInformation transactionHeaderInformation,
                                  StartupStatisticsProvider startupStatistics,
-                                 CacheProvider cacheProvider, Monitors monitors )
+                                 Caches cacheProvider )
     {
         this.config = config;
         this.tokenNameLookup = tokenNameLookup;
@@ -273,7 +271,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         this.transactionHeaderInformation = transactionHeaderInformation;
         this.startupStatistics = startupStatistics;
         this.cacheProvider = cacheProvider;
-        this.monitors = monitors;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -319,9 +316,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         final NodeManager nodeManager = dependencyResolver.resolveDependency( NodeManager.class );
 
         AutoLoadingCache<NodeImpl> nodeCache = new AutoLoadingCache<>(
-                cacheProvider.newNodeCache( msgLog, config, monitors ), nodeLoader( neoStore.getNodeStore() ) );
+                cacheProvider.node(), nodeLoader( neoStore.getNodeStore() ) );
         AutoLoadingCache<RelationshipImpl> relationshipCache = new AutoLoadingCache<>(
-                cacheProvider.newRelationshipCache( msgLog, config, monitors ),
+                cacheProvider.relationship(),
                 relationshipLoader( neoStore.getRelationshipStore() ) );
         RelationshipLoader relationshipLoader = new RelationshipLoader( relationshipCache,
                 new RelationshipChainLoader( neoStore ) );

@@ -93,8 +93,8 @@ public class ConstraintIndexCreator
     public void dropUniquenessConstraintIndex( IndexDescriptor descriptor )
             throws TransactionFailureException, DropIndexFailureException
     {
-        KernelTransaction transaction = kernel.newTransaction();
-        try ( Statement statement = transaction.acquireStatement() )
+        try ( KernelTransaction transaction = kernel.newTransaction();
+             Statement statement = transaction.acquireStatement() )
         {
             // NOTE: This creates the index (obviously) but it DOES NOT grab a schema
             // write lock. It is assumed that the transaction that invoked this "inner" transaction
@@ -104,6 +104,7 @@ public class ConstraintIndexCreator
             // internal implementation of Statement. However it is currently used by the external
             // RemoveOrphanConstraintIndexesOnStartup job. This needs revisiting.
             ((KernelStatement) statement).txState().constraintIndexDoDrop( descriptor );
+            transaction.success();
         }
     }
 

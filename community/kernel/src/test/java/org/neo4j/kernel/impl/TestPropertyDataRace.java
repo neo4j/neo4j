@@ -30,7 +30,7 @@ import org.junit.runner.RunWith;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.logging.SystemOutLogging;
 import org.neo4j.qa.tooling.DumpProcessInformation;
 import org.neo4j.test.EmbeddedDatabaseRule;
@@ -160,7 +160,7 @@ public class TestPropertyDataRace
                 done.countDown();
             }
         }.start();
-        
+
         if ( !done.await( 1, MINUTES ) )
         {
             File dumpDirectory = targetDir.cleanDirectory( "dump" );
@@ -169,7 +169,7 @@ public class TestPropertyDataRace
                     stringContains( SubProcess.class.getSimpleName() ) );
             fail( "Test didn't complete within a reasonable time, dumping process information to " + dumpDirectory );
         }
-        
+
         for ( String key : two.getPropertyKeys() )
         {
             assertEquals( "two", two.getProperty( key ) );
@@ -179,7 +179,7 @@ public class TestPropertyDataRace
     @BreakpointTrigger( "enable breakpoints" )
     private void clearCaches()
     {
-        database.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        database.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 
     @BreakpointTrigger( "done" )

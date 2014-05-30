@@ -38,12 +38,12 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
@@ -57,24 +57,24 @@ public class LockingStatementOperations implements
     SchemaStateOperations,
     LockOperations
 {
+    private final EntityReadOperations entityReadDelegate;
     private final EntityWriteOperations entityWriteDelegate;
     private final SchemaReadOperations schemaReadDelegate;
     private final SchemaWriteOperations schemaWriteDelegate;
     private final SchemaStateOperations schemaStateDelegate;
-    private final StoreReadLayer storeReadLayer;
 
     public LockingStatementOperations(
+            EntityReadOperations entityReadDelegate,
             EntityWriteOperations entityWriteDelegate,
             SchemaReadOperations schemaReadDelegate,
             SchemaWriteOperations schemaWriteDelegate,
-            SchemaStateOperations schemaStateDelegate,
-            StoreReadLayer storeReadLayer )
+            SchemaStateOperations schemaStateDelegate )
     {
+        this.entityReadDelegate = entityReadDelegate;
         this.entityWriteDelegate = entityWriteDelegate;
         this.schemaReadDelegate = schemaReadDelegate;
         this.schemaWriteDelegate = schemaWriteDelegate;
         this.schemaStateDelegate = schemaStateDelegate;
-        this.storeReadLayer = storeReadLayer;
     }
 
     @Override
@@ -225,7 +225,7 @@ public class LockingStatementOperations implements
     {
         try
         {
-            storeReadLayer.visit( relationshipId, new RelationshipVisitor()
+            entityReadDelegate.relationshipVisit( state, relationshipId, new RelationshipVisitor()
             {
                 @Override
                 public void visit( long relId, long startNode, long endNode, int type )
@@ -238,6 +238,7 @@ public class LockingStatementOperations implements
         catch ( EntityNotFoundException e )
         {
             // Fine, the relationship is already gone
+            return;
         }
         state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         entityWriteDelegate.relationshipDelete( state, relationshipId );

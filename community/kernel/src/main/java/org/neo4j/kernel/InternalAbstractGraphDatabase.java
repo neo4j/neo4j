@@ -31,7 +31,6 @@ import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBase
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Label;
@@ -741,16 +740,6 @@ public abstract class InternalAbstractGraphDatabase
         };
     }
 
-    // This is here until we've moved all operations into the kernel, which handles this check on it's own.
-    private void assertDatabaseRunning()
-    {
-        if( life.isRunning() )
-        {
-            return;
-        }
-        throw new DatabaseShutdownException();
-    }
-
     protected RemoteTxHook createTxHook()
     {
         return new DefaultTxHook();
@@ -812,7 +801,7 @@ public abstract class InternalAbstractGraphDatabase
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
                 storeMigrationProcess, transactionMonitor, kernelHealth, txHook, txIdGenerator,
-                transactionHeaderInformation, startupStatistics, cacheProvider, monitors );
+                transactionHeaderInformation, startupStatistics, caches );
         dataSourceManager.register( neoDataSource );
     }
 
@@ -1287,6 +1276,10 @@ public abstract class InternalAbstractGraphDatabase
             else if ( TransactionMonitor.class.isAssignableFrom( type ) )
             {
                 return type.cast( transactionMonitor );
+            }
+            else if ( Caches.class.isAssignableFrom( type ) )
+            {
+                return type.cast( caches );
             }
             return null;
         }

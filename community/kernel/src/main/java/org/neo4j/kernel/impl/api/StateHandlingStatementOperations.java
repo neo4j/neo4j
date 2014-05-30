@@ -329,7 +329,7 @@ public class StateHandlingStatementOperations implements
             }
             return constraint;
         }
-        catch ( TransactionFailureException | ConstraintVerificationFailedKernelException | DropIndexFailureException e )
+        catch ( ConstraintVerificationFailedKernelException | DropIndexFailureException | TransactionFailureException e )
         {
             throw new CreateConstraintFailureException( constraint, e );
         }

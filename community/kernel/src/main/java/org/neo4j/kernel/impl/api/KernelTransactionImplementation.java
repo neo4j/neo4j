@@ -43,7 +43,6 @@ import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -94,7 +93,6 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     public KernelTransactionImplementation( StatementOperationParts operations, boolean readOnly,
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
                                             IndexingService indexService,
-                                            NodeManager nodeManager,
                                             UpdateableSchemaState schemaState,
                                             TransactionRecordState neoStoreTransaction,
                                             SchemaIndexProviderMap providerMap, NeoStore neoStore,
@@ -547,7 +545,14 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         finally
         {
-            afterCommit( success );
+            if ( !success )
+            {
+                rollback();
+            }
+            else
+            {
+                afterCommit();
+            }
         }
     }
 
@@ -571,7 +576,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
     }
 
-    private void afterCommit( boolean success )
+    private void afterCommit()
     {
         try
         {
@@ -581,7 +586,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         }
         finally
         {
-            transactionMonitor.transactionFinished( success );
+            transactionMonitor.transactionFinished( true );
         }
     }
 

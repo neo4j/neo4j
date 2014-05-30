@@ -48,6 +48,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
@@ -264,7 +265,7 @@ public abstract class AbstractNeo4jTestCase
 
     protected void clearCache()
     {
-        getGraphDbAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        getGraphDbAPI().getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 
     protected long propertyRecordsInUse()
