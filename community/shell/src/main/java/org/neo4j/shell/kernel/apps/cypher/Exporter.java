@@ -39,8 +39,14 @@ public class Exporter
 
     public void export( Output out ) throws RemoteException, ShellException
     {
+        // TODO this really needs a proper test; if possible the created output should be feed back
+        // to ensure the script is valid in its entirety
         begin( out );
-        exporter.export(asWriter(out));
+        exporter.exportSchema( asWriter( out ) );
+        commit( out );
+
+        begin( out );
+        exporter.exportData( asWriter( out ) );
         out.println(";");
         commit(out);
     }

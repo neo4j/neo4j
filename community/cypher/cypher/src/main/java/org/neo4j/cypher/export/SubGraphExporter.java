@@ -50,8 +50,18 @@ public class SubGraphExporter
 
     public void export( PrintWriter out )
     {
+        exportSchema( out );
+        exportData( out );
+    }
+
+    public void exportSchema( PrintWriter out )
+    {
         appendIndexes( out );
         appendConstraints( out );
+    }
+
+    public void exportData( PrintWriter out )
+    {
         appendNodes( out );
         appendRelationships( out );
     }
