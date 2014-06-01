@@ -223,7 +223,8 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     /**
      * Must be call under lock
      */
-    long pageId()
+    @Override
+    public long pageId()
     {
         assertLocked();
         return pageId;

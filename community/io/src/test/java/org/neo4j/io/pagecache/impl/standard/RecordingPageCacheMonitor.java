@@ -25,7 +25,10 @@ import java.util.concurrent.LinkedBlockingQueue;
 
 import org.hamcrest.Matcher;
 
-public class RecordingMonitor implements StandardPageCache.Monitor
+import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.PageLock;
+
+public class RecordingPageCacheMonitor implements PageCacheMonitor
 {
     private final BlockingQueue<Event> record = new LinkedBlockingQueue<>();
     private CountDownLatch trapLatch;
@@ -45,6 +48,18 @@ public class RecordingMonitor implements StandardPageCache.Monitor
         Evict event = new Evict( io, pageId );
         record.add( event );
         trip( event );
+    }
+
+    @Override
+    public void pin( PageLock lock, long pageId, PageIO io )
+    {
+        // we currently do not record these
+    }
+
+    @Override
+    public void unpin( PageLock lock, long pageId, PageIO io )
+    {
+        // we currently do not record these
     }
 
     public <T extends Event> T observe( Class<T> type ) throws InterruptedException

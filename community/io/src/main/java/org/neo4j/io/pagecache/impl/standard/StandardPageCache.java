@@ -27,6 +27,7 @@ import java.util.Map;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
@@ -35,42 +36,20 @@ import org.neo4j.io.pagecache.PagedFile;
  */
 public class StandardPageCache implements PageCache, Runnable
 {
-    public interface Monitor
-    {
-        /** A page not in the cache was loaded */
-        void pageFault( long pageId, PageIO io );
-
-        /** A page was evicted. */
-        void evict( long pageId, PageIO io );
-    }
-
-    public static final Monitor NO_MONITOR = new Monitor()
-    {
-        @Override
-        public void pageFault( long pageId, PageIO io )
-        {
-
-        }
-
-        @Override
-        public void evict( long pageId, PageIO io )
-        {
-
-        }
-    };
-
     private final FileSystemAbstraction fs;
+    private final PageCacheMonitor monitor;
     private final Map<File, StandardPagedFile> pagedFiles = new HashMap<>();
     private final ClockSweepPageTable table;
 
     public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize )
     {
-        this(fs, maxPages, pageSize, NO_MONITOR );
+        this(fs, maxPages, pageSize, PageCacheMonitor.NULL );
     }
 
-    public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize, Monitor monitor )
+    public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize, PageCacheMonitor monitor )
     {
         this.fs = fs;
+        this.monitor = monitor;
         this.table = new ClockSweepPageTable( maxPages, pageSize, monitor );
     }
 
@@ -84,7 +63,7 @@ public class StandardPageCache implements PageCache, Runnable
         if ( pagedFile == null || !pagedFile.claimReference() )
         {
             StoreChannel channel = fs.open( file, "rw" );
-            pagedFile = new StandardPagedFile( table, file, channel, filePageSize );
+            pagedFile = new StandardPagedFile( table, file, channel, filePageSize, monitor );
             pagedFiles.put( file, pagedFile );
         }
 

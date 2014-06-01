@@ -27,6 +27,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.PagedFile;
@@ -37,6 +38,7 @@ public class StandardPagedFile implements PagedFile
 
     private final PageTable table;
     private final int filePageSize;
+    private final PageCacheMonitor monitor;
     private final StandardPageIO pageIO;
 
     private final AtomicInteger references = new AtomicInteger( 1 );
@@ -50,13 +52,21 @@ public class StandardPagedFile implements PagedFile
      * @param channel
      * @param filePageSize is the page size used by this file, NOT the page size used by
      *                     the cache. This value is always smaller than the page size used
-     *                     by the cache. The remaining space in the page cache buffers are
+     *                     by the cache. The remaining space in the page cache buffers is
+     *                     left unused.
+     * @param monitor
      */
-    public StandardPagedFile( PageTable table, File file, StoreChannel channel, int filePageSize )
+    public StandardPagedFile(
+            PageTable table,
+            File file,
+            StoreChannel channel,
+            int filePageSize,
+            PageCacheMonitor monitor )
     {
         this.table = table;
         this.filePageSize = filePageSize;
-        this.pageIO = new StandardPageIO(file, channel, filePageSize, new RemoveEvictedPage(filePages));
+        this.monitor = monitor;
+        this.pageIO = new StandardPageIO( file, channel, filePageSize, new RemoveEvictedPage( filePages ) );
     }
 
     @Override
@@ -81,7 +91,7 @@ public class StandardPagedFile implements PagedFile
                     latch.countDown();
 
                     cursor.reset( page, lock );
-
+                    monitor.pin( lock, pageId, pageIO );
                     return; // yay!
                 }
             }
@@ -104,6 +114,7 @@ public class StandardPagedFile implements PagedFile
                 if ( page.pin( pageIO, pageId, lock ) )
                 {
                     cursor.reset( page, lock );
+                    monitor.pin( lock, pageId, pageIO );
                     return; // yay!
                 }
                 filePages.replace( pageId, page, NULL );
@@ -115,7 +126,11 @@ public class StandardPagedFile implements PagedFile
     public void unpin( PageCursor cursor )
     {
         StandardPageCursor standardCursor = (StandardPageCursor) cursor;
-        standardCursor.page().unpin( standardCursor.lockType() );
+        PageLock lock = standardCursor.lockType();
+        PinnablePage page = standardCursor.page();
+        long pageId = page.pageId();
+        page.unpin( lock );
+        monitor.unpin( lock, pageId, pageIO );
         standardCursor.reset( null, null );
     }
 

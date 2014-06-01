@@ -103,12 +103,8 @@ public class StandardPageIO implements PageIO
 
         StandardPageIO that = (StandardPageIO) o;
 
-        if ( channel != null ? !channel.equals( that.channel ) : that.channel != null )
-        {
-            return false;
-        }
+        return !(channel != null ? !channel.equals( that.channel ) : that.channel != null);
 
-        return true;
     }
 
     @Override

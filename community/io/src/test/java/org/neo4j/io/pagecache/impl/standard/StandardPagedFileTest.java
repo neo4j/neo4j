@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.junit.Test;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageLock;
 
 import static junit.framework.TestCase.fail;
@@ -46,7 +47,7 @@ public class StandardPagedFileTest
         when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
         when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
 
-        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512);
+        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
 
         // When
         file.pin( cursor, PageLock.SHARED, 12 );
@@ -63,7 +64,7 @@ public class StandardPagedFileTest
         when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
         when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
 
-        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512);
+        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
 
         // When
         file.pin( cursor, PageLock.SHARED, 12 );
@@ -80,7 +81,7 @@ public class StandardPagedFileTest
         when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
         when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
 
-        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512);
+        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
 
         // And given I've pinned a page already
         file.pin( cursor, PageLock.SHARED, 12 );

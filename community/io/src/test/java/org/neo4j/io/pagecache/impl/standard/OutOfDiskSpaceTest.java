@@ -46,7 +46,7 @@ public class OutOfDiskSpaceTest
     {
         // Given
         LimitedFilesystemAbstraction fs = new LimitedFilesystemAbstraction( new DefaultFileSystemAbstraction() );
-        RecordingMonitor monitor = new RecordingMonitor();
+        RecordingPageCacheMonitor monitor = new RecordingPageCacheMonitor();
         StandardPageCache cache = new StandardPageCache( fs, 2, 512, monitor );
 
         PagedFile file = cache.map( new File( testDir.directory(), "storefile" ), 512 );
@@ -57,7 +57,7 @@ public class OutOfDiskSpaceTest
         sweeperThread.start();
 
         // And given we've "changed" some pages
-        CountDownLatch evictionThreadLatch = monitor.trap( any( RecordingMonitor.Evict.class ) );
+        CountDownLatch evictionThreadLatch = monitor.trap( any( RecordingPageCacheMonitor.Evict.class ) );
         file.pin( cursor, PageLock.EXCLUSIVE, 1 );
         file.unpin( cursor );
         file.pin( cursor, PageLock.EXCLUSIVE, 2 );

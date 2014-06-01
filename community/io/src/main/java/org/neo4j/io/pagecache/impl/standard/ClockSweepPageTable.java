@@ -24,6 +24,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.locks.LockSupport;
 
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageLock;
 
 import static org.neo4j.io.pagecache.impl.standard.StandardPinnablePage.UNBOUND_PAGE_ID;
@@ -42,12 +43,12 @@ public class ClockSweepPageTable implements PageTable, Runnable
     private final AtomicReference<StandardPinnablePage> freeList;
     private final StandardPinnablePage[] pages;
     private final int pageSize;
-    private final StandardPageCache.Monitor monitor;
+    private final PageCacheMonitor monitor;
 
     private volatile Thread sweeperThread;
     private volatile IOException sweeperException;
 
-    public ClockSweepPageTable( int maxPages, int pageSize, StandardPageCache.Monitor monitor )
+    public ClockSweepPageTable( int maxPages, int pageSize, PageCacheMonitor monitor )
     {
         this.pageSize = pageSize;
         this.monitor = monitor;

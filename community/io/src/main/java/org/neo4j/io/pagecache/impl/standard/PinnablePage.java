@@ -44,4 +44,11 @@ public interface PinnablePage extends Page
      * beforehand.
      */
     void unpin( PageLock lock );
+
+    /**
+     * The PageId that this page is <strong>currently</strong> pinned with.
+     *
+     * If this page is not pinned, then a garbage value is returned.
+     */
+    long pageId();
 }

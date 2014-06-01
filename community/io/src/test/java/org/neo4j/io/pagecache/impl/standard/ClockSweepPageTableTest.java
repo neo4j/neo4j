@@ -29,6 +29,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageLock;
 
 import static org.hamcrest.CoreMatchers.equalTo;
@@ -39,8 +40,8 @@ import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.verify;
 
-import static org.neo4j.io.pagecache.impl.standard.RecordingMonitor.Fault;
-import static org.neo4j.io.pagecache.impl.standard.RecordingMonitor.Evict;
+import static org.neo4j.io.pagecache.impl.standard.RecordingPageCacheMonitor.Fault;
+import static org.neo4j.io.pagecache.impl.standard.RecordingPageCacheMonitor.Evict;
 
 public class ClockSweepPageTableTest
 {
@@ -48,14 +49,14 @@ public class ClockSweepPageTableTest
     private final byte[] bytesA = "the A bytes".getBytes();
     private final byte[] bytesB = "the B bytes".getBytes();
 
-    private RecordingMonitor monitor;
+    private RecordingPageCacheMonitor monitor;
     private ClockSweepPageTable table;
     private Thread sweeperThread;
 
     @Before
     public void startPageTable()
     {
-        monitor = new RecordingMonitor();
+        monitor = new RecordingPageCacheMonitor();
         table = new ClockSweepPageTable( 1, TEST_PAGE_SIZE, monitor );
         sweeperThread = new Thread( table );
         sweeperThread.start();
@@ -95,7 +96,7 @@ public class ClockSweepPageTableTest
         page.unpin( PageLock.EXCLUSIVE );
 
         // When I perform an operation that will force eviction
-        Thread thread = new Thread(new Runnable()
+        fork(new Runnable()
         {
             @Override
             public void run()
@@ -111,9 +112,7 @@ public class ClockSweepPageTableTest
                     e.printStackTrace();
                 }
             }
-        });
-        thread.start();
-        thread.join();
+        }).join();
 
         // Then my changes should've been forced to disk
         byte[] actual = new byte[bytesA.length];
@@ -172,7 +171,7 @@ public class ClockSweepPageTableTest
     public void loading_with_exclusive_lock_stops_all_others() throws Exception
     {
         // Given
-        ClockSweepPageTable table = new ClockSweepPageTable( 1, TEST_PAGE_SIZE, StandardPageCache.NO_MONITOR );
+        ClockSweepPageTable table = new ClockSweepPageTable( 1, TEST_PAGE_SIZE, PageCacheMonitor.NULL );
         final BufferPageIO io = new BufferPageIO( bytesA );
 
         // When
@@ -212,7 +211,7 @@ public class ClockSweepPageTableTest
         page.unpin( PageLock.SHARED );
 
         // When
-        Thread thread = new Thread(new Runnable()
+        fork(new Runnable()
         {
             @Override
             public void run()
@@ -228,9 +227,7 @@ public class ClockSweepPageTableTest
                     e.printStackTrace();
                 }
             }
-        });
-        thread.start();
-        thread.join();
+        }).join();
 
         // Then
         assertFalse( page.pin( io, 12, PageLock.SHARED ) );
