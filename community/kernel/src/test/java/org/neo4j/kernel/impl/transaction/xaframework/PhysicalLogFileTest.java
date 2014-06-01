@@ -27,9 +27,9 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
 import org.neo4j.test.TargetDirectory;
@@ -49,7 +49,8 @@ public class PhysicalLogFileTest
         String name = "log";
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LogFile logFile = new PhysicalLogFile( fs, directory.directory(), name, 1000, LogPruneStrategies.NO_PRUNING,
-                transactionIdStore, mock( Monitor.class ), logRotationControl );
+                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
+                new LogPositionCache( 10, 100 ) );
         logFile.open( NO_RECOVERY_EXPECTED );
 
         // WHEN
@@ -69,7 +70,8 @@ public class PhysicalLogFileTest
         String name = "log";
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LogFile logFile = new PhysicalLogFile( fs, directory.directory(), name, 1000, LogPruneStrategies.NO_PRUNING,
-                transactionIdStore, mock( Monitor.class ), logRotationControl );
+                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
+                new LogPositionCache( 10, 100 ) );
         logFile.open( NO_RECOVERY_EXPECTED );
 
         // WHEN
@@ -97,7 +99,8 @@ public class PhysicalLogFileTest
         String name = "log";
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LogFile logFile = new PhysicalLogFile( fs, directory.directory(), name, 50, LogPruneStrategies.NO_PRUNING,
-                transactionIdStore, mock( Monitor.class ), logRotationControl );
+                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
+                new LogPositionCache( 10, 100 ) );
         logFile.open( NO_RECOVERY_EXPECTED );
 
         // WHEN
@@ -152,7 +155,8 @@ public class PhysicalLogFileTest
 
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LogFile logFile = new PhysicalLogFile( fs, directory.directory(), name, 50, LogPruneStrategies.NO_PRUNING,
-                transactionIdStore, mock( Monitor.class ), logRotationControl );
+                transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
+                new LogPositionCache( 10, 100 ) );
         logFile.open( new Visitor<ReadableLogChannel, IOException>()
         {
             @Override
@@ -204,7 +208,8 @@ public class PhysicalLogFileTest
 
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
-    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 1L, 5L );
+    private final LogVersionRepository logVersionRepository = new DeadSimpleLogVersionRepository( 1L );
+    private final TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 5L );
     private static final Visitor<ReadableLogChannel, IOException> NO_RECOVERY_EXPECTED =
             new Visitor<ReadableLogChannel, IOException>()
     {

@@ -19,45 +19,26 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import java.io.IOException;
 
-public class DeadSimpleTransactionIdStore implements TransactionIdStore
+public class DeadSimpleLogVersionRepository implements LogVersionRepository
 {
-    private long transactionId;
-    private long appliedTransactionId;
+    private long logVersion;
 
-    public DeadSimpleTransactionIdStore( long initialTransactionId )
+    public DeadSimpleLogVersionRepository( long initialLogVersion )
     {
-        this.transactionId = initialTransactionId;
-        this.appliedTransactionId = initialTransactionId;
+        this.logVersion = initialLogVersion;
     }
 
     @Override
-    public long nextCommittingTransactionId()
+    public long incrementAndGetVersion() throws IOException
     {
-        return ++transactionId;
+        return ++logVersion;
     }
 
     @Override
-    public long getLastCommittingTransactionId()
+    public long getCurrentLogVersion()
     {
-        return transactionId;
-    }
-
-    @Override
-    public void transactionClosed( long transactionId )
-    {
-        appliedTransactionId = transactionId;
-    }
-
-    @Override
-    public boolean closedTransactionIdIsOnParWithCommittingTransactionId()
-    {
-        return appliedTransactionId == transactionId;
-    }
-
-    @Override
-    public void flushAll()
-    {
+        return logVersion;
     }
 }
