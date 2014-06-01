@@ -19,19 +19,17 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
+import org.junit.Test;
+
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+
+import static org.junit.Assert.assertEquals;
 import static org.mockito.Mockito.spy;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStoreMocking.mockNeoStore;
 
-import org.junit.Test;
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStoreMocking.mockNeoStore;
 
 public class NeoStoreTransactionContextTest
 {
@@ -41,37 +39,20 @@ public class NeoStoreTransactionContextTest
         // GIVEN
         NeoStore mockStore = mockNeoStore();
         NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mockStore );
+        NeoStoreTransactionContext toClose = new NeoStoreTransactionContext( supplier, mockStore );
 
-        NeoStoreTransactionContext toClose = new NeoStoreTransactionContext(
-                supplier, mockStore );
-
-        toClose.getNodeCommands().put( 1l, mock( Command.NodeCommand.class ) );
-        toClose.setNeoStoreCommand( mock( Command.NeoStoreCommand.class ) );
-
-        // WHEN
-        toClose.close();
-
-        // THEN
-        assertTrue( toClose.getNodeCommands().isEmpty() );
-        assertNull( toClose.getNeoStoreCommand().getRecord() );
-    }
-
-    @Test
-    public void shouldClearBindingsOnClose() throws Exception
-    {
-        // GIVEN
-        NeoStore mockStore = mockNeoStore();
-        NeoStoreTransactionContextSupplier supplier = new NeoStoreTransactionContextSupplier( mockStore );
-
-        NeoStoreTransactionContext toClose = new NeoStoreTransactionContext(
-                supplier, mockStore );
-        toClose.bind( mock( TransactionState.class ) );
+        toClose.getNodeRecords().create( 1L, null ).forChangingData();
+        toClose.getRelGroupRecords().create( 2L, 1 ).forChangingData();
+        assertEquals( 1, toClose.getNodeRecords().changeSize() );
+        assertEquals( 0, toClose.getPropertyRecords().changeSize() );
+        assertEquals( 1, toClose.getRelGroupRecords().changeSize() );
 
         // WHEN
         toClose.close();
 
         // THEN
-        assertNull( toClose.getTransactionState() );
+        assertEquals( 0, toClose.getNodeRecords().changeSize() );
+        assertEquals( 0, toClose.getRelGroupRecords().changeSize() );
     }
 
     @Test

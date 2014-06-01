@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
-import static org.neo4j.kernel.impl.nioneo.store.ShortArray.LONG;
-import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -38,6 +29,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
@@ -54,12 +46,23 @@ import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 
+import static java.util.Arrays.asList;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+
+import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
+import static org.neo4j.kernel.impl.nioneo.store.ShortArray.LONG;
+import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
+
 public class NodeCommandTest
 {
     private NodeStore nodeStore;
     InMemoryLogChannel channel = new InMemoryLogChannel();
-    private XaCommandReader commandReader = new PhysicalLogNeoXaCommandReaderV1();
-    private CommandSerializer commandWriter = new CommandSerializer( channel );
+    private final XaCommandReader commandReader = new PhysicalLogNeoXaCommandReaderV1();
+    private final CommandSerializer commandWriter = new CommandSerializer( channel );
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
@@ -201,12 +204,14 @@ public class NodeCommandTest
     @Before
     public void before() throws Exception
     {
+        File dir = new File( "dir" );
+        fs.get().mkdirs( dir );
+        Config config = StoreFactory.configForStoreDir( new Config(), dir );
         @SuppressWarnings( "deprecation" )
-        StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
+        StoreFactory storeFactory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
                 new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, new DefaultTxHook() );
-        File storeFile = new File( "nodestore" );
-        storeFactory.createNodeStore( storeFile );
-        nodeStore = storeFactory.newNodeStore( storeFile );
+        storeFactory.createNodeStore();
+        nodeStore = storeFactory.newNodeStore();
     }
 
     @After
