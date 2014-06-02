@@ -19,9 +19,21 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write2bLengthAndString;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.write3bLengthAndString;
+
 import java.io.IOException;
 import java.util.Collection;
+import java.util.Map;
 
+import org.neo4j.kernel.impl.index.IndexCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.AddCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
+import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -36,9 +48,7 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandType;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
 
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-
-public class CommandSerializer extends NeoCommandVisitor.Adapter
+public class CommandSerializer implements NeoCommandVisitor
 {
     private final WritableLogChannel channel;
 
@@ -52,10 +62,8 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
     {
         NodeRecord before = command.getBefore();
         NodeRecord after = command.getAfter();
-
         channel.put( NeoCommandType.NODE_COMMAND );
         channel.putLong( after.getId() );
-
         writeNodeRecord( before );
         writeNodeRecord( after );
         return true;
@@ -65,37 +73,29 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
     public boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException
     {
         RelationshipRecord record = command.getRecord();
-        byte inUse = record.inUse() ? Record.IN_USE.byteValue()
-                : Record.NOT_IN_USE.byteValue();
+        byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
         channel.put( NeoCommandType.REL_COMMAND );
         channel.putLong( record.getId() );
         channel.put( inUse );
         if ( record.inUse() )
         {
-            channel.putLong( record.getFirstNode() )
-                    .putLong( record.getSecondNode() )
-                    .putInt( record.getType() )
-                    .putLong( record.getFirstPrevRel() )
-                    .putLong( record.getFirstNextRel() )
-                    .putLong( record.getSecondPrevRel() )
-                    .putLong( record.getSecondNextRel() )
+            channel.putLong( record.getFirstNode() ).putLong( record.getSecondNode() ).putInt( record.getType() )
+                    .putLong( record.getFirstPrevRel() ).putLong( record.getFirstNextRel() )
+                    .putLong( record.getSecondPrevRel() ).putLong( record.getSecondNextRel() )
                     .putLong( record.getNextProp() )
-                    .put( (byte) ((record.isFirstInFirstChain() ? 1 : 0) | (record.isFirstInSecondChain() ? 2 : 0)) )
-            ;
+                    .put( (byte) ((record.isFirstInFirstChain() ? 1 : 0) | (record.isFirstInSecondChain() ? 2 : 0)) );
         }
         return true;
     }
 
     private boolean writeNodeRecord( NodeRecord record ) throws IOException
     {
-        byte inUse = record.inUse() ? Record.IN_USE.byteValue()
-                : Record.NOT_IN_USE.byteValue();
+        byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
         channel.put( inUse );
         if ( record.inUse() )
         {
-            channel.put( record.isDense() ? (byte)1 : (byte)0 );
+            channel.put( record.isDense() ? (byte) 1 : (byte) 0 );
             channel.putLong( record.getNextRel() ).putLong( record.getNextProp() );
-
             // labels
             channel.putLong( record.getLabelField() );
             writeDynamicRecords( record.getDynamicLabelRecords() );
@@ -109,10 +109,8 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
         // COMMAND + ID
         channel.put( NeoCommandType.PROP_COMMAND );
         channel.putLong( command.getKey() ); // 8
-
         // BEFORE
         writePropertyRecord( command.getBefore() );
-
         // AFTER
         writePropertyRecord( command.getAfter() );
         return true;
@@ -139,8 +137,7 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
     {
         RelationshipTypeTokenRecord record = command.getRecord();
         // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
-        byte inUse = record.inUse() ? Record.IN_USE.byteValue()
-                : Record.NOT_IN_USE.byteValue();
+        byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
         channel.put( NeoCommandType.REL_TYPE_COMMAND );
         channel.putInt( record.getId() ).put( inUse ).putInt( record.getNameId() );
         writeDynamicRecords( record.getNameRecords() );
@@ -152,8 +149,7 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
     {
         LabelTokenRecord record = command.getRecord();
         // id+in_use(byte)+type_blockId(int)+nr_type_records(int)
-        byte inUse = record.inUse() ? Record.IN_USE.byteValue()
-                : Record.NOT_IN_USE.byteValue();
+        byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
         channel.put( NeoCommandType.LABEL_KEY_COMMAND );
         channel.putInt( record.getId() ).put( inUse ).putInt( record.getNameId() );
         writeDynamicRecords( record.getNameRecords() );
@@ -165,8 +161,7 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
     {
         PropertyKeyTokenRecord record = command.getRecord();
         // id+in_use(byte)+count(int)+key_blockId(int)+nr_key_records(int)
-        byte inUse = record.inUse() ? Record.IN_USE.byteValue()
-                : Record.NOT_IN_USE.byteValue();
+        byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
         channel.put( NeoCommandType.PROP_INDEX_COMMAND );
         channel.putInt( record.getId() );
         channel.put( inUse );
@@ -189,7 +184,7 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
         channel.put( NeoCommandType.SCHEMA_RULE_COMMAND );
         writeDynamicRecords( command.getRecordsBefore() );
         writeDynamicRecords( recordsAfter );
-        channel.put( first( recordsAfter ).isCreated() ? (byte) 1 : 0);
+        channel.put( first( recordsAfter ).isCreated() ? (byte) 1 : 0 );
         return true;
     }
 
@@ -198,6 +193,153 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
     {
         channel.put( NeoCommandType.NEOSTORE_COMMAND ).putLong( command.getRecord().getNextProp() );
         return true;
+    }
+
+    @Override
+    public boolean visitAddIndexCommand( AddCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.INDEX_ADD_COMMAND );
+        writeToFile( command );
+        return true;
+    }
+
+    @Override
+    public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND );
+        writeToFile( command );
+        putIntOrLong( command.getStartNode() );
+        putIntOrLong( command.getEndNode() );
+        return true;
+    }
+
+    @Override
+    public boolean visitRemoveIndexCommand( RemoveCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.INDEX_REMOVE_COMMAND );
+        writeToFile( command );
+        return true;
+    }
+
+    @Override
+    public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.INDEX_DELETE_COMMAND );
+        writeIndexCommandHeader( command );
+        return true;
+    }
+
+    @Override
+    public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
+    {
+        channel.put( NeoCommandType.INDEX_CREATE_COMMAND );
+        writeIndexCommandHeader( command );
+        channel.putShort( (short)command.getConfig().size() );
+        for ( Map.Entry<String, String> entry : command.getConfig().entrySet() )
+        {
+            write2bLengthAndString( channel, entry.getKey() );
+            write2bLengthAndString( channel, entry.getValue() );
+        }
+        return true;
+    }
+
+    @Override
+    public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
+    {
+        channel.put(  NeoCommandType.INDEX_DEFINE_COMMAND );
+        channel.put( (byte)(NeoCommandType.INDEX_DEFINE_COMMAND << 5) );
+        channel.put( (byte)0 );
+        channel.put( (byte)0 );
+        writeMap( command.getIndexNameIdRange() );
+        writeMap( command.getKeyIdRange() );
+        return true;
+    }
+
+    private void writeMap( Map<String, Byte> map ) throws IOException
+    {
+        channel.put( (byte)map.size() );
+        for ( Map.Entry<String, Byte> entry : map.entrySet() )
+        {
+            write2bLengthAndString( channel, entry.getKey() );
+            channel.put( entry.getValue() );
+        }
+    }
+
+    public void writeToFile( IndexCommand command ) throws IOException
+    {
+        /* c: commandType
+         * e: entityType
+         * n: indexNameId
+         * k: keyId
+         * i: entityId
+         * v: value type
+         * u: value
+         * x: 0=entityId needs 4b, 1=entityId needs 8b
+         * y: 0=startNode needs 4b, 1=startNode needs 8b
+         * z: 0=endNode needs 4b, 1=endNode needs 8b
+         *
+         * [cccv,vvex][yznn,nnnn][kkkk,kkkk]
+         * [iiii,iiii] x 4 or 8
+         * (either string value)
+         * [llll,llll][llll,llll][llll,llll][string chars...]
+         * (numeric value)
+         * [uuuu,uuuu] x 2-8 (depending on value type)
+         */
+        writeIndexCommandHeader( command );
+        putIntOrLong( command.getEntityId() );
+        // Value
+        Object value = command.getValue();
+        switch ( command.getValueType() )
+        {
+        case IndexCommand.VALUE_TYPE_STRING:
+            write3bLengthAndString( channel, value.toString() );
+            break;
+        case IndexCommand.VALUE_TYPE_SHORT:
+            channel.putShort( ((Number)value).shortValue() );
+            break;
+        case IndexCommand.VALUE_TYPE_INT:
+            channel.putInt( ((Number)value).intValue() );
+            break;
+        case IndexCommand.VALUE_TYPE_LONG:
+            channel.putLong( ((Number)value).longValue() );
+            break;
+        case IndexCommand.VALUE_TYPE_FLOAT:
+            channel.putFloat( ((Number)value).floatValue() );
+            break;
+        case IndexCommand.VALUE_TYPE_DOUBLE:
+            channel.putDouble( ((Number)value).doubleValue() );
+            break;
+        case IndexCommand.VALUE_TYPE_NULL:
+            break;
+        default:
+            throw new RuntimeException( "Unknown value type " + command.getValueType() );
+        }
+    }
+
+    protected void writeIndexCommandHeader( IndexCommand command ) throws IOException
+    {
+        channel.put( (byte) ((command.getCommandType() << 5) | (command.getValueType() << 2)
+                | (command.getEntityType() << 1) | (needsLong( command.getEntityId() ))) );
+        channel.put( (byte) ((command.startNodeNeedsLong() << 7) | (command.endNodeNeedsLong() << 6) | (command
+                .getIndexNameId())) );
+        channel.put( command.getKeyId() );
+    }
+
+    protected void putIntOrLong( long id ) throws IOException
+    {
+        if ( needsLong( id ) == 1 )
+        {
+            channel.putLong( id );
+        }
+        else
+        {
+            channel.putInt( (int) id );
+        }
+    }
+
+    protected static byte needsLong( long value )
+    {
+        return value > Integer.MAX_VALUE ? (byte) 1 : (byte) 0;
     }
 
     void writeDynamicRecords( Collection<DynamicRecord> records ) throws IOException
@@ -209,8 +351,7 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
         }
     }
 
-    void writeDynamicRecord( DynamicRecord record )
-            throws IOException
+    void writeDynamicRecord( DynamicRecord record ) throws IOException
     {
         // id+type+in_use(byte)+nr_of_bytes(int)+next_block(long)
         if ( record.inUse() )
@@ -220,9 +361,8 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
             {
                 inUse |= Record.FIRST_IN_CHAIN.byteValue();
             }
-            channel.putLong( record.getId() ).putInt( record.getType() ).put(
-                    inUse ).putInt( record.getLength() ).putLong(
-                    record.getNextBlock() );
+            channel.putLong( record.getId() ).putInt( record.getType() ).put( inUse ).putInt( record.getLength() )
+                    .putLong( record.getNextBlock() );
             byte[] data = record.getData();
             assert data != null;
             channel.put( data, data.length );
@@ -230,8 +370,7 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
         else
         {
             byte inUse = Record.NOT_IN_USE.byteValue();
-            channel.putLong( record.getId() ).putInt( record.getType() ).put(
-                    inUse );
+            channel.putLong( record.getId() ).putInt( record.getType() ).put( inUse );
         }
     }
 
@@ -269,16 +408,14 @@ public class CommandSerializer extends NeoCommandVisitor.Adapter
 
     private void writePropertyRecord( PropertyRecord record ) throws IOException
     {
-        byte inUse = record.inUse() ? Record.IN_USE.byteValue()
-                : Record.NOT_IN_USE.byteValue();
+        byte inUse = record.inUse() ? Record.IN_USE.byteValue() : Record.NOT_IN_USE.byteValue();
         if ( record.getRelId() != -1 )
         {
             // Here we add 2, i.e. set the second lsb.
             inUse += Record.REL_PROPERTY.byteValue();
         }
         channel.put( inUse ); // 1
-        channel.putLong( record.getNextProp() ).putLong(
-                record.getPrevProp() ); // 8 + 8
+        channel.putLong( record.getNextProp() ).putLong( record.getPrevProp() ); // 8 + 8
         long nodeId = record.getNodeId();
         long relId = record.getRelId();
         if ( nodeId != -1 )

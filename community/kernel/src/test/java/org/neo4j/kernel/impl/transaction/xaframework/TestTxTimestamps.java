@@ -34,11 +34,10 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
@@ -78,19 +77,20 @@ public class TestTxTimestamps
             tx.finish();
             expectedCommitTimestamps[i] = System.currentTimeMillis();
         }
-        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                .getNeoStoreDataSource().rotateLogicalLog();
-        
+//        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
+//                .getNeoStoreDataSource().rotateLogicalLog();
+
+        db.shutdown();
         ByteBuffer buffer = ByteBuffer.allocate( 1024*500 );
         StoreChannel channel = fileSystem.open( new File( db.getStoreDir(),
-                NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME + ".v0" ), "r" );
+                GraphDatabaseSettings.logical_log.getDefaultValue() + ".v0" ), "r" );
         try
         {
             VersionAwareLogEntryReader.readLogHeader( buffer, channel, true );
 
             AConsumer consumer = new AConsumer( expectedCommitTimestamps, expectedStartTimestamps );
 
-            LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
+            LogDeserializer deserializer = new LogDeserializer( XaCommandReaderFactory.DEFAULT );
 
             try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( channel ) )
             {

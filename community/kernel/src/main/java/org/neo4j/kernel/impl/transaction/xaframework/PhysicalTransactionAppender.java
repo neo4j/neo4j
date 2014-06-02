@@ -50,7 +50,7 @@ public class PhysicalTransactionAppender implements TransactionAppender
                 transaction.additionalHeader() );
 
         // Write all the commands to the log channel
-        transaction.execute( logEntryWriter );
+        logEntryWriter.serialize(transaction);
 
         // Write commit record
         long transactionId = txIdGenerator.generate( transaction );

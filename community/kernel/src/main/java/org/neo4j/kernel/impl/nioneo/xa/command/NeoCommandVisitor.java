@@ -21,6 +21,12 @@ package org.neo4j.kernel.impl.nioneo.xa.command;
 
 import java.io.IOException;
 
+import org.neo4j.kernel.impl.index.IndexCommand.AddCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
+import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.LabelTokenCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NeoStoreCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
@@ -31,8 +37,16 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
 
+/**
+ * A NeoCommandVisitor has to handle all type of commands that a Neo transaction can generate. It provides
+ * methods for handling each type of Command available through a callback pattern to avoid dynamic dispatching.
+ * Implementations need to provide all these methods of course, but it is expected that they will delegate
+ * the actual work to implementations that hold related functionality together, using a Facade pattern.
+ * For example, it is conceivable that a CommandWriterVisitor would use a NeoCommandWriter and a SchemaCommandWriter.
+ */
 public interface NeoCommandVisitor
 {
+    // NeoStore commands
     boolean visitNodeCommand( Command.NodeCommand command ) throws IOException;
     boolean visitRelationshipCommand( Command.RelationshipCommand command ) throws IOException;
     boolean visitPropertyCommand( Command.PropertyCommand command ) throws IOException;
@@ -42,6 +56,14 @@ public interface NeoCommandVisitor
     boolean visitPropertyKeyTokenCommand( Command.PropertyKeyTokenCommand command ) throws IOException;
     boolean visitSchemaRuleCommand( Command.SchemaRuleCommand command ) throws IOException;
     boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException;
+
+    // Index commands
+    boolean visitAddIndexCommand( AddCommand command ) throws IOException;
+    boolean visitIndexAddRelationshipCommand( AddRelationshipCommand addRelationshipCommand ) throws IOException;
+    boolean visitRemoveIndexCommand( RemoveCommand removeCommand ) throws IOException;
+    boolean visitIndexDeleteCommand( DeleteCommand deleteCommand ) throws IOException;
+    boolean visitIndexCreateCommand( CreateCommand createCommand ) throws IOException;
+    boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand ) throws IOException;
 
     public static class Adapter implements NeoCommandVisitor
     {
@@ -95,6 +117,43 @@ public interface NeoCommandVisitor
 
         @Override
         public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitAddIndexCommand( AddCommand command ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand addRelationshipCommand )
+                throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitRemoveIndexCommand( RemoveCommand removeCommand ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitIndexDeleteCommand( DeleteCommand deleteCommand ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitIndexCreateCommand( CreateCommand createCommand ) throws IOException
+        {
+            return true;
+        }
+
+        @Override
+        public boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand ) throws IOException
         {
             return true;
         }

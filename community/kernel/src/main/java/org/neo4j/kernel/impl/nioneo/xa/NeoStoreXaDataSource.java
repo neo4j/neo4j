@@ -102,11 +102,11 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 {
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
 
-    @SuppressWarnings("deprecation")
+    @SuppressWarnings( "deprecation" )
     public static abstract class Configuration
     {
         public static final Setting<String> keep_logical_logs = GraphDatabaseSettings.keep_logical_logs;
-        public static final Setting<Boolean> read_only= GraphDatabaseSettings.read_only;
+        public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
         public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
         public static final Setting<File> logical_log = InternalAbstractGraphDatabase.Configuration.logical_log;
@@ -185,7 +185,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 return phase.isExplicitlyRequested();
             }
         };
-
         private final String message;
 
         private Diagnostics( String message )
@@ -283,34 +282,28 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
     @Override
     public void init()
-    {   // We do our own internal life management:
-        // start() does life.init() and life.start(),
-        // stop() does life.stop() and life.shutdown().
+    { // We do our own internal life management:
+      // start() does life.init() and life.start(),
+      // stop() does life.stop() and life.shutdown().
     }
 
     @Override
     public void start() throws IOException
     {
         life = new LifeSupport();
-
         readOnly = config.get( Configuration.read_only );
-
         storeDir = config.get( Configuration.store_dir );
         File store = config.get( Configuration.neo_store );
         if ( !storeFactory.storeExists() )
         {
             storeFactory.createNeoStore().close();
         }
-
         indexProvider = dependencyResolver.resolveDependency( SchemaIndexProvider.class,
                 SchemaIndexProvider.HIGHEST_PRIORITIZED_OR_NONE );
         storeMigrationProcess.addParticipant( indexProvider.storeMigrationParticipant() );
-
         // TODO: Build a real provider map
         DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
-
         storeMigrationProcess.migrateIfNeeded( store.getParentFile() );
-
         neoStore = storeFactory.newNeoStore( false );
 
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
@@ -320,30 +313,19 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         AutoLoadingCache<RelationshipImpl> relationshipCache = new AutoLoadingCache<>(
                 cacheProvider.relationship(),
                 relationshipLoader( neoStore.getRelationshipStore() ) );
-        RelationshipLoader relationshipLoader = new RelationshipLoader( relationshipCache,
-                new RelationshipChainLoader( neoStore ) );
-        persistenceCache = new PersistenceCache(
-                nodeCache, relationshipCache, nodeManager.newGraphProperties(), relationshipLoader,
-                propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
+        RelationshipLoader relationshipLoader = new RelationshipLoader( relationshipCache, new RelationshipChainLoader(
+                neoStore ) );
+        persistenceCache = new PersistenceCache( nodeCache, relationshipCache, nodeManager.newGraphProperties(),
+                relationshipLoader, propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
         cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState, persistenceCache );
-
         try
         {
-            indexingService = life.add(
-                    new IndexingService(
-                            scheduler,
-                            providerMap,
-                            new NeoStoreIndexStoreView( lockService, neoStore ),
-                            tokenNameLookup, updateableSchemaState,
-                            logging, indexingServiceMonitor ) );
-
+            indexingService = life.add( new IndexingService( scheduler, providerMap, new NeoStoreIndexStoreView(
+                    lockService, neoStore ), tokenNameLookup, updateableSchemaState, logging, indexingServiceMonitor ) );
             integrityValidator = new IntegrityValidator( neoStore, indexingService );
-
             labelScanStore = life.add( dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                     LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore() );
-
             fileListing = new NeoStoreFileListing( storeDir, labelScanStore, indexingService );
-
             Provider<NeoStore> neoStoreProvider = new Provider<NeoStore>()
             {
                 @Override
@@ -352,62 +334,54 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     return getNeoStore();
                 }
             };
-
-            storeLayer = new CacheLayer(
-                new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
+            storeLayer = new CacheLayer( new DiskLayer( propertyKeyTokenHolder, labelTokens, relationshipTypeTokens,
                     new SchemaStorage( neoStore.getSchemaStore() ), neoStoreProvider, indexingService ),
-                persistenceCache, indexingService, schemaCache );
-
+                    persistenceCache, indexingService, schemaCache );
             kernel = life.add( new Kernel( propertyKeyTokenHolder, updateableSchemaState, schemaWriteGuard,
-                    indexingService, nodeManager, neoStoreProvider, persistenceCache, schemaCache, providerMap,
-                    fs, config, labelScanStore, storeLayer,
-                    scheduler, transactionMonitor, kernelHealth, readOnly, cacheAccess, integrityValidator,
-                    locks, lockService, remoteTxHook, txIdGenerator, transactionHeaderInformation, this,
-                    startupStatistics, logging ) );
-
+                    indexingService, nodeManager, neoStoreProvider, persistenceCache, schemaCache, providerMap, fs,
+                    config, labelScanStore, storeLayer, scheduler, transactionMonitor, kernelHealth, readOnly,
+                    cacheAccess, integrityValidator, locks, lockService, txIdGenerator, transactionHeaderInformation,
+                    this, startupStatistics, logging ) );
             kernel.registerTransactionHook( transactionEventHandlers );
-
             life.init();
-
-
-//            // TODO 2.2-future: Why isn't this done in the init() method of the indexing service?
-//            if ( !readOnly )
-//            {
-//                neoStore.setRecoveredStatus( true );
-//                try
-//                {
-//                    indexingService.initIndexes( loadIndexRules() );
-//                    xaContainer.openLogicalLog();
-//                }
-//                finally
-//                {
-//                    neoStore.setRecoveredStatus( false );
-//                }
-//            }
-//            if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
-//            {
-//                neoStore.makeStoreOk();
-//            }
-//            else
-//            {
-//                msgLog.debug( "Waiting for TM to take care of recovered " +
-//                        "transactions." );
-//            }
-
+            //            // TODO 2.2-future: Why isn't this done in the init() method of the indexing service?
+            //            if ( !readOnly )
+            //            {
+            //                neoStore.setRecoveredStatus( true );
+            //                try
+            //                {
+            //                    indexingService.initIndexes( loadIndexRules() );
+            //                    xaContainer.openLogicalLog();
+            //                }
+            //                finally
+            //                {
+            //                    neoStore.setRecoveredStatus( false );
+            //                }
+            //            }
+            //            if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
+            //            {
+            //                neoStore.makeStoreOk();
+            //            }
+            //            else
+            //            {
+            //                msgLog.debug( "Waiting for TM to take care of recovered " +
+            //                        "transactions." );
+            //            }
             // TODO Problem here is that we don't know if recovery has been performed at this point
             // if it hasn't then no index recovery will be performed since the node store is still in
             // "not ok" state and forceGetRecord will always return place holder node records that are not in use.
             // This issue will certainly introduce index inconsistencies.
             life.start();
-
-            propertyKeyTokenHolder.addTokens( ((TokenStore<?>) neoStore.getPropertyKeyTokenStore()).getTokens( Integer.MAX_VALUE ) );
-            relationshipTypeTokens.addTokens( ((TokenStore<?>) neoStore.getRelationshipTypeTokenStore()).getTokens( Integer.MAX_VALUE ) );
+            propertyKeyTokenHolder.addTokens( ((TokenStore<?>) neoStore.getPropertyKeyTokenStore())
+                    .getTokens( Integer.MAX_VALUE ) );
+            relationshipTypeTokens.addTokens( ((TokenStore<?>) neoStore.getRelationshipTypeTokenStore())
+                    .getTokens( Integer.MAX_VALUE ) );
             labelTokens.addTokens( ((TokenStore<?>) neoStore.getLabelTokenStore()).getTokens( Integer.MAX_VALUE ) );
         }
         catch ( Throwable e )
-        {   // Something unexpected happened during startup
+        { // Something unexpected happened during startup
             try
-            {   // Close the neostore, so that locks are released properly
+            { // Close the neostore, so that locks are released properly
                 neoStore.close();
             }
             catch ( Exception closeException )
@@ -418,8 +392,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         }
     }
 
-    private AutoLoadingCache.Loader<RelationshipImpl> relationshipLoader(
-            final RelationshipStore relationshipStore )
+    private AutoLoadingCache.Loader<RelationshipImpl> relationshipLoader( final RelationshipStore relationshipStore )
     {
         return new AutoLoadingCache.Loader<RelationshipImpl>()
         {
@@ -429,8 +402,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 try
                 {
                     RelationshipRecord record = relationshipStore.getRecord( id );
-                    return new RelationshipImpl( id, record.getFirstNode(), record.getSecondNode(),
-                            record.getType() );
+                    return new RelationshipImpl( id, record.getFirstNode(), record.getSecondNode(), record.getType() );
                 }
                 catch ( InvalidRecordException e )
                 {
@@ -461,11 +433,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     }
 
     // TODO 2.2-future: In TransactionFactory (now gone) was (#onRecoveryComplete)
-//    forceEverything();
-//    neoStore.makeStoreOk();
-//    neoStore.setVersion( xaContainer.getLogicalLog().getHighestLogVersion() );
-
-
+    //    forceEverything();
+    //    neoStore.makeStoreOk();
+    //    neoStore.setVersion( xaContainer.getLogicalLog().getHighestLogVersion() );
     public NeoStore getNeoStore()
     {
         return neoStore;
@@ -500,11 +470,11 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         }
         life.shutdown();
         // TODO 2.2-future
-//        if ( logApplied )
-//        {
-//            neoStore.rebuildIdGenerators();
-//            logApplied = false;
-//        }
+        //        if ( logApplied )
+        //        {
+        //            neoStore.rebuildIdGenerators();
+        //            logApplied = false;
+        //        }
         neoStore.close();
         msgLog.info( "NeoStore closed" );
     }
@@ -519,9 +489,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
     @Override
     public void shutdown()
-    {   // We do our own internal life management:
-        // start() does life.init() and life.start(),
-        // stop() does life.stop() and life.shutdown().
+    { // We do our own internal life management:
+      // start() does life.init() and life.start(),
+      // stop() does life.stop() and life.shutdown().
     }
 
     public StoreId getStoreId()

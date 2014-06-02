@@ -46,8 +46,7 @@ public class PhysicalTransactionStore implements TransactionStore
     public void open( final Visitor<TransactionRepresentation, IOException> recoveredTransactionVisitor )
             throws IOException, TransactionFailureException
     {
-        final Consumer<TransactionRepresentation, IOException> consumer =
-                new Consumer<TransactionRepresentation, IOException>()
+        final Consumer<TransactionRepresentation, IOException> consumer = new Consumer<TransactionRepresentation, IOException>()
         {
             @Override
             public boolean accept( TransactionRepresentation transaction ) throws IOException
@@ -55,7 +54,6 @@ public class PhysicalTransactionStore implements TransactionStore
                 return recoveredTransactionVisitor.visit( transaction );
             }
         };
-
         logFile.open( new Visitor<ReadableLogChannel, IOException>()
         {
             @Override
@@ -69,7 +67,6 @@ public class PhysicalTransactionStore implements TransactionStore
                 return true;
             }
         } );
-
         this.appender = new PhysicalTransactionAppender( logFile.getWriter(), txIdGenerator, positionCache );
     }
 
@@ -91,7 +88,9 @@ public class PhysicalTransactionStore implements TransactionStore
         }
 
         // ask LogFile
-        position = logFile.findRoughPositionOf( transactionIdToStartFrom );
+        TransactionPositionLocator visitor = new TransactionPositionLocator( transactionIdToStartFrom );
+        logFile.accept( visitor );
+        position = visitor.getPosition();
         // TODO 2.2-future play forward and cache that position
         TransactionCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
         return cursor;
@@ -104,6 +103,29 @@ public class PhysicalTransactionStore implements TransactionStore
         {
             appender.close();
             appender = null;
+        }
+    }
+
+    private static class TransactionPositionLocator implements LogFile.LogFileVisitor
+    {
+        private final long startTransactionId;
+        private LogPosition position;
+
+        TransactionPositionLocator( long startTransactionId )
+        {
+            this.startTransactionId = startTransactionId;
+        }
+
+        @Override
+        public boolean visit( LogPosition position, ReadableLogChannel channel )
+        {
+            // TODO Auto-generated method stub
+            return false;
+        }
+        
+        public LogPosition getPosition()
+        {
+            return position;
         }
     }
 }

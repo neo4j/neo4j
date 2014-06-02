@@ -38,7 +38,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 public class PhysicalLogFile implements LogFile, LogVersionBridge
 {
     public static final String DEFAULT_NAME = "nioneo_logical.log";
-
     private final long rotateAtSize;
     private final FileSystemAbstraction fileSystem;
     private final LogPruneStrategy pruneStrategy;
@@ -49,12 +48,12 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( 16 );
     private final LogRotationControl logRotationControl;
     private WritableLogChannel writer;
-	private final LogVersionRepository logVersionRepository;
+    private final LogVersionRepository logVersionRepository;
 
     public PhysicalLogFile( FileSystemAbstraction fileSystem, File directory, String name, long rotateAtSize,
-            LogPruneStrategy pruneStrategy, TransactionIdStore transactionIdStore, 
-            LogVersionRepository logVersionRepository, Monitor monitor,
-            LogRotationControl logRotationControl, LogPositionCache positionCache )
+            LogPruneStrategy pruneStrategy, TransactionIdStore transactionIdStore,
+            LogVersionRepository logVersionRepository, Monitor monitor, LogRotationControl logRotationControl,
+            LogPositionCache positionCache )
     {
         this.fileSystem = fileSystem;
         this.rotateAtSize = rotateAtSize;
@@ -69,12 +68,10 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
 
     @Override
     public void open( Visitor<ReadableLogChannel, IOException> recoveredDataVisitor ) throws IOException
-    {        
+    {
         long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
-
         PhysicalLogVersionedStoreChannel channel = openLogChannelForVersion( lastLogVersionUsed );
         doRecoveryOn( channel, recoveredDataVisitor );
-
         writer = new PhysicalWritableLogChannel( channel, new LogVersionBridge()
         {
             @Override
@@ -93,33 +90,31 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
 
     private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
     {
-    	File toOpen = logFiles.getHistoryFileName( forVersion );
-    	PhysicalLogVersionedStoreChannel channel = openFileChannel( toOpen, "rw" );
+        File toOpen = logFiles.getHistoryFileName( forVersion );
+        PhysicalLogVersionedStoreChannel channel = openFileChannel( toOpen, "rw" );
         long[] header = readLogHeader( headerBuffer, channel, false );
-    	if ( header == null )
-    	{
-    		// Either the header is not there in full or the file was new. Don't care
-    		long lastTxId = transactionIdStore.getLastCommittingTransactionId();
+        if ( header == null )
+        {
+            // Either the header is not there in full or the file was new. Don't care
+            long lastTxId = transactionIdStore.getLastCommittingTransactionId();
             writeLogHeader( headerBuffer, forVersion, lastTxId );
             positionCache.putHeader( forVersion, lastTxId );
             channel.writeAll( headerBuffer );
-            channel.setVersion(forVersion);
+            channel.setVersion( forVersion );
             monitor.opened( toOpen, forVersion, lastTxId, true );
-    	}
-    	return channel;
+        }
+        return channel;
     }
 
-    private void doRecoveryOn( PhysicalLogVersionedStoreChannel toRecover, Visitor<ReadableLogChannel, IOException> recoveredDataVisitor )
-            throws IOException
+    private void doRecoveryOn( PhysicalLogVersionedStoreChannel toRecover,
+            Visitor<ReadableLogChannel, IOException> recoveredDataVisitor ) throws IOException
     {
         if ( new XaLogicalLogRecoveryCheck( toRecover ).recoveryRequired() )
-        {   // There are already data in here, which means recovery will need to be performed.
-
+        { // There are already data in here, which means recovery will need to be performed.
             ReadableLogChannel recoveredDataChannel = new ReadAheadLogChannel( toRecover, NO_MORE_CHANNELS,
                     ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE );
             recoveredDataVisitor.visit( recoveredDataChannel );
             // intentionally keep it open since we're continuing using the underlying channel for the writer below
-
             logRotationControl.forceEverything();
             // TODO rotate after recovery?
         }
@@ -127,11 +122,11 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
 
     private synchronized VersionedStoreChannel rotate( VersionedStoreChannel currentLog ) throws IOException
     {
-    	/*
-    	 * First we flush the store. If we fail now or during the flush, on
-    	 * recovery we'll discover the current log file and replay it. Everything
-    	 * will be ok.
-    	 */
+        /*
+         * First we flush the store. If we fail now or during the flush, on
+         * recovery we'll discover the current log file and replay it. Everything
+         * will be ok.
+         */
         logRotationControl.awaitAllTransactionsClosed();
         logRotationControl.forceEverything();
         /*
@@ -149,95 +144,92 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
          */
         PhysicalLogVersionedStoreChannel newLog = openLogChannelForVersion( newLogVersion );
         currentLog.close();
-
         return newLog;
     }
 
-
-//    @Override
-//    public Long getFirstCommittedTxId( long version )
-//    {
-//        if ( version == 0 )
-//        {
-//            return 1L;
-//        }
-//
-//        // First committed tx for version V = last committed tx version V-1 + 1
-//        Long header = positionCache.getHeader( version - 1 );
-//        if ( header != null )
-//        // It existed in cache
-//        {
-//            return header + 1;
-//        }
-//
-//        // Wasn't cached, go look for it
-//        synchronized ( this )
-//        {
-//            if ( version > logVersion )
-//            {
-//                throw new IllegalArgumentException( "Too high version " + version + ", active is " + logVersion );
-//            }
-//            else if ( version == logVersion )
-//            {
-//                throw new IllegalArgumentException( "Last committed tx for the active log isn't determined yet" );
-//            }
-//            else if ( version == logVersion - 1 )
-//            {
-//                return previousLogLastCommittedTx;
-//            }
-//            else
-//            {
-//                File file = getFileName( version );
-//                if ( fileSystem.fileExists( file ) )
-//                {
-//                    try
-//                    {
-//                        long[] headerLongs = VersionAwareLogEntryReader.readLogHeader( fileSystem, file );
-//                        return headerLongs[1] + 1;
-//                    }
-//                    catch ( IOException e )
-//                    {
-//                        throw new RuntimeException( e );
-//                    }
-//                }
-//            }
-//        }
-//        return null;
-//    }
-//
-//
-//    @Override
-//    public Long getFirstStartRecordTimestamp( long version ) throws IOException
-//    {
-//        ReadableByteChannel log = null;
-//        try
-//        {
-//            ByteBuffer buffer = LogExtractor.newLogReaderBuffer();
-//            log = getLogicalLog( version );
-//            VersionAwareLogEntryReader.readLogHeader( buffer, log, true );
-//            LogDeserializer deserializer = new LogDeserializer( buffer, commandReaderFactory );
-//
-//            TimeWrittenConsumer consumer = new TimeWrittenConsumer();
-//
-//            try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( log ) )
-//            {
-//                while( cursor.next( consumer ) )
-//                {
-//                    ;
-//                }
-//            }
-//            return consumer.getTimeWritten();
-//        }
-//        finally
-//        {
-//            if ( log != null )
-//            {
-//                log.close();
-//            }
-//        }
-//    }
-//
-
+    //    @Override
+    //    public Long getFirstCommittedTxId( long version )
+    //    {
+    //        if ( version == 0 )
+    //        {
+    //            return 1L;
+    //        }
+    //
+    //        // First committed tx for version V = last committed tx version V-1 + 1
+    //        Long header = positionCache.getHeader( version - 1 );
+    //        if ( header != null )
+    //        // It existed in cache
+    //        {
+    //            return header + 1;
+    //        }
+    //
+    //        // Wasn't cached, go look for it
+    //        synchronized ( this )
+    //        {
+    //            if ( version > logVersion )
+    //            {
+    //                throw new IllegalArgumentException( "Too high version " + version + ", active is " + logVersion );
+    //            }
+    //            else if ( version == logVersion )
+    //            {
+    //                throw new IllegalArgumentException( "Last committed tx for the active log isn't determined yet" );
+    //            }
+    //            else if ( version == logVersion - 1 )
+    //            {
+    //                return previousLogLastCommittedTx;
+    //            }
+    //            else
+    //            {
+    //                File file = getFileName( version );
+    //                if ( fileSystem.fileExists( file ) )
+    //                {
+    //                    try
+    //                    {
+    //                        long[] headerLongs = VersionAwareLogEntryReader.readLogHeader( fileSystem, file );
+    //                        return headerLongs[1] + 1;
+    //                    }
+    //                    catch ( IOException e )
+    //                    {
+    //                        throw new RuntimeException( e );
+    //                    }
+    //                }
+    //            }
+    //        }
+    //        return null;
+    //    }
+    //
+    //
+    //    @Override
+    //    public Long getFirstStartRecordTimestamp( long version ) throws IOException
+    //    {
+    //        ReadableByteChannel log = null;
+    //        try
+    //        {
+    //            ByteBuffer buffer = LogExtractor.newLogReaderBuffer();
+    //            log = getLogicalLog( version );
+    //            VersionAwareLogEntryReader.readLogHeader( buffer, log, true );
+    //            LogDeserializer deserializer = new LogDeserializer( buffer, commandReaderFactory );
+    //
+    //            TimeWrittenConsumer consumer = new TimeWrittenConsumer();
+    //
+    //            try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( log ) )
+    //            {
+    //                while( cursor.next( consumer ) )
+    //                {
+    //                    ;
+    //                }
+    //            }
+    //            return consumer.getTimeWritten();
+    //        }
+    //        finally
+    //        {
+    //            if ( log != null )
+    //            {
+    //                log.close();
+    //            }
+    //        }
+    //    }
+    //
     @Override
     public WritableLogChannel getWriter()
     {
@@ -248,7 +240,7 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
     public ReadableLogChannel getReader( LogPosition position ) throws IOException
     {
         VersionedStoreChannel channel = openLogChannel( position );
-        return new ReadAheadLogChannel( channel, this, 4*1024 );
+        return new ReadAheadLogChannel( channel, this, 4 * 1024 );
     }
 
     @Override
@@ -257,13 +249,12 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
         PhysicalLogVersionedStoreChannel nextChannel;
         try
         {
-            nextChannel = openLogChannel( new LogPosition( channel.getVersion()+1, 0 ) );
+            nextChannel = openLogChannel( new LogPosition( channel.getVersion() + 1, 0 ) );
         }
         catch ( FileNotFoundException e )
         {
             return channel;
         }
-
         // TODO read header properly
         channel.close();
         nextChannel.position( VersionAwareLogEntryReader.LOG_HEADER_SIZE );
@@ -273,7 +264,7 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
     private PhysicalLogVersionedStoreChannel openLogChannel( LogPosition position ) throws IOException
     {
         long version = position.getLogVersion();
-        File fileToOpen = logFiles.getHistoryFileName(version);
+        File fileToOpen = logFiles.getHistoryFileName( version );
         PhysicalLogVersionedStoreChannel channel = openFileChannel( fileToOpen, "r", version );
         channel.position( position.getByteOffset() );
         return channel;
@@ -284,8 +275,7 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
         return new PhysicalLogVersionedStoreChannel( fileSystem.open( file, mode ) );
     }
 
-    private PhysicalLogVersionedStoreChannel openFileChannel( File file, String mode, long version )
-            throws IOException
+    private PhysicalLogVersionedStoreChannel openFileChannel( File file, String mode, long version ) throws IOException
     {
         return new PhysicalLogVersionedStoreChannel( fileSystem.open( file, mode ), version );
     }
@@ -309,8 +299,8 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
         @Override
         public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
         {
-            logger.info( "Opened logical log [" + logFile + "] version=" + logVersion + ", lastTxId=" +
-                    lastTransactionId + " (" + (clean ? "clean" : "recovered") + ")" );
+            logger.info( "Opened logical log [" + logFile + "] version=" + logVersion + ", lastTxId="
+                    + lastTransactionId + " (" + (clean ? "clean" : "recovered") + ")" );
         }
 
         @Override
@@ -325,7 +315,6 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
     {
         logRotationControl.awaitAllTransactionsClosed();
         logRotationControl.forceEverything();
-
         /*
          *  We simply increment the version, essentially "rotating" away
          *  the current active log file, to avoid having a recovery on
@@ -333,13 +322,12 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
          *  process.
          */
         logVersionRepository.incrementAndGetVersion();
-
-//        pruneStrategy.prune( this );
+        //        pruneStrategy.prune( this );
     }
-    
+
     @Override
-    public LogPosition findRoughPositionOf( long transactionId ) throws NoSuchTransactionException
+    public void accept( LogFileVisitor visitor )
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        // TODO Auto-generated method stub
     }
 }

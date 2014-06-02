@@ -111,10 +111,10 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
              * first byte is the actual type. That is a mismatch that can be resolved externally, hence this conditional
              * extra byte read. After 2.1 is released we can remove it.
              */
-    
+
             byte version = channel.get();
             byte type = channel.get();
-        
+
             switch ( type )
             {
                 case LogEntry.TX_START:
@@ -124,6 +124,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
                 case LogEntry.COMMAND:
                     return readTxCommandEntry( version, channel );
                 case LogEntry.EMPTY:
+                    System.out.println("Read 0");
                     return null;
                 default:
                     throw new IOException( "Unknown entry[" + type + "]" );
@@ -131,7 +132,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         }
         catch ( ReadPastEndException e )
         {
-            e.printStackTrace();
+//            e.printStackTrace();
             return null;
         }
     }

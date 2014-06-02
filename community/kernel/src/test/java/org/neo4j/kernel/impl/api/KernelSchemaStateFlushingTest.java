@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static org.junit.Assert.assertEquals;
+
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.KernelAPI;
@@ -36,8 +37,6 @@ import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper;
 import org.neo4j.test.ImpermanentDatabaseRule;
-
-import static org.junit.Assert.assertEquals;
 
 public class KernelSchemaStateFlushingTest
 {
@@ -131,6 +130,7 @@ public class KernelSchemaStateFlushingTest
 
     private UniquenessConstraint createConstraint() throws KernelException
     {
+
         try ( KernelTransaction transaction = kernel.newTransaction();
               Statement statement = transaction.acquireStatement() )
         {

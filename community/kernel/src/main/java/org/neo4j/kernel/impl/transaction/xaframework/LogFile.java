@@ -31,6 +31,11 @@ import org.neo4j.helpers.collection.Visitor;
  */
 public interface LogFile extends Closeable
 {
+    public interface LogFileVisitor
+    {
+        boolean visit( LogPosition position, ReadableLogChannel channel );
+    }
+
     /**
      * Opens the log file to make readers and writers available.
      */
@@ -48,8 +53,6 @@ public interface LogFile extends Closeable
      */
     ReadableLogChannel getReader( LogPosition position ) throws IOException;
 
-    /**
-     * A slight leak from {@link TransactionStore} since {@link LogFile} isn't supposed to know about transaction ids.
-     */
-    LogPosition findRoughPositionOf( long transactionId ) throws NoSuchTransactionException;
+    
+    void accept( LogFileVisitor visitor );
 }

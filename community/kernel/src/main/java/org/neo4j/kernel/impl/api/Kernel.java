@@ -149,12 +149,10 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final TransactionMonitor transactionMonitor;
     private final boolean readOnly;
     private boolean isShutdown = false;
-    private final CacheAccessBackDoor cacheAccess;
     private final IntegrityValidator integrityValidator;
     private final Locks locks;
     private final NodeManager nodeManager;
     private final NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier;
-    private final RemoteTxHook remoteTxHook;
     private final TxIdGenerator txIdGenerator;
     private final TransactionRepresentationCommitProcess commitProcess;
     private final TransactionHeaderInformation transactionHeaderInformation;
@@ -170,7 +168,7 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
                    LabelScanStore labelScanStore, StoreReadLayer storeLayer, JobScheduler scheduler,
                    TransactionMonitor transactionMonitor, KernelHealth kernelHealth,
                    boolean readOnly, CacheAccessBackDoor cacheAccess, IntegrityValidator integrityValidator,
-                   Locks locks, LockService lockService, RemoteTxHook remoteTxHook, TxIdGenerator txIdGenerator,
+                   Locks locks, LockService lockService, TxIdGenerator txIdGenerator,
                    TransactionHeaderInformation transactionHeaderInformation, LogRotationControl logRotationControl,
                    StartupStatisticsProvider startupStatistics, Logging logging )
     {
@@ -184,10 +182,8 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.readOnly = readOnly;
         this.schemaWriteGuard = schemaWriteGuard;
         this.indexService = indexService;
-        this.cacheAccess = cacheAccess;
         this.integrityValidator = integrityValidator;
         this.locks = locks;
-        this.remoteTxHook = remoteTxHook;
         this.txIdGenerator = txIdGenerator;
         this.transactionHeaderInformation = transactionHeaderInformation;
         this.startupStatistics = startupStatistics;

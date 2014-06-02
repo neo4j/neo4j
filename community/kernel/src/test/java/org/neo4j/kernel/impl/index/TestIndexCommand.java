@@ -19,11 +19,12 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import java.io.File;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.index.IndexCommand.readCommand;
+
 import java.io.FileInputStream;
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Iterator;
@@ -32,27 +33,12 @@ import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
-import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.util.FileUtils;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandSerializer;
+import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
 import org.neo4j.test.TargetDirectory;
-
-import static java.io.File.createTempFile;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.index.IndexCommand.readCommand;
-import static org.neo4j.kernel.impl.util.FileUtils.copyFile;
 
 
 public class TestIndexCommand
@@ -71,21 +57,7 @@ public class TestIndexCommand
     private static final int INT_VALUE = 345;
     private static final Map<String, String> SOME_CONFIG = stringMap( "type", "exact", "provider", "lucene" );
 
-    private final XaCommandWriter writer = new XaCommandWriter()
-    {
-        @Override
-        public void write( XaCommand command, LogBuffer buffer ) throws IOException
-        {
-            if( command instanceof IndexDefineCommand )
-            {
-                ((IndexDefineCommand) command).writeToFile( buffer );
-            }
-            else if ( command instanceof  IndexCommand )
-            {
-                ((IndexCommand) command).writeToFile( buffer );
-            }
-        }
-    };
+    private final InMemoryLogChannel channel = new InMemoryLogChannel();
     
     @Rule
     public TargetDirectory.TestDirectory directory = TargetDirectory.forTest( TestIndexCommand.class ).testDirectory();
@@ -93,13 +65,13 @@ public class TestIndexCommand
     @Test
     public void testWriteReadTruncate() throws Exception
     {
-        List<XaCommand> commands = createSomeCommands();
-        Pair<File, List<Long>> writtenCommands = writeCommandsToFile( commands );
-        List<XaCommand> readCommands = readCommandsFromFile( writtenCommands.first() ); 
+        List<Command> commands = createSomeCommands();
+        List<Long> writtenCommands = writeCommandsToFile( commands );
+        List<Command> readCommands = readCommandsFromChannel(); 
         
         // Assert that the read commands are equal to the written commands
-        Iterator<XaCommand> commandIterator = commands.iterator();
-        for ( XaCommand readCommand : readCommands )
+        Iterator<Command> commandIterator = commands.iterator();
+        for ( Command readCommand : readCommands )
         {
             assertEquals( commandIterator.next(), readCommand );
         }
@@ -108,40 +80,20 @@ public class TestIndexCommand
         // (where commands are cut off in the middle) can be read
         for ( int i = 0; i < commands.size(); i++ )
         {
-            long startPosition = writtenCommands.other().get( i );
+            long startPosition = writtenCommands.get( i );
             long nextStartPosition = i+1 < commands.size() ?
-                    writtenCommands.other().get( i+1 ) : writtenCommands.first().length();
+                    writtenCommands.get( i+1 ) : channel.writerPosition();
             for ( long p = startPosition; p < nextStartPosition; p++ )
             {
-                File copy = copyAndTruncateFile( writtenCommands.first(), p );
-                List<XaCommand> readTruncatedCommands = readCommandsFromFile( copy );
+                channel.truncateTo( (int) p );
+                List<Command> readTruncatedCommands = readCommandsFromChannel();
                 assertEquals( i, readTruncatedCommands.size() );
-                FileUtils.deleteFile( copy );
             }
         }
-        
-        writtenCommands.first().delete();
     }
-
-    private File copyAndTruncateFile( File file, long fileSize ) throws IOException
+    private List<Command> createSomeCommands()
     {
-        File copy = createTempFile( "index", "copy", directory.directory() );
-        copyFile( file, copy );
-        RandomAccessFile raFile = new RandomAccessFile( copy, "rw" );
-        try
-        {
-            raFile.getChannel().truncate( fileSize );
-        }
-        finally
-        {
-            raFile.close();
-        }
-        return copy;
-    }
-
-    private List<XaCommand> createSomeCommands()
-    {
-        List<XaCommand> commands = new ArrayList<XaCommand>();
+        List<Command> commands = new ArrayList<Command>();
         IndexDefineCommand definitions = new IndexDefineCommand();
         commands.add( definitions );
         commands.add( definitions.create( INDEX_NAME_1, Node.class, SOME_CONFIG ) );
@@ -153,20 +105,17 @@ public class TestIndexCommand
         return commands;
     }
 
-    private List<XaCommand> readCommandsFromFile( File file ) throws IOException
+    private List<Command> readCommandsFromChannel() throws IOException
     {
         FileInputStream in = null;
         ReadableByteChannel reader = null;
-        List<XaCommand> commands;
+        List<Command> commands;
         try
         {
-            in = new FileInputStream( file );
-            reader = in.getChannel();
-            ByteBuffer buffer = ByteBuffer.allocate( 10000 );
-            commands = new ArrayList<XaCommand>();
+            commands = new ArrayList<Command>();
             while ( true )
             {
-                XaCommand command = readCommand( reader, buffer );
+                Command command = readCommand( channel );
                 if ( command == null )
                 {
                     break;
@@ -184,28 +133,16 @@ public class TestIndexCommand
         return commands;
     }
 
-    private Pair<File, List<Long>> writeCommandsToFile( List<XaCommand> commands ) throws IOException
+    private List<Long> writeCommandsToFile( List<Command> commands ) throws IOException
     {
-        File file = createTempFile( "index", "command" );
-        RandomAccessFile randomAccessFile = new RandomAccessFile( file, "rw" );
+        CommandSerializer writer = new CommandSerializer( channel ); 
         List<Long> startPositions;
-        try
+        startPositions = new ArrayList<>();
+        for ( Command command : commands )
         {
-            StoreFileChannel fileChannel = new StoreFileChannel( randomAccessFile.getChannel() );
-            LogBuffer writeBuffer = new DirectMappedLogBuffer( fileChannel, new Monitors().newMonitor( ByteCounterMonitor.class ) );
-            startPositions = new ArrayList<>();
-            for ( XaCommand command : commands )
-            {
-                startPositions.add( writeBuffer.getFileChannelPosition() );
-                writer.write( command, writeBuffer );
-            }
-            writeBuffer.force();
-            fileChannel.close();
+            startPositions.add( (long) channel.writerPosition() );
+            command.accept( writer );
         }
-        finally
-        {
-            randomAccessFile.close();
-        }
-        return Pair.of( file, startPositions );
+        return startPositions;
     }
 }

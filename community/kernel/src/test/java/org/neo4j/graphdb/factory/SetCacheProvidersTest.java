@@ -22,7 +22,6 @@ package org.neo4j.graphdb.factory;
 import java.util.ArrayList;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;

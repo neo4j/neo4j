@@ -21,22 +21,22 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 public class LogPosition
 {
-    private final long logVerion;
+    private final long logVersion;
     private final long byteOffset;
 
     public LogPosition( long logVersion, long byteOffset )
     {
-        this.logVerion = logVersion;
+        this.logVersion = logVersion;
         this.byteOffset = byteOffset;
     }
 
     public boolean earlierThan( LogPosition other )
     {
-        if ( logVerion < other.logVerion )
+        if ( logVersion < other.logVersion )
         {
             return true;
         }
-        if ( logVerion > other.logVerion )
+        if ( logVersion > other.logVersion )
         {
             return false;
         }
@@ -45,7 +45,7 @@ public class LogPosition
 
     public long getLogVersion()
     {
-        return logVerion;
+        return logVersion;
     }
 
     public long getByteOffset()

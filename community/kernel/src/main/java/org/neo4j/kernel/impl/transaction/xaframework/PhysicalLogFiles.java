@@ -57,7 +57,7 @@ public class PhysicalLogFiles
     }
 
     public long getHistoryLogVersion( File historyLogFile )
-    {   // Get version based on the name
+    { // Get version based on the name
         String name = historyLogFile.getName();
         String toFind = ".v";
         int index = name.lastIndexOf( toFind );
@@ -67,7 +67,6 @@ public class PhysicalLogFiles
         }
         return Integer.parseInt( name.substring( index + toFind.length() ) );
     }
-
 
     public long getHighestHistoryLogVersion()
     {

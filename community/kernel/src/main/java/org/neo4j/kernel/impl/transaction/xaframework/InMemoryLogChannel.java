@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
@@ -29,19 +30,19 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     private byte[] bytes = new byte[1000];
     private ByteBuffer asWriter = ByteBuffer.wrap( bytes );
     private ByteBuffer asReader = ByteBuffer.wrap( bytes );
-    private ByteBuffer bufferForConversions = ByteBuffer.wrap( new byte[100] );
 
     public void reset()
     {
         asWriter.clear();
         asReader.clear();
-        bytes = new byte[100];
+        Arrays.fill( bytes, (byte) 0 );
     }
 
     @Override
     public InMemoryLogChannel put( byte b ) throws IOException
     {
         asWriter.put( b );
+        System.out.println("Put byte " + b );
         return this;
     }
 
@@ -49,6 +50,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public InMemoryLogChannel putShort( short s ) throws IOException
     {
         asWriter.putShort( s );
+        System.out.println("Put short " + s );
         return this;
     }
 
@@ -56,6 +58,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public InMemoryLogChannel putInt( int i ) throws IOException
     {
         asWriter.putInt( i );
+        System.out.println("Put int " + i );
         return this;
     }
 
@@ -63,6 +66,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public InMemoryLogChannel putLong( long l ) throws IOException
     {
         asWriter.putLong( l );
+        System.out.println("Put long " + l );
         return this;
     }
 
@@ -84,26 +88,18 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public InMemoryLogChannel put( byte[] bytes, int length ) throws IOException
     {
         asWriter.put( bytes, 0, length );
+        System.out.println("Put array " + length );
         return this;
     }
 
     @Override
     public InMemoryLogChannel put( char[] chars, int length ) throws IOException
     {
-        ensureConversionBufferCapacity( length * 2 );
         for ( int i = 0; i < length; i++ )
         {
             asWriter.putChar( chars[i] );
         }
         return this;
-    }
-
-    private void ensureConversionBufferCapacity( int length )
-    {
-        if ( bufferForConversions.capacity() < length )
-        {
-            bufferForConversions = ByteBuffer.wrap( new byte[length * 2] );
-        }
     }
 
     @Override
@@ -136,28 +132,36 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public byte get() throws ReadPastEndException
     {
         ensureAvailableToRead( 1 );
-        return asReader.get();
+        byte b = asReader.get();
+        System.out.println("read byte " + b );
+        return b;
     }
 
     @Override
     public short getShort() throws ReadPastEndException
     {
         ensureAvailableToRead( 2 );
-        return asReader.getShort();
+        short short1 = asReader.getShort();
+        System.out.println("read short " + short1 );
+        return short1;
     }
 
     @Override
     public int getInt() throws ReadPastEndException
     {
         ensureAvailableToRead( 4 );
-        return asReader.getInt();
+        int int1 = asReader.getInt();
+        System.out.println("read int " + int1 );
+        return int1;
     }
 
     @Override
     public long getLong() throws ReadPastEndException
     {
         ensureAvailableToRead( 8 );
-        return asReader.getLong();
+        long long1 = asReader.getLong();
+        System.out.println("read long " + long1 );
+        return long1;
     }
 
     @Override
@@ -179,13 +183,17 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     {
         ensureAvailableToRead( length );
         asReader.get( bytes, 0, length );
+        System.out.println("read array " + Arrays.toString( bytes ));
     }
 
     @Override
     public void get( char[] chars, int length ) throws IOException
     {
         ensureAvailableToRead( length * 2 );
-        asReader.asCharBuffer().get( chars, 0, length );
+        for ( int i = 0; i < length; i++)
+        {            
+            chars[i] = asReader.getChar();
+        }
     }
 
     private void ensureAvailableToRead( int i ) throws ReadPastEndException
