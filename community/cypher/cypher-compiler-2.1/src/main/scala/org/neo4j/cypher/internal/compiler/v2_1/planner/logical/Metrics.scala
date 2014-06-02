@@ -29,7 +29,7 @@ object Metrics {
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
   // required to execute a step)
-  type CostModel = LogicalPlan => Double
+  type CostModel = LogicalPlan => Cost
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
@@ -41,6 +41,13 @@ object Metrics {
 }
 
 case class Metrics(cost: CostModel, cardinality: CardinalityModel, selectivity: SelectivityModel)
+case class Cost(gummyBears: Double) extends Ordered[Cost] {
+  def +(other:Double): Double = other + gummyBears
+  def +(other:Cost): Cost = Cost(other.gummyBears + gummyBears)
+  def *(other:Double): Double = other * gummyBears
+
+  def compare(that: Cost): Int = gummyBears.compare(that.gummyBears)
+}
 
 trait MetricsFactory {
   def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable): SelectivityModel

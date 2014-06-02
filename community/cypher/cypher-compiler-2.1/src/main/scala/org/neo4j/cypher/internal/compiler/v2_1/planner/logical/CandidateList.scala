@@ -29,7 +29,7 @@ case class CandidateList(plans: Seq[QueryPlan] = Seq.empty) {
   def +(plan: QueryPlan) = copy(plans :+ plan)
 
   def bestPlan(costs: CostModel): Option[QueryPlan] = {
-    val sortedPlans = plans.sortBy[(Double, Int)](c => (costs(c.plan), -c.availableSymbols.size))
+    val sortedPlans = plans.sortBy[(Cost, Int)](c => (costs(c.plan), -c.availableSymbols.size))
     sortedPlans.headOption
   }
 

@@ -37,8 +37,8 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans so the cheaper plan is on the left") {
     (new given {
       cost = {
-        case _: Selection => 1000
-        case _: NodeByLabelScan => 20
+        case _: Selection => Cost(1000)
+        case _: NodeByLabelScan => Cost(20)
       }
       cardinality = {
         case _: Selection => 10

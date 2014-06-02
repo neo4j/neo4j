@@ -72,7 +72,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   trait LogicalPlanningConfiguration {
     def selectivityModel(statistics: GraphStatistics, semanticTable: SemanticTable): PartialFunction[Expression, Double]
     def cardinalityModel(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): PartialFunction[LogicalPlan, Double]
-    def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Double]
+    def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost]
     def graphStatistics: GraphStatistics
     def indexes: Set[(String, String)]
     def uniqueIndexes: Set[(String, String)]
@@ -99,7 +99,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case (expr: Expression) => model(expr)
       })
     }
-    def costModel(cardinality: CardinalityModel) = {
+    def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost] = {
       val model = new SimpleCostModel(cardinality)
       ({
         case (plan: LogicalPlan) => model(plan)
@@ -116,7 +116,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
     var knownLabels: Set[String] = Set.empty
     var cardinality: PartialFunction[LogicalPlan, Double] = PartialFunction.empty
-    var cost: PartialFunction[LogicalPlan, Double] = PartialFunction.empty
+    var cost: PartialFunction[LogicalPlan, Cost] = PartialFunction.empty
     var selectivity: PartialFunction[Expression, Double] = PartialFunction.empty
     var labelCardinality: Map[String, Double] = Map.empty
     var statistics = null
@@ -132,6 +132,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def costModel(cardinality: Metrics.CardinalityModel) =
       cost.orElse(parent.costModel(cardinality))
+
     def cardinalityModel(statistics: GraphStatistics, selectivity: Metrics.SelectivityModel, semanticTable: SemanticTable) = {
       val labelIdCardinality = labelCardinality.map {
         case (name: String, cardinality: Double) =>
