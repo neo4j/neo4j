@@ -21,34 +21,35 @@ package org.neo4j.cypher.internal.compiler.v2_1
 
 import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, Multiplier}
 
 
 case object HardcodedGraphStatistics extends HardcodedGraphStatisticsValues
 
 class HardcodedGraphStatisticsValues extends GraphStatistics {
-  val NODES_CARDINALITY: Double = 10000.0
-  val NODES_WITH_LABEL_CARDINALITY: Double = 2000.0
-  val NODES_WITH_LABEL_SELECTIVITY: Double = 0.2
-  val RELATIONSHIPS_WITH_TYPE_SELECTIVITY: Double = 0.2
-  val DEGREE_BY_RELATIONSHIP_TYPE_AND_DIRECTION: Double = 5.0
-  val DEGREE_BY_LABEL_RELATIONSHIP_TYPE_AND_DIRECTION: Double = 5.0
+  val NODES_CARDINALITY = Cardinality(10000)
+  val NODES_WITH_LABEL_SELECTIVITY = Multiplier(0.2)
+  val NODES_WITH_LABEL_CARDINALITY = NODES_CARDINALITY * NODES_WITH_LABEL_SELECTIVITY
+  val RELATIONSHIPS_WITH_TYPE_SELECTIVITY = Multiplier(0.2)
+  val DEGREE_BY_RELATIONSHIP_TYPE_AND_DIRECTION = Multiplier(5)
+  val DEGREE_BY_LABEL_RELATIONSHIP_TYPE_AND_DIRECTION = Multiplier(5)
 
   def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId,
-                                                direction: Direction): Double =
+                                                direction: Direction): Multiplier =
     DEGREE_BY_LABEL_RELATIONSHIP_TYPE_AND_DIRECTION
 
-  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Double =
+  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Multiplier =
     DEGREE_BY_RELATIONSHIP_TYPE_AND_DIRECTION
 
-  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Double =
+  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Multiplier =
     RELATIONSHIPS_WITH_TYPE_SELECTIVITY
 
-  def nodesWithLabelSelectivity(labelId: LabelId): Double =
+  def nodesWithLabelSelectivity(labelId: LabelId): Multiplier =
     NODES_WITH_LABEL_SELECTIVITY
 
-  def nodesWithLabelCardinality(labelId: LabelId): Double =
+  def nodesWithLabelCardinality(labelId: LabelId): Cardinality =
     NODES_WITH_LABEL_CARDINALITY
 
-  def nodesCardinality: Double =
+  def nodesCardinality: Cardinality =
     NODES_CARDINALITY
 }

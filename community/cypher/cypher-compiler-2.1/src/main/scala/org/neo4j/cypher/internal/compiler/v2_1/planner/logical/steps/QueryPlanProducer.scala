@@ -229,7 +229,6 @@ object QueryPlanProducer {
       )
     )
 
-
   def planQueryArgumentRow(queryGraph: QueryGraph): QueryPlan = {
     val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
     val patternRels = queryGraph.patternRelationships.filter( rel => queryGraph.argumentIds.contains(rel.name))
