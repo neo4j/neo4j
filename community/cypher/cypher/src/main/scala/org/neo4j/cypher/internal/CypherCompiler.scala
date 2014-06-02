@@ -52,7 +52,7 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private val queryCacheSize: Int = getQueryCacheSize
 
-  private val queryCache2_0 = new LRUCache[String, Object](queryCacheSize)
+  private val queryCache2_0 = new LRUCache[Object, Object](queryCacheSize)
   private val queryCache1_9 = new LRUCache[String, Object](queryCacheSize)
 
   val ronjaCompiler2_1 = CypherCompilerFactory2_1.ronjaCompiler(graph, queryCacheSize, kernelMonitors)

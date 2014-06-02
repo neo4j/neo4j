@@ -20,146 +20,70 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.{SelectivityModel, CardinalityModel}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.mockito.stubbing.Answer
-import org.mockito.invocation.InvocationOnMock
-import org.mockito.Matchers._
-import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
 
-class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport  {
+class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans for simple cartesian product") {
-    implicit val planContext = newMockedPlanContext
-    implicit val planner = newPlanner(newMockedMetricsFactory)
-    produceLogicalPlan("MATCH n, m RETURN n, m") should equal(
-      CartesianProduct(AllNodesScan(IdName("m")), AllNodesScan(IdName("n")))
-    )
-  }
-
-  test("should build plans for simple cartesian product with a predicate on the elements") {
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan     => 1000
-      case _: NodeByLabelScan  => 100
-      case _: Selection        => 500
-      case _                   => Double.MaxValue
-    })
-
-    implicit val planContext = newMockedPlanContext
-    implicit val planner = newPlanner(factory)
-    when(planContext.getOptLabelId("Label")).thenReturn(None)
-    when(planContext.getOptPropertyKeyId("prop")).thenReturn(None)
-
-    produceLogicalPlan("MATCH n, m WHERE n.prop = 12 AND m:Label RETURN n, m") should equal(
+    planFor("MATCH n, m RETURN n, m").plan should equal(
       CartesianProduct(
-        Selection(
-          Seq(Equals(Property(Identifier("n")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("12")_)_),
-          AllNodesScan("n")
-        ),
-        NodeByLabelScan("m", Left("Label"))
-      )
+        AllNodesScan(IdName("m")),
+        AllNodesScan(IdName("n")))
     )
   }
 
-  test("should build plans with cartesian joins such that cross product cardinality is minimized") {
-    val labelIdA = Right(LabelId(30))
-    val labelIdB = Right(LabelId(10))
-    val labelIdC = Right(LabelId(20))
-
-    val factory = newMockedMetricsFactory
-    def f(plan: LogicalPlan): Double = plan match {
-      case _: AllNodesScan                             => 1000
-      case NodeByLabelScan(_, Right(LabelId(labelId))) => labelId
-      case CartesianProduct(left, right)               => f(left) * f(right)
-      case _                                           => Double.MaxValue
-    }
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn(f _)
-
-    implicit val planContext = newMockedPlanContext
-    implicit val planner = newPlanner(factory)
-
-    when(planContext.getOptLabelId("A")).thenReturn(Some(30))
-    when(planContext.getOptLabelId("B")).thenReturn(Some(10))
-    when(planContext.getOptLabelId("C")).thenReturn(Some(20))
-
-    produceLogicalPlan("MATCH a, b, c WHERE a:A AND b:B AND c:C RETURN a, b, c") should equal(
-      CartesianProduct(
-        CartesianProduct(
-          NodeByLabelScan("b", labelIdB),
-          NodeByLabelScan("c", labelIdC)
-        ),
-        NodeByLabelScan("a", labelIdA)
-      )
-    )
-  }
-
-  ignore("should build plans with cartesian joins such that cross product cardinality is minimized according to selectivity") {
-    val labelIdA = Right(LabelId(30))
-    val labelIdB = Right(LabelId(20))
-    val labelIdC = Right(LabelId(10))
-
-    val factory = newMockedMetricsFactory
-    when(factory.newSelectivityEstimator(any(), any())).thenReturn((expression: Expression) => expression match {
-      case Equals(Property(Identifier(lhs), _), Property(Identifier(rhs), _)) =>
-        (lhs, rhs) match {
-          case ("a", "b") => /* 60 */ 0.5 // => 30
-          case ("b", "c") => /* 20 */ 1.0 // => 20
-          case ("a", "c") => /* 30 */ 0.5 // => 15
-        }
-    })
-
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenAnswer(new Answer[CardinalityModel] {
-      def answer(invocation: InvocationOnMock): CardinalityModel = {
-        val selectivity = invocation.getArguments()(1).asInstanceOf[SelectivityModel]
-        new CardinalityModel {
-          def apply(plan: LogicalPlan): Double = plan match {
-            case _: AllNodesScan                             => 1000
-            case NodeByLabelScan(_, Right(LabelId(labelId))) => labelId
-            case CartesianProduct(left, right)               => apply(left) * apply(right)
-            case Selection(predicates, left)                 => predicates.foldLeft(1.0)(_ * selectivity(_)) * apply(left)
-            case _                                           => Double.MaxValue
-          }
-        }
+  test("should build plans so the cheaper plan is on the left") {
+    (new given {
+      cost = {
+        case _: Selection => 1000
+        case _: NodeByLabelScan => 20
       }
-    })
+      cardinality = {
+        case _: Selection => 10
+        case _: NodeByLabelScan => 10
+      }
+    } planFor "MATCH n, m WHERE n.prop = 12 AND m:Label RETURN n, m").plan should beLike {
+      case CartesianProduct(_: Selection, _: NodeByLabelScan) => ()
+    }
+  }
 
-    implicit val planContext = newMockedPlanContext
-    implicit val planner = newPlanner(factory)
+  test("should combine three plans so the cost is minimized") {
+    implicit val plan = new given {
+      labelCardinality = Map(
+        "A" -> 30,
+        "B" -> 20,
+        "C" -> 10
+      )
+    } planFor "MATCH a, b, c WHERE a:A AND b:B AND c:C RETURN a, b, c"
 
-    when(planContext.getOptLabelId("A")).thenReturn(Some(30))
-    when(planContext.getOptLabelId("B")).thenReturn(Some(20))
-    when(planContext.getOptLabelId("C")).thenReturn(Some(10))
-    when(planContext.getOptPropertyKeyId("x")).thenReturn(None)
-
-    produceLogicalPlan("MATCH a, b, c WHERE a:A AND b:B AND c:C AND a.x = b.x AND b.x = c.x AND a.x = c.x RETURN a, b, c") should equal(
-      Selection(
-        predicates = Seq(
-          Equals(
-            Property(Identifier("a")_, PropertyKeyName("x")_)_,
-            Property(Identifier("b")_, PropertyKeyName("x")_)_
-          )_,
-          Equals(
-            Property(Identifier("b")_, PropertyKeyName("x")_)_,
-            Property(Identifier("c")_, PropertyKeyName("x")_)_
-          )_
-        ),
-        left = CartesianProduct(
-          NodeByLabelScan("b", labelIdB),
-          Selection(
-            predicates = Seq(Equals(
-              Property(Identifier("a")_, PropertyKeyName("x")_)_,
-              Property(Identifier("c")_, PropertyKeyName("x")_)_
-            )_),
-            left = CartesianProduct(
-              NodeByLabelScan("c", labelIdC),
-              NodeByLabelScan("a", labelIdA)
-            )
-          )
+    plan.plan should equal(
+      CartesianProduct(
+        NodeByLabelScan("a", Right(labelId("A"))),
+        CartesianProduct(
+          NodeByLabelScan("c", Right(labelId("C"))),
+          NodeByLabelScan("b", Right(labelId("B")))
         )
+      )
+    )
+  }
+
+  test("should combine two plans so the cost is minimized") {
+    implicit val plan = new given {
+      labelCardinality = Map(
+        "A" -> 30,
+        "B" -> 20
+      )
+    } planFor "MATCH a, b WHERE a:A AND b:B RETURN a, b"
+
+    // A x B = 30 * 2 + 30 * (20 * 2) => 1260
+    // B x A = 20 * 2 + 20 * (30 * 2) => 1240
+
+    plan.plan should equal(
+      CartesianProduct(
+        NodeByLabelScan("b", Right(labelId("B"))),
+        NodeByLabelScan("a", Right(labelId("A")))
       )
     )
   }
