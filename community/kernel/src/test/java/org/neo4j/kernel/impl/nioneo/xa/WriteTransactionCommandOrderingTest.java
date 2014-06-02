@@ -19,35 +19,37 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.util.ArrayList;
-import java.util.HashSet;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import java.io.IOException;
+import java.util.Collection;
+import java.util.Collections;
+import java.util.LinkedList;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
-
-import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
+import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
+import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
-
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.xa.RecordChanges.RecordChange;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 
 public class WriteTransactionCommandOrderingTest
 {
@@ -68,60 +70,89 @@ public class WriteTransactionCommandOrderingTest
     public void shouldExecuteCommandsInTheSameOrderRegardlessOfItBeingRecoveredOrNot() throws Exception
     {
         // Given
-        List<String> nonRecoveredRecording = new ArrayList<>();
-        NeoStoreTransaction nonRecoveredTx = newWriteTransaction();
-        injectAllPossibleCommands( nonRecoveredTx );
-
-        List<String> recoveredRecording = new ArrayList<>();
-        NeoStoreTransaction recoveredTx = newWriteTransaction();
-        recoveredTx.setRecovered();
-        injectAllPossibleCommands( recoveredTx );
+        TransactionRecordState tx = injectAllPossibleCommands();
 
         // When
-        currentRecording.set( nonRecoveredRecording );
-        nonRecoveredTx.doPrepare();
-        nonRecoveredTx.doCommit();
-
-        currentRecording.set( recoveredRecording );
-        recoveredTx.doPrepare();
-        recoveredTx.doCommit();
-
+        PhysicalTransactionRepresentation commands = tx.doPrepare();
+        
         // Then
-        assertThat(nonRecoveredRecording, equalTo(recoveredRecording)); // ordering is the same in both cases
-        assertThat(new HashSet<>( recoveredRecording ).size(), is( 9 )); // we have included all possible commands
+        commands.execute( new OrderVerifyingCommandVisitor() );
     }
 
-    private void injectAllPossibleCommands( NeoStoreTransaction tx )
+    private TransactionRecordState injectAllPossibleCommands()
     {
-        Command.NodeCommand updatedNode = new Command.NodeCommand();
-        updatedNode.init( inUseNode(), inUseNode() );
-        tx.injectCommand( updatedNode );
-        Command.NodeCommand deletedNode = new Command.NodeCommand();
-        deletedNode.init( inUseNode(), missingNode() );
-        tx.injectCommand( deletedNode );
-        Command.NodeCommand createdNode = new Command.NodeCommand();
-        createdNode.init( missingNode(), createdNode() );
-        tx.injectCommand( createdNode );
+        NeoStoreTransactionContext context = mock( NeoStoreTransactionContext.class );
 
-        Command.PropertyCommand updatedProp = new Command.PropertyCommand();
-        updatedProp.init( inUseProperty(), inUseProperty() );
-        tx.injectCommand( updatedProp );
-        Command.PropertyCommand deletedProp = new Command.PropertyCommand();
-        deletedProp.init( inUseProperty(), missingProperty() );
-        tx.injectCommand( deletedProp );
-        Command.PropertyCommand createdProp = new Command.PropertyCommand();
-        createdProp.init( missingProperty(), createdProperty() );
-        tx.injectCommand( createdProp );
+        RecordChanges<Integer,LabelTokenRecord,Void> labelTokenChanges = mock( RecordChanges.class);
+        RecordChanges<Integer,RelationshipTypeTokenRecord,Void> relationshipTypeTokenChanges = mock( RecordChanges.class);
+        RecordChanges<Integer,PropertyKeyTokenRecord,Void> propertyKeyTokenChanges = mock( RecordChanges.class);
+        RecordChanges<Long,NodeRecord,Void> nodeRecordChanges = mock( RecordChanges.class);
+        RecordChanges<Long,RelationshipRecord,Void> relationshipRecordChanges = mock( RecordChanges.class);
+        RecordChanges<Long,PropertyRecord,PrimitiveRecord> propertyRecordChanges = mock( RecordChanges.class);
+        RecordChanges<Long,RelationshipGroupRecord,Integer> relationshipGroupChanges = mock( RecordChanges.class);
+        RecordChanges<Long, Collection<DynamicRecord>, SchemaRule> schemaRuleChanges = mock( RecordChanges.class);
 
-        Command.RelationshipCommand updatedRel = new Command.RelationshipCommand();
-        updatedRel.init( inUseRelationship() );
-        tx.injectCommand( updatedRel );
-        Command.RelationshipCommand deletedRel =new Command.RelationshipCommand();
-        deletedRel.init( missingRelationship() );
-        tx.injectCommand( deletedRel );
-        Command.RelationshipCommand createdRel = new Command.RelationshipCommand();
-        createdRel.init( createdRelationship() );
-        tx.injectCommand( createdRel );
+        when( context.getLabelTokenRecords() ).thenReturn( labelTokenChanges );
+        when( context.getRelationshipTypeTokenRecords() ).thenReturn( relationshipTypeTokenChanges );
+        when( context.getPropertyKeyTokenRecords() ).thenReturn( propertyKeyTokenChanges );
+        when( context.getNodeRecords() ).thenReturn( nodeRecordChanges );
+        when( context.getRelRecords() ).thenReturn( relationshipRecordChanges );
+        when( context.getPropertyRecords() ).thenReturn( propertyRecordChanges );
+        when( context.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
+        when( context.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
+        
+        List<RecordChange<Long, NodeRecord, Void>> nodeChanges = new LinkedList<>();
+        
+        RecordChange<Long, NodeRecord, Void> deletedNode = mock( RecordChange.class );
+        when( deletedNode.getBefore() ).thenReturn( inUseNode() );
+        when( deletedNode.forReadingLinkage() ).thenReturn( missingNode() );
+        nodeChanges.add( deletedNode );
+        
+        RecordChange<Long, NodeRecord, Void> createdNode = mock( RecordChange.class );
+        when( createdNode.getBefore() ).thenReturn( missingNode() );
+        when( createdNode.forReadingLinkage() ).thenReturn( createdNode() );
+        nodeChanges.add( createdNode );
+        
+        RecordChange<Long, NodeRecord, Void> updatedNode = mock( RecordChange.class );
+        when( updatedNode.getBefore() ).thenReturn( inUseNode() );
+        when( updatedNode.forReadingLinkage() ).thenReturn( inUseNode() );
+        nodeChanges.add( updatedNode );
+
+        when( nodeRecordChanges.changes() ).thenReturn( nodeChanges );
+        
+        when( labelTokenChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Integer,LabelTokenRecord,Void>>emptyList() );
+        when( relationshipTypeTokenChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Integer,RelationshipTypeTokenRecord,Void>>emptyList() );
+        when( propertyKeyTokenChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Integer,PropertyKeyTokenRecord,Void>>emptyList() );
+        when( relationshipRecordChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Long,RelationshipRecord,Void>>emptyList() );
+        when( propertyRecordChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Long,PropertyRecord,PrimitiveRecord>>emptyList() );
+        when( relationshipGroupChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Long,RelationshipGroupRecord,Integer>>emptyList() );
+        when( schemaRuleChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Long,Collection<DynamicRecord>,SchemaRule>>emptyList() );
+        
+        
+        
+        
+        return new TransactionRecordState( 1, mock( NeoStore.class), mock( IntegrityValidator.class), context );
+        
+//        
+//        Command.PropertyCommand updatedProp = new Command.PropertyCommand();
+//        updatedProp.init( inUseProperty(), inUseProperty() );
+//        tx.injectCommand( updatedProp );
+//        Command.PropertyCommand deletedProp = new Command.PropertyCommand();
+//        deletedProp.init( inUseProperty(), missingProperty() );
+//        tx.injectCommand( deletedProp );
+//        Command.PropertyCommand createdProp = new Command.PropertyCommand();
+//        createdProp.init( missingProperty(), createdProperty() );
+//        tx.injectCommand( createdProp );
+//
+//        Command.RelationshipCommand updatedRel = new Command.RelationshipCommand();
+//        updatedRel.init( inUseRelationship() );
+//        tx.injectCommand( updatedRel );
+//        Command.RelationshipCommand deletedRel =new Command.RelationshipCommand();
+//        deletedRel.init( missingRelationship() );
+//        tx.injectCommand( deletedRel );
+//        Command.RelationshipCommand createdRel = new Command.RelationshipCommand();
+//        createdRel.init( createdRelationship() );
+//        tx.injectCommand( createdRel );
     }
 
     private static RelationshipRecord missingRelationship()
@@ -182,20 +213,6 @@ public class WriteTransactionCommandOrderingTest
         NodeRecord record = new NodeRecord( 1, false, -1, -1 );
         record.setInUse( true );
         return record;
-    }
-
-    private NeoStoreTransaction newWriteTransaction() {
-        NeoStoreTransactionContext context = new NeoStoreTransactionContext( mock( NeoStoreTransactionContextSupplier.class ),
-                store );
-        context.bind( TransactionState.NO_STATE );
-        NeoStoreTransaction tx = new NeoStoreTransaction( 0l, mock( XaLogicalLog.class ),
-                store, mock( CacheAccessBackDoor.class ), mock( IndexingService.class ),
-                NeoStoreTransactionTest.NO_LABEL_SCAN_STORE, mock( IntegrityValidator.class ),
-                mock( KernelTransactionImplementation.class ), mock( LockService.class, RETURNS_MOCKS ),
-                context
-        );
-        tx.setCommitTxId( store.getLastCommittedTx() + 1 );
-        return tx;
     }
 
     private static String commandActionToken( AbstractBaseRecord record )
@@ -300,5 +317,49 @@ public class WriteTransactionCommandOrderingTest
         @Override
         protected void loadStorage() {
         }
+    }
+
+    private static class OrderVerifyingCommandVisitor extends NeoCommandVisitor.Adapter
+    {
+        private boolean nodeVisited;
+        private boolean relationshipVisited;
+        private boolean propertyVisited;
+
+        // Commands should appear in this order
+        private boolean created;
+        private boolean updated;
+        private boolean deleted;
+
+        @Override
+        public boolean visitNodeCommand( NodeCommand command ) throws IOException
+        {
+            if ( !nodeVisited )
+            {
+                created = false;
+                updated = false;
+                deleted = false;
+            }
+            nodeVisited = true;
+            assertFalse( relationshipVisited );
+            assertFalse( propertyVisited );
+            
+            switch( command.getMode() )
+            {
+                case CREATE:
+                    created = true;
+                    assertFalse( updated );
+                    assertFalse( deleted );
+                    break;
+                case UPDATE:
+                    updated = true;
+                    assertFalse( deleted );
+                    break;
+                case DELETE:
+                    deleted = true;
+                    break;
+            }
+            return true;
+        }
+        
     }
 }
