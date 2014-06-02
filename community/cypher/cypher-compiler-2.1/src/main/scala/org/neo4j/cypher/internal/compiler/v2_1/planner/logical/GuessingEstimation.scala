@@ -27,11 +27,11 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 
 object GuessingEstimation {
-  val LABEL_NOT_FOUND_SELECTIVITY: Double = 0.0
-  val PREDICATE_SELECTIVITY: Double = 0.2
-  val INDEX_SEEK_SELECTIVITY: Double = 0.08
-  val UNIQUE_INDEX_SEEK_SELECTIVITY: Double = 0.05
-  val DEFAULT_EXPAND_RELATIONSHIP_DEGREE: Double = 2.0
+  val LABEL_NOT_FOUND_SELECTIVITY = Multiplier(0.0)
+  val PREDICATE_SELECTIVITY = Multiplier(0.2)
+  val INDEX_SEEK_SELECTIVITY = Multiplier(0.08)
+  val UNIQUE_INDEX_SEEK_SELECTIVITY = Multiplier(0.05)
+  val DEFAULT_EXPAND_RELATIONSHIP_DEGREE = Multiplier(2.0)
 }
 
 class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
@@ -41,22 +41,22 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
 
   def apply(plan: LogicalPlan): Cardinality = plan match {
     case AllNodesScan(_) =>
-      Cardinality(statistics.nodesCardinality)
+      statistics.nodesCardinality
 
     case NodeByLabelScan(_, Left(_)) =>
-      Cardinality(statistics.nodesCardinality * LABEL_NOT_FOUND_SELECTIVITY)
+      statistics.nodesCardinality * LABEL_NOT_FOUND_SELECTIVITY
 
     case NodeByLabelScan(_, Right(labelId)) =>
-      Cardinality(statistics.nodesWithLabelCardinality(labelId))
+      statistics.nodesWithLabelCardinality(labelId)
 
     case NodeByIdSeek(_, nodeIds) =>
       Cardinality(nodeIds.size)
 
     case NodeIndexSeek(_, _, _, _) =>
-      Cardinality(statistics.nodesCardinality * INDEX_SEEK_SELECTIVITY)
+      statistics.nodesCardinality * INDEX_SEEK_SELECTIVITY
 
     case NodeIndexUniqueSeek(_, _, _, _) =>
-      Cardinality(statistics.nodesCardinality * UNIQUE_INDEX_SEEK_SELECTIVITY)
+      statistics.nodesCardinality * UNIQUE_INDEX_SEEK_SELECTIVITY
 
     case NodeHashJoin(_, left, right) =>
       Cardinality(math.min(cardinality(left).amount, cardinality(right).amount))
@@ -65,12 +65,12 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       Cardinality(math.min(cardinality(left).amount, cardinality(right).amount))
 
     case expand @ Expand(left, _, dir, types, _, _, length) =>
-      val degree = degreeByRelationshipTypesAndDirection(types, dir)
-      cardinality(left) * math.pow(degree, averagePathLength(length))
+      val degree = degreeByRelationshipTypesAndDirection(types, dir).coefficient
+      cardinality(left) * Multiplier(math.pow(degree, averagePathLength(length)))
 
     case expand @ OptionalExpand(left, _, dir, types, _, _, length, predicates) =>
-      val degree = degreeByRelationshipTypesAndDirection(types, dir)
-      cardinality(left) * math.pow(degree, averagePathLength(length)) * predicateSelectivity(predicates)
+      val degree = degreeByRelationshipTypesAndDirection(types, dir).coefficient
+      cardinality(left) * Multiplier(math.pow(degree, averagePathLength(length))) * predicateSelectivity(predicates)
 
     case Selection(predicates, left) =>
       cardinality(left) * predicateSelectivity(predicates)
@@ -166,16 +166,16 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
     case VarPatternLength(_, None)        => 42
   }
 
-  private def degreeByRelationshipTypesAndDirection(types: Seq[ast.RelTypeName], dir: Direction) =
+  private def degreeByRelationshipTypesAndDirection(types: Seq[ast.RelTypeName], dir: Direction): Multiplier =
     if (types.size <= 0)
       DEFAULT_EXPAND_RELATIONSHIP_DEGREE
     else
-      types.foldLeft(0.0)((sum, t) => sum + degreeByRelationshipTypeAndDirection(t.id, dir)) / types.size
+      types.foldLeft(Multiplier(0))((sum, t) => sum + degreeByRelationshipTypeAndDirection(t.id, dir))
 
-  private def predicateSelectivity(predicates: Seq[ast.Expression]): Double =
-    predicates.map(selectivity).foldLeft(1.0)(_ * _)
+  private def predicateSelectivity(predicates: Seq[ast.Expression]): Multiplier =
+    predicates.map(selectivity).foldLeft(Multiplier(1))(_ * _)
 
-  private def degreeByRelationshipTypeAndDirection(optId: Option[RelTypeId], direction: Direction) = optId match {
+  private def degreeByRelationshipTypeAndDirection(optId: Option[RelTypeId], direction: Direction): Multiplier = optId match {
     case Some(id) => statistics.degreeByRelationshipTypeAndDirection(id, direction)
     case None     => DEFAULT_EXPAND_RELATIONSHIP_DEGREE
   }
@@ -188,7 +188,7 @@ class StatisticsBasedSelectivityModel(statistics: GraphStatistics)
 
   import GuessingEstimation._
 
-  def apply(predicate: ast.Expression): Double = predicate match {
+  def apply(predicate: ast.Expression): Multiplier = predicate match {
     case ast.HasLabels(_, Seq(label)) =>
       if (label.id.isDefined)
         statistics.nodesWithLabelSelectivity(label.id.get)
@@ -196,7 +196,7 @@ class StatisticsBasedSelectivityModel(statistics: GraphStatistics)
         LABEL_NOT_FOUND_SELECTIVITY
 
     case ast.Not(inner) =>
-      1.0 - apply(inner)
+      Multiplier(1) - apply(inner)
 
     case _  =>
       PREDICATE_SELECTIVITY

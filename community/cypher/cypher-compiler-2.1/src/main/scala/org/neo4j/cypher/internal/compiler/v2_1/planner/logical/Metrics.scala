@@ -37,7 +37,7 @@ object Metrics {
 
   // This metric estimates the selectivity of an expression
   // (e.g. by algebraic analysis or using statistics)
-  type SelectivityModel = Expression => Double
+  type SelectivityModel = Expression => Multiplier
 }
 
 case class Metrics(cost: CostModel, cardinality: CardinalityModel, selectivity: SelectivityModel)
@@ -51,13 +51,19 @@ case class Cost(gummyBears: Double) extends Ordered[Cost] {
 
 case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def compare(that: Cardinality) = amount.compare(that.amount)
-  def *(that: Double) = Cardinality(amount * that)
+  def *(that: Multiplier) = Cardinality(amount * that.coefficient)
   def *(that: Cardinality) = Cardinality(amount * that.amount)
   def *(that: CostPerRow) = Cost(amount * that.cost)
   def *(that: Cost) = Cost(amount * that.gummyBears)
 }
 
 case class CostPerRow(cost: Double)
+
+case class Multiplier(coefficient: Double) {
+  def +(other: Multiplier): Multiplier = Multiplier(other.coefficient + coefficient)
+  def -(other: Multiplier): Multiplier = Multiplier(other.coefficient - coefficient)
+  def *(other: Multiplier): Multiplier = Multiplier(other.coefficient * coefficient)
+}
 
 trait MetricsFactory {
   def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable): SelectivityModel

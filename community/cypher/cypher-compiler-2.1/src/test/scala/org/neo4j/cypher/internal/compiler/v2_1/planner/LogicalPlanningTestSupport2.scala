@@ -70,7 +70,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val realConfig = new RealLogicalPlanningConfiguration
 
   trait LogicalPlanningConfiguration {
-    def selectivityModel(statistics: GraphStatistics, semanticTable: SemanticTable): PartialFunction[Expression, Double]
+    def selectivityModel(statistics: GraphStatistics, semanticTable: SemanticTable): PartialFunction[Expression, Multiplier]
     def cardinalityModel(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): PartialFunction[LogicalPlan, Cardinality]
     def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost]
     def graphStatistics: GraphStatistics
@@ -119,7 +119,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     var knownLabels: Set[String] = Set.empty
     var cardinality: PartialFunction[LogicalPlan, Cardinality] = PartialFunction.empty
     var cost: PartialFunction[LogicalPlan, Cost] = PartialFunction.empty
-    var selectivity: PartialFunction[Expression, Double] = PartialFunction.empty
+    var selectivity: PartialFunction[Expression, Multiplier] = PartialFunction.empty
     var labelCardinality: Map[String, Cardinality] = Map.empty
     var statistics = null
 
