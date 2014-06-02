@@ -17,18 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.perty
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_1.perty.pformat
-
-case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
-
-  def availableSymbols: Set[IdName] = plan.availableSymbols
-
-  override def toString = pformat(this)
+trait HasDocFormatter {
+  def docFormatter: DocFormatter = DocFormatters.defaultFormatter
 }
 
+trait HasLineDocFormatter extends HasDocFormatter {
+  override def docFormatter: DocFormatter = DocFormatters.defaultLineFormatter
+}
 
-
+trait HasPageDocFormatter extends HasDocFormatter {
+  override def docFormatter: DocFormatter = DocFormatters.defaultPageFormatter
+}
 

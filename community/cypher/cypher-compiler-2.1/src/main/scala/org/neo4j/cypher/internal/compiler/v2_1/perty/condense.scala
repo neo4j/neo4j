@@ -17,18 +17,18 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.perty
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_1.perty.pformat
+import scala.annotation.tailrec
 
-case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
+object condense extends (Seq[PrintCommand] => Seq[PrintCommand]) {
+  def apply(commands: Seq[PrintCommand]) = apply(Seq.newBuilder, commands).result()
 
-  def availableSymbols: Set[IdName] = plan.availableSymbols
-
-  override def toString = pformat(this)
+  @tailrec
+  private def apply(builder: PrintingConverter[Seq[PrintCommand]],
+                    commands: Seq[PrintCommand]): PrintingConverter[Seq[PrintCommand]]= commands match {
+    case PrintText(lhs) +: PrintText(rhs) +: tail => apply(builder, PrintText(lhs ++ rhs) +: tail)
+    case head +: tail                             => apply(builder += head, tail)
+    case _                                        => builder
+  }
 }
-
-
-
-

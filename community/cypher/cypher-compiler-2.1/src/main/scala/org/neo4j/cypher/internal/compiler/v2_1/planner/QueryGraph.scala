@@ -22,9 +22,10 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.{GeneratedPretty, Pretty, pformat}
+import org.neo4j.cypher.internal.compiler.v2_1.perty.{PrettyToString, GeneratedPretty, Pretty, pformat}
+import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{internalDocBuilder, queryGraphDocBuilder}
 
-trait QueryGraph extends GeneratedPretty {
+trait QueryGraph {
   def patternRelationships: Set[PatternRelationship]
   def patternNodes: Set[IdName]
   def argumentIds: Set[IdName]
@@ -101,7 +102,8 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
                           patternNodes: Set[IdName] = Set.empty,
                           argumentIds: Set[IdName] = Set.empty,
                           selections: Selections = Selections(),
-                          optionalMatches: Seq[QueryGraph] = Seq.empty) extends QueryGraph  {
+                          optionalMatches: Seq[QueryGraph] = Seq.empty)
+  extends QueryGraph with internalDocBuilder.AsPrettyToString {
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
     val argumentIds = coveredIds intersect optionalMatch.coveredIds
@@ -171,7 +173,7 @@ object SelectionPredicates {
         exp match {
           case exp: PatternExpression        => acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
           case exp@Not(_: PatternExpression) => acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
-          case exp                           => acc ++ SelectionPredicates.idNames(exp)
+          case _                             => acc ++ SelectionPredicates.idNames(exp)
         }
       }
       Predicate(newDeps, ors)
