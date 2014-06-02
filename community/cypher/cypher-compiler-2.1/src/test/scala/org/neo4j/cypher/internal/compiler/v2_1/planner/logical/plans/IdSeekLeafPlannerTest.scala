@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.idSeekLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.RelTypeId
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, Candidates}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 import org.mockito.Matchers._
@@ -50,8 +50,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: NodeByIdSeek => 1
-      case _               => Double.MaxValue
+      case _: NodeByIdSeek => Cardinality(1)
+      case _               => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
@@ -85,8 +85,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: NodeByIdSeek => 1
-      case _               => Double.MaxValue
+      case _: NodeByIdSeek => Cardinality(1)
+      case _               => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
@@ -124,8 +124,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: DirectedRelationshipByIdSeek => 1
-      case _                               => Double.MaxValue
+      case _: DirectedRelationshipByIdSeek => Cardinality(1)
+      case _                               => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
@@ -159,8 +159,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: UndirectedRelationshipByIdSeek => 2
-      case _                                 => Double.MaxValue
+      case _: UndirectedRelationshipByIdSeek => Cardinality(2)
+      case _                                 => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
@@ -197,8 +197,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: DirectedRelationshipByIdSeek => 1
-      case _                               => Double.MaxValue
+      case _: DirectedRelationshipByIdSeek => Cardinality(1)
+      case _                               => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
@@ -235,8 +235,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: UndirectedRelationshipByIdSeek => 2
-      case _                                 => Double.MaxValue
+      case _: UndirectedRelationshipByIdSeek => Cardinality(2)
+      case _                                 => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
@@ -279,8 +279,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: UndirectedRelationshipByIdSeek => 2
-      case _                                 => Double.MaxValue
+      case _: UndirectedRelationshipByIdSeek => Cardinality(2)
+      case _                                 => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
@@ -327,8 +327,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: UndirectedRelationshipByIdSeek => 2
-      case _                                 => Double.MaxValue
+      case _: UndirectedRelationshipByIdSeek => Cardinality(2)
+      case _                                 => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,

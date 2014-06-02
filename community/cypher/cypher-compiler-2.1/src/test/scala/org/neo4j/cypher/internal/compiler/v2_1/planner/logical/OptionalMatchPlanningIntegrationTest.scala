@@ -29,7 +29,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
 
   test("should build plans containing joins") {
     (new given {
-      cardinality = {
+      cardinality = mapCardinality {
         case _: AllNodesScan => 2000000
         case _: NodeByLabelScan => 20
         case _: Expand => 10

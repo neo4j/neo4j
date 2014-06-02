@@ -40,36 +40,36 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       Cost(0)
 
     case _: AllNodesScan =>
-      Cost(cardinality(plan))
+      Cost(cardinality(plan).amount)
 
     case _: NodeIndexSeek =>
-      Cost(cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW)
+      Cost(cardinality(plan).amount * INDEX_OVERHEAD_COST_PER_ROW)
 
     case _: NodeIndexUniqueSeek =>
-      Cost(cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW)
+      Cost(cardinality(plan).amount * INDEX_OVERHEAD_COST_PER_ROW)
 
     case _: NodeByLabelScan =>
-      Cost(cardinality(plan) * LABEL_INDEX_OVERHEAD_COST_PER_ROW)
+      Cost(cardinality(plan).amount * LABEL_INDEX_OVERHEAD_COST_PER_ROW)
 
     case _: NodeByIdSeek =>
-      Cost(cardinality(plan))
+      Cost(cardinality(plan).amount)
 
     case _: DirectedRelationshipByIdSeek =>
-      Cost(cardinality(plan))
+      Cost(cardinality(plan).amount)
 
     case _: UndirectedRelationshipByIdSeek =>
-      Cost(cardinality(plan))
+      Cost(cardinality(plan).amount)
 
     case projection: Projection =>
       Cost(cost(projection.left) +
-        cardinality(projection.left) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * projection.numExpressions)
+        cardinality(projection.left).amount * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * projection.numExpressions)
 
     case selection: Selection =>
       Cost(cost(selection.left) +
-        cardinality(selection.left) * EXPRESSION_SELECTION_OVERHEAD_PER_ROW * selection.numPredicates)
+        cardinality(selection.left).amount * EXPRESSION_SELECTION_OVERHEAD_PER_ROW * selection.numPredicates)
 
     case cartesian: CartesianProduct =>
-      Cost(cost(cartesian.left) + cardinality(cartesian.left) * cost(cartesian.right).gummyBears)
+      Cost(cost(cartesian.left) + cardinality(cartesian.left).amount * cost(cartesian.right).gummyBears)
 
     case applyOp: Apply =>
       Cost(applyCost(outer = applyOp.left, inner = applyOp.right))
@@ -99,10 +99,10 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       Cost(selectOrSemiApplyCost(outer = applyOp.left, inner = applyOp.right))
 
     case expand: Expand =>
-      Cost(cost(expand.left) + cardinality(expand))
+      Cost(cost(expand.left) + cardinality(expand).amount)
 
     case expand: OptionalExpand =>
-      Cost(cost(expand.left) + cardinality(expand) * expand.predicates.length * EXPRESSION_SELECTION_OVERHEAD_PER_ROW)
+      Cost(cost(expand.left) + cardinality(expand).amount * expand.predicates.length * EXPRESSION_SELECTION_OVERHEAD_PER_ROW)
 
     case optional: Optional =>
       cost(optional.inputPlan)
@@ -110,34 +110,33 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
     case join: NodeHashJoin =>
       Cost(cost(join.left) +
         cost(join.right) +
-        cardinality(join.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
-        cardinality(join.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW)
+        cardinality(join.left).amount * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
+        cardinality(join.right).amount * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW)
 
     case outerJoin: OuterHashJoin =>
       Cost(cost(outerJoin.left) +
         cost(outerJoin.right) +
-        cardinality(outerJoin.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
-        cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW)
+        cardinality(outerJoin.left).amount * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
+        cardinality(outerJoin.right).amount * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW)
 
     case s @ Sort(input, _) =>
-      Cost(cost(input) + cardinality(s) * SORT_COST_PER_ROW)
+      Cost(cost(input) + cardinality(s).amount * SORT_COST_PER_ROW)
 
     case s @ Skip(input, _) =>
-      Cost(cost(input) + cardinality(s))
+      Cost(cost(input) + cardinality(s).amount)
 
     case l @ Limit(input, _) =>
-      Cost(cost(input) + cardinality(l))
+      Cost(cost(input) + cardinality(l).amount)
 
     case s @ SortedLimit(input, _, _) =>
-      Cost(cost(input) + cardinality(s) * SORT_COST_PER_ROW)
-
+      Cost(cost(input) + cardinality(s).amount * SORT_COST_PER_ROW)
   }
 
-  private def selectOrSemiApplyCost(outer: LogicalPlan, inner: LogicalPlan) =
-    cost(outer) + cardinality(outer) * (cost(inner) + EXPRESSION_SELECTION_OVERHEAD_PER_ROW)
+  private def selectOrSemiApplyCost(outer: LogicalPlan, inner: LogicalPlan): Double =
+    cost(outer) + cardinality(outer).amount * (cost(inner) + EXPRESSION_SELECTION_OVERHEAD_PER_ROW)
 
-  private def applyCost(outer: LogicalPlan, inner: LogicalPlan) =
-    cost(outer) + cardinality(outer) * cost(inner).gummyBears
+  private def applyCost(outer: LogicalPlan, inner: LogicalPlan): Double =
+    cost(outer) + cardinality(outer).amount * cost(inner).gummyBears
 
   private def cost(plan: LogicalPlan) = apply(plan)
 }

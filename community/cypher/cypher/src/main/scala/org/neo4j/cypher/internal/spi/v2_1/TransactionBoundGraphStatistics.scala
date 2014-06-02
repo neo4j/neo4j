@@ -23,14 +23,15 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.heuristics.StatisticsData
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Cardinality
 
 class TransactionBoundGraphStatistics(statistics: StatisticsData) extends GraphStatistics {
 
   def nodesCardinality =
-    statistics.liveNodesRatio() * statistics.maxAddressableNodes()
+    Cardinality(statistics.liveNodesRatio() * statistics.maxAddressableNodes())
 
   def nodesWithLabelCardinality(labelId: LabelId) =
-     nodesWithLabelSelectivity(labelId) * nodesCardinality
+    Cardinality(nodesWithLabelSelectivity(labelId)) * nodesCardinality
 
   def nodesWithLabelSelectivity(labelId: LabelId): Double =
     statistics.labelDistribution( labelId.id )
