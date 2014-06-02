@@ -39,30 +39,30 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
                                       (implicit semanticTable: SemanticTable) extends Metrics.CardinalityModel {
   import GuessingEstimation._
 
-  def apply(plan: LogicalPlan): Double = plan match {
+  def apply(plan: LogicalPlan): Cardinality = plan match {
     case AllNodesScan(_) =>
-      statistics.nodesCardinality
+      Cardinality(statistics.nodesCardinality)
 
     case NodeByLabelScan(_, Left(_)) =>
-      statistics.nodesCardinality * LABEL_NOT_FOUND_SELECTIVITY
+      Cardinality(statistics.nodesCardinality * LABEL_NOT_FOUND_SELECTIVITY)
 
     case NodeByLabelScan(_, Right(labelId)) =>
-      statistics.nodesWithLabelCardinality(labelId)
+      Cardinality(statistics.nodesWithLabelCardinality(labelId))
 
     case NodeByIdSeek(_, nodeIds) =>
-      nodeIds.size
+      Cardinality(nodeIds.size)
 
     case NodeIndexSeek(_, _, _, _) =>
-      statistics.nodesCardinality * INDEX_SEEK_SELECTIVITY
+      Cardinality(statistics.nodesCardinality * INDEX_SEEK_SELECTIVITY)
 
     case NodeIndexUniqueSeek(_, _, _, _) =>
-      statistics.nodesCardinality * UNIQUE_INDEX_SEEK_SELECTIVITY
+      Cardinality(statistics.nodesCardinality * UNIQUE_INDEX_SEEK_SELECTIVITY)
 
     case NodeHashJoin(_, left, right) =>
-      math.min(cardinality(left), cardinality(right))
+      Cardinality(math.min(cardinality(left).amount, cardinality(right).amount))
 
     case OuterHashJoin(_, left, right) =>
-      math.min(cardinality(left), cardinality(right))
+      Cardinality(math.min(cardinality(left).amount, cardinality(right).amount))
 
     case expand @ Expand(left, _, dir, types, _, _, length) =>
       val degree = degreeByRelationshipTypesAndDirection(types, dir)
@@ -108,10 +108,10 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       cardinality(outer) * predicateSelectivity(Seq(expr)) // TODO: This is not true. We should calculate cardinality on QG and not LP
 
     case DirectedRelationshipByIdSeek(_, relIds, _, _) =>
-      relIds.size
+      Cardinality(relIds.size)
 
     case UndirectedRelationshipByIdSeek(_, relIds, _, _) =>
-      relIds.size * 2
+      Cardinality(relIds.size * 2)
 
     case Projection(left, _) =>
       cardinality(left)
@@ -120,25 +120,40 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       cardinality(input)
 
     case SingleRow(_) =>
-      1
+      Cardinality(1)
 
     case Sort(input, _) =>
       cardinality(input)
 
     case Skip(input, skip: ast.NumberLiteral) =>
-      Math.max(0.0, cardinality(input) - skip.value.asInstanceOf[Number].doubleValue())
+      Cardinality(
+        Math.max(
+          0.0,
+          cardinality(input).amount - skip.value.asInstanceOf[Number].doubleValue()
+        )
+      )
 
     case Skip(input, _) =>
       cardinality(input)
 
     case Limit(input, limit: ast.NumberLiteral) =>
-      Math.min(cardinality(input), limit.value.asInstanceOf[Number].doubleValue())
+      Cardinality(
+        Math.min(
+          cardinality(input).amount,
+          limit.value.asInstanceOf[Number].doubleValue()
+        )
+      )
 
     case Limit(input, _) =>
       cardinality(input)
 
     case SortedLimit(input, limit: ast.NumberLiteral, _) =>
-      Math.min(cardinality(input), limit.value.asInstanceOf[Number].doubleValue())
+      Cardinality(
+        Math.min(
+          cardinality(input).amount,
+          limit.value.asInstanceOf[Number].doubleValue()
+        )
+      )
 
     case SortedLimit(input, _, _) =>
       cardinality(input)

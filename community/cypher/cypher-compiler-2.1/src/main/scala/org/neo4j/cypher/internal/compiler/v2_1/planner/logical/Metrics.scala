@@ -33,7 +33,7 @@ object Metrics {
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
-  type CardinalityModel = LogicalPlan => Double
+  type CardinalityModel = LogicalPlan => Cardinality
 
   // This metric estimates the selectivity of an expression
   // (e.g. by algebraic analysis or using statistics)
@@ -47,6 +47,12 @@ case class Cost(gummyBears: Double) extends Ordered[Cost] {
   def *(other:Double): Double = other * gummyBears
 
   def compare(that: Cost): Int = gummyBears.compare(that.gummyBears)
+}
+
+case class Cardinality(amount: Double) extends Ordered[Cardinality] {
+  def compare(that: Cardinality) = amount.compare(that.amount)
+  def *(that: Double) = Cardinality(amount * that)
+  def *(that: Cardinality) = Cardinality(amount * that.amount)
 }
 
 trait MetricsFactory {
