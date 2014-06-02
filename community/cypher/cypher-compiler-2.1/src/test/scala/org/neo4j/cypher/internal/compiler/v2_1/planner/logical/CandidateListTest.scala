@@ -31,8 +31,8 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 
 
     assertTopPlan(winner = b, a, b)(new given {
       cost = {
-        case p if p == a.plan => 100
-        case p if p == b.plan => 50
+        case p if p == a.plan => Cost(100)
+        case p if p == b.plan => Cost(50)
       }
     })
   }
@@ -44,8 +44,8 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 
 
     val GIVEN = new given {
       cost = {
-        case p if p == ab.plan => 100
-        case p if p == b.plan => 50
+        case p if p == ab.plan => Cost(100)
+        case p if p == b.plan => Cost(50)
       }
     }
 
@@ -58,7 +58,7 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 
 
     val GIVEN = new given {
       cost = {
-        case _ => 100
+        case _ => Cost(100)
       }
     }
 
