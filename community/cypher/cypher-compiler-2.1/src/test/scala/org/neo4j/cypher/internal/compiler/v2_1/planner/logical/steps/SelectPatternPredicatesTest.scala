@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{QueryGraphSolvingContext, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, QueryGraphSolvingContext, PlanTransformer}
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
@@ -45,7 +45,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   val factory = newMockedMetricsFactory
   when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-    case _ => 1000.0
+    case _ => Cardinality(1000)
   })
 
   val passThrough = new PlanTransformer {

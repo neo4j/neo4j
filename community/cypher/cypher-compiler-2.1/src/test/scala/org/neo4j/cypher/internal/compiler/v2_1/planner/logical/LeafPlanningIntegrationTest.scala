@@ -28,7 +28,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should build plans for all nodes scans") {
     (new given {
-      cardinality = {
+      cardinality = mapCardinality {
         case _: AllNodesScan => 1
         case _               => Double.MaxValue
       }
@@ -39,7 +39,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should build plans for label scans without compile-time label id") {
     (new given {
-      cardinality = {
+      cardinality = mapCardinality {
         case _: AllNodesScan => 1000
         case _: NodeByIdSeek => 2
         case _: NodeByLabelScan => 1
@@ -52,7 +52,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
 
   test("should build plans for label scans with compile-time label id") {
     implicit val plan = new given {
-      cardinality = {
+      cardinality = mapCardinality {
         case _: AllNodesScan => 1000
         case _: NodeByIdSeek => 2
         case _: NodeByLabelScan => 1

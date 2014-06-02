@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, Candidates, PlanTable}
 
 class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("should introduce apply for unsolved optional match when all arguments are covered") {
@@ -40,8 +40,8 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: SingleRow => 1.0
-      case _            => 1000.0
+      case _: SingleRow => Cardinality(1.0)
+      case _            => Cardinality(1000.0)
     })
 
     implicit val context = newMockedQueryGraphSolvingContext(

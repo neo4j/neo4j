@@ -43,7 +43,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   test("Should build plans containing expand for two unrelated relationship patterns") {
 
     (new given {
-      cardinality = {
+      cardinality = mapCardinality {
         case AllNodesScan(IdName("a")) => 1000
         case AllNodesScan(IdName("b")) => 2000
         case AllNodesScan(IdName("c")) => 3000
@@ -100,7 +100,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
 
   test("Should build plans expanding from the cheaper side for single relationship pattern") {
     (new given {
-      cardinality = {
+      cardinality = mapCardinality {
         case _: NodeIndexSeek => 10.0
         case _: AllNodesScan  => 100.04
         case _                => Double.MaxValue

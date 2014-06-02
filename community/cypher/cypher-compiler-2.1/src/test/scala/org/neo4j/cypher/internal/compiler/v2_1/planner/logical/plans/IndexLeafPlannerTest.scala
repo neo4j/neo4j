@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
 import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, Candidates}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 import org.mockito.Mockito._
@@ -59,9 +59,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan    => 1000
-      case _: NodeByLabelScan => 100
-      case _                  => Double.MaxValue
+      case _: AllNodesScan    => Cardinality(1000)
+      case _: NodeByLabelScan => Cardinality(100)
+      case _                  => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedQueryGraphSolvingContext(
       semanticTable = semanticTable,
@@ -103,9 +103,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan    => 1000
-      case _: NodeByLabelScan => 100
-      case _                  => Double.MaxValue
+      case _: AllNodesScan    => Cardinality(1000)
+      case _: NodeByLabelScan => Cardinality(100)
+      case _                  => Cardinality(Double.MaxValue)
     })
     implicit val context = newMockedQueryGraphSolvingContext(
       semanticTable = semanticTable,

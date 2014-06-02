@@ -70,13 +70,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val realConfig = new RealLogicalPlanningConfiguration
 
   trait LogicalPlanningConfiguration {
-    def selectivityModel(statistics: GraphStatistics, semanticTable: SemanticTable): PartialFunction[Expression, Double]
-    def cardinalityModel(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): PartialFunction[LogicalPlan, Double]
-    def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Double]
+    def selectivityModel(statistics: GraphStatistics, semanticTable: SemanticTable): PartialFunction[Expression, Multiplier]
+    def cardinalityModel(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): PartialFunction[LogicalPlan, Cardinality]
+    def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost]
     def graphStatistics: GraphStatistics
     def indexes: Set[(String, String)]
     def uniqueIndexes: Set[(String, String)]
-    def labelCardinality: Map[String, Double]
+    def labelCardinality: Map[String, Cardinality]
     def knownLabels: Set[String]
 
     class given extends StubbedLogicalPlanningConfiguration(this)
@@ -84,6 +84,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def planFor(queryString: String): SemanticPlan = {
       LogicalPlanningEnvironment(this).planFor(queryString)
     }
+
+    protected def mapCardinality(pf:PartialFunction[LogicalPlan, Double]): PartialFunction[LogicalPlan, Cardinality] = pf.andThen(Cardinality.apply)
   }
 
   case class RealLogicalPlanningConfiguration() extends LogicalPlanningConfiguration {
@@ -99,7 +101,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case (expr: Expression) => model(expr)
       })
     }
-    def costModel(cardinality: CardinalityModel) = {
+    def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost] = {
       val model = new SimpleCostModel(cardinality)
       ({
         case (plan: LogicalPlan) => model(plan)
@@ -115,10 +117,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
     var knownLabels: Set[String] = Set.empty
-    var cardinality: PartialFunction[LogicalPlan, Double] = PartialFunction.empty
-    var cost: PartialFunction[LogicalPlan, Double] = PartialFunction.empty
-    var selectivity: PartialFunction[Expression, Double] = PartialFunction.empty
-    var labelCardinality: Map[String, Double] = Map.empty
+    var cardinality: PartialFunction[LogicalPlan, Cardinality] = PartialFunction.empty
+    var cost: PartialFunction[LogicalPlan, Cost] = PartialFunction.empty
+    var selectivity: PartialFunction[Expression, Multiplier] = PartialFunction.empty
+    var labelCardinality: Map[String, Cardinality] = Map.empty
     var statistics = null
 
     var indexes: Set[(String, String)] = Set.empty
@@ -132,12 +134,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def costModel(cardinality: Metrics.CardinalityModel) =
       cost.orElse(parent.costModel(cardinality))
+
     def cardinalityModel(statistics: GraphStatistics, selectivity: Metrics.SelectivityModel, semanticTable: SemanticTable) = {
-      val labelIdCardinality = labelCardinality.map {
-        case (name: String, cardinality: Double) =>
+      val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
+        case (name: String, cardinality: Cardinality) =>
           semanticTable.resolvedLabelIds(name) -> cardinality
       }
-      val labelScanCardinality: PartialFunction[LogicalPlan, Double] = {
+      val labelScanCardinality: PartialFunction[LogicalPlan, Cardinality] = {
         case NodeByLabelScan(_, Right(labelId)) if labelIdCardinality.contains(labelId) =>
           labelIdCardinality(labelId)
       }
@@ -246,6 +249,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       }, semanticTable)
     }
   }
+
+  def fakeQueryPlanFor(id: String*): QueryPlan = QueryPlan(FakePlan(id.map(IdName).toSet), PlannerQuery.empty)
 
   def planFor(queryString: String): SemanticPlan = new given().planFor(queryString)
 

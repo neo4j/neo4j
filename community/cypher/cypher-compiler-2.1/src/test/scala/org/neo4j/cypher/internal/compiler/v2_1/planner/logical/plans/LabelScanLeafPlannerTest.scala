@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.labelScanLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, Candidates}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
@@ -44,8 +44,8 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: NodeByLabelScan => 1
-      case _                  => Double.MaxValue
+      case _: NodeByLabelScan => Cardinality(1)
+      case _                  => Cardinality(Double.MaxValue)
     })
 
     val semanticTable = newMockedSemanticTable
@@ -76,8 +76,8 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: NodeByLabelScan => 100
-      case _                  => Double.MaxValue
+      case _: NodeByLabelScan => Cardinality(100)
+      case _                  => Cardinality(Double.MaxValue)
     })
 
     val semanticTable = newMockedSemanticTable
