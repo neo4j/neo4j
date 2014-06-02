@@ -247,6 +247,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     }
   }
 
+  def fakeQueryPlanFor(id: String*): QueryPlan = QueryPlan(FakePlan(id.map(IdName).toSet), PlannerQuery.empty)
+
   def planFor(queryString: String): SemanticPlan = new given().planFor(queryString)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)

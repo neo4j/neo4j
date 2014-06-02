@@ -168,7 +168,7 @@ trait LogicalPlanningTestSupport
   implicit def idName(name: String): IdName = IdName(name)
 }
 
-case class FakePlan(availableSymbols: Set[IdName]) extends LogicalPlan{
+case class FakePlan(availableSymbols: Set[IdName]) extends LogicalPlan {
   def rhs = None
   def lhs = None
 }
