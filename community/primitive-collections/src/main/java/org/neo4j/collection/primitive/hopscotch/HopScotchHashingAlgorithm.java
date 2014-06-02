@@ -279,7 +279,7 @@ public class HopScotchHashingAlgorithm
     private static <VALUE> Table<VALUE> growTable( Table<VALUE> oldTable, Monitor monitor,
             HashFunction hashFunction, ResizeMonitor<VALUE> resizeMonitor )
     {
-        monitor.tableGrowing( oldTable.capacity(), oldTable.size() );
+        assert monitor.tableGrowing( oldTable.capacity(), oldTable.size() );
         Table<VALUE> newTable = oldTable.grow();
         long nullKey = oldTable.nullKey();
 
@@ -297,7 +297,7 @@ public class HopScotchHashingAlgorithm
                 }
             }
         }
-        monitor.tableGrew( oldTable.capacity(), newTable.capacity(), newTable.size() );
+        assert monitor.tableGrew( oldTable.capacity(), newTable.capacity(), newTable.size() );
         resizeMonitor.tableGrew( newTable );
         oldTable.close();
         return newTable;
