@@ -21,28 +21,24 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.NotEquals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.mockito.Mockito._
-import org.mockito.Matchers._
 
-class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans containing joins") {
-    implicit val planContext = newMockedPlanContext
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan                      => 200
-      case Expand(_, IdName("b"), _, _, _, _,_) => 10000
-      case _: Expand                            => 10
-      case _: NodeHashJoin                      => 20
-      case _                                    => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
 
-    produceLogicalPlan("MATCH (a)<-[r1]-(b)-[r2]->(c) RETURN b") should equal(
+    (new given {
+      cardinality = {
+        case _: AllNodesScan                      => 200
+        case Expand(_, IdName("b"), _, _, _, _,_) => 10000
+        case _: Expand                            => 10
+        case _: NodeHashJoin                      => 20
+        case _                                    => Double.MaxValue
+      }
+    } planFor "MATCH (a)<-[r1]-(b)-[r2]->(c) RETURN b").plan should equal(
       Projection(
         Selection(
           Seq(NotEquals(Identifier("r1")_,Identifier("r2")_)_),

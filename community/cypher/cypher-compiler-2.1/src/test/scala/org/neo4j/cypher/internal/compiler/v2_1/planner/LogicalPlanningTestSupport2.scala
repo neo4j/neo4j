@@ -77,6 +77,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def indexes: Set[(String, String)]
     def uniqueIndexes: Set[(String, String)]
     def labelCardinality: Map[String, Double]
+    def knownLabels: Set[String]
 
     class given extends StubbedLogicalPlanningConfiguration(this)
 
@@ -109,9 +110,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def indexes = Set.empty
     def uniqueIndexes = Set.empty
     def labelCardinality = Map.empty
+    def knownLabels = Set.empty
   }
 
   class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
+    var knownLabels: Set[String] = Set.empty
     var cardinality: PartialFunction[LogicalPlan, Double] = PartialFunction.empty
     var cost: PartialFunction[LogicalPlan, Double] = PartialFunction.empty
     var selectivity: PartialFunction[Expression, Double] = PartialFunction.empty
@@ -164,17 +167,20 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     lazy val semanticTable: SemanticTable = {
       val table = SemanticTable()
+      def addLabelIfUnknown(labelName: String) =
+        if (!table.resolvedLabelIds.contains(labelName))
+          table.resolvedLabelIds.put(labelName, LabelId(table.resolvedLabelIds.size))
+
       config.indexes.foreach { case (label, property) =>
-        table.resolvedLabelIds.put(label, LabelId(table.resolvedLabelIds.size))
+        addLabelIfUnknown(label)
         table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
       }
       config.uniqueIndexes.foreach { case (label, property) =>
-        table.resolvedLabelIds.put(label, LabelId(table.resolvedLabelIds.size))
+        addLabelIfUnknown(label)
         table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
       }
-      config.labelCardinality.keys.foreach {label =>
-        table.resolvedLabelIds.put(label, LabelId(table.resolvedLabelIds.size))
-      }
+      config.labelCardinality.keys.foreach(addLabelIfUnknown)
+      config.knownLabels.foreach(addLabelIfUnknown)
       table
     }
 
@@ -246,6 +252,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
   implicit def idName(name: String): IdName = IdName(name)
-  implicit def labelId(label: String)(implicit plan: SemanticPlan): Either[String, LabelId] =
-    Right(plan.semanticTable.resolvedLabelIds(label))
+  implicit def labelId(label: String)(implicit plan: SemanticPlan): LabelId =
+    plan.semanticTable.resolvedLabelIds(label)
+  implicit def propertyKeyId(label: String)(implicit plan: SemanticPlan): PropertyKeyId =
+    plan.semanticTable.resolvedPropertyKeyNames(label)
 }

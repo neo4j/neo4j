@@ -20,22 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
 
-class SingleRowPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
+class SingleRowPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans containing single row") {
-    implicit val planContext = newMockedPlanContext
-    implicit val planner = newPlanner(newMockedMetricsFactory)
-
-    produceLogicalPlan("RETURN 42") should equal(
+    planFor("RETURN 42").plan should equal(
       Projection(
         SingleRow(Set.empty)(), expressions = Map("42" -> SignedIntegerLiteral("42")_)
       )
     )
   }
-
 }
