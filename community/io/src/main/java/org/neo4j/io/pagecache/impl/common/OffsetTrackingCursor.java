@@ -21,31 +21,13 @@ package org.neo4j.io.pagecache.impl.common;
 
 import java.nio.BufferOverflowException;
 import java.nio.BufferUnderflowException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.io.pagecache.PageCursor;
 
 public class OffsetTrackingCursor implements PageCursor
 {
-    private static final AtomicInteger THREAD_ID_COUNTER = new AtomicInteger( -1 );
-
     protected Page page;
     private int currentOffset;
-
-
-    // each thread has a cursor and this id is used to find the right queue to talk to
-    // when a srsp queue is used for synchronization
-    private final int threadId;
-
-    public OffsetTrackingCursor()
-    {
-        threadId = THREAD_ID_COUNTER.incrementAndGet();
-    }
-
-    public int getThreadId()
-    {
-        return threadId;
-    }
 
     public byte getByte()
     {
