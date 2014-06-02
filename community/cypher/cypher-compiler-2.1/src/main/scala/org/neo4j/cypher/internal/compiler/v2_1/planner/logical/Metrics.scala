@@ -41,11 +41,11 @@ object Metrics {
 }
 
 case class Metrics(cost: CostModel, cardinality: CardinalityModel, selectivity: SelectivityModel)
-case class Cost(gummyBears: Double) extends Ordered[Cost] {
-  def +(other:Double): Double = other + gummyBears
-  def +(other:Cost): Cost = Cost(other.gummyBears + gummyBears)
-  def *(other:Double): Double = other * gummyBears
 
+case class Cost(gummyBears: Double) extends Ordered[Cost] {
+  def +(other: Cost): Cost = Cost(other.gummyBears + gummyBears)
+  def *(other: Double): Cost = Cost(other * gummyBears)
+  def +(other: CostPerRow): CostPerRow = CostPerRow(other.cost * gummyBears)
   def compare(that: Cost): Int = gummyBears.compare(that.gummyBears)
 }
 
@@ -53,7 +53,11 @@ case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def compare(that: Cardinality) = amount.compare(that.amount)
   def *(that: Double) = Cardinality(amount * that)
   def *(that: Cardinality) = Cardinality(amount * that.amount)
+  def *(that: CostPerRow) = Cost(amount * that.cost)
+  def *(that: Cost) = Cost(amount * that.gummyBears)
 }
+
+case class CostPerRow(cost: Double)
 
 trait MetricsFactory {
   def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable): SelectivityModel
