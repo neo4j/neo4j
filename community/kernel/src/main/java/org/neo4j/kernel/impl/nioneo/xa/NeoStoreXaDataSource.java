@@ -280,8 +280,9 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  RelationshipTypeTokenHolder relationshipTypeTokens,
                                  PersistenceManager persistenceManager, Locks lockManager,
                                  SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
-                                 IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs, Function
-            <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory, StoreUpgrader storeMigrationProcess )
+                                 IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
+                                 Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory,
+                                 StoreUpgrader storeMigrationProcess )
     {
         super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
         this.config = config;

@@ -313,7 +313,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
                 new NotElectableElectionCredentialsProvider() :
                 new DefaultElectionCredentialsProvider( config.get( ClusterSettings.server_id ),
-                        new OnDiskLastTxIdGetter( this ), new HighAvailabilityMemberInfoProvider()
+                        new OnDiskLastTxIdGetter( this ),
+                        new HighAvailabilityMemberInfoProvider()
                 {
                     @Override
                     public HighAvailabilityMemberState getHighAvailabilityMemberState()
@@ -343,7 +344,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ).equals(
                                 config.get( ClusterSettings.server_id ) ) )
                         {
-                            msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not " +
+                            msgLog.error( String.format( "Instance %s has the same serverId as ours (%s) - will not " +
                                             "join this cluster",
                                     member.getRoleUri(), config.get( ClusterSettings.server_id )
                             ) );

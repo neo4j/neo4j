@@ -72,8 +72,8 @@ public class XaFactory
                                        XaCommandWriterFactory commandWriterFactory,
                                        InjectedTransactionValidator injectedTxValidator,
                                        XaTransactionFactory tf, TransactionStateFactory stateFactory,
-                                       TransactionInterceptorProviders providers, boolean readOnly, Function<List
-            <LogEntry>, List<LogEntry>> transactionTranslator )
+                                       TransactionInterceptorProviders providers, boolean readOnly,
+                                       Function<List<LogEntry>, List<LogEntry>> transactionTranslator )
     {
         if ( logicalLog == null || commandReaderFactory == null || commandWriterFactory == null || tf == null )
         {

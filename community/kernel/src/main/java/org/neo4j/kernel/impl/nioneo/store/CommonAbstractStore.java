@@ -157,6 +157,10 @@ public abstract class CommonAbstractStore implements IdSequence
      */
     public abstract String getTypeDescriptor();
 
+    /**
+     * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
+     * operate on the store files directly. This method is called by constructors.
+     */
     protected void checkStorage()
     {
         readOnly = configuration.get( Configuration.read_only );
@@ -192,6 +196,10 @@ public abstract class CommonAbstractStore implements IdSequence
         }
     }
 
+    /**
+     * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
+     * operate on the store files directly. This method is called by constructors.
+     */
     protected void checkVersion()
     {
         try
@@ -207,6 +215,10 @@ public abstract class CommonAbstractStore implements IdSequence
     /**
      * Should do first validation on store validating stuff like version and id
      * generator. This method is called by constructors.
+     *
+     * Note: This method will map the file with the page cache. The store file must not
+     * be accessed directly until it has been unmapped - the store file must only be
+     * accessed through the page cache.
      */
     protected void loadStorage()
     {

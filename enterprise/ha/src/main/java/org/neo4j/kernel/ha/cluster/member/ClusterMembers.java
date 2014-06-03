@@ -64,7 +64,7 @@ public class ClusterMembers
         };
     }
 
-    private final Map<InstanceId, ClusterMember> members = new CopyOnWriteHashMap<InstanceId, ClusterMember>();
+    private final Map<InstanceId, ClusterMember> members = new CopyOnWriteHashMap<>();
 
     public ClusterMembers( Cluster cluster, Heartbeat heartbeat, ClusterMemberEvents clusterMemberEvents,
                            InstanceId me )
