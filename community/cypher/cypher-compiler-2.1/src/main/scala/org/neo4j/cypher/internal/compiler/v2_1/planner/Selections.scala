@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.perty.{PrettyToString, GeneratedPretty, Pretty}
-import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{internalDocBuilder, plannerDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
 
 case class Predicate(dependencies: Set[IdName], exp: Expression)
   extends internalDocBuilder.AsPrettyToString {

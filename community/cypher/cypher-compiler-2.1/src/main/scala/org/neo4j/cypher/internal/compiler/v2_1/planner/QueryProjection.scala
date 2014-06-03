@@ -24,6 +24,7 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.perty.PrettyToString
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{internalDocBuilder, plannerQueryDocBuilder, queryProjectionDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
 
 trait QueryProjection {
   def projections: Map[String, Expression]

@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.perty.{PrettyToString, GeneratedPretty, Pretty, pformat}
-import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{internalDocBuilder, plannerQueryDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, PatternRelationship}
 
 trait PlannerQuery {
   def graph: QueryGraph

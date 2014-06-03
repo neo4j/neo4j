@@ -22,8 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
-import org.neo4j.cypher.internal.compiler.v2_1.perty.{PrettyToString, GeneratedPretty, Pretty, pformat}
-import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{internalDocBuilder, queryGraphDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
 
 trait QueryGraph {
   def patternRelationships: Set[PatternRelationship]
