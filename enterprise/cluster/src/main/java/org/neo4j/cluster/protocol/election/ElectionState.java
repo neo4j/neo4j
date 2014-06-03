@@ -123,7 +123,8 @@ public enum ElectionState
                                                 if ( !context.getFailed().contains( server.getKey() ) )
                                                 {
                                                     // This is a candidate - allow it to vote itself for promotion
-                                                    outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(), role ) );
+                                                    outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(),
+                                                            context.voteRequestForRole( new ElectionRole( role ) ) ) );
                                                 }
                                             }
                                             context.setTimeout( "election-" + role,
@@ -192,7 +193,8 @@ public enum ElectionState
                                                  * expected. If we are indeed the role holder, then we'll cast our
                                                  * vote as a response to this message, which will complete the election.
                                                  */
-                                                outgoing.offer( Message.internal( ElectionMessage.vote, roleName ) );
+                                                outgoing.offer( Message.internal( ElectionMessage.vote,
+                                                        context.voteRequestForRole( new ElectionRole( roleName ) ) ) );
                                             }
                                             else
                                             {
@@ -237,7 +239,8 @@ public enum ElectionState
                                         if ( !context.getFailed().contains( server.getKey() ) )
                                         {
                                             // This is a candidate - allow it to vote itself for promotion
-                                            outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(), role ) );
+                                            outgoing.offer( Message.to( ElectionMessage.vote, server.getValue(),
+                                                    context.voteRequestForRole( new ElectionRole( role ) ) ) );
                                         }
                                     }
                                     context.setTimeout( "election-" + role, Message.timeout( ElectionMessage
@@ -327,7 +330,7 @@ public enum ElectionState
                                 // Missing one vote, the one from the current role holder
                                 outgoing.offer( Message.to( ElectionMessage.vote,
                                         context.getUriForId( currentElected ),
-                                        data.getRole() ) );
+                                        context.voteRequestForRole( new ElectionRole( data.getRole() ) ) ) );
                             }
                             break;
                         }
