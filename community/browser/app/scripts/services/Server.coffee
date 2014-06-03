@@ -29,7 +29,7 @@ angular.module('neo4jApp.services')
 
       # http://docs.angularjs.org/api/ng.$http
       httpOptions =
-        timeout: Settings.maxExecutionTime
+        timeout: (Settings.maxExecutionTime * 1000)
 
       returnAndUpdate = (Type, promise) ->
         rv = new Type()
@@ -123,7 +123,7 @@ angular.module('neo4jApp.services')
         status: (params = '')->
           # User a smaller timeout for status requests so IE10 detects when the
           # server goes down faster.
-          @options '/db/data', { timeout: Settings.heartbeat }
+          @options '/db/data', { timeout: (Settings.heartbeat * 1000)}
 
         log: (path) ->
           @get(path).then((r)-> console.log (r))
