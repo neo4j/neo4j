@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,7 +34,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -38,26 +45,18 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
-import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
-
 public class PhysicalTransactionStoreTest
 {
     @Test
     public void shouldOpenCleanStore() throws Exception
     {
         // GIVEN
-        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0, 0 );
+        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l );
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LogPositionCache positionCache = new LogPositionCache( 10, 1000 );
+
         LogFile logFile = new PhysicalLogFile( fs, directory.directory(), DEFAULT_NAME, 1000, NO_PRUNING,
-                transactionIdStore, new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
+                transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
                 positionCache );
         TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
         try ( TransactionStore store = new PhysicalTransactionStore( logFile, txIdGenerator, positionCache,
@@ -81,7 +80,7 @@ public class PhysicalTransactionStoreTest
     {
         // GIVEN
         InMemoryLogChannel channel = new InMemoryLogChannel();
-        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0, 0 );
+        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l );
         TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
         LogPositionCache positionCache = new LogPositionCache( 10, 100 );
         final byte[] additionalHeader = new byte[] {1, 2, 5};

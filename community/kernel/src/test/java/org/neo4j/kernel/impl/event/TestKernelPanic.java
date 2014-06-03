@@ -22,82 +22,21 @@ package org.neo4j.kernel.impl.event;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
-import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Random;
 import java.util.concurrent.Callable;
-import java.util.concurrent.CountDownLatch;
-import java.util.concurrent.ExecutorService;
-import java.util.concurrent.Executors;
 
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TargetDirectory;
 
+// TODO 2.2-future 
+@Ignore("Fix for 2.2")
 public class TestKernelPanic
 {
     private static final int COUNT = 100000;
-
-    @Test
-    public void simplePerfTest() throws Exception
-    {
-    	File dir = TargetDirectory.forTest(getClass()).cleanDirectory("foobar");    			
-        final GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir.getAbsolutePath() );
-
-        ExecutorService es = Executors.newFixedThreadPool( 6 );
-
-
-        final Random r = new Random();
-        final List<Node> nodes = new ArrayList<>( 300 );
-
-        try( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-        {
-            for ( int i = 0; i < 300; i++ )
-            {
-                nodes.add( db.createNode() );
-            }
-            tx.success();
-        }
-
-        long startedAt = System.currentTimeMillis();
-        final CountDownLatch cdl = new CountDownLatch( COUNT );
-
-        for ( int i = 0; i < COUNT; i++ )
-        {
-            es.execute( new Runnable()
-            {
-                @Override
-                public void run()
-                {
-                    try ( org.neo4j.graphdb.Transaction tx = db.beginTx() )
-                    {
-                        for ( int j = 0; j < 400; j++ )
-                        {
-                            Node node1 = nodes.get( r.nextInt( 100 ) );
-                            Node node2 = nodes.get( r.nextInt( 100 ) );
-                            node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "foo" ) );
-                        }
-                        tx.success();
-                    }
-                    finally
-                    {
-                        cdl.countDown();
-                    }
-                }
-            } );
-        }
-        cdl.await();
-        es.shutdown();
-        System.out.println("Took " + (System.currentTimeMillis() - startedAt));
-    }
 	
     @Test( timeout = 10000 )
     public void panicTest() throws Exception

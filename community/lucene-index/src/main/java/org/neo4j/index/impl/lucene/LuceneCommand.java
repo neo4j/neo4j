@@ -30,10 +30,9 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.index.impl.lucene.CommitContext.DocumentContext;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
-abstract class LuceneCommand extends XaCommand
+abstract class LuceneCommand
 {
     private static final byte ADD_COMMAND = (byte) 1;
     private static final byte REMOVE_COMMAND = (byte) 2;
@@ -350,7 +349,7 @@ abstract class LuceneCommand extends XaCommand
         }
     }
 
-    static XaCommand readCommand( ReadableByteChannel channel, 
+    static LuceneCommand readCommand( ReadableByteChannel channel, 
         ByteBuffer buffer, EntityType nodeEntityType, EntityType relationshipEntityType ) throws IOException
     {
         // Read what type of command it is

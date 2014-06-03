@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import javax.transaction.xa.Xid;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
 
 import org.junit.Test;
 import org.neo4j.helpers.Function;
-import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
-
-import static org.mockito.Mockito.*;
 
 public class LogEntryConsumerTest
 {
@@ -60,14 +60,6 @@ public class LogEntryConsumerTest
 
         // THEN
         verify( handler, times( 1 ) ).onePhaseCommitEntry( onePC );
-        verifyNoMoreInteractions( handler );
-
-        // THEN
-        verify( handler, times( 1 ) ).prepareEntry( prepare );
-        verifyNoMoreInteractions( handler );
-
-        // THEN
-        verify( handler, times( 1 ) ).doneEntry( done );
         verifyNoMoreInteractions( handler );
     }
 }

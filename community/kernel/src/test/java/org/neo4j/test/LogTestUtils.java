@@ -19,14 +19,16 @@
  */
 package org.neo4j.test;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.HashMap;
 import java.util.List;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.transaction.xa.Xid;
 
@@ -37,27 +39,22 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
  *
  * @author Mattias Persson
  */
+// TODO 2.2-future rewrite this using the new APIs
 public class LogTestUtils
 {
     public static interface LogHook<RECORD> extends Predicate<RECORD>
@@ -180,10 +177,11 @@ public class LogTestUtils
     private static void gatherHistoricalLogicalLogFiles( FileSystemAbstraction fileSystem, String storeDir,
             List<File> files )
     {
-        long highestVersion = getHighestHistoryLogVersion( fileSystem, new File( storeDir ), GraphDatabaseSettings.logical_log.getDefaultValue()  );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( new File(storeDir), fileSystem );
+        long highestVersion = logFiles.getHighestHistoryLogVersion();
         for ( long version = 0; version <= highestVersion; version++ )
         {
-            File versionFile = getHistoryFileName( new File( storeDir, GraphDatabaseSettings.logical_log.getDefaultValue() ), version );
+            File versionFile = logFiles.getHistoryFileName( version );
             if ( fileSystem.fileExists( versionFile ) )
             {
                 files.add( versionFile );
@@ -202,40 +200,40 @@ public class LogTestUtils
         final LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
         ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
         transferLogicalLogHeader( in, outBuffer, buffer );
-        final LogEntryWriterv1 writer = new LogEntryWriterv1();
-        writer.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
+//        final LogEntryWriterv1 writer = new LogEntryWriterv1();
+//        writer.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
+//
+//        LogDeserializer deserializer =
+//                new LogDeserializer( XaCommandReaderFactory.DEFAULT );
+//
+//        Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
+//        {
+//            @Override
+//            public boolean accept( LogEntry entry ) throws IOException
+//            {
+//                boolean accepted = filter.accept( entry );
+//                if ( accepted )
+//                {
+//                    writer.writeLogEntry( entry, outBuffer );
+//                }
+//                return true;
+//            }
+//        };
 
-        LogDeserializer deserializer =
-                new LogDeserializer( XaCommandReaderFactory.DEFAULT );
-
-        Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
-        {
-            @Override
-            public boolean accept( LogEntry entry ) throws IOException
-            {
-                boolean accepted = filter.accept( entry );
-                if ( accepted )
-                {
-                    writer.writeLogEntry( entry, outBuffer );
-                }
-                return true;
-            }
-        };
-
-        try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( in ) )
-        {
-            while ( cursor.next( consumer ) )
-            {
-                ;
-            }
-        }
-        finally
-        {
-            safeClose( in );
-            outBuffer.force();
-            safeClose( out );
-            filter.done( file );
-        }
+//        try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( in ) )
+//        {
+//            while ( cursor.next( consumer ) )
+//            {
+//                ;
+//            }
+//        }
+//        finally
+//        {
+//            safeClose( in );
+//            outBuffer.force();
+//            safeClose( out );
+//            filter.done( file );
+//        }
 
         return tempFile;
     }

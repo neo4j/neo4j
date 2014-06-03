@@ -26,7 +26,7 @@ import collection.JavaConverters._
 import java.util.concurrent.TimeUnit
 import org.neo4j.kernel.api.Statement
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
-import org.neo4j.kernel.impl.transaction.TxManager
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor
 
 trait GraphIcing {
 
@@ -74,9 +74,10 @@ trait GraphIcing {
       }
     }
 
-    def txCounts = TxCounts(txManager.getCommittedTxCount, txManager.getRolledbackTxCount, txManager.getActiveTxCount)
+    def txCounts = TxCounts(txMonitor.getNumberOfCommittedTransactions, txMonitor.getNumberOfRolledbackTransactions, txMonitor.getNumberOfActiveTransactions)
 
-    private def txManager: TxManager = resolveDependency(classOf[TxManager])
+    // TODO 2.2-future
+    private def txMonitor: TransactionMonitor = resolveDependency(classOf[TransactionMonitor])
 
     private def txBridge: ThreadToStatementContextBridge = resolveDependency(classOf[ThreadToStatementContextBridge])
 
@@ -84,7 +85,7 @@ trait GraphIcing {
   }
 }
 
-final case class TxCounts(commits: Int = 0, rollbacks: Int = 0, active: Int = 0) {
+final case class TxCounts(commits: Long = 0, rollbacks: Long = 0, active: Long = 0) {
   def +(other: TxCounts) = TxCounts(commits + other.commits, rollbacks + other.rollbacks, active + other.active)
   def -(other: TxCounts) = TxCounts(commits - other.commits, rollbacks - other.rollbacks, active - other.active)
 }

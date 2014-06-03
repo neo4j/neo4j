@@ -50,7 +50,7 @@ public class SlaveTxHook implements RemoteTxHook
     }
 
     @Override
-    public void remotelyInitializeTransaction( int eventIdentifier, TransactionState state )
+    public void remotelyInitializeTransaction( TransactionState state )
     {
         if(!state.isRemotelyInitialized())
         {

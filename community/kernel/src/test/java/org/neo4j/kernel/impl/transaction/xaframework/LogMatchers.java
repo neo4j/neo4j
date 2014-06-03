@@ -60,7 +60,7 @@ public class LogMatchers
 
             // Read all log entries
             final List<LogEntry> entries = new ArrayList<>();
-            LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
+            LogDeserializer deserializer = new LogDeserializer( XaCommandReaderFactory.DEFAULT );
 
 
             Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
@@ -147,7 +147,7 @@ public class LogMatchers
             @Override
             public boolean matchesSafely( LogEntry.Start entry )
             {
-                return entry != null && entry.getIdentifier() == identifier && entry.getMasterId() == masterId
+                return entry != null && entry.getMasterId() == masterId
                         && entry.getLocalId() == localId;
             }
 
@@ -168,7 +168,7 @@ public class LogMatchers
             @Override
             public boolean matchesSafely( LogEntry.OnePhaseCommit onePC )
             {
-                return onePC != null && onePC.getIdentifier() == identifier && onePC.getTxId() == txId;
+                return onePC != null && onePC.getTxId() == txId;
             }
 
             @Override
@@ -176,25 +176,6 @@ public class LogMatchers
             {
                 description.appendText( String.format( "1PC[%d, txId=%d, <Any Date>],", identifier, txId ) );
 
-            }
-        };
-    }
-
-    public static Matcher<? extends LogEntry> doneEntry( final int identifier )
-    {
-        return new TypeSafeMatcher<LogEntry.Done>()
-        {
-
-            @Override
-            public boolean matchesSafely( LogEntry.Done done )
-            {
-                return done != null && done.getIdentifier() == identifier;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( String.format( "Done[%d]", identifier ) );
             }
         };
     }

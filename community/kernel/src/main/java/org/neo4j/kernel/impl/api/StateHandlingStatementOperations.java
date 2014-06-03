@@ -1058,7 +1058,6 @@ public class StateHandlingStatementOperations implements
             {
                 degree = storeLayer.nodeGetDegree( nodeId, direction );
             }
-
             return state.txState().augmentNodeDegree( nodeId, degree, direction );
         }
         else

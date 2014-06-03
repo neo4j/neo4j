@@ -38,7 +38,7 @@ public class XaCommandReaderFactoryTest
         XaCommandReaderFactory factory = XaCommandReaderFactory.DEFAULT;
 
         // WHEN
-        XaCommandReader reader = factory.newInstance( (byte) 0, mock( ByteBuffer.class ) );
+        XaCommandReader reader = factory.newInstance( (byte) 0 );
 
         // THEN
         assertTrue( reader instanceof PhysicalLogNeoXaCommandReaderV0 );
@@ -51,7 +51,7 @@ public class XaCommandReaderFactoryTest
         XaCommandReaderFactory factory = XaCommandReaderFactory.DEFAULT;
 
         // WHEN
-        XaCommandReader reader = factory.newInstance( (byte) -1, mock( ByteBuffer.class ) );
+        XaCommandReader reader = factory.newInstance( (byte) -1 );
 
         // THEN
         assertTrue( reader instanceof PhysicalLogNeoXaCommandReaderV1 );
@@ -66,7 +66,7 @@ public class XaCommandReaderFactoryTest
         // WHEN
         try
         {
-            factory.newInstance( (byte) -5, mock( ByteBuffer.class ) );
+            factory.newInstance( (byte) -5 );
             fail();
         }
         catch( IllegalArgumentException e)

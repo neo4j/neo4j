@@ -21,12 +21,15 @@ package org.neo4j.kernel.impl.recovery;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.HashMap;
 
 import org.junit.Test;
+import org.mockito.Mockito;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
@@ -40,7 +43,7 @@ public class TestStoreRecoverer
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-        assertThat( recoverer.recoveryNeededAt( store, new HashMap<String, String>() ), is( false ) );
+        assertThat( recoverer.recoveryNeededAt( store, mock(LogVersionRepository.class), new HashMap<String, String>() ), is( false ) );
     }
 
     @Test
@@ -51,7 +54,7 @@ public class TestStoreRecoverer
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-        assertThat( recoverer.recoveryNeededAt( store, new HashMap<String, String>() ), is( true ) );
+        assertThat( recoverer.recoveryNeededAt( store, mock( LogVersionRepository.class ), new HashMap<String, String>() ), is( true ) );
     }
 
     @Test
@@ -62,12 +65,12 @@ public class TestStoreRecoverer
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-        assertThat( recoverer.recoveryNeededAt( store, new HashMap<String, String>() ), is( true ) );
+        assertThat( recoverer.recoveryNeededAt( store, mock( LogVersionRepository.class ),new HashMap<String, String>() ), is( true ) );
 
         // Don't call recoverer.recover, because currently it's hard coded to start an embedded db
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( store.getPath() ).shutdown();
 
-        assertThat( recoverer.recoveryNeededAt( store, new HashMap<String, String>() ), is( false ) );
+        assertThat( recoverer.recoveryNeededAt( store, mock( LogVersionRepository.class ), new HashMap<String, String>() ), is( false ) );
     }
 
     private File createIntactStore() throws IOException

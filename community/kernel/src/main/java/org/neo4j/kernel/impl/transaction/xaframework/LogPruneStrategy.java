@@ -21,5 +21,5 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 public interface LogPruneStrategy
 {
-    void prune( LogFileInformation source );
+    void prune();
 }

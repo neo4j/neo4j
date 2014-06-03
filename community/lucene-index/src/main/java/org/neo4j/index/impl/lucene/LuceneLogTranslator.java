@@ -27,54 +27,38 @@ import org.neo4j.helpers.Function;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 
-public class LuceneLogTranslator
-    implements Function<List<LogEntry>, List<LogEntry>>
+public class LuceneLogTranslator implements Function<List<LogEntry>, List<LogEntry>>
 {
     @Override
     public List<LogEntry> apply( List<LogEntry> logEntries )
     {
-        final List<LogEntry> newEntries = new ArrayList<>(  );
-
+        final List<LogEntry> newEntries = new ArrayList<>();
         for ( LogEntry logEntry : logEntries )
         {
             try
             {
-                logEntry.accept( new LogHandler.Filter(null)
+                logEntry.accept( new LogHandler.Filter( null )
                 {
                     @Override
                     public void startEntry( LogEntry.Start startEntry ) throws IOException
                     {
-                        newEntries.add( new LogEntry.Start( startEntry.getXid(), startEntry.getIdentifier(), LogEntry.CURRENT_LOG_ENTRY_VERSION, startEntry.getMasterId(), startEntry.getStartPosition(), startEntry.getTimeWritten(), startEntry.getLastCommittedTxWhenTransactionStarted() ) );
-                    }
-
-                    @Override
-                    public void prepareEntry( LogEntry.Prepare prepareEntry ) throws IOException
-                    {
-                        newEntries.add(new LogEntry.Prepare( prepareEntry.getIdentifier(), LogEntry.CURRENT_LOG_ENTRY_VERSION, prepareEntry.getTimeWritten() ));
+                        newEntries.add( new LogEntry.Start( startEntry.getMasterId(), startEntry.getLocalId(),
+                                startEntry.getTimeWritten(), startEntry.getLastCommittedTxWhenTransactionStarted(),
+                                startEntry.getAdditionalHeader(), startEntry.getStartPosition() ) );
                     }
 
                     @Override
                     public void onePhaseCommitEntry( LogEntry.OnePhaseCommit onePhaseCommitEntry ) throws IOException
                     {
-                        newEntries.add(new LogEntry.OnePhaseCommit( onePhaseCommitEntry.getIdentifier(), LogEntry.CURRENT_LOG_ENTRY_VERSION, onePhaseCommitEntry.getTxId(), onePhaseCommitEntry.getTimeWritten() ));
-                    }
-
-                    @Override
-                    public void twoPhaseCommitEntry( LogEntry.TwoPhaseCommit twoPhaseCommitEntry ) throws IOException
-                    {
-                        newEntries.add(new LogEntry.TwoPhaseCommit( twoPhaseCommitEntry.getIdentifier(), LogEntry.CURRENT_LOG_ENTRY_VERSION, twoPhaseCommitEntry.getTxId(), twoPhaseCommitEntry.getTimeWritten() ));
-                    }
-
-                    @Override
-                    public void doneEntry( LogEntry.Done doneEntry ) throws IOException
-                    {
-                        newEntries.add(new LogEntry.Done(doneEntry.getIdentifier(), LogEntry.CURRENT_LOG_ENTRY_VERSION));
+                        newEntries.add( new LogEntry.OnePhaseCommit( LogEntry.CURRENT_LOG_ENTRY_VERSION,
+                                onePhaseCommitEntry.getTxId(), onePhaseCommitEntry.getTimeWritten() ) );
                     }
 
                     @Override
                     public void commandEntry( LogEntry.Command commandEntry ) throws IOException
                     {
-                        newEntries.add(new LogEntry.Command( commandEntry.getIdentifier(), LogEntry.CURRENT_LOG_ENTRY_VERSION, commandEntry.getXaCommand() ));
+                        newEntries.add( new LogEntry.Command( LogEntry.CURRENT_LOG_ENTRY_VERSION, commandEntry
+                                .getXaCommand() ) );
                     }
                 } );
             }
@@ -84,7 +68,6 @@ public class LuceneLogTranslator
                 throw new RuntimeException( e );
             }
         }
-
         return newEntries;
     }
 }

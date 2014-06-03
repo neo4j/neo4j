@@ -28,7 +28,7 @@ import org.neo4j.graphdb._
 import java.util.HashMap
 import org.neo4j.graphdb.Neo4jMatchers._
 import org.neo4j.tooling.GlobalGraphOperations
-import javax.transaction.TransactionManager
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 
 class MutatingIntegrationTest extends ExecutionEngineJUnitSuite
   with Assertions with QueryStatisticsTestSupport {
@@ -333,8 +333,9 @@ return distinct center""")
     intercept[EntityNotFoundException](execute("START left=node(1), right=node(3,4) CREATE UNIQUE left-[r:KNOWS]->right RETURN r"))
 
 
-    val txManager: TransactionManager = graph.getDependencyResolver.resolveDependency(classOf[TransactionManager])
-    assertNull("Did not expect to be in a transaction now", txManager.getTransaction)
+    // TODO 2.2-future
+    val contextBridge : ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+    assertNull("Did not expect to be in a transaction now", contextBridge.getTopLevelTransactionBoundToThisThread( false ))
   }
 
   @Test

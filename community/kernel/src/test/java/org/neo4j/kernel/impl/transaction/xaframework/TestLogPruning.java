@@ -19,25 +19,26 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.junit.After;
-import org.junit.Test;
-
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.test.ImpermanentGraphDatabase;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
+import java.io.File;
+
+import org.junit.After;
+import org.junit.Test;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestLogPruning
 {
     private GraphDatabaseAPI db;
     private FileSystemAbstraction fs;
+    private PhysicalLogFiles files;
 
     @After
     public void after() throws Exception
@@ -56,7 +57,6 @@ public class TestLogPruning
         for ( int i = 0; i < 100; i++ )
         {
             doTransaction();
-            rotate();
             assertEquals( i+1, logCount() );
         }
     }
@@ -69,25 +69,17 @@ public class TestLogPruning
         newDb( size + " size" );
 
         doTransaction();
-        rotate();
-        long sizeOfOneLog = fs.getFileSize( neoDataSource()
-                .getXaContainer().getLogicalLog().getFileName( 0 ) );
+        long sizeOfOneLog = fs.getFileSize( files.getHistoryFileName( 0 ) );
         int filesNeededToExceedPruneLimit = (int) Math.ceil( (double) size / (double) sizeOfOneLog );
 
         // When
         for ( int i = 1; i < filesNeededToExceedPruneLimit*2; i++ )
         {
             doTransaction();
-            rotate();
 
             // Then
             assertEquals( Math.min( i+1, filesNeededToExceedPruneLimit ), logCount() );
         }
-    }
-
-    private NeoStoreXaDataSource neoDataSource()
-    {
-        return db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource();
     }
 
     @Test
@@ -99,7 +91,6 @@ public class TestLogPruning
         for ( int i = 0; i < logsToKeep*2; i++ )
         {
             doTransaction();
-            rotate();
             assertEquals( Math.min( i+1, logsToKeep ), logCount() );
         }
     }
@@ -117,22 +108,23 @@ public class TestLogPruning
             {
                 doTransaction();
             }
-            rotate();
             assertEquals( Math.min( i+1, transactionsToKeep/txsPerLog ), logCount() );
         }
     }
 
     private GraphDatabaseAPI newDb( String logPruning )
     {
-        GraphDatabaseAPI db = new ImpermanentGraphDatabase( stringMap( keep_logical_logs.name(), logPruning ) )
+        fs = new EphemeralFileSystemAbstraction();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new ImpermanentGraphDatabase( stringMap( keep_logical_logs.name(), logPruning ) )
         {
             @Override
             protected FileSystemAbstraction createFileSystemAbstraction()
             {
-                return (fs = super.createFileSystemAbstraction());
+                return fs;
             }
         };
         this.db = db;
+        files = new PhysicalLogFiles( new File(db.getStoreDir()), GraphDatabaseSettings.logical_log.getDefaultValue(), fs );
         return db;
     }
 
@@ -150,18 +142,12 @@ public class TestLogPruning
         }
     }
 
-    private void rotate() throws Exception
-    {
-        neoDataSource().rotateLogicalLog();
-    }
-
     private int logCount()
     {
-        XaLogicalLog log = neoDataSource().getXaContainer().getLogicalLog();
         int count = 0;
-        for ( long i = log.getCurrentLogVersion()-1; i >= 0; i-- )
+        for ( long i = files.getHighestHistoryLogVersion(); i >= 0; i-- )
         {
-            if ( fs.fileExists( log.getFileName( i ) ) )
+            if ( fs.fileExists( files.getHistoryFileName( i ) ) )
             {
                 count++;
             }

@@ -19,44 +19,54 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import javax.transaction.xa.Xid;
 
 public class EideticTransactionMonitor implements TransactionMonitor
 {
-    private int commitCount;
-    private int injectOnePhaseCommitCount;
-    private int injectTwoPhaseCommitCount;
+    private int transactionsStarted;
+    private int peakConcurrent;
+    private int successfulFinishes;
+    private int unsuccessfulFinishes;
 
     @Override
-    public void transactionCommitted( Xid xid, boolean recovered )
+    public void transactionStarted()
     {
-        commitCount++;
-    }
-
-    @Override
-    public void injectOnePhaseCommit( Xid xid )
-    {
-        injectOnePhaseCommitCount++;
+        transactionsStarted++;
+        peakConcurrent = Math.max( peakConcurrent, getNumberOfActiveTransactions() );
     }
 
     @Override
-    public void injectTwoPhaseCommit( Xid xid )
+    public void transactionFinished( boolean successful )
     {
-        injectTwoPhaseCommitCount++;
+        if ( successful ) successfulFinishes++; else unsuccessfulFinishes++;
     }
 
-    public int getCommitCount()
+    @Override
+    public int getNumberOfActiveTransactions()
     {
-        return commitCount;
+        return transactionsStarted - ( successfulFinishes + unsuccessfulFinishes );
     }
 
-    public int getInjectOnePhaseCommitCount()
+    @Override
+    public int getPeakConcurrentNumberOfTransactions()
     {
-        return injectOnePhaseCommitCount;
+        return peakConcurrent;
     }
 
-    public int getInjectTwoPhaseCommitCount()
+    @Override
+    public int getNumberOfStartedTransactions()
     {
-        return injectTwoPhaseCommitCount;
+        return transactionsStarted;
+    }
+
+    @Override
+    public long getNumberOfCommittedTransactions()
+    {
+        return successfulFinishes;
+    }
+
+    @Override
+    public long getNumberOfRolledbackTransactions()
+    {
+        return unsuccessfulFinishes;
     }
 }

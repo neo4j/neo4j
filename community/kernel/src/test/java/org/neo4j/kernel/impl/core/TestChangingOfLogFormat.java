@@ -27,7 +27,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -37,11 +36,9 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.fail;
-
-import static org.neo4j.kernel.impl.nioneo.store.TestXa.copyLogicalLog;
-import static org.neo4j.kernel.impl.nioneo.store.TestXa.renameCopiedLogicalLog;
 
 public class TestChangingOfLogFormat
 {
@@ -56,10 +53,10 @@ public class TestChangingOfLogFormat
         tx.success();
         tx.finish();
 
-        Pair<Pair<File, File>, Pair<File, File>> copy = copyLogicalLog( fs.get(), logBaseFileName );
+        Pair<Pair<File, File>, Pair<File, File>> copy = copyLogicalLog( logBaseFileName );
         decrementLogFormat( copy.other().other() );
         db.shutdown();
-        renameCopiedLogicalLog( fs.get(), copy );
+        renameCopiedLogicalLog( copy );
 
         try
         {
@@ -88,6 +85,50 @@ public class TestChangingOfLogFormat
         buffer.flip();
         channel.write( buffer );
         channel.close();
+    }
+
+    public  Pair<Pair<File, File>, Pair<File, File>> copyLogicalLog( File logBaseFileName ) throws IOException
+    {
+        EphemeralFileSystemAbstraction fileSystem = fs.get();
+        File activeLog = new File( logBaseFileName.getPath() + ".active" );
+        StoreChannel af = fileSystem.open( activeLog, "r" );
+        ByteBuffer buffer = ByteBuffer.allocate( 1024 );
+        af.read( buffer );
+        buffer.flip();
+        File activeLogBackup = new File( logBaseFileName.getPath() + ".bak.active" );
+        StoreChannel activeCopy = fileSystem.open( activeLogBackup, "rw" );
+        activeCopy.write( buffer );
+        activeCopy.close();
+        af.close();
+        buffer.flip();
+        char active = buffer.asCharBuffer().get();
+        buffer.clear();
+        File currentLog = new File( logBaseFileName.getPath() + "." + active );
+        StoreChannel source = fileSystem.open( currentLog, "r" );
+        File currentLogBackup = new File( logBaseFileName.getPath() + ".bak." + active );
+        StoreChannel dest = fileSystem.open( currentLogBackup, "rw" );
+        int read;
+        do
+        {
+            read = source.read( buffer );
+            buffer.flip();
+            dest.write( buffer );
+            buffer.clear();
+        }
+        while ( read == 1024 );
+        source.close();
+        dest.close();
+        return Pair.of( Pair.of( activeLog, activeLogBackup ), Pair.of( currentLog, currentLogBackup ) );
+    }
+
+    public void renameCopiedLogicalLog( Pair<Pair<File, File>, Pair<File, File>> files ) throws IOException
+    {
+        EphemeralFileSystemAbstraction fileSystem = fs.get();
+        fileSystem.deleteFile( files.first().first() );
+        fileSystem.renameFile( files.first().other(), files.first().first() );
+
+        fileSystem.deleteFile( files.other().first() );
+        fileSystem.renameFile( files.other().other(), files.other().first() );
     }
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();

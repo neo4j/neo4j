@@ -24,9 +24,6 @@ import java.io.IOException;
 
 interface LogFileInformation
 {
-
-    File getFileName( long version );
-
     /**
      * @param version the log version to get first committed tx for.
      * @return the first committed transaction id for the log with {@code version}.
@@ -45,9 +42,4 @@ interface LogFileInformation
      * in the log {@code version}.
      */
     Long getFirstStartRecordTimestamp( long version ) throws IOException;
-
-    /**
-     * @return The current log version for this log file set
-     */
-	int getCurrentLogVersion();
 }

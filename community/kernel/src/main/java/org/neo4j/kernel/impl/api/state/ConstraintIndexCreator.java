@@ -136,7 +136,7 @@ public class ConstraintIndexCreator
         }
     }
 
-    private IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
+    public IndexDescriptor createConstraintIndex( final int labelId, final int propertyKeyId )
     {
         try ( KernelTransaction transaction = kernel.newTransaction();
               Statement statement = transaction.acquireStatement() )

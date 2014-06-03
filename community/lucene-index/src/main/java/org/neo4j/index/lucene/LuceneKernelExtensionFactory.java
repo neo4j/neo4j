@@ -19,8 +19,6 @@
  */
 package org.neo4j.index.lucene;
 
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
@@ -28,8 +26,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneKernelExtensionFactory.Dependencies>
@@ -40,13 +36,7 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
 
         GraphDatabaseService getDatabase();
 
-        TransactionManager getTxManager();
-
-        XaFactory getXaFactory();
-
         FileSystemAbstraction getFileSystem();
-
-        XaDataSourceManager getXaDataSourceManager();
 
         IndexProviders getIndexProviders();
 
@@ -62,8 +52,6 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
         return new LuceneKernelExtension( dependencies.getConfig(), dependencies.getDatabase(),
-                dependencies.getTxManager(), dependencies.getIndexStore(), dependencies.getXaFactory(),
-                dependencies.getFileSystem(),
-                dependencies.getXaDataSourceManager(), dependencies.getIndexProviders() );
+                dependencies.getIndexStore(), dependencies.getFileSystem(), dependencies.getIndexProviders() );
     }
 }

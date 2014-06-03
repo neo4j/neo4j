@@ -47,6 +47,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.XidImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.LoggingMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
@@ -92,7 +93,7 @@ public class XaLogicalLogTest
             }
         } );
         PhysicalLogFile log = new PhysicalLogFile( fs, dir, "logical.log", 14/* <- This is the rotate threshold */, 
-        		NO_PRUNING, mock( TransactionIdStore.class ), mock( LoggingMonitor.class ), 
+        		NO_PRUNING, mock( TransactionIdStore.class ), mock( LogVersionRepository.class), mock( Monitor.class ), 
         		mock( LogRotationControl.class), mock( LogPositionCache.class ) );
         log.open( mock ( Visitor.class ) );
         

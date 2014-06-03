@@ -161,16 +161,14 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final PersistenceCache persistenceCache;
 
     public Kernel( PropertyKeyTokenHolder propertyKeyTokenHolder, UpdateableSchemaState schemaState,
-                   SchemaWriteGuard schemaWriteGuard,
-                   IndexingService indexService, NodeManager nodeManager, Provider<NeoStore> neoStoreProvider,
-                   PersistenceCache persistenceCache, SchemaCache schemaCache, SchemaIndexProviderMap providerMap,
-                   FileSystemAbstraction fs, Config config,
-                   LabelScanStore labelScanStore, StoreReadLayer storeLayer, JobScheduler scheduler,
-                   TransactionMonitor transactionMonitor, KernelHealth kernelHealth,
-                   boolean readOnly, CacheAccessBackDoor cacheAccess, IntegrityValidator integrityValidator,
-                   Locks locks, LockService lockService, TxIdGenerator txIdGenerator,
-                   TransactionHeaderInformation transactionHeaderInformation, LogRotationControl logRotationControl,
-                   StartupStatisticsProvider startupStatistics, Logging logging )
+            SchemaWriteGuard schemaWriteGuard, IndexingService indexService, NodeManager nodeManager,
+            Provider<NeoStore> neoStoreProvider, PersistenceCache persistenceCache, SchemaCache schemaCache,
+            SchemaIndexProviderMap providerMap, FileSystemAbstraction fs, Config config, LabelScanStore labelScanStore,
+            StoreReadLayer storeLayer, JobScheduler scheduler, TransactionMonitor transactionMonitor,
+            KernelHealth kernelHealth, boolean readOnly, CacheAccessBackDoor cacheAccess,
+            IntegrityValidator integrityValidator, Locks locks, LockService lockService, TxIdGenerator txIdGenerator,
+            TransactionHeaderInformation transactionHeaderInformation, LogRotationControl logRotationControl,
+            StartupStatisticsProvider startupStatistics, Logging logging )
     {
         this.nodeManager = nodeManager;
         this.persistenceCache = persistenceCache;
@@ -191,19 +189,15 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         this.schemaCache = schemaCache;
         this.labelScanStore = labelScanStore;
         this.scheduler = scheduler;
-
         this.legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
-                nodeManager.getNodePropertyTrackers(),
-                nodeManager.getRelationshipPropertyTrackers(),
-                nodeManager );
+                nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
         this.storeLayer = storeLayer;
         this.statementOperations = buildStatementOperations();
         this.statisticsService = new StatisticsServiceRepository( fs, config, storeLayer, scheduler ).loadStatistics();
         this.neoStoreTransactionContextSupplier = new NeoStoreTransactionContextSupplier( neoStore );
-
         this.transactionStore = createTransactionStore( logRotationControl, logging );
-        this.commitProcess = new TransactionRepresentationCommitProcess( transactionStore,
-                kernelHealth, indexService, labelScanStore, neoStore, cacheAccess, lockService, false );
+        this.commitProcess = new TransactionRepresentationCommitProcess( transactionStore, kernelHealth, indexService,
+                labelScanStore, neoStore, cacheAccess, lockService, false );
     }
 
     private TransactionStore createTransactionStore( LogRotationControl logRotationControl, Logging logging )
@@ -211,12 +205,12 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         File directory = config.get( GraphDatabaseSettings.store_dir );
         LogPositionCache logPositionCache = new LogPositionCache( 1000, 100_000 );
         LogFile logFile = new PhysicalLogFile( fs, directory, PhysicalLogFile.DEFAULT_NAME,
-                config.get( GraphDatabaseSettings.logical_log_rotation_threshold ),
-                LogPruneStrategies.fromConfigValue( fs, config.get( GraphDatabaseSettings.keep_logical_logs ) ),
-                neoStore, neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
+                config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), LogPruneStrategies.fromConfigValue(
+                        fs, null, null, null, config.get( GraphDatabaseSettings.keep_logical_logs ) ), neoStore,
+                neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
                 logRotationControl, logPositionCache );
-        return new PhysicalTransactionStore( logFile, txIdGenerator, logPositionCache,
-                new VersionAwareLogEntryReader( XaCommandReaderFactory.DEFAULT ) );
+        return new PhysicalTransactionStore( logFile, txIdGenerator, logPositionCache, new VersionAwareLogEntryReader(
+                XaCommandReaderFactory.DEFAULT ) );
     }
 
     @Override
@@ -270,13 +264,10 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
         Locks.Client locksClient = locks.newClient();
         context.bind( locksClient );
         TransactionRecordState neoStoreTransaction = new TransactionRecordState(
-                neoStore.getLastCommittingTransactionId(),
-                neoStore, integrityValidator, context );
+                neoStore.getLastCommittingTransactionId(), neoStore, integrityValidator, context );
         ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( this, indexService );
-
-        return new KernelTransactionImplementation( statementOperations, readOnly,
-                schemaWriteGuard, labelScanStore, indexService,
-                schemaState, neoStoreTransaction, providerMap, neoStore, locksClient, hooks,
+        return new KernelTransactionImplementation( statementOperations, readOnly, schemaWriteGuard, labelScanStore,
+                indexService, schemaState, neoStoreTransaction, providerMap, neoStore, locksClient, hooks,
                 constraintIndexCreator, transactionHeaderInformation, commitProcess, transactionMonitor, neoStore,
                 persistenceCache, storeLayer );
     }
@@ -311,40 +302,26 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     {
         // Bottom layer: Read-access to committed data
         StoreReadLayer storeLayer = this.storeLayer;
-
         // + Transaction state handling
-        StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations(
-                storeLayer, legacyPropertyTrackers,
-                new ConstraintIndexCreator( this, indexService ) );
-
+        StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeLayer,
+                legacyPropertyTrackers, new ConstraintIndexCreator( this, indexService ) );
         StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
                 stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
-                new SchemaStateConcern( schemaState ), null);
-
+                new SchemaStateConcern( schemaState ), null );
         // + Constraints
-        ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations =
-                new ConstraintEnforcingEntityOperations( parts.entityWriteOperations(), parts.entityReadOperations(),
-                        parts.schemaReadOperations() );
-
+        ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations = new ConstraintEnforcingEntityOperations(
+                parts.entityWriteOperations(), parts.entityReadOperations(), parts.schemaReadOperations() );
         // + Data integrity
-        DataIntegrityValidatingStatementOperations dataIntegrityContext = new
-                DataIntegrityValidatingStatementOperations(
-                parts.keyWriteOperations(),
-                parts.schemaReadOperations(),
-                parts.schemaWriteOperations() );
-
+        DataIntegrityValidatingStatementOperations dataIntegrityContext = new DataIntegrityValidatingStatementOperations(
+                parts.keyWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations() );
         parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
                 constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null );
-
         // + Locking
-        LockingStatementOperations lockingContext = new LockingStatementOperations(
-                parts.entityReadOperations(),
-                parts.entityWriteOperations(),
-                parts.schemaReadOperations(),
-                parts.schemaWriteOperations(),
+        LockingStatementOperations lockingContext = new LockingStatementOperations( parts.entityReadOperations(),
+                parts.entityWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations(),
                 parts.schemaStateOperations() );
-        parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext, lockingContext );
-
+        parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
+                lockingContext );
         return parts;
     }
 }

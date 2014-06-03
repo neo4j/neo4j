@@ -168,7 +168,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
-
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.Functions.identity;
 import static org.neo4j.helpers.Settings.STRING;
@@ -961,6 +960,7 @@ public abstract class InternalAbstractGraphDatabase
             throw new NotFoundException( format( "Node %d not found", id ) );
         }
         threadToTransactionBridge.assertInTransaction();
+        
         return nodeManager.newNodeProxyById( id );
     }
 

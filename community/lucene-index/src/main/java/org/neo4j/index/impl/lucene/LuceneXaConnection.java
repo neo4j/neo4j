@@ -21,56 +21,28 @@ package org.neo4j.index.impl.lucene;
 
 import java.util.Map;
 
-import javax.transaction.xa.XAException;
-import javax.transaction.xa.XAResource;
-
 import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.kernel.impl.index.IndexXaConnection;
-import org.neo4j.kernel.impl.transaction.xaframework.XaConnectionHelpImpl;
-import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
-import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 
 /**
  * An XA connection used with {@link LuceneDataSource}.
  * This class is public because the XA framework requires it.
  */
-public class LuceneXaConnection extends XaConnectionHelpImpl implements IndexXaConnection
+public class LuceneXaConnection 
 {
     private final LuceneXaResource xaResource;
 
-    LuceneXaConnection( Object identifier, XaResourceManager xaRm, 
-        byte[] branchId )
+    LuceneXaConnection( Object identifier )
     {
-        super( xaRm );
-        xaResource = new LuceneXaResource( identifier, xaRm, branchId );
+        xaResource = new LuceneXaResource( identifier );
     }
     
-    @Override
-    public XAResource getXaResource()
-    {
-        return xaResource;
-    }
-    
-    private static class LuceneXaResource extends XaResourceHelpImpl
+    private static class LuceneXaResource
     {
         private final Object identifier;
         
-        LuceneXaResource( Object identifier, XaResourceManager xaRm, 
-            byte[] branchId )
+        LuceneXaResource( Object identifier  )
         {
-            super( xaRm, branchId );
             this.identifier = identifier;
-        }
-        
-        @Override
-        public boolean isSameRM( XAResource xares )
-        {
-            if ( xares instanceof LuceneXaResource )
-            {
-                return identifier.equals( 
-                    ((LuceneXaResource) xares).identifier );
-            }
-            return false;
         }
     }
 
@@ -78,17 +50,17 @@ public class LuceneXaConnection extends XaConnectionHelpImpl implements IndexXaC
     
     LuceneTransaction getLuceneTx()
     {
-        if ( luceneTx == null )
-        {
-            try
-            {
-                luceneTx = ( LuceneTransaction ) getTransaction();
-            }
-            catch ( XAException e )
-            {
-                throw new RuntimeException( "Unable to get lucene tx", e );
-            }
-        }
+//        if ( luceneTx == null )
+//        {
+//            try
+//            {
+//                luceneTx = ( LuceneTransaction ) getTransaction();
+//            }
+//            catch ( XAException e )
+//            {
+//                throw new RuntimeException( "Unable to get lucene tx", e );
+//            }
+//        }
         return luceneTx;
     }
     
@@ -121,7 +93,6 @@ public class LuceneXaConnection extends XaConnectionHelpImpl implements IndexXaC
         getLuceneTx().delete( index );
     }
     
-    @Override
     public void createIndex( Class<? extends PropertyContainer> entityType,
             String name, Map<String, String> config )
     {

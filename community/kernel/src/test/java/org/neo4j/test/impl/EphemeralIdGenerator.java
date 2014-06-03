@@ -138,4 +138,10 @@ public class EphemeralIdGenerator implements IdGenerator
     public void delete()
     {
     }
+
+    @Override
+    public long getHighestPossibleIdInUse()
+    {
+        return nextId.get();
+    }
 }

@@ -31,7 +31,6 @@ import java.util.Map;
 import org.apache.lucene.index.IndexWriter;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -41,12 +40,8 @@ import org.neo4j.index.impl.lucene.LuceneCommand.DeleteCommand;
 import org.neo4j.index.impl.lucene.LuceneCommand.RemoveCommand;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
-import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 
-class LuceneTransaction extends XaTransaction
+class LuceneTransaction
 {
     private final Map<IndexIdentifier, TxDataBoth> txData =
             new HashMap<IndexIdentifier, TxDataBoth>();
@@ -55,10 +50,8 @@ class LuceneTransaction extends XaTransaction
     private final Map<IndexIdentifier,CommandList> commandMap =
             new HashMap<IndexIdentifier,CommandList>();
 
-    LuceneTransaction( XaLogicalLog xaLog, TransactionState state,
-        LuceneDataSource luceneDs )
+    LuceneTransaction( LuceneDataSource luceneDs )
     {
-        super( xaLog, state );
         this.dataSource = luceneDs;
     }
 
@@ -235,18 +228,6 @@ class LuceneTransaction extends XaTransaction
         return data != null ? data.removed( false ) : null;
     }
 
-    @Override
-    protected void doAddCommand( XaCommand command )
-    { // we override inject command and manage our own in memory command list
-    }
-
-    @Override
-    protected void injectCommand( XaCommand command )
-    {
-        queueCommand( ( LuceneCommand ) command ).incCounter( (LuceneCommand ) command );
-    }
-
-    @Override
     protected void doCommit()
     {
         dataSource.getWriteLock();
@@ -263,14 +244,14 @@ class LuceneTransaction extends XaTransaction
                 IndexIdentifier identifier = entry.getKey();
                 CommandList commandList = entry.getValue();
                 IndexType type = identifier == LuceneCommand.CreateIndexCommand.FAKE_IDENTIFIER
-                                 || !commandList.containsWrites() ? null : dataSource.getType( identifier, isRecovered() );
+                                 || !commandList.containsWrites() ? null : dataSource.getType( identifier, false );
                 
                 // This is for an issue where there are changes to and index which in a later
                 // transaction becomes deleted and crashes before the next rotation.
                 // The next recovery process will then recover that log and do those changes
                 // to the index, which at this point doesn't exist. So just don't do those
                 // changes as it will be deleted "later" anyway.
-                if ( type == null && isRecovered() )
+                if ( type == null  )
                 {
                     if ( commandList.isDeletion() )
                     {
@@ -306,8 +287,8 @@ class LuceneTransaction extends XaTransaction
                     }
                 }
             }
-
-            dataSource.setLastCommittedTxId( getCommitTxId() );
+            // TODO 2.2-future
+//            dataSource.setLastCommittedTxId( getCommitTxId() );
             closeTxData();
         }
         catch ( IOException e )
@@ -353,7 +334,6 @@ class LuceneTransaction extends XaTransaction
         this.txData.clear();
     }
 
-    @Override
     protected void doPrepare()
     {
         boolean containsDeleteCommand = false;
@@ -365,7 +345,7 @@ class LuceneTransaction extends XaTransaction
                 {
                     containsDeleteCommand = true;
                 }
-                addCommand( command );
+//                addCommand( command );
             }
         }
         if ( !containsDeleteCommand )
@@ -385,7 +365,7 @@ class LuceneTransaction extends XaTransaction
                 for ( Long id : abandonedIds )
                 {
                     RemoveCommand command = new RemoveCommand( entry.getKey(), entry.getKey().entityTypeByte, id, null, null );
-                    addCommand( command );
+//                    addCommand( command );
                     commands.add( command );
                 }
                 abandonedIds.clear();
@@ -393,14 +373,12 @@ class LuceneTransaction extends XaTransaction
         }
     }
 
-    @Override
     protected void doRollback()
     {
         commandMap.clear();
         closeTxData();
     }
 
-    @Override
     public boolean isReadOnly()
     {
         return commandMap.isEmpty();
@@ -518,7 +496,7 @@ class LuceneTransaction extends XaTransaction
 
         boolean isRecovery()
         {
-            return commands.get( 0 ).isRecovered();
+            return false;
         }
     }
 

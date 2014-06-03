@@ -245,6 +245,7 @@ public class PersistenceCache
                     addIds( idArray, added.outgoingChanges( type ), DirectionWrapper.OUTGOING );
                     addIds( idArray, added.incomingChanges( type ), DirectionWrapper.INCOMING );
                     addIds( idArray, loopsChanges, DirectionWrapper.BOTH );
+                    result.put( type, idArray );
                 }
                 return result;
             }

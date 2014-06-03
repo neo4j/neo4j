@@ -252,8 +252,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
     @Test
     public void testSameTxWithArray()
     {
-        getTransaction().success();
-        getTransaction().finish();
+        commit();
         newTransaction();
 
         Node nodeA = getGraphDb().createNode();
@@ -278,8 +277,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         Node nodeB = getGraphDb().createNode();
         Relationship rel = nodeA.createRelationshipTo( nodeB, MyRelTypes.TEST );
         rel.setProperty( "1", 1 );
-        getTransaction().success();
-        getTransaction().finish();
+        commit();
         newTransaction();
         clearCache();
         nodeA.createRelationshipTo( nodeB, MyRelTypes.TEST );
@@ -298,8 +296,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         getGraphDb().getNodeById( nodeA.getId() );
         getGraphDb().getRelationshipById( rel.getId() );
         // apply COW maps
-        getTransaction().success();
-        getTransaction().finish();
+        commit();
         newTransaction();
         count = 0;
         for ( Relationship relToB : nodeA.getRelationships( MyRelTypes.TEST ) )
@@ -312,53 +309,7 @@ public class TestNeo4jCacheAndPersistence extends AbstractNeo4jTestCase
         assertEquals( 2, nodeA.getProperty( "2" ) );
         assertEquals( 2, rel.getProperty( "2" ) );
     }
-    
-    @Test
-    public void testTxCacheLoadIsolation() throws Exception
-    {
-        Node node = getGraphDb().createNode();
-        node.setProperty( "someproptest", "testing" );
-        Node node1 = getGraphDb().createNode();
-        node1.setProperty( "someotherproptest", 2 );
-        commit();
-        TransactionManager txManager = 
-            getGraphDbAPI().getDependencyResolver().resolveDependency( TransactionManager.class );
-        
-        txManager.begin();
-        node.setProperty( "someotherproptest", "testing2" );
-        Relationship rel = node.createRelationshipTo( node1, 
-            MyRelTypes.TEST );
-        javax.transaction.Transaction txA = txManager.suspend();
-        txManager.begin();
-        assertEquals( "testing", node.getProperty( "someproptest" ) );
-        assertTrue( !node.hasProperty( "someotherproptest" ) );
-        assertTrue( !node.hasRelationship() );
-        clearCache();
-        assertEquals( "testing", node.getProperty( "someproptest" ) );
-        assertTrue( !node.hasProperty( "someotherproptest" ) );
-        javax.transaction.Transaction txB = txManager.suspend();
-        txManager.resume( txA );
-        assertEquals( "testing", node.getProperty( "someproptest" ) );
-        assertTrue( node.hasProperty( "someotherproptest" ) );
-        assertTrue( node.hasRelationship() );
-        clearCache();
-        assertEquals( "testing", node.getProperty( "someproptest" ) );
-        assertTrue( node.hasProperty( "someotherproptest" ) );
-        assertTrue( node.hasRelationship() );
-        txManager.suspend();
-        txManager.resume( txB );
-        assertEquals( "testing", node.getProperty( "someproptest" ) );
-        assertTrue( !node.hasProperty( "someotherproptest" ) );
-        assertTrue( !node.hasRelationship() );
-        txManager.rollback();
-        txManager.resume( txA );
-        node.delete();
-        node1.delete();
-        rel.delete();
-        txManager.commit();
-        newTransaction();
-    }
-    
+
     @Test
     public void testNodeMultiRemoveProperty()
     {

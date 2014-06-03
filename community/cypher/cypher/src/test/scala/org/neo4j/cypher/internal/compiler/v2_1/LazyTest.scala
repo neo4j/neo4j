@@ -190,7 +190,8 @@ class LazyTest extends ExecutionEngineFunSuite {
     val fakeReadStatement = mock[ReadOperations]
     val fakeStatement = mock[Statement]
 
-    when(nodeManager.getAllNodes).thenReturn(counter)
+    // TODO 2.2-future
+//    when(nodeManager.getAllNodes).thenReturn(counter)
     when(bridge.instance()).thenReturn(fakeStatement)
     when(fakeStatement.readOperations()).thenReturn(fakeReadStatement)
     when(fakeStatement.dataWriteOperations()).thenReturn(fakeDataStatement)

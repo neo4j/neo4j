@@ -22,6 +22,7 @@ package org.neo4j.index.impl.lucene;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
@@ -29,7 +30,6 @@ import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.index.IndexConnectionBroker;
 
 public class LuceneIndexImplementation implements IndexImplementation
 {
@@ -51,24 +51,17 @@ public class LuceneIndexImplementation implements IndexImplementation
     public static final int DEFAULT_LAZY_THRESHOLD = 100;
 
     private final GraphDatabaseService graphDb;
-    private IndexConnectionBroker<LuceneXaConnection> broker;
     private LuceneDataSource dataSource;
     final int lazynessThreshold;
 
     public LuceneIndexImplementation( GraphDatabaseService db,
-                                      LuceneDataSource dataSource,
-                                      IndexConnectionBroker<LuceneXaConnection> broker
+                                      LuceneDataSource dataSource
+                                      
     )
     {
         this.graphDb = db;
         this.dataSource = dataSource;
-        this.broker = broker;
         this.lazynessThreshold = DEFAULT_LAZY_THRESHOLD;
-    }
-
-    IndexConnectionBroker<LuceneXaConnection> broker()
-    {
-        return broker;
     }
 
     LuceneDataSource dataSource()
@@ -155,12 +148,6 @@ public class LuceneIndexImplementation implements IndexImplementation
     public boolean matches( GraphDatabaseService gdb )
     {
         return this.graphDb.equals(gdb);
-    }
-
-    public void reset( LuceneDataSource dataSource, IndexConnectionBroker<LuceneXaConnection> broker)
-    {
-        this.broker = broker;
-        this.dataSource = dataSource;
     }
 
     public GraphDatabaseService graphDb()

@@ -25,7 +25,7 @@ import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
 import org.junit.Test;
-
+import org.mockito.Mockito;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,8 +38,8 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-
 import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
+import static org.mockito.Mockito.mock;
 
 public class TestTxEntries
 {
@@ -79,17 +79,22 @@ public class TestTxEntries
 
     private void assertCorrectChecksumEquality( Xid refXid )
     {
-        Start ref = new Start( refXid, refId, refMaster, refMe, startPosition, refTime, 0l );
-        assertChecksumsEquals( ref, new Start( refXid, refId, refMaster, refMe, startPosition, refTime, 0l ) );
+        /*
+         * public Start( int masterId, int myId, long timeWritten,
+                      long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader,
+                      LogPosition startPosition )
+         */
+        Start ref = new Start( refMaster, refMe,refTime, 0l, refXid.getBranchQualifier(), mock( LogPosition.class) );
+        assertChecksumsEquals( ref, new Start( refMaster, refMe,refTime, 0l, refXid.getBranchQualifier(), mock( LogPosition.class) ) );
 
         // Different Xids
-        assertChecksumsNotEqual( ref, new Start( randomXid( null ), refId, refMaster, refMe, startPosition, refTime, 0l ) );
+        assertChecksumsNotEqual( ref, new Start( refMaster, refMe, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
 
         // Different master
-        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster+1, refMe, startPosition, refTime, 0l ) );
+        assertChecksumsNotEqual( ref, new Start( refMaster+1, refMe, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
 
         // Different me
-        assertChecksumsNotEqual( ref, new Start( refXid, refId, refMaster, refMe+1, startPosition, refTime, 0l ) );
+        assertChecksumsNotEqual( ref, new Start( refMaster, refMe+1, refTime, 0l, randomXid( null ).getBranchQualifier(), mock( LogPosition.class) ) );
     }
 
     private void assertChecksumsNotEqual( Start ref, Start other )

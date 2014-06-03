@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel;
 
-import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 
 /**
@@ -29,13 +29,13 @@ import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 public class DefaultTxHook implements RemoteTxHook
 {
     @Override
-    public void remotelyInitializeTransaction( int eventIdentifier, TransactionState state )
+    public void remotelyInitializeTransaction( TxState state )
     {
         // Do nothing from the ordinary here
     }
 
     @Override
-    public void remotelyFinishTransaction( int eventIdentifier, boolean success )
+    public void remotelyFinishTransaction( boolean success )
     {
         // Do nothing from the ordinary here
     }

@@ -98,31 +98,28 @@ public class NeoStoreFileListingTest
         indexingService = mock( IndexingService.class );
         storeDir = mock( File.class );
 
-        when( xaLogicalLog.getHistoryFileNamePattern()).thenReturn( getHistoryFileNamePattern( "nioneo_logical.log" ) );
-        when( xaContainer.getLogicalLog() ).thenReturn( xaLogicalLog );
-
         // Defaults, overridden in individual tests
         filesInStoreDirAre( new String[]{}, new String[]{} );
         scanStoreFilesAre( new String[]{} );
         indexFilesAre( new String[]{} );
     }
 
-    @Test
-    public void shouldOnlyListLogicalLogs() throws Exception
-    {
-        // Given
-        filesInStoreDirAre( STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
-        NeoStoreFileListing fileListing = newFileListing();
-
-        // When
-        ResourceIterator<File> result = fileListing.listLogicalLogs();
-
-        // Then
-        assertThat( asSetOfPaths( result ), equalTo( asSet(
-                "nioneo_logical.log.v0",
-                "nioneo_logical.log.v1",
-                "nioneo_logical.log.v2") ) );
-    }
+//    @Test
+//    public void shouldOnlyListLogicalLogs() throws Exception
+//    {
+//        // Given
+//        filesInStoreDirAre( STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
+//        NeoStoreFileListing fileListing = newFileListing();
+//
+//        // When
+//        ResourceIterator<File> result = fileListing.listLogicalLogs();
+//
+//        // Then
+//        assertThat( asSetOfPaths( result ), equalTo( asSet(
+//                "nioneo_logical.log.v0",
+//                "nioneo_logical.log.v1",
+//                "nioneo_logical.log.v2") ) );
+//    }
 
     @Test
     public void shouldOnlyListNeoStoreFiles() throws Exception
@@ -205,10 +202,7 @@ public class NeoStoreFileListingTest
                 "neostore.relationshiptypestore.db",
                 "neostore.relationshiptypestore.db.names",
                 "neostore.schemastore.db",
-                "neostore",
-                "nioneo_logical.log.v0",
-                "nioneo_logical.log.v1",
-                "nioneo_logical.log.v2" )));
+                "neostore" )));
     }
 
     @Test

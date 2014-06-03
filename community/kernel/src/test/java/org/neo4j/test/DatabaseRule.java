@@ -182,6 +182,6 @@ public abstract class DatabaseRule extends ExternalResource
 
     public void clearCache()
     {
-        getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        // TODO 2.2-future find a way to clear the cache
     }
 }

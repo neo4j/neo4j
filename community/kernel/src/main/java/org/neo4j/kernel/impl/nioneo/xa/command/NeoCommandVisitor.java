@@ -59,11 +59,11 @@ public interface NeoCommandVisitor
 
     // Index commands
     boolean visitAddIndexCommand( AddCommand command ) throws IOException;
-    boolean visitIndexAddRelationshipCommand( AddRelationshipCommand addRelationshipCommand ) throws IOException;
-    boolean visitRemoveIndexCommand( RemoveCommand removeCommand ) throws IOException;
-    boolean visitIndexDeleteCommand( DeleteCommand deleteCommand ) throws IOException;
-    boolean visitIndexCreateCommand( CreateCommand createCommand ) throws IOException;
-    boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand ) throws IOException;
+    boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException;
+    boolean visitRemoveIndexCommand( RemoveCommand command ) throws IOException;
+    boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException;
+    boolean visitIndexCreateCommand( CreateCommand command ) throws IOException;
+    boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException;
 
     public static class Adapter implements NeoCommandVisitor
     {

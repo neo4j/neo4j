@@ -42,7 +42,6 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -63,6 +62,12 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.index.IndexCommand.AddCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
+import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -103,7 +108,6 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.lang.Integer.parseInt;
-
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -120,7 +124,6 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -1556,5 +1559,48 @@ public class NeoStoreTransactionTest
 		{
 			return new PhysicalTransactionRepresentation(commands, true);
 		}
+
+        @Override
+        public boolean visitAddIndexCommand( AddCommand command ) throws IOException
+        {
+            commands.add(command);
+            return true;
+        }
+
+        @Override
+        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command )
+                throws IOException
+        {
+            commands.add(command);
+            return true;
+        }
+
+        @Override
+        public boolean visitRemoveIndexCommand( RemoveCommand command ) throws IOException
+        {
+            commands.add(command);
+            return true;
+        }
+
+        @Override
+        public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
+        {
+            commands.add(command);
+            return true;
+        }
+
+        @Override
+        public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
+        {
+            commands.add(command);
+            return true;
+        }
+
+        @Override
+        public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
+        {
+            commands.add(command);
+            return true;
+        }
     }
 }

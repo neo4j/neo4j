@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,17 +32,12 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.graphdb.mockfs.BreakableFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.FileSystemGuard;
 import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 public class TestDirectMappedLogBuffer
 {
@@ -113,7 +112,7 @@ public class TestDirectMappedLogBuffer
 
         // When
         writeBuffer.put( new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16} );
-        writeBuffer.writeOut();
+        writeBuffer.force();
 
         // Then
         assertThat(mockChannel.buff.position(  ), is(16));
@@ -128,7 +127,7 @@ public class TestDirectMappedLogBuffer
 
         // When
         writeBuffer.put( new byte[]{1,2,3,4,5,6,7,8,9,10,11,12,13,14,15,16} );
-        writeBuffer.writeOut();
+        writeBuffer.force();;
 
         // Then expect an IOException
     }

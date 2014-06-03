@@ -653,7 +653,8 @@ public class TestAutoIndexing
                 1 } );
 
         newTransaction();
-        graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        // TODO 2.2-future
+//        graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         node1.removeProperty( "nodeProp" );
         newTransaction();
         assertFalse( node1.hasProperty( "nodeProp" ) );

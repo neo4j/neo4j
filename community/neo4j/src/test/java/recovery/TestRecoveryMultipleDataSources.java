@@ -19,26 +19,22 @@
  */
 package recovery;
 
+import static java.lang.Runtime.getRuntime;
+import static java.lang.System.exit;
+import static java.lang.System.getProperty;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+import static org.neo4j.test.TargetDirectory.forTest;
+
 import java.io.File;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static java.lang.Runtime.getRuntime;
-import static java.lang.System.exit;
-import static java.lang.System.getProperty;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestRecoveryMultipleDataSources
 {
@@ -82,8 +78,9 @@ public class TestRecoveryMultipleDataSources
         db.createNode().createRelationshipTo( db.createNode(), MyRelTypes.TEST );
         tx.success();
         tx.close();
-        
-        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
+
+        // TODO 2.2-future
+//        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).rotateLogicalLogs();
         tx = db.beginTx();
         db.index().forNodes( "index" ).add( db.createNode(), dir, db.createNode() );
         tx.success();

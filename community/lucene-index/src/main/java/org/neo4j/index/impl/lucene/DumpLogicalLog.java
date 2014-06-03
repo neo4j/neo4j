@@ -57,7 +57,8 @@ public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
 
     protected XaCommandReaderFactory instantiateCommandReaderFactory()
     {
-        return new LuceneDataSource.LuceneCommandReaderFactory( null, null );
+        // TODO 2.2-future
+        return null;
     }
 
     @Override

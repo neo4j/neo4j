@@ -62,7 +62,7 @@ public class StoreRecoverer
         File baseLogPath = config.get( GraphDatabaseSettings.logical_log );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( baseLogPath, fs );
 
-        File log = logFiles.getHistoryFileName(logVersionRepository.getCurrentLogVersion());
+        File log = logFiles.getHistoryFileName( logVersionRepository.getCurrentLogVersion() );
 
         StoreChannel logChannel = null;
         try

@@ -29,9 +29,6 @@ import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
-
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.MultiReader;
 import org.apache.lucene.index.Term;
@@ -43,7 +40,6 @@ import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
@@ -52,7 +48,6 @@ import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 
 public abstract class LuceneIndex<T extends PropertyContainer> implements Index<T>
@@ -65,7 +60,6 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
 
     final LuceneIndexImplementation service;
     private final IndexIdentifier identifier;
-    private final TransactionManager txManager;
     final IndexType type;
     private volatile boolean deleted;
 
@@ -74,22 +68,22 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
     // allow for self-healing properties.
     final Collection<Long> abandonedIds = new CopyOnWriteArraySet<Long>();
 
-    LuceneIndex( LuceneIndexImplementation service, IndexIdentifier identifier, TransactionManager txManager )
+    LuceneIndex( LuceneIndexImplementation service, IndexIdentifier identifier )
     {
         this.service = service;
         this.identifier = identifier;
-        this.txManager = txManager;
         this.type = service.dataSource().getType( identifier, false );
     }
 
     LuceneXaConnection getConnection()
     {
-        assertNotDeleted();
-        if ( service.broker() == null )
-        {
-            throw new ReadOnlyDbException();
-        }
-        return service.broker().acquireResourceConnection();
+//        assertNotDeleted();
+//        if ( service.broker() == null )
+//        {
+//            throw new ReadOnlyDbException();
+//        }
+//        return service.broker().acquireResourceConnection();
+        return null;
     }
 
     private void assertNotDeleted()
@@ -108,9 +102,10 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
 
     LuceneXaConnection getReadOnlyConnection()
     {
-        assertNotDeleted();
-        return service.broker() == null ? null :
-                service.broker().acquireReadOnlyResourceConnection();
+//        assertNotDeleted();
+//        return service.broker() == null ? null :
+//                service.broker().acquireReadOnlyResourceConnection();r
+        return null;
     }
 
     void markAsDeleted()
@@ -479,9 +474,9 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         private final GraphDatabaseService gdb;
         NodeIndex( LuceneIndexImplementation service,
                    GraphDatabaseService gdb,
-                   IndexIdentifier identifier, TransactionManager txManager )
+                   IndexIdentifier identifier )
         {
-            super( service, identifier, txManager );
+            super( service, identifier );
             this.gdb = gdb;
         }
 
@@ -525,9 +520,9 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
         private final GraphDatabaseService gdb;
         RelationshipIndex( LuceneIndexImplementation service,
                            GraphDatabaseService gdb,
-                           IndexIdentifier identifier, TransactionManager txManager )
+                           IndexIdentifier identifier )
         {
-            super( service, identifier, txManager );
+            super( service, identifier );
             this.gdb = gdb;
         }
 
@@ -624,16 +619,17 @@ public abstract class LuceneIndex<T extends PropertyContainer> implements Index<
      */
     private void assertInTransaction()
     {
-        try
-        {
-            if ( txManager.getTransaction() == null )
-            {
-                throw new NotInTransactionException();
-            }
-        }
-        catch ( SystemException e )
-        {
-            throw new IllegalStateException( "Unable to determine transaction state", e );
-        }
+        // TODO 2.2-future
+//        try
+//        {
+//            if ( txManager.getTransaction() == null )
+//            {
+//                throw new NotInTransactionException();
+//            }
+//        }
+//        catch ( SystemException e )
+//        {
+//            throw new IllegalStateException( "Unable to determine transaction state", e );
+//        }
     }
 }

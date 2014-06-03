@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -26,14 +28,12 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
-
 public class LogPruneStrategies
 {
     public static final LogPruneStrategy NO_PRUNING = new LogPruneStrategy()
     {
         @Override
-        public void prune( LogFileInformation source )
+        public void prune()
         {   // Don't prune logs at all.
         }
 
@@ -52,59 +52,68 @@ public class LogPruneStrategies
     private abstract static class AbstractPruneStrategy implements LogPruneStrategy
     {
         protected final FileSystemAbstraction fileSystem;
+        protected final LogFileInformation logFileInformation;
+        protected final PhysicalLogFiles files;
+        protected final LogVersionRepository versionRepo;
 
-        AbstractPruneStrategy( FileSystemAbstraction fileSystem )
+
+        AbstractPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
+                LogVersionRepository versionRepo )
         {
+            super();
             this.fileSystem = fileSystem;
+            this.logFileInformation = logFileInformation;
+            this.files = files;
+            this.versionRepo = versionRepo;
         }
-
+        
         @Override
-        public void prune( LogFileInformation source )
+        public void prune()
         {
-            if ( source.getCurrentLogVersion() == 0 )
-            {
-                return;
-            }
-
-            long upper = source.getCurrentLogVersion()-1;
-            Threshold threshold = newThreshold();
-            boolean exceeded = false;
-            while ( upper >= 0 )
-            {
-                File file = source.getFileName( upper );
-                if ( !fileSystem.fileExists( file ) )
-                {
-                    // There aren't logs to prune anything. Just return
-                    return;
-                }
-
-                if ( fileSystem.getFileSize( file ) > VersionAwareLogEntryReader.LOG_HEADER_SIZE &&
-                        threshold.reached( file, upper, source ) )
-                {
-                    exceeded = true;
-                    break;
-                }
-                upper--;
-            }
-
-            if ( !exceeded )
-            {
-                return;
-            }
-
-            // Find out which log is the earliest existing (lower bound to prune)
-            long lower = upper;
-            while ( fileSystem.fileExists( source.getFileName( lower-1 ) ) )
-            {
-                lower--;
-            }
-
-            // The reason we delete from lower to upper is that if it crashes in the middle
-            // we can be sure that no holes are created
-            for ( long version = lower; version < upper; version++ )
-            {
-                fileSystem.deleteFile( source.getFileName( version ) );
-            }
+//            if ( source.getCurrentLogVersion() == 0 )
+//            {
+//                return;
+//            }
+//
+//            long upper = source.getCurrentLogVersion()-1;
+//            Threshold threshold = newThreshold();
+//            boolean exceeded = false;
+//            while ( upper >= 0 )
+//            {
+//                File file = source.getFileName( upper );
+//                if ( !fileSystem.fileExists( file ) )
+//                {
+//                    // There aren't logs to prune anything. Just return
+//                    return;
+//                }
+//
+//                if ( fileSystem.getFileSize( file ) > VersionAwareLogEntryReader.LOG_HEADER_SIZE &&
+//                        threshold.reached( file, upper, source ) )
+//                {
+//                    exceeded = true;
+//                    break;
+//                }
+//                upper--;
+//            }
+//
+//            if ( !exceeded )
+//            {
+//                return;
+//            }
+//
+//            // Find out which log is the earliest existing (lower bound to prune)
+//            long lower = upper;
+//            while ( fileSystem.fileExists( source.getFileName( lower-1 ) ) )
+//            {
+//                lower--;
+//            }
+//
+//            // The reason we delete from lower to upper is that if it crashes in the middle
+//            // we can be sure that no holes are created
+//            for ( long version = lower; version < upper; version++ )
+//            {
+//                fileSystem.deleteFile( source.getFileName( version ) );
+//            }
         }
 
         /**
@@ -114,20 +123,23 @@ public class LogPruneStrategies
          * returned {@code true} for should be kept, but all previous logs should be pruned.
          */
         protected abstract Threshold newThreshold();
+
     }
 
-    public static LogPruneStrategy nonEmptyFileCount( FileSystemAbstraction fileSystem, int maxLogCountToKeep )
+    public static LogPruneStrategy nonEmptyFileCount( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
+            LogVersionRepository versionRepo, int maxLogCountToKeep )
     {
-        return new FileCountPruneStrategy( fileSystem, maxLogCountToKeep );
+        return new FileCountPruneStrategy( fileSystem, logFileInformation, files, versionRepo, maxLogCountToKeep );
     }
 
     private static class FileCountPruneStrategy extends AbstractPruneStrategy
     {
         private final int maxNonEmptyLogCount;
 
-        public FileCountPruneStrategy( FileSystemAbstraction fileSystem, int maxNonEmptyLogCount )
+        public FileCountPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
+                LogVersionRepository versionRepo, int maxNonEmptyLogCount )
         {
-            super( fileSystem );
+            super( fileSystem, logFileInformation, files, versionRepo );
             this.maxNonEmptyLogCount = maxNonEmptyLogCount;
         }
 
@@ -153,18 +165,20 @@ public class LogPruneStrategies
         }
     }
 
-    public static LogPruneStrategy totalFileSize( FileSystemAbstraction fileSystem, int numberOfBytes )
+    public static LogPruneStrategy totalFileSize( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
+            LogVersionRepository versionRepo, int numberOfBytes )
     {
-        return new FileSizePruneStrategy( fileSystem, numberOfBytes );
+        return new FileSizePruneStrategy( fileSystem, logFileInformation, files, versionRepo, numberOfBytes );
     }
 
     public static class FileSizePruneStrategy extends AbstractPruneStrategy
     {
         private final int maxSize;
 
-        public FileSizePruneStrategy( FileSystemAbstraction fileystem, int maxSizeBytes )
+        public FileSizePruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
+                LogVersionRepository versionRepo, int maxSizeBytes )
         {
-            super( fileystem );
+            super( fileSystem, logFileInformation, files, versionRepo );
             this.maxSize = maxSizeBytes;
         }
 
@@ -185,18 +199,20 @@ public class LogPruneStrategies
         }
     }
 
-    public static LogPruneStrategy transactionCount( FileSystemAbstraction fileSystem, int maxCount )
+    public static LogPruneStrategy transactionCount( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
+            LogVersionRepository versionRepo, int maxCount )
     {
-        return new TransactionCountPruneStrategy( fileSystem, maxCount );
+        return new TransactionCountPruneStrategy( fileSystem, logFileInformation, files, versionRepo, maxCount );
     }
 
     public static class TransactionCountPruneStrategy extends AbstractPruneStrategy
     {
         private final int maxTransactionCount;
 
-        public TransactionCountPruneStrategy( FileSystemAbstraction fileSystem, int maxTransactionCount )
+        public TransactionCountPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
+                LogVersionRepository versionRepo, int maxTransactionCount )
         {
-            super( fileSystem );
+            super( fileSystem, logFileInformation, files, versionRepo );
             this.maxTransactionCount = maxTransactionCount;
         }
 
@@ -223,7 +239,7 @@ public class LogPruneStrategies
                     }
                     catch(RuntimeException e)
                     {
-                        if(e.getCause() != null && e.getCause() instanceof IllegalLogFormatException)
+                        if(e.getCause() != null && e.getCause() instanceof IllegalLogFormatException )
                         {
                             return decidePruneForIllegalLogFormat( (IllegalLogFormatException) e.getCause() );
                         }
@@ -237,9 +253,10 @@ public class LogPruneStrategies
         }
     }
 
-    public static LogPruneStrategy transactionTimeSpan( FileSystemAbstraction fileSystem, int timeToKeep, TimeUnit timeUnit )
+    public static LogPruneStrategy transactionTimeSpan( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
+            LogVersionRepository versionRepo, int timeToKeep, TimeUnit timeUnit )
     {
-        return new TransactionTimeSpanPruneStrategy( fileSystem, timeToKeep, timeUnit );
+        return new TransactionTimeSpanPruneStrategy( fileSystem, logFileInformation, files, versionRepo, timeToKeep, timeUnit );
     }
 
     public static class TransactionTimeSpanPruneStrategy extends AbstractPruneStrategy
@@ -247,9 +264,10 @@ public class LogPruneStrategies
         private final int timeToKeep;
         private final TimeUnit unit;
 
-        public TransactionTimeSpanPruneStrategy( FileSystemAbstraction fileSystem, int timeToKeep, TimeUnit unit )
+        public TransactionTimeSpanPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
+                LogVersionRepository versionRepo,  int timeToKeep, TimeUnit unit )
         {
-            super( fileSystem );
+            super( fileSystem, logFileInformation, files, versionRepo );
             this.timeToKeep = timeToKeep;
             this.unit = unit;
         }
@@ -283,7 +301,7 @@ public class LogPruneStrategies
 
     private static boolean decidePruneForIllegalLogFormat( IllegalLogFormatException e )
     {
-        if(e.wasNewerLogVersion())
+        if( e.wasNewerLogVersion() )
         {
             throw new RuntimeException( "Unable to read database logs, because it contains" +
                     " logs from a newer version of Neo4j.", e );
@@ -307,7 +325,8 @@ public class LogPruneStrategies
      *   <li>1k hours - For keeping last 1000 hours worth of log data</li>
      * </ul>
      */
-    public static LogPruneStrategy fromConfigValue( FileSystemAbstraction fileSystem, String configValue )
+    public static LogPruneStrategy fromConfigValue( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
+            LogVersionRepository versionRepo, String configValue )
     {
         String[] tokens = configValue.split( " " );
         if ( tokens.length == 0 )
@@ -324,7 +343,7 @@ public class LogPruneStrategies
             }
             else if ( numberWithUnit.equals( "false" ) )
             {
-                return transactionCount( fileSystem, 1 );
+                return transactionCount( fileSystem, logFileInformation, files, versionRepo, 1 );
             }
             else
             {
@@ -340,23 +359,23 @@ public class LogPruneStrategies
         int typeIndex = 0;
         if ( type.equals( types[typeIndex++] ) )
         {
-            return nonEmptyFileCount( fileSystem, number );
+            return nonEmptyFileCount( fileSystem, logFileInformation, files, versionRepo, number );
         }
         else if ( type.equals( types[typeIndex++] ) )
         {
-            return totalFileSize( fileSystem, number );
+            return totalFileSize( fileSystem, logFileInformation, files, versionRepo, number );
         }
         else if ( type.equals( types[typeIndex++] ) )
         {
-            return transactionCount( fileSystem, number );
+            return transactionCount( fileSystem, logFileInformation, files, versionRepo, number );
         }
         else if ( type.equals( types[typeIndex++] ) )
         {
-            return transactionTimeSpan( fileSystem, number, TimeUnit.HOURS );
+            return transactionTimeSpan( fileSystem, logFileInformation, files, versionRepo, number, TimeUnit.HOURS );
         }
         else if ( type.equals( types[typeIndex++] ) )
         {
-            return transactionTimeSpan( fileSystem, number, TimeUnit.DAYS );
+            return transactionTimeSpan( fileSystem, logFileInformation, files, versionRepo, number, TimeUnit.DAYS );
         }
         else
         {

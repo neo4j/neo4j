@@ -39,6 +39,7 @@ import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.TestShortString;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.GraphTransactionRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -245,6 +246,6 @@ public class TestShortStringProperties extends TestShortString
 
     private PropertyStore propertyStore()
     {
-        return graphdb.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStore.class ).getPropertyStore();
+        return graphdb.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class).getNeoStore().getPropertyStore();
     }
 }

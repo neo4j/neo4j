@@ -298,7 +298,7 @@ class SlaveLocksClient implements Locks.Client
                     + availabilityGuard.describeWhoIsBlocking() );
         }
 
-        txHook.remotelyInitializeTransaction( txManager.getEventIdentifier(), txManager.getTransactionState() );
+        txHook.remotelyInitializeTransaction( txManager.getTransactionState() );
     }
 
     private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()

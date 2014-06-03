@@ -19,16 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.api.TxState;
+
 
 /**
  * Hook for remote transaction coordination
  */
 public interface RemoteTxHook
 {
-    void remotelyInitializeTransaction( int eventIdentifier, TransactionState state );
+    void remotelyInitializeTransaction( TxState state );
     
-    void remotelyFinishTransaction( int eventIdentifier, boolean success );
+    void remotelyFinishTransaction( boolean success );
     
     boolean freeIdsDuringRollback();
 }

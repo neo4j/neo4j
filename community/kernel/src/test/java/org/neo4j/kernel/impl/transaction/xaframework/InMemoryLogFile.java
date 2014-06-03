@@ -58,8 +58,9 @@ public class InMemoryLogFile implements LogFile
     }
 
     @Override
-    public LogPosition findRoughPositionOf( long transactionId ) throws NoSuchTransactionException
+    public void accept( LogFileVisitor visitor )
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        // TODO Auto-generated method stub
+        
     }
 }
