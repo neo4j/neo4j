@@ -23,9 +23,11 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import commands._
 import mutation.GraphElementPropertyFunctions
 import pipes.{EntityProducer, QueryState}
-import org.neo4j.cypher.{EntityNotFoundException, IndexHintException, InternalException}
+import org.neo4j.cypher.{CypherTypeException, EntityNotFoundException, IndexHintException, InternalException}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.helpers.IsCollection
+import scala.collection.GenTraversableOnce
 
 class EntityProducerFactory extends GraphElementPropertyFunctions {
 
@@ -116,7 +118,6 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         state.query.relationshipOps.all }
   }
 
-
   val nodeByIndexHint: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, AnyIndex, valueExp)) =>
 
@@ -129,9 +130,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         (throw new InternalException("Something went wrong trying to build your query."))
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val value = expression(m)(state)
-        val neoValue = makeValueNeoSafe(value)
-        state.query.exactIndexSearch(index, neoValue)
+        indexQuery(expression, m, state, state.query.exactIndexSearch(index, _), labelName, propertyName)
       }
 
     case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, UniqueIndex, valueExp)) =>
@@ -145,11 +144,40 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         (throw new InternalException("Something went wrong trying to build your query."))
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val value = expression(m)(state)
-        val neoValue = makeValueNeoSafe(value)
-        state.query.exactUniqueIndexSearch(index, neoValue).toIterator
+        indexQuery(expression, m, state, state.query.exactUniqueIndexSearch(index, _), labelName, propertyName)
       }
   }
+
+  private def indexQuery(expression: QueryExpression,
+                         m: ExecutionContext,
+                         state: QueryState,
+                         index: Any => GenTraversableOnce[Node],
+                         labelName: String,
+                         propertyName: String): Iterator[Node] = expression match {
+    case SingleQueryExpression(inner) =>
+      val in = inner(m)(state)
+      in match {
+        case null =>
+          Iterator.empty
+
+        case value =>
+          val neoValue = makeValueNeoSafe(value)
+          index(neoValue).toIterator
+      }
+
+    case ManyQueryExpression(inner) =>
+      inner(m)(state) match {
+        case IsCollection(coll) => coll.toSet.flatMap {
+          value: Any =>
+            val neoValue: Any = makeValueNeoSafe(value)
+            index(neoValue)
+
+        }.iterator
+        case null => Iterator.empty
+        case _ => throw new CypherTypeException(s"Expected the value for looking up $labelName.$propertyName to be a collection but it was not.")
+      }
+  }
+
 
   val relationshipByIndex: PartialFunction[(PlanContext, StartItem), EntityProducer[Relationship]] = {
     case (planContext, startItem @ RelationshipByIndex(varName, idxName, key, value)) =>
