@@ -1,7 +1,3 @@
-2.1.2
------
-o Allow Cypher to use indexes to solve IN queries
-
 2.1.0-M02
 ---------
 o Add a new cost based planner

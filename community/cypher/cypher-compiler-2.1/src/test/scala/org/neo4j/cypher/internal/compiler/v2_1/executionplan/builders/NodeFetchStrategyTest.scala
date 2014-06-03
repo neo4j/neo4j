@@ -20,9 +20,9 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{AnyInCollection, HasLabel, Equals}
+import commands.{HasLabel, Equals}
 import commands.values.{UnresolvedLabel, UnresolvedProperty}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Collection, Literal, Property, Identifier}
+import commands.expressions.{Property, Identifier}
 import spi.PlanContext
 import symbols._
 import org.neo4j.kernel.api.index.IndexDescriptor
@@ -65,24 +65,6 @@ class NodeFetchStrategyTest extends MockitoSugar with Assertions {
 
     // When
     val foundStartItem = NodeFetchStrategy.findStartStrategy("a", Seq(equalityPredicate, labelPredicate), planCtx, noSymbols)
-
-    // Then
-    assert(foundStartItem.rating === NodeFetchStrategy.IndexEquality)
-  }
-
-  @Test def should_select_schema_index_when_expression_property_check_with_in() {
-    //Given
-    val noSymbols = new SymbolTable(Map("b"->CTNode))
-    val inPredicate = AnyInCollection(Collection(Identifier("b")),"_inner_",Equals(Property(Identifier("a"), UnresolvedProperty(propertyName)), Identifier("_inner_")))
-    val labelPredicate = HasLabel(Identifier("a"), UnresolvedLabel(labelName))
-    val planCtx = mock[PlanContext]
-    val indexDescriptor = new IndexDescriptor(0, 0)
-
-    when(planCtx.getIndexRule(labelName, propertyName)).thenReturn(Some(indexDescriptor))
-    when(planCtx.getUniquenessConstraint(labelName, propertyName)).thenReturn(None)
-
-    // When
-    val foundStartItem = NodeFetchStrategy.findStartStrategy("a", Seq(inPredicate, labelPredicate), planCtx, noSymbols)
 
     // Then
     assert(foundStartItem.rating === NodeFetchStrategy.IndexEquality)

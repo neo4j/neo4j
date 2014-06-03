@@ -2618,16 +2618,6 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
-  test("simple in expression with index hint") {
-    expectQuery(
-      "match (n:Person)-->() using index n:Person(name) where n.name IN ['Andres'] return n",
-      Query.matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("Person"))), SingleNode("  UNNAMED20"), "  UNNAMED16", Seq(), Direction.OUTGOING, Map.empty)).
-        where(AnyInCollection(Collection(Literal("Andres")), "-_-INNER-_-",  Equals(Property(Identifier("n"), PropertyKey("name")), Identifier("-_-INNER-_-")))).
-        using(SchemaIndex("n", "Person", "name", AnyIndex, None)).
-        returns(ReturnItem(Identifier("n"), "n"))
-    )
-  }
-
   test("single node match pattern") {
     expectQuery(
       "start s = node(*) match s return s",

@@ -20,7 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{AllNodes, AnyIndex, NodeByLabel, SchemaIndex}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 import pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{QueryContext, PlanContext}
 import org.neo4j.cypher.IndexHintException
@@ -29,9 +30,6 @@ import org.junit.{Before, Test}
 import org.mockito.Mockito._
 import org.scalatest.Assertions
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SchemaIndex
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v2_1.commands.NodeByLabel
 
 class EntityProducerFactoryTest extends MockitoSugar with Assertions {
   var planContext: PlanContext = null
@@ -69,7 +67,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     val state = QueryStateHelper.emptyWith(query = queryContext)
 
     //WHEN
-    val func = factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, AnyIndex, Some(SingleQueryExpression(Literal(value)))))
+    val func = factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, AnyIndex, Some(Literal(value))))
     assert(func(context, state) === indexResult)
   }
 
@@ -97,7 +95,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     val propertyKey = "prop"
     val index: IndexDescriptor = new IndexDescriptor(123, 456)
     when(planContext.getIndexRule(labelName, propertyKey)).thenReturn(Some(index))
-    val producer = factory.nodeByIndexHint(planContext, SchemaIndex("x", labelName, propertyKey, AnyIndex, Some(SingleQueryExpression(Literal(Seq(1,2,3))))))
+    val producer = factory.nodeByIndexHint(planContext, SchemaIndex("x", labelName, propertyKey, AnyIndex, Some(Literal(Seq(1,2,3)))))
     val queryContext: QueryContext = mock[QueryContext]
     val state = QueryStateHelper.emptyWith(query = queryContext)
 
