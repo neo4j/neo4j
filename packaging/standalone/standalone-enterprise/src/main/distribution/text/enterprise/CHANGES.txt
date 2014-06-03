@@ -1,5 +1,11 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.1.0
+-----
+Kernel:
+o Fixes potential leak of transaction state in entity locks that could
+  lead to excess GC activity
+
 2.1.0-RC2
 --------- 
 Kernel:

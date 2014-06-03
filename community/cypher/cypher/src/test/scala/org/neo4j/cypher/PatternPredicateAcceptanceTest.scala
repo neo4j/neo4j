@@ -52,8 +52,7 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
   }
 
   test("should filter var length relationships with properties") {
-    // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
-
+    // given
     val start1 = createPath(12, 42)
     createPath(324234,666)
 
@@ -65,8 +64,7 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
   }
 
   test("should handle or between an expression and a subquery") {
-    // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
-
+    // given
     val start1 = createPath(33, 42)
     val start2 = createPath(12, 666)
     createPath(55555, 7777)
@@ -79,8 +77,7 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
   }
 
   test("should handle or between 2 expressions and a subquery") {
-    // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
-
+    // Given
     val start1 = createPath(33, 42)
     val start2 = createPath(12, 666)
     val start3 = createPath(25, 444)
@@ -94,8 +91,7 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
   }
 
   test("should handle or between one expression and a negated subquery") {
-    // Given a graph with two paths from the :Start node - one with all props having the 42 value, and one where not all rels have this property
-
+    // given
     val start1 = createPath(nodePropertyValue = 25, relPropertyValue = 444)
     val start2 = createPath(nodePropertyValue = 12, relPropertyValue = 42)
     createPath(nodePropertyValue = 25, relPropertyValue = 42)
@@ -105,6 +101,101 @@ class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matche
 
     // then
     assert(Seq(start1, start2) == result)
+  }
+
+  test("should handle or between one subquery and a negated subquery") {
+    // given
+    val start1 = createLabeledNode("Start")
+    relate(start1, createNode(Map("prop" -> 42)))
+    val start2 = createLabeledNode("Start")
+    relate(start2, createNode(Map("prop" -> 411)))
+    val start3 = createLabeledNode("Start")
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where (n)-->({prop: 42}) OR NOT (n)-->() return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start3) == result)
+  }
+
+  test("should handle or between two subqueries") {
+    // given
+    val start1 = createLabeledNode("Start")
+    relate(start1, createNode(Map("prop" -> 42)))
+    val start2 = createLabeledNode("Start")
+    relate(start2, createNode(Map("prop" -> 411)))
+    createLabeledNode("Start")
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where (n)-->({prop: 42}) OR (n)-->({prop: 411}) return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start2) == result)
+  }
+
+  test("should handle or between one negated subquery and a subquery") {
+    // given
+    val start1 = createLabeledNode("Start")
+    relate(start1, createNode(Map("prop" -> 42)))
+    val start2 = createLabeledNode("Start")
+    relate(start2, createNode(Map("prop" -> 411)))
+    val start3 = createLabeledNode("Start")
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where NOT (n)-->() OR (n)-->({prop: 42}) return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start3) == result)
+  }
+
+  test("should handle or between one negated subquery, a subquery and a regular expression") {
+    // given
+    val start1 = createLabeledNode("Start")
+    relate(start1, createNode(Map("prop" -> 42)))
+    val start2 = createLabeledNode("Start")
+    relate(start2, createNode(Map("prop" -> 411)))
+    val start3 = createLabeledNode(Map("prop" -> 21), "Start")
+    createNode()
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where n.prop = 21 OR NOT (n)-->() OR (n)-->({prop: 42}) return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start3) == result)
+  }
+
+  test("should handle or between one negated subquery, two subqueries and a regular expression") {
+    // given
+    val start1 = createLabeledNode("Start")
+    relate(start1, createNode(Map("prop" -> 42)))
+    val start2 = createLabeledNode("Start")
+    relate(start2, createNode(Map("prop" -> 411)))
+    val start3 = createLabeledNode(Map("prop" -> 21), "Start")
+    val start4 = createLabeledNode("Start")
+    relate(start4, createNode(Map("prop" -> 1)))
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where n.prop = 21 OR NOT (n)-->() OR (n)-->({prop: 42}) OR (n)-->({prop: 1}) return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start3, start4) == result)
+  }
+
+  test("should handle or between one negated subquery, two subqueries and a regular expression 2") {
+    // given
+    val start1 = createLabeledNode("Start")
+    relate(start1, createNode(Map("prop" -> 42)))
+    val start2 = createLabeledNode("Start")
+    relate(start2, createNode(Map("prop" -> 411)))
+    val start3 = createLabeledNode(Map("prop" -> 21), "Start")
+    val start4 = createLabeledNode("Start")
+    relate(start4, createNode(Map("prop" -> 1)))
+
+    // when
+    val result = executeWithNewPlanner("match (n:Start) where n.prop = 21 OR (n)-->({prop: 42}) OR NOT (n)-->() OR (n)-->({prop: 1}) return n").columnAs[Node]("n").toList
+
+    // then
+    assert(Seq(start1, start3, start4) == result)
   }
 
   private def createPath(nodePropertyValue: Any, relPropertyValue: Any): Node = {

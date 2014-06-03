@@ -60,8 +60,8 @@ object flattenBooleanOperators extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
 
   private val firstStep: Rewriter = Rewriter.lift {
-    case p@And(lhs, rhs) => Ands(List(lhs, rhs))(p.position)
-    case p@Or(lhs, rhs)  => Ors(List(lhs, rhs))(p.position)
+    case p@And(lhs, rhs) => Ands(Set(lhs, rhs))(p.position)
+    case p@Or(lhs, rhs)  => Ors(Set(lhs, rhs))(p.position)
   }
 
   private val secondStep: Rewriter = Rewriter.lift {
@@ -85,14 +85,12 @@ object simplifyPredicates extends Rewriter {
   private val F = False()(null)
 
   private val instance: Rewriter = Rewriter.lift {
-    case Not(Not(exp)) => exp
-    case p@Ands(exps) if exps.contains(T)                => Ands(exps.filterNot(T == _))(p.position)
-    case p@Ors(exps) if exps.contains(F)                 => Ors(exps.filterNot(F == _))(p.position)
-    case p@Ors(exps) if exps.contains(T)                 => True()(p.position)
-    case p@Ands(exps) if exps.contains(F)                => False()(p.position)
-    case p@Ands(head :: Nil)                             => head
-    case p@Ors(head :: Nil)                              => head
-    case p@Ands(exps) if exps.distinct.size != exps.size => Ands(exps.distinct)(p.position)
-    case p@Ors(exps) if exps.distinct.size != exps.size  => Ors(exps.distinct)(p.position)
+    case Not(Not(exp))                    => exp
+    case p@Ands(exps) if exps.contains(T) => Ands(exps.filterNot(T == _))(p.position)
+    case p@Ors(exps) if exps.contains(F)  => Ors(exps.filterNot(F == _))(p.position)
+    case p@Ors(exps) if exps.contains(T)  => True()(p.position)
+    case p@Ands(exps) if exps.contains(F) => False()(p.position)
+    case p@Ands(exps) if exps.size == 1   => exps.head
+    case p@Ors(exps) if exps.size == 1    => exps.head
   }
 }

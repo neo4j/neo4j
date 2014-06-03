@@ -19,35 +19,42 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
 import org.neo4j.graphdb.Node
 
-class OptionalBehaviourAcceptanceTest extends ExecutionEngineJUnitSuite {
-  @Test def optional_nodes_with_labels_in_match_clause_should_return_null_when_where_is_no_match() {
+class OptionalBehaviourAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+  test("optional nodes with labels in match clause should return null when there is no match") {
     createNode()
-    val result = execute("start n = node(0) optional match n-[r]-(m:Person) return r")
+    val result = executeWithNewPlanner("match n optional match n-[r]-(m:Person) return r")
     assert(result.toList === List(Map("r" -> null)))
   }
 
-  @Test def optional_nodes_with_labels_in_match_clause_should_not_return_if_where_is_no_match() {
+  test("optional nodes with labels in match clause should not return if where is no match") {
     createNode()
-    val result = execute("start n = node(0) optional match (n)-[r]-(m) where m:Person return r")
+    val result = executeWithNewPlanner("match n optional match (n)-[r]-(m) where m:Person return r")
     assert(result.toList === List(Map("r" -> null)))
   }
 
-  @Test def should_allow_match_following_optional_match_if_there_is_an_intervening_with_when_there_are_results() {
+  test("should allow match following optional match if there is an intervening with when there are results") {
     val a = createLabeledNode("A")
     val c = createLabeledNode("C")
     relate(a, c)
     val d = createNode()
     relate(c, d)
-    val result = executeScalar[Node]("MATCH (a:A) OPTIONAL MATCH (a)-->(b:B) OPTIONAL MATCH (a)-->(c:C) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
+    val result = executeScalarWithNewPlanner[Node]("MATCH (a:A) OPTIONAL MATCH (a)-->(b:B) OPTIONAL MATCH (a)-->(c:C) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
     assert(result === d)
   }
 
-  @Test def should_allow_match_following_optional_match_if_there_is_an_intervening_with_when_there_are_no_results() {
+  test("should allow match following optional match if there is an intervening with when there are no results") {
     createLabeledNode("A")
-    val result = execute("MATCH (a:A) OPTIONAL MATCH (a)-->(b:B) OPTIONAL MATCH (a)-->(c:C) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
+    val result = executeWithNewPlanner("MATCH (a:A) OPTIONAL MATCH (a)-->(b:B) OPTIONAL MATCH (a)-->(c:C) WITH coalesce(b, c) as x MATCH (x)-->(d) RETURN d")
     assert(result.toList === List())
+  }
+
+  test("should support optional match without any external dependencies in WITH") {
+    val nodeA = createLabeledNode("A")
+    val nodeB = createLabeledNode("B")
+    val result = executeWithNewPlanner("OPTIONAL MATCH (a:A) WITH a AS a MATCH (b:B) RETURN a, b")
+
+    assert(result.toList === List(Map("a" -> nodeA, "b" -> nodeB)))
   }
 }

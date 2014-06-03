@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.{SymbolTable, CTNumber}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.CTNumber
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{Equals, Not, True}
-import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal}
 
 class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
@@ -93,7 +92,7 @@ class SelectOrSemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
     result should equal(List(Map("a" -> 2)))
   }
 
-  test("should let through the one that matches ot the one satisfying the") {
+  test("should let through the one that matches and the one satisfying the expression") {
     val lhsData = List(Map("a" -> 1), Map("a" -> 2), Map("a" -> 3))
     val lhs = new FakePipe(lhsData.iterator, "a" -> CTNumber)
 

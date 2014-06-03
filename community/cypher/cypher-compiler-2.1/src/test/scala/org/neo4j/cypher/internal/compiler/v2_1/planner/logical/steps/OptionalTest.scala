@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{QueryGraphSolver, QueryGraphSolvingContext, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, QueryGraphSolver, QueryGraphSolvingContext, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 import scala.collection.mutable
 
@@ -43,8 +43,8 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: SingleRow => 1.0
-      case _            => 1000.0
+      case _: SingleRow => Cardinality(1.0)
+      case _            => Cardinality(1000.0)
     })
 
     val fakePlan = newMockedQueryPlan(Set(IdName("a"), IdName("b")))
@@ -80,8 +80,8 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: SingleRow => 1.0
-      case _            => 1000.0
+      case _: SingleRow => Cardinality(1.0)
+      case _            => Cardinality(1000.0)
     })
 
     val fakePlan1 = newMockedQueryPlan(Set(IdName("a"), IdName("b")))

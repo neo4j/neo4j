@@ -106,7 +106,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         }
     }
 
-    public String filterVersionForUDC( String version )
+    public static String filterVersionForUDC( String version )
     {
         if ( !version.contains( "+" ) )
         {

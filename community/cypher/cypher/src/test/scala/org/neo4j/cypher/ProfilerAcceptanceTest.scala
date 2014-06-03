@@ -46,6 +46,12 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     assertDbHits(1)(result)("Expand")
   }
 
+  test("PROFILE for Cypher 2.0") {
+    val result = super.profile("cypher 2.0 match n where n-[:FOO]->() return *")
+    result.toList
+    result.executionPlanDescription().toString
+  }
+
   test("match n where not n-[:FOO]->() return *") {
     //GIVEN
     relate( createNode(), createNode(), "FOO")

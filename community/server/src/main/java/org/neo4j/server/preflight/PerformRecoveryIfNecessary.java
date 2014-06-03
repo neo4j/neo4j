@@ -38,6 +38,7 @@ public class PerformRecoveryIfNecessary implements PreflightTask
     private final PrintStream out;
     private final Map<String, String> dbConfig;
     private final ConsoleLogger log;
+    private final Logging logging;
 
     public PerformRecoveryIfNecessary( Configuration serverConfig, Map<String, String> dbConfig, PrintStream out,
             Logging logging )
@@ -46,6 +47,7 @@ public class PerformRecoveryIfNecessary implements PreflightTask
         this.dbConfig = dbConfig;
         this.out = out;
         this.log = logging.getConsoleLog( getClass() );
+        this.logging = logging;
     }
 
     @Override
@@ -60,7 +62,7 @@ public class PerformRecoveryIfNecessary implements PreflightTask
                 if ( recoverer.recoveryNeededAt( dbLocation, dbConfig ) )
                 {
                     out.println( "Detected incorrectly shut down database, performing recovery.." );
-                    recoverer.recover( dbLocation, dbConfig );
+                    recoverer.recover( dbLocation, dbConfig, logging );
                 }
             }
             return true;

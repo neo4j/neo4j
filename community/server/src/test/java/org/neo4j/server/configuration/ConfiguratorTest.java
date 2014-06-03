@@ -93,7 +93,7 @@ public class ConfiguratorTest
 
         Map<String, String> databaseTuningProperties = configurator.getDatabaseTuningProperties();
         assertNotNull( databaseTuningProperties );
-        assertEquals( 5, databaseTuningProperties.size() );
+        assertEquals( 6, databaseTuningProperties.size() );
     }
 
     @Test

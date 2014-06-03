@@ -23,16 +23,17 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
+import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogRecoveryCheck;
+import org.neo4j.kernel.logging.Logging;
 
 /**
  * For now, an external tool that can determine if a given store will need
@@ -59,6 +60,14 @@ public class StoreRecoverer
         params.put( GraphDatabaseSettings.store_dir.name(), dataDir.getPath() );
         Config config = new Config( params, GraphDatabaseSettings.class );
 
+        File neoStorePath = config.get( GraphDatabaseSettings.neo_store );
+
+        if(!fs.fileExists( neoStorePath ))
+        {
+            // No database in the specified directory.
+            return false;
+        }
+
         File baseLogPath = config.get( GraphDatabaseSettings.logical_log );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( baseLogPath, fs );
 
@@ -79,19 +88,18 @@ public class StoreRecoverer
         }
     }
 
-    public void recover( File dataDir, Map<String, String> params ) throws IOException
+    public void recover( File dataDir, Map<String, String> params, Logging logging ) throws IOException
     {
         // For now, just launch a full embedded database on top of the
         // directory.
         // In a perfect world, to be expanded to only do recovery, and to be
-        // used
-        // as a component of the database, rather than something that is bolted
+        // used as a component of the database, rather than something that is bolted
         // on outside it like this.
 
-        GraphDatabaseService db =
-                new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( dataDir.getCanonicalPath() )
-                    .setConfig( params ).newGraphDatabase();
-
-        db.shutdown();
+        new EmbeddedGraphDatabase(
+                dataDir.getAbsolutePath(),
+                params,
+                new DefaultGraphDatabaseDependencies( logging ) )
+            .shutdown();
     }
 }

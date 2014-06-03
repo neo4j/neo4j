@@ -28,7 +28,6 @@ import java.io.IOException;
 import java.util.HashMap;
 
 import org.junit.Test;
-import org.mockito.Mockito;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;

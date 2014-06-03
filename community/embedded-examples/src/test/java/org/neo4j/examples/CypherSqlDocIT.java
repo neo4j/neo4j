@@ -116,7 +116,7 @@ public class CypherSqlDocIT extends ImpermanentGraphJavaDocTestBase
      * image::RDBMSvsGraph.svg[scaledwidth="100%"]
      * endif::nonhtmloutput[]
      * ifndef::nonhtmloutput[]
-     * image::RDBMSvsGraph.svg.png[scaledwidth="100%"]
+     * image::RDBMSvsGraph.svg.png[]
      * endif::nonhtmloutput[]
      * 
      * And here are example queries:

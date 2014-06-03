@@ -210,10 +210,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         tle.readCount--;
         if ( tle.isFree() )
         {
-            if ( !this.isMarked() )
-            {
-                txLockElementMap.remove( tx );
-            }
+            txLockElementMap.remove( tx );
             ragManager.lockReleased( this, tx );
         }
         if ( waitingThreadList.size() > 0 )
@@ -376,10 +373,7 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
         tle.writeCount--;
         if ( tle.isFree() )
         {
-            if ( !this.isMarked() )
-            {
-                txLockElementMap.remove( tx );
-            }
+            txLockElementMap.remove( tx );
             ragManager.lockReleased( this, tx );
         }
 
@@ -571,5 +565,10 @@ class RWLock implements Visitor<LineLogger, RuntimeException>
             txLockElementMap.put( tx, tle = new TxLockElement( tx ) );
         }
         return tle;
+    }
+
+    synchronized Object getTxLockElementCount()
+    {
+        return txLockElementMap.size();
     }
 }

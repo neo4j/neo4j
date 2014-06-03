@@ -21,64 +21,53 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, LogicalPlanningTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan, IdName}
-import org.mockito.Matchers._
-import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 
-class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  implicit val semanticTable = newMockedSemanticTable
-  implicit val planContext = newMockedPlanContext
-  implicit val context = newMockedQueryGraphSolvingContext(planContext)
-
-  val x = newMockedQueryPlan("x")
-  val y = newMockedQueryPlan("y")
-  val xAndY = newMockedQueryPlan("x", "y")
-
+class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("picks the right plan by cost, no matter the cardinality") {
-    val a = newMockedQueryPlanWithProjections("a")
-    val b = newMockedQueryPlanWithProjections("b")
+    val a = fakeQueryPlanFor("a")
+    val b = fakeQueryPlanFor("b")
 
-    val factory = newMockedMetricsFactory
-    when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
-      case p if p eq a.plan => 100
-      case p if p eq b.plan => 50
-      case _                => Double.MaxValue
+    assertTopPlan(winner = b, a, b)(new given {
+      cost = {
+        case p if p == a.plan => Cost(100)
+        case p if p == b.plan => Cost(50)
+      }
     })
-
-    assertTopPlan(winner = b, a, b)(factory)
   }
 
+
   test("picks the right plan by cost, no matter the size of the covered ids") {
-    val ab = QueryPlan( newMockedLogicalPlan(Set(IdName("a"), IdName("b"))), PlannerQuery.empty )
-    val b = newMockedQueryPlanWithProjections("b")
+    val ab = fakeQueryPlanFor("a", "b")
+    val b = fakeQueryPlanFor("b")
 
-    val factory = newMockedMetricsFactory
-    when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
-      case p if p eq ab.plan => 100
-      case p if p eq b.plan  => 50
-      case _                 => Double.MaxValue
-    })
+    val GIVEN = new given {
+      cost = {
+        case p if p == ab.plan => Cost(100)
+        case p if p == b.plan => Cost(50)
+      }
+    }
 
-    assertTopPlan(winner = b, ab, b)(factory)
+    assertTopPlan(winner = b, ab, b)(GIVEN)
   }
 
   test("picks the right plan by cost and secondly by the covered ids") {
-    val ab = newMockedQueryPlan("a", "b")
-    val c = newMockedQueryPlanWithProjections("c")
+    val ab = fakeQueryPlanFor("a", "b")
+    val c = fakeQueryPlanFor("c")
 
-    val factory = newMockedMetricsFactory
-    when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
-      case p if p eq ab.plan => 50
-      case p if p eq c.plan  => 50
-      case _                 => Double.MaxValue
-    })
+    val GIVEN = new given {
+      cost = {
+        case _ => Cost(100)
+      }
+    }
 
-    assertTopPlan(winner = ab, ab, c)(factory)
+    assertTopPlan(winner = ab, ab, c)(GIVEN)
   }
 
-  private def assertTopPlan(winner: QueryPlan, candidates: QueryPlan*)(metrics: MetricsFactory) {
-    val costs = metrics.newMetrics(context.statistics, semanticTable).cost
+  private def assertTopPlan(winner: QueryPlan, candidates: QueryPlan*)(GIVEN: given) {
+    val environment = LogicalPlanningEnvironment(GIVEN)
+    val costs = environment.metricsFactory.newMetrics(GIVEN.graphStatistics, environment.semanticTable).cost
     CandidateList(candidates).bestPlan(costs) should equal(Some(winner))
     CandidateList(candidates.reverse).bestPlan(costs) should equal(Some(winner))
   }

@@ -321,6 +321,7 @@ public class ComponentVersion extends Version
       </activation>
       <modules>
         <module>manual</module>
+        <module>manual/refcard</module>
       </modules>
       <properties>
         <attach-java-sources-phase>package</attach-java-sources-phase>

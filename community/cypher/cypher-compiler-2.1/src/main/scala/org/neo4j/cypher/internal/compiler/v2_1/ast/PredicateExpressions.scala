@@ -29,7 +29,7 @@ case class And(lhs: Expression, rhs: Expression)(val position: InputPosition) ex
   )
 }
 
-case class Ands(exprs: List[Expression])(val position: InputPosition) extends Expression {
+case class Ands(exprs: Set[Expression])(val position: InputPosition) extends Expression {
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
 }
 
@@ -39,7 +39,7 @@ case class Or(lhs: Expression, rhs: Expression)(val position: InputPosition) ext
   )
 }
 
-case class Ors(exprs: List[Expression])(val position: InputPosition) extends Expression {
+case class Ors(exprs: Set[Expression])(val position: InputPosition) extends Expression {
   override def semanticCheck(ctx: SemanticContext) = SemanticCheckResult.success
 }
 
