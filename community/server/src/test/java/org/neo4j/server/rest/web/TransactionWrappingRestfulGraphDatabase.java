@@ -23,8 +23,7 @@ import javax.ws.rs.core.Response;
 import javax.ws.rs.core.UriInfo;
 
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.rest.domain.TraverserReturnType;
 
 /**
@@ -33,10 +32,10 @@ import org.neo4j.server.rest.domain.TraverserReturnType;
  */
 public class TransactionWrappingRestfulGraphDatabase extends RestfulGraphDatabase
 {
-    private final AbstractGraphDatabase graph;
+    private final InternalAbstractGraphDatabase graph;
     private final RestfulGraphDatabase restfulGraphDatabase;
 
-    public TransactionWrappingRestfulGraphDatabase( AbstractGraphDatabase graph,
+    public TransactionWrappingRestfulGraphDatabase( InternalAbstractGraphDatabase graph,
                                                     RestfulGraphDatabase restfulGraphDatabase )
     {
         super( null, null, null );

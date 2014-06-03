@@ -19,6 +19,17 @@
  */
 package org.neo4j.server.rrd;
 
+import static java.lang.Double.NaN;
+import static java.util.Arrays.asList;
+import static java.util.concurrent.TimeUnit.DAYS;
+import static java.util.concurrent.TimeUnit.HOURS;
+import static java.util.concurrent.TimeUnit.MINUTES;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.neo4j.server.configuration.Configurator.RRDB_LOCATION_PROPERTY_KEY;
+import static org.rrd4j.ConsolFun.AVERAGE;
+import static org.rrd4j.ConsolFun.MAX;
+import static org.rrd4j.ConsolFun.MIN;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -26,11 +37,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
-
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -39,25 +49,11 @@ import org.neo4j.server.database.RrdDbWrapper;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.server.rrd.sampler.PropertyCountSampleable;
 import org.neo4j.server.rrd.sampler.RelationshipCountSampleable;
-
 import org.rrd4j.ConsolFun;
 import org.rrd4j.core.DsDef;
 import org.rrd4j.core.RrdDb;
 import org.rrd4j.core.RrdDef;
 import org.rrd4j.core.RrdToolkit;
-
-import static java.lang.Double.NaN;
-import static java.util.Arrays.asList;
-import static java.util.concurrent.TimeUnit.DAYS;
-import static java.util.concurrent.TimeUnit.HOURS;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.neo4j.server.configuration.Configurator.RRDB_LOCATION_PROPERTY_KEY;
-
-import static org.rrd4j.ConsolFun.AVERAGE;
-import static org.rrd4j.ConsolFun.MAX;
-import static org.rrd4j.ConsolFun.MIN;
 
 public class RrdFactory
 {
@@ -75,12 +71,12 @@ public class RrdFactory
 
     public org.neo4j.server.database.RrdDbWrapper createRrdDbAndSampler( final Database db, JobScheduler scheduler ) throws IOException
     {
-        NodeManager nodeManager = db.getGraph().getDependencyResolver().resolveDependency( NodeManager.class );
+        NeoStore neoStore = db.getGraph().getDependencyResolver().resolveDependency( NeoStore.class );
 
         Sampleable[] primitives = {
-                new NodeIdsInUseSampleable( nodeManager ),
-                new PropertyCountSampleable( nodeManager ),
-                new RelationshipCountSampleable( nodeManager )
+                new NodeIdsInUseSampleable( neoStore ),
+                new PropertyCountSampleable( neoStore ),
+                new RelationshipCountSampleable( neoStore )
         };
 
         Sampleable[] usage = {};

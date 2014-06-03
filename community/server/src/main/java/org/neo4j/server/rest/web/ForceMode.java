@@ -1,3 +1,5 @@
+package org.neo4j.server.rest.web;
+
 /**
  * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -17,25 +19,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rrd.sampler;
-
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-
-public class PropertyCountSampleable extends DatabasePrimitivesSampleableBase
+// TODO 2.2-future is this really required?
+@Deprecated
+public enum ForceMode
 {
-    public PropertyCountSampleable( NeoStore neoStore )
-    {
-        super( neoStore );
-    }
-
-    @Override public String getName()
-    {
-        return "property_count";
-    }
-
-    @Override public double getValue()
-    {
-        return getNeoStore().getPropertyStore().getNumberOfIdsInUse();
-    }
+    forced,
+    unforced
 }

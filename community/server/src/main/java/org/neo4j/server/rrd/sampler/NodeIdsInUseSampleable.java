@@ -19,16 +19,15 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.server.rrd.UnableToSampleException;
 
 public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
 {
 
-    public NodeIdsInUseSampleable( NodeManager nodeManager )
+    public NodeIdsInUseSampleable( NeoStore neoStore )
     {
-        super( nodeManager );
+        super( neoStore );
     }
 
     @Override public String getName()
@@ -40,7 +39,7 @@ public class NodeIdsInUseSampleable extends DatabasePrimitivesSampleableBase
     {
         try
         {
-            return getNodeManager().getNumberOfIdsInUse( Node.class );
+            return getNeoStore().getNodeStore().getNumberOfIdsInUse();
         }
         catch ( Exception e )
         {

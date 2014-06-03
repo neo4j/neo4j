@@ -19,6 +19,18 @@
  */
 package org.neo4j.server.rest.web;
 
+import static java.lang.Long.parseLong;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.URI;
@@ -42,8 +54,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.FakeClock;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.rest.domain.GraphDbHelper;
@@ -59,18 +70,6 @@ import org.neo4j.server.rest.web.RestfulGraphDatabase.AmpersandSeparatedCollecti
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.server.EntityOutputFormat;
 
-import static java.lang.Long.parseLong;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 public class RestfulGraphDatabaseTest
 {
     private static final String NODE_AUTO_INDEX = "node_auto_index";
@@ -83,12 +82,12 @@ public class RestfulGraphDatabaseTest
     private static EntityOutputFormat output;
     private static LeaseManager leaseManager;
     private static final ForceMode FORCE = ForceMode.forced;
-    private static AbstractGraphDatabase graph;
+    private static InternalAbstractGraphDatabase graph;
 
     @BeforeClass
     public static void doBefore() throws IOException
     {
-        graph = (AbstractGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graph = (InternalAbstractGraphDatabase)new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase(graph);
         helper = new GraphDbHelper( database );
         output = new EntityOutputFormat( new JsonFormat(), URI.create( BASE_URI ), null );

@@ -19,59 +19,45 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.InvalidTransactionException;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
+import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 class TransitionalTxManagementKernelTransaction
 {
-    private final TransactionManager txManager;
+    private final ThreadToStatementContextBridge bridge;
 
-    private Transaction suspendedTransaction;
+    private TopLevelTransaction suspendedTransaction;
 
-    public TransitionalTxManagementKernelTransaction( TransactionManager txManager )
+    TransitionalTxManagementKernelTransaction( ThreadToStatementContextBridge bridge )
     {
-        this.txManager = txManager;
+        this.bridge = bridge;
     }
 
     public void suspendSinceTransactionsAreStillThreadBound()
     {
-        try
-        {
-            assert suspendedTransaction == null : "Can't suspend the transaction if it already is suspended.";
-            suspendedTransaction = txManager.suspend();
-        }
-        catch ( SystemException e )
-        {
-            throw new RuntimeException( e );
-        }
+        assert suspendedTransaction == null : "Can't suspend the transaction if it already is suspended.";
+        suspendedTransaction = bridge.getTopLevelTransactionBoundToThisThread( true );
+        bridge.unbindTransactionFromCurrentThread();
     }
 
     public void resumeSinceTransactionsAreStillThreadBound()
     {
-        try
-        {
-            assert suspendedTransaction != null : "Can't suspend the transaction if it has not first been suspended.";
-            txManager.resume( suspendedTransaction );
-            suspendedTransaction = null;
-        }
-        catch ( InvalidTransactionException | SystemException e )
-        {
-            throw new RuntimeException( e );
-        }
+        assert suspendedTransaction != null : "Can't suspend the transaction if it has not first been suspended.";
+        bridge.bindTransactionToCurrentThread( suspendedTransaction );
+        suspendedTransaction = null;
     }
 
     public void rollback()
     {
         try
         {
-            txManager.rollback();
+            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( true );
+            kernelTransactionBoundToThisThread.failure();
+            kernelTransactionBoundToThisThread.close();
         }
-        catch ( SystemException e )
+        catch ( TransactionFailureException e )
         {
             throw new RuntimeException( e );
         }
@@ -81,9 +67,11 @@ class TransitionalTxManagementKernelTransaction
     {
         try
         {
-            txManager.commit();
+            KernelTransaction kernelTransactionBoundToThisThread = bridge.getKernelTransactionBoundToThisThread( true );
+            kernelTransactionBoundToThisThread.success();
+            kernelTransactionBoundToThisThread.close();
         }
-        catch ( RollbackException | HeuristicMixedException | HeuristicRollbackException | SystemException e )
+        catch ( TransactionFailureException e )
         {
             throw new RuntimeException( e );
         }

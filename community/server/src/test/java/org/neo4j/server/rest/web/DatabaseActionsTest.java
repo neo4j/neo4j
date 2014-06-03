@@ -19,6 +19,25 @@
  */
 package org.neo4j.server.rest.web;
 
+import static java.util.Arrays.asList;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.hasKey;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.first;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.nodeUriToId;
+import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -45,8 +64,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.AbstractGraphDatabase;
-import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.server.database.Database;
 import org.neo4j.server.database.WrappedDatabase;
 import org.neo4j.server.helpers.ServerHelper;
@@ -64,36 +82,17 @@ import org.neo4j.server.rest.repr.RelationshipRepresentationTest;
 import org.neo4j.server.rest.web.DatabaseActions.RelationshipDirection;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.hasKey;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.first;
-import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.server.rest.repr.RepresentationTestAccess.nodeUriToId;
-import static org.neo4j.server.rest.repr.RepresentationTestAccess.serialize;
-
 public class DatabaseActionsTest
 {
     private static GraphDbHelper graphdbHelper;
     private static Database database;
-    private static AbstractGraphDatabase graph;
+    private static InternalAbstractGraphDatabase graph;
     private static DatabaseActions actions;
 
     @BeforeClass
     public static void createDb() throws IOException
     {
-        graph = (AbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        graph = (InternalAbstractGraphDatabase) new TestGraphDatabaseFactory().newImpermanentDatabase();
         database = new WrappedDatabase( graph );
         graphdbHelper = new GraphDbHelper( database );
         actions = new TransactionWrappedDatabaseActions( new LeaseManager( new FakeClock() ), ForceMode.forced,

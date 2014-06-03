@@ -21,10 +21,9 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -52,22 +51,25 @@ public class Rollback extends NonTransactionProvidingApp
             return Continuation.INPUT_COMPLETE;
         }
 
-        Transaction tx = Begin.currentTransaction( getServer() );
+        KernelTransaction tx = Begin.currentTransaction( getServer() );
         if ( tx == null )
         {
             throw Commit.fail( session, "Not in a transaction" );
-        } else
+        }
+        else
         {
+            session.remove( Variables.TX_COUNT );
+            tx.failure();
             try
             {
-                session.remove( Variables.TX_COUNT );
-                tx.rollback();
-                out.println( "Transaction rolled back" );
-                return Continuation.INPUT_COMPLETE;
-            } catch ( SystemException e )
+                tx.close();
+            }
+            catch ( TransactionFailureException e )
             {
                 throw new ShellException( e.getMessage() );
             }
+            out.println( "Transaction rolled back" );
+                return Continuation.INPUT_COMPLETE;
         }
     }
 }

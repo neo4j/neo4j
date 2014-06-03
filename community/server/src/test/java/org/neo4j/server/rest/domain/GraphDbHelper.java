@@ -19,6 +19,10 @@
  */
 package org.neo4j.server.rest.domain;
 
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.Iterables.single;
+
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -29,7 +33,6 @@ import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.index.Index;
@@ -43,12 +46,8 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.IterableWrapper;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.server.database.Database;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.single;
 
 public class GraphDbHelper
 {
@@ -61,19 +60,16 @@ public class GraphDbHelper
 
     public int getNumberOfNodes()
     {
-        return numberOfEntitiesFor( Node.class );
+        return (int) database.getGraph().getDependencyResolver().resolveDependency( NeoStore.class )
+                .getNodeStore().getNumberOfIdsInUse();
     }
 
     public int getNumberOfRelationships()
     {
-        return numberOfEntitiesFor( Relationship.class );
+        return (int) database.getGraph().getDependencyResolver().resolveDependency( NeoStore.class )
+                .getRelationshipStore().getNumberOfIdsInUse();
     }
 
-    private int numberOfEntitiesFor( Class<? extends PropertyContainer> type )
-    {
-        return (int) database.getGraph().getDependencyResolver().resolveDependency( NodeManager.class )
-                .getNumberOfIdsInUse( type );
-    }
 
     public Map<String, Object> getNodeProperties( long nodeId )
     {

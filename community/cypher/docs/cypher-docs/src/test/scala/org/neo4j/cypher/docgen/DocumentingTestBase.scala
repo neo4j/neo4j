@@ -33,7 +33,7 @@ import org.neo4j.cypher.{ CypherException, ExecutionResult }
 import org.neo4j.test.{ TestGraphDatabaseFactory, GraphDescription }
 import org.neo4j.test.AsciiDocGenerator
 import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
-import org.neo4j.kernel.{ GraphDatabaseAPI, AbstractGraphDatabase }
+import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.cypher.internal.helpers.{ Materialized, GraphIcing }
 import org.neo4j.cypher.export.{ SubGraphExporter, DatabaseSubGraph }
 import org.neo4j.helpers.Settings
@@ -41,10 +41,11 @@ import org.neo4j.cypher.example.JavaExecutionEngineDocTest
 import org.neo4j.tooling.GlobalGraphOperations
 import scala.reflect.ClassTag
 import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, NodeManager}
 import org.neo4j.cypher.internal.ServerExecutionEngine
 import org.neo4j.cypher.internal.commons.CypherJUnitSuite
 import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+import org.neo4j.kernel.impl.api.KernelStatement
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -276,13 +277,23 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
   }
 
   protected def assertIsDeleted(pc: PropertyContainer) {
-    val internalDb: AbstractGraphDatabase = db.asInstanceOf[AbstractGraphDatabase]
+    val nodeManager: ThreadToStatementContextBridge = db.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
 
-    val nodeManager: NodeManager = internalDb.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[NodeManager])
+    val statement : KernelStatement = nodeManager.getKernelTransactionBoundToThisThread( true ).acquireStatement().asInstanceOf[KernelStatement]
 
-    if (!nodeManager.isDeleted(pc)) {
-      fail("Expected " + pc + " to be deleted, but it isn't.")
+    pc match {
+      case node: Node =>
+        if (statement.txState().nodeIsDeletedInThisTx(node.getId)) {
+        fail("Expected " + pc + " to be deleted, but it isn't.")
+        }
+      case rel: Relationship =>
+        if (statement.txState().relationshipIsDeletedInThisTx(rel.getId)) {
+          fail("Expected " + pc + " to be deleted, but it isn't.")
+        }
+      case _ => throw new ClassCastException
     }
+
+
   }
 
   protected def getLabelsFromNode(p: ExecutionResult): Iterable[String] = p.columnAs[Node]("n").next().labels

@@ -21,11 +21,9 @@ package org.neo4j.shell.kernel.apps;
 
 import java.rmi.RemoteException;
 
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-
 import org.neo4j.helpers.Service;
+import org.neo4j.kernel.api.KernelTransaction;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -33,8 +31,6 @@ import org.neo4j.shell.Output;
 import org.neo4j.shell.Session;
 import org.neo4j.shell.ShellException;
 import org.neo4j.shell.Variables;
-
-import static org.neo4j.shell.ShellException.wrapCause;
 
 @Service.Implementation(App.class)
 public class Commit extends NonTransactionProvidingApp
@@ -46,16 +42,10 @@ public class Commit extends NonTransactionProvidingApp
         return "Commits a transaction";
     }
 
-    private Transaction getCurrectTransaction() throws ShellException
+    private KernelTransaction getCurrectTransaction() throws ShellException
     {
-        try
-        {
-            return getServer().getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).getTransaction();
-        }
-        catch ( SystemException e )
-        {
-            throw wrapCause( e );
-        }
+        return getServer().getDb().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
+                .getKernelTransactionBoundToThisThread( false );
     }
 
     @Override
@@ -70,7 +60,7 @@ public class Commit extends NonTransactionProvidingApp
 
         Integer txCount = session.getCommitCount();
 
-        Transaction tx = getCurrectTransaction();
+        KernelTransaction tx = getCurrectTransaction();
         if ( txCount == null || txCount.equals( 0 ) )
         {
             if ( tx != null )
@@ -93,7 +83,8 @@ public class Commit extends NonTransactionProvidingApp
 
             try
             {
-                tx.commit();
+                tx.success();
+                tx.close();
                 session.remove( Variables.TX_COUNT );
                 out.println( "Transaction committed" );
                 return Continuation.INPUT_COMPLETE;

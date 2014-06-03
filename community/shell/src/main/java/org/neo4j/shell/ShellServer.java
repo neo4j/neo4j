@@ -24,6 +24,8 @@ import java.rmi.Remote;
 import java.rmi.RemoteException;
 import java.util.Map;
 
+import org.neo4j.kernel.api.KernelTransaction;
+
 /**
  * A shell server which clients can connect to and send requests
  * (command lines).

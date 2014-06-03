@@ -19,6 +19,10 @@
  */
 package org.neo4j.management;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
+
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -30,10 +34,8 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.ImpermanentDatabaseRule;
-
-import static org.junit.Assert.*;
 
 public class TestCacheBeans
 {
@@ -90,7 +92,7 @@ public class TestCacheBeans
             tx.success();
         }
 
-        graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        graphDb.getDependencyResolver().resolveDependency( Caches.class ).clear();
 
         long[] hits = get( CacheBean.HIT_COUNT ), miss = get( CacheBean.MISS_COUNT );
         Transaction transaction = graphDb.beginTx();

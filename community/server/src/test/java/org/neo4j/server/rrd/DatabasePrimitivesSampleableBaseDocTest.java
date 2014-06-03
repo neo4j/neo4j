@@ -19,18 +19,18 @@
  */
 package org.neo4j.server.rrd;
 
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
+
 import javax.management.MalformedObjectNameException;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.server.rrd.sampler.DatabasePrimitivesSampleableBase;
 import org.neo4j.server.rrd.sampler.NodeIdsInUseSampleable;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.junit.Assert.assertTrue;
 
 public class DatabasePrimitivesSampleableBaseDocTest
 {
@@ -39,7 +39,7 @@ public class DatabasePrimitivesSampleableBaseDocTest
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
         
-        DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( nodeManager( db ) );
+        DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( neoStore( db ) );
 
         assertTrue( "There should be no nodes in use.", sampleable.getValue() == 0 );
 
@@ -51,15 +51,15 @@ public class DatabasePrimitivesSampleableBaseDocTest
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI)new TestGraphDatabaseFactory().newImpermanentDatabase();
 
-        DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( nodeManager( db ) );
+        DatabasePrimitivesSampleableBase sampleable = new NodeIdsInUseSampleable( neoStore( db ) );
 
         assertTrue( "There should be no nodes in use.", sampleable.getValue() == 0 );
 
         db.shutdown();
     }
 
-    private NodeManager nodeManager( GraphDatabaseAPI db )
+    private NeoStore neoStore( GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( NodeManager.class );
+        return db.getDependencyResolver().resolveDependency( NeoStore.class );
     }
 }

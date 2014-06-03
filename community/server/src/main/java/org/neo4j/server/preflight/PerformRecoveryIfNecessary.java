@@ -59,7 +59,8 @@ public class PerformRecoveryIfNecessary implements PreflightTask
             if ( dbLocation.exists() )
             {
                 StoreRecoverer recoverer = new StoreRecoverer();
-                if ( recoverer.recoveryNeededAt( dbLocation, dbConfig ) )
+                // TODO 2.2-future create a file listing based LogVersionRepository
+                if ( recoverer.recoveryNeededAt( dbLocation, null, dbConfig ) )
                 {
                     out.println( "Detected incorrectly shut down database, performing recovery.." );
                     recoverer.recover( dbLocation, dbConfig, logging );
