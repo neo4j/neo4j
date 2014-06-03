@@ -290,12 +290,15 @@ public class ForsetiClient implements Locks.Client
                 }
                 else if(existingLock instanceof SharedLock)
                 {
+                    // Note that there is a "safe" race here where someone may be releasing the last reference to a lock
+                    // and thus removing that lock instance (making it unacquirable). In this case, we allow retrying,
+                    // even though this is a try-lock call.
                     if(((SharedLock)existingLock).acquire(this))
                     {
                         // Success!
                         break;
                     }
-                    else
+                    else if( ((SharedLock) existingLock).isUpdateLock() )
                     {
                         return false;
                     }
