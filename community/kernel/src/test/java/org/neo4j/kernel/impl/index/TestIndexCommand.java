@@ -37,11 +37,11 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
-import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
+import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
@@ -52,7 +52,7 @@ import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.index.IndexCommand.readCommand;
-import static org.neo4j.kernel.impl.util.FileUtils.copyFile;
+import static org.neo4j.io.fs.FileUtils.copyFile;
 
 
 public class TestIndexCommand

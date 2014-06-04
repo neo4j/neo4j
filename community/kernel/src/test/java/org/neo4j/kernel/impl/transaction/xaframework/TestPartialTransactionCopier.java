@@ -43,7 +43,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;

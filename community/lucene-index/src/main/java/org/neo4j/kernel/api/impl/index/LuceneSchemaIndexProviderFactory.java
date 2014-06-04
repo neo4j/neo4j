@@ -23,7 +23,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.neo4j.kernel.api.impl.index.LuceneKernelExtensions.directoryFactory;
 

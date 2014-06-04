@@ -24,11 +24,11 @@ import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
-import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -37,11 +37,13 @@ import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.perftest.enterprise.generator.DataGenerator;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Parameters;
@@ -62,8 +64,6 @@ public class ConsistencyPerformanceCheck
     static final Setting<Boolean> generate_graph = booleanSetting( "generate_graph", false );
     static final Setting<String> report_file = stringSetting( "report_file", "target/report.json" );
     static final Setting<CheckerVersion> checker_version = enumSetting( "checker_version", CheckerVersion.NEW );
-    static final Setting<WindowPoolImplementation> window_pool_implementation =
-            enumSetting( "window_pool_implementation", WindowPoolImplementation.SCAN_RESISTANT );
     static final Setting<TaskExecutionOrder> execution_order =
             enumSetting( "execution_order", TaskExecutionOrder.SINGLE_THREADED );
     static final Setting<Boolean> wait_before_check = booleanSetting( "wait_before_check", false );
@@ -76,6 +76,9 @@ public class ConsistencyPerformanceCheck
             stringSetting( "log_mapped_memory_stats_filename", "mapped_memory_stats.log" );
     static final Setting<Long> log_mapped_memory_stats_interval =
             integerSetting( "log_mapped_memory_stats_interval", 1000000 );
+    private static LifecycledPageCache pageCache;
+    private static Neo4jJobScheduler jobScheduler;
+    private static FileSystemAbstraction fileSystem;
 
     /**
      * Sample execution:
@@ -121,25 +124,41 @@ public class ConsistencyPerformanceCheck
         }
 
         Config tuningConfiguration = buildTuningConfiguration( configuration );
+        jobScheduler = new Neo4jJobScheduler();
+        fileSystem = new DefaultFileSystemAbstraction();
+        pageCache = new LifecycledPageCache( fileSystem, jobScheduler, tuningConfiguration );
+        jobScheduler.start();
+        pageCache.start();
         DirectStoreAccess directStoreAccess = createScannableStores( configuration.get( DataGenerator.store_dir ),
                 tuningConfiguration );
 
         JsonReportWriter reportWriter = new JsonReportWriter( configuration, tuningConfiguration );
         TimingProgress progressMonitor = new TimingProgress( new TimeLogger( reportWriter ), progress );
 
-        configuration.get( checker_version ).run( progressMonitor, directStoreAccess, tuningConfiguration );
+        try
+        {
+            configuration.get( checker_version ).run( progressMonitor, directStoreAccess, tuningConfiguration );
+        }
+        finally
+        {
+            pageCache.stop();
+            jobScheduler.stop();
+        }
     }
 
     private static DirectStoreAccess createScannableStores( String storeDir, Config tuningConfiguration )
     {
         StringLogger logger = StringLogger.DEV_NULL;
-        FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+
+        Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
                 tuningConfiguration,
                 new DefaultIdGeneratorFactory(),
-                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
-                        .windowPoolFactory( tuningConfiguration, logger ),
-                fileSystem, logger, new DefaultTxHook() );
+                pageCache,
+                fileSystem,
+                logger,
+                new DefaultTxHook(),
+                monitors );
 
         NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
 
@@ -154,8 +173,6 @@ public class ConsistencyPerformanceCheck
                 param( GraphDatabaseSettings.store_dir, DataGenerator.store_dir ),
                 param( GraphDatabaseSettings.all_stores_total_mapped_memory_size, all_stores_total_mapped_memory_size ),
                 param( ConsistencyCheckSettings.consistency_check_execution_order, execution_order ),
-                param( ConsistencyCheckSettings.consistency_check_window_pool_implementation,
-                        window_pool_implementation ),
                 param( GraphDatabaseSettings.mapped_memory_page_size, mapped_memory_page_size ),
                 param( GraphDatabaseSettings.log_mapped_memory_stats, log_mapped_memory_stats ),
                 param( GraphDatabaseSettings.log_mapped_memory_stats_filename, log_mapped_memory_stats_filename ),

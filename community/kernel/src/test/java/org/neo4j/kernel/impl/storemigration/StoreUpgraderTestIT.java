@@ -51,7 +51,7 @@ import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.UnableToUpgradeException;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;

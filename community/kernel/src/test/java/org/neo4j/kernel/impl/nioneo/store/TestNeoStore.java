@@ -34,6 +34,7 @@ import javax.transaction.xa.Xid;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -50,6 +51,8 @@ import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -97,6 +100,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -118,8 +122,11 @@ public class TestNeoStore
     private TargetDirectory targetDirectory;
     private File path;
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    private PageCache pageCache;
 
     private File file( String name )
     {
@@ -132,8 +139,16 @@ public class TestNeoStore
         targetDirectory = TargetDirectory.forTest( fs.get(), getClass() );
         path = targetDirectory.cleanDirectory( "dir" );
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
-        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fs.get(), StringLogger.DEV_NULL, null );
+        Monitors monitors = new Monitors();
+        pageCache = pageCacheRule.getPageCache( fs.get(), config );
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCache,
+                fs.get(),
+                StringLogger.DEV_NULL,
+                null,
+                monitors );
         sf.createNeoStore( file( NeoStore.DEFAULT_NAME ) ).close();
     }
 
@@ -185,8 +200,15 @@ public class TestNeoStore
                 InternalAbstractGraphDatabase.Configuration.logical_log.name(), file( "nioneo_logical.log" ).getPath() ),
                 GraphDatabaseSettings.class );
         EphemeralFileSystemAbstraction fs = this.fs.get();
-        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fs, StringLogger.DEV_NULL, null );
+        Monitors monitors = new Monitors();
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCache,
+                fs,
+                StringLogger.DEV_NULL,
+                null,
+                monitors );
         KernelHealth kernelHealth = mock( KernelHealth.class );
 
         NodeManager nodeManager = mock(NodeManager.class);
@@ -202,7 +224,7 @@ public class TestNeoStore
         ds = new NeoStoreXaDataSource(config, sf, StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, new PlaceboTm( lockManager, TxIdGenerator.DEFAULT ),
                         // Could be new TransactionStateFactory( new DevNullLoggingService() )
-                        fs, new Monitors(), DevNullLoggingService.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
+                        fs, monitors, DevNullLoggingService.DEV_NULL, RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING, kernelHealth ), noStateFactory( DevNullLoggingService.DEV_NULL ),
                 new TransactionInterceptorProviders( Collections.<TransactionInterceptorProvider>emptyList(),
                         dependencyResolverForConfig( config ) ), null, new DevNullLoggingService(),
@@ -1179,8 +1201,15 @@ public class TestNeoStore
 
         Config config = new Config( MapUtil.stringMap( "string_block_size", "62", "array_block_size", "302" ),
                 GraphDatabaseSettings.class );
-        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fs.get(), StringLogger.DEV_NULL, null );
+        Monitors monitors = new Monitors();
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCache,
+                fs.get(),
+                StringLogger.DEV_NULL,
+                null,
+                monitors );
         sf.createNeoStore( file( "neo" ) ).close();
 
         initializeStores();
@@ -1199,8 +1228,16 @@ public class TestNeoStore
         assertEquals( 1, NeoStore.setVersion( fs.get(), new File( storeDir, NeoStore.DEFAULT_NAME ), 10 ) );
         assertEquals( 10, NeoStore.setVersion( fs.get(), new File( storeDir, NeoStore.DEFAULT_NAME ), 12 ) );
 
-        StoreFactory sf = new StoreFactory( new Config( new HashMap<String, String>(), GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, null );
+        Monitors monitors = new Monitors();
+        Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCache,
+                fs.get(),
+                StringLogger.DEV_NULL,
+                null,
+                monitors );
 
         NeoStore neoStore = sf.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
         assertEquals( 12, neoStore.getVersion() );
@@ -1212,9 +1249,17 @@ public class TestNeoStore
     {
         // given
         new GraphDatabaseFactory().newEmbeddedDatabase( testDir.absolutePath() ).shutdown();
-        StoreFactory sf = new StoreFactory( new Config( new HashMap<String, String>(), GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
-                StringLogger.DEV_NULL, null );
+        Monitors monitors = new Monitors();
+        Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
+        DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                new StandardPageCache( fileSystemAbstraction, 1014, 4096 ),
+                fileSystemAbstraction,
+                StringLogger.DEV_NULL,
+                null,
+                monitors );
 
         // when
         NeoStore neoStore = sf.newNeoStore( new File( testDir.absolutePath(), NeoStore.DEFAULT_NAME ) );
@@ -1231,7 +1276,7 @@ public class TestNeoStore
 
 
         // when
-        neoStore.flushAll();
+        neoStore.flush();
         neoStore.close();
         neoStore = sf.newNeoStore( new File( testDir.absolutePath(), NeoStore.DEFAULT_NAME ) );
 
@@ -1239,5 +1284,4 @@ public class TestNeoStore
         assertEquals( 10l, neoStore.getLatestConstraintIntroducingTx() );
         neoStore.close();
     }
-
 }

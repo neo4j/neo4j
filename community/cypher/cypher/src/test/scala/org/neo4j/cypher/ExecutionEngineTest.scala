@@ -29,9 +29,9 @@ import org.junit.{Ignore, Test}
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
-import org.neo4j.kernel.impl.util.FileUtils
 import java.io.{PrintWriter, File}
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
+import org.neo4j.io.fs.FileUtils
 
 class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
   @Test def shouldGetRelationshipById() {

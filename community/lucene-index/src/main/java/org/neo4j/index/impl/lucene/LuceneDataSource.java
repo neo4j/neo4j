@@ -83,7 +83,7 @@ import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.index.IndexProviderStore;
 import org.neo4j.kernel.impl.index.IndexStore;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;

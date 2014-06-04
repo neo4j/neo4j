@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Math.max;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -33,16 +27,16 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.RecoveryLogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.SlaveLogDeserializer;
@@ -65,11 +59,17 @@ import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.BufferedFileChannel;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.Math.max;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG2;
 
 /**
  * <CODE>XaLogicalLog</CODE> is a transaction and logical log combined. In
@@ -154,8 +154,8 @@ public class XaLogicalLog implements LogLoader
                          XaTransactionFactory xaTf, FileSystemAbstraction fileSystem, Monitors monitors,
                          Logging logging, LogPruneStrategy pruneStrategy, TransactionStateFactory stateFactory,
                          KernelHealth kernelHealth, long rotateAtSize, InjectedTransactionValidator injectedTxValidator,
-                         Function<List<LogEntry>, List<LogEntry>> interceptor, Function<List<LogEntry>,
-            List<LogEntry>> transactionTranslator )
+                         Function<List<LogEntry>, List<LogEntry>> interceptor,
+                         Function<List<LogEntry>, List<LogEntry>> transactionTranslator )
     {
         this.fileName = fileName;
         this.xaRm = xaRm;

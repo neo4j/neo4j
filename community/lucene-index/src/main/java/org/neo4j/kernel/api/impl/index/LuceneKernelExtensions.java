@@ -23,7 +23,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class LuceneKernelExtensions
 {

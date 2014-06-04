@@ -38,12 +38,16 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
 import static org.junit.Assert.assertFalse;
@@ -308,9 +312,22 @@ public class UpgradeStoreIT
     private void createManyRelationshipTypes( File path, int numberOfTypes )
     {
         File fileName = new File( path, "neostore.relationshiptypestore.db" );
-        DynamicStringStore stringStore = new DynamicStringStore( new File( fileName.getPath() + ".names"), null, IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.THROW_EXCEPTION );
-        RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion( fileName, stringStore );
+        Monitors monitors = new Monitors();
+        Config config = new Config();
+        DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
+        StandardPageCache pageCache = new StandardPageCache( fs, 1024, 4096 );
+        DynamicStringStore stringStore = new DynamicStringStore(
+                new File( fileName.getPath() + ".names"),
+                config,
+                IdType.RELATIONSHIP_TYPE_TOKEN_NAME,
+                new DefaultIdGeneratorFactory(),
+                pageCache,
+                fs,
+                StringLogger.DEV_NULL,
+                StoreVersionMismatchHandler.THROW_EXCEPTION,
+                monitors );
+        RelationshipTypeTokenStore store = new RelationshipTypeTokenStoreWithOneOlderVersion(
+                fileName, stringStore, monitors, fs, pageCache );
         for ( int i = 0; i < numberOfTypes; i++ )
         {
             String name = "type" + i;
@@ -328,13 +345,25 @@ public class UpgradeStoreIT
 
     private static class RelationshipTypeTokenStoreWithOneOlderVersion extends RelationshipTypeTokenStore
     {
+        private static final Config config = new Config( stringMap() );
         private boolean versionCalled;
 
-        public RelationshipTypeTokenStoreWithOneOlderVersion( File fileName, DynamicStringStore stringStore )
+        public RelationshipTypeTokenStoreWithOneOlderVersion(
+                File fileName,
+                DynamicStringStore stringStore,
+                Monitors monitors,
+                FileSystemAbstraction fs,
+                PageCache pageCache )
         {
-            super( fileName, new Config( stringMap() ), new NoLimitIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                    new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL, stringStore,
-                    StoreVersionMismatchHandler.THROW_EXCEPTION );
+            super( fileName,
+                    config,
+                    new NoLimitIdGeneratorFactory(),
+                    pageCache,
+                    fs,
+                    StringLogger.DEV_NULL,
+                    stringStore,
+                    StoreVersionMismatchHandler.THROW_EXCEPTION,
+                    monitors );
         }
 
         @Override

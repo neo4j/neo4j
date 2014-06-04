@@ -25,6 +25,7 @@ import java.net.URL;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -33,9 +34,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -53,12 +56,19 @@ public class StoreVersionTest
 
         File storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME );
 
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( GraphDatabaseSettings.store_dir.name(), outputDir.getPath());
-        config.put( "neo_store", storeFileName.getPath() );
-        StoreFactory sf = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                null );
+        Map<String, String> params = new HashMap<String, String>();
+        params.put( GraphDatabaseSettings.store_dir.name(), outputDir.getPath() );
+        params.put( "neo_store", storeFileName.getPath() );
+        Monitors monitors = new Monitors();
+        Config config = new Config( params, GraphDatabaseSettings.class );
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fs.get(), config ),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                null,
+                monitors );
         NeoStore neoStore = sf.createNeoStore( storeFileName );
 
         CommonAbstractStore[] stores = {
@@ -91,9 +101,17 @@ public class StoreVersionTest
 
         try
         {
-            new NodeStore( workingFile, config, new DefaultIdGeneratorFactory(),
-                    new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, null,
-                    StoreVersionMismatchHandler.THROW_EXCEPTION );
+            Monitors monitors = new Monitors();
+            new NodeStore(
+                    workingFile,
+                    config,
+                    new DefaultIdGeneratorFactory(),
+                    pageCacheRule.getPageCache( fs.get(), config ),
+                    fs.get(),
+                    StringLogger.DEV_NULL,
+                    null,
+                    StoreVersionMismatchHandler.THROW_EXCEPTION,
+                    monitors );
             fail( "Should have thrown exception" );
         }
         catch ( NotCurrentStoreVersionException e )
@@ -112,12 +130,19 @@ public class StoreVersionTest
 
         File storeFileName = new File( outputDir, NeoStore.DEFAULT_NAME );
 
-        Map<String, String> config = new HashMap<String, String>();
-        config.put( GraphDatabaseSettings.store_dir.name(), outputDir.getPath() );
-        config.put( "neo_store", storeFileName.getPath() );
-        StoreFactory sf = new StoreFactory( new Config( config, GraphDatabaseSettings.class ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                null );
+        Map<String, String> params = new HashMap<>();
+        params.put( GraphDatabaseSettings.store_dir.name(), outputDir.getPath() );
+        params.put( "neo_store", storeFileName.getPath() );
+        Monitors monitors = new Monitors();
+        Config config = new Config( params, GraphDatabaseSettings.class );
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fs.get(), config ),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                null,
+                monitors );
         NeoStore neoStore = sf.createNeoStore( storeFileName );
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
@@ -140,4 +165,6 @@ public class StoreVersionTest
     }
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
 }

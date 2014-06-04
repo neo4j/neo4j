@@ -28,14 +28,14 @@ public abstract class KernelException extends Exception
 
     protected KernelException( Status statusCode, Throwable cause, String message, Object... parameters )
     {
-        super( String.format( message, parameters ) );;
+        super( String.format( message, parameters ) );
         this.statusCode = statusCode;
         initCause( cause );
     }
 
     protected KernelException( Status statusCode, String message, Object... parameters )
     {
-        super( String.format( message, parameters ) );;
+        super( String.format( message, parameters ) );
         this.statusCode = statusCode;
     }
 

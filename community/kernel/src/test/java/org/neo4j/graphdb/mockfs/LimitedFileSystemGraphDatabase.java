@@ -19,7 +19,7 @@
  */
 package org.neo4j.graphdb.mockfs;
 
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.ImpermanentGraphDatabase;
 
 @SuppressWarnings("deprecation")

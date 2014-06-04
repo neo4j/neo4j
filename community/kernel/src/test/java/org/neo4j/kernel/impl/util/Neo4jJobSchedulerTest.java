@@ -67,7 +67,7 @@ public class Neo4jJobSchedulerTest
     {
         // Given
         long period = 10;
-        scheduler = new Neo4jJobScheduler( StringLogger.DEV_NULL );
+        scheduler = new Neo4jJobScheduler();
 
         // When
         scheduler.start();
@@ -90,14 +90,18 @@ public class Neo4jJobSchedulerTest
     {
         // Given
         long period = 2;
-        scheduler = new Neo4jJobScheduler( StringLogger.DEV_NULL );
+        scheduler = new Neo4jJobScheduler();
 
         scheduler.start();
-        scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
+        JobScheduler.JobHandle jobHandle = scheduler.scheduleRecurring(
+                indexPopulation,
+                countInvocationsJob,
+                period,
+                MILLISECONDS );
         awaitFirstInvocation();
 
         // When
-        scheduler.cancelRecurring( indexPopulation,  countInvocationsJob);
+        jobHandle.cancel( false );
 
         // Then
         int recorded = invocations.get();

@@ -28,7 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.DependencySatisfier;
 
 /**

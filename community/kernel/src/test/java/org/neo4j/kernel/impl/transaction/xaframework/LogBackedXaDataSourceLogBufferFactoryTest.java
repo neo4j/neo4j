@@ -35,7 +35,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.util.TestLogging;

@@ -21,11 +21,14 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Implementation of the property store.
@@ -43,13 +46,19 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
 
     private static final int RECORD_SIZE = 1/*inUse*/ + 4/*prop count*/ + 4/*nameId*/;
 
-    public PropertyKeyTokenStore( File fileName, Config config,
-                                  IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                                  FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                                  DynamicStringStore nameStore, StoreVersionMismatchHandler versionMismatchHandler )
+    public PropertyKeyTokenStore(
+            File fileName,
+            Config config,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            DynamicStringStore nameStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super(fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler);
+        super(fileName, config, IdType.PROPERTY_KEY_TOKEN, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
     @Override
@@ -65,17 +74,17 @@ public class PropertyKeyTokenStore extends TokenStore<PropertyKeyTokenRecord>
     }
 
     @Override
-    protected void readRecord( PropertyKeyTokenRecord record, Buffer buffer )
+    protected void readRecord( PropertyKeyTokenRecord record, PageCursor cursor )
     {
-        record.setPropertyCount( buffer.getInt() );
-        record.setNameId( buffer.getInt() );
+        record.setPropertyCount( cursor.getInt() );
+        record.setNameId( cursor.getInt() );
     }
 
     @Override
-    protected void writeRecord( PropertyKeyTokenRecord record, Buffer buffer )
+    protected void writeRecord( PropertyKeyTokenRecord record, PageCursor cursor )
     {
-        buffer.putInt( record.getPropertyCount() );
-        buffer.putInt( record.getNameId() );
+        cursor.putInt( record.getPropertyCount() );
+        cursor.putInt( record.getNameId() );
     }
 
     @Override

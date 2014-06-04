@@ -338,6 +338,11 @@ the relevant Commercial Agreement.
       <artifactId>neo4j-primitive-collections</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 
     <!-- main dependencies, external -->
     <dependency>
@@ -351,6 +356,15 @@ the relevant Commercial Agreement.
     </dependency>
 
     <!-- test dependencies -->
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
     <dependency>
       <groupId>junit</groupId>
       <artifactId>junit</artifactId>

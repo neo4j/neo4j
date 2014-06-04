@@ -20,14 +20,17 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.List;
+import java.io.IOException;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 /**
  * Implementation of the relationship store.
@@ -47,12 +50,18 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     // second_next_rel_id+next_prop_id(int)+first-in-chain-markers(1)
     public static final int RECORD_SIZE = 34;
 
-    public RelationshipStore( File fileName, Config configuration, IdGeneratorFactory idGeneratorFactory,
-                             WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
-                             StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler )
+    public RelationshipStore(
+            File fileName,
+            Config configuration,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
         super( fileName, configuration, IdType.RELATIONSHIP, idGeneratorFactory,
-                windowPoolFactory, fileSystemAbstraction, stringLogger, versionMismatchHandler );
+                pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     @Override
@@ -87,38 +96,21 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
 
     public RelationshipRecord getRecord( long id, RelationshipRecord target )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
-        try
-        {
-            return getRecord( id, window, RecordLoad.NORMAL, target );
-        }
-        finally
-        {
-            releaseWindow( window );
-        }
+        return getRecord( id, target, RecordLoad.NORMAL );
     }
 
     @Override
     public RelationshipRecord forceGetRecord( long id )
     {
-        PersistenceWindow window;
         try
         {
-            window = acquireWindow( id, OperationType.READ );
+            assertIdExists( id );
         }
         catch ( InvalidRecordException e )
         {
             return new RelationshipRecord( id, -1, -1, -1 );
         }
-
-        try
-        {
-            return getRecord( id, window, RecordLoad.FORCE, new RelationshipRecord( id ) );
-        }
-        finally
-        {
-            releaseWindow( window );
-        }
+        return getRecord( id, new RelationshipRecord( id ), RecordLoad.FORCE );
     }
 
     @Override
@@ -135,62 +127,89 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
 
     public RelationshipRecord getLightRel( long id )
     {
-        PersistenceWindow window;
         try
         {
-            window = acquireWindow( id, OperationType.READ );
+            assertIdExists( id );
         }
         catch ( InvalidRecordException e )
         {
-            // ok to high id
             return null;
+        }
+
+        return getRecord( id, new RelationshipRecord( id ), RecordLoad.CHECK );
+    }
+
+    private RelationshipRecord getRecord( long id, RelationshipRecord target, RecordLoad loadMode )
+    {
+        PageCursor cursor = pageCache.newCursor();
+        try
+        {
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
         try
         {
-            return getRecord( id, window, RecordLoad.CHECK, new RelationshipRecord( id ) );
+            return getRecord( id, cursor, loadMode, target );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
     @Override
     public void updateRecord( RelationshipRecord record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
-            OperationType.WRITE );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            updateRecord( record, window, false );
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            updateRecord( record, cursor, false );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
     @Override
     public void forceUpdateRecord( RelationshipRecord record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
-                OperationType.WRITE );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            updateRecord( record, window, true );
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            updateRecord( record, cursor, true );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
     private void updateRecord( RelationshipRecord record,
-        PersistenceWindow window, boolean force )
+        PageCursor cursor, boolean force )
     {
         long id = record.getId();
+        cursor.setOffset( offsetForId( id ) );
         registerIdFromUpdateRecord( id );
-        Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() || force )
         {
             long firstNode = record.getFirstNode();
@@ -233,14 +252,20 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
             long firstInEndNodeChain = record.isFirstInSecondChain() ? 0x2 : 0;
             byte extraByte = (byte) (firstInEndNodeChain | firstInStartNodeChain);
 
-            buffer.put( (byte)inUseUnsignedByte ).putInt( (int) firstNode ).putInt( (int) secondNode )
-                .putInt( typeInt ).putInt( (int) firstPrevRel ).putInt( (int) firstNextRel )
-                .putInt( (int) secondPrevRel ).putInt( (int) secondNextRel ).putInt( (int) nextProp )
-                .put( extraByte );
+            cursor.putByte( (byte)inUseUnsignedByte );
+            cursor.putInt( (int) firstNode );
+            cursor.putInt( (int) secondNode );
+            cursor.putInt( typeInt );
+            cursor.putInt( (int) firstPrevRel );
+            cursor.putInt( (int) firstNextRel );
+            cursor.putInt( (int) secondPrevRel );
+            cursor.putInt( (int) secondNextRel );
+            cursor.putInt( (int) nextProp );
+            cursor.putByte( extraByte );
         }
         else
         {
-            buffer.put( Record.NOT_IN_USE.byteValue() );
+            cursor.putByte( Record.NOT_IN_USE.byteValue() );
             if ( !isInRecoveryMode() )
             {
                 freeId( id );
@@ -248,15 +273,15 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         }
     }
 
-    private RelationshipRecord getRecord( long id, PersistenceWindow window,
+    private RelationshipRecord getRecord( long id, PageCursor cursor,
         RecordLoad load, RelationshipRecord record )
     {
-        Buffer buffer = window.getOffsettedBuffer( id );
+        cursor.setOffset( offsetForId( id ) );
 
         // [    ,   x] in use flag
         // [    ,xxx ] first node high order bits
         // [xxxx,    ] next prop high order bits
-        long inUseByte = buffer.get();
+        long inUseByte = cursor.getByte();
 
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( !inUse )
@@ -270,10 +295,10 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
             }
         }
 
-        long firstNode = buffer.getUnsignedInt();
+        long firstNode = cursor.getUnsignedInt();
         long firstNodeMod = (inUseByte & 0xEL) << 31;
 
-        long secondNode = buffer.getUnsignedInt();
+        long secondNode = cursor.getUnsignedInt();
 
         // [ xxx,    ][    ,    ][    ,    ][    ,    ] second node high order bits,     0x70000000
         // [    ,xxx ][    ,    ][    ,    ][    ,    ] first prev rel high order bits,  0xE000000
@@ -281,7 +306,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         // [    ,    ][  xx,x   ][    ,    ][    ,    ] second prev rel high order bits, 0x380000
         // [    ,    ][    , xxx][    ,    ][    ,    ] second next rel high order bits, 0x70000
         // [    ,    ][    ,    ][xxxx,xxxx][xxxx,xxxx] type
-        long typeInt = buffer.getInt();
+        long typeInt = cursor.getInt();
         long secondNodeMod = (typeInt & 0x70000000L) << 4;
         int type = (int)(typeInt & 0xFFFF);
 
@@ -291,26 +316,26 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         record.setType( type );
         record.setInUse( inUse );
 
-        long firstPrevRel = buffer.getUnsignedInt();
+        long firstPrevRel = cursor.getUnsignedInt();
         long firstPrevRelMod = (typeInt & 0xE000000L) << 7;
         record.setFirstPrevRel( longFromIntAndMod( firstPrevRel, firstPrevRelMod ) );
 
-        long firstNextRel = buffer.getUnsignedInt();
+        long firstNextRel = cursor.getUnsignedInt();
         long firstNextRelMod = (typeInt & 0x1C00000L) << 10;
         record.setFirstNextRel( longFromIntAndMod( firstNextRel, firstNextRelMod ) );
 
-        long secondPrevRel = buffer.getUnsignedInt();
+        long secondPrevRel = cursor.getUnsignedInt();
         long secondPrevRelMod = (typeInt & 0x380000L) << 13;
         record.setSecondPrevRel( longFromIntAndMod( secondPrevRel, secondPrevRelMod ) );
 
-        long secondNextRel = buffer.getUnsignedInt();
+        long secondNextRel = cursor.getUnsignedInt();
         long secondNextRelMod = (typeInt & 0x70000L) << 16;
         record.setSecondNextRel( longFromIntAndMod( secondNextRel, secondNextRelMod ) );
 
-        long nextProp = buffer.getUnsignedInt();
+        long nextProp = cursor.getUnsignedInt();
         long nextPropMod = (inUseByte & 0xF0L) << 28;
 
-        byte extraByte = buffer.get();
+        byte extraByte = cursor.getByte();
 
         record.setFirstInFirstChain( (extraByte & 0x1) != 0 );
         record.setFirstInSecondChain( (extraByte & 0x2) != 0 );
@@ -319,34 +344,29 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         return record;
     }
 
-    public RelationshipRecord getChainRecord( long relId )
+    public RelationshipRecord getChainRecord( long id )
     {
-        PersistenceWindow window;
         try
         {
-            window = acquireWindow( relId, OperationType.READ );
+            assertIdExists( id );
         }
         catch ( InvalidRecordException e )
         {
-            // ok to high id
             return null;
         }
+
+        return getRecord( id, new RelationshipRecord( id ), RecordLoad.NORMAL );
+    }
+
+    public void flushAll()
+    {
         try
         {
-//            return getFullRecord( relId, window );
-            return getRecord( relId, window, RecordLoad.NORMAL, new RelationshipRecord( relId ) );
-        }
-        finally
+            storeFile.flush();
+        } catch(IOException e)
         {
-            releaseWindow( window );
+            throw new UnderlyingStorageException( e );
         }
     }
 
-    @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
-    {
-        List<WindowPoolStats> list = new ArrayList<>();
-        list.add( getWindowPoolStats() );
-        return list;
-    }
 }

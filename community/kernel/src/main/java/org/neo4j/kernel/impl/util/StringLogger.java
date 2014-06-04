@@ -33,7 +33,7 @@ import java.util.concurrent.CopyOnWriteArrayList;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.logging.LogMarker;
 
 import static org.neo4j.helpers.collection.IteratorUtil.loop;

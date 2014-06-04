@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import javax.transaction.TransactionManager;
+
 import org.junit.Test;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import javax.transaction.TransactionManager;
-
-import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.*;
 
 public class SpringTransactionManagerTest
 {
@@ -55,5 +55,7 @@ public class SpringTransactionManagerTest
         assertEquals( "FooBar", db.getNodeById( node.getId() ).getProperty(
                 "name" ) );
         tm.commit();
+
+        db.shutdown();
     }
 }

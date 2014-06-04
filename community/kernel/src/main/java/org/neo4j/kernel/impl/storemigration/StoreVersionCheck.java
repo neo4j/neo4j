@@ -25,8 +25,8 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 
 public class StoreVersionCheck
 {

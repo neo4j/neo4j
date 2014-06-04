@@ -86,6 +86,8 @@ public class TestConcurrentRelationshipChainLoadingIssue
         {
             tryOnce( db, node, iterations++ );
         }
+
+        db.shutdown();
     }
 
     private void checkStateToHelpDiagnoseFlakeyTest( GraphDatabaseAPI db, Node node )

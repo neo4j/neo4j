@@ -62,5 +62,6 @@ public class SetCacheProvidersTest
         GraphDatabaseAPI db = (GraphDatabaseAPI) gdbf.newImpermanentDatabase();
         assertEquals( SoftCacheProvider.NAME, db.getDependencyResolver().resolveDependency( NodeManager.class )
                 .getCacheType().getName() );
+        db.shutdown();
     }
 }

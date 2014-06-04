@@ -836,7 +836,7 @@ public class XaResourceManager
 
     /**
      * Returns <CODE>true</CODE> if recovered transactions exist. This method
-     * is useful to invoke after the logical log has been opened to detirmine if
+     * is useful to invoke after the logical log has been opened to determine if
      * there are any recovered transactions waiting for the TM to tell them what
      * to do.
      *

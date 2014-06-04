@@ -19,19 +19,35 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Test;
+
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
-import org.neo4j.test.TargetDirectory;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class OnDiskLastTxIdGetterTest
 {
     @Test
     public void testGetLastTxIdNoFilePresent() throws Exception
     {
-        OnDiskLastTxIdGetter getter = new OnDiskLastTxIdGetter(
-                TargetDirectory.forTest( getClass() ).cleanDirectory( "no-store" ) );
-        assertEquals( -1, getter.getLastTxId() );
+        // This is a sign that we have some bad coupling on our hands.
+        // We currently have to do this because of our lifecycle and construction ordering.
+        InternalAbstractGraphDatabase graphdb = mock( InternalAbstractGraphDatabase.class );
+        DependencyResolver resolver = mock( DependencyResolver.class );
+        NeoStoreProvider provider = mock( NeoStoreProvider.class );
+        NeoStore neoStore = mock( NeoStore.class );
+        when( graphdb.getDependencyResolver() ).thenReturn( resolver );
+        when( resolver.resolveDependency( NeoStoreProvider.class ) ).thenReturn( provider );
+        when( provider.evaluate() ).thenReturn( neoStore );
+        when( neoStore.getLastCommittedTx() ).thenReturn( 13L );
+
+        OnDiskLastTxIdGetter getter = new OnDiskLastTxIdGetter( graphdb );
+        assertEquals( 13L, getter.getLastTxId() );
     }
 }

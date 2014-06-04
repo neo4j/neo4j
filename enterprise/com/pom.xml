@@ -78,6 +78,17 @@
           </execution>
         </executions>
       </plugin>
+
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default</id>
+            <phase>none</phase>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
 
@@ -98,6 +109,14 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

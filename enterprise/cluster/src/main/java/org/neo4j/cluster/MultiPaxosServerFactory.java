@@ -176,7 +176,7 @@ public class MultiPaxosServerFactory
                 .getOutgoing() ) );
 
         context.getHeartbeatContext().addHeartbeatListener( new HeartbeatReelectionListener(
-                server.newClient( Election.class ), logging.getMessagesLog( ClusterLeaveReelectionListener.class ) ) );
+                server.newClient( Election.class ), logging.getMessagesLog( HeartbeatReelectionListener.class ) ) );
         context.getClusterContext().addClusterListener( new ClusterLeaveReelectionListener( server.newClient(
                 Election.class ),
                 logging.getMessagesLog( ClusterLeaveReelectionListener.class )

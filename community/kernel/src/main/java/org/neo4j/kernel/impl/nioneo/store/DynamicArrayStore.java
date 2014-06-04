@@ -28,12 +28,14 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.System.arraycopy;
 
@@ -49,13 +51,19 @@ public class DynamicArrayStore extends AbstractDynamicStore
     public static final String TYPE_DESCRIPTOR = "ArrayPropertyStore";
     public static final String VERSION = buildTypeDescriptorAndVersion( TYPE_DESCRIPTOR );
 
-    public DynamicArrayStore( File fileName, Config configuration, IdType idType,
-                             IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                             FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                             StoreVersionMismatchHandler versionMismatchHandler )
+    public DynamicArrayStore(
+            File fileName,
+            Config configuration,
+            IdType idType,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, configuration, idType, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler );
+        super( fileName, configuration, idType, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     @Override

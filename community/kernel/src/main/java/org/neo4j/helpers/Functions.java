@@ -21,8 +21,13 @@ package org.neo4j.helpers;
 
 import java.util.Map;
 
+/**
+ * @deprecated use {@link org.neo4j.function.Functions} instead.
+ */
+@Deprecated
 public final class Functions
 {
+    @Deprecated
     public static <From, To> Function<From, To> map( final Map<From, To> map )
     {
         return new Function<From, To>()
@@ -35,7 +40,8 @@ public final class Functions
         };
     }
 
-    public static <From, To> Function<From, To> withDefaults( final Function<From, To> defaults, final Function<From,
+    @Deprecated
+    public static <From, To> Function<From, To> withDefaults( final org.neo4j.function.Function<From, To> defaults, final org.neo4j.function.Function<From,
             To> f )
     {
         return new Function<From, To>()
@@ -57,6 +63,7 @@ public final class Functions
         };
     }
 
+    @Deprecated
     public static <From, To> Function<From, To> nullFunction()
     {
         return new Function<From, To>()
@@ -69,6 +76,7 @@ public final class Functions
         };
     }
 
+    @Deprecated
     public static <From, To> Function<From, To> constant( final To value )
     {
         return new Function<From, To>()
@@ -81,6 +89,7 @@ public final class Functions
         };
     }
 
+    @Deprecated
     public static <T> Function<T, T> identity()
     {
         return new Function<T, T>()
@@ -93,6 +102,7 @@ public final class Functions
         };
     }
 
+    @Deprecated
     public static <From, From2, To> Function2<Function<From, From2>, Function<From2, To>, Function<From, To>> compose()
     {
         return new Function2<Function<From, From2>, Function<From2, To>, Function<From, To>>()
@@ -112,6 +122,7 @@ public final class Functions
         };
     }
 
+    @Deprecated
     public static <T1, T2> Function2<Function2<T1, T2, T1>, Function2<T1, T2, T1>, Function2<T1, T2, T1>> compose2()
     {
         return new Function2<Function2<T1, T2, T1>, Function2<T1, T2, T1>, Function2<T1, T2, T1>>()
@@ -132,6 +143,7 @@ public final class Functions
         };
     }
 
+    @Deprecated
     public static Function<Object, String> TO_STRING = new Function<Object, String>()
     {
         @Override
@@ -148,10 +160,7 @@ public final class Functions
         }
     };
 
-    private Functions()
-    {
-    }
-
+    @Deprecated
     public static <FROM, TO> Function<FROM, TO> cast( final Class<TO> to )
     {
         return new Function<FROM, TO>()
