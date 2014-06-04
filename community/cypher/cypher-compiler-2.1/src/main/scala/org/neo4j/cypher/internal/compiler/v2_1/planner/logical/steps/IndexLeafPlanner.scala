@@ -50,6 +50,7 @@ abstract class IndexLeafPlanner extends LeafPlanner {
               constructPlan(idName, LabelToken(labelName, labelId), PropertyKeyToken(propertyKeyName, propertyKeyName.id.head), valueExpr)
             entryConstructor(Seq(propertyPredicate, labelPredicate))
           }
+        //        case predicate@QueryToken(AnyInCollection(expression, _, Equals(Property(Identifier(id), prop),Identifier(_))))
       }.flatten
     )
   }

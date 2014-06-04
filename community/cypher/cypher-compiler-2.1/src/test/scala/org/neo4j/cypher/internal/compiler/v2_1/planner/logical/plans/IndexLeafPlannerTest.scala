@@ -20,105 +20,72 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
-import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, Candidates}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{QueryGraphSolvingContext, Cardinality}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
 
-import org.mockito.Mockito._
-import org.mockito.Matchers._
-import scala.collection.mutable
+class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
-  val statistics = hardcodedStatistics
+  val idName = IdName("n")
+  val hasLabels = HasLabels(ident("n"), Seq(LabelName("Awesome") _)) _
+  val equalsValue = Equals(
+    Property(ident("n"), PropertyKeyName("prop") _) _,
+    SignedIntegerLiteral("42") _
+  )_
 
   test("index scan when there is an index on the property") {
-    // given
-    val identifier = Identifier("n")_
-    val label = LabelToken("Awesome", LabelId(12))
-    val propertyKey = PropertyKeyToken("prop", PropertyKeyId(15))
-    val idName = IdName("n")
-    val hasLabels = HasLabels(identifier, Seq(LabelName("Awesome")_))_
-    val equals = Equals(
-      Property(identifier, PropertyKeyName("prop")_)_,
-      SignedIntegerLiteral("42")_
-    )_
-    val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set(idName), equals), Predicate(Set(idName), hasLabels))),
-      patternNodes = Set(idName))
+    new given {
+      qg = queryGraph(equalsValue, hasLabels)
 
-    val semanticTable = newMockedSemanticTable
-    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> label.nameId))
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map("prop" -> propertyKey.nameId))
-    when(semanticTable.isNode(identifier)).thenReturn(true)
+      cardinality = mapCardinality {
+        case _: AllNodesScan => 1000
+        case _: NodeByLabelScan => 100
+        case _ => Double.MaxValue
+      }
 
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan    => Cardinality(1000)
-      case _: NodeByLabelScan => Cardinality(100)
-      case _                  => Cardinality(Double.MaxValue)
-    })
-    implicit val context = newMockedQueryGraphSolvingContext(
-      semanticTable = semanticTable,
-      planContext = newMockedPlanContext,
-      query = qg,
-      metrics = factory.newMetrics(statistics, semanticTable))
+      indexOn("Awesome", "prop")
 
-    when(context.planContext.getIndexRule("Awesome", "prop")).thenReturn(Some(new IndexDescriptor(12, 15)))
-    when(context.planContext.getUniqueIndexRule("Awesome", "prop")).thenReturn(None)
+      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+        // when
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
 
-    // when
-    val resultPlans = indexSeekLeafPlanner(qg)
-
-    // then
-    resultPlans should equal(Candidates(planNodeIndexSeek(idName, label, propertyKey, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
+        // then
+        resultPlans.plans.map(_.plan) should beLike {
+          case Seq(NodeIndexSeek(`idName`, _, _, SignedIntegerLiteral("42"))) => ()
+        }
+      }
+    }
   }
 
-  test("index seek when there is an index on the property") {
-    // given
-    val identifier = Identifier("n")_
-    val label = LabelToken(LabelName("Awesome")_, LabelId(12))
-    val propertyKey = PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(15))
-    val idName = IdName("n")
-    val hasLabels = HasLabels(identifier, Seq(LabelName("Awesome")_))_
-    val equals = Equals(
-      Property(identifier, PropertyKeyName("prop")_)_,
-      SignedIntegerLiteral("42")_
-    )_
-    val qg = QueryGraph(
-      selections = Selections(Set(
-        Predicate(Set(idName), equals),
-        Predicate(Set(idName), hasLabels))),
-      patternNodes = Set(idName))
+  test("unique index scan when there is an unique index on the property") {
+    new given {
+      qg = queryGraph(equalsValue, hasLabels)
 
-    val semanticTable = newMockedSemanticTable
-    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> label.nameId))
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map("prop" -> propertyKey.nameId))
-    when(semanticTable.isNode(identifier)).thenReturn(true)
+      cardinality = mapCardinality {
+        case _: AllNodesScan => 1000
+        case _: NodeByLabelScan => 100
+        case _ => Double.MaxValue
+      }
 
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan    => Cardinality(1000)
-      case _: NodeByLabelScan => Cardinality(100)
-      case _                  => Cardinality(Double.MaxValue)
-    })
-    implicit val context = newMockedQueryGraphSolvingContext(
-      semanticTable = semanticTable,
-      planContext = newMockedPlanContext,
-      query = qg,
-      metrics = factory.newMetrics(statistics, semanticTable))
-    when(context.planContext.getIndexRule("Awesome", "prop")).thenReturn(None)
-    when(context.planContext.getUniqueIndexRule("Awesome", "prop")).thenReturn(Some(new IndexDescriptor(12, 15)))
+      uniqueIndexOn("Awesome", "prop")
 
-    // when
-    val resultPlans = uniqueIndexSeekLeafPlanner(qg)
+      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+        // when
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
 
-    // then
-    resultPlans should equal(Candidates(planNodeIndexUniqueSeek(idName, label, propertyKey, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
+        // then
+        resultPlans.plans.map(_.plan) should beLike {
+          case Seq(NodeIndexUniqueSeek(`idName`, _, _, SignedIntegerLiteral("42"))) => ()
+        }
+      }
+    }
   }
+
+  private def queryGraph(predicates: Expression*) =
+    QueryGraph(
+      selections = Selections(predicates.map(Predicate(Set(idName), _)).toSet),
+      patternNodes = Set(idName)
+    )
 }
