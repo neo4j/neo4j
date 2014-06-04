@@ -28,7 +28,6 @@ import static org.mockito.Mockito.*;
 
 public class StoreFileChannelTest
 {
-
     @Test
     public void shouldHandlePartialWrites() throws Exception
     {
@@ -36,7 +35,7 @@ public class StoreFileChannelTest
         FileChannel mockChannel = mock(FileChannel.class);
         when(mockChannel.write( any(ByteBuffer.class), anyLong() )).thenReturn( 4 );
 
-        ByteBuffer buffer = ByteBuffer.wrap( "Hello, world!".getBytes() );
+        ByteBuffer buffer = ByteBuffer.wrap( "Hello, world!".getBytes( "UTF-8" ) );
 
         StoreFileChannel channel = new StoreFileChannel( mockChannel );
 
@@ -50,5 +49,4 @@ public class StoreFileChannelTest
         verify( mockChannel ).write( buffer, 32 );
         verifyNoMoreInteractions( mockChannel );
     }
-
 }
