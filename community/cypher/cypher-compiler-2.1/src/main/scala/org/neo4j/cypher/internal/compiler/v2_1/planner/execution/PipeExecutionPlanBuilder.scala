@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v2_1.commands.True
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{SingleQueryExpression, True}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.AggregationExpression
@@ -61,11 +61,11 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case UndirectedRelationshipByIdSeek(IdName(id), relIdExpr, IdName(fromNode), IdName(toNode)) =>
           UndirectedRelationshipByIdSeekPipe(id, relIdExpr.map(_.asCommandExpression), toNode, fromNode)
 
-        case NodeIndexSeek(IdName(id), labelId, propertyKeyId, valueExpr) =>
-          NodeIndexSeekPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)
+        case NodeIndexSeek(IdName(id), label, propertyKey, valueExpr) =>
+          NodeIndexSeekPipe(id, label, propertyKey, SingleQueryExpression(valueExpr.asCommandExpression), unique = false)
 
-        case NodeIndexUniqueSeek(IdName(id), labelId, propertyKeyId, valueExpr) =>
-          NodeUniqueIndexSeekPipe(id, Right(labelId), Right(propertyKeyId), valueExpr.asCommandExpression)
+        case NodeIndexUniqueSeek(IdName(id), label, propertyKey, valueExpr) =>
+          NodeIndexSeekPipe(id, label, propertyKey, SingleQueryExpression(valueExpr.asCommandExpression), unique = true)
 
         case Selection(predicates, left) =>
           FilterPipe(buildPipe(left), predicates.map(_.asCommandPredicate).reduce(_ ++ _))

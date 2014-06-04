@@ -23,16 +23,17 @@ import org.junit.{Before, Test}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.mockito.Mockito._
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 import org.scalatest.mock.MockitoSugar
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.EntityProducerFactory
 import org.hamcrest.MatcherAssert.assertThat
 import org.hamcrest.Matchers._
 import org.neo4j.cypher.PlanDescription
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SchemaIndex
-import org.neo4j.cypher.internal.compiler.v2_1.commands.NodeByIndex
 import org.neo4j.kernel.api.index.IndexDescriptor
-
+import org.neo4j.cypher.internal.compiler.v2_1.commands.SchemaIndex
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_1.commands.NodeByLabel
+import org.neo4j.cypher.internal.compiler.v2_1.commands.NodeByIndex
+import org.neo4j.cypher.internal.compiler.v2_1.commands.NodeByIndexQuery
+import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleQueryExpression
 
 class StartPipePlanDescriptionTest extends MockitoSugar {
 

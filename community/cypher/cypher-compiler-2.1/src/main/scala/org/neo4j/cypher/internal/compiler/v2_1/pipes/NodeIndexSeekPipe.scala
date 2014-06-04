@@ -20,50 +20,42 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.CTNode
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.{SymbolTable, CTNode}
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{Index, LabelName, IntroducedIdentifier}
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{Index, IntroducedIdentifier}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{indexQuery, QueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{PropertyKeyToken, LabelToken}
+import org.neo4j.graphdb.Node
 
-case class NodeIndexSeekPipe(ident: String, label: Either[String, LabelId], propertyKey: Either[String, PropertyKeyId], valueExpr: Expression)(implicit pipeMonitor: PipeMonitor) extends Pipe {
+case class NodeIndexSeekPipe(ident: String,
+                             label: LabelToken,
+                             propertyKey: PropertyKeyToken,
+                             valueExpr: QueryExpression,
+                             unique: Boolean = false)
+                            (implicit pipeMonitor: PipeMonitor) extends Pipe {
+
+  val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+
+  val indexFactory: (QueryState) => (Any) => Iterator[Node] =
+    if (unique)
+      (state: QueryState) => (x: Any) => state.query.exactUniqueIndexSearch(descriptor, x).toIterator
+    else
+      (state: QueryState) => (x: Any) => state.query.exactIndexSearch(descriptor, x)
 
   protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] = {
-    val optLabelId = label match {
-      case Left(str)      => state.query.getOptLabelId(str).map(LabelId)
-      case Right(labelId) => Some(labelId)
-    }
-
-    val optPropertyKeyId = propertyKey match {
-      case Left(str)      => state.query.getOptPropertyKeyId(str).map(PropertyKeyId)
-      case Right(propertyKeyId) => Some(propertyKeyId)
-    }
-
-    (optLabelId, optPropertyKeyId) match {
-      case (Some(labelId), Some(propertyKeyId)) => {
-        val descriptor = new IndexDescriptor(labelId.id, propertyKeyId.id)
-        val value = valueExpr(ExecutionContext.empty)(state)
-        val iterator = state.query.exactIndexSearch(descriptor, value)
-        iterator.map(node => ExecutionContext.from(ident -> node))
-      }
-      case _ => Iterator.empty
-    }
+    val index = indexFactory(state)
+    val resultNodes = indexQuery(valueExpr, ExecutionContext.empty, state, index, label.name, propertyKey.name)
+    resultNodes.map(node => ExecutionContext.from(ident -> node))
   }
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  private def labelName = label match {
-    case Left(name) => name
-    case Right(id) => id.toString
+  def planDescription = {
+    val name = if (unique) "NodeUniqueIndexSeek" else "NodeIndexSeek"
+    new PlanDescriptionImpl(this, name, NoChildren, Seq(
+      IntroducedIdentifier(ident), Index(label.name, propertyKey.name))
+    )
   }
-
-  private def propertyName = propertyKey match {
-    case Left(name) => name
-    case Right(id) => id.toString
-  }
-
-  def planDescription = new PlanDescriptionImpl(this, "NodeIndexSeek", NoChildren, Seq(
-    IntroducedIdentifier(ident), Index(labelName, propertyName)))
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 

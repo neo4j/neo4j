@@ -40,8 +40,8 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   test("index scan when there is an index on the property") {
     // given
     val identifier = Identifier("n")_
-    val labelId = LabelId(12)
-    val propertyKeyId = PropertyKeyId(15)
+    val label = LabelToken("Awesome", LabelId(12))
+    val propertyKey = PropertyKeyToken("prop", PropertyKeyId(15))
     val idName = IdName("n")
     val hasLabels = HasLabels(identifier, Seq(LabelName("Awesome")_))_
     val equals = Equals(
@@ -53,8 +53,8 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       patternNodes = Set(idName))
 
     val semanticTable = newMockedSemanticTable
-    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> labelId))
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map("prop" -> propertyKeyId))
+    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> label.nameId))
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map("prop" -> propertyKey.nameId))
     when(semanticTable.isNode(identifier)).thenReturn(true)
 
     val factory = newMockedMetricsFactory
@@ -76,14 +76,14 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val resultPlans = indexSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(planNodeIndexSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
+    resultPlans should equal(Candidates(planNodeIndexSeek(idName, label, propertyKey, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
   }
 
   test("index seek when there is an index on the property") {
     // given
     val identifier = Identifier("n")_
-    val labelId = LabelId(12)
-    val propertyKeyId = PropertyKeyId(15)
+    val label = LabelToken(LabelName("Awesome")_, LabelId(12))
+    val propertyKey = PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(15))
     val idName = IdName("n")
     val hasLabels = HasLabels(identifier, Seq(LabelName("Awesome")_))_
     val equals = Equals(
@@ -97,8 +97,8 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
       patternNodes = Set(idName))
 
     val semanticTable = newMockedSemanticTable
-    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> labelId))
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map("prop" -> propertyKeyId))
+    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> label.nameId))
+    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map("prop" -> propertyKey.nameId))
     when(semanticTable.isNode(identifier)).thenReturn(true)
 
     val factory = newMockedMetricsFactory
@@ -119,6 +119,6 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val resultPlans = uniqueIndexSeekLeafPlanner(qg)
 
     // then
-    resultPlans should equal(Candidates(planNodeIndexUniqueSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
+    resultPlans should equal(Candidates(planNodeIndexUniqueSeek(idName, label, propertyKey, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
   }
 }

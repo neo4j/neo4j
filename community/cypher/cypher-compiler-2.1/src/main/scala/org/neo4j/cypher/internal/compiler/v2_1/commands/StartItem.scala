@@ -89,8 +89,8 @@ case object UniqueIndex extends SchemaIndexKind
 trait QueryExpression {
   def expression:Expression
 }
-case class SingleQueryExpression(expression:Expression) extends QueryExpression
-case class ManyQueryExpression(expression:Expression) extends QueryExpression
+case class SingleQueryExpression(expression: Expression) extends QueryExpression
+case class ManyQueryExpression(expression: Expression) extends QueryExpression
 
 case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression])
   extends StartItem(identifier, query.map(q => Arguments.LegacyExpression(q.expression)).toSeq :+ Arguments.Index(label, property))

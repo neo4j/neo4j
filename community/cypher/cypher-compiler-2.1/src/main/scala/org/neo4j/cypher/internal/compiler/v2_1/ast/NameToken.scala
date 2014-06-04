@@ -17,12 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{PropertyKeyToken, LabelToken, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId, NameId}
 
-case class NodeIndexUniqueSeek(idName: IdName, label: LabelToken, propertyKey: PropertyKeyToken, valueExpr: Expression)
-                              extends LogicalLeafPlan {
-  def availableSymbols = Set(idName)
+sealed abstract class NameToken[I <: NameId] {
+  def name: String
+  def nameId: I
 }
+
+object LabelToken {
+  def apply(symbolicName: LabelName, nameId: LabelId): LabelToken = LabelToken(symbolicName.name, nameId)
+}
+
+final case class LabelToken(name: String, nameId: LabelId) extends NameToken[LabelId]
+
+object PropertyKeyToken {
+  def apply(symbolicName: PropertyKeyName, nameId: PropertyKeyId): PropertyKeyToken = PropertyKeyToken(symbolicName.name, nameId)
+}
+
+final case class PropertyKeyToken(name: String, nameId: PropertyKeyId) extends NameToken[PropertyKeyId]

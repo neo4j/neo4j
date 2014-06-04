@@ -23,6 +23,7 @@ import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.junit.Assert._
 import org.junit.Test
 import org.neo4j.cypher.internal.helpers.GraphIcing
+import org.hamcrest.CoreMatchers._
 
 class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSupport with GraphIcing {
 
@@ -75,7 +76,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       assertions = {
         (p) =>
           assertEquals(1, p.size)
-          assertTrue(p.executionPlanDescription().toString contains "SchemaIndex")
+          assertThat(p.executionPlanDescription().toString, containsString("SchemaIndex"))
       }
     )
   }
@@ -89,7 +90,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       assertions = {
         (p) =>
           assertEquals(1, p.size)
-          assertTrue(p.executionPlanDescription().toString contains "SchemaIndex")
+          assertThat(p.executionPlanDescription().toString, containsString("SchemaIndex"))
       }
     )
   }
@@ -105,7 +106,7 @@ class SchemaIndexTest extends DocumentingTestBase with QueryStatisticsTestSuppor
       assertions = {
         (p) =>
           assertEquals(2, p.size)
-          assertTrue(p.executionPlanDescription().toString contains "SchemaIndex")
+          assertThat(p.executionPlanDescription().toString, containsString("SchemaIndex"))
       }
     )
   }
