@@ -5,8 +5,7 @@ Cypher works very hard to execute queries as fast as possible.
 
 However, when optimizing for maximum query execution performance, it may be helpful to rephrase queries using knowledge about the domain and the application.
 
-The overall goal of manual query performance optimization is to ensure that only necessary data is retrieved from the
-graph.
+The overall goal of manual query performance optimization is to ensure that only necessary data is retrieved from the graph.
 At least data should get filtered out as early as possible in order to reduce the amount of work that has to be done at later stages of query execution.
 This also goes for what gets returned: avoid returning whole nodes and relationships -- instead, pick the data you need and return only that.
 You should also make sure to set an upper limit on variable length patterns, so they don't cover larger portions of the dataset than needed.
