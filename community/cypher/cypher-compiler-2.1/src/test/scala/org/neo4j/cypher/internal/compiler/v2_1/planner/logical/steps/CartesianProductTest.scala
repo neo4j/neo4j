@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, Candidates, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cost, Candidates, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
@@ -56,7 +56,7 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
   private def prepare(cost: LogicalPlan => Double, plans: QueryPlan*) = {
     val factory = newMockedMetricsFactory
 
-    when(factory.newCostModel(any())).thenReturn(cost)
+    when(factory.newCostModel(any())).thenReturn(cost.andThen(Cost.apply))
     implicit val context = newMockedQueryGraphSolvingContext(
       planContext = newMockedPlanContext,
       metrics = factory.newMetrics(HardcodedGraphStatistics, newMockedSemanticTable)

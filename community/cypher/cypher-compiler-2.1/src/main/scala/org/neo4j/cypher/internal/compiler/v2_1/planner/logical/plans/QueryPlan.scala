@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
-import org.neo4j.cypher.internal.compiler.v2_1.pprint.pformat
+import org.neo4j.cypher.internal.compiler.v2_1.perty.pformat
 
 case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
 
