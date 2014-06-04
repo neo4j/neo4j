@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleQueryExpression
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -77,7 +78,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         "n",
         LabelToken("Awesome", LabelId(0)),
         PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
-        SignedIntegerLiteral("42")_
+        SingleQueryExpression(SignedIntegerLiteral("42")(pos))
       )
     )
   }
@@ -88,7 +89,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SignedIntegerLiteral("42")_)
+      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedIntegerLiteral("42")_))
     )
   }
 
@@ -99,7 +100,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(1)), SignedIntegerLiteral("42")_)
+      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(1)), SingleQueryExpression(SignedIntegerLiteral("42")_))
     )
   }
 

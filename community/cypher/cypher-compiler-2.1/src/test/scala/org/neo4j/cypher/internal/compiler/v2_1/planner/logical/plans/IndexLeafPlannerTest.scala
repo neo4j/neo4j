@@ -23,8 +23,9 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{QueryGraphSolvingContext, Cardinality}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.QueryGraphSolvingContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleQueryExpression
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -53,7 +54,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, SignedIntegerLiteral("42"))) => ()
+          case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(SignedIntegerLiteral("42")))) => ()
         }
       }
     }
@@ -77,7 +78,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexUniqueSeek(`idName`, _, _, SignedIntegerLiteral("42"))) => ()
+          case Seq(NodeIndexUniqueSeek(`idName`, _, _, SingleQueryExpression(SignedIntegerLiteral("42")))) => ()
         }
       }
     }

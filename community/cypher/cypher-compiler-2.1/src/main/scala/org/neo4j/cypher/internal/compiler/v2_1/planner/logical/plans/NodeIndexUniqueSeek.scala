@@ -19,10 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{PropertyKeyToken, LabelToken, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.QueryExpression
 
-case class NodeIndexUniqueSeek(idName: IdName, label: LabelToken, propertyKey: PropertyKeyToken, valueExpr: Expression)
+case class NodeIndexUniqueSeek(idName: IdName,
+                               label: LabelToken,
+                               propertyKey: PropertyKeyToken,
+                               valueExpr: QueryExpression[Expression])
                               extends LogicalLeafPlan {
   def availableSymbols = Set(idName)
 }

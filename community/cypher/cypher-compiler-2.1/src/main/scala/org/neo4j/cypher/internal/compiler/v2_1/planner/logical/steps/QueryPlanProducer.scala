@@ -23,49 +23,10 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{AggregationProjection, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.SortDescription
-import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexUniqueSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Aggregation
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.DirectedRelationshipByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.OptionalExpand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SelectOrSemiApply
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AntiSemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LetSelectOrSemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.UndirectedRelationshipByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SelectOrAntiSemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LetSelectOrAntiSemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Limit
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByLabelScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LetSemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.CartesianProduct
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.OuterHashJoin
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Selection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Sort
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Apply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeByIdSeek
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.AggregationProjection
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Add
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LetAntiSemiApply
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SortedLimit
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Skip
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Optional
+import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleQueryExpression
 
 object QueryPlanProducer {
   def solvePredicate(plan: QueryPlan, solved: Expression) =
@@ -156,7 +117,7 @@ object QueryPlanProducer {
                         propertyKey: PropertyKeyToken,
                         valueExpr: Expression, solvedPredicates: Seq[Expression] = Seq.empty) =
     QueryPlan(
-      NodeIndexSeek(idName, label, propertyKey, valueExpr),
+      NodeIndexSeek(idName, label, propertyKey, SingleQueryExpression(valueExpr)),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
@@ -175,7 +136,7 @@ object QueryPlanProducer {
                               valueExpr: Expression,
                               solvedPredicates: Seq[Expression] = Seq.empty) =
     QueryPlan(
-      NodeIndexUniqueSeek(idName, label, propertyKey, valueExpr),
+      NodeIndexUniqueSeek(idName, label, propertyKey, SingleQueryExpression(valueExpr)),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
