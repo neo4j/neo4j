@@ -42,7 +42,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.helpers.AggregationNameGenerator
  * RETURN { name: x1, count: x2 }
  */
 case object isolateAggregation extends Rewriter {
-  def apply(in: AnyRef): Option[AnyRef] = instance.apply(in)
+  def apply(in: AnyRef): Option[AnyRef] = bottomUp(instance).apply(in)
 
   private val instance = Rewriter.lift {
     case q@SingleQuery(clauses) =>

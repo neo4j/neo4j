@@ -45,7 +45,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
     val rewrittenAst: Statement = if (normalize) {
       val step1 = astRewriter.rewrite(query, ast)._1
-      val step2 = step1.rewrite(bottomUp(inSequence(nameVarLengthRelationships, namePatternPredicates))).asInstanceOf[Statement]
+      val step2 = step1.rewrite(inSequence(nameVarLengthRelationships, namePatternPredicates)).asInstanceOf[Statement]
       val step3 = inlineProjections(step2)
       step3
     } else {
@@ -114,13 +114,19 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     ))
 
     query.graph.selections should equal(Selections(Set(
-      Predicate(Set(IdName("n")), Ors(Set(
-        HasLabels(nIdent, Seq(X))(pos),
-        Ands(Set(
-          HasLabels(nIdent, Seq(A))(pos),
+      Predicate(Set(IdName("n")),
+        Ors(Set(
+          HasLabels(nIdent, Seq(X))(pos),
           HasLabels(nIdent, Seq(B))(pos)
-        ))(pos)))_
-      ))))
+        ))(pos)
+      ),
+      Predicate(Set(IdName("n")),
+        Ors(Set(
+          HasLabels(nIdent, Seq(X))(pos),
+          HasLabels(nIdent, Seq(A))(pos)
+        ))(pos)
+      )
+    )))
 
     query.graph.patternNodes should equal(Set(IdName("n")))
   }
