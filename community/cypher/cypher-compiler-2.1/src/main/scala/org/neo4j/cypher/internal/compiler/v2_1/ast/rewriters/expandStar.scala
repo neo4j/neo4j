@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
+import org.neo4j.cypher.internal.compiler.v2_1.{bottomUp, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator
 
-
 object expandStar extends Rewriter {
 
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
     case x: ReturnAll if x.seenIdentifiers.nonEmpty =>

@@ -152,6 +152,81 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(() => prepare), assertions: _*)
   }
 
+  def profileQuery(title: String, text: String, queryText: String, assertions: (ExecutionResult => Unit)*) {
+    internalProfileQuery(title, text, "cypher 2.1.experimental " + queryText, None, None, assertions: _*)
+  }
+
+  private def internalProfileQuery(title: String, text: String, queryText: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
+    parameters = null
+    preparationQueries = List()
+
+    dumpSetupConstraintsQueries(setupConstraintQueries, dir)
+    dumpSetupQueries(setupQueries, dir)
+
+    val consoleData: String = "none"
+
+    var query = queryText
+    val keySet = nodeMap.keySet
+    val writer: PrintWriter = createWriter(title, dir)
+    prepare.foreach {
+      (prepareStep: () => Any) => prepareStep()
+    }
+
+    if (preparationQueries.size > 0) {
+      dumpPreparationQueries(preparationQueries, dir, title)
+    }
+
+    db.inTx {
+      keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
+    }
+
+    try {
+      val results = if (parameters == null) engine.profile(query) else engine.profile(query, parameters)
+      val result = RewindableExecutionResult(results)
+
+      if (expectedException.isDefined) {
+        fail(s"Expected the test to throw an exception: $expectedException")
+      }
+
+      val testId = nicefy(section + " " + title)
+      writer.println("[[" + testId + "]]")
+      if (!noTitle) writer.println("== " + title + " ==")
+      writer.println(text)
+      writer.println()
+
+      if (parameters != null) {
+        writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
+      }
+      val output = new StringBuilder(2048)
+      output.append(".Query\n")
+      output.append(createCypherSnippet(query))
+      writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".query", output.toString()))
+      writer.println()
+      writer.println()
+
+      writer.append(".Query Plan\n")
+      writer.append(AsciidocHelper.createOutputSnippet(result.executionPlanDescription().toString))
+
+      writer.flush()
+      writer.close()
+
+
+      db.inTx {
+        assertions.foreach(_.apply(result))
+      }
+
+    } catch {
+      case e: CypherException if expectedException.nonEmpty =>
+        val expectedExceptionType = expectedException.get
+        e match {
+          case expectedExceptionType(typedE) =>
+            dumpToFile(dir, writer, title, query, "", text, typedE, consoleData)
+          case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
+        }
+    }
+  }
+
+
   private def internalTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
     parameters = null
     preparationQueries = List()

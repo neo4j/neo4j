@@ -169,11 +169,11 @@ object ExpressionConverters {
   }
 
    implicit class OrsConverter(val e: ast.Ors) extends AnyVal {
-    def asCommandOrs = commands.Ors(e.exprs.map(_.asCommandPredicate))
+    def asCommandOrs = commands.Ors(e.exprs.map(_.asCommandPredicate).toList)
   }
 
   implicit class AndsConverter(val e: ast.Ands) extends AnyVal {
-    def asCommandAnds = commands.Ands(e.exprs.map(_.asCommandPredicate))
+    def asCommandAnds = commands.Ands(e.exprs.map(_.asCommandPredicate).toList)
   }
 
   implicit class EqualsConverter(val e: ast.Equals) extends AnyVal {

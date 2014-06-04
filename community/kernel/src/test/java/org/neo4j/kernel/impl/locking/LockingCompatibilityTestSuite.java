@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.locking;
 
+import static junit.framework.TestCase.assertFalse;
+import static junit.framework.TestCase.fail;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.neo4j.test.OtherThreadExecutor.WorkerCommand;
+import static org.neo4j.test.OtherThreadRule.isWaiting;
+
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.ExecutionException;
@@ -31,12 +37,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Suite;
 import org.neo4j.kernel.api.index.ParameterizedSuiteRunner;
 import org.neo4j.test.OtherThreadRule;
-
-import static junit.framework.TestCase.assertFalse;
-import static junit.framework.TestCase.fail;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.neo4j.test.OtherThreadExecutor.WorkerCommand;
-import static org.neo4j.test.OtherThreadRule.isWaiting;
 
 /** Base for locking tests. */
 @RunWith(ParameterizedSuiteRunner.class)

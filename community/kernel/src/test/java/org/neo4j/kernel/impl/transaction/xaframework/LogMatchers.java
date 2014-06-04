@@ -25,16 +25,19 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
 import javax.transaction.xa.Xid;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 
 import org.hamcrest.TypeSafeMatcher;
-
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.util.DumpLogicalLog;
 
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
@@ -53,15 +56,26 @@ public class LogMatchers
         try
         {
             // Always a header
-            LogIoUtils.readLogHeader( buffer, fileChannel, true );
+            VersionAwareLogEntryReader.readLogHeader( buffer, fileChannel, true );
 
             // Read all log entries
-            List<LogEntry> entries = new ArrayList<LogEntry>();
-            DumpLogicalLog.CommandFactory cmdFactory = new DumpLogicalLog.CommandFactory();
-            LogEntry entry;
-            while ( (entry = LogIoUtils.readEntry( buffer, fileChannel, cmdFactory )) != null )
+            final List<LogEntry> entries = new ArrayList<>();
+            LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
+
+
+            Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
             {
-                entries.add( entry );
+                @Override
+                public boolean accept( LogEntry entry ) throws IOException
+                {
+                    entries.add( entry );
+                    return true;
+                }
+            };
+
+            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
+            {
+                while ( cursor.next( consumer ) );
             }
 
             return entries;
@@ -161,7 +175,6 @@ public class LogMatchers
             public void describeTo( Description description )
             {
                 description.appendText( String.format( "1PC[%d, txId=%d, <Any Date>],", identifier, txId ) );
-
             }
         };
     }
@@ -181,6 +194,25 @@ public class LogMatchers
             public void describeTo( Description description )
             {
                 description.appendText( String.format( "Done[%d]", identifier ) );
+            }
+        };
+    }
+
+    public static Matcher<? extends LogEntry> commandEntry( final int identifier )
+    {
+        return new TypeSafeMatcher<LogEntry.Command>()
+        {
+
+            @Override
+            public boolean matchesSafely( LogEntry.Command cmd )
+            {
+                return cmd != null && cmd.getIdentifier() == identifier;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( String.format( "Command[%d]", identifier ) );
             }
         };
     }

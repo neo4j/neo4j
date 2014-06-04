@@ -19,6 +19,11 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.helpers.collection.Iterables.toList;
+
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -41,11 +46,6 @@ import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.helpers.collection.Iterables.toList;
-
 class ClusterContextImpl
         extends AbstractContextImpl
         implements ClusterContext
@@ -66,6 +66,9 @@ class ClusterContextImpl
 
     private final LearnerContext learnerContext;
     private final HeartbeatContext heartbeatContext;
+
+    private long electorVersion;
+    private InstanceId lastElector;
 
     ClusterContextImpl( InstanceId me, CommonContextState commonState, Logging logging,
                         Timeouts timeouts, Executor executor,
@@ -99,6 +102,29 @@ class ClusterContextImpl
     }
 
     // Cluster API
+    public long getLastElectorVersion()
+    {
+        return electorVersion;
+    }
+
+    @Override
+    public void setLastElectorVersion( long lastElectorVersion )
+    {
+        this.electorVersion = lastElectorVersion;
+    }
+
+    public InstanceId getLastElector()
+    {
+        return lastElector;
+    }
+
+    @Override
+    public void setLastElector( InstanceId lastElector )
+    {
+        this.lastElector = lastElector;
+    }
+
+    // Cluster API
     @Override
     public void addClusterListener( ClusterListener listener )
     {
@@ -115,9 +141,8 @@ class ClusterContextImpl
     @Override
     public void created( String name )
     {
-        commonState.setConfiguration(
-                new ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ),
-                Collections.singleton( commonState.boundAt() ) ));
+        commonState.setConfiguration( new  ClusterConfiguration( name, logging.getMessagesLog( ClusterConfiguration.class ),
+                Collections.singleton( commonState.boundAt() ) ) );
         joined();
     }
 
@@ -130,8 +155,7 @@ class ClusterContextImpl
     }
 
     @Override
-    public void acquiredConfiguration( final Map<InstanceId, URI> memberList, final Map<String,
-            InstanceId> roles )
+    public void acquiredConfiguration( final Map<InstanceId, URI> memberList, final Map<String, InstanceId> roles )
     {
         commonState.configuration().setMembers( memberList );
         commonState.configuration().setRoles( roles );
@@ -148,7 +172,7 @@ class ClusterContextImpl
             {
                 listener.enteredCluster( commonState.configuration() );
             }
-        });
+        } );
     }
 
     @Override
@@ -207,20 +231,58 @@ class ClusterContextImpl
     @Override
     public void elected( final String roleName, final InstanceId instanceId )
     {
+        elected( roleName, instanceId, null, -1 );
+    }
+
+    @Override
+    public void elected( final String roleName, final InstanceId instanceId, InstanceId electorId, long version )
+    {
+        if ( electorId != null )
+        {
+            if ( electorId.equals( getMyId() ) )
+            {
+                getLogger( getClass() ).debug( "I elected instance " + instanceId + " for role "
+                        + roleName + " at version " + version );
+                if ( version < electorVersion )
+                {
+                    return;
+                }
+            }
+            else if ( version < electorVersion && electorId.equals( lastElector ) )
+            {
+                getLogger( getClass() ).warn( "Election result for role " + roleName +
+                        " received from elector instance " + electorId + " with version " + version +
+                        ". I had version " + electorVersion + " for elector " + lastElector );
+                return;
+            }
+            else
+            {
+                getLogger( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
+            }
+
+            this.electorVersion = version;
+            this.lastElector = electorId;
+        }
         commonState.configuration().elected( roleName, instanceId );
         Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
         {
             @Override
             public void notify( ClusterListener listener )
             {
-                listener.elected( roleName, instanceId,
-                        commonState.configuration().getUriForId( instanceId ) );
+                listener.elected( roleName, instanceId, commonState.configuration().getUriForId( instanceId ) );
             }
         } );
     }
 
     @Override
-    public void unelected( final String roleName, final InstanceId instanceId )
+    public void unelected( final String roleName, final org.neo4j.cluster.InstanceId instanceId )
+    {
+        unelected( roleName, instanceId, null, -1 );
+    }
+
+    @Override
+    public void unelected( final String roleName, final org.neo4j.cluster.InstanceId instanceId,
+                           org.neo4j.cluster.InstanceId electorId, long version )
     {
         commonState.configuration().unelected( roleName );
         Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
@@ -314,21 +376,21 @@ class ClusterContextImpl
     }
 
     @Override
-    public Iterable<InstanceId> getOtherInstances()
+    public Iterable<org.neo4j.cluster.InstanceId> getOtherInstances()
     {
         return Iterables.filter( not( in( me ) ), commonState.configuration().getMemberIds() );
     }
 
     /** Used to ensure that no other instance is trying to join with the same id from a different machine */
     @Override
-    public boolean isInstanceJoiningFromDifferentUri( InstanceId joiningId, URI uri )
+    public boolean isInstanceJoiningFromDifferentUri( org.neo4j.cluster.InstanceId joiningId, URI uri )
     {
         return currentlyJoiningInstances.containsKey( joiningId )
                 && !currentlyJoiningInstances.get( joiningId ).equals(uri);
     }
 
     @Override
-    public void instanceIsJoining( InstanceId joiningId, URI uri )
+    public void instanceIsJoining( org.neo4j.cluster.InstanceId joiningId, URI uri )
     {
         currentlyJoiningInstances.put( joiningId, uri );
     }
@@ -352,7 +414,7 @@ class ClusterContextImpl
     {
         learnerContext.setLastDeliveredInstanceId( id );
         learnerContext.learnedInstanceId( id );
-        learnerContext.setNextInstanceId( id + 1 );
+        learnerContext.setNextInstanceId( id + 1);
     }
 
     @Override
@@ -377,7 +439,7 @@ class ClusterContextImpl
                 joiningInstances == null ? null : new ArrayList<>(toList(joiningInstances)),
                 joinDeniedConfigurationResponseState == null ? null : joinDeniedConfigurationResponseState.snapshot(),
                 executor, objectOutputStreamFactory, objectInputStreamFactory, snapshotLearnerContext,
-                snapshotHeartbeatContext);
+                snapshotHeartbeatContext );
     }
 
     @Override

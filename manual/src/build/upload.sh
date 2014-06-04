@@ -39,8 +39,8 @@ ssh -i $IDENTITY_FILE $DOCS_SERVER mkdir -p $ROOTPATHDOCS/chunked/$VERSION
 
 # Copy artifacts
 rsync -e "ssh -i $IDENTITY_FILE" -r --delete $DIR/target/docbkx/webhelp/ $DOCS_SERVER:$ROOTPATHDOCS/chunked/$VERSION/
-#ssh -i $IDENTITY_FILE $DOCS_SERVER mkdir -p $ROOTPATHDOCS/pdf
-#scp -i $IDENTITY_FILE $DIR/target/pdf/neo4j-manual.pdf $DOCS_SERVER:$ROOTPATHDOCS/pdf/neo4j-manual-$VERSION.pdf
+ssh -i $IDENTITY_FILE $DOCS_SERVER mkdir -p $ROOTPATHDOCS/pdf
+scp -i $IDENTITY_FILE $DIR/target/docbkx/pdf/neo4j-manual-shortinfo.pdf $DOCS_SERVER:$ROOTPATHDOCS/pdf/neo4j-manual-$VERSION.pdf
 
 echo Apparently, successfully published to $DOCS_SERVER.
 

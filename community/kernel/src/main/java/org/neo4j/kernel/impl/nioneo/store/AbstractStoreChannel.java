@@ -40,6 +40,18 @@ public class AbstractStoreChannel implements StoreChannel
     }
 
     @Override
+    public void writeAll( ByteBuffer src, long position ) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
+    public void writeAll( ByteBuffer src ) throws IOException
+    {
+        throw new UnsupportedOperationException();
+    }
+
+    @Override
     public MappedByteBuffer map( FileChannel.MapMode mode, long position, long size ) throws IOException
     {
         throw new UnsupportedOperationException();

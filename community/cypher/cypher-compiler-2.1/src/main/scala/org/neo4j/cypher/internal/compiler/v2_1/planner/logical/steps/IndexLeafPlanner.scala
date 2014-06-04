@@ -40,12 +40,13 @@ abstract class IndexLeafPlanner extends LeafPlanner {
         // n.prop = value
         case propertyPredicate@Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) =>
           val idName = IdName(name)
-          for (propertyKeyId <- propertyKey.id.toSeq;
-               labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
+
+          for (labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
                label <- labelPredicate.labels;
-               labelId <- label.id if findIndexesForLabel(labelId.id).toSeq.exists(_.getPropertyKeyId == propertyKeyId.id))
+               indexDescriptor <- findIndexesFor(label.name, propertyKey.name);
+               labelId <- label.id)
           yield {
-            val entryConstructor = constructPlan(idName, labelId, propertyKeyId, valueExpr)
+            val entryConstructor = constructPlan(idName, labelId, propertyKey.id.head, valueExpr)
             entryConstructor(Seq(propertyPredicate, labelPredicate))
           }
       }.flatten
@@ -57,7 +58,9 @@ abstract class IndexLeafPlanner extends LeafPlanner {
                               propertyKeyId: PropertyKeyId,
                               valueExpr: Expression)(implicit context: QueryGraphSolvingContext): (Seq[Expression]) => QueryPlan
 
-  protected def findIndexesForLabel(labelId: Int)(implicit context: QueryGraphSolvingContext): Iterator[IndexDescriptor]
+
+
+  protected def findIndexesFor(label: String, property: String)(implicit context: QueryGraphSolvingContext): Option[IndexDescriptor]
 }
 
 object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
@@ -66,8 +69,9 @@ object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
     (predicates: Seq[Expression]) =>
       planNodeIndexUniqueSeek(idName, labelId, propertyKeyId, valueExpr, predicates)
 
-  protected def findIndexesForLabel(labelId: Int)(implicit context: QueryGraphSolvingContext): Iterator[IndexDescriptor] =
-    context.planContext.uniqueIndexesGetForLabel(labelId)
+
+  protected def findIndexesFor(label: String, property: String)(implicit context: QueryGraphSolvingContext): Option[IndexDescriptor] =
+    context.planContext.getUniqueIndexRule(label, property)
 }
 
 object indexSeekLeafPlanner extends IndexLeafPlanner {
@@ -76,6 +80,7 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
     (predicates: Seq[Expression]) =>
       planNodeIndexSeek(idName, labelId, propertyKeyId, valueExpr, predicates)
 
-  protected def findIndexesForLabel(labelId: Int)(implicit context: QueryGraphSolvingContext): Iterator[IndexDescriptor] =
-    context.planContext.indexesGetForLabel(labelId)
+  protected def findIndexesFor(label: String, property: String)(implicit context: QueryGraphSolvingContext): Option[IndexDescriptor] =
+    context.planContext.getIndexRule(label, property)
+
 }

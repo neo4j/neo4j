@@ -148,8 +148,7 @@ trait LogicalPlanningTestSupport
   def newPlanner(metricsFactory: MetricsFactory): Planner =
     new Planner(monitors, metricsFactory, monitors.newMonitor[PlanningMonitor]())
 
-  def produceLogicalPlan(queryText: String)
-                        (implicit planner: Planner, planContext: PlanContext) = {
+  def produceQueryPlan(queryText: String)(implicit planner: Planner, planContext: PlanContext): QueryPlan = {
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, _) = astRewriter.rewrite(queryText, parsedStatement)
@@ -157,16 +156,19 @@ trait LogicalPlanningTestSupport
       case ast: Query =>
         val semanticTable = semanticChecker.check(queryText, rewrittenStatement)
         tokenResolver.resolve(ast)(semanticTable, planContext)
-        planner.produceLogicalPlan(ast, semanticTable)(planContext)
+        planner.produceQueryPlan(ast, semanticTable)(planContext)
       case _ =>
         throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")
     }
   }
 
+  def produceLogicalPlan(queryText: String)(implicit planner: Planner, planContext: PlanContext): LogicalPlan =
+    produceQueryPlan(queryText)(planner, planContext).plan
+
   implicit def idName(name: String): IdName = IdName(name)
 }
 
-case class FakePlan(availableSymbols: Set[IdName]) extends LogicalPlan{
+case class FakePlan(availableSymbols: Set[IdName]) extends LogicalPlan {
   def rhs = None
   def lhs = None
 }

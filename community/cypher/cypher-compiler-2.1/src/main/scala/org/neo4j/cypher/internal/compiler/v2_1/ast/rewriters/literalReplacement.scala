@@ -26,7 +26,7 @@ object literalReplacement {
   type LiteralReplacements = IdentityMap[Literal, Parameter]
 
   case class ExtractParameterRewriter(replaceableLiterals: LiteralReplacements) extends Rewriter {
-    def apply(that: AnyRef): Option[AnyRef] = rewriter.apply(that)
+    def apply(that: AnyRef): Option[AnyRef] = bottomUp(rewriter).apply(that)
 
     private val rewriter: Rewriter = Rewriter.lift {
       case l: Literal =>

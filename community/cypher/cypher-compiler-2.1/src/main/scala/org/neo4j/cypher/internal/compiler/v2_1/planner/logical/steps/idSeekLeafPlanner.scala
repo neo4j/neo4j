@@ -88,7 +88,7 @@ object idSeekLeafPlanner extends LeafPlanner {
 
       val predicate = predicates match {
         case exp :: Nil => exp
-        case _ => Ors(predicates)(predicates.head.position)
+        case _ => Ors(predicates.toSet)(predicates.head.position)
       }
 
       planHiddenSelection(Seq(predicate), plan)

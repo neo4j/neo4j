@@ -38,6 +38,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.spi._
 import org.neo4j.collection.primitive.PrimitiveLongIterator
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.cypher.internal.compiler.v2_0.spi.IdempotentResult
+import java.net.URL
 
 class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, statement: Statement)
   extends TransactionBoundTokenContext(statement) with QueryContext {
@@ -259,4 +260,6 @@ class TransactionBoundQueryContext(graph: GraphDatabaseAPI, tx: Transaction, sta
     statement.schemaWriteOperations().constraintDrop(new UniquenessConstraint(labelId, propertyKeyId))
 
   private val tokenNameLookup = new StatementTokenNameLookup(statement.readOperations())
+
+  def getCsvIterator(url: URL): scala.Iterator[Array[String]] = Iterator.empty
 }

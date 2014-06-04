@@ -43,8 +43,8 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case Projection(left, expressions) =>
           ProjectionNewPipe(buildPipe(left), toLegacyExpressions(expressions))
 
-        case SingleRow(ids) =>
-          NullPipe(new SymbolTable(ids.map { case IdName(key) => key -> CTAny}.toMap))
+        case sr @ SingleRow(ids) =>
+          NullPipe(new SymbolTable(sr.typeInfo))
 
         case AllNodesScan(IdName(id)) =>
           AllNodesScanPipe(id)
@@ -101,11 +101,23 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
         case AntiSemiApply(outer, inner) =>
           SemiApplyPipe(buildPipe(outer), buildPipe(inner), negated = true)
 
+        case LetSemiApply(outer, inner, idName) =>
+          LetSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, negated = false)
+
+        case LetAntiSemiApply(outer, inner, idName) =>
+          LetSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, negated = true)
+
         case apply@SelectOrSemiApply(outer, inner, predicate) =>
           SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), predicate.asCommandPredicate, negated = false)
 
         case apply@SelectOrAntiSemiApply(outer, inner, predicate) =>
           SelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), predicate.asCommandPredicate, negated = true)
+
+        case apply@LetSelectOrSemiApply(outer, inner, idName, predicate) =>
+          LetSelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, predicate.asCommandPredicate, negated = false)
+
+        case apply@LetSelectOrAntiSemiApply(outer, inner, idName, predicate) =>
+          LetSelectOrSemiApplyPipe(buildPipe(outer), buildPipe(inner), idName.name, predicate.asCommandPredicate, negated = true)
 
         case Sort(left, sortItems) =>
           SortPipe(buildPipe(left), sortItems)

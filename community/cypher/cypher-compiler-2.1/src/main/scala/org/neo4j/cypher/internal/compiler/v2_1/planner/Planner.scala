@@ -26,16 +26,20 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPl
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp, ParsedQuery, Monitors}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
-case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: PlanningMonitor) extends PipeBuilder {
-  val tokenResolver = new SimpleTokenResolver()
-  val plannerQueryBuilder = new SimplePlannerQueryBuilder
-  val executionPlanBuilder = new PipeExecutionPlanBuilder(monitors)
-  val strategy = new QueryPlanningStrategy()
-  val queryGraphSolver = new GreedyQueryGraphSolver()
+case class Planner(monitors: Monitors,
+                   metricsFactory: MetricsFactory,
+                   monitor: PlanningMonitor,
+                   tokenResolver: SimpleTokenResolver = new SimpleTokenResolver(),
+                   plannerQueryBuilder: PlannerQueryBuilder = new SimplePlannerQueryBuilder,
+                   maybeExecutionPlanBuilder: Option[PipeExecutionPlanBuilder] = None,
+                   strategy: PlanningStrategy = new QueryPlanningStrategy(),
+                   queryGraphSolver: QueryGraphSolver = new GreedyQueryGraphSolver()) extends PipeBuilder {
+
+  val executionPlanBuilder:PipeExecutionPlanBuilder = maybeExecutionPlanBuilder.getOrElse(new PipeExecutionPlanBuilder(monitors))
 
   def producePlan(inputQuery: ParsedQuery, planContext: PlanContext): PipeInfo =
     producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)
@@ -46,7 +50,7 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
     rewrittenStatement match {
       case ast: Query =>
         monitor.startedPlanning(query)
-        val logicalPlan = produceLogicalPlan(ast, semanticTable)(planContext)
+        val logicalPlan = produceQueryPlan(ast, semanticTable)(planContext).plan
         monitor.foundPlan(query, logicalPlan)
         val result = executionPlanBuilder.build(logicalPlan)
         monitor.successfulPlanning(query, result)
@@ -63,18 +67,20 @@ case class Planner(monitors: Monitors, metricsFactory: MetricsFactory, monitor: 
     )).asInstanceOf[Statement]
 
     val statementWithInlinedProjections = inlineProjections(namedStatement)
+    val statementWithAliasedSortSkipAndLimit = statementWithInlinedProjections.rewrite(bottomUp(useAliasesInSortSkipAndLimit))
 
-    statementWithInlinedProjections
+    statementWithAliasedSortSkipAndLimit
   }
 
-  def produceLogicalPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): LogicalPlan = {
+  def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): QueryPlan = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val (plannerQuery, subQueriesLookupTable) = plannerQueryBuilder.produce(ast)
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
 
     val context = LogicalPlanningContext(planContext, metrics, semanticTable, plannerQuery, queryGraphSolver, subQueriesLookupTable)
-    strategy.plan(context).plan
+    val plan = strategy.plan(context)
+    plan
   }
 }
 

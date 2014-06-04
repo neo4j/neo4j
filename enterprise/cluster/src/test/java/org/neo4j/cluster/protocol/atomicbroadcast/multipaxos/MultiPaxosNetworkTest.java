@@ -25,12 +25,19 @@ import java.util.concurrent.BrokenBarrierException;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Semaphore;
 
+import ch.qos.logback.classic.Logger;
+import ch.qos.logback.classic.LoggerContext;
 import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
-import org.neo4j.cluster.*;
+
+import org.neo4j.cluster.BindingListener;
+import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.MultiPaxosServerFactory;
+import org.neo4j.cluster.NetworkedServerFactory;
+import org.neo4j.cluster.ProtocolServer;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcast;
 import org.neo4j.cluster.protocol.atomicbroadcast.AtomicBroadcastMap;
 import org.neo4j.cluster.protocol.atomicbroadcast.ObjectStreamFactory;
@@ -48,10 +55,8 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.LogbackService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
-
-import ch.qos.logback.classic.Logger;
-import ch.qos.logback.classic.LoggerContext;
 
 /**
  * TODO
@@ -67,7 +72,8 @@ public class MultiPaxosNetworkTest
         final LifeSupport life = new LifeSupport();
         Config config = new Config( MapUtil.stringMap( GraphDatabaseSettings.store_dir.name(),
                 TargetDirectory.forTest( getClass() ).cleanDirectory( "cluster" ).getAbsolutePath() ),
-                GraphDatabaseSettings.class );
+                GraphDatabaseSettings.class
+        );
 
         final LoggerContext loggerContext = new LoggerContext();
         loggerContext.putProperty( "host", "none" );
@@ -80,34 +86,39 @@ public class MultiPaxosNetworkTest
                 .relativeTimeout( HeartbeatMessage.timed_out, HeartbeatMessage.sendHeartbeat, 10000 );
 
         NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
-                new MultiPaxosServerFactory(
+                new MultiPaxosServerFactory( new Monitors(),
                         new ClusterConfiguration( "default", logging.getMessagesLog( ClusterConfiguration.class ),
                                 "cluster://localhost:5001",
                                 "cluster://localhost:5002",
                                 "cluster://localhost:5003" ),
-                        logging ),
-                timeoutStrategy, logging, new ObjectStreamFactory(), new ObjectStreamFactory() );
+                        logging
+                ),
+                timeoutStrategy, new Monitors(), logging, new ObjectStreamFactory(), new ObjectStreamFactory()
+        );
 
         ServerIdElectionCredentialsProvider serverIdElectionCredentialsProvider = new
                 ServerIdElectionCredentialsProvider();
         final ProtocolServer server1 = serverFactory.newNetworkedServer( new Config( MapUtil.stringMap(
-                ClusterSettings.cluster_server.name(),
-                ":5001" ), ClusterSettings.class ),
-                new InMemoryAcceptorInstanceStore(), serverIdElectionCredentialsProvider );
+                        ClusterSettings.cluster_server.name(),
+                        ":5001" ), ClusterSettings.class ),
+                new InMemoryAcceptorInstanceStore(), serverIdElectionCredentialsProvider
+        );
         server1.addBindingListener( serverIdElectionCredentialsProvider );
 
         serverIdElectionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         final ProtocolServer server2 = serverFactory.newNetworkedServer( new Config( MapUtil.stringMap(
-                ClusterSettings.cluster_server.name(),
-                ":5002" ), ClusterSettings.class ), new InMemoryAcceptorInstanceStore(),
-                serverIdElectionCredentialsProvider );
+                        ClusterSettings.cluster_server.name(),
+                        ":5002" ), ClusterSettings.class ), new InMemoryAcceptorInstanceStore(),
+                serverIdElectionCredentialsProvider
+        );
         server2.addBindingListener( serverIdElectionCredentialsProvider );
 
         serverIdElectionCredentialsProvider = new ServerIdElectionCredentialsProvider();
         final ProtocolServer server3 = serverFactory.newNetworkedServer( new Config( MapUtil.stringMap(
-                ClusterSettings.cluster_server.name(),
-                ":5003" ), ClusterSettings.class ), new InMemoryAcceptorInstanceStore(),
-                serverIdElectionCredentialsProvider );
+                        ClusterSettings.cluster_server.name(),
+                        ":5003" ), ClusterSettings.class ), new InMemoryAcceptorInstanceStore(),
+                serverIdElectionCredentialsProvider
+        );
         server3.addBindingListener( serverIdElectionCredentialsProvider );
 
         server1.addBindingListener( new BindingListener()

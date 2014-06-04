@@ -30,10 +30,16 @@ public interface LegacyDatabase extends Remote
     String getStoreDir() throws RemoteException;
     
     void awaitStarted( long time, TimeUnit unit ) throws RemoteException;
-    
-    long createNode( String name ) throws RemoteException;
-    
-    void verifyNodeExists( long id, String name ) throws RemoteException;
+
+    long initialize() throws RemoteException;
+
+    long createNode() throws RemoteException;
+
+    public void doComplexLoad( long center ) throws RemoteException;
+
+    void verifyNodeExists( long id ) throws RemoteException;
     
     boolean isMaster() throws RemoteException;
+
+    void verifyComplexLoad( long centralNode ) throws RemoteException;
 }

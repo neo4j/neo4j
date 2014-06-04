@@ -1,3 +1,32 @@
+2.1.2
+-----
+o Resolves a dangerous recovery issue, where multiple crashes in a row without clean shutdown or log rotation
+  in between could cause data loss.
+
+2.1.0
+-----
+o Fixes potential leak of transaction state in entity locks that could
+  lead to excess GC activity
+
+2.1.0-RC2
+---------
+o Fixes issue where store upgrade could leave relationship ids to be reused by
+  subsequent usage of the database
+
+2.1.0-RC1
+---------
+o The traversal framework can now take Iterable<Node> as starting points
+o The Iterable returned from getRelationships(...) can now be iterated more than once
+o Improve the performance of the server by reducing the overhead of logging
+o Further performance improvements for the upgrade process
+o Improve performance by producing less work for the GC in various places
+o Fixes a bug where the transaction log could get duplicate entries, making it unusable for recovery
+o Fixes a bug where the database could leak memory after a mode switch in HA
+o Fixes a bug where file descriptors would leak if more than one MERGE statement was executed in a transaction
+o Fixes a bug where an uncommitted index creation in a transaction could interfer with observing the state
+  of other existing indexes
+o Fixes a bug where old transaction log files could prevent the database from upgrading to a newer version
+
 2.1.0-M02
 ------------
 o Widens recoverable failure scenarios for schema indexes

@@ -67,13 +67,7 @@ abstract class LuceneCommand extends XaCommand
         this.value = value;
         this.type = type;
     }
-    
-    @Override
-    public void execute()
-    {
-        // TODO Auto-generated method stub
-    }
-    
+
     abstract void perform( CommitContext context );
     
     public Class<? extends PropertyContainer> getEntityType()
@@ -89,7 +83,6 @@ abstract class LuceneCommand extends XaCommand
         throw new IllegalArgumentException( "Unknown entity type " + entityType );
     }
 
-    @Override
     public void writeToFile( LogBuffer buffer ) throws IOException
     {
         buffer.put( type );
@@ -356,9 +349,9 @@ abstract class LuceneCommand extends XaCommand
             return "Create[" + new IndexIdentifier( entityType, null, name ) + "," + config + "]";
         }
     }
-    
+
     static XaCommand readCommand( ReadableByteChannel channel, 
-        ByteBuffer buffer, LuceneDataSource dataSource ) throws IOException
+        ByteBuffer buffer, EntityType nodeEntityType, EntityType relationshipEntityType ) throws IOException
     {
         // Read what type of command it is
         buffer.clear(); buffer.limit( 2 );
@@ -405,11 +398,11 @@ abstract class LuceneCommand extends XaCommand
             EntityType entityType = null;
             if ( entityTypeByte == NODE )
             {
-                entityType = dataSource != null ? dataSource.nodeEntityType : null;
+                entityType = nodeEntityType;
             }
             else if ( entityTypeByte == RELATIONSHIP )
             {
-                entityType = dataSource != null ? dataSource.relationshipEntityType : null;
+                entityType = relationshipEntityType;
             }
             else
             {

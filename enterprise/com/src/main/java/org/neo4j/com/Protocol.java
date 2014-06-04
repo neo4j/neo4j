@@ -165,7 +165,7 @@ public class Protocol
     private StoreId readStoreId( ChannelBuffer source, ByteBuffer byteBuffer )
     {
         byteBuffer.clear();
-        byteBuffer.limit( 8 + 8 + 8 );
+        byteBuffer.limit( StoreId.SIZE_IN_BYTES );
         source.readBytes( byteBuffer );
         byteBuffer.flip();
         return StoreId.deserialize( byteBuffer );

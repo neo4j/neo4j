@@ -63,7 +63,7 @@ trait Pipe {
 
   def symbols: SymbolTable
 
-  def executionPlanDescription: PlanDescription
+  def planDescription: PlanDescription
 
   /**
    * Please make sure to add a test for this implementation @ PipeLazynessTest
@@ -87,7 +87,7 @@ case class NullPipe(symbols: SymbolTable = SymbolTable())
 
   def exists(pred: Pipe => Boolean) = pred(this)
 
-  def executionPlanDescription: PlanDescription = new NullPlanDescription(this)
+  def planDescription: PlanDescription = new NullPlanDescription(this)
 }
 
 abstract class PipeWithSource(source: Pipe, val monitor: PipeMonitor) extends Pipe {

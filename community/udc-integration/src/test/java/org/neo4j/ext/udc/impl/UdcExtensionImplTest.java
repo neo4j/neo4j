@@ -442,14 +442,14 @@ public class UdcExtensionImplTest
     @Test
     public void shouldFilterPlusBuildNumbers() throws Exception
     {
-        assertThat( new DefaultUdcInformationCollector( null, null, null ).filterVersionForUDC( "1.9.0-M01+00001" ),
+        assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9.0-M01+00001" ),
                 is( equalTo( "1.9.0-M01" ) ) );
     }
 
     @Test
     public void shouldNotFilterSnapshotBuildNumbers() throws Exception
     {
-        assertThat( new DefaultUdcInformationCollector( null, null, null ).filterVersionForUDC( "2.0-SNAPSHOT" ),
+        assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "2.0-SNAPSHOT" ),
                 is( equalTo( "2.0-SNAPSHOT" ) ) );
 
     }
@@ -457,7 +457,7 @@ public class UdcExtensionImplTest
     @Test
     public void shouldNotFilterReleaseBuildNumbers() throws Exception
     {
-        assertThat( new DefaultUdcInformationCollector( null, null, null ).filterVersionForUDC( "1.9" ),
+        assertThat( DefaultUdcInformationCollector.filterVersionForUDC( "1.9" ),
                 is( equalTo( "1.9" ) ) );
     }
 

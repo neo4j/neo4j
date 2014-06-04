@@ -19,12 +19,18 @@
  */
 package org.neo4j.consistency;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.Property.property;
+import static org.neo4j.test.Property.set;
+
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.consistency.checking.GraphStoreFixture;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -35,14 +41,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.Property.property;
-import static org.neo4j.test.Property.set;
 
 public class ConsistencyCheckServiceIntegrationTest
 {

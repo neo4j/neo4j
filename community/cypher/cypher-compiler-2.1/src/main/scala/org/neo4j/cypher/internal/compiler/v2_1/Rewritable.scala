@@ -55,6 +55,8 @@ object Rewritable {
         children.toIndexedSeq
       case _: Seq[_] =>
         children
+      case _: Set[_] =>
+        children.toSet
       case t =>
         t
     }

@@ -931,23 +931,6 @@ RETURN a.name""")
     result.toList should equal (List(Map("b" -> b1)))
   }
 
-  test("should filter nodes by label given in match even if nodes are start nodes") {
-    // GIVEN
-    val a1 = createLabeledNode("bar")
-    val a2 = createLabeledNode("baz")
-    val b = createLabeledNode("foo")
-
-    relate(a1, b)
-    relate(a2, b)
-
-    // WHEN
-    val result = execute("START a=node(0,1), b=node(2) MATCH (a:bar) --> (b:foo) RETURN a")
-
-    // THEN
-    result.toList should equal (List(Map("a" -> a1)))
-  }
-
-
   test("should use predicates in the correct place") {
     //GIVEN
     val m = execute( """create
@@ -1186,7 +1169,7 @@ RETURN a.name""")
     // Given empty db
 
     // when
-    val result = execute("optional match (a) with a match (a)-->(b) return b")
+    val result = executeWithNewPlanner("optional match (a) with a match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
     result.toList should be(empty)
@@ -1199,7 +1182,7 @@ RETURN a.name""")
     relate(a, b)
 
     // when
-    val result = execute("optional match (a:Person) with a match (a)-->(b) return b").columnAs[Node]("b")
+    val result = executeWithNewPlanner("optional match (a:Person) with a match (a)-->(b) return b").columnAs[Node]("b")
 
     // should give us a number in the middle, not all or nothing
     result.toList should be(empty)
@@ -1209,7 +1192,7 @@ RETURN a.name""")
     // Given empty db
 
     // when
-    val result = execute("optional match (a) with a optional match (a)-->(b) return b")
+    val result = executeWithNewPlanner("optional match (a) with a optional match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
     result.toList should equal (List(Map("b"->null)))

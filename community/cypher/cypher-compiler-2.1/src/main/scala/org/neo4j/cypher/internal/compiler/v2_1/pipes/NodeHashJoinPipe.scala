@@ -20,35 +20,47 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescriptionImpl, ExecutionContext, PlanDescription}
+import org.neo4j.cypher.internal.compiler.v2_1.{TwoChildren, PlanDescriptionImpl, ExecutionContext, PlanDescription}
 import scala.collection.mutable
 import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.KeyNames
 
-case class NodeHashJoinPipe(node: String, source: Pipe, inner: Pipe)
-                      (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
+case class NodeHashJoinPipe(nodeIdentifier: String, left: Pipe, right: Pipe)
+                           (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(left, pipeMonitor) {
 
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     val table = new mutable.HashMap[Long, mutable.MutableList[ExecutionContext]]
     input.foreach { context =>
-      val joinKey = context(node).asInstanceOf[Node].getId
-      val seq = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
-      seq += context
+      context(nodeIdentifier) match {
+        case n: Node =>
+          val joinKey = n.getId
+          val seq = table.getOrElseUpdate(joinKey, mutable.MutableList.empty)
+          seq += context
+
+        case null =>
+      }
     }
 
-    inner.createResults(state).flatMap { context =>
-      val joinKey = context(node).asInstanceOf[Node].getId
-      val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
-      seq.map(context ++ _)
+    right.createResults(state).flatMap { context =>
+      context(nodeIdentifier) match {
+        case n: Node =>
+          val joinKey = n.getId
+          val seq = table.getOrElse(joinKey, mutable.MutableList.empty)
+          seq.map(context ++ _)
+
+        case null =>
+          Iterator.empty
+      }
     }
   }
 
-  def executionPlanDescription: PlanDescription =
+  def planDescription: PlanDescription =
     new PlanDescriptionImpl(
-      this,
-      "NodeHashJoin",
-      Seq(source.executionPlanDescription, inner.executionPlanDescription),
-      args = Seq("node" -> node)
+      pipe = this,
+      name = "NodeHashJoin",
+      children = TwoChildren(left.planDescription, right.planDescription),
+      arguments = Seq(KeyNames(Seq(nodeIdentifier)))
     )
 
-  def symbols: SymbolTable = source.symbols.add(inner.symbols.identifiers).add(node, CTNode)
+  def symbols: SymbolTable = left.symbols.add(right.symbols.identifiers).add(nodeIdentifier, CTNode)
 }

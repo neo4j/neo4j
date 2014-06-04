@@ -35,7 +35,7 @@ public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
     public InMemoryLogBuffer()
     {
     }
-    
+
     public void reset()
     {
         writeIndex = readIndex = 0;
@@ -59,7 +59,7 @@ public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
         writeIndex += bufferForConversions.limit();
         return this;
     }
-    
+
     public LogBuffer put( byte b ) throws IOException
     {
         ensureArrayCapacityPlus( 1 );
@@ -150,6 +150,11 @@ public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
 
     public void close() throws IOException
     {
+    }
+
+    public ByteBuffer asByteBuffer()
+    {
+        return ByteBuffer.wrap( bytes, readIndex, writeIndex );
     }
 
     public int read( ByteBuffer dst ) throws IOException

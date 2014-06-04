@@ -31,12 +31,19 @@ import java.util.Map;
 import java.util.Properties;
 import java.util.regex.Pattern;
 
+import com.sun.management.OperatingSystemMXBean;
+
 import org.neo4j.ext.udc.Edition;
 import org.neo4j.ext.udc.UdcSettings;
+import org.neo4j.graphdb.Label;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.KernelData;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
@@ -45,13 +52,20 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import static org.neo4j.ext.udc.UdcConstants.CLUSTER_HASH;
 import static org.neo4j.ext.udc.UdcConstants.DISTRIBUTION;
 import static org.neo4j.ext.udc.UdcConstants.EDITION;
+import static org.neo4j.ext.udc.UdcConstants.HEAP_SIZE;
 import static org.neo4j.ext.udc.UdcConstants.ID;
+import static org.neo4j.ext.udc.UdcConstants.LABEL_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.MAC;
+import static org.neo4j.ext.udc.UdcConstants.NODE_IDS_IN_USE;
+import static org.neo4j.ext.udc.UdcConstants.NUM_PROCESSORS;
 import static org.neo4j.ext.udc.UdcConstants.OS_PROPERTY_PREFIX;
+import static org.neo4j.ext.udc.UdcConstants.PROPERTY_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.REGISTRATION;
+import static org.neo4j.ext.udc.UdcConstants.RELATIONSHIP_IDS_IN_USE;
 import static org.neo4j.ext.udc.UdcConstants.REVISION;
 import static org.neo4j.ext.udc.UdcConstants.SOURCE;
 import static org.neo4j.ext.udc.UdcConstants.TAGS;
+import static org.neo4j.ext.udc.UdcConstants.TOTAL_MEMORY;
 import static org.neo4j.ext.udc.UdcConstants.UDC_PROPERTY_PREFIX;
 import static org.neo4j.ext.udc.UdcConstants.UNKNOWN_DIST;
 import static org.neo4j.ext.udc.UdcConstants.USER_AGENTS;
@@ -62,41 +76,51 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
     private final Config config;
     @SuppressWarnings("deprecation")
     private final KernelData kernel;
+    private final NodeManager nodeManager;
     private String storeId;
     private boolean crashPing;
 
-    public DefaultUdcInformationCollector( Config config, XaDataSourceManager xadsm, @SuppressWarnings("deprecation") KernelData kernel )
+    public DefaultUdcInformationCollector( Config config, XaDataSourceManager xadsm,
+                                           @SuppressWarnings("deprecation") KernelData kernel )
     {
         this.config = config;
         this.kernel = kernel;
+        nodeManager = kernel.graphDatabase().getDependencyResolver().resolveDependency( NodeManager.class );
 
-        if (xadsm != null) xadsm.addDataSourceRegistrationListener( new DataSourceRegistrationListener()
+        if ( xadsm != null )
         {
-            @Override
-            public void registeredDataSource( XaDataSource ds )
+            xadsm.addDataSourceRegistrationListener( new DataSourceRegistrationListener()
             {
-                if ( ds instanceof NeoStoreXaDataSource )
+                @Override
+                public void registeredDataSource( XaDataSource ds )
                 {
-                    crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
-                    storeId = Long.toHexString( ds.getRandomIdentifier() );
+                    if ( ds instanceof NeoStoreXaDataSource )
+                    {
+                        crashPing = ds.getXaContainer().getLogicalLog().wasNonClean();
+                        storeId = Long.toHexString( ds.getRandomIdentifier() );
+                    }
                 }
-            }
 
-            @Override
-            public void unregisteredDataSource( XaDataSource ds )
-            {
-                if ( ds instanceof NeoStoreXaDataSource )
+                @Override
+                public void unregisteredDataSource( XaDataSource ds )
                 {
-                    crashPing = false;
-                    storeId = null;
+                    if ( ds instanceof NeoStoreXaDataSource )
+                    {
+                        crashPing = false;
+                        storeId = null;
+                    }
                 }
-            }
-        } );
+            } );
+        }
     }
 
-    public String filterVersionForUDC(String version) {
-        if ( !version.contains( "+" ) ) return version;
-        return version.substring(0, version.indexOf("+"));
+    public static String filterVersionForUDC( String version )
+    {
+        if ( !version.contains( "+" ) )
+        {
+            return version;
+        }
+        return version.substring( 0, version.indexOf( "+" ) );
     }
 
     @Override
@@ -107,17 +131,26 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         Map<String, String> udcFields = new HashMap<>();
 
         add( udcFields, ID, storeId );
-        add( udcFields, VERSION,  filterVersionForUDC(kernel.version().getReleaseVersion() ));
-        add( udcFields, REVISION, filterVersionForUDC(kernel.version().getRevision() ));
+        add( udcFields, VERSION, filterVersionForUDC( kernel.version().getReleaseVersion() ) );
+        add( udcFields, REVISION, filterVersionForUDC( kernel.version().getRevision() ) );
 
         add( udcFields, EDITION, determineEdition( classPath ) );
         add( udcFields, TAGS, determineTags( jarNamesForTags, classPath ) );
         add( udcFields, CLUSTER_HASH, determineClusterNameHash() );
         add( udcFields, SOURCE, config.get( UdcSettings.udc_source ) );
         add( udcFields, REGISTRATION, config.get( UdcSettings.udc_registration_key ) );
-        add( udcFields, MAC, determineMacAddress() );
         add( udcFields, DISTRIBUTION, determineOsDistribution() );
         add( udcFields, USER_AGENTS, determineUserAgents() );
+
+        add( udcFields, MAC, determineMacAddress() );
+        add( udcFields, NUM_PROCESSORS, determineNumberOfProcessors() );
+        add( udcFields, TOTAL_MEMORY, determineTotalMemory() );
+        add( udcFields, HEAP_SIZE, determineHeapSize() );
+
+        add( udcFields, NODE_IDS_IN_USE, determineNodesIdsInUse() );
+        add( udcFields, RELATIONSHIP_IDS_IN_USE, determineRelationshipIdsInUse() );
+        add( udcFields, LABEL_IDS_IN_USE, determineLabelIdsInUse() );
+        add( udcFields, PROPERTY_IDS_IN_USE, determinePropertyIdsInUse() );
 
         udcFields.putAll( determineSystemProperties() );
         return udcFields;
@@ -160,7 +193,7 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         try
         {
             Class<?> haSettings = Class.forName( "org.neo4j.kernel.ha.HaSettings" );
-            @SuppressWarnings( "unchecked" )
+            @SuppressWarnings("unchecked")
             Setting<String> setting = (Setting<String>) haSettings.getField( "cluster_name" ).get( null );
             String name = config.get( setting );
             return name != null ? Math.abs( name.hashCode() % Integer.MAX_VALUE ) : null;
@@ -263,6 +296,46 @@ public class DefaultUdcInformationCollector implements UdcInformationCollector
         {
             return null;
         }
+    }
+
+    private int determineNumberOfProcessors()
+    {
+        return Runtime.getRuntime().availableProcessors();
+    }
+
+    private long determineTotalMemory()
+    {
+        return ((OperatingSystemMXBean) ManagementFactory.getOperatingSystemMXBean()).getTotalPhysicalMemorySize();
+    }
+
+    private long determineHeapSize()
+    {
+        return ManagementFactory.getMemoryMXBean().getHeapMemoryUsage().getUsed();
+    }
+
+    private long determineNodesIdsInUse()
+    {
+        return getNumberOfIdsInUse( Node.class );
+    }
+
+    private long determineLabelIdsInUse()
+    {
+        return getNumberOfIdsInUse( Label.class );
+    }
+
+    private long determinePropertyIdsInUse()
+    {
+        return getNumberOfIdsInUse( PropertyStore.class );
+    }
+
+    private long determineRelationshipIdsInUse()
+    {
+        return getNumberOfIdsInUse( Relationship.class );
+    }
+
+    private long getNumberOfIdsInUse( Class<?> clazz )
+    {
+        return nodeManager.getNumberOfIdsInUse( clazz );
     }
 
     private String toCommaString( Object values )

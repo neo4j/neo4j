@@ -20,18 +20,26 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1
-import v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Add, RelTypeName, PatternExpression, Expression, SortItem}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{AggregationProjection, PlannerQuery, QueryGraph}
-import v2_1.ast._
-import v2_1.{PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.SortDescription
+import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
 object QueryPlanProducer {
+  def solvePredicate(plan: QueryPlan, solved: Expression) =
+    QueryPlan(
+      plan.plan,
+      plan.solved.updateGraph(_.addPredicates(solved))
+    )
+
   def planAggregation(left: QueryPlan, grouping: Map[String, Expression], aggregation: Map[String, Expression]) =
     QueryPlan(
       Aggregation(left.plan, grouping, aggregation),
       left.solved.withProjection(
-      AggregationProjection(groupingKeys = grouping, aggregationExpressions = aggregation, Seq.empty, None, None)
+        AggregationProjection(groupingKeys = grouping, aggregationExpressions = aggregation, Seq.empty, None, None)
       )
     )
 
@@ -40,15 +48,15 @@ object QueryPlanProducer {
       AllNodesScan(idName),
       PlannerQuery(graph = QueryGraph(patternNodes = Set(idName))))
 
-  def planAntiSemiApply(left: QueryPlan, right: QueryPlan, predicate: PatternExpression, solved: Expression) =
-    QueryPlan(
-      AntiSemiApply(left.plan, right.plan),
-      left.solved.updateGraph(_.addPredicates(solved)))
-
   def planApply(left: QueryPlan, right: QueryPlan) =
     QueryPlan(
       plan = Apply(left.plan, right.plan),
       solved = left.solved ++ right.solved)
+
+  def planTailApply(left: QueryPlan, right: QueryPlan) =
+    QueryPlan(
+      plan = Apply(left.plan, right.plan),
+      solved = left.solved.updateTailOrSelf(_.withTail(right.solved)))
 
   def planCartesianProduct(left: QueryPlan, right: QueryPlan) =
     QueryPlan(
@@ -157,17 +165,48 @@ object QueryPlanProducer {
     )
 
   def planSelection(predicates: Seq[Expression], left: QueryPlan) =
-    QueryPlan(Selection(predicates, left.plan), left.solved.updateGraph(_.addPredicates(predicates: _*)))
+    QueryPlan(Selection(predicates, left.plan), left.solved.updateTailOrSelf(_.updateGraph(_.addPredicates(predicates: _*))))
 
-  def planSelectOrAntiSemiApply(outer: QueryPlan, inner: QueryPlan, expr: Expression, solved: Expression) =
+  def planSelectOrAntiSemiApply(outer: QueryPlan, inner: QueryPlan, expr: Expression) =
     QueryPlan(
       SelectOrAntiSemiApply(outer.plan, inner.plan, expr),
-      outer.solved.updateGraph(_.addPredicates(solved)))
+      outer.solved
+    )
 
-  def planSelectOrSemiApply(outer: QueryPlan, inner: QueryPlan, expr: Expression, solved: Expression) =
+  def planLetSelectOrAntiSemiApply(outer: QueryPlan, inner: QueryPlan, id: IdName, expr: Expression) =
+    QueryPlan(
+      LetSelectOrAntiSemiApply(outer.plan, inner.plan, id, expr),
+      outer.solved
+    )
+
+  def planSelectOrSemiApply(outer: QueryPlan, inner: QueryPlan, expr: Expression) =
     QueryPlan(
       SelectOrSemiApply(outer.plan, inner.plan, expr),
-      outer.solved.updateGraph(_.addPredicates(solved))
+      outer.solved
+    )
+
+  def planLetSelectOrSemiApply(outer: QueryPlan, inner: QueryPlan, id: IdName, expr: Expression) =
+    QueryPlan(
+      LetSelectOrSemiApply(outer.plan, inner.plan, id, expr),
+      outer.solved
+    )
+
+  def planLetAntiSemiApply(left: QueryPlan, right: QueryPlan, id: IdName) =
+    QueryPlan(
+      LetAntiSemiApply(left.plan, right.plan, id),
+      left.solved
+    )
+
+  def planLetSemiApply(left: QueryPlan, right: QueryPlan, id: IdName) =
+    QueryPlan(
+      LetSemiApply(left.plan, right.plan, id),
+      left.solved
+    )
+
+  def planAntiSemiApply(left: QueryPlan, right: QueryPlan, predicate: PatternExpression, solved: Expression) =
+    QueryPlan(
+      AntiSemiApply(left.plan, right.plan),
+      left.solved.updateGraph(_.addPredicates(solved))
     )
 
   def planSemiApply(left: QueryPlan, right: QueryPlan, predicate: Expression) =
@@ -190,9 +229,82 @@ object QueryPlanProducer {
       )
     )
 
-  def planSingleRow(coveredIds: Set[IdName]) =
+  def planQueryArgumentRow(queryGraph: QueryGraph): QueryPlan = {
+    val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
+    val patternRels = queryGraph.patternRelationships.filter( rel => queryGraph.argumentIds.contains(rel.name))
+    val otherIds = queryGraph.argumentIds -- patternNodes -- patternRels.map(_.name)
+    planArgumentRow(patternNodes, patternRels, otherIds)
+  }
+
+  def planArgumentRow(patternNodes: Set[IdName], patternRels: Set[PatternRelationship] = Set.empty, other: Set[IdName] = Set.empty): QueryPlan = {
+    val relIds = patternRels.map(_.name)
+    val coveredIds = patternNodes ++ relIds ++ other
+    val typeInfoSeq =
+      patternNodes.toSeq.map( (x: IdName) => x.name -> CTNode) ++
+      relIds.toSeq.map( (x: IdName) => x.name -> CTRelationship) ++
+      other.toSeq.map( (x: IdName) => x.name -> CTAny)
+    val typeInfo = typeInfoSeq.toMap
+
     QueryPlan(
-      SingleRow(coveredIds),
-      PlannerQuery(graph = QueryGraph(argumentIds = coveredIds, patternNodes = coveredIds))
+      SingleRow(coveredIds)(typeInfo),
+      PlannerQuery(graph =
+        QueryGraph(
+          argumentIds = coveredIds,
+          patternNodes = patternNodes,
+          patternRelationships = patternRels
+      ))
+    )
+  }
+
+  def planSingleRow() =
+    QueryPlan( SingleRow(Set.empty)(Map.empty), PlannerQuery.empty )
+
+  def planStarProjection(inner: QueryPlan, expressions: Map[String, Expression]) =
+    QueryPlan(
+      inner.plan,
+      inner.solved.updateTailOrSelf(_.updateProjections(_.withProjections(expressions)))
+    )
+
+  def planRegularProjection(inner: QueryPlan, expressions: Map[String, Expression]) =
+    QueryPlan(
+      Projection(inner.plan, expressions),
+      inner.solved.updateTailOrSelf(_.updateProjections(_.withProjections(expressions)))
+    )
+
+  def planLimit(inner: QueryPlan, count: Expression) =
+    QueryPlan(
+      Limit(inner.plan, count),
+      inner.solved.updateTailOrSelf(_.updateProjections(_.withLimit(Some(count))))
+    )
+
+  def planSkip(inner: QueryPlan, count: Expression) =
+    QueryPlan(
+      Skip(inner.plan, count),
+      inner.solved.updateTailOrSelf(_.updateProjections(_.withSkip(Some(count))))
+    )
+
+  def planSort(inner: QueryPlan, descriptions: Seq[SortDescription], items: Seq[SortItem]) =
+    QueryPlan(
+      Sort(inner.plan, descriptions),
+      inner.solved.updateTailOrSelf(_.updateProjections(_.withSortItems(items)))
+    )
+
+  def planSortedLimit(inner: QueryPlan, limit: Expression, items: Seq[SortItem]) =
+    QueryPlan(
+      SortedLimit(inner.plan, limit, items),
+      inner.solved.updateTailOrSelf(_.updateProjections(_.withSortItems(items).withLimit(Some(limit))))
+    )
+
+  def planSortedSkipAndLimit(inner: QueryPlan, skip: Expression, limit: Expression, items: Seq[SortItem]) =
+    planSkip(
+      QueryPlan(
+        SortedLimit(inner.plan, Add(limit, skip)(limit.position), items),
+        inner.solved.updateTailOrSelf(
+          _.updateProjections(
+            _.withSortItems(items)
+             .withLimit(Some(limit))
+          ))
+      ),
+      skip
     )
 }

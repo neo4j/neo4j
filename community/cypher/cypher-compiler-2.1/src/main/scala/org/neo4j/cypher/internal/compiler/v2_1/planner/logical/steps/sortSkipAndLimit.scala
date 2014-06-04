@@ -24,46 +24,42 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Descending, Ascending, SortDescription}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
 
 object sortSkipAndLimit {
+
+  import QueryPlanProducer._
+
   def apply(plan: QueryPlan)(implicit context: LogicalPlanningContext): QueryPlan = {
     val query = context.query
-    val logicalPlan = plan.plan
     val projection = query.projection
 
     val producedPlan = (projection.sortItems.toList, projection.skip, projection.limit) match {
       case (Nil, s, l) =>
-        addLimit(l, addSkip(s, logicalPlan))
+        addLimit(l, addSkip(s, plan))
 
-      case (sort, None, Some(l)) =>
-        SortedLimit(logicalPlan, l, sort)
+      case (sortItems, None, Some(l)) =>
+        planSortedLimit(plan, l, sortItems)
 
-      case (sort, Some(s), Some(l)) =>
-        Skip(SortedLimit(logicalPlan, ast.Add(l, s)(null), sort), s)
+      case (sortItems, Some(s), Some(l)) =>
+        planSortedSkipAndLimit(plan, s, l, sortItems)
 
-      case (sort, s, None) if sort.exists(notIdentifier) =>
-        val newPlan: LogicalPlan = ensureSortablePlan(sort, plan)
-        val orderBy = sort.map(sortDescription)
-        val sortPlan = Sort(newPlan, orderBy)
-
+      case (sortItems, s, None) if sortItems.exists(notIdentifier) =>
+        val newPlan = ensureSortablePlan(sortItems, plan)
+        val sortDescriptions = sortItems.map(sortDescription)
+        val sortPlan = planSort(newPlan, sortDescriptions, sortItems)
         addSkip(s, sortPlan)
 
-      case (sort, s, None) =>
-        val sortPlan = Sort(logicalPlan, sort.map(sortDescription))
+      case (sortItems, s, None) =>
+        val sortDescriptions = sortItems.map(sortDescription)
+        val sortPlan = planSort(plan, sortDescriptions, sortItems)
         addSkip(s, sortPlan)
     }
 
-    val newProjection = plan.solved.projection
-      .withSortItems(projection.sortItems)
-      .withSkip(projection.skip)
-      .withLimit(projection.limit)
-
-    val solved = plan.solved.withProjection(newProjection)
-
-    QueryPlan(producedPlan, solved)
+    producedPlan
   }
 
-  private def ensureSortablePlan(sort: List[ast.SortItem], plan: QueryPlan): LogicalPlan = {
+  private def ensureSortablePlan(sort: List[ast.SortItem], plan: QueryPlan): QueryPlan = {
     val expressionsToProject = sort.collect {
       case sortItem if notIdentifier(sortItem) => sortItem.expression
     }
@@ -77,7 +73,7 @@ object sortSkipAndLimit {
     }
 
     val totalProjections = projections ++ keepExistingIdentifiers
-    Projection(plan.plan, totalProjections)
+    planRegularProjection(plan, totalProjections)
   }
 
   private def sortDescription(in: ast.SortItem): SortDescription = in match {
@@ -89,9 +85,9 @@ object sortSkipAndLimit {
 
   private def notIdentifier(s: ast.SortItem) = !s.expression.isInstanceOf[ast.Identifier]
 
-  private def addSkip(s: Option[ast.Expression], plan: LogicalPlan): LogicalPlan =
-    s.fold(plan)(x => Skip(plan, x))
+  private def addSkip(s: Option[ast.Expression], plan: QueryPlan): QueryPlan =
+    s.fold(plan)(x => planSkip(plan, x))
 
-  private def addLimit(s: Option[ast.Expression], plan: LogicalPlan): LogicalPlan =
-    s.fold(plan)(x => Limit(plan, x))
+  private def addLimit(s: Option[ast.Expression], plan: QueryPlan): QueryPlan =
+    s.fold(plan)(x => planLimit(plan, x))
 }

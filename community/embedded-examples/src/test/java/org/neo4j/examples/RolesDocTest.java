@@ -54,7 +54,7 @@ public class RolesDocTest extends ImpermanentGraphJavaDocTestBase
      * What's interesting is that a tree is not sufficient for storing this kind of structure,
      * as elaborated below.
      * 
-     * image::roles.png[scaledwidth="100%"]
+     * image::roles.png[]
      * 
      * This is an implementation of an example found in the article
      * http://www.codeproject.com/Articles/22824/A-Model-to-Represent-Directed-Acyclic-Graphs-DAG-o[A Model to Represent Directed Acyclic Graphs (DAG) on SQL Databases]

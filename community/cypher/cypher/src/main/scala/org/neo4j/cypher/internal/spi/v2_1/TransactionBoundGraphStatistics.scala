@@ -23,23 +23,24 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.GraphStatistics
 import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
 import org.neo4j.kernel.api.heuristics.StatisticsData
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Multiplier, Cardinality}
 
 class TransactionBoundGraphStatistics(statistics: StatisticsData) extends GraphStatistics {
 
   def nodesCardinality =
-    statistics.liveNodesRatio() * statistics.maxAddressableNodes()
+    Cardinality(statistics.liveNodesRatio() * statistics.maxAddressableNodes())
 
   def nodesWithLabelCardinality(labelId: LabelId) =
-     nodesWithLabelSelectivity(labelId) * nodesCardinality
+    nodesCardinality * nodesWithLabelSelectivity(labelId)
 
-  def nodesWithLabelSelectivity(labelId: LabelId): Double =
-    statistics.labelDistribution( labelId.id )
+  def nodesWithLabelSelectivity(labelId: LabelId) =
+    Multiplier(statistics.labelDistribution( labelId.id ))
 
-  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Double = ???
+  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId) = ???
 
-  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Double =
-    statistics.degree( StatisticsData.RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, relTypeId.id, direction )
+  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction) =
+    Multiplier(statistics.degree( StatisticsData.RELATIONSHIP_DEGREE_FOR_NODE_WITHOUT_LABEL, relTypeId.id, direction ))
 
-  def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double =
-    statistics.degree( labelId.id, relTypeId.id, direction )
+  def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction) =
+    Multiplier(statistics.degree( labelId.id, relTypeId.id, direction ))
 }

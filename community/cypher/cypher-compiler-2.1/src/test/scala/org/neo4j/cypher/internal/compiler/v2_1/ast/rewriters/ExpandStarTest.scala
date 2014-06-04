@@ -85,6 +85,6 @@ class ExpandStarTest extends CypherFunSuite with RewriteTest {
   }
 
   override protected def parseForRewriting(queryText: String): Statement = {
-    super.parseForRewriting(queryText).typedRewrite[Statement](bottomUp(aliasReturnItems))
+    super.parseForRewriting(queryText).typedRewrite[Statement](aliasReturnItems)
   }
 }

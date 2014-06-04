@@ -46,8 +46,7 @@ object selectCovered extends PlanTransformer {
   def apply(plan: QueryPlan)(implicit context: QueryGraphSolvingContext): QueryPlan = {
     val unsolvedPredicates = context.queryGraph.selections
       .scalarPredicatesGiven(plan.availableSymbols)
-      .filterNot(plan.solved.graph.selections.contains)
-
+      .filterNot(predicate => plan.solved.exists(_.graph.selections.contains(predicate)))
     if (unsolvedPredicates.isEmpty)
       plan
     else {

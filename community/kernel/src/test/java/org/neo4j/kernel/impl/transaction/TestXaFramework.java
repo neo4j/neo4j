@@ -22,11 +22,16 @@ package org.neo4j.kernel.impl.transaction;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
 
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 import javax.transaction.Transaction;
@@ -37,27 +42,45 @@ import javax.transaction.xa.Xid;
 
 import org.junit.Before;
 import org.junit.Test;
-
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Functions;
+import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.NoTransactionState;
 import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.DummyXaDataSource.DummyXaConnection;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
+import org.neo4j.kernel.impl.transaction.xaframework.XaConnectionHelpImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.XaFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.transaction.xaframework.XaResourceHelpImpl;
+import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
+import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.mockito.Mockito.mock;
 
 public class TestXaFramework extends AbstractNeo4jTestCase
 {
@@ -114,6 +137,287 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         xaDsMgr = getGraphDbAPI().getDependencyResolver().resolveDependency( XaDataSourceManager.class );
     }
 
+    private static class DummyCommand extends XaCommand
+    {
+        private final int type;
+
+        DummyCommand( int type )
+        {
+            this.type = type;
+        }
+
+        public int getType()
+        {
+            return type;
+        }
+    }
+
+    private static class DummyCommandReaderFactory implements XaCommandReaderFactory
+    {
+        @Override
+        public XaCommandReader newInstance( byte logEntryVersion, final ByteBuffer buffer )
+        {
+            return new XaCommandReader()
+            {
+                @Override
+                public XaCommand read( ReadableByteChannel channel ) throws IOException
+                {
+                    buffer.clear();
+                    buffer.limit( 4 );
+                    if ( channel.read( buffer ) == 4 )
+                    {
+                        buffer.flip();
+                        return new DummyCommand( buffer.getInt() );
+                    }
+                    return null;
+                }
+            };
+        }
+    }
+
+    private static class DummyCommandWriterFactory implements XaCommandWriterFactory
+    {
+        @Override
+        public XaCommandWriter newInstance()
+        {
+            return new XaCommandWriter()
+            {
+                @Override
+                public void write( XaCommand command, LogBuffer buffer ) throws IOException
+                {
+                    buffer.putInt( ((DummyCommand)command).getType() );
+                }
+            };
+        }
+    }
+
+    private static class DummyTransaction extends XaTransaction
+    {
+        private final java.util.List<XaCommand> commandList = new java.util.ArrayList<XaCommand>();
+
+        public DummyTransaction( XaLogicalLog log, TransactionState state )
+        {
+            super( log, state );
+            setCommitTxId( 0 );
+        }
+
+        @Override
+        public void doAddCommand( XaCommand command )
+        {
+            commandList.add( command );
+        }
+
+        @Override
+        public void doPrepare()
+        {
+
+        }
+
+        @Override
+        public void doRollback()
+        {
+        }
+
+        @Override
+        public void doCommit()
+        {
+        }
+
+        @Override
+        public boolean isReadOnly()
+        {
+            return false;
+        }
+    }
+
+    private static class DummyTransactionFactory extends XaTransactionFactory
+    {
+        @Override
+        public XaTransaction create( long lastCommittedTxWhenTransactionStarted, TransactionState state )
+        {
+            return new DummyTransaction( getLogicalLog(), state );
+        }
+
+        @Override
+        public void flushAll()
+        {
+        }
+
+        @Override
+        public long getAndSetNewVersion()
+        {
+            return 0;
+        }
+
+        @Override
+        public long getCurrentVersion()
+        {
+            return 0;
+        }
+
+        @Override
+        public void setVersion( long version )
+        {
+        }
+
+        @Override
+        public long getLastCommittedTx()
+        {
+            return 0;
+        }
+    }
+
+    public class DummyXaDataSource extends XaDataSource
+    {
+        private XaContainer xaContainer = null;
+
+        public DummyXaDataSource( java.util.Map<String, String> map, byte[] branchId, String name, XaFactory xaFactory )
+                throws InstantiationException
+        {
+            super( branchId, name );
+            try
+            {
+                TransactionStateFactory stateFactory = new TransactionStateFactory( new DevNullLoggingService() )
+                {
+                    @Override
+                    public TransactionState create( Transaction tx )
+                    {
+                        return new NoTransactionState()
+                        {
+                            @Override
+                            @SuppressWarnings("deprecation")
+                            public TxIdGenerator getTxIdGenerator()
+                            {
+                                return getGraphDbAPI().getDependencyResolver().resolveDependency( TxIdGenerator.class );
+                            }
+                        };
+                    }
+                };
+
+                map.put( "store_dir", path().getPath() );
+                xaContainer = xaFactory.newXaContainer( this, resourceFile(),
+                        new DummyCommandReaderFactory(),
+                        new DummyCommandWriterFactory(),
+                        ALLOW_ALL,
+                        new DummyTransactionFactory(), stateFactory, new TransactionInterceptorProviders(
+                        Iterables.<TransactionInterceptorProvider>empty(),
+                        new DependencyResolver.Adapter()
+                        {
+                            @Override
+                            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
+                            {
+                                return type.cast( new Config( MapUtil.stringMap(
+                                        GraphDatabaseSettings.intercept_committing_transactions.name(),
+                                        Settings.FALSE,
+                                        GraphDatabaseSettings.intercept_deserialized_transactions.name(),
+                                        Settings.FALSE
+                                ) ) );
+                            }
+                        } ), false, Functions.<List<LogEntry>>identity() );
+                xaContainer.openLogicalLog();
+            }
+            catch ( IOException e )
+            {
+                throw new InstantiationException( "" + e );
+            }
+        }
+
+        @Override
+        public void init()
+        {
+        }
+
+        @Override
+        public void start()
+        {
+        }
+
+        @Override
+        public void stop()
+        {
+            xaContainer.close();
+            // cleanup dummy resource log
+            deleteAllResourceFiles();
+        }
+
+        @Override
+        public void shutdown()
+        {
+        }
+
+
+        @Override
+        public XaConnection getXaConnection()
+        {
+            return new DummyXaConnection( xaContainer.getResourceManager() );
+        }
+
+        @Override
+        public long getLastCommittedTxId()
+        {
+            return 0;
+        }
+    }
+
+    private static class DummyXaResource extends XaResourceHelpImpl
+    {
+        DummyXaResource( XaResourceManager xaRm )
+        {
+            super( xaRm, null );
+        }
+
+        @Override
+        public boolean isSameRM( XAResource resource )
+        {
+            return resource instanceof DummyXaResource;
+        }
+    }
+
+    private class DummyXaConnection extends XaConnectionHelpImpl
+    {
+        private XAResource xaResource = null;
+
+        public DummyXaConnection( XaResourceManager xaRm )
+        {
+            super( xaRm );
+            xaResource = new DummyXaResource( xaRm );
+        }
+
+        @Override
+        public XAResource getXaResource()
+        {
+            return xaResource;
+        }
+        
+        public void doStuff1() throws XAException
+        {
+            validate();
+            getTransaction().addCommand( new DummyCommand( 1 ) );
+        }
+
+        public void doStuff2() throws XAException
+        {
+            validate();
+            getTransaction().addCommand( new DummyCommand( 2 ) );
+        }
+
+        public void enlistWithTx() throws Exception
+        {
+            tm.getTransaction().enlistResource( xaResource );
+        }
+
+        public void delistFromTx() throws Exception
+        {
+            tm.getTransaction().delistResource( xaResource,
+                    XAResource.TMSUCCESS );
+        }
+
+        public int getTransactionId() throws Exception
+        {
+            return getTransaction().getIdentifier();
+        }
+    }
+
     @Test
     public void testCreateXaResource() throws Exception
     {
@@ -122,14 +426,13 @@ public class TestXaFramework extends AbstractNeo4jTestCase
         FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         KernelHealth kernelHealth = mock( KernelHealth.class );
         xaDsMgr.registerDataSource( new DummyXaDataSource(
-                UTF8.encode( "DDDDDD" ), "dummy_datasource",
+                new HashMap<String, String>(), UTF8.encode( "DDDDDD" ), "dummy_datasource",
                 new XaFactory(
                         new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
                         new PlaceboTm( null, getGraphDbAPI().getDependencyResolver()
                                 .resolveDependency( TxIdGenerator.class ) ),
                         fileSystem, new Monitors(), new DevNullLoggingService(),
-                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING, kernelHealth ), stateFactory,
-                        resourceFile() ) );
+                        RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING, kernelHealth ) ) );
         XaDataSource xaDs = xaDsMgr.getXaDataSource( "dummy_datasource" );
         DummyXaConnection xaC = null;
         try
@@ -182,33 +485,33 @@ public class TestXaFramework extends AbstractNeo4jTestCase
             FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
             KernelHealth kernelHealth = mock( KernelHealth.class );
 
-            xaDsMgr.registerDataSource( new DummyXaDataSource( UTF8.encode( "DDDDDD" ), "dummy_datasource1",
+            xaDsMgr.registerDataSource( new DummyXaDataSource( new HashMap<String, String>(),
+                    UTF8.encode( "DDDDDD" ), "dummy_datasource1",
                     new XaFactory( new Config( config, GraphDatabaseSettings.class ), TxIdGenerator.DEFAULT,
                             (AbstractTransactionManager)tm, fileSystem, new Monitors(), new DevNullLoggingService(),
-                            RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING, kernelHealth ),
-                            stateFactory, resourceFile() ) );
+                            RecoveryVerifier.ALWAYS_VALID, LogPruneStrategies.NO_PRUNING, kernelHealth ) ) );
             DummyXaDataSource xaDs1 = (DummyXaDataSource) xaDsMgr.getXaDataSource( "dummy_datasource1" );
             xaC1 = (DummyXaConnection) xaDs1.getXaConnection();
             tm.begin(); // get
-            xaC1.enlistWithTx( tm );
+            xaC1.enlistWithTx();
             int currentTxId = xaC1.getTransactionId();
             xaC1.doStuff1();
-            xaC1.delistFromTx( tm );
+            xaC1.delistFromTx();
             tm.commit();
             // xaC2 = ( DummyXaConnection ) xaDs2.getXaConnection();
             tm.begin();
             Node node = getGraphDb().createNode(); // get resource in tx
-            xaC1.enlistWithTx( tm );
+            xaC1.enlistWithTx();
             assertEquals( ++currentTxId, xaC1.getTransactionId() );
             xaC1.doStuff1();
-            xaC1.delistFromTx( tm );
+            xaC1.delistFromTx();
             tm.commit();
             tm.begin();
             node = getGraphDb().getNodeById( node.getId() );
-            xaC1.enlistWithTx( tm );
+            xaC1.enlistWithTx();
             assertEquals( ++currentTxId, xaC1.getTransactionId() );
             xaC1.doStuff2();
-            xaC1.delistFromTx( tm );
+            xaC1.delistFromTx();
             node.delete();
             tm.commit();
         }

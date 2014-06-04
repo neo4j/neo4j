@@ -32,7 +32,6 @@ import org.neo4j.cypher.internal.spi.v2_1.TransactionBoundPlanContext
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
 import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.CypherCompiler
-import org.neo4j.kernel.impl.api.Kernel
 
 trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   self: CypherTestSuite  =>
@@ -40,9 +39,11 @@ trait GraphDatabaseTestSupport extends CypherTestSupport with GraphIcing {
   var graph: GraphDatabaseAPI with Snitch = null
   var nodes: List[Node] = null
 
+  def databaseConfig(): Map[String,String] = Map.empty
+
   override protected def initTest() {
     super.initTest()
-    graph = new ImpermanentGraphDatabase() with Snitch
+    graph = new ImpermanentGraphDatabase(databaseConfig().asJava) with Snitch
   }
 
   override protected def stopTest() {

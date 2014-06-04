@@ -20,8 +20,7 @@
 
 
 function show_java_requirements() {
-  echo "* Please use Oracle(R) Java(TM) 7 to run Neo4j Server. Download \"Java Platform (JDK) 7\" from:"
-  echo "  http://www.oracle.com/technetwork/java/javase/downloads/index.html"
+  echo "* Please use Oracle(R) Java(TM) 7 or OpenJDK(TM) to run Neo4j Server."
 }
 
 function show_installation_instructions() {
@@ -369,7 +368,7 @@ complain_about_java_version() {
   show_installation_instructions
 }
 
-# check if running Oracle JDK 7, warn if not
+# check if running Oracle JDK 7 or OpenJDK 7, warn if not
 checkjvmcompatibility() {
   # Shut down if java version < 1.7
   JAVAVERSION=$("$JAVACMD" -version 2>&1 | awk -F '"' '/version/ {print $2}')
@@ -378,7 +377,7 @@ checkjvmcompatibility() {
     exit 1
   fi
 
-  $JAVACMD -version 2>&1 | egrep -q "Java HotSpot\\(TM\\) (64-Bit Server|Server|Client) VM"
+  $JAVACMD -version 2>&1 | egrep -q "(Java HotSpot\\(TM\\)|OpenJDK) (64-Bit Server|Server|Client) VM"
   if [ $? -eq 1 ]
   then
     warn_about_java_runtime

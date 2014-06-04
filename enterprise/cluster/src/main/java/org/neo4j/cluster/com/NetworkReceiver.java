@@ -64,6 +64,12 @@ import org.neo4j.kernel.logging.Logging;
 public class NetworkReceiver
         implements MessageSource, Lifecycle
 {
+    public interface Monitor
+    {
+        void receivedMessage( Message message );
+
+        void processedMessage( Message message );
+    }
 
 
     public interface Configuration
@@ -94,6 +100,7 @@ public class NetworkReceiver
     private ServerBootstrap serverBootstrap;
     private Iterable<MessageProcessor> processors = Listeners.newListeners();
 
+    private Monitor monitor;
     private Configuration config;
     private StringLogger msgLog;
 
@@ -102,8 +109,9 @@ public class NetworkReceiver
 
     volatile boolean bindingDetected = false;
 
-    public NetworkReceiver( Configuration config, Logging logging )
+    public NetworkReceiver( Monitor monitor, Configuration config, Logging logging )
     {
+        this.monitor = monitor;
         this.config = config;
         this.msgLog = logging.getMessagesLog( getClass() );
     }
@@ -215,6 +223,8 @@ public class NetworkReceiver
                 // Ignore
             }
         }
+
+        monitor.processedMessage( message );
     }
 
     private URI getURI( InetSocketAddress address ) throws URISyntaxException
@@ -326,6 +336,7 @@ public class NetworkReceiver
             message.setHeader( Message.FROM, fromHeader.toASCIIString() );
 
             msgLog.debug( "Received:" + message );
+            monitor.receivedMessage( message );
             receive( message );
         }
 

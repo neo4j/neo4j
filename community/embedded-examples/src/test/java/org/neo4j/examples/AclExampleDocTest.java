@@ -47,7 +47,7 @@ public class AclExampleDocTest extends ImpermanentGraphJavaDocTestBase
      * The result is a complex security scheme that can easily be implemented in a graph structure, 
      * supporting permissions overriding, principal and content composition, without duplicating data anywhere.
      *
-     * image::ACL.png[scaledwidth="100%"]
+     * image::ACL.png[]
      *
      * === Technique ===
      *

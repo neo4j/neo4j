@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.util.concurrent.TimeUnit.MILLISECONDS;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -31,6 +39,7 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
 
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.XidImpl;
@@ -38,16 +47,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor.LogLoader;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
 
 public class TestLogPruneStrategy
 {
@@ -256,7 +255,7 @@ public class TestLogPruneStrategy
                     " and prune strategy " + log.pruning, FS.fileExists( file ) );
             if ( empty.contains( i ) )
             {
-                assertEquals( "Log v" + i + " should be empty", LogIoUtils.LOG_HEADER_SIZE, FS.getFileSize( file ) );
+                assertEquals( "Log v" + i + " should be empty", VersionAwareLogEntryReader.LOG_HEADER_SIZE, FS.getFileSize( file ) );
                 empty.remove( i );
             }
             else
@@ -320,11 +319,11 @@ public class TestLogPruneStrategy
         private void clearAndWriteHeader()
         {
             activeBuffer.clear();
-            LogIoUtils.writeLogHeader( activeBuffer, version, tx );
+            VersionAwareLogEntryReader.writeLogHeader( activeBuffer, version, tx );
             
             // Because writeLogHeader does flip()
             activeBuffer.limit( activeBuffer.capacity() );
-            activeBuffer.position( LogIoUtils.LOG_HEADER_SIZE );
+            activeBuffer.position( VersionAwareLogEntryReader.LOG_HEADER_SIZE );
         }
         
         @Override
@@ -354,12 +353,27 @@ public class TestLogPruneStrategy
          */
         public boolean addTransaction( int commandSize, long date ) throws IOException
         {
+            LogEntryWriterv1 writer = new LogEntryWriterv1();
+
+            writer.setCommandWriter(new XaCommandWriter()
+            {
+                @Override
+                public void write( XaCommand command, LogBuffer buffer ) throws IOException
+                {
+                    TestXaCommand test = (TestXaCommand) command;
+                    buffer.putInt( test.getTotalSize() );
+                    buffer.put( new byte[test.getTotalSize() - 4/*size of the totalSize integer*/] );
+                }
+            } );
+
             InMemoryLogBuffer tempLogBuffer = new InMemoryLogBuffer();
             XidImpl xid = new XidImpl( getNewGlobalId( DEFAULT_SEED, 0 ), RESOURCE_XID );
-            LogIoUtils.writeStart( tempLogBuffer, identifier, xid, -1, -1, date, Long.MAX_VALUE );
-            LogIoUtils.writeCommand( tempLogBuffer, identifier, new TestXaCommand( commandSize ) );
-            LogIoUtils.writeCommit( false, tempLogBuffer, identifier, ++tx, date );
-            LogIoUtils.writeDone( tempLogBuffer, identifier );
+            writer.writeLogEntry( new LogEntry.Start( xid, identifier, -1, -1, date, -1, Long.MAX_VALUE), tempLogBuffer );
+
+            writer.writeLogEntry( new LogEntry.Command( identifier, new TestXaCommand( commandSize ) ), tempLogBuffer );
+
+            writer.writeLogEntry( new LogEntry.OnePhaseCommit( identifier, ++tx, date ), tempLogBuffer );
+            writer.writeLogEntry( new LogEntry.Done( identifier), tempLogBuffer );
             tempLogBuffer.read( activeBuffer );
             if ( !timestamps.containsKey( version ) )
              {
@@ -483,17 +497,10 @@ public class TestLogPruneStrategy
         {
             this.totalSize = totalSize;
         }
-        
-        @Override
-        public void execute()
-        {   // Do nothing
-        }
 
-        @Override
-        public void writeToFile( LogBuffer buffer ) throws IOException
+        public int getTotalSize()
         {
-            buffer.putInt( totalSize );
-            buffer.put( new byte[totalSize-4/*size of the totalSize integer*/] );
+            return totalSize;
         }
     }
 }

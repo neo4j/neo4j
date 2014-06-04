@@ -19,27 +19,28 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.File;
 import java.nio.ByteBuffer;
+import java.util.List;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
-
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class LogBackedXaDataSourceLogBufferFactoryTest
 {
@@ -54,8 +55,9 @@ public class LogBackedXaDataSourceLogBufferFactoryTest
         LogBackedXaDataSource ds = new LogBackedXaDataSource("irrelephant".getBytes(), "irrelephant")
         {
             private XaLogicalLog logicalLog = new XaLogicalLog( new File( testDir.directory(), "my.log" ), null, null,
-                    null, new DefaultFileSystemAbstraction(), new Monitors(), new TestLogging(), null, null,
-                    mock( KernelHealth.class ), 100, null );
+                    mock( XaCommandWriterFactory.class ), null, new DefaultFileSystemAbstraction(), new Monitors(),
+                    new TestLogging(), null, null, mock( KernelHealth.class ), 100, null, null,
+                    Functions.<List<LogEntry>>identity() );
 
             @Override
             public XaConnection getXaConnection()
@@ -90,7 +92,7 @@ public class LogBackedXaDataSourceLogBufferFactoryTest
             // Then the header should be correct
             StoreChannel channel = logFile.getFileChannel();
             channel.position( 0 );
-            long[] headerLongs = LogIoUtils.readLogHeader( scratch, channel, true );
+            long[] headerLongs = VersionAwareLogEntryReader.readLogHeader( scratch, channel, true );
             assertThat(headerLongs[0], equalTo(0l));
             assertThat(headerLongs[1], equalTo(-1l));
 

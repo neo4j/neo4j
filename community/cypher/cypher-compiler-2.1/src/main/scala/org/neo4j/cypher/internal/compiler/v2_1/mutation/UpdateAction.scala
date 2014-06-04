@@ -24,7 +24,7 @@ import commands.AstNode
 import commands.expressions.Expression
 import pipes.QueryState
 import symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.data.SimpleVal
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{UpdateActionName, IntroducedIdentifier}
 
 trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
 
@@ -36,9 +36,5 @@ trait UpdateAction extends TypeSafe with AstNode[UpdateAction] {
 
   def shortName: String = getClass.getSimpleName.replace("Action", "")
 
-  def description: Seq[(String, SimpleVal)] =
-    Seq(
-      "action" -> SimpleVal.fromStr(shortName),
-      "identifiers" -> SimpleVal.fromSeq(identifiers.map(_._1))
-    )
+  def arguments:Seq[Argument] = identifiers.map(tuple => IntroducedIdentifier(tuple._1)) :+ UpdateActionName(shortName)
 }

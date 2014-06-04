@@ -28,6 +28,9 @@ Automatic
 1.9 -> 2.0::
 Explicit
 
+2.0 -> 2.1::
+Explicit
+
 [NOTE]
 Downgrade is supported only between versions which do not have incompatible store layouts.
 That means that if you did an upgrade where you didn't have to explicitly set the +allow_store_upgrade+ flag to false then you can downgrade without any problems to the previous version used.
@@ -57,6 +60,13 @@ To perform a special upgrade (for significant changes to the database store):
 . The +allow_store_upgrade+ configuration parameter should be removed, set to +false+ or commented out.
 . Information about the upgrade and progress indicator is printed in 'messages.log'.
 
+[[deployment-upgrading-two-one]]
+== Upgrade 2.0 -> 2.1 ==
+
+This edition uses a new store format that supports grouping of relationships by type, for substantially increased performance in many situations.
+
+The upgrade is explicit, as described above, and will occur at first startup. This will take some time and will require extra disk space.
+
 [[deployment-upgrading-two-zero]]
 == Upgrade 1.9 -> 2.0 ==
 
@@ -64,7 +74,7 @@ This edition adds a new store for labels and one for schema, an index for labels
 Note that we do not currently support rolling upgrades between 1.9.x and 2.0.
 
 For Neo4j 2.0, Java 7 is required.
-We recommend that you install the Java JDK 7 from the http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Website].
+We recommend that you install http://openjdk.java.net/[OpenJDK 7] or http://www.oracle.com/technetwork/java/javase/downloads/index.html[Oracle Java 7].
 
 When upgrading, the following will happen and will both take some time, and will require extra disk space:
 

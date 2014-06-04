@@ -1,0 +1,73 @@
+[[query-tuning]]
+
+Query Tuning
+==========
+
+Blah blah blah, don't write slow queries. You can read more about the <<execution-plans, execution plan operators>> shown on this page.
+
+We start with the following data set:
+
+//setup
+[source,cypher]
+----
+CREATE (adam:User {name: 'Adam'})
+CREATE (pernilla:User {name: 'Pernilla'})
+CREATE (david:User {name: 'David'})
+CREATE (adam)-[:FRIEND]->(pernilla)
+CREATE (pernilla)-[:FRIEND]->(david)
+----
+
+And we want to do query to find Pernilla. We might start with the following query:
+
+[source,cypher]
+----
+cypher 2.1.experimental
+MATCH (p {name:"Pernilla"})
+RETURN p
+----
+
+As the number of nodes in the database increase this query will slow down so we'd have a look at the profile output to try and work out why that is:
+
+//profile
+
+The inclusion of <<query-plan-all-nodes-scan, All Nodes Scan>> indicates that the query planner scanned all the nodes in the database, checking the +name+ property on each one.
+
+When searching for the start nodes for our query we should specify a label to narrow down the search area.
+For this query we can include a +Person+ like so:
+
+[source,cypher]
+----
+cypher 2.1.experimental
+MATCH (p:Person {name:"Pernilla"})
+RETURN p
+----
+
+This query will be faster than the first one but as the number of people increase we notice that our query slows down.
+
+Again we can look at the profile output to work out why:
+
+//profile
+
+The <<query-plan-node-by-label-scan, Label Scan>> operator indicates that when we look up +Pernilla+ a linear scan of all the people in the database is being executed.
+
+If we're going to be looking up people by name frequently then we'll want to create an index on the +name+ property for the +Person+ label:
+
+[source,cypher]
+----
+CREATE INDEX ON :Person(name)
+----
+
+Now if we run the query again it will run more quickly:
+
+[source,cypher]
+----
+cypher 2.1.experimental
+MATCH (p:Person {name:"Pernilla"})
+RETURN p
+----
+
+Let's look at the profile output again:
+
+//profile
+
+Now the query planner makes use of the <<query-plan-node-index-seek, Node Index Seek>> operator which does an index lookup and therefore gives us a performance improvement as the number of people increases.

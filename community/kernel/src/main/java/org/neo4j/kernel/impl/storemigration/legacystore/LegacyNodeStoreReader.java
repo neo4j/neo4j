@@ -23,8 +23,14 @@ import java.io.Closeable;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
+import java.util.Iterator;
+
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -32,6 +38,7 @@ import org.neo4j.kernel.impl.nioneo.store.Record;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 import static java.nio.ByteBuffer.allocateDirect;
+
 import static org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore.longFromIntAndMod;
 
 public class LegacyNodeStoreReader implements Closeable
@@ -82,6 +89,67 @@ public class LegacyNodeStoreReader implements Closeable
 
             position += buffer.capacity()   ;
         }
+    }
+
+    public Iterator<NodeRecord> iterator() throws IOException
+    {
+        final ByteBuffer buffer = ByteBuffer.allocateDirect( 4 * 1024 * RECORD_SIZE );
+        final long fileSize = fileChannel.size();
+        return new PrefetchingIterator<NodeRecord>()
+        {
+            private long position = 0;
+            private final Collection<NodeRecord> pageRecords = new ArrayList<>();
+            private Iterator<NodeRecord> pageRecordsIterator = IteratorUtil.emptyIterator();
+
+            @Override
+            protected NodeRecord fetchNextOrNull()
+            {
+                // Next from current page
+                if ( pageRecordsIterator.hasNext() )
+                {
+                    return pageRecordsIterator.next();
+                }
+
+                // Read next page
+                while ( position < fileSize )
+                {
+                    int pageOffset = 0;
+                    buffer.clear();
+                    try
+                    {
+                        fileChannel.read( buffer, position );
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
+                    }
+                    // Visit each record in the page
+                    pageRecords.clear();
+                    while ( pageOffset < buffer.capacity() && (pageOffset + position) < fileSize )
+                    {
+                        buffer.position(pageOffset);
+                        long id = (position + pageOffset) / RECORD_SIZE;
+
+                        NodeRecord record = readRecord( buffer, id );
+                        if ( record.inUse() )
+                        {
+                            pageRecords.add( record );
+                        }
+
+                        pageOffset += RECORD_SIZE;
+                    }
+                    position += buffer.capacity();
+                    pageRecordsIterator = pageRecords.iterator();
+                    if ( pageRecordsIterator.hasNext() )
+                    {
+                        return pageRecordsIterator.next();
+                    }
+                }
+
+                // No more records
+                return null;
+            }
+        };
     }
 
     private NodeRecord readRecord( ByteBuffer buffer, long id )

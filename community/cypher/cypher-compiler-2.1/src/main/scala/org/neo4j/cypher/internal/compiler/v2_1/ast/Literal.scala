@@ -28,7 +28,9 @@ sealed trait Literal extends Expression {
   def value: AnyRef
 }
 
-sealed trait NumberLiteral extends Literal
+sealed trait NumberLiteral extends Literal {
+  def stringVal: String
+}
 
 sealed abstract class IntegerLiteral(stringVal: String) extends NumberLiteral with SimpleTyping {
   lazy val value: java.lang.Long = stringVal.toLong

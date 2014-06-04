@@ -72,7 +72,7 @@ public class MultiPaxosContext
 
         heartbeatContext = new HeartbeatContextImpl(me, commonState, logging, timeouts, executor );
         learnerContext = new LearnerContextImpl(me, commonState, logging, timeouts, paxosInstances, instanceStore, objectInputStreamFactory, objectOutputStreamFactory, heartbeatContext );
-        clusterContext = new ClusterContextImpl(me, commonState, logging, timeouts, executor, objectOutputStreamFactory, objectInputStreamFactory, learnerContext, heartbeatContext);
+        clusterContext = new ClusterContextImpl(me, commonState, logging, timeouts, executor, objectOutputStreamFactory, objectInputStreamFactory, learnerContext, heartbeatContext );
         electionContext = new ElectionContextImpl( me, commonState, logging, timeouts, roles, clusterContext, heartbeatContext, electionCredentialsProvider );
         proposerContext = new ProposerContextImpl(me, commonState, logging, timeouts, paxosInstances );
         acceptorContext = new AcceptorContextImpl(me, commonState, logging, timeouts, instanceStore);

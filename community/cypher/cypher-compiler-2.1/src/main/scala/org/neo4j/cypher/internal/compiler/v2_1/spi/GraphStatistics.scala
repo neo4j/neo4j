@@ -21,12 +21,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.spi
 
 import org.neo4j.cypher.internal.compiler.v2_1.{RelTypeId, LabelId}
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Multiplier, Cardinality}
 
 trait GraphStatistics {
-  def nodesCardinality: Double
-  def nodesWithLabelCardinality(labelId: LabelId): Double
-  def nodesWithLabelSelectivity(labelId: LabelId): Double
-  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Double
-  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Double
-  def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Double
+  def nodesCardinality: Cardinality
+  def nodesWithLabelCardinality(labelId: LabelId): Cardinality
+  def nodesWithLabelSelectivity(labelId: LabelId): Multiplier
+  def relationshipsWithTypeSelectivity(relTypeId: RelTypeId): Multiplier
+  def degreeByRelationshipTypeAndDirection(relTypeId: RelTypeId, direction: Direction): Multiplier
+  def degreeByLabelRelationshipTypeAndDirection(labelId: LabelId, relTypeId: RelTypeId, direction: Direction): Multiplier
 }

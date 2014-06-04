@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.cache;
 import java.util.Collection;
 
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
+import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.SchemaCache;
-import org.neo4j.kernel.impl.api.SchemaState;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Token;
@@ -45,7 +45,7 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
         this.schemaState = schemaState;
         this.persistenceCache = persistenceCache;
     }
-    
+
     @Override
     public void removeNodeFromCache( long nodeId )
     {
@@ -63,6 +63,18 @@ public class BridgingCacheAccess implements CacheAccessBackDoor
     public void removeRelationshipTypeFromCache( int id )
     {
         nodeManager.removeRelationshipTypeFromCache( id );
+    }
+
+    @Override
+    public void removePropertyKeyFromCache( int id )
+    {
+        nodeManager.removePropertyKeyFromCache( id );
+    }
+
+    @Override
+    public void removeLabelFromCache( int id )
+    {
+        nodeManager.removeLabelFromCache( id );
     }
 
     @Override

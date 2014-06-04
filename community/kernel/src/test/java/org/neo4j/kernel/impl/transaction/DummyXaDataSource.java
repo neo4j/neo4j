@@ -19,10 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.List;
 
 import javax.transaction.TransactionManager;
 import javax.transaction.xa.XAException;
@@ -30,16 +33,21 @@ import javax.transaction.xa.XAResource;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
-import org.neo4j.kernel.impl.transaction.xaframework.XaCommandFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnection;
 import org.neo4j.kernel.impl.transaction.xaframework.XaConnectionHelpImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
@@ -51,8 +59,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransaction;
 import org.neo4j.kernel.impl.transaction.xaframework.XaTransactionFactory;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
-
 public class DummyXaDataSource extends XaDataSource
 {
     private XaContainer xaContainer = null;
@@ -63,7 +69,9 @@ public class DummyXaDataSource extends XaDataSource
         super( branchId, name );
         try
         {
-            xaContainer = xaFactory.newXaContainer( this, logFile, new DummyCommandFactory(),
+            xaContainer = xaFactory.newXaContainer( this, logFile,
+                    new DummyCommandReaderFactory(),
+                    new DummyCommandWriterFactory(),
                     ALLOW_ALL, new DummyTransactionFactory(), stateFactory, new TransactionInterceptorProviders(
                             Iterables.<TransactionInterceptorProvider>empty(),
                             new DependencyResolver.Adapter()
@@ -78,7 +86,7 @@ public class DummyXaDataSource extends XaDataSource
                                             Settings.FALSE
                                             ) ) );
                                 }
-                            } ), false );
+                            } ), false, Functions.<List<LogEntry>>identity() );
             xaContainer.openLogicalLog();
         }
         catch ( IOException e )
@@ -190,37 +198,50 @@ public class DummyXaDataSource extends XaDataSource
             this.type = type;
         }
 
-        @Override
-        public void execute()
+        public int getType()
         {
+            return type;
         }
 
-        // public void writeToFile( FileChannel fileChannel, ByteBuffer buffer )
-        // throws IOException
+    }
+
+
+    private static class DummyCommandReaderFactory implements XaCommandReaderFactory
+    {
         @Override
-        public void writeToFile( LogBuffer buffer ) throws IOException
+        public XaCommandReader newInstance( byte logEntryVersion, final ByteBuffer buffer )
         {
-            // buffer.clear();
-            buffer.putInt( type );
-            // buffer.flip();
-            // fileChannel.write( buffer );
+            return new XaCommandReader()
+            {
+                @Override
+                public XaCommand read( ReadableByteChannel channel ) throws IOException
+                {
+                    buffer.clear();
+                    buffer.limit( 4 );
+                    if ( channel.read( buffer ) == 4 )
+                    {
+                        buffer.flip();
+                        return new DummyCommand( buffer.getInt() );
+                    }
+                    return null;
+                }
+            };
         }
     }
 
-    static class DummyCommandFactory extends XaCommandFactory
+    private static class DummyCommandWriterFactory implements XaCommandWriterFactory
     {
         @Override
-        public XaCommand readCommand( ReadableByteChannel byteChannel,
-                                      ByteBuffer buffer ) throws IOException
+        public XaCommandWriter newInstance()
         {
-            buffer.clear();
-            buffer.limit( 4 );
-            if ( byteChannel.read( buffer ) == 4 )
+            return new XaCommandWriter()
             {
-                buffer.flip();
-                return new DummyCommand( buffer.getInt() );
-            }
-            return null;
+                @Override
+                public void write( XaCommand command, LogBuffer buffer ) throws IOException
+                {
+                    buffer.putInt( ((DummyCommand)command).getType() );
+                }
+            };
         }
     }
 

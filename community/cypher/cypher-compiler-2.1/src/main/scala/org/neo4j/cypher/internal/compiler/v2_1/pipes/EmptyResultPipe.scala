@@ -32,7 +32,7 @@ class EmptyResultPipe(source: Pipe)(implicit pipeMonitor: PipeMonitor) extends P
     Iterator.empty
   }
 
-  override def executionPlanDescription = source.executionPlanDescription.andThen(this, "EmptyResult")
+  override def planDescription = source.planDescription.andThen(this, "EmptyResult")
 
   def dependencies = Seq()
 

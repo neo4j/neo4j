@@ -19,16 +19,6 @@
  */
 package org.neo4j.cluster;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Matchers.any;
-import static org.mockito.Mockito.doAnswer;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.cluster.com.message.Message.internal;
-
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -40,6 +30,7 @@ import org.mockito.Matchers;
 import org.mockito.Mockito;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageSender;
@@ -50,24 +41,37 @@ import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Matchers.any;
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.cluster.com.message.Message.internal;
+
 public class StateMachinesTest
 {
     @Test
     public void whenMessageHandlingCausesNewMessagesThenEnsureCorrectOrder() throws Exception
     {
         // Given
-        StateMachines stateMachines = new StateMachines( Mockito.mock(MessageSource.class),
-                Mockito.mock( MessageSender.class), Mockito.mock( Timeouts.class),
-                Mockito.mock(DelayedDirectExecutor.class), new Executor()
+        StateMachines stateMachines = new StateMachines( mock( StateMachines.Monitor.class ),
+                mock( MessageSource.class ),
+                Mockito.mock( MessageSender.class ), Mockito.mock( Timeouts.class ),
+                Mockito.mock( DelayedDirectExecutor.class ), new Executor()
         {
             @Override
             public void execute( Runnable command )
             {
                 command.run();
             }
-        }, mock( InstanceId.class ) );
+        }, mock( InstanceId.class )
+        );
 
-        ArrayList<TestMessage> handleOrder = new ArrayList<>(  );
+        ArrayList<TestMessage> handleOrder = new ArrayList<>();
         StateMachine stateMachine = new StateMachine( handleOrder, TestMessage.class, TestState.test,
                 mock( Logging.class ) );
 
@@ -105,27 +109,29 @@ public class StateMachinesTest
             }
         } ).when( sender ).process( Matchers.<List<Message<? extends MessageType>>>any() );
 
-        StateMachines stateMachines = new StateMachines( mock( MessageSource.class ), sender,
-        mock( Timeouts.class ), mock( DelayedDirectExecutor.class ), new Executor()
+        StateMachines stateMachines = new StateMachines( mock( StateMachines.Monitor.class ),
+                mock( MessageSource.class ), sender,
+                mock( Timeouts.class ), mock( DelayedDirectExecutor.class ), new Executor()
         {
             @Override
             public void execute( Runnable command )
             {
                 command.run();
             }
-        }, me );
+        }, me
+        );
 
         // The state machine, which has a TestMessage message type and simply adds a TO header to the messages it
         // is handed to handle.
         StateMachine machine = mock( StateMachine.class );
-        when( machine.getMessageType() ).then(  new Answer<Object>()
+        when( machine.getMessageType() ).then( new Answer<Object>()
         {
             @Override
             public Object answer( InvocationOnMock invocation ) throws Throwable
             {
                 return TestMessage.class;
             }
-        });
+        } );
         doAnswer( new Answer<Object>()
         {
             @Override
@@ -158,34 +164,35 @@ public class StateMachinesTest
     }
 
     public enum TestState
-        implements State<List, TestMessage>
+            implements State<List, TestMessage>
     {
         test
-        {
-            @Override
-            public State<?, ?> handle( List context, Message<TestMessage> message, MessageHolder outgoing ) throws Throwable
-            {
-                context.add(message.getMessageType());
-
-                switch ( message.getMessageType() )
                 {
-                    case message1:
+                    @Override
+                    public State<?, ?> handle( List context, Message<TestMessage> message,
+                                               MessageHolder outgoing ) throws Throwable
                     {
-                        outgoing.offer( internal( TestMessage.message2 ) );
-                        outgoing.offer( internal( TestMessage.message3 ) );
-                        break;
-                    }
+                        context.add( message.getMessageType() );
 
-                    case message2:
-                    {
-                        outgoing.offer( internal( TestMessage.message4 ) );
-                        outgoing.offer( internal( TestMessage.message5 ) );
-                        break;
-                    }
-                }
+                        switch ( message.getMessageType() )
+                        {
+                            case message1:
+                            {
+                                outgoing.offer( internal( TestMessage.message2 ) );
+                                outgoing.offer( internal( TestMessage.message3 ) );
+                                break;
+                            }
 
-                return this;
-            }
-        };
+                            case message2:
+                            {
+                                outgoing.offer( internal( TestMessage.message4 ) );
+                                outgoing.offer( internal( TestMessage.message5 ) );
+                                break;
+                            }
+                        }
+
+                        return this;
+                    }
+                };
     }
 }

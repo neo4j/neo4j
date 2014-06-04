@@ -19,6 +19,7 @@
  */
 package org.neo4j.consistency.checking;
 
+import java.util.ArrayList;
 import java.util.Collection;
 
 import org.junit.Test;
@@ -216,7 +217,7 @@ public class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
-        new InlineNodeLabels( node.getLabelField(), node ).add( 1, null );
+        new InlineNodeLabels( node.getLabelField(), node ).add( 1, null, null );
         LabelTokenRecord labelRecordNotInUse = notInUse( new LabelTokenRecord( 1 ) );
 
         add( labelRecordNotInUse );
@@ -246,7 +247,8 @@ public class NodeRecordCheckTest
         Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
 
         labelIds[12] = labelIds.length;
-        DynamicArrayStore.allocateFromNumbers( labelIds, labelRecords.iterator(), new PreAllocatedRecords( 52 ) );
+        DynamicArrayStore.allocateFromNumbers( new ArrayList<DynamicRecord>(), labelIds, labelRecords.iterator(),
+                new PreAllocatedRecords( 52 ) );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -265,7 +267,7 @@ public class NodeRecordCheckTest
     {
         // given
         NodeRecord node = inUse( new NodeRecord( 42, false, NONE, NONE ) );
-        new InlineNodeLabels( node.getLabelField(), node ).put( new long[]{1, 2, 1}, null );
+        new InlineNodeLabels( node.getLabelField(), node ).put( new long[]{1, 2, 1}, null, null );
         LabelTokenRecord label1 = inUse( new LabelTokenRecord( 1 ) );
         LabelTokenRecord label2 = inUse( new LabelTokenRecord( 2 ) );
 
@@ -294,7 +296,8 @@ public class NodeRecordCheckTest
         Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
 
         labelIds[12] = 11;
-        DynamicArrayStore.allocateFromNumbers( labelIds, labelRecords.iterator(), new PreAllocatedRecords( 52 ) );
+        DynamicArrayStore.allocateFromNumbers( new ArrayList<DynamicRecord>(), labelIds, labelRecords.iterator(),
+                new PreAllocatedRecords( 52 ) );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 
@@ -321,7 +324,8 @@ public class NodeRecordCheckTest
         DynamicRecord labelsRecord2 = notInUse( array( new DynamicRecord( 2 ) ) );
         Collection<DynamicRecord> labelRecords = asList( labelsRecord1, labelsRecord2 );
 
-        DynamicArrayStore.allocateFromNumbers( labelIds, labelRecords.iterator(), new PreAllocatedRecords( 52 ) );
+        DynamicArrayStore.allocateFromNumbers( new ArrayList<DynamicRecord>(), labelIds,
+                labelRecords.iterator(), new PreAllocatedRecords( 52 ) );
         assertDynamicRecordChain( labelsRecord1, labelsRecord2 );
         node.setLabelField( DynamicNodeLabels.dynamicPointer( labelRecords ), labelRecords );
 

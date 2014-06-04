@@ -26,7 +26,7 @@ import org.neo4j.cypher.InternalException
 
 object addUniquenessPredicates extends Rewriter {
 
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
 

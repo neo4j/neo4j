@@ -26,22 +26,7 @@ import javacompat.{PlanDescription => JPlanDescription}
  */
 trait PlanDescription {
   def name: String
-
-  /**
-   * Render this plan description and all predecessor step descriptions to builder using the default separator
-   *
-   * @param builder StringBuilder to be used
-   */
-  def render(builder: StringBuilder)
-
-  /**
-   * Render this plan description and all predecessor step descriptions to builder
-   *
-   * @param builder StringBuilder to be used
-   * @param separator separator to be inserted between predecessor step descriptions
-   * @param levelSuffix separator suffix to be added per child nesting level
-   */
-  def render(builder: StringBuilder, separator: String, levelSuffix: String)
-
   def asJava: JPlanDescription
+  def render(builder: StringBuilder, separator: String, levelSuffix: String)
+  def render(builder: StringBuilder)
 }

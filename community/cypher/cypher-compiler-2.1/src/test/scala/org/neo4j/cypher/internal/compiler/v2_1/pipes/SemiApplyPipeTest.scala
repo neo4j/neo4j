@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.{SymbolTable, CTNumber}
-import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.CTNumber
 
 class SemiApplyPipeTest extends CypherFunSuite with PipeTestSupport {
 

@@ -22,9 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, CandidateList, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
@@ -66,8 +65,8 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case AllNodesScan(IdName("b")) => 1 // Make sure we start the inner plan using b
-      case _                         => 1000.0
+      case AllNodesScan(IdName("b")) => Cardinality(1) // Make sure we start the inner plan using b
+      case _                         => Cardinality(1000)
     })
 
     val innerPlan = newMockedQueryPlan("b")

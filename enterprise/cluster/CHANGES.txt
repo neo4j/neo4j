@@ -1,3 +1,8 @@
+
+2.1.0-RC1
+---------
+o Fixes a number of issues when multiple leader elections are in flight concurrently
+
 2.1.0-M02
 ---------
 o Throttles debug output of clustering code in messages.log

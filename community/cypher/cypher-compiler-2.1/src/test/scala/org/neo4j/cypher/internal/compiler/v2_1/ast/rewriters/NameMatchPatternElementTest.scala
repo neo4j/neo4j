@@ -30,7 +30,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[r:Foo]->() RETURN n")
     val expected = parser.parse("MATCH (n)-[r:Foo]->(`  UNNAMED20`) RETURN n")
 
-    val result = original.rewrite(bottomUp(nameMatchPatternElements))
+    val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)
   }
 
@@ -38,7 +38,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
     val expected = parser.parse("MATCH (n)-[`  UNNAMED9`:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
 
-    val result = original.rewrite(bottomUp(nameMatchPatternElements))
+    val result = original.rewrite(nameMatchPatternElements)
     assert(result === expected)
   }
 
@@ -46,14 +46,14 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[:Bar]->(m) RETURN n")
     val expected = parser.parse("MATCH (n)-[:Foo]->(m) WHERE (n)-[`  UNNAMED31`:Bar]->(m) RETURN n")
 
-    val result = original.rewrite(bottomUp(namePatternPredicates))
+    val result = original.rewrite(namePatternPredicates)
     assert(result === expected)
   }
 
   test("don't rename unnamed varlength paths while the legacy planner is still around") {
     val original = parser.parse("MATCH (n)-[:Foo*]->(m) RETURN n")
 
-    val result = original.rewrite(bottomUp(nameMatchPatternElements))
+    val result = original.rewrite(nameMatchPatternElements)
 
     assert(result === original)
   }
@@ -62,7 +62,7 @@ class NameMatchPatternElementTest extends CypherFunSuite {
     val original = parser.parse("MATCH (n)-[:Foo*]->(m) RETURN n")
     val expected = parser.parse("MATCH (n)-[`  UNNAMED9`:Foo*]->(m) RETURN n")
 
-    val result = original.rewrite(bottomUp(nameVarLengthRelationships))
+    val result = original.rewrite(nameVarLengthRelationships)
     assert(result === expected)
   }
 }

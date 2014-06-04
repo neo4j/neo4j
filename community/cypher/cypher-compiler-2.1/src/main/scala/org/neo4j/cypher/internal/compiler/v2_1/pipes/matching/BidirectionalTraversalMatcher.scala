@@ -26,7 +26,6 @@ import org.neo4j.graphdb.traversal._
 import org.neo4j.kernel.{StandardBranchCollisionDetector, Uniqueness, Traversal}
 import org.neo4j.kernel.impl.traversal.BranchCollisionPolicy
 import collection.JavaConverters._
-import org.neo4j.cypher.internal.compiler.v2_1.data.SimpleVal
 
 class BidirectionalTraversalMatcher(steps: ExpanderStep,
                                     start: EntityProducer[Node],
@@ -114,7 +113,6 @@ class BidirectionalTraversalMatcher(steps: ExpanderStep,
     def create(evaluator: Evaluator) = new StepCollisionDetector
   }
 
-  def description: Seq[(String, SimpleVal)] = Seq(
-    "start" -> SimpleVal.fromMap(start.description.toMap),
-    "end" -> SimpleVal.fromMap(start.description.toMap))
+  def arguments: Seq[Argument] = Seq.empty // TODO: Remove this class. This is wrong. But not worth fixing plans for.
+                                           // This class will die when Ronja rules the world
 }

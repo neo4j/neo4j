@@ -19,9 +19,6 @@
  */
 package org.neo4j.cluster;
 
-import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
-import static org.neo4j.cluster.com.message.Message.CREATED_BY;
-
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Deque;
@@ -32,6 +29,9 @@ import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
+
 import org.neo4j.cluster.com.message.Message;
 import org.neo4j.cluster.com.message.MessageHolder;
 import org.neo4j.cluster.com.message.MessageProcessor;
@@ -41,8 +41,9 @@ import org.neo4j.cluster.com.message.MessageType;
 import org.neo4j.cluster.statemachine.StateMachine;
 import org.neo4j.cluster.statemachine.StateTransitionListener;
 import org.neo4j.cluster.timeout.Timeouts;
-import org.slf4j.Logger;
-import org.slf4j.LoggerFactory;
+
+import static org.neo4j.cluster.com.message.Message.CONVERSATION_ID;
+import static org.neo4j.cluster.com.message.Message.CREATED_BY;
 
 
 /**
@@ -54,8 +55,16 @@ import org.slf4j.LoggerFactory;
 public class StateMachines
         implements MessageProcessor, MessageSource
 {
+    public interface Monitor
+    {
+        void beganProcessing( Message message );
+
+        void finishedProcessing( Message message );
+    }
+
     private final Logger logger = LoggerFactory.getLogger( StateMachines.class );
 
+    private final Monitor monitor;
     private final MessageSender sender;
     private DelayedDirectExecutor executor;
     private Executor stateMachineExecutor;
@@ -69,11 +78,12 @@ public class StateMachines
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock( true );
     private final String instanceIdHeaderValue;
 
-    public StateMachines( MessageSource source,
+    public StateMachines( Monitor monitor, MessageSource source,
                           final MessageSender sender,
                           Timeouts timeouts,
                           DelayedDirectExecutor executor, Executor stateMachineExecutor, InstanceId instanceId )
     {
+        this.monitor = monitor;
         this.sender = sender;
         this.executor = executor;
         this.stateMachineExecutor = stateMachineExecutor;
@@ -127,6 +137,8 @@ public class StateMachines
             @Override
             public void run()
             {
+                monitor.beganProcessing( message );
+
                 lock.writeLock().lock();
                 try
                 {
@@ -141,7 +153,7 @@ public class StateMachines
 
                         stateMachine.handle( message, temporaryOutgoing );
                         Message<? extends MessageType> tempMessage;
-                        while ((tempMessage = temporaryOutgoing.nextOutgoingMessage()) != null)
+                        while ( (tempMessage = temporaryOutgoing.nextOutgoingMessage()) != null )
                         {
                             outgoing.offer( tempMessage );
                         }
@@ -152,7 +164,7 @@ public class StateMachines
                         List<Message<? extends MessageType>> toSend = new LinkedList<Message<? extends MessageType>>();
                         try
                         {
-                            while ( ( outgoingMessage = outgoing.nextOutgoingMessage() ) != null )
+                            while ( (outgoingMessage = outgoing.nextOutgoingMessage()) != null )
                             {
                                 message.copyHeadersTo( outgoingMessage, CONVERSATION_ID, CREATED_BY );
 
@@ -179,12 +191,13 @@ public class StateMachines
                                 else
                                 {
                                     // Deliver internally if possible
-                                    StateMachine internalStatemachine = stateMachines.get( outgoingMessage.getMessageType()
+                                    StateMachine internalStatemachine = stateMachines.get( outgoingMessage
+                                            .getMessageType()
                                             .getClass() );
                                     if ( internalStatemachine != null )
                                     {
                                         internalStatemachine.handle( (Message) outgoingMessage, temporaryOutgoing );
-                                        while ((tempMessage = temporaryOutgoing.nextOutgoingMessage()) != null)
+                                        while ( (tempMessage = temporaryOutgoing.nextOutgoingMessage()) != null )
                                         {
                                             outgoing.offer( tempMessage );
                                         }
@@ -210,6 +223,7 @@ public class StateMachines
                 // Before returning, process delayed executions so that they are done before returning
                 // This will effectively trigger all notifications created by contexts
                 executor.drain();
+                monitor.finishedProcessing( message );
             }
         } );
         return true;
@@ -250,7 +264,8 @@ public class StateMachines
 
     private class OutgoingMessageHolder implements MessageHolder
     {
-        private Deque<Message<? extends MessageType>> outgoingMessages = new ArrayDeque<Message<? extends MessageType>>();
+        private Deque<Message<? extends MessageType>> outgoingMessages = new ArrayDeque<Message<? extends
+                MessageType>>();
 
         @Override
         public synchronized void offer( Message<? extends MessageType> message )

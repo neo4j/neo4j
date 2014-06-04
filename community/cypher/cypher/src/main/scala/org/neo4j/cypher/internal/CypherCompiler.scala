@@ -52,10 +52,11 @@ class CypherCompiler(graph: GraphDatabaseService,
 
   private val queryCacheSize: Int = getQueryCacheSize
 
-  private val queryCache2_0 = new LRUCache[String, Object](queryCacheSize)
+  private val queryCache2_0 = new LRUCache[Object, Object](queryCacheSize)
   private val queryCache1_9 = new LRUCache[String, Object](queryCacheSize)
 
-  val compiler2_1 = CypherCompilerFactory2_1.newInstance(graph, queryCacheSize, kernelMonitors)
+  val ronjaCompiler2_1 = CypherCompilerFactory2_1.ronjaCompiler(graph, queryCacheSize, kernelMonitors)
+  val legacyCompiler2_1 = CypherCompilerFactory2_1.legacyCompiler(graph, queryCacheSize, kernelMonitors)
   val compiler2_0 = new CypherCompiler2_0(graph, (q, f) => queryCache2_0.getOrElseUpdate(q, f))
   val compiler1_9 = new CypherCompiler1_9(graph, (q, f) => queryCache1_9.getOrElseUpdate(q, f))
 
@@ -64,8 +65,12 @@ class CypherCompiler(graph: GraphDatabaseService,
     val (version, remainingQuery) = versionedQuery(query)
 
     version match {
+      case CypherVersion.experimental =>
+        val (plan, extractedParameters) = ronjaCompiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, kernelAPI, context))
+        (new ExecutionPlanWrapperForV2_1(plan), extractedParameters)
+
       case CypherVersion.v2_1 =>
-        val (plan, extractedParameters) = compiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, kernelAPI, context))
+        val (plan, extractedParameters) = legacyCompiler2_1.prepare(remainingQuery, new PlanContext_v2_1(statement, kernelAPI, context))
         (new ExecutionPlanWrapperForV2_1(plan), extractedParameters)
 
       case CypherVersion.v2_0 =>
@@ -83,7 +88,7 @@ class CypherCompiler(graph: GraphDatabaseService,
     val (version, remainingQuery) = versionedQuery(query)
 
     version match  {
-      case CypherVersion.v2_1 => compiler2_1.isPeriodicCommit(remainingQuery)
+      case CypherVersion.v2_1 => ronjaCompiler2_1.isPeriodicCommit(remainingQuery)
       case _                  => false
     }
   }

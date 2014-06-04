@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.symbols.CTNode
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{Index, LabelName, IntroducedIdentifier}
 
 case class NodeIndexSeekPipe(ident: String, label: Either[String, LabelId], propertyKey: Either[String, PropertyKeyId], valueExpr: Expression)(implicit pipeMonitor: PipeMonitor) extends Pipe {
 
@@ -51,10 +52,18 @@ case class NodeIndexSeekPipe(ident: String, label: Either[String, LabelId], prop
 
   def exists(predicate: Pipe => Boolean): Boolean = predicate(this)
 
-  def executionPlanDescription = new PlanDescriptionImpl(this, "NodeIndexSeek", Seq.empty, Seq(
-    "ident" -> ident,
-    "label" -> label,
-    "propertyKey"-> propertyKey))
+  private def labelName = label match {
+    case Left(name) => name
+    case Right(id) => id.toString
+  }
+
+  private def propertyName = propertyKey match {
+    case Left(name) => name
+    case Right(id) => id.toString
+  }
+
+  def planDescription = new PlanDescriptionImpl(this, "NodeIndexSeek", NoChildren, Seq(
+    IntroducedIdentifier(ident), Index(labelName, propertyName)))
 
   def symbols: SymbolTable = new SymbolTable(Map(ident -> CTNode))
 

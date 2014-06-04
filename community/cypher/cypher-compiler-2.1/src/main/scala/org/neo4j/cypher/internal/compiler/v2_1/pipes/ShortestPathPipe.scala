@@ -25,6 +25,7 @@ import commands.expressions.ShortestPathExpression
 import symbols._
 import org.neo4j.cypher.internal.helpers._
 import org.neo4j.graphdb.Path
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
 
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
@@ -46,7 +47,7 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath)
 
   val symbols = source.symbols.add(pathName, CTPath)
 
-  override def executionPlanDescription =
-    source.executionPlanDescription.andThen(this, "ShortestPath", "ast" -> ast)
+  override def planDescription =
+    source.planDescription.andThen(this, "ShortestPath", IntroducedIdentifier(ast.pathName))
 
 }

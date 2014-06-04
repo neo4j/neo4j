@@ -23,9 +23,14 @@ import java.io.File;
 import java.io.IOException;
 
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 public class CompareTxStreams
@@ -35,10 +40,31 @@ public class CompareTxStreams
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
         Monitors monitors = new Monitors();
         compareLogStreams(
-                LogExtractor.from( fileSystem, new File(args[0]),
-                        monitors.newMonitor( ByteCounterMonitor.class, CompareTxStreams.class, "logExtractor1" ) ),
-                LogExtractor.from( fileSystem, new File( args[1]),
-                        monitors.newMonitor( ByteCounterMonitor.class, CompareTxStreams.class, "logExtractor1" ) ));
+                LogExtractor.from( fileSystem, XaCommandReaderFactory.DEFAULT,
+                        new XaCommandWriterFactory()
+                        {
+                            @Override
+                            public XaCommandWriter newInstance()
+                            {
+                                return new PhysicalLogNeoXaCommandWriter();
+                            }
+                        },
+                        monitors.newMonitor( ByteCounterMonitor.class ),
+                        new LogEntryWriterv1(),
+                        new File(args[0]) ),
+                LogExtractor.from( fileSystem,
+                        XaCommandReaderFactory.DEFAULT,
+                        new XaCommandWriterFactory()
+                        {
+                            @Override
+                            public XaCommandWriter newInstance()
+                            {
+                                return new PhysicalLogNeoXaCommandWriter();
+                            }
+                        },
+                        monitors.newMonitor( ByteCounterMonitor.class ),
+                        new LogEntryWriterv1(),
+                        new File( args[1] ) ) );
     }
 
     protected static void compareLogStreams( LogExtractor extractor1, LogExtractor extractor2 ) throws IOException

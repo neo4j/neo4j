@@ -205,10 +205,12 @@ object PipeLazynessTest extends MockitoSugar {
   private def startPipe = {
     val node = mock[Node]
     val (iter, src) = emptyFakes
-    val pipe = new NodeStartPipe(src, "y", new EntityProducer[Node]() {
+    val pipe = new NodeStartPipe(src, "y", new EntityProducer[Node] {
       def producerType: String = "SingleNodeMock"
 
       def apply(v1: ExecutionContext, v2: QueryState): Iterator[Node] = Iterator(node)
+
+      def arguments: Seq[Argument] = Seq.empty
     })
     Seq(pipe, iter)
   }

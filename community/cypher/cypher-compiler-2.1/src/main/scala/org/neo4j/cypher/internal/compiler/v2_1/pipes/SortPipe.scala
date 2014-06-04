@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.compiler.v2_1.{Comparer, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.KeyNames
 
 trait SortDescription {
   def id: String
@@ -33,7 +34,7 @@ case class SortPipe(source: Pipe, orderBy: Seq[SortDescription])(implicit monito
     input.toList.
       sortWith((a, b) => compareBy(a, b, orderBy)(state)).iterator
 
-  def executionPlanDescription = source.executionPlanDescription.andThen(this, "Sort", "descr" -> orderBy)
+  def planDescription = source.planDescription.andThen(this, "Sort", KeyNames(orderBy.map(_.id)))
 
   def symbols = source.symbols
 

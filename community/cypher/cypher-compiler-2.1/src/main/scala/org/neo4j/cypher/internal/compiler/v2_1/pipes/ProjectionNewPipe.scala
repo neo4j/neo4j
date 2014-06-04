@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.pipes
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
-import org.neo4j.cypher.internal.compiler.v2_1.data.SimpleVal
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.KeyNames
 
 case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
                             (implicit pipeMonitor: PipeMonitor) extends PipeWithSource(source, pipeMonitor) {
@@ -46,9 +46,7 @@ case class ProjectionNewPipe(source: Pipe, expressions: Map[String, Expression])
         projection
     }
 
-  override def executionPlanDescription =
-    source.executionPlanDescription
-      .andThen(this, "Projection",
-        "symKeys" -> SimpleVal.fromIterable(source.symbols.keys),
-        "exprKeys" -> SimpleVal.fromIterable(expressions.keys))
+  override def planDescription =
+    source.planDescription
+      .andThen(this, "Projection", KeyNames(expressions.keys.toSeq))
 }

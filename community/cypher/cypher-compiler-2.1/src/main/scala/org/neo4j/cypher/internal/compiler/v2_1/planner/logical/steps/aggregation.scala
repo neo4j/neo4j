@@ -33,6 +33,7 @@ object aggregation {
       case IdName(x) => x -> Identifier(x)(null)
     }
 
+    // TODO: we need to project here since the pipe does not do that, when moving to the new runtime the aggregation pipe MUST do the projection itself
     val projectedPlan = projection(plan, expressionsMap)
     planAggregation(projectedPlan, aggregation.groupingKeys, aggregation.aggregationExpressions)
   }

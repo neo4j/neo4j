@@ -76,35 +76,3 @@ class FlattenBooleanOperatorsTest extends CypherFunSuite with PredicateTestSuppo
   }
 
 }
-
-trait PredicateTestSupport extends CypherTestSupport {
-  self: CypherFunSuite =>
-
-  private val pos = DummyPosition(0)
-
-  def rewriter: Rewriter
-
-  val P = anExp("P")
-  val Q = anExp("Q")
-  val R = anExp("R")
-  val S = anExp("S")
-  val V = anExp("V")
-
-  implicit class IFF(x: Expression) {
-    def <=>(other: Expression) = {
-      val output = rewriter(x).get
-
-      output should equal(other)
-    }
-  }
-
-  def anExp(s: String) = StringLiteral(s)(pos)
-  def and(p1: Expression, p2: Expression) = And(p1, p2)(pos)
-  def ands(predicates: Expression*) = Ands(predicates.toList)(pos)
-  def or(p1: Expression, p2: Expression) = Or(p1, p2)(pos)
-  def ors(predicates: Expression*) = Ors(predicates.toList)(pos)
-  def xor(p1: Expression, p2: Expression) = Xor(p1, p2)(pos)
-  def not(e: Expression) = Not(e)(pos)
-  def TRUE: Expression = True()(pos)
-  def FALSE: Expression = False()(pos)
-}

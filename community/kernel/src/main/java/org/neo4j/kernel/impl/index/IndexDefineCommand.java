@@ -55,7 +55,7 @@ public class IndexDefineCommand extends XaCommand
     private final Map<String, Byte> keyIdRange;
     private final Map<Byte, String> idToIndexName;
     private final Map<Byte, String> idToKey;
-    
+
     public IndexDefineCommand()
     {
         indexNameIdRange = new HashMap<String, Byte>();
@@ -71,7 +71,7 @@ public class IndexDefineCommand extends XaCommand
         idToIndexName = reverse( indexNames );
         idToKey = reverse( keys );
     }
-    
+
     private static String getFromMap( Map<Byte, String> map, byte id )
     {
         String result = map.get( id );
@@ -162,12 +162,6 @@ public class IndexDefineCommand extends XaCommand
         return id;
     }
 
-    @Override
-    public void execute()
-    {
-    }
-
-    @Override
     public void writeToFile( LogBuffer buffer ) throws IOException
     {
         buffer.put( (byte)(IndexCommand.DEFINE_COMMAND << 5) );

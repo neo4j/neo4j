@@ -31,11 +31,13 @@ import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;
+import java.util.List;
 import java.util.Map;
 
 import javax.transaction.Transaction;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -57,6 +59,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Factory;
+import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DatabaseAvailability;
@@ -87,6 +90,7 @@ import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
+import org.neo4j.kernel.ha.transaction.DenseNodeTransactionTranslator;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.ha.transaction.TxHookModeSwitcher;
 import org.neo4j.kernel.ha.transaction.TxIdGeneratorModeSwitcher;
@@ -97,11 +101,13 @@ import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.core.WritableTransactionState;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.NoOpClient;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.transaction.xaframework.ForceMode;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -190,6 +196,19 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // Skip this, it's done manually in create() to ensure it is as late as possible
     }
 
+    protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
+    {
+        return new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
+
+        {
+            @Override
+            public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
+            {
+                return new DenseNodeTransactionTranslator( neoStore );
+            }
+        };
+    }
+
     public void start()
     {
         life.start();
@@ -255,7 +274,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 {
                     return locks.newClient();
                 }
-                catch( TransactionFailureException e )
+                catch ( TransactionFailureException e )
                 {
                     // This happens during recovery, when there is no lock manager available in certain conditions
                     // due to HAs lifecycle management. It's "safe", since recover does not need locks, but this is
@@ -310,7 +329,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
 
 
-        clusterClient = new ClusterClient( ClusterClient.adapt( config ), logging, electionCredentialsProvider,
+        clusterClient = new ClusterClient( monitors, ClusterClient.adapt( config ), logging,
+                electionCredentialsProvider,
                 objectStreamFactory, objectStreamFactory );
         PaxosClusterMemberEvents localClusterEvents = new PaxosClusterMemberEvents( clusterClient, clusterClient,
                 clusterClient, clusterClient, logging, new Predicate<PaxosClusterMemberEvents.ClusterMembersSnapshot>()
@@ -445,7 +465,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
                         (HaIdGeneratorFactory) idGeneratorFactory,
                         logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
-                        updateableSchemaState, monitors, kernelExtensions.listFactories() ),
+                        updateableSchemaState, monitors, kernelExtensions.listFactories()
+                ),
                         new SwitchToMaster( logging, msgLog, this,
                                 (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
                                 masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
@@ -487,7 +508,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 return HighlyAvailableGraphDatabase.super.createLockManager();
             }
-        });
+        } );
         return lockManager;
     }
 

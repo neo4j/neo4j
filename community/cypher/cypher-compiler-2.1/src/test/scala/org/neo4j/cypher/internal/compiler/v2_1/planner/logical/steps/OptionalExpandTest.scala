@@ -48,7 +48,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       query = qg
     )
 
-    val inputPlan = planSingleRow(Set("a"))
+    val inputPlan = planArgumentRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq.empty, optionalMatch)
 
@@ -68,7 +68,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       query = qg
     )
 
-    val inputPlan = planSingleRow(Set("a"))
+    val inputPlan = planArgumentRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     optionalExpand(planTable) should equal(Candidates())
   }
@@ -86,7 +86,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       query = qg
     )
 
-    val inputPlan = planSingleRow(Set("a"))
+    val inputPlan = planArgumentRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(r1Predicate), optionalMatch)
 
@@ -106,7 +106,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       query = qg
     )
 
-    val inputPlan = planSingleRow(Set("a"))
+    val inputPlan = planArgumentRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.OUTGOING, Seq.empty, IdName("b"), IdName("r1"), SimplePatternLength, Seq(bPredicate), optionalMatch)
 
@@ -126,7 +126,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       query = qg
     )
 
-    val inputPlan = planSingleRow(Set("a"))
+    val inputPlan = planArgumentRow(Set("a"))
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = planOptionalExpand(inputPlan, IdName("a"), Direction.INCOMING, Seq.empty, IdName("b"), IdName("r3"), SimplePatternLength, Seq(bPredicate), optionalMatch)
 
@@ -149,7 +149,7 @@ class OptionalExpandTest extends CypherFunSuite with LogicalPlanningTestSupport 
       query = qg
     )
 
-    val inputPlan = planSingleRow(Set("b"))
+    val inputPlan = planArgumentRow(Set("b"))
     val planTable = PlanTable(Map(Set(IdName("b")) -> inputPlan))
 
     optionalExpand(planTable) should equal(CandidateList(Seq()))

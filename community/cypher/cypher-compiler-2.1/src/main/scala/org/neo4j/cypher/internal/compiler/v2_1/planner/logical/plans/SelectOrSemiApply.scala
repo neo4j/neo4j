@@ -22,7 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
 
 case class SelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression) extends AbstractSelectOrSemiApply(left, right, expr)
-case class SelectOrAntiSemiApply(outer: LogicalPlan, inner: LogicalPlan, expr: Expression) extends AbstractSelectOrSemiApply(outer, inner, expr)
+case class SelectOrAntiSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression) extends AbstractSelectOrSemiApply(left, right, expr)
 
 abstract class AbstractSelectOrSemiApply(left: LogicalPlan, right: LogicalPlan, expr: Expression) extends LogicalPlan {
   val lhs = Some(left)

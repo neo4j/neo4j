@@ -20,9 +20,8 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.neo4j.cypher.internal.compiler.v2_1.{PlanDescription, ExecutionContext}
+import org.neo4j.cypher.internal.compiler.v2_1.{SingleChild, PlanDescriptionImpl, PlanDescription, ExecutionContext}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
-
 
 class UnwindPipe(source: Pipe, collection: Expression, identifier: String)(implicit monitor: PipeMonitor) extends PipeWithSource(source, monitor) with CollectionSupport {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] =
@@ -32,8 +31,8 @@ class UnwindPipe(source: Pipe, collection: Expression, identifier: String)(impli
         seq.map(x => context.newWith((identifier, x)))
     }
 
-  def executionPlanDescription: PlanDescription =
-    source.executionPlanDescription.andThen(this, "UNWIND")
+  def planDescription: PlanDescription =
+    PlanDescriptionImpl(this, "UNWIND", SingleChild(source.planDescription), Seq())
 
   def symbols = source.symbols.add(identifier, collection.getType(source.symbols).legacyIteratedType)
 
