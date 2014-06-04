@@ -3,7 +3,9 @@
 Query Tuning
 ==========
 
-Blah blah blah, don't write slow queries. You can read more about the <<execution-plans, execution plan operators>> shown on this page.
+A short introduction of query tuning in Cypher. In particular we explain basic concept of how to make sure that
+your queries run as fast as possible by using all the feature given by Neo4j.
+You can read more about the <<execution-plans, execution plan operators>> shown on this page.
 
 We start with the following data set:
 
