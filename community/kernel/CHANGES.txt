@@ -1,3 +1,8 @@
+2.1.2
+-----
+o Resolves a dangerous recovery issue, where multiple crashes in a row without clean shutdown or log rotation
+  in between could cause data loss.
+
 2.1.0
 -----
 o Fixes potential leak of transaction state in entity locks that could
