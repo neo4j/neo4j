@@ -26,11 +26,12 @@ import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{Index,
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{indexQuery, QueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{PropertyKeyToken, LabelToken}
 import org.neo4j.graphdb.Node
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 
 case class NodeIndexSeekPipe(ident: String,
                              label: LabelToken,
                              propertyKey: PropertyKeyToken,
-                             valueExpr: QueryExpression,
+                             valueExpr: QueryExpression[Expression],
                              unique: Boolean = false)
                             (implicit pipeMonitor: PipeMonitor) extends Pipe {
 

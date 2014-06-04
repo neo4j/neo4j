@@ -109,7 +109,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val identifier = "id"
     val label = "label"
     val property = "prop"
-    val collectionExpression = Collection(Literal(42),Literal(43))
+    val collectionExpression: Expression = Collection(Literal(42),Literal(43))
     val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Identifier(identifier), PropertyKey(property)),Identifier("_identifier_")))
 
     test(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
@@ -120,7 +120,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val identifier = "id"
     val label = "label"
     val property = "prop"
-    val collectionExpression = Collection(Literal(42),Literal(42))
+    val collectionExpression: Expression = Collection(Literal(42),Literal(42))
     val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Identifier(identifier), PropertyKey(property)),Identifier("_identifier_")))
 
     test(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
@@ -131,7 +131,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val identifier = "id"
     val label = "label"
     val property = "prop"
-    val collectionExpression = Null()
+    val collectionExpression: Expression = Null()
     val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Identifier(identifier), PropertyKey(property)),Identifier("_identifier_")))
 
     test(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
@@ -142,7 +142,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val identifier = "id"
     val label = "label"
     val property = "prop"
-    val collectionExpression = Collection()
+    val collectionExpression: Expression = Collection()
     val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Identifier(identifier), PropertyKey(property)),Identifier("_identifier_")))
 
     test(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
@@ -152,7 +152,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     test(identifier, label,property,predicate,SingleQueryExpression(expression))
   }
 
-  private def test(identifier: String, label: String, property: String, predicate: Predicate, queryExpression: QueryExpression) {
+  private def test(identifier: String, label: String, property: String, predicate: Predicate, queryExpression: QueryExpression[Expression]) {
     val labelPredicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
 
     val q = PartiallySolvedQuery().copy(

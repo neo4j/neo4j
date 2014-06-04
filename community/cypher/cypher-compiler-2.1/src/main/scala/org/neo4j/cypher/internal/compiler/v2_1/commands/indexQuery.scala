@@ -26,9 +26,10 @@ import org.neo4j.graphdb.Node
 import org.neo4j.cypher.internal.helpers.IsCollection
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.cypher.internal.compiler.v2_1.mutation.GraphElementPropertyFunctions
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 
 object indexQuery extends GraphElementPropertyFunctions {
-  def apply(queryExpression: QueryExpression,
+  def apply(queryExpression: QueryExpression[Expression],
             m: ExecutionContext,
             state: QueryState,
             index: Any => GenTraversableOnce[Node],

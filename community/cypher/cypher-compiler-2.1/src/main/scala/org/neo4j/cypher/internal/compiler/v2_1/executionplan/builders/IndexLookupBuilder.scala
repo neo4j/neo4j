@@ -59,7 +59,7 @@ class IndexLookupBuilder extends PlanBuilder {
         if identifier == hint.identifier && label.name == hint.label => predicate
     }
 
-  private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(QueryToken[Predicate], QueryExpression)] =
+  private def findPropertyPredicates(plan: ExecutionPlanInProgress, hint: SchemaIndex): Seq[(QueryToken[Predicate], QueryExpression[Expression])] =
     plan.query.where.collect {
       case predicate@QueryToken(Equals(Property(Identifier(id), prop), expression))
         if id == hint.identifier && prop.name == hint.property => (predicate, SingleQueryExpression(expression))

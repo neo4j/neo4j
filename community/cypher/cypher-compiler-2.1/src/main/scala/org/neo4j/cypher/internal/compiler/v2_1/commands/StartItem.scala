@@ -86,13 +86,13 @@ sealed abstract class SchemaIndexKind
 case object AnyIndex extends SchemaIndexKind
 case object UniqueIndex extends SchemaIndexKind
 
-trait QueryExpression {
-  def expression:Expression
+trait QueryExpression[T] {
+  def expression: T
 }
-case class SingleQueryExpression(expression: Expression) extends QueryExpression
-case class ManyQueryExpression(expression: Expression) extends QueryExpression
+case class SingleQueryExpression[T](expression: T) extends QueryExpression[T]
+case class ManyQueryExpression[T](expression: T) extends QueryExpression[T]
 
-case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression])
+case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])
   extends StartItem(identifier, query.map(q => Arguments.LegacyExpression(q.expression)).toSeq :+ Arguments.Index(label, property))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers
 
