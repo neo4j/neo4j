@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
+import org.neo4j.cypher.internal.compiler.v2_1.{bottomUp, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{AliasedReturnItem, Identifier, UnaliasedReturnItem}
 
 object aliasReturnItems extends Rewriter {
@@ -29,5 +29,5 @@ object aliasReturnItems extends Rewriter {
       AliasedReturnItem(expr, Identifier(string)(expr.position))(item.position)
   }
 
-  def apply(input: AnyRef): Option[AnyRef] = instance.apply(input)
+  def apply(input: AnyRef): Option[AnyRef] = bottomUp(instance).apply(input)
 }

@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.ListedReturnItems
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Return
 
 object useAliasesInSortSkipAndLimit extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  def apply(that: AnyRef): Option[AnyRef] = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
     case r@Return(_, ListedReturnItems(items), optOrderBy, optSkip, optLimit) if items.exists( (item) => containsAggregate(item.expression) ) =>

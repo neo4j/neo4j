@@ -20,23 +20,24 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Not, Equals, Expression, NotEquals}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
 
 class NormalizeNotEqualsTest extends CypherFunSuite {
 
-  val lhs = mock[Expression]
-  val rhs = mock[Expression]
-  val p = DummyPosition(0)
+  val pos = DummyPosition(0)
+  val lhs: Expression = StringLiteral("42")(pos)
+  val rhs: Expression = StringLiteral("42")(pos)
 
   test("notEquals  iff  not(equals)") {
-    val notEquals = NotEquals(lhs, rhs)(p)
-    val output = normalizeNotEquals(notEquals).get
-    output should equal(Not(Equals(lhs, rhs)(p))(p))
+    val notEquals = NotEquals(lhs, rhs)(pos)
+    val output = notEquals.rewrite(normalizeNotEquals)
+    val expected: Expression = Not(Equals(lhs, rhs)(pos))(pos)
+    output should equal(expected)
   }
 
   test("should do nothing on other expressions") {
-    val output = normalizeNotEquals(lhs)
-    output should equal(None)
+    val output = lhs.rewrite(normalizeNotEquals)
+    output should equal(lhs)
   }
 }
