@@ -1035,7 +1035,7 @@ public final class TxStateImpl implements TxState
             return committed;
         }
 
-        return nodes.augment( committed );
+        return addedAndRemovedNodes().augment( committed );
     }
 
     @Override
@@ -1046,7 +1046,7 @@ public final class TxStateImpl implements TxState
             return committed;
         }
 
-        return relationships.augment( committed );
+        return addedAndRemovedRels().augment( committed );
     }
 
     @Override
