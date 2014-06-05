@@ -26,15 +26,20 @@ import java.util.logging.Level;
 import java.util.logging.Logger;
 
 import org.junit.Assert;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.GraphTransactionRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -43,8 +48,14 @@ import static org.junit.Assert.fail;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 
-public class TestNode extends AbstractNeo4jTestCase
+public class NodeTest
 {
+    @ClassRule
+    public static DatabaseRule db = new ImpermanentDatabaseRule();
+
+    @Rule
+    public GraphTransactionRule tx = new GraphTransactionRule( db );
+
     @Test
     public void givenNodeWithRelationshipWhenDeleteNodeThenThrowExceptionOnCommit() throws Exception
     {
@@ -52,27 +63,24 @@ public class TestNode extends AbstractNeo4jTestCase
         Node node1 = getGraphDb().createNode();
         Node node2 = getGraphDb().createNode();
         node1.createRelationshipTo( node2, DynamicRelationshipType.withName( "KNOWS" ) );
-        getTransaction().success();
-        getTransaction().close();
+
+        tx.success();
 
         // When
-        setTransaction( getGraphDb().beginTx() );
+        tx.begin();
         node1.delete();
-        getTransaction().success();
-        TransactionFailureException exc = null;
+
         try
         {
-            getTransaction().close();
+            tx.success();
+
+        // Then
             Assert.fail();
         }
         catch ( TransactionFailureException e )
         {
-            exc = e;
+            Assert.assertNotEquals( e.getCause().getMessage().indexOf( "still has relationships" ), -1 );
         }
-
-        // Then
-        Assert.assertNotEquals( exc.getCause().getMessage().indexOf( "still has relationships" ), -1 );
-
     }
 
     @Test
@@ -82,11 +90,9 @@ public class TestNode extends AbstractNeo4jTestCase
         long nodeId = node.getId();
         getGraphDb().getNodeById( nodeId );
         node.delete();
-        Transaction tx = getTransaction();
+
         tx.success();
-        //noinspection deprecation
-        tx.finish();
-        setTransaction( getGraphDb().beginTx() );
+        tx.begin();
         try
         {
             getGraphDb().getNodeById( nodeId );
@@ -155,7 +161,7 @@ public class TestNode extends AbstractNeo4jTestCase
         assertEquals( string2, node1.getProperty( key2 ) );
         assertEquals( int2, node2.getProperty( key2 ) );
 
-        getTransaction().failure();
+//        getTransaction().failure();
     }
 
     @Test
@@ -218,7 +224,7 @@ public class TestNode extends AbstractNeo4jTestCase
         {
             // must mark as rollback only
         }
-        getTransaction().failure();
+ //       getTransaction().failure();
     }
 
     @Test
@@ -348,17 +354,13 @@ public class TestNode extends AbstractNeo4jTestCase
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "test", "test" );
-        Transaction tx = getTransaction();
+
         tx.success();
-        //noinspection deprecation
-        tx.finish();
-        tx = getGraphDb().beginTx();
+        tx.begin();
         node.setProperty( "test2", "test2" );
         node.delete();
+
         tx.success();
-        //noinspection deprecation
-        tx.finish();
-        setTransaction( getGraphDb().beginTx() );
     }
     
     @Test
@@ -366,14 +368,16 @@ public class TestNode extends AbstractNeo4jTestCase
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "test", "test1" );
-        newTransaction();
+        tx.success();
+        tx.begin();
         node.setProperty( "test", "test2" );
         node.removeProperty( "test" );
         node.setProperty( "test", "test3" );
         assertEquals( "test3", node.getProperty( "test" ) );
         node.removeProperty( "test" );
         node.setProperty( "test", "test4" );
-        newTransaction();
+        tx.success();
+        tx.begin();
         assertEquals( "test4", node.getProperty( "test" ) );
     }
     
@@ -382,15 +386,18 @@ public class TestNode extends AbstractNeo4jTestCase
     {
         Node node = getGraphDb().createNode();
         node.setProperty( "test", "test1" );
-        newTransaction();
+        tx.success();
+        tx.begin();
         node.removeProperty( "test" );
         node.setProperty( "test", "test3" );
         assertEquals( "test3", node.getProperty( "test" ) );
-        newTransaction();
+        tx.success();
+        tx.begin();
         assertEquals( "test3", node.getProperty( "test" ) );
         node.removeProperty( "test" );
         node.setProperty( "test", "test4" );
-        newTransaction();
+        tx.success();
+        tx.begin();
         assertEquals( "test4", node.getProperty( "test" ) );
     }
     
@@ -443,8 +450,14 @@ public class TestNode extends AbstractNeo4jTestCase
             if ( System.currentTimeMillis() > endTime ) break;
         }
         boolean gotLock = gotTheLock.get();
-        newTransaction();
+        tx.success();
+        tx.begin();
         assertFalse( gotLock );
         thread.join();
+    }
+
+    private GraphDatabaseService getGraphDb()
+    {
+        return db.getGraphDatabaseService();
     }
 }

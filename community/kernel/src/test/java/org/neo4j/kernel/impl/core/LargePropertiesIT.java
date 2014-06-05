@@ -21,18 +21,29 @@ package org.neo4j.kernel.impl.core;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
+import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.Node;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 
-public class LargePropertiesIT extends AbstractNeo4jTestCase
+import org.neo4j.graphdb.Node;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.GraphTransactionRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
+
+public class LargePropertiesIT
 {
+    @ClassRule
+    public static DatabaseRule db = new ImpermanentDatabaseRule();
+
+    @Rule
+    public GraphTransactionRule tx = new GraphTransactionRule( db );
+
     private Node node;
 
     @Before
     public void createInitialNode()
     {
-        node = getGraphDb().createNode();
+        node = db.getGraphDatabaseService().createNode();
     }
 
     @After
@@ -47,6 +58,5 @@ public class LargePropertiesIT extends AbstractNeo4jTestCase
         byte[] bytes = new byte[10*1024*1024];
         node.setProperty( "large_array", bytes );
         node.setProperty( "large_string", new String( bytes ) );
-        newTransaction();
     }
 }

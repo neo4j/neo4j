@@ -23,14 +23,13 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
 
-public class CacheTypesIT extends AbstractNeo4jTestCase
+public class CacheTypesIT
 {
     private GraphDatabaseAPI newDb( String cacheType )
     {

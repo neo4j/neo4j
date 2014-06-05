@@ -20,6 +20,7 @@
 package org.neo4j.test;
 
 import org.junit.rules.ExternalResource;
+
 import org.neo4j.graphdb.Transaction;
 
 /**
@@ -49,22 +50,47 @@ public class GraphTransactionRule
     protected void after()
     {
         success();
+
+        database.clearCache();
     }
 
-    public void begin()
+    public Transaction begin()
     {
         tx = database.getGraphDatabaseService().beginTx();
+        return tx;
     }
 
     public void success()
     {
-        tx.success();
-        tx.finish();
+        try
+        {
+            if (tx != null)
+            {
+                tx.success();
+                tx.finish();
+            }
+        }
+        finally
+        {
+            tx = null;
+        }
     }
+
+
 
     public void failure()
     {
-        tx.failure();
-        tx.finish();
+        try
+        {
+            if (tx != null)
+            {
+                tx.failure();
+                tx.finish();
+            }
+        }
+        finally
+        {
+            tx = null;
+        }
     }
 }
