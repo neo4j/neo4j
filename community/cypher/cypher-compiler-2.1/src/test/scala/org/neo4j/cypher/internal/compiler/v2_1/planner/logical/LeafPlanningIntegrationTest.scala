@@ -171,6 +171,16 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     )
   }
 
+  test("should build plans for index seek when there is an index on the property and a hint is given when returning *") {
+    implicit val plan = new given {
+      indexOn("Awesome", "prop")
+    } planFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN *"
+
+    plan.plan should equal(
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedIntegerLiteral("42")_))
+    )
+  }
+
   test("should build plans for index seek when there are multiple indices on properties and a hint is given") {
     implicit val plan = new given {
       indexOn("Awesome", "prop1")
@@ -205,6 +215,20 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
       Selection(
         List(Equals(Property(ident("n"), PropertyKeyName("prop1")_)_, SignedIntegerLiteral("42")_)_),
         NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), SingleQueryExpression(SignedIntegerLiteral("3")_))
+      )
+    )
+  }
+
+  test("should build plans for unique index seek using IN when there are multiple unique indices on properties and a hint is given") {
+    implicit val plan = new given {
+      uniqueIndexOn("Awesome", "prop1")
+      uniqueIndexOn("Awesome", "prop2")
+    } planFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 IN [3] RETURN n"
+
+    plan.plan should equal(
+      Selection(
+        List(Equals(Property(ident("n"), PropertyKeyName("prop1")_)_, SignedIntegerLiteral("42")_)_),
+        NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), ManyQueryExpression(Collection(Seq(SignedIntegerLiteral("3")_))_))
       )
     )
   }

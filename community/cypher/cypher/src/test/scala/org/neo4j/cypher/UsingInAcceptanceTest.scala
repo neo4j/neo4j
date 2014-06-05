@@ -19,9 +19,7 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.graphdb.NotFoundException
-
-class UsingInAcceptanceTest extends ExecutionEngineFunSuite {
+class UsingInAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("fail if using index with start clause") {
     // GIVEN
@@ -38,7 +36,7 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite {
 
     // WHEN
     intercept[SyntaxException](
-      execute("match n-->() using index n:Person(name) where n.name IN ['kabam'] return n"))
+      executeWithNewPlanner("match n-->() using index n:Person(name) where n.name IN ['kabam'] return n"))
   }
 
   test("fail if using an hint for a non existing index") {
@@ -46,7 +44,7 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite {
 
     // WHEN
     intercept[IndexHintException](
-      execute("match (n:Person)-->() using index n:Person(name) where n.name IN ['kabam'] return n"))
+      executeWithNewPlanner("match (n:Person)-->() using index n:Person(name) where n.name IN ['kabam'] return n"))
   }
 
   test("fail if using hints with unusable equality predicate") {
@@ -55,7 +53,7 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite {
 
     // WHEN
     intercept[SyntaxException](
-      execute("match (n:Person)-->() using index n:Person(name) where NOT (n.name IN ['kabam']) return n"))
+      executeWithNewPlanner("match (n:Person)-->() using index n:Person(name) where NOT (n.name IN ['kabam']) return n"))
   }
 
   test("fail if joining index hints in equality predicates") {
@@ -65,7 +63,7 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite {
 
     // WHEN
     intercept[SyntaxException](
-      execute("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name IN [m.name] return n"))
+      executeWithNewPlanner("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name IN [m.name] return n"))
   }
 
   test("fail when equality checks are done with OR") {
@@ -74,6 +72,6 @@ class UsingInAcceptanceTest extends ExecutionEngineFunSuite {
 
     // WHEN
     intercept[SyntaxException](
-      execute("match n-->() using index n:Person(name) where n.name IN ['kabam'] OR n.name = 'kaboom' return n"))
+      executeWithNewPlanner("match n-->() using index n:Person(name) where n.name IN ['kabam'] OR n.name = 'kaboom' return n"))
   }
 }
