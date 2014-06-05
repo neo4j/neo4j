@@ -30,6 +30,7 @@ trait QueryGraph {
   def argumentIds: Set[IdName]
   def selections: Selections
   def optionalMatches: Seq[QueryGraph]
+  def hints: Set[Hint]
 
   def addPatternNodes(nodes: IdName*): QueryGraph
   def addPatternRel(rel: PatternRelationship): QueryGraph
@@ -37,6 +38,7 @@ trait QueryGraph {
   def addArgumentId(newIds: Seq[IdName]): QueryGraph
   def addSelections(selections: Selections): QueryGraph
   def addPredicates(predicates: Expression*): QueryGraph
+  def addHints(addedHints: Hint*): QueryGraph
 
   def withoutArguments(): QueryGraph = withArgumentIds(Set.empty)
   def withArgumentIds(argumentIds: Set[IdName]): QueryGraph
@@ -86,8 +88,9 @@ object QueryGraph {
             patternNodes: Set[IdName] = Set.empty,
             argumentIds: Set[IdName] = Set.empty,
             selections: Selections = Selections(),
-            optionalMatches: Seq[QueryGraph] = Seq.empty): QueryGraph =
-    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, optionalMatches)
+            optionalMatches: Seq[QueryGraph] = Seq.empty,
+            hints: Set[Hint] = Set.empty): QueryGraph =
+    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints)
 
   val empty = QueryGraph()
 
@@ -103,7 +106,8 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
                           patternNodes: Set[IdName] = Set.empty,
                           argumentIds: Set[IdName] = Set.empty,
                           selections: Selections = Selections(),
-                          optionalMatches: Seq[QueryGraph] = Seq.empty)
+                          optionalMatches: Seq[QueryGraph] = Seq.empty,
+                          hints: Set[Hint] = Set.empty)
   extends QueryGraph with internalDocBuilder.AsPrettyToString {
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
@@ -136,6 +140,8 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
     val newSelections = Selections(predicates.flatMap(SelectionPredicates.extractPredicates).toSet)
     copy(selections = selections ++ newSelections)
   }
+
+  def addHints(addedHints: Hint*) = copy(hints = hints ++ addedHints)
 }
 
 object SelectionPredicates {

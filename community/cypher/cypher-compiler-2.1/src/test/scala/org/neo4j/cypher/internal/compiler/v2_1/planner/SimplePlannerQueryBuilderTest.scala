@@ -746,5 +746,11 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.patternNodes should be (Set(IdName("n")))
   }
 
+  test("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n") {
+    val (query, _) = buildPlannerQuery("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n")
+
+    query.graph.hints should equal(Set[Hint](UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_))
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }
