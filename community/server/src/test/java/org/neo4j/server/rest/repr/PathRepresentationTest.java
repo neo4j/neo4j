@@ -122,7 +122,7 @@ public class PathRepresentationTest
 
         Relationship ab = relationship( 17, a, "LOVES", b );
         Relationship cb = relationship( 18, c, "HATES", b );
-        Relationship cd = relationship( 18, c, "KNOWS", d );
+        Relationship cd = relationship( 19, c, "KNOWS", d );
 
         return new PathRepresentation<Path>(
                 path( a, link( ab, b ), link( cb, c ), link( cd, d ) ));
