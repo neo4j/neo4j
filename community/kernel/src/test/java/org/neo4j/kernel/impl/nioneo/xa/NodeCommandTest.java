@@ -159,7 +159,7 @@ public class NodeCommandTest
         // When
         Command.NodeCommand cmd = new Command.NodeCommand();
         cmd.init( before, after );
-        cmd.accept( commandWriter );
+        cmd.handle( commandWriter );
         Command.NodeCommand result = (Command.NodeCommand) commandReader.read( channel );
         // Then
         assertThat( result, equalTo( cmd ) );
@@ -175,7 +175,7 @@ public class NodeCommandTest
             throws IOException
     {
         channel.reset();
-        cmd.accept( commandWriter );
+        cmd.handle( commandWriter );
         Command.NodeCommand result = (Command.NodeCommand) commandReader.read( channel );
         // Then
         assertThat( result, equalTo( cmd ) );

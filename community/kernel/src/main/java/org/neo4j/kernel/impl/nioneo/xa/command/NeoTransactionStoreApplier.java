@@ -25,6 +25,7 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.Set;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.exceptions.index.IndexActivationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
@@ -41,7 +42,7 @@ import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
 
-public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
+public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter implements Visitor<Command, IOException>
 {
     private final NeoStore neoStore;
     private final IndexingService indexes;
@@ -85,6 +86,13 @@ public class NeoTransactionStoreApplier extends NeoCommandVisitor.Adapter
                       neoStore.getPropertyKeyTokenStore().getToken( id, true ) :
                       neoStore.getPropertyKeyTokenStore().getToken( id );
         cacheAccess.addPropertyKeyToken( index );
+    }
+
+    @Override
+    public boolean visit( Command element ) throws IOException
+    {
+        element.handle( this );
+        return true;
     }
 
     @Override

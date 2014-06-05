@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.nioneo.xa.command;
 
 import java.io.IOException;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.index.IndexCommand.AddCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
@@ -38,13 +39,13 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenComm
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
 
 /**
- * A NeoCommandVisitor has to handle all type of commands that a Neo transaction can generate. It provides
+ * A NeoCommandHandler has to handle all type of commands that a Neo transaction can generate. It provides
  * methods for handling each type of Command available through a callback pattern to avoid dynamic dispatching.
  * Implementations need to provide all these methods of course, but it is expected that they will delegate
  * the actual work to implementations that hold related functionality together, using a Facade pattern.
- * For example, it is conceivable that a CommandWriterVisitor would use a NeoCommandWriter and a SchemaCommandWriter.
+ * For example, it is conceivable that a CommandWriterHandler would use a NeoCommandHandler and a SchemaCommandHandler.
  */
-public interface NeoCommandVisitor
+public interface NeoCommandHandler
 {
     // NeoStore commands
     boolean visitNodeCommand( Command.NodeCommand command ) throws IOException;
@@ -65,7 +66,7 @@ public interface NeoCommandVisitor
     boolean visitIndexCreateCommand( CreateCommand command ) throws IOException;
     boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException;
 
-    public static class Adapter implements NeoCommandVisitor
+    public static class Adapter implements NeoCommandHandler
     {
         @Override
         public boolean visitNodeCommand( NodeCommand command ) throws IOException
@@ -155,6 +156,23 @@ public interface NeoCommandVisitor
         @Override
         public boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand ) throws IOException
         {
+            return true;
+        }
+    }
+
+    public static class HandlerVisitor implements Visitor<Command, IOException>
+    {
+        private NeoCommandHandler handler;
+
+        public HandlerVisitor( NeoCommandHandler handler )
+        {
+            this.handler = handler;
+        }
+
+        @Override
+        public boolean visit( Command element ) throws IOException
+        {
+            element.handle( handler );
             return true;
         }
     }

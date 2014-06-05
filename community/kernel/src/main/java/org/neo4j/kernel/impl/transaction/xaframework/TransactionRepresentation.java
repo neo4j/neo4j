@@ -21,7 +21,8 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 
 /**
  * Representation of a transaction that can be written to a {@link TransactionAppender} and read back later.
@@ -30,7 +31,7 @@ public interface TransactionRepresentation
 {
     boolean isRecovered();
 
-    void execute( NeoCommandVisitor visitor ) throws IOException;
+    void accept( Visitor<Command, IOException> visitor ) throws IOException;
 
     byte[] additionalHeader();
 

@@ -42,6 +42,7 @@ import org.junit.Test;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -62,12 +63,6 @@ import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.index.IndexUpdates;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.index.IndexCommand.AddCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
@@ -86,16 +81,11 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.LabelTokenCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.NeoStoreCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
@@ -108,6 +98,7 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.lang.Integer.parseInt;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -124,6 +115,7 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 import static org.mockito.Mockito.when;
+
 import static org.neo4j.graphdb.Direction.INCOMING;
 import static org.neo4j.graphdb.Direction.OUTGOING;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -241,18 +233,18 @@ public class NeoStoreTransactionTest
         // The dynamic label record should be part of what is logged, and it should be set to not in use anymore.
         final AtomicBoolean nodeCommandsExist = new AtomicBoolean(false);
 
-        transactionCommands.execute(new NeoCommandVisitor.Adapter()
+        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
         {
-        	@Override
-        	public boolean visitNodeCommand(NodeCommand command) throws IOException
-        	{
-        		nodeCommandsExist.set( true );
+            @Override
+            public boolean visitNodeCommand( NodeCommand command ) throws IOException
+            {
+                nodeCommandsExist.set( true );
                 Collection<DynamicRecord> beforeDynLabels = command.getAfter().getDynamicLabelRecords();
-                assertThat( beforeDynLabels.size(), equalTo(1) );
-                assertThat( beforeDynLabels.iterator().next().inUse(), equalTo(false) );
-        		return true;
-        	}
-        });
+                assertThat( beforeDynLabels.size(), equalTo( 1 ) );
+                assertThat( beforeDynLabels.iterator().next().inUse(), equalTo( false ) );
+                return true;
+            }
+        } ));
 
         assertTrue( "No node commands found", nodeCommandsExist.get() );
     }
@@ -297,21 +289,21 @@ public class NeoStoreTransactionTest
 
         final AtomicBoolean nodeCommandsExist = new AtomicBoolean(false);
 
-        transactionCommands.execute(new NeoCommandVisitor.Adapter()
+        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
         {
-        	@Override
-        	public boolean visitNodeCommand(NodeCommand command) throws IOException
-        	{
-        		nodeCommandsExist.set( true );
-        		DynamicRecord before = command.getBefore().getDynamicLabelRecords().iterator().next();
+            @Override
+            public boolean visitNodeCommand( NodeCommand command ) throws IOException
+            {
+                nodeCommandsExist.set( true );
+                DynamicRecord before = command.getBefore().getDynamicLabelRecords().iterator().next();
                 DynamicRecord after = command.getAfter().getDynamicLabelRecords().iterator().next();
 
-                assertThat( before.getId(), equalTo(after.getId()) );
-                assertThat( after.inUse(), equalTo(true) );
+                assertThat( before.getId(), equalTo( after.getId() ) );
+                assertThat( after.inUse(), equalTo( true ) );
 
-        		return true;
-        	}
-        });
+                return true;
+            }
+        } ));
 
         assertTrue( "No node commands found", nodeCommandsExist.get() );
     }
@@ -634,7 +626,12 @@ public class NeoStoreTransactionTest
             tx.addLabelToNode( 10000 + i, nodeId );
         }
         tx.createSchemaRule( indexRule( ruleId, 100, propertyKeyId, PROVIDER_DESCRIPTOR ) );
-        prepareAndCommitRecovered( tx, 3 );
+
+        PhysicalTransactionRepresentation toCommit = tx.doPrepare();
+        RecoveryCreatingCopyingNeoCommandHandler recoverer = new RecoveryCreatingCopyingNeoCommandHandler();
+        toCommit.accept( recoverer );
+
+        commitRecovered( recoverer.getAsRecovered(), 3 );
 
         // THEN
         assertEquals( "NodeStore", nodeId+1, neoStore.getNodeStore().getHighId() );
@@ -663,18 +660,18 @@ public class NeoStoreTransactionTest
         tx.createSchemaRule( rule );
         PhysicalTransactionRepresentation transactionCommands = tx.doPrepare();
 
-        transactionCommands.execute( new NeoCommandVisitor.Adapter()
+        transactionCommands.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
         {
-        	@Override
-        	public boolean visitSchemaRuleCommand(SchemaRuleCommand command) throws IOException
-        	{
-        		for ( DynamicRecord record : command.getRecordsAfter() )
+            @Override
+            public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
+            {
+                for ( DynamicRecord record : command.getRecordsAfter() )
                 {
                     assertFalse( record + " should have been heavy", record.isLight() );
                 }
-        		return true;
-        	}
-        });
+                return true;
+            }
+        } ));
     }
 
     @Test
@@ -704,20 +701,15 @@ public class NeoStoreTransactionTest
         commitProcess().commit(tx.doPrepare());
 
         // WHEN
-        Visitor<Command, RuntimeException> verifier = new Visitor<Command, RuntimeException>()
+        Visitor<Command, IOException> verifier = new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
         {
             @Override
-            public boolean visit( Command element )
+            public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
             {
-                if ( element instanceof PropertyCommand )
-                {
-                    // THEN
-                    PropertyCommand propertyCommand = (PropertyCommand) element;
-                    verifyPropertyRecord( propertyCommand.getBefore() );
-                    verifyPropertyRecord( propertyCommand.getAfter() );
-                    return true;
-                }
-                return false;
+                // THEN
+                verifyPropertyRecord( command.getBefore() );
+                verifyPropertyRecord( command.getAfter() );
+                return true;
             }
 
             private void verifyPropertyRecord( PropertyRecord record )
@@ -730,11 +722,13 @@ public class NeoStoreTransactionTest
                     }
                 }
             }
-        };
-//        tx = newWriteTransaction( mockIndexing, verifier ).first();
+        });
+        tx = newWriteTransaction( mockIndexing).first();
         int index2 = 1;
         tx.nodeAddProperty( nodeId, index2, string( 40 ) ); // will require a block of size 4
-        commitProcess().commit(tx.doPrepare());
+        PhysicalTransactionRepresentation representation = tx.doPrepare();
+        representation.accept( verifier );
+        commitProcess().commit( representation );
     }
 
     @Test
@@ -762,7 +756,10 @@ public class NeoStoreTransactionTest
         tx.nodeCreate( nodeId );
         tx.addLabelToNode( labelId, nodeId );
         tx.nodeAddProperty( nodeId, propertyKeyId, "Neo" );
-        commitProcess().commit( tx.doPrepare() );
+        PhysicalTransactionRepresentation representation = tx.doPrepare();
+        RecoveryCreatingCopyingNeoCommandHandler recoverer = new RecoveryCreatingCopyingNeoCommandHandler();
+        representation.accept( recoverer );
+        commitProcess().commit( representation );
         verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
         indexUpdates.assertContent( expectedUpdate );
 
@@ -772,7 +769,7 @@ public class NeoStoreTransactionTest
 
         // WHEN
         // -- later recovering that tx, there should be only one update
-        prepareAndCommitRecovered( tx, 2 );
+        commitRecovered( recoverer.getAsRecovered(), 2 );
         verify( mockIndexing, times( 1 ) ).updateIndexes( any( IndexUpdates.class ) );
         indexUpdates.assertContent( expectedUpdate );
     }
@@ -1037,6 +1034,7 @@ public class NeoStoreTransactionTest
         createRelationships( writeTransaction, nodeId, typeA, INCOMING, 20 );
 
         commitProcess().commit(writeTransaction.doPrepare());
+        writeTransaction = newWriteTransaction().first();
 
         int typeB = 1;
         writeTransaction.createRelationshipTypeToken( typeB, "B" );
@@ -1057,25 +1055,26 @@ public class NeoStoreTransactionTest
         // The dynamic label record in before should be the same id as in after, and should be in use
         final AtomicBoolean foundRelationshipGroupInUse = new AtomicBoolean();
 
-        tx.execute(new NeoCommandVisitor.Adapter()
+        tx.accept( new NeoCommandHandler.HandlerVisitor(new NeoCommandHandler.Adapter()
         {
-        	@Override
-        	public boolean visitRelationshipGroupCommand(
-        			RelationshipGroupCommand command) throws IOException {
-        		if ( command.getRecord().inUse() )
-        		{
-	        		if ( !foundRelationshipGroupInUse.get() )
-	                {
-	                    foundRelationshipGroupInUse.set( true );
-	                }
-	                else
-	                {
-	                    fail();
-	                }
-        		}
-        		return true;
-        	}
-          });
+            @Override
+            public boolean visitRelationshipGroupCommand(
+                    RelationshipGroupCommand command ) throws IOException
+            {
+                if ( command.getRecord().inUse() )
+                {
+                    if ( !foundRelationshipGroupInUse.get() )
+                    {
+                        foundRelationshipGroupInUse.set( true );
+                    }
+                    else
+                    {
+                        fail();
+                    }
+                }
+                return true;
+            }
+        } ));
 
         assertTrue( "Did not create relationship group command", foundRelationshipGroupInUse.get() );
     }
@@ -1308,16 +1307,20 @@ public class NeoStoreTransactionTest
     	return commitProcess( mockIndexing );
     }
 
+    private long nextTxId = 0;
+
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws InterruptedException, ExecutionException, IOException
     {
     	TransactionAppender appenderMock = mock( TransactionAppender.class );
         Future<Long> futureMock = mock( Future.class );
-        when( futureMock.get() ).thenReturn( 3l );
+        when( futureMock.get() ).thenReturn( nextTxId++ );
         when( appenderMock.append( Matchers.<TransactionRepresentation>any()) ).thenReturn( futureMock );
         TransactionStore txStoreMock = mock ( TransactionStore.class );
         when( txStoreMock.getAppender() ).thenReturn(appenderMock);
-    	return new TransactionRepresentationCommitProcess( txStoreMock, mock( KernelHealth.class ),
-                indexing, mock( LabelScanStore.class ), neoStore, cacheAccessBackDoor, locks, false );
+        LabelScanStore labelScanStore = mock( LabelScanStore.class );
+        when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
+        return new TransactionRepresentationCommitProcess( txStoreMock, mock( KernelHealth.class ),
+                indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, false );
     }
 
     @After
@@ -1369,23 +1372,20 @@ public class NeoStoreTransactionTest
 
     private static final long[] none = new long[0];
 
-    private void prepareAndCommitRecovered( TransactionRecordState tx, long txId ) throws Exception
+    private void commitRecovered( TransactionRepresentation recoveredTx, long txId ) throws Exception
     {
-        PhysicalTransactionRepresentation toCommit = tx.doPrepare();
-        RecoveryCreatingCopyingNeoCommandVisitor recoverer = new RecoveryCreatingCopyingNeoCommandVisitor();
-        toCommit.execute(recoverer);
 
         NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
                 neoStore, mockIndexing, cacheAccessBackDoor, locks, txId, true );
 
+        LabelScanStore labelScanStore = mock( LabelScanStore.class );
+        when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
         NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( mockIndexing,
-                mock( LabelScanStore.class ), neoStore.getNodeStore(), neoStore.getPropertyStore(),
+                labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(),
                 cacheAccessBackDoor, propertyLoader );
 
-        TransactionRepresentation recoveredTx = recoverer.getAsRecovered();
-
-        recoveredTx.execute( storeApplier );
-        recoveredTx.execute( indexApplier );
+        recoveredTx.accept( storeApplier );
+        recoveredTx.accept( indexApplier );
 
         storeApplier.done();
         indexApplier.done();
@@ -1489,118 +1489,20 @@ public class NeoStoreTransactionTest
         }
     }
 
-    public static class RecoveryCreatingCopyingNeoCommandVisitor implements NeoCommandVisitor
+    public static class RecoveryCreatingCopyingNeoCommandHandler implements Visitor<Command, IOException>
     {
     	private final List<Command> commands = new LinkedList<Command>();
 
-		@Override
-		public boolean visitNodeCommand(NodeCommand command) throws IOException {
-			commands.add(command);
-			return true;
-		}
-
-		@Override
-		public boolean visitRelationshipCommand(RelationshipCommand command)
-				throws IOException {
-			commands.add(command);
-			return true;
-		}
-
-		@Override
-		public boolean visitPropertyCommand(PropertyCommand command)
-				throws IOException {
-			commands.add(command);
-			return true;
-		}
-
-		@Override
-		public boolean visitRelationshipGroupCommand(
-				RelationshipGroupCommand command) throws IOException {
-			commands.add(command);
-			return true;
-		}
-
-		@Override
-		public boolean visitRelationshipTypeTokenCommand(
-				RelationshipTypeTokenCommand command) throws IOException {
-			commands.add(command);
-			return true;
-		}
-
-		@Override
-		public boolean visitLabelTokenCommand(LabelTokenCommand command)
-				throws IOException {
-			commands.add(command);
-			return true;
-		}
-
-		@Override
-		public boolean visitPropertyKeyTokenCommand(
-				PropertyKeyTokenCommand command) throws IOException {
-			commands.add(command);
-			return true;
-		}
-
-		@Override
-		public boolean visitSchemaRuleCommand(SchemaRuleCommand command)
-				throws IOException {
-			commands.add(command);
-			return true;
-		}
-
-		@Override
-		public boolean visitNeoStoreCommand(NeoStoreCommand command)
-				throws IOException {
-			commands.add(command);
-			return true;
-		}
+        @Override
+        public boolean visit( Command element ) throws IOException
+        {
+            commands.add(element);
+            return true;
+        }
 
 		public TransactionRepresentation getAsRecovered()
 		{
 			return new PhysicalTransactionRepresentation(commands, true);
 		}
-
-        @Override
-        public boolean visitAddIndexCommand( AddCommand command ) throws IOException
-        {
-            commands.add(command);
-            return true;
-        }
-
-        @Override
-        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command )
-                throws IOException
-        {
-            commands.add(command);
-            return true;
-        }
-
-        @Override
-        public boolean visitRemoveIndexCommand( RemoveCommand command ) throws IOException
-        {
-            commands.add(command);
-            return true;
-        }
-
-        @Override
-        public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
-        {
-            commands.add(command);
-            return true;
-        }
-
-        @Override
-        public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
-        {
-            commands.add(command);
-            return true;
-        }
-
-        @Override
-        public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
-        {
-            commands.add(command);
-            return true;
-        }
     }
 }

@@ -19,10 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.util.Collection;
 import java.util.Collections;
@@ -31,6 +27,7 @@ import java.util.List;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -48,8 +45,12 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.RecordChanges.RecordChange;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
+
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class WriteTransactionCommandOrderingTest
 {
@@ -76,7 +77,7 @@ public class WriteTransactionCommandOrderingTest
         PhysicalTransactionRepresentation commands = tx.doPrepare();
         
         // Then
-        commands.execute( new OrderVerifyingCommandVisitor() );
+        commands.accept( new NeoCommandHandler.HandlerVisitor( new OrderVerifyingCommandHandler() ));
     }
 
     private TransactionRecordState injectAllPossibleCommands()
@@ -319,7 +320,7 @@ public class WriteTransactionCommandOrderingTest
         }
     }
 
-    private static class OrderVerifyingCommandVisitor extends NeoCommandVisitor.Adapter
+    private static class OrderVerifyingCommandHandler extends NeoCommandHandler.Adapter
     {
         private boolean nodeVisited;
         private boolean relationshipVisited;

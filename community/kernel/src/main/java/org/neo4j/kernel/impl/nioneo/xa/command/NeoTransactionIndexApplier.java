@@ -26,6 +26,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -47,7 +48,7 @@ import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLab
  * Gather node and property changes, converting them into logical updates to the indexes.
  * {@link #done()} will actually apply to the indexes.
  */
-public class NeoTransactionIndexApplier extends NeoCommandVisitor.Adapter
+public class NeoTransactionIndexApplier extends NeoCommandHandler.Adapter implements Visitor<Command, IOException>
 {
     private final Map<Long, NodeCommand> nodeCommands = new HashMap<>();
     private final Map<Long, List<PropertyCommand>> propertyCommands = new HashMap<>();
@@ -100,6 +101,13 @@ public class NeoTransactionIndexApplier extends NeoCommandVisitor.Adapter
         {
             throw new UnderlyingStorageException( e );
         }
+    }
+
+    @Override
+    public boolean visit( Command element ) throws IOException
+    {
+        element.handle( this );
+        return true;
     }
 
     @Override

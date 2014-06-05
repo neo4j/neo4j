@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 import java.util.Collection;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
 
 public class PhysicalTransactionRepresentation implements TransactionRepresentation
 {
@@ -59,11 +59,12 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     }
 
     @Override
-    public void execute( NeoCommandVisitor visitor ) throws IOException
+    public void accept( Visitor<Command, IOException> visitor ) throws IOException
     {
         for ( Command command : commands )
         {
-            command.accept( visitor );
+            if (!visitor.visit( command ))
+                return;
         }
     }
 

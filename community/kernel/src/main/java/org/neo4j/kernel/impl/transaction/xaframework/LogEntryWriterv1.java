@@ -22,32 +22,18 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.neo4j.kernel.impl.index.IndexCommand.AddCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
-import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.LabelTokenCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.NeoStoreCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.PropertyKeyTokenCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipGroupCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.RelationshipTypeTokenCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 
 public class LogEntryWriterv1 implements LogEntryWriter
 {
     private static final short CURRENT_FORMAT_VERSION = (LogEntry.CURRENT_LOG_VERSION) & 0xFF;
     static final int LOG_HEADER_SIZE = 16;
     private final WritableLogChannel channel;
-    private final NeoCommandVisitor commandWriter;
+    private final NeoCommandHandler commandWriter;
 
-    public LogEntryWriterv1( WritableLogChannel channel, NeoCommandVisitor commandWriter )
+    public LogEntryWriterv1( WritableLogChannel channel, NeoCommandHandler commandWriter )
     {
         this.channel = channel;
         this.commandWriter = commandWriter;
@@ -86,117 +72,19 @@ public class LogEntryWriterv1 implements LogEntryWriter
     @Override
     public void serialize( TransactionRepresentation tx ) throws IOException
     {
-        tx.execute( new CommandSerializer() );
+        tx.accept( new CommandSerializer() );
     }
     
     public void writeCommandEntry( Command command ) throws IOException
     {
         writeLogEntryHeader( LogEntry.COMMAND );
-        command.accept( commandWriter );
+        command.handle( commandWriter );
     }
 
-    private class CommandSerializer implements NeoCommandVisitor
+    private class CommandSerializer implements Visitor<Command, IOException>
     {
         @Override
-        public boolean visitNodeCommand( NodeCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitRelationshipCommand( RelationshipCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitPropertyCommand( PropertyCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitRelationshipGroupCommand( RelationshipGroupCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitRelationshipTypeTokenCommand( RelationshipTypeTokenCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitLabelTokenCommand( LabelTokenCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitPropertyKeyTokenCommand( PropertyKeyTokenCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitSchemaRuleCommand( SchemaRuleCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitNeoStoreCommand( NeoStoreCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitAddIndexCommand( AddCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitRemoveIndexCommand( RemoveCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
-        {
-            writeCommandEntry( command );
-            return true;
-        }
-
-        @Override
-        public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
+        public boolean visit( Command command ) throws IOException
         {
             writeCommandEntry( command );
             return true;

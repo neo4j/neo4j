@@ -46,9 +46,9 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandType;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 
-public class CommandSerializer implements NeoCommandVisitor
+public class CommandSerializer implements NeoCommandHandler
 {
     private final WritableLogChannel channel;
 

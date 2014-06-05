@@ -117,7 +117,7 @@ public abstract class Command
         return o != null && o.getClass().equals( getClass() ) && getKey() == ((Command) o).getKey();
     }
 
-    public abstract boolean accept( NeoCommandVisitor visitor ) throws IOException;
+    public abstract boolean handle( NeoCommandHandler handler ) throws IOException;
 
     public void invalidateCache( CacheAccessBackDoor cacheAccess )
     {   // no-op by default
@@ -143,9 +143,9 @@ public abstract class Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
-            return visitor.visitNodeCommand( this );
+            return handler.visitNodeCommand( this );
         }
 
         @Override
@@ -200,9 +200,9 @@ public abstract class Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
-            return visitor.visitRelationshipCommand( this );
+            return handler.visitRelationshipCommand( this );
         }
 
         public RelationshipRecord getRecord()
@@ -265,9 +265,9 @@ public abstract class Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
-            return visitor.visitRelationshipGroupCommand( this );
+            return handler.visitRelationshipGroupCommand( this );
         }
 
         public RelationshipGroupRecord getRecord()
@@ -303,9 +303,9 @@ public abstract class Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
-            return visitor.visitNeoStoreCommand( this );
+            return handler.visitNeoStoreCommand( this );
         }
 
         public NeoStoreRecord getRecord()
@@ -338,9 +338,9 @@ public abstract class Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
-            return visitor.visitPropertyKeyTokenCommand( this );
+            return handler.visitPropertyKeyTokenCommand( this );
         }
 
         public PropertyKeyTokenRecord getRecord()
@@ -377,9 +377,9 @@ public abstract class Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
-            return visitor.visitPropertyCommand( this );
+            return handler.visitPropertyCommand( this );
         }
 
         @Override
@@ -444,9 +444,9 @@ public abstract class Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
-            return visitor.visitRelationshipTypeTokenCommand( this );
+            return handler.visitRelationshipTypeTokenCommand( this );
         }
 
         public RelationshipTypeTokenRecord getRecord()
@@ -479,9 +479,9 @@ public abstract class Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
-            return visitor.visitLabelTokenCommand( this );
+            return handler.visitLabelTokenCommand( this );
         }
 
         public LabelTokenRecord getRecord()
@@ -523,9 +523,9 @@ public abstract class Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler handler ) throws IOException
         {
-            return visitor.visitSchemaRuleCommand( this );
+            return handler.visitSchemaRuleCommand( this );
         }
 
         @Override

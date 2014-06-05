@@ -97,7 +97,7 @@ public class TransactionRepresentationCommitProcess
                     neoStore, indexingService, cacheAccess, lockService, transactionId, recovery );
             try
             {
-                representation.execute( storeApplier );
+                representation.accept( storeApplier );
             }
             finally
             {
@@ -109,7 +109,7 @@ public class TransactionRepresentationCommitProcess
                     labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess, propertyLoader );
             try
             {
-                representation.execute( indexApplier );
+                representation.accept( indexApplier );
             }
             finally
             {

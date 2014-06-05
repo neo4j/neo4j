@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 
-public class NeoTransactionRollbackVisitor extends NeoCommandVisitor.Adapter
+public class NeoTransactionRollbackHandler extends NeoCommandHandler.Adapter
 {
     private final boolean freeIds;
 
-    public NeoTransactionRollbackVisitor( boolean freeIds )
+    public NeoTransactionRollbackHandler( boolean freeIds )
     {
         this.freeIds = freeIds;
     }

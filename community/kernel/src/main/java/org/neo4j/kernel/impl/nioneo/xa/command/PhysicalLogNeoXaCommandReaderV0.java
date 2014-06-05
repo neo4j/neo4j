@@ -121,14 +121,14 @@ public class PhysicalLogNeoXaCommandReaderV0 implements XaCommandReader
                 throw new IOException( "Unknown command type[" + commandType + "]" );
             }
         }
-        if ( command != null && !command.accept( reader ) )
+        if ( command != null && !command.handle( reader ) )
         {
             return null;
         }
         return command;
     }
 
-    private class PhysicalNeoCommandReader extends NeoCommandVisitor.Adapter
+    private class PhysicalNeoCommandReader extends NeoCommandHandler.Adapter
     {
         @Override
         public boolean visitNodeCommand( Command.NodeCommand command ) throws IOException

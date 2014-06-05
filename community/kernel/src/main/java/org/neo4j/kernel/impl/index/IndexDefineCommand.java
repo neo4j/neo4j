@@ -31,7 +31,7 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.CommandRecordVisitor;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 
 /**
  * A command which have to be first in the transaction. It will map index names
@@ -131,7 +131,7 @@ public class IndexDefineCommand extends Command
     }
 
     @Override
-    public boolean accept( NeoCommandVisitor visitor ) throws IOException
+    public boolean handle( NeoCommandHandler visitor ) throws IOException
     {
         return visitor.visitIndexDefineCommand( this );
     }

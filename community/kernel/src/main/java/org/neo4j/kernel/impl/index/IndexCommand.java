@@ -26,7 +26,7 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.CommandRecordVisitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandType;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandVisitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 
 /**
  * Created from {@link IndexDefineCommand} or read from a logical log.
@@ -162,7 +162,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitAddIndexCommand( this );
         }
@@ -228,7 +228,7 @@ public abstract class IndexCommand extends Command
         }
         
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexAddRelationshipCommand( this );
         }
@@ -242,7 +242,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitRemoveIndexCommand( this );
         }
@@ -263,7 +263,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexDeleteCommand( this );
         }
@@ -303,7 +303,7 @@ public abstract class IndexCommand extends Command
         }
 
         @Override
-        public boolean accept( NeoCommandVisitor visitor ) throws IOException
+        public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexCreateCommand( this );
         }
