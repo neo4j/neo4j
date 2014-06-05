@@ -157,10 +157,8 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
           (acc, _) => acc :+ name
         case In(Property(Identifier(id), PropertyKeyName(name)),_) if id == identifier =>
           (acc, _) => acc :+ name
-        case _: Where | _: And =>
+        case _: Where | _: And | _: Ands =>
           (acc, children) => children(acc)
-        case _ =>
-          (acc, _) => acc
       }
       case None => Seq.empty
     }) ++ pattern.treeFold(Seq.empty[String]) {
@@ -181,10 +179,8 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
       case Some(where) => where.treeFold(labels) {
         case HasLabels(Identifier(id), labels) if id == identifier =>
           (acc, _) => acc ++ labels.map(_.name)
-        case _: Where | _: And =>
+        case _: Where | _: And | _: Ands =>
           (acc, children) => children(acc)
-        case _ =>
-          (acc, _) => acc
       }
       case None => labels
     }
