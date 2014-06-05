@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.CostModel
+import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
+import scala.annotation.tailrec
 
 case class CandidateList(plans: Seq[QueryPlan] = Seq.empty) {
 
@@ -29,11 +31,21 @@ case class CandidateList(plans: Seq[QueryPlan] = Seq.empty) {
   def +(plan: QueryPlan) = copy(plans :+ plan)
 
   def bestPlan(costs: CostModel): Option[QueryPlan] = {
-    val sortedPlans = plans.sortBy[(Cost, Int)](c => (costs(c.plan), -c.availableSymbols.size))
+    val sortedPlans = plans.sortBy[(Int, Cost, Int)](c => (-countSolvedHints(c.solved), costs(c.plan), -c.availableSymbols.size))
     sortedPlans.headOption
   }
 
   def map(f: QueryPlan => QueryPlan): CandidateList = copy(plans = plans.map(f))
+
+  @tailrec
+  private def countSolvedHints(pq: PlannerQuery, count: Int = 0): Int = {
+    val qg = pq.graph
+    val foundHints = count + (qg +: qg.optionalMatches).map(_.hints.size).sum
+    pq.tail match {
+      case Some(tailQ) => countSolvedHints(tailQ, foundHints)
+      case _           => foundHints
+    }
+  }
 }
 
 object Candidates {
