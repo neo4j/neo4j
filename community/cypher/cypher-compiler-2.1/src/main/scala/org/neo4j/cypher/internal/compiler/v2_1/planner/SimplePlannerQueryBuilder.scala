@@ -182,7 +182,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
               addSelections(selections).
               addPatternNodes(nodeIds: _*).
               addPatternRels(rels).
-              addHints(hints: _*)
+              addHints(hints)
           }
 
           produceQueryGraphFromClauses(newQuery, subQueryLookupTable ++ subQueries, tl)

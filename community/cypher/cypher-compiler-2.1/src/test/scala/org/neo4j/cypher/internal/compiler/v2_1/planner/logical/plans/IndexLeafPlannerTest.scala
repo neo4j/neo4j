@@ -121,6 +121,54 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }
   }
 
+  test("plans index scans such that it solves hints") {
+    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_
+
+    new given {
+      qg = queryGraph(equalsValue, hasLabels).addHints(Some(hint))
+
+      indexOn("Awesome", "prop")
+
+      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+        // when
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
+
+        // then
+        resultPlans.plans.map(_.plan) should beLike {
+          case Seq(NodeIndexSeek(`idName`, _, _, SingleQueryExpression(SignedIntegerLiteral("42")))) => ()
+        }
+
+        resultPlans.plans.map(_.solved.graph) should beLike {
+          case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
+        }
+      }
+    }
+  }
+
+  test("plans unique index scans such that it solves hints") {
+    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_
+
+    new given {
+      qg = queryGraph(equalsValue, hasLabels).addHints(Some(hint))
+
+      uniqueIndexOn("Awesome", "prop")
+
+      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+        // when
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
+
+        // then
+        resultPlans.plans.map(_.plan) should beLike {
+          case Seq(NodeIndexUniqueSeek(`idName`, _, _, SingleQueryExpression(SignedIntegerLiteral("42")))) => ()
+        }
+
+        resultPlans.plans.map(_.solved.graph) should beLike {
+          case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
+        }
+      }
+    }
+  }
+
   private def queryGraph(predicates: Expression*) =
     QueryGraph(
       selections = Selections(predicates.map(Predicate(Set(idName), _)).toSet),

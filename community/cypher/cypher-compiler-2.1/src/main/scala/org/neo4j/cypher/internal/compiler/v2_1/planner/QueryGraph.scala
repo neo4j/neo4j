@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
+import scala.collection.GenTraversableOnce
 
 trait QueryGraph {
   def patternRelationships: Set[PatternRelationship]
@@ -38,7 +39,7 @@ trait QueryGraph {
   def addArgumentId(newIds: Seq[IdName]): QueryGraph
   def addSelections(selections: Selections): QueryGraph
   def addPredicates(predicates: Expression*): QueryGraph
-  def addHints(addedHints: Hint*): QueryGraph
+  def addHints(addedHints: GenTraversableOnce[Hint]): QueryGraph
 
   def withoutArguments(): QueryGraph = withArgumentIds(Set.empty)
   def withArgumentIds(argumentIds: Set[IdName]): QueryGraph
@@ -141,7 +142,7 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
     copy(selections = selections ++ newSelections)
   }
 
-  def addHints(addedHints: Hint*) = copy(hints = hints ++ addedHints)
+  def addHints(addedHints: GenTraversableOnce[Hint]) = copy(hints = hints ++ addedHints)
 }
 
 object SelectionPredicates {
