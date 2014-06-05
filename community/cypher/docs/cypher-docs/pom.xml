@@ -38,11 +38,12 @@
       </comments>
     </license>
   </licenses>
-  
+
   <properties>
     <version-package>cypher.internal.docs</version-package>
     <docs-plugin.skip>false</docs-plugin.skip>
     <attach-docs-phase>verify</attach-docs-phase>
+    <remote-csv-upload>http://docs.neo4j.org/chunked/${project.version}/csv</remote-csv-upload>
   </properties>
 
   <dependencies>
@@ -119,7 +120,7 @@
                             <includeProjectDependencies>false</includeProjectDependencies>
                             <arguments>
                                 <argument>${project.build.directory}/docs/parsed-graphgists</argument>
-                                <argument>http://docs.neo4j.org/chunked/${project.version}/csv</argument>
+                                <argument>${remote-csv-upload}</argument>
                                 <argument>${project.build.directory}/../src/docs/graphgists</argument>
                             </arguments>
                         </configuration>

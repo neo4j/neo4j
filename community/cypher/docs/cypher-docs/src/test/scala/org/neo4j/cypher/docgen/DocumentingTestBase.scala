@@ -166,7 +166,6 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
 
     val consoleData: String = "none"
 
-    var query = queryText
     val keySet = nodeMap.keySet
     val writer: PrintWriter = createWriter(title, dir)
     prepare.foreach {
@@ -177,8 +176,8 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
       dumpPreparationQueries(preparationQueries, dir, title)
     }
 
-    db.inTx {
-      keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
+    val query = db.inTx {
+      keySet.foldLeft(queryText)((acc, key) => acc.replace("%" + key + "%", node(key).getId.toString))
     }
 
     try {
@@ -253,7 +252,6 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     }
 
     // val r = testWithoutDocs(queryText, prepare, assertions:_*)
-    var query = queryText
     val keySet = nodeMap.keySet
     val writer: PrintWriter = createWriter(title, dir)
     prepare.foreach {
@@ -263,18 +261,23 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
       dumpPreparationQueries(preparationQueries, dir, title)
       dumpPreparationGraphviz(dir, title, graphvizOptions)
     }
-    db.inTx {
-      keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
+
+    val query = db.inTx {
+      keySet.foldLeft(queryText)((acc, key) => acc.replace("%" + key + "%", node(key).getId.toString))
     }
 
+    assert(filePaths.size == urls.size)
+
+    val testQuery = filePaths.foldLeft(query)( (acc, entry) => acc.replace(entry._1, entry._2))
+    val docQuery = urls.foldLeft(query)( (acc, entry) => acc.replace(entry._1, entry._2))
 
     try {
-      val result = fetchQueryResults(prepare, query)
+      val result = fetchQueryResults(prepare, testQuery)
       if (expectedException.isDefined) {
         fail(s"Expected the test to throw an exception: $expectedException")
       }
 
-      dumpToFile(dir, writer, title, query, optionalResultExplanation, text, result, consoleData)
+      dumpToFile(dir, writer, title, docQuery, optionalResultExplanation, text, result, consoleData)
       if (graphvizExecutedAfter) {
         dumpGraphViz(dir, graphvizOptions.trim)
       }
@@ -288,7 +291,7 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
         val expectedExceptionType = expectedException.get
         e match {
           case expectedExceptionType(typedE) =>
-            dumpToFile(dir, writer, title, query, optionalResultExplanation, text, typedE, consoleData)
+            dumpToFile(dir, writer, title, docQuery, optionalResultExplanation, text, typedE, consoleData)
           case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
         }
     }
@@ -312,6 +315,10 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
   val graphvizExecutedAfter: Boolean = false
   var parameters: Map[String, Any] = null
   var preparationQueries: List[String] = List()
+
+  protected val baseUrl = System.getProperty("remote-csv-upload")
+  var filePaths: Map[String, String] = Map.empty
+  var urls: Map[String, String] = Map.empty
 
   def section: String
   val dir: File = createDir(section)
@@ -337,7 +344,7 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     if (!noTitle) writer.println("== " + title + " ==")
     writer.println(text)
     writer.println()
-    runQuery(dir, writer, testId, query, returns, result, consoleData)
+    dumpQuery(dir, writer, testId, query, returns, result, consoleData)
     writer.flush()
     writer.close()
   }
@@ -428,7 +435,7 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     case v: Any => v
   }
 
-  private def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
+  private def dumpQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
     if (parameters != null) {
       writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
     }

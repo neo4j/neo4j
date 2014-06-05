@@ -32,14 +32,41 @@ class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport {
 
   def section = "Load CSV"
 
-  @Test def should_import_data_from_a_csv_file() {
-    val url = new CsvFile("artists.csv").withContents(
-      Seq("1", "ABBA", "1992"),
-      Seq("2", "Roxette", "1986"),
-      Seq("3", "Europe", "1979"),
-      Seq("4", "The Cardigans", "1992")
-    )
+  private val artist = new CsvFile("artists.csv").withContentsF(
+    Seq("1", "ABBA", "1992"),
+    Seq("2", "Roxette", "1986"),
+    Seq("3", "Europe", "1979"),
+    Seq("4", "The Cardigans", "1992")
+  )
 
+  private val artistWithHeaders = new CsvFile("artists-with-headers.csv").withContentsF(
+    Seq("Id", "Name", "Year"),
+    Seq("1", "ABBA", "1992"),
+    Seq("2", "Roxette", "1986"),
+    Seq("3", "Europe", "1979"),
+    Seq("4", "The Cardigans", "1992")
+  )
+
+  private val artistFieldTerminator = new CsvFile("artists-fieldterminator.csv", ';').withContentsF(
+    Seq("1", "ABBA", "1992"),
+    Seq("2", "Roxette", "1986"),
+    Seq("3", "Europe", "1979"),
+    Seq("4", "The Cardigans", "1992")
+  )
+
+  filePaths = Map(
+    "%ARTIST%" -> CsvFile.urify(artist),
+    "%ARTIS_WITH_HEADER%" -> CsvFile.urify(artistWithHeaders),
+    "%ARTIST_WITH_FIELD_DELIMITER%" -> CsvFile.urify(artistFieldTerminator)
+  )
+
+  urls = Map(
+    "%ARTIST%" -> (baseUrl + artist.getName),
+    "%ARTIS_WITH_HEADER%" -> (baseUrl + artistWithHeaders.getName),
+    "%ARTIST_WITH_FIELD_DELIMITER%" -> (baseUrl + artistFieldTerminator.getName)
+  )
+
+  @Test def should_import_data_from_a_csv_file() {
     testQuery(
       title = "Import data from a CSV file",
       text = """
@@ -52,7 +79,7 @@ Then you write it to your database using the normal updating clauses of Cypher.
 include::csv-files/artists.csv[]
 ----
 """,
-      queryText = s"LOAD CSV FROM '${url}' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
+      queryText = s"LOAD CSV FROM '%ARTIST%' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
       optionalResultExplanation =
         """
 A new node with the +Artist+ label is created for each row in the CSV file.
@@ -61,14 +88,6 @@ In addition, two columns from the CSV file are set as properties on the nodes.""
   }
 
   @Test def should_import_data_from_a_csv_file_with_headers() {
-    val url = new CsvFile("artists-with-headers.csv").withContents(
-      Seq("Id", "Name", "Year"),
-      Seq("1", "ABBA", "1992"),
-      Seq("2", "Roxette", "1986"),
-      Seq("3", "Europe", "1979"),
-      Seq("4", "The Cardigans", "1992")
-    )
-
     testQuery(
       title = "Import data from a CSV file containing headers",
       text = """
@@ -80,7 +99,7 @@ When your CSV file has headers, you can view each row in the file as a map inste
 include::csv-files/artists-with-headers.csv[]
 ----
 """,
-      queryText = s"LOAD CSV WITH HEADERS FROM '${url}' AS line CREATE (:Artist {name: line.Name, year: toInt(line.Year)})",
+      queryText = s"LOAD CSV WITH HEADERS FROM '%ARTIS_WITH_HEADER%' AS line CREATE (:Artist {name: line.Name, year: toInt(line.Year)})",
       optionalResultExplanation = """
 This time, the file starts with a single row containing column names.
 Indicate this using +WITH HEADERS+ and you can access specific fields by their corresponding column name.""",
@@ -88,13 +107,6 @@ Indicate this using +WITH HEADERS+ and you can access specific fields by their c
   }
 
   @Test def should_import_data_from_a_csv_file_with_custom_field_terminator() {
-    val url = new CsvFile("artists-fieldterminator.csv", ';').withContents(
-      Seq("1", "ABBA", "1992"),
-      Seq("2", "Roxette", "1986"),
-      Seq("3", "Europe", "1979"),
-      Seq("4", "The Cardigans", "1992")
-    )
-
     testQuery(
       title = "Import data from a CSV file with a custom field delimiter",
       text = """
@@ -107,20 +119,13 @@ You can specify which delimiter your file uses using +FIELDTERMINATOR+.
 include::csv-files/artists-fieldterminator.csv[]
 ----
 """,
-      queryText = s"LOAD CSV FROM '${url}' AS line FIELDTERMINATOR ';' CREATE (:Artist {name: line[1], year: toInt(line[2])})",
+      queryText = s"LOAD CSV FROM '%ARTIST_WITH_FIELD_DELIMITER%' AS line FIELDTERMINATOR ';' CREATE (:Artist {name: line[1], year: toInt(line[2])})",
       optionalResultExplanation =
         "As values in this file are separated by a semicolon, a custom +FIELDTERMINATOR+ is specified in the +LOAD CSV+ clause.",
       assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
   }
 
   @Test def should_import_data_from_a_csv_file_with_periodic_commit() {
-    val url = new CsvFile("file.csv").withContents(
-      Seq("1", "ABBA", "1992"),
-      Seq("2", "Roxette", "1986"),
-      Seq("3", "Europe", "1979"),
-      Seq("4", "The Cardigans", "1992")
-    )
-
     testQuery(
       title = "Importing large amounts of data",
       text = """
@@ -130,22 +135,16 @@ This reduces the memory overhead of the transaction state.
 By default, the commit will happen every 1000 rows.
 For more information, see <<query-periodic-commit>>.
 """,
-      queryText = s"USING PERIODIC COMMIT LOAD CSV FROM '${url}' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
+      queryText = s"USING PERIODIC COMMIT LOAD CSV FROM '%ARTIST%' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
   }
 
   @Test def should_import_data_from_a_csv_file_with_periodic_commit_after_500_rows() {
-    val url = new CsvFile("file.csv").withContents(
-      Seq("1", "ABBA", "1992"),
-      Seq("2", "Roxette", "1986"),
-      Seq("3", "Europe", "1979"),
-      Seq("4", "The Cardigans", "1992"))
-
     testQuery(
       title = "Setting the rate of periodic commits",
       text = """You can set the number of rows as in the example, where it is set to 500 rows.""",
-      queryText = s"USING PERIODIC COMMIT 500 LOAD CSV FROM '${url}' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
+      queryText = s"USING PERIODIC COMMIT 500 LOAD CSV FROM '%ARTIST%' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
   }
