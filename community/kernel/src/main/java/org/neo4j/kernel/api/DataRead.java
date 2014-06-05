@@ -78,6 +78,10 @@ interface DataRead
     long nodeGetUniqueFromIndexLookup( IndexDescriptor index, Object value ) throws IndexNotFoundKernelException,
             IndexBrokenKernelException;
 
+    boolean nodeExists(long nodeId);
+
+    boolean relationshipExists( long relId );
+
     /**
      * Checks if a node is labeled with a certain label or not. Returns
      * {@code true} if the node is labeled with the label, otherwise {@code false.}

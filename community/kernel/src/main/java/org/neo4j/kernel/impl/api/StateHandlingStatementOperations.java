@@ -164,6 +164,44 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
+    public boolean nodeExists( KernelStatement state, long nodeId )
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            if ( state.txState().nodeIsDeletedInThisTx( nodeId ) )
+            {
+                return false;
+            }
+
+            if ( state.txState().nodeIsAddedInThisTx( nodeId ) )
+            {
+                return true;
+            }
+        }
+
+        return storeLayer.nodeExists( nodeId );
+    }
+
+    @Override
+    public boolean relationshipExists( KernelStatement state, long relId )
+    {
+        if ( state.hasTxStateWithChanges() )
+        {
+            if ( state.txState().relationshipIsDeletedInThisTx( relId ) )
+            {
+                return false;
+            }
+
+            if ( state.txState().relationshipIsAddedInThisTx( relId ) )
+            {
+                return true;
+            }
+        }
+
+        return storeLayer.relationshipExists( relId );
+    }
+
+    @Override
     public boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
     {
         if ( state.hasTxStateWithChanges() )

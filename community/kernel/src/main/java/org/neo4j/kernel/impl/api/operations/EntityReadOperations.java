@@ -36,6 +36,9 @@ import org.neo4j.kernel.impl.api.RelationshipVisitor;
 public interface EntityReadOperations
 {
     // Currently, of course, most relevant operations here are still in the old core API implementation.
+    boolean nodeExists(KernelStatement state, long nodeId);
+
+    boolean relationshipExists( KernelStatement statement, long relId );
 
     /**
      * @param labelId the label id of the label that returned nodes are guaranteed to have

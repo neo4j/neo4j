@@ -253,6 +253,18 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
+    public boolean nodeExists( KernelStatement state, long nodeId )
+    {
+        return entityReadOperations.nodeExists( state, nodeId );
+    }
+
+    @Override
+    public boolean relationshipExists( KernelStatement statement, long relId )
+    {
+        return entityReadOperations.relationshipExists( statement, relId );
+    }
+
+    @Override
     public boolean nodeHasLabel( KernelStatement state, long nodeId, int labelId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeHasLabel( state, nodeId, labelId );

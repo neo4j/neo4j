@@ -157,6 +157,20 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
+    public boolean nodeExists( long nodeId )
+    {
+        statement.assertOpen();
+        return dataRead().nodeExists( statement, nodeId );
+    }
+
+    @Override
+    public boolean relationshipExists( long relId )
+    {
+        statement.assertOpen();
+        return dataRead().relationshipExists( statement, relId );
+    }
+
+    @Override
     public boolean nodeHasLabel( long nodeId, int labelId ) throws EntityNotFoundException
     {
         statement.assertOpen();

@@ -960,8 +960,13 @@ public abstract class InternalAbstractGraphDatabase
             throw new NotFoundException( format( "Node %d not found", id ) );
         }
         threadToTransactionBridge.assertInTransaction();
-        
-        return nodeManager.newNodeProxyById( id );
+        try (Statement statement = threadToTransactionBridge.instance())
+        {
+            if ( !statement.readOperations().nodeExists( id ) )
+                throw new NotFoundException(format( "Node %d not found", id ));
+
+            return nodeManager.newNodeProxyById( id );
+        }
     }
 
     @Override
@@ -972,7 +977,13 @@ public abstract class InternalAbstractGraphDatabase
             throw new NotFoundException( format( "Relationship %d not found", id));
         }
         threadToTransactionBridge.assertInTransaction();
-        return nodeManager.newRelationshipProxyById( id );
+        try (Statement statement = threadToTransactionBridge.instance())
+        {
+            if ( !statement.readOperations().relationshipExists( id ) )
+                throw new NotFoundException( format( "Relationship %d not found", id ) );
+
+            return nodeManager.newRelationshipProxyById( id );
+        }
     }
 
     @Override
