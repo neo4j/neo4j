@@ -86,8 +86,6 @@ trait QueryContext extends TokenContext {
    * This should not be used. We'll remove sooner (or later). Don't do it.
    */
   def withAnyOpenQueryContext[T](work: (QueryContext) => T): T
-
-  def getCsvIterator(url: URL): Iterator[Array[String]]
 }
 
 trait LockingQueryContext extends QueryContext {

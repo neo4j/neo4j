@@ -34,7 +34,7 @@ class LoadCSVQueryContext(inner: QueryContext, cleaner: CleanUpper = new CleanUp
     }
   }
 
-  override def getCsvIterator(url: URL): Iterator[Array[String]] = {
+  def getCsvIterator(url: URL): Iterator[Array[String]] = {
     val inputStream = ToStream(url).stream
     val reader = new BufferedReader(new InputStreamReader(inputStream))
     val csvReader = new CSVReader(reader)

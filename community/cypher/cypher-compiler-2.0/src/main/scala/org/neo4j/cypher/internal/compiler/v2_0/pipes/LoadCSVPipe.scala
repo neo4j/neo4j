@@ -24,6 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_0.{ExecutionContext, PlanDescriptio
 import java.io._
 import java.net.URL
 import org.neo4j.cypher.internal.compiler.v2_0.symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_0.spi.LoadCSVQueryContext
 
 sealed trait CSVFormat
 case object HasHeaders extends CSVFormat
@@ -32,7 +33,7 @@ case object NoHeaders extends CSVFormat
 class LoadCSVPipe(source: Pipe, format: CSVFormat, url: URL, identifier: String) extends PipeWithSource(source) {
   protected def internalCreateResults(input: Iterator[ExecutionContext], state: QueryState): Iterator[ExecutionContext] = {
     input.flatMap(context => {
-      val iterator:Iterator[Array[String]] = state.query.getCsvIterator(url)
+      val iterator:Iterator[Array[String]] = state.query.asInstanceOf[LoadCSVQueryContext].getCsvIterator(url)
 
       val nextRow: Array[String] => Iterable[Serializable]  = format match {
         case HasHeaders =>
