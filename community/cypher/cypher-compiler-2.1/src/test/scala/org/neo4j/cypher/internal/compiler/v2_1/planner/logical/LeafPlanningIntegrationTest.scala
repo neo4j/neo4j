@@ -23,6 +23,9 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
 
 class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -72,7 +75,12 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      NodeIndexSeek("n", "Awesome", "prop", SignedIntegerLiteral("42")_)
+      NodeIndexSeek(
+        "n",
+        LabelToken("Awesome", LabelId(0)),
+        PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
+        SingleQueryExpression(SignedIntegerLiteral("42")(pos))
+      )
     )
   }
 
@@ -82,7 +90,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      NodeIndexUniqueSeek("n", "Awesome", "prop", SignedIntegerLiteral("42")_)
+      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), SingleQueryExpression(SignedIntegerLiteral("42")_))
     )
   }
 
@@ -93,7 +101,7 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
     plan.plan should equal(
-      NodeIndexUniqueSeek("n", "Awesome", "prop", SignedIntegerLiteral("42")_)
+      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(1)), SingleQueryExpression(SignedIntegerLiteral("42")_))
     )
   }
 
@@ -117,5 +125,39 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
         NodeByIdSeek("n", Seq(SignedIntegerLiteral("42")_, SignedIntegerLiteral("64")_))
       )
     )
+  }
+
+  test("should build plans for index seek when there is an index on the property and an IN predicate") {
+    (new given {
+      indexOn("Awesome", "prop")
+    } planFor "MATCH (n:Awesome) WHERE n.prop IN [42] RETURN n").plan should beLike {
+      case NodeIndexSeek(
+              IdName("n"),
+              LabelToken("Awesome", _),
+              PropertyKeyToken("prop", _),
+              ManyQueryExpression(Collection(_))) => ()
+    }
+  }
+
+  test("should not use indexes for large collections") {
+    // Index selectivity is 0.08, and label selectivity is 0.2.
+    // So if we have 3 elements in the collection, we should not use the index.
+
+    (new given {
+      indexOn("Awesome", "prop")
+    } planFor "MATCH (n:Awesome) WHERE n.prop IN [1,2,3,4,5,6,7,8,9,10] RETURN n").plan should beLike {
+      case _: Selection => ()
+    }
+  }
+
+  test("should use indexes for large collections if it is a unique index") {
+    // Index selectivity is 0.08, and label selectivity is 0.2.
+    // So if we have 3 elements in the collection, we should not use the index.
+
+    (new given {
+      uniqueIndexOn("Awesome", "prop")
+    } planFor "MATCH (n:Awesome) WHERE n.prop IN [1,2,3,4,5,6,7,8,9,10] RETURN n").plan should beLike {
+      case _: NodeIndexUniqueSeek => ()
+    }
   }
 }

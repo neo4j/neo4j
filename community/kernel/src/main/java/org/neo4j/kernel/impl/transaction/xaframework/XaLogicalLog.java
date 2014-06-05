@@ -65,7 +65,6 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Math.max;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.CLEAN;
 import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogTokens.LOG1;

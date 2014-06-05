@@ -21,42 +21,47 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{SingleQueryExpression, ManyQueryExpression, QueryExpression}
 
 
 abstract class IndexLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: QueryGraphSolvingContext) = {
     implicit val semanticTable = context.semanticTable
     val predicates: Seq[Expression] = qg.selections.flatPredicates
-    val labelPredicateMap = qg.selections.labelPredicates
+    val labelPredicateMap: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
+
+    def producePlanFor(name: String, propertyKeyName: PropertyKeyName, propertyPredicate: Expression, queryExpression: QueryExpression[Expression]) = {
+      val idName = IdName(name)
+      for (labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
+           labelName <- labelPredicate.labels;
+           indexDescriptor <- findIndexesFor(labelName.name, propertyKeyName.name);
+           labelId <- labelName.id)
+      yield {
+        val entryConstructor: (Seq[Expression]) => QueryPlan =
+          constructPlan(idName, LabelToken(labelName, labelId), PropertyKeyToken(propertyKeyName, propertyKeyName.id.head), queryExpression)
+        entryConstructor(Seq(propertyPredicate, labelPredicate))
+      }
+    }
 
     CandidateList(
       predicates.collect {
-        // n.prop = value
-        case propertyPredicate@Equals(Property(identifier@Identifier(name), propertyKey), ConstantExpression(valueExpr)) =>
-          val idName = IdName(name)
+        case equalityPredicate@Equals(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) =>
+          producePlanFor(name, propertyKeyName, equalityPredicate, SingleQueryExpression(valueExpr))
 
-          for (labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
-               label <- labelPredicate.labels;
-               indexDescriptor <- findIndexesFor(label.name, propertyKey.name);
-               labelId <- label.id)
-          yield {
-            val entryConstructor = constructPlan(idName, labelId, propertyKey.id.head, valueExpr)
-            entryConstructor(Seq(propertyPredicate, labelPredicate))
-          }
+        case inPredicate@In(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) =>
+          producePlanFor(name, propertyKeyName, inPredicate, ManyQueryExpression(valueExpr))
       }.flatten
     )
   }
 
   protected def constructPlan(idName: IdName,
-                              labelId: LabelId,
-                              propertyKeyId: PropertyKeyId,
-                              valueExpr: Expression)(implicit context: QueryGraphSolvingContext): (Seq[Expression]) => QueryPlan
+                              label: LabelToken,
+                              propertyKey: PropertyKeyToken,
+                              valueExpr: QueryExpression[Expression])(implicit context: QueryGraphSolvingContext): (Seq[Expression]) => QueryPlan
 
 
 
@@ -64,10 +69,13 @@ abstract class IndexLeafPlanner extends LeafPlanner {
 }
 
 object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
-  protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
+  protected def constructPlan(idName: IdName,
+                              label: LabelToken,
+                              propertyKey: PropertyKeyToken,
+                              valueExpr: QueryExpression[Expression])
                              (implicit context: QueryGraphSolvingContext): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
-      planNodeIndexUniqueSeek(idName, labelId, propertyKeyId, valueExpr, predicates)
+      planNodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, predicates)
 
 
   protected def findIndexesFor(label: String, property: String)(implicit context: QueryGraphSolvingContext): Option[IndexDescriptor] =
@@ -75,10 +83,13 @@ object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
 }
 
 object indexSeekLeafPlanner extends IndexLeafPlanner {
-  protected def constructPlan(idName: IdName, labelId: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression)
+  protected def constructPlan(idName: IdName,
+                              label: LabelToken,
+                              propertyKey: PropertyKeyToken,
+                              valueExpr: QueryExpression[Expression])
                              (implicit context: QueryGraphSolvingContext): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
-      planNodeIndexSeek(idName, labelId, propertyKeyId, valueExpr, predicates)
+      planNodeIndexSeek(idName, label, propertyKey, valueExpr, predicates)
 
   protected def findIndexesFor(label: String, property: String)(implicit context: QueryGraphSolvingContext): Option[IndexDescriptor] =
     context.planContext.getIndexRule(label, property)

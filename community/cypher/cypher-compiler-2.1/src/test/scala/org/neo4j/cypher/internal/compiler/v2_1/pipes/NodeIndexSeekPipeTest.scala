@@ -20,110 +20,219 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{Operations, QueryContext}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Collection, Literal}
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
 import org.neo4j.graphdb.Node
-import org.mockito.Mockito
+import org.mockito.Mockito._
+import org.mockito.Matchers._
 import org.neo4j.kernel.api.index.IndexDescriptor
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
+import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
+import org.neo4j.cypher.internal.compiler.v2_1.ast.LabelToken
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_1.commands.ManyQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PropertyKeyToken
+import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleQueryExpression
 
-class NodeIndexSeekPipeTest extends CypherFunSuite {
+class NodeIndexSeekPipeTest extends CypherFunSuite with AstConstructionTestSupport {
 
   implicit val monitor = mock[PipeMonitor]
 
+  val label = LabelToken(LabelName("LabelName")_, LabelId(11))
+  val propertyKey = PropertyKeyToken(PropertyKeyName("PropertyName")_, PropertyKeyId(10))
+  val descriptor = new IndexDescriptor(label.nameId.id, propertyKey.nameId.id)
+  val node = mock[Node]
+  val node2 = mock[Node]
+
   test("should return nodes found by index lookup when both labelId and property key id are solved at compile time") {
     // given
-    val node = mock[Node]
-    val descriptor = new IndexDescriptor(11, 10)
     val queryState = QueryStateHelper.emptyWith(
-      query = Mockito.when(mock[QueryContext].exactIndexSearch(descriptor,"hello")).thenReturn(Iterator(node)).getMock[QueryContext]
+      query = exactIndexFor("hello" -> Iterator(node))
     )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", Right(LabelId(11)), Right(PropertyKeyId(10)), Literal("hello"))
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")))
     val result = pipe.createResults(queryState)
 
     // then
     result.map(_("n")).toList should equal(List(node))
   }
 
-  test("should return nodes found by index lookup when labelId is resolved at compile time and property key id is solved at runtime") {
+  test("should handle index lookups for multiple values") {
     // given
-    val node = mock[Node]
-    val query = mock[QueryContext]
-    Mockito.when(query.getOptPropertyKeyId("prop")).thenReturn(Some(10))
-    val descriptor = new IndexDescriptor(11, 10)
-    Mockito.when(query.exactIndexSearch(descriptor,"hello")).thenReturn(Iterator(node))
-    val queryState = QueryStateHelper.emptyWith(query = query)
+    val queryState = QueryStateHelper.emptyWith(
+      query = exactIndexFor(
+        "hello" -> Iterator(node ),
+        "world" -> Iterator(node2)
+      )
+    )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", Right(LabelId(11)), Left("prop"), Literal("hello"))
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(Literal("hello"), Literal("world"))))
+    val result = pipe.createResults(queryState)
+
+    // then
+    result.map(_("n")).toList should equal(List(node, node2))
+  }
+
+  test("should handle unique index lookups for multiple values") {
+    // given
+    val queryState = QueryStateHelper.emptyWith(
+      query = exactUniqueIndexFor(
+        "hello" -> Some(node),
+        "world" -> Some(node2)
+      )
+    )
+
+    // when
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(Literal("hello"), Literal("world"))), unique = true)
+    val result = pipe.createResults(queryState)
+
+    // then
+    result.map(_("n")).toList should equal(List(node, node2))
+  }
+
+  test("should handle index lookups for multiple values when some are null") {
+    // given
+    val queryState = QueryStateHelper.emptyWith(
+      query = exactIndexFor(
+        "hello" -> Iterator(node)
+      )
+    )
+
+    // when
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(
+      Collection(
+        Literal("hello"),
+        Literal(null))))
     val result = pipe.createResults(queryState)
 
     // then
     result.map(_("n")).toList should equal(List(node))
   }
 
-  test("should return nodes found by index lookup when labelId is resolved at runtime and property key id is solved at compile time") {
+  test("should handle unique index lookups for multiple values when some are null") {
     // given
-    val node = mock[Node]
-    val query = mock[QueryContext]
-    Mockito.when(query.getOptLabelId("label")).thenReturn(Some(11))
-    val descriptor = new IndexDescriptor(11, 10)
-    Mockito.when(query.exactIndexSearch(descriptor,"hello")).thenReturn(Iterator(node))
-    val queryState = QueryStateHelper.emptyWith(query = query)
+    val queryState = QueryStateHelper.emptyWith(
+      query = exactUniqueIndexFor(
+        "hello" -> Some(node)
+      )
+    )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", Left("label"), Right(PropertyKeyId(10)), Literal("hello"))
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(
+      Collection(
+        Literal("hello"),
+        Literal(null))), unique = true)
     val result = pipe.createResults(queryState)
 
     // then
     result.map(_("n")).toList should equal(List(node))
   }
 
-  test("should return nodes found by index lookup when both labelId and property key id is solved at runtime") {
+  test("should handle index lookups for IN an empty collection") {
     // given
-    val node = mock[Node]
-    val query = mock[QueryContext]
-    Mockito.when(query.getOptLabelId("label")).thenReturn(Some(11))
-    Mockito.when(query.getOptPropertyKeyId("prop")).thenReturn(Some(10))
-    val descriptor = new IndexDescriptor(11, 10)
-    Mockito.when(query.exactIndexSearch(descriptor, 42)).thenReturn(Iterator(node))
-    val queryState = QueryStateHelper.emptyWith(query = query)
+    val queryState = QueryStateHelper.emptyWith(
+      query = exactIndexFor(
+        "hello" -> Iterator(node)
+      )
+    )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", Left("label"), Left("prop"), Literal(42))
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection()))
+    val result = pipe.createResults(queryState)
+
+    // then
+    result.map(_("n")).toList should equal(List.empty)
+  }
+
+  test("should handle index lookups for IN a collection with duplicates") {
+    // given
+    val queryState = QueryStateHelper.emptyWith(   // WHERE n.prop IN ['hello', 'hello']
+      query = exactIndexFor(
+        "hello" -> Iterator(node)
+      )
+    )
+
+    // when
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(
+      Literal("hello"),
+      Literal("hello")
+    )))
     val result = pipe.createResults(queryState)
 
     // then
     result.map(_("n")).toList should equal(List(node))
   }
 
-  test("should return empty iterator when labelId cannot be resolved") {
+  test("should handle index lookups for IN a collection that returns the same nodes for multiple values") {
     // given
-    val query = mock[QueryContext]
-    Mockito.when(query.getOptLabelId("label")).thenReturn(None)
-    val queryState = QueryStateHelper.emptyWith(query = query)
+    val queryState = QueryStateHelper.emptyWith(   // WHERE n.prop IN ['hello', 'hello']
+      query = exactIndexFor(
+        "hello" -> Iterator(node),
+        "world" -> Iterator(node)
+      )
+    )
 
     // when
-    val pipe = NodeIndexSeekPipe("n", Left("label"), Right(PropertyKeyId(10)), Literal("hello"))
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Collection(
+      Literal("hello"),
+      Literal("world")
+    )))
     val result = pipe.createResults(queryState)
 
     // then
-    result should be(empty)
+    result.map(_("n")).toList should equal(List(node, node))
   }
 
-  test("should return empty iterator when property key id cannot be resolved") {
+  test("should give a helpful error message") {
     // given
-    val query = mock[QueryContext]
-    Mockito.when(query.getOptPropertyKeyId("prop")).thenReturn(None)
-    val queryState = QueryStateHelper.emptyWith(query = query)
+    val queryState = QueryStateHelper.empty
 
     // when
-    val pipe = NodeIndexSeekPipe("n", Right(LabelId(10)), Left("prop"), Literal("hello"))
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, ManyQueryExpression(Literal("wut?")))
+
+    // then
+    val msg = intercept[CypherTypeException](pipe.createResults(queryState)).getMessage
+
+    msg should equal("Expected the value for looking up :LabelName(PropertyName) to be a collection but it was not.")
+  }
+
+  test("should return the node found by the unique index lookup when both labelId and property key id are solved at compile time") {
+    // given
+    val queryState =  QueryStateHelper.emptyWith( query = exactUniqueIndexFor("hello"->Some(node)) )
+
+    // when
+    val pipe = NodeIndexSeekPipe("n", label, propertyKey, SingleQueryExpression(Literal("hello")), unique = true)
     val result = pipe.createResults(queryState)
 
     // then
-    result should be(empty)
+    result.map(_("n")).toList should equal(List(node))
+  }
+
+  private def exactUniqueIndexFor(values : (Any, Option[Node])*): QueryContext = {
+    val query = mock[QueryContext]
+    when(query.exactUniqueIndexSearch(any(), any())).thenReturn(None)
+
+    values.foreach {
+      case (searchTerm, result) => when(query.exactUniqueIndexSearch(descriptor, searchTerm)).thenReturn(result)
+    }
+
+    query
+  }
+
+  private def exactIndexFor(values : (Any, Iterator[Node])*): QueryContext = {
+    val query = mock[QueryContext]
+    when(query.exactIndexSearch(any(), any())).thenReturn(Iterator.empty)
+
+    values.foreach {
+      case (searchTerm, result) => when(query.exactIndexSearch(descriptor, searchTerm)).thenReturn(result)
+    }
+
+    query
   }
 }

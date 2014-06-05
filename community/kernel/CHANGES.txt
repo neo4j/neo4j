@@ -5,6 +5,11 @@ o Deprecated Function and Function2 interfaces, as they are internal utility API
   longer considered official API. Users are expected to choose a utility library like
   Guava or apache commons for their utility needs.
 
+2.1.2
+-----
+o Resolves a dangerous recovery issue, where multiple crashes in a row without clean shutdown or log rotation
+  in between could cause data loss.
+
 2.1.0
 -----
 o Fixes potential leak of transaction state in entity locks that could
@@ -425,7 +430,7 @@ o Fixed performance bug when loading relationship chains that caused the arrays 
 o Added the ability to auto index properties for database primitives
 o Locks on database primitives acquired by neostore XAResources are now released during afterCompletion()
   of the global transaction. This allows for nodes and relationships to be used as monitors in distributed
-  settings. 
+  settings.
 
 1.4.M03 (2011-05-26)
 --------------------
@@ -442,7 +447,7 @@ o Changed the default implementation of the logical log to a DirectMappedLogBuff
 o Changed the TxLog to use a DirectMappedLogBuffer instead of its ad hoc implementation.
 o Added a configuration parameter (Config.USE_MEMORY_MAPPED_LOG) for controlling the log implementation (mmapped vs buffered)
   separately from the store files with a default value of 'false'.
-  
+
 1.3.M05 (2011-03-24)
 --------------------
 o Added support for HA and backup on Windows.
@@ -571,11 +576,11 @@ o Read only operations can now execute without a transaction.
 
 -API
 o Added a method to get the GraphDatabaseService on Node and Relationship.
-o Moved the commons component utilities into kernel component, 
+o Moved the commons component utilities into kernel component,
   see helpers package.
 
 -Bug fixes
-o Fixed issues with logical log and active log that could cause recovery 
+o Fixed issues with logical log and active log that could cause recovery
   to throw an exception.
 o Fixed buffer overflow for large string/array properties.
 o Fixed bug that could cause leak of NodeImpl.
@@ -584,25 +589,25 @@ o Fixed bug that could cause leak of NodeImpl.
 1.0 (2010-02-16)
 ----------------
 
--API 
+-API
 o Updated javadoc.
 
 -Bug fixes
 o Fixed leak of non committed property changes to other transactions.
 o Fixed cache duplication bug of relationships.
-o Fixed problem that could cause other exception to be thrown than 
+o Fixed problem that could cause other exception to be thrown than
   NotFoundException on getNodeById/RelationshipById.
-o Fixed problem with recovery when LuceneFulltextIndex entries existed 
+o Fixed problem with recovery when LuceneFulltextIndex entries existed
   in global transaction log.
 o BatchInserter now throws exception when trying to create a relationship
   with same start and end node.
-o Fixed problem with broken entries in logical log that could cause recovery 
+o Fixed problem with broken entries in logical log that could cause recovery
   to throw an exception.
 
 1.0-rc (2010-01-10)
 ------------------
 
-o API: moved API to org.neo4j.grapdb and implementation to 
+o API: moved API to org.neo4j.grapdb and implementation to
   org.neo4j.kernel.impl
 
 1.0-b11 (2009-12-27)
@@ -621,22 +626,22 @@ o Fixed some bugs in batch inserter.
 --------------------
 
 -Enhancements, new features and major changes
-o Core: Read-only mode. It is now possible to start multiple read only 
+o Core: Read-only mode. It is now possible to start multiple read only
   NeoServices to the same store (using EmbeddedReadOnlyNeo).
-o Core:  Improved depth first traversal speed on nodes with many 
+o Core:  Improved depth first traversal speed on nodes with many
   relationships by loading relationships on demand. This will also
   reduce the stress on GC when traversing over a node with many
   relationships since much fewer objects will be created.
 
 -Minor enhancements, changes and tweaks
 o Core: Faster rebuild of id generators after a crash
-o Core: Exception cleanup removing bad code either catching Throwable or 
+o Core: Exception cleanup removing bad code either catching Throwable or
   throwing RuntimeException.
-o Core: Fixed so a read only NeoService can apply a logical log from a 
+o Core: Fixed so a read only NeoService can apply a logical log from a
   backup.
 
 -Bug Fixes
-o Fixed a bug when using plain buffers instead of memory mapped ones that 
+o Fixed a bug when using plain buffers instead of memory mapped ones that
   could case recovery to fail due to buffers not being flushed properly.
 
 
@@ -686,7 +691,7 @@ o Core: Removed event manager dependency since it needs a rewrite (event
 o Core: Transaction events have been removed, need proper specification.
 o Core: Removed read lock on loading of non-cached node/relationship,
   replaced with reentrant lock stripe.
-o Core: Persistence row windows in nioneo now only load data if acquired for 
+o Core: Persistence row windows in nioneo now only load data if acquired for
   read operation.
 o Core: Upgraded to JTA 1.1
 o Core: Improved some error messages.
@@ -697,16 +702,16 @@ o Core: Increased default block size for string and array stores to better
 
 -Bug fixes
 o Core: Fixed missing close on TM's active log file.
-o Core: A bug with copy on write "diff" maps that could cause wrong cached value 
+o Core: A bug with copy on write "diff" maps that could cause wrong cached value
   to be read (for both properties and relationships) has been fixed.
 o Core: Fixed an issue with non committed properties/relationships
-  modifications leaking to other transactions (in cache layer during cache 
+  modifications leaking to other transactions (in cache layer during cache
   resize).
 o Core: Fixed bug in property index manager that could cause created index
   not to be published at the right time.
 o Core: Fixed bug that allowed for relationship/property loads on deleted
   node (in same tx).
-o Core: Fixed some bugs caused by use of JTA tx synchronization hooks (we can't 
+o Core: Fixed some bugs caused by use of JTA tx synchronization hooks (we can't
   use them when ordering is required).
 o Core: Fixed bug with relationship type store not handling "holes" correctly.
 o Core: Fixed problem with multiple calls to close() on XaDataSources
@@ -735,14 +740,14 @@ o API: NotFound and NotInTransaction runtime exceptions have been moved from
 o API: getRelationshipById is now exposed in NeoService.
 o API: A common base interface for Node and Relationship has been added that
   contains the set/get/remove property operations.
-o Core: Made it easy to embed Neo4j in a Spring application. Spring can also be 
+o Core: Made it easy to embed Neo4j in a Spring application. Spring can also be
   configured to use Neo4j's transaction manager.
 o Core: All known bugs have been fixed.
 o Core: Removed singletons and made everything IoC.
 o Core: Lots of minor optimization and improvements above native store
   layer (nioneo).
 o Core: Cleanup of code (removed non used code) and improved exception handling.
-o Core: Improved read performance and parallelism by implementing MVCC-like 
+o Core: Improved read performance and parallelism by implementing MVCC-like
   features. No locks are now taken during read-only operations, instead
   concurrent operations are working against snapshot versions. Rather than full
   versioning, for higher performance diffs are kept and applied to the right

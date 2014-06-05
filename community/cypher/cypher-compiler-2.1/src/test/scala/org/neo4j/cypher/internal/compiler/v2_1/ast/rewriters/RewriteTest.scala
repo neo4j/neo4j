@@ -43,11 +43,11 @@ trait RewriteTest {
   protected def parseForRewriting(queryText: String) = parser.parse(queryText)
 
   protected def rewrite(original: Statement): AnyRef =
-    original.rewrite(bottomUp(rewriterUnderTest))
+    original.rewrite(rewriterUnderTest)
 
   protected def assertIsNotRewritten(query: String) {
     val original = parser.parse(query)
-    val result = original.rewrite(bottomUp(rewriterUnderTest))
+    val result = original.rewrite(rewriterUnderTest)
     assert(result === original, "\n" + query)
   }
 }
