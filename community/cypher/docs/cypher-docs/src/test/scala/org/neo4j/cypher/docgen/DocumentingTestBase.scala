@@ -45,6 +45,7 @@ import org.neo4j.kernel.impl.core.NodeManager
 import org.neo4j.cypher.internal.ServerExecutionEngine
 import org.neo4j.cypher.internal.commons.CypherJUnitSuite
 import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+import java.util.concurrent.TimeUnit
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -89,11 +90,11 @@ trait DocumentationHelper extends GraphIcing {
   def dumpSetupConstraintsQueries(queries: List[String], dir: File) {
     dumpQueries(queries, dir, simpleName + "-setup-constraints");
   }
-  
+
   def dumpPreparationQueries(queries: List[String], dir: File, testid: String) {
     dumpQueries(queries, dir, simpleName + "-" + nicefy(testid) + ".preparation");
   }
-  
+
   private def dumpQueries(queries: List[String], dir: File, testid: String): String = {
     if (queries.isEmpty) {
       ""
@@ -103,7 +104,7 @@ trait DocumentationHelper extends GraphIcing {
       AsciiDocGenerator.dumpToSeparateFile(dir, testid, output);
     }
   }
-  
+
   val path: File = new File("target/docs/dev/ql/")
 
   val graphvizFileName = "cypher-" + simpleName + "-graph"
@@ -393,6 +394,8 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     setupConstraintQueries.foreach(engine.execute)
 
     db.inTx {
+      db.schema().awaitIndexesOnline(1, TimeUnit.SECONDS)
+
       nodeIndex = db.index().forNodes("nodes")
       relIndex = db.index().forRelationships("rels")
       val g = new GraphImpl(graphDescription.toArray[String])

@@ -76,4 +76,85 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite {
     intercept[SyntaxException](
       execute("match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n"))
   }
+
+  test("should be able to use index hints on IN expressions") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = execute("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
+
+    //THEN
+    result.toList should equal (List(Map("n" -> jake)))
+  }
+
+  test("should be able to use index hints on IN collections with duplicates") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = execute("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+
+    //THEN
+    result.toList should equal (List(Map("n" -> jake)))
+  }
+
+  test("should be able to use index hints on IN an empty collections") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = execute("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
+
+    //THEN
+    result.toList should equal (List())
+  }
+
+  test("should be able to use index hints on IN a null value") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = execute("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+
+    //THEN
+    result.toList should equal (List())
+  }
+
+  test("should be able to use index hints on IN a collection parameter") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = execute("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+
+    //THEN
+    result.toList should equal (List(Map("n" -> jake)))
+  }
+
 }

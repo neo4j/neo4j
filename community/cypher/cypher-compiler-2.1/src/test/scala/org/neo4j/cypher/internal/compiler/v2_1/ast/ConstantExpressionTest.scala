@@ -17,15 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
+package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{PropertyKeyToken, LabelToken, Expression}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.QueryExpression
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-case class NodeIndexSeek(idName: IdName,
-                         label: LabelToken,
-                         propertyKey: PropertyKeyToken,
-                         valueExpr: QueryExpression[Expression])
-                         extends LogicalLeafPlan {
-  def availableSymbols = Set(idName)
+class ConstantExpressionTest extends CypherFunSuite {
+  test("tests") {
+    assertIsConstant(SignedIntegerLiteral("42")(null))
+    assertIsConstant(Parameter("42")(null))
+    assertIsConstant(Collection(Seq(SignedIntegerLiteral("42")(null)))(null))
+  }
+
+  private def assertIsNotConstant(e: Expression) =
+    ConstantExpression.unapply(e).foreach(_ => fail(s"$e should not be considered constant"))
+
+  private def assertIsConstant(e: Expression) = {
+    val unapply = ConstantExpression.unapply(e)
+    if (unapply.isEmpty) fail(s"$e should be considered constant")
+  }
 }
