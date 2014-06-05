@@ -34,16 +34,16 @@ trait PlannerQuery {
   def withProjection(projection: QueryProjection): PlannerQuery
   def withGraph(graph: QueryGraph): PlannerQuery
 
-  def allHints: Seq[Hint] = allHints(this)
+  def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
 
-  @tailrec
-  private def allHints(pq: PlannerQuery, hints: Seq[Hint] = Seq.empty): Seq[Hint] = {
-    val qg = pq.graph
-    val foundHints = hints ++ (qg +: qg.optionalMatches).flatMap(_.hints)
-    pq.tail match {
-      case Some(tailQ) => allHints(tailQ, foundHints)
-      case _           => foundHints
-    }
+  val allHints: Set[Hint] = tail match {
+    case Some(tailPlannerQuery) => graph.allHints ++ tailPlannerQuery.allHints
+    case None                   => graph.allHints
+  }
+
+  val numHints: Int = tail match {
+    case Some(tailPlannerQuery) => graph.numHints + tailPlannerQuery.numHints
+    case None                   => graph.numHints
   }
 
   def updateGraph(f: QueryGraph => QueryGraph): PlannerQuery = withGraph(f(graph))

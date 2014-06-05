@@ -22,17 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.perty.{DocFormatters, PrintNewLine, PrintText, condense}
+import org.neo4j.cypher.internal.compiler.v2_1.perty.{DocFormatters, condense, PrintNewLine, PrintText}
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{astExpressionDocBuilder, plannerDocBuilder, astDocBuilder, queryGraphDocBuilder}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.perty.PrintText
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Predicate
-import scala.Some
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
-import org.neo4j.cypher.internal.compiler.v2_1.perty.PrintNewLine
+import org.neo4j.graphdb.Direction
 
 class QueryGraphDocBuilderTest extends DocBuilderTestSuite[Any] {
 

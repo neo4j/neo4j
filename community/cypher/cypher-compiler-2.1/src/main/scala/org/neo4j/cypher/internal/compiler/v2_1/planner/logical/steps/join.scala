@@ -29,7 +29,8 @@ object join extends CandidateGenerator[PlanTable] {
       left <- planTable.plans
       right <- planTable.plans if left != right
     } yield {
-      (left.availableSymbols & right.availableSymbols).toList match {
+      val shared = (left.availableSymbols & right.availableSymbols).toList
+      shared match {
         case id :: Nil => Some(planNodeHashJoin(id, left, right))
         case Nil => None
         case _ => None

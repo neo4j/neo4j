@@ -55,12 +55,16 @@ trait QueryGraph {
   def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] =
     patternRelationships.filter { r => r.left == id || r.right == id }
 
-
   def coveredIds: Set[IdName] = {
     val patternIds = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships)
     val optionalMatchIds = optionalMatches.flatMap(_.coveredIds)
     patternIds ++ argumentIds ++ optionalMatchIds
   }
+
+  val allHints: Set[Hint] =
+    if (optionalMatches.isEmpty) hints else hints ++ optionalMatches.flatMap(_.allHints)
+
+  def numHints = allHints.size
 
   def ++(other: QueryGraph): QueryGraph =
     QueryGraph(
@@ -68,7 +72,8 @@ trait QueryGraph {
       patternNodes = patternNodes ++ other.patternNodes,
       patternRelationships = patternRelationships ++ other.patternRelationships,
       optionalMatches = optionalMatches ++ other.optionalMatches,
-      argumentIds = argumentIds ++ other.argumentIds
+      argumentIds = argumentIds ++ other.argumentIds,
+      hints = hints ++ other.hints
     )
 
   def isCoveredBy(other: QueryGraph): Boolean = {
