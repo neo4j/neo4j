@@ -68,8 +68,8 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
       executeWithNewPlanner("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
   }
 
-  test("scan hints are not yet handled by ronja") {
-    execute("match (n:Person) using scan n:Person return n")
+  test("scan hints are handled by ronja") {
+    executeWithNewPlanner("match (n:Person) using scan n:Person return n").toList
   }
 
   test("fail when equality checks are done with OR") {

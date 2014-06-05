@@ -174,9 +174,6 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
           val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
 
-          if (hints.exists(!_.isInstanceOf[UsingIndexHint]))
-            throw new CantHandleQueryException
-
           val newQuery = querySoFar.updateGraph {
             qg => qg.
               addSelections(selections).
@@ -196,9 +193,6 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
             patternRelationships = rels.toSet,
             hints = hints.toSet
           )
-
-          if (hints.exists(!_.isInstanceOf[UsingIndexHint]))
-            throw new CantHandleQueryException
 
           val newQuery = querySoFar.updateGraph {
             qg => qg.withAddedOptionalMatch(optionalMatch)

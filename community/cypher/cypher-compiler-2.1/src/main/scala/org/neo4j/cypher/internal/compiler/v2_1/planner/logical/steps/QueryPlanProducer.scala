@@ -106,12 +106,13 @@ object QueryPlanProducer {
       )
     )
 
-  def planNodeByLabelScan(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression]) =
+  def planNodeByLabelScan(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression], solvedHint: Option[UsingScanHint] = None) =
     QueryPlan(
       NodeByLabelScan(idName, label),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
+        .addHints(solvedHint)
       )
     )
 

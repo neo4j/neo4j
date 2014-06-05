@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, QueryGraphSolvingContext, LeafPlanner}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{UsingScanHint, Identifier, UsingIndexHint}
 
 object labelScanLeafPlanner extends LeafPlanner {
   def apply(qg: QueryGraph)(implicit context: QueryGraphSolvingContext) = {
@@ -31,8 +32,14 @@ object labelScanLeafPlanner extends LeafPlanner {
     CandidateList(
       for (idName <- qg.patternNodes.toSeq;
            labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
-           labelName <- labelPredicate.labels) yield
-        planNodeByLabelScan(idName, labelName.either, Seq(labelPredicate))
+           labelName <- labelPredicate.labels) yield {
+        val identName = idName.name
+        val hint = qg.hints.collectFirst {
+          case hint@UsingScanHint(Identifier(`identName`), `labelName`) => hint
+        }
+
+        planNodeByLabelScan(idName, labelName.either, Seq(labelPredicate), hint)
+      }
     )
   }
 }

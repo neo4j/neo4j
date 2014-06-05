@@ -161,6 +161,17 @@ class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
     }
   }
 
+  test("should build plans for label scans when a hint is given") {
+    implicit val plan = new given planFor "MATCH (n:Foo:Bar:Baz) USING SCAN n:Bar RETURN n"
+
+    plan.plan should equal(
+      Selection(
+        Seq(HasLabels(ident("n"), Seq(LabelName("Foo")_))_, HasLabels(ident("n"), Seq(LabelName("Baz")_))_),
+        NodeByLabelScan("n", Left("Bar"))
+      )
+    )
+  }
+
   test("should build plans for index seek when there is an index on the property and a hint is given") {
     implicit val plan = new given {
       indexOn("Awesome", "prop")
