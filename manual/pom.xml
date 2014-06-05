@@ -277,6 +277,13 @@
                     <include>**/*.csv</include>
                   </includes>
                 </resource>
+                <resource>
+                  <directory>${docs.sources}/neo4j-cypher-docs-docs-jar/dev/ql/load-csv/csv-files</directory>
+                  <filtering>false</filtering>
+                  <includes>
+                    <include>**/*.csv</include>
+                  </includes>
+                </resource>
               </resources>
             </configuration>
           </execution>
