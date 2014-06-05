@@ -19,11 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-object ConstantExpression {
-  def unapply(v: AnyRef): Option[Expression] = v match {
-    case expr: Literal => Some(expr)
-    case expr: Parameter => Some(expr)
-    case expr@Collection(expressions) if expressions.forall(unapply(_).nonEmpty) => Some(expr)
-    case _ => None
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+
+class ConstantExpressionTest extends CypherFunSuite {
+  test("tests") {
+    assertIsConstant(SignedIntegerLiteral("42")(null))
+    assertIsConstant(Parameter("42")(null))
+    assertIsConstant(Collection(Seq(SignedIntegerLiteral("42")(null)))(null))
+  }
+
+  private def assertIsNotConstant(e: Expression) =
+    ConstantExpression.unapply(e).foreach(_ => fail(s"$e should not be considered constant"))
+
+  private def assertIsConstant(e: Expression) = {
+    val unapply = ConstantExpression.unapply(e)
+    if (unapply.isEmpty) fail(s"$e should be considered constant")
   }
 }

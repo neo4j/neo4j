@@ -25,26 +25,51 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.QueryGraphSolvingContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
 
 class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   val idName = IdName("n")
   val hasLabels = HasLabels(ident("n"), Seq(LabelName("Awesome") _)) _
+  val property = Property(ident("n"), PropertyKeyName("prop") _)_
+  val lit42 = SignedIntegerLiteral("42") _
+  val lit6 = SignedIntegerLiteral("6") _
+
   val equalsValue = Equals(
-    Property(ident("n"), PropertyKeyName("prop") _) _,
-    SignedIntegerLiteral("42") _
-  )_
+    property ,
+    lit42
+  ) _
+
+  test("does not plan index seek when no index exist") {
+    new given {
+      qg = queryGraph(equalsValue, hasLabels)
+
+      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+        // when
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
+
+        // then
+        resultPlans.plans shouldBe empty
+      }
+    }
+  }
+  test("does not plan index seek when no unique index exist") {
+    new given {
+      qg = queryGraph(equalsValue, hasLabels)
+
+      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+        // when
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
+
+        // then
+        resultPlans.plans shouldBe empty
+      }
+    }
+  }
 
   test("index scan when there is an index on the property") {
     new given {
       qg = queryGraph(equalsValue, hasLabels)
-
-      cardinality = mapCardinality {
-        case _: AllNodesScan => 1000
-        case _: NodeByLabelScan => 100
-        case _ => Double.MaxValue
-      }
 
       indexOn("Awesome", "prop")
 
@@ -60,15 +85,27 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     }
   }
 
+  test("index scan when there is an index on the property for IN queries") {
+    new given {
+      qg = queryGraph(In(property, Collection(Seq(lit42))_)_, hasLabels)
+
+      indexOn("Awesome", "prop")
+
+      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+        // when
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
+
+        // then
+        resultPlans.plans.map(_.plan) should beLike {
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(SignedIntegerLiteral("42")))))) => ()
+        }
+      }
+    }
+  }
+
   test("unique index scan when there is an unique index on the property") {
     new given {
       qg = queryGraph(equalsValue, hasLabels)
-
-      cardinality = mapCardinality {
-        case _: AllNodesScan => 1000
-        case _: NodeByLabelScan => 100
-        case _ => Double.MaxValue
-      }
 
       uniqueIndexOn("Awesome", "prop")
 
