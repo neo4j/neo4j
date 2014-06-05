@@ -21,8 +21,12 @@ package org.neo4j.kernel.api.impl.index;
 
 import java.io.IOException;
 
+import org.apache.lucene.search.BooleanClause;
+import org.apache.lucene.search.BooleanQuery;
 import org.apache.lucene.search.IndexSearcher;
+import org.apache.lucene.search.Query;
 import org.apache.lucene.search.SearcherManager;
+import org.apache.lucene.search.TermQuery;
 
 import org.neo4j.index.impl.lucene.Hits;
 import org.neo4j.kernel.api.index.IndexReader;
@@ -42,12 +46,32 @@ class LuceneIndexAccessorReader implements IndexReader
     }
 
     @Override
-    public PrimitiveLongIterator lookup( final Object value )
+    public PrimitiveLongIterator lookup( Object value )
     {
         try
         {
             Hits hits = new Hits( searcher, documentLogic.newQuery( value ), null );
             return new HitsPrimitiveLongIterator( hits, documentLogic );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    @Override
+    public boolean hasIndexed( long nodeId, Object propertyValue )
+    {
+        Query nodeIdQuery = new TermQuery( documentLogic.newQueryForChangeOrRemove( nodeId ) );
+        Query valueQuery = documentLogic.newQuery( propertyValue );
+        BooleanQuery nodeIdAndValueQuery = new BooleanQuery( true );
+        nodeIdAndValueQuery.add( nodeIdQuery, BooleanClause.Occur.MUST );
+        nodeIdAndValueQuery.add( valueQuery, BooleanClause.Occur.MUST );
+        try
+        {
+            Hits hits = new Hits( searcher, nodeIdAndValueQuery, null );
+            // A <label,propertyKeyId,nodeId> tuple should only match at most a single propertyValue
+            return hits.length() == 1;
         }
         catch ( IOException e )
         {

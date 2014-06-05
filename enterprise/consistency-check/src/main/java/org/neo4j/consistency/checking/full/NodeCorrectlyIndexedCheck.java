@@ -70,38 +70,58 @@ public class NodeCorrectlyIndexedCheck implements RecordCheck<NodeRecord, Consis
             try ( IndexReader reader = indexes.accessorFor( indexRule ).newReader() )
             {
                 Object propertyValue = propertyReader.propertyValue( property ).value();
-                PrimitiveLongIterator indexedNodeIds = reader.lookup( propertyValue );
-                verifyNodeCorrectlyIndexed( record, engine, indexRule, propertyValue, indexedNodeIds );
+                long nodeId = record.getId();
+
+                if ( indexRule.isConstraintIndex() )
+                {
+                    verifyNodeCorrectlyIndexedUniquely( nodeId, propertyValue, engine, indexRule, reader );
+                }
+                else
+                {
+                    verifyNodeCorrectlyIndexed( nodeId, propertyValue, engine, indexRule, reader );
+                }
             }
         }
     }
 
-    private void verifyNodeCorrectlyIndexed(
-            NodeRecord record,
+    private void verifyNodeCorrectlyIndexedUniquely(
+            long nodeId,
+            Object propertyValue,
             CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
             IndexRule indexRule,
-            Object propertyValue,
-            PrimitiveLongIterator indexedNodeIds )
+            IndexReader reader )
     {
-        boolean matched = false;
+        PrimitiveLongIterator indexedNodeIds = reader.lookup( propertyValue );
+        boolean found = false;
+
         while ( indexedNodeIds.hasNext() )
         {
-            long nodeId = indexedNodeIds.next();
+            long indexedNodeId = indexedNodeIds.next();
 
-            if ( nodeId == record.getId() )
+            if ( nodeId == indexedNodeId )
             {
-                matched = true;
+                found = true;
             }
             else
             {
-                if ( indexRule.isConstraintIndex() )
-                {
-                    engine.report().uniqueIndexNotUnique( indexRule, propertyValue, nodeId );
-                }
+                engine.report().uniqueIndexNotUnique( indexRule, propertyValue, indexedNodeId );
             }
         }
 
-        if ( !matched )
+        if ( !found )
+        {
+            engine.report().notIndexed( indexRule, propertyValue );
+        }
+    }
+
+    private void verifyNodeCorrectlyIndexed(
+            long nodeId,
+            Object propertyValue,
+            CheckerEngine<NodeRecord, ConsistencyReport.NodeConsistencyReport> engine,
+            IndexRule indexRule,
+            IndexReader reader )
+    {
+        if ( !reader.hasIndexed( nodeId, propertyValue ) )
         {
             engine.report().notIndexed( indexRule, propertyValue );
         }
