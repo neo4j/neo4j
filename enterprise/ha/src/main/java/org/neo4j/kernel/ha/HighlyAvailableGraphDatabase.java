@@ -24,10 +24,10 @@ import java.net.URI;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+
 import javax.transaction.Transaction;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -167,7 +167,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( xaDataSourceManager,
                 (TxManager) txManager, availabilityGuard, logging, masterDelegateInvocationHandler ) );
-        life.add( updatePuller = new UpdatePuller( (HaXaDataSourceManager) xaDataSourceManager, master,
+        life.add( updatePuller = new UpdatePuller( memberStateMachine, (HaXaDataSourceManager) xaDataSourceManager, master,
                 requestContextFactory, txManager, availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
@@ -507,8 +507,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 return HighlyAvailableGraphDatabase.super.createLockManager();
             }
-        }
-        );
+        } );
         return lockManager;
     }
 

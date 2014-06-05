@@ -26,7 +26,7 @@ import org.neo4j.cypher
 object foldConstants extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] =
   try {
-    instance.apply(that)
+    bottomUp(instance).apply(that)
   } catch {
     case e:ArithmeticException => throw new cypher.ArithmeticException(e.getMessage, e)
   }

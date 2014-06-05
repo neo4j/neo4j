@@ -1,0 +1,5 @@
+[[operator-node-hash-join]]
+= Node hash join =
+
+Using a hash table, a node hash join joins the inputs coming from the left with the inputs coming from the right.
+The join key is specific in the arguments of the operator.

@@ -78,11 +78,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def uniqueIndexes: Set[(String, String)]
     def labelCardinality: Map[String, Cardinality]
     def knownLabels: Set[String]
+    def qg: QueryGraph
 
     class given extends StubbedLogicalPlanningConfiguration(this)
 
     def planFor(queryString: String): SemanticPlan = {
       LogicalPlanningEnvironment(this).planFor(queryString)
+    }
+
+    def withQueryGraphSolvingContext[T](f: QueryGraphSolvingContext => T): T = {
+      LogicalPlanningEnvironment(this).withQueryGraphSolvingContext(qg)(f)
     }
 
     protected def mapCardinality(pf:PartialFunction[LogicalPlan, Double]): PartialFunction[LogicalPlan, Cardinality] = pf.andThen(Cardinality.apply)
@@ -113,6 +118,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def uniqueIndexes = Set.empty
     def labelCardinality = Map.empty
     def knownLabels = Set.empty
+    def qg: QueryGraph = ???
   }
 
   class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
@@ -122,6 +128,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     var selectivity: PartialFunction[Expression, Multiplier] = PartialFunction.empty
     var labelCardinality: Map[String, Cardinality] = Map.empty
     var statistics = null
+    var qg: QueryGraph = null
 
     var indexes: Set[(String, String)] = Set.empty
     var uniqueIndexes: Set[(String, String)] = Set.empty
@@ -247,6 +254,18 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
           tokenResolver.resolve(ast)(semanticTable, planContext)
           planner.produceQueryPlan(ast, semanticTable)(planContext).plan
       }, semanticTable)
+    }
+
+    def withQueryGraphSolvingContext[T](qg: QueryGraph)(f: QueryGraphSolvingContext => T): T = {
+      val ctx = QueryGraphSolvingContext(
+        planContext = planContext,
+        metrics = metricsFactory.newMetrics(config.graphStatistics, semanticTable),
+        semanticTable = semanticTable,
+        queryGraph = qg,
+        subQueriesLookupTable = Map.empty,
+        strategy = queryGraphSolver
+      )
+      f(ctx)
     }
   }
 
