@@ -25,6 +25,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleQueryExpression
 
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -118,4 +120,55 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       )
     )
   }
+
+  test("Should build plans expanding from the more expensive side if that is requested by using a hint") {
+    (new given {
+      cardinality = mapCardinality {
+        case _: NodeIndexSeek => 1000.0
+        case _                => 10.0
+      }
+
+      indexOn("Person", "name")
+    } planFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r").plan should equal(
+      Projection(
+        Expand(
+          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Andres")_)),
+          "b", Direction.INCOMING, Seq.empty, "a", "r", SimplePatternLength
+        ),
+        Map("r" -> ident("r"))
+      )
+    )
+  }
+
+//  test("Should build plans with leaves for both sides if that is requested by using hints") {
+//    (new given {
+//      cardinality = mapCardinality {
+//        case _: NodeIndexSeek                   => 1000.0
+//        case x: Expand if x.from == IdName("a") => 100.0
+//        case x: Expand if x.from == IdName("b") => 200.0
+//        case _                                  => 10.0
+//      }
+//
+//      // a, b
+//       // a->b$$$
+//      // a->b$$$ Hash Join b
+//
+//      // expandJoin([(a), (b)]) => (a -> b), (b -> a)
+//      // expandJoin([a -> b), (a), (b), (b -> a)]
+//
+//      indexOn("Person", "name")
+//    } planFor "MATCH (a)-[r]->(b) USING INDEX a:Person(name) USING INDEX b:Person(name) WHERE a:Person AND b:Person AND a.name = 'Jakub' AND b.name = 'Andres' return r").plan should equal(
+//      Projection(
+//        NodeHashJoin(
+//          "b",
+//          Expand(
+//            NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Andres")_)),
+//            "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength
+//          ),
+//          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Jakub")_))
+//        ),
+//        Map("r" -> ident("r"))
+//      )
+//    )
+//  }
 }

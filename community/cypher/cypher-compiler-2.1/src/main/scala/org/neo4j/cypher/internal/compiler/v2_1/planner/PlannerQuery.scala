@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, PatternRelationship}
+import scala.annotation.tailrec
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Hint
 
 trait PlannerQuery {
   def graph: QueryGraph
@@ -31,6 +33,18 @@ trait PlannerQuery {
   def withTail(newTail: PlannerQuery): PlannerQuery
   def withProjection(projection: QueryProjection): PlannerQuery
   def withGraph(graph: QueryGraph): PlannerQuery
+
+  def allHints: Seq[Hint] = allHints(this)
+
+  @tailrec
+  private def allHints(pq: PlannerQuery, hints: Seq[Hint] = Seq.empty): Seq[Hint] = {
+    val qg = pq.graph
+    val foundHints = hints ++ (qg +: qg.optionalMatches).flatMap(_.hints)
+    pq.tail match {
+      case Some(tailQ) => allHints(tailQ, foundHints)
+      case _           => foundHints
+    }
+  }
 
   def updateGraph(f: QueryGraph => QueryGraph): PlannerQuery = withGraph(f(graph))
   def updateProjections(f: QueryProjection => QueryProjection): PlannerQuery = withProjection(f(projection))
