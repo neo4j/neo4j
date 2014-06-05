@@ -83,6 +83,22 @@ _Note that there may be downstream components that need to be tested as well,_ d
 To run tests, use Maven rather than your IDE to ensure others can replicate your test run.
 The command for running Neo4j tests in any given component is `mvn clean validate`.
 
+The general structure of a unit test looks like this:
+[source,java]
+--------------------------------------------
+@Test
+public void myTest()
+{
+    // Given
+    [ Setup code here, setting the stage and parameters that are relevant ]
+
+    // When
+    [ The code that is being tested, preferrably just one line, like calling a method ]
+
+    // Then
+    [ Assertions on the result ]
+}
+--------------------------------------------
 
 [[community-contributing-code-code-style]]
 == Code Style ==
