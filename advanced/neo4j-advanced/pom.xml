@@ -22,7 +22,6 @@
     <short-name>neo4j-advanced</short-name>
     <version-package>advanced.impl</version-package>
     <bundle.namespace>org.neo4j</bundle.namespace>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/deployment-installation.html#editions</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
 
@@ -132,9 +131,6 @@
           <execution>
             <id>create-javadocs</id>
             <phase>${attach-javadoc-phase}</phase>
-            <goals>
-              <goal>javadoc</goal>
-            </goals>
             <configuration>
               <additionnalDependencies>
                 <additionnalDependency>
@@ -153,7 +149,6 @@
                   <version>1.6.4</version>
                 </additionnalDependency>
               </additionnalDependencies>
-              <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <header>${project.name}</header>
               <doctitle>${project.name} ${project.version} API</doctitle>
@@ -202,35 +197,6 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>package-javadocs</id>
-            <phase>${attach-javadoc-phase}</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <attach>true</attach>
-              <descriptors>
-                <descriptor>src/main/assembly/assembly.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-descriptor</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
-
 </project>
-

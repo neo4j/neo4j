@@ -34,8 +34,6 @@
     
     <neo4j.debian.maintainer>Admins &lt;admins@neotechnology.com&gt;</neo4j.debian.maintainer>
     <licensing.phase>none</licensing.phase>
-    <maven.site.skip>true</maven.site.skip>
-    <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
 
   <dependencies>
