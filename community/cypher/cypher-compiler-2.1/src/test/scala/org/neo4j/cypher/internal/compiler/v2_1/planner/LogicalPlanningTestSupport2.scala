@@ -38,16 +38,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   self: CypherTestSuite with MockitoSugar =>
 
-  var kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
-  var monitors = new Monitors(kernelMonitors)
-  var monitorTag = "compiler2.1"
-  var parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
-  var semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
-  var astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
-  var tokenResolver = new SimpleTokenResolver()
-  var monitor = mock[PlanningMonitor]
-  var strategy = new QueryPlanningStrategy()
-  var queryGraphSolver = new GreedyQueryGraphSolver()
+  val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
+  val monitors = new Monitors(kernelMonitors)
+  val monitorTag = "compiler2.1"
+  val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
+  val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
+  val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
+  val tokenResolver = new SimpleTokenResolver()
+  val monitor = mock[PlanningMonitor]
+  val strategy = new QueryPlanningStrategy()
+  val queryGraphSolver = new GreedyQueryGraphSolver()
 
   val realConfig = new RealLogicalPlanningConfiguration
 
@@ -166,8 +166,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         if (!table.resolvedLabelIds.contains(labelName))
           table.resolvedLabelIds.put(labelName, LabelId(table.resolvedLabelIds.size))
       def addPropertyIfUnknown(labelName: String) =
-        if (!table.resolvedLabelIds.contains(labelName))
-          table.resolvedLabelIds.put(labelName, LabelId(table.resolvedLabelIds.size))
+        if (!table.resolvedPropertyKeyNames.contains(labelName))
+          table.resolvedPropertyKeyNames.put(labelName, PropertyKeyId(table.resolvedPropertyKeyNames.size))
 
       config.indexes.foreach { case (label, property) =>
         addLabelIfUnknown(label)
