@@ -33,13 +33,21 @@ case class PlanTable(m: Map[Set[IdName], QueryPlan] = Map.empty) {
   def -(ids: Set[IdName]) = copy(m = m - ids)
 
   def +(newPlan: QueryPlan): PlanTable = {
-    val newPlanCoveredByOldPlan = m.values.exists(p => newPlan.solved.graph.isCoveredBy(p.solved.graph))
+    val newSolved = newPlan.solved
+    val newPlanCoveredByOldPlan = m.values.exists { p =>
+      val solved = p.solved
+      newSolved.graph.isCoveredBy(solved.graph) &&
+      newSolved.isCoveredByHints(solved)
+    }
 
     if (newPlanCoveredByOldPlan) {
       this
     } else {
       val oldPlansNotCoveredByNewPlan = m.filter {
-        case (_, existingPlan) => !newPlan.solved.graph.covers(existingPlan.solved.graph)
+        case (_, existingPlan) =>
+          val solved = existingPlan.solved
+          !(newSolved.graph.covers(solved.graph) &&
+            solved.isCoveredByHints(newSolved))
       }
       PlanTable(oldPlansNotCoveredByNewPlan + (newPlan.availableSymbols -> newPlan))
     }
@@ -48,7 +56,7 @@ case class PlanTable(m: Map[Set[IdName], QueryPlan] = Map.empty) {
   def plans: Seq[QueryPlan] = m.values.toSeq
 
   def uniquePlan: QueryPlan = {
-    val allPlans = plans
+    val allPlans = plans.toList
 
     if (allPlans.size > 1)
       throw new InternalException(s"Expected the final plan table to have 0 or 1 plan (got ${allPlans.size})")

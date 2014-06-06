@@ -17,20 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.perty._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{UsingIndexHint, RelTypeName}
+import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{astDocBuilder, astExpressionDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{ASTNode, LabelName, AstConstructionTestSupport, UsingIndexHint}
 
-case object astDocBuilder extends CachingDocBuilder[Any] {
+class AstDocBuilderTest extends DocBuilderTestSuite[Any] with AstConstructionTestSupport {
 
-  import Doc._
+  val docBuilder = astDocBuilder orElse astExpressionDocBuilder orElse simpleDocBuilder
 
-  override protected def newNestedDocGenerator = {
-    case relTypeName: RelTypeName => (inner) =>
-      text(relTypeName.name)
-
-    case hint: UsingIndexHint => (inner) =>
-      group("USING" :/: "INDEX" :/: group(inner(hint.identifier) :: block(inner(hint.label))(inner(hint.property))))
+  test("USING INDEX n:Person(name)") {
+    val astNode: ASTNode = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
+    format(astNode) should equal("USING INDEX n:Person(name)")
   }
 }

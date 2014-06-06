@@ -21,13 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.SortDescription
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{QueryExpression, SingleQueryExpression}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v2_1.ast
+import org.neo4j.cypher.internal.compiler.v2_1.planner.AggregationProjection
+import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
 object QueryPlanProducer {
   def solvePredicate(plan: QueryPlan, solved: Expression) =
@@ -104,24 +106,27 @@ object QueryPlanProducer {
       )
     )
 
-  def planNodeByLabelScan(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression]) =
+  def planNodeByLabelScan(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression], solvedHint: Option[UsingScanHint] = None) =
     QueryPlan(
       NodeByLabelScan(idName, label),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
+        .addHints(solvedHint)
       )
     )
 
   def planNodeIndexSeek(idName: IdName,
                         label: ast.LabelToken,
                         propertyKey: ast.PropertyKeyToken,
-                        valueExpr: QueryExpression[Expression], solvedPredicates: Seq[Expression] = Seq.empty) =
+                        valueExpr: QueryExpression[Expression], solvedPredicates: Seq[Expression] = Seq.empty,
+                        solvedHint: Option[UsingIndexHint] = None) =
     QueryPlan(
       NodeIndexSeek(idName, label, propertyKey, valueExpr),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
+        .addHints(solvedHint)
       )
     )
 
@@ -135,12 +140,14 @@ object QueryPlanProducer {
                               label: ast.LabelToken,
                               propertyKey: ast.PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
-                              solvedPredicates: Seq[Expression] = Seq.empty) =
+                              solvedPredicates: Seq[Expression] = Seq.empty,
+                              solvedHint: Option[UsingIndexHint] = None) =
     QueryPlan(
       NodeIndexUniqueSeek(idName, label, propertyKey, valueExpr),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
+        .addHints(solvedHint)
       )
     )
 
@@ -281,13 +288,13 @@ object QueryPlanProducer {
 
   def planLimit(inner: QueryPlan, count: Expression) =
     QueryPlan(
-      Limit(inner.plan, count),
+      LimitPlan(inner.plan, count),
       inner.solved.updateTailOrSelf(_.updateProjections(_.withLimit(Some(count))))
     )
 
   def planSkip(inner: QueryPlan, count: Expression) =
     QueryPlan(
-      Skip(inner.plan, count),
+      SkipPlan(inner.plan, count),
       inner.solved.updateTailOrSelf(_.updateProjections(_.withSkip(Some(count))))
     )
 
