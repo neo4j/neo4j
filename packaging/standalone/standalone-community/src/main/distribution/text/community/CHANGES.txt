@@ -1,5 +1,23 @@
 For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 
+2.1.2
+-----
+Cypher:
+o Allow Cypher to use indexes to solve IN queries
+
+Kernel:
+o Resolves a dangerous recovery issue, where multiple crashes in a row without clean shutdown or log rotation
+  in between could cause data loss.
+o BatchImporter properly zeroes out reused buffers, which could lead to introducing corruption during
+  a store migration
+
+Server:
+o Ensures transactional endpoint responds with an https location
+  for https calls
+
+Browser:
+o Relaxes heartbeat to server
+
 2.1.0
 -----
 Kernel:
