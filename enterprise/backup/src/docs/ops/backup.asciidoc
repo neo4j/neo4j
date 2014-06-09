@@ -24,9 +24,9 @@ Regardless of the mode a backup is created with, the resulting files represent a
 
 The database to be backed up is specified using a URI with syntax
 
-<running mode>://<host>[:port]{,<host>[:port]*}
+<host>[:port]{,<host>[:port]*}
 
-Running mode must be defined and is either _single_ for non-HA or _ha_ for HA clusters. The <host>[:port] part
+The <host>[:port] part
 points to a host running the database, on port _port_ if not the default. The additional _host:port_ arguments
 are useful for passing multiple cluster members.
 
@@ -43,13 +43,13 @@ To perform a backup from a running embedded or server database run:
 ----
 # Performing a full backup: create a blank directory and run the backup tool
 mkdir /mnt/backup/neo4j-backup
-./neo4j-backup -from single://192.168.1.34 -to /mnt/backup/neo4j-backup
+./neo4j-backup -from 192.168.1.34 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup: just specify the location of your previous backup
-./neo4j-backup -from single://192.168.1.34 -to /mnt/backup/neo4j-backup
+./neo4j-backup -from 192.168.1.34 -to /mnt/backup/neo4j-backup
 
 # Performing an incremental backup where the service is registered on a custom port
-./neo4j-backup -from single://192.168.1.34:9999 -to /mnt/backup/neo4j-backup
+./neo4j-backup -from 192.168.1.34:9999 -to /mnt/backup/neo4j-backup
 ----
 
 [[backup-java]]
@@ -79,10 +79,10 @@ That is, use the value of the +ha.cluster_server+ setting in the configuration.
 [source,shell]
 ----
 # Performing a backup from HA cluster, specifying only one cluster member
-./neo4j-backup -from ha://192.168.1.15:5001 -to /mnt/backup/neo4j-backup
+./neo4j-backup -from 192.168.1.15:5001 -to /mnt/backup/neo4j-backup
 
 # Performing a backup from HA cluster, specifying two possible cluster members
-./neo4j-backup -from ha://192.168.1.15:5001,192.168.1.16:5002 -to /mnt/backup/neo4j-backup
+./neo4j-backup -from 192.168.1.15:5001,192.168.1.16:5002 -to /mnt/backup/neo4j-backup
 ----
 
 [[backup-restoring]]

@@ -40,12 +40,9 @@ SOURCE URI
 
 Backup sources are given in the following format:
 
-*<running mode>://<host>[:<port>][,<host>[:<port>]]...*
+*<host>[:<port>][,<host>[:<port>]]...*
 
 Note that multiple hosts can be defined.
-
-*running mode*::
-  \'single' or \'ha'. \'ha' is for instances in High Availability mode, \'single' is for standalone databases.
 
 *host*::
   In single mode, the host of a source database; in ha mode, the cluster address of a cluster member. Note that multiple hosts can be given when using High Availability mode.
@@ -75,19 +72,19 @@ EXAMPLES
 ----
 # Performing a backup the first time: create a blank directory and run the backup tool
 mkdir /mnt/backup/neo4j-backup
-neo4j-backup -from single://192.168.1.34 -to /mnt/backup/neo4j-backup
+neo4j-backup -from 192.168.1.34 -to /mnt/backup/neo4j-backup
 
 # Subsequent backups using the same _target_-directory will be incremental and therefore quick
-neo4j-backup -from single://freja -to /mnt/backup/neo4j-backup
+neo4j-backup -from freja -to /mnt/backup/neo4j-backup
 
 # Performing a backup where the service is registered on a custom port
-neo4j-backup -from single://freja:9999 -to /mnt/backup/neo4j-backup
+neo4j-backup -from freja:9999 -to /mnt/backup/neo4j-backup
 
 # Performing a backup from HA cluster, specifying only one cluster member
-./neo4j-backup -from ha://oden:5002 -to /mnt/backup/neo4j-backup
+./neo4j-backup -from oden:5002 -to /mnt/backup/neo4j-backup
 
 # Performing a backup from HA cluster, specifying two cluster members
-./neo4j-backup -from ha://oden:5001,loke:5002 -to /mnt/backup/neo4j-backup
+./neo4j-backup -from oden:5001,loke:5002 -to /mnt/backup/neo4j-backup
 ----
 
 [[neo4j-backup-manpage-restore]]

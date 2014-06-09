@@ -125,9 +125,9 @@ public class ClusterMembers
         }
 
         @Override
-        public void leftCluster( InstanceId member )
+        public void leftCluster( InstanceId instanceId, URI member )
         {
-            members.remove( member );
+            members.remove( instanceId );
         }
     }
 

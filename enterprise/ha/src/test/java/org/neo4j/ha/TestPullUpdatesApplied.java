@@ -21,6 +21,7 @@ package org.neo4j.ha;
 
 import java.io.File;
 import java.io.InputStream;
+import java.net.URI;
 import java.text.SimpleDateFormat;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -116,7 +117,7 @@ public class TestPullUpdatesApplied
                 new ClusterListener.Adapter()
                 {
                     @Override
-                    public void leftCluster( InstanceId member )
+                    public void leftCluster( InstanceId instanceId, URI member )
                     {
                         latch1.countDown();
                         masterDb.getDependencyResolver().resolveDependency( ClusterClient.class )

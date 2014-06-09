@@ -19,10 +19,6 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.net.URI;
 import java.net.URISyntaxException;
@@ -41,8 +37,9 @@ import java.util.concurrent.TimeoutException;
 
 import org.junit.After;
 import org.junit.Rule;
-import org.neo4j.cluster.InstanceId;
+
 import org.neo4j.cluster.FixedNetworkLatencyStrategy;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.MultipleFailureLatencyStrategy;
 import org.neo4j.cluster.NetworkMock;
 import org.neo4j.cluster.ScriptableNetworkFailureLatencyStrategy;
@@ -63,6 +60,10 @@ import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.test.LoggerRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 /**
  * Base class for cluster tests
@@ -236,7 +237,7 @@ public class ClusterMockTest
             }
 
             @Override
-            public void leftCluster( InstanceId id )
+            public void leftCluster( InstanceId id, URI member )
             {
                 logger.getLogger().debug( uri + " sees a leave from " + id );
             }

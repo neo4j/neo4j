@@ -19,21 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import static org.mockito.Mockito.mock;
-
 import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-
-import static org.junit.Assert.assertEquals;
 
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
 
 public class RWLockLeakTest
 {
     @Test
     public void assertWriteLockDoesNotLeakMemory() throws InterruptedException
     {
-        final TransactionManager tm = mock( TransactionManager.class );
         final RagManager ragManager = new RagManager();
         final Object resource = new Object();
         final RWLock lock = new RWLock( resource, ragManager );
@@ -51,7 +48,6 @@ public class RWLockLeakTest
     @Test
     public void assertReadLockDoesNotLeakMemory() throws InterruptedException
     {
-        final TransactionManager tm = mock( TransactionManager.class );
         final RagManager ragManager = new RagManager();
         final Object resource = new Object();
         final RWLock lock = new RWLock( resource, ragManager );
