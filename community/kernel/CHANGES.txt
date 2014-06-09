@@ -2,6 +2,8 @@
 -----
 o Resolves a dangerous recovery issue, where multiple crashes in a row without clean shutdown or log rotation
   in between could cause data loss.
+o BatchImporter properly zeroes out reused buffers, which could lead to introducing corruption during
+  a store migration
 
 2.1.0
 -----

@@ -1,3 +1,8 @@
+2.1.2
+-----
+o Consistency checks on non-constraint indexes is significantly
+  faster
+
 1.9.M02 (2012-11-30)
 --------------------
 o Write out log file if inconsistencies are found.
