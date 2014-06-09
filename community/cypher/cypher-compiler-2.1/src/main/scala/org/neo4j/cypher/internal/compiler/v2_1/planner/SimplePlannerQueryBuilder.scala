@@ -169,7 +169,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         val newQG = querySoFar.withProjection(projection)
         produceQueryGraphFromClauses(newQG, subQueryLookupTable, tl)
 
-        case Match(optional@false, pattern: Pattern, Seq(), optWhere) :: tl =>
+        case Match(optional@false, pattern: Pattern, hints, optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
           val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
@@ -178,18 +178,21 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
             qg => qg.
               addSelections(selections).
               addPatternNodes(nodeIds: _*).
-              addPatternRels(rels)
+              addPatternRels(rels).
+              addHints(hints)
           }
 
           produceQueryGraphFromClauses(newQuery, subQueryLookupTable ++ subQueries, tl)
 
-        case Match(optional@true, pattern: Pattern, Seq(), optWhere) :: tl =>
+        case Match(optional@true, pattern: Pattern, hints, optWhere) :: tl =>
           val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
           val optionalMatch = QueryGraph(
             selections = selections,
             patternNodes = nodeIds.toSet,
-            patternRelationships = rels.toSet)
+            patternRelationships = rels.toSet,
+            hints = hints.toSet
+          )
 
           val newQuery = querySoFar.updateGraph {
             qg => qg.withAddedOptionalMatch(optionalMatch)

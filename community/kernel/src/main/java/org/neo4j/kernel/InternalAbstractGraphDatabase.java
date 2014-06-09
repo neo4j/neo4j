@@ -26,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -1496,10 +1497,6 @@ public abstract class InternalAbstractGraphDatabase
             else if ( StoreUpgrader.class.isAssignableFrom( type ) )
             {
                 return type.cast( storeMigrationProcess );
-            }
-            else if ( AvailabilityGuard.class.isAssignableFrom( type ) )
-            {
-                return (T) availabilityGuard;
             }
             else if ( AvailabilityGuard.class.isAssignableFrom( type ) )
             {

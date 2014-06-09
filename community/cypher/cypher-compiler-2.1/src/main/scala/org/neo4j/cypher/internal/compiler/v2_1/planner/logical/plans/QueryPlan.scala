@@ -27,6 +27,10 @@ case class QueryPlan(plan: LogicalPlan, solved: PlannerQuery) {
   def availableSymbols: Set[IdName] = plan.availableSymbols
 
   override def toString = pformat(this)
+
+  def updateSolved(f: PlannerQuery => PlannerQuery) = copy(solved = f(solved))
+
+
 }
 
 

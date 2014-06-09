@@ -71,7 +71,7 @@ public class ConsistencyCheckService
                 pageCache, fileSystem, logger,
                 new DefaultTxHook(), monitors
         );
-        jobScheduler.start();
+        jobScheduler.init();
         pageCache.start();
 
         ConsistencySummaryStatistics summary;
@@ -114,7 +114,7 @@ public class ConsistencyCheckService
             report.close();
             neoStore.close();
             pageCache.stop();
-            jobScheduler.stop();
+            jobScheduler.shutdown();
         }
 
         if ( !summary.isConsistent() )

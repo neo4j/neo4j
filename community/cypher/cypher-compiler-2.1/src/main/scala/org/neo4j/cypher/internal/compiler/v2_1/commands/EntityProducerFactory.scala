@@ -17,15 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
+package org.neo4j.cypher.internal.compiler.v2_1.commands
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands._
 import mutation.GraphElementPropertyFunctions
 import pipes.{EntityProducer, QueryState}
-import org.neo4j.cypher.{EntityNotFoundException, IndexHintException, InternalException}
+import org.neo4j.cypher.{CypherTypeException, EntityNotFoundException, IndexHintException, InternalException}
 import org.neo4j.graphdb.{PropertyContainer, Relationship, Node}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.helpers.IsCollection
+import scala.collection.GenTraversableOnce
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.GetGraphElements
 
 class EntityProducerFactory extends GraphElementPropertyFunctions {
 
@@ -116,7 +118,6 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         state.query.relationshipOps.all }
   }
 
-
   val nodeByIndexHint: PartialFunction[(PlanContext, StartItem), EntityProducer[Node]] = {
     case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, AnyIndex, valueExp)) =>
 
@@ -129,9 +130,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         (throw new InternalException("Something went wrong trying to build your query."))
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val value = expression(m)(state)
-        val neoValue = makeValueNeoSafe(value)
-        state.query.exactIndexSearch(index, neoValue)
+        indexQuery(expression, m, state, state.query.exactIndexSearch(index, _), labelName, propertyName)
       }
 
     case (planContext, startItem @ SchemaIndex(identifier, labelName, propertyName, UniqueIndex, valueExp)) =>
@@ -145,9 +144,7 @@ class EntityProducerFactory extends GraphElementPropertyFunctions {
         (throw new InternalException("Something went wrong trying to build your query."))
 
       asProducer[Node](startItem) { (m: ExecutionContext, state: QueryState) =>
-        val value = expression(m)(state)
-        val neoValue = makeValueNeoSafe(value)
-        state.query.exactUniqueIndexSearch(index, neoValue).toIterator
+        indexQuery(expression, m, state, state.query.exactUniqueIndexSearch(index, _), labelName, propertyName)
       }
   }
 

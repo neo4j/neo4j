@@ -121,7 +121,7 @@ public class DataGenerator
             batchInserter.shutdown();
         }
         Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
-        jobScheduler.start();
+        jobScheduler.init();
         LifecycledPageCache pageCache = new LifecycledPageCache(
                 new DefaultFileSystemAbstraction(),
                 jobScheduler,
@@ -148,7 +148,7 @@ public class DataGenerator
             pageCache.flush();
             pageCache.close();
             pageCache.stop();
-            jobScheduler.stop();
+            jobScheduler.shutdown();
         }
     }
 

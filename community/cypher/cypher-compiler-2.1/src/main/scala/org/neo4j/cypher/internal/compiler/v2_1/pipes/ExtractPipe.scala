@@ -26,13 +26,27 @@ import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.KeyName
 
 object ExtractPipe {
   def apply(source: Pipe, expressions: Map[String, Expression])(implicit pipeMonitor: PipeMonitor): ExtractPipe = source match {
-      // If we can merge the two pipes together, do it
-    case p: ExtractPipe if expressions.values.forall(_.symbolDependenciesMet(p.source.symbols)) =>
+    // If we can merge the two pipes together, do it
+    case p: ExtractPipe if canMerge(p, expressions) =>
       new ExtractPipe(p.source, p.expressions ++ expressions, true)
 
     case _              =>
       new ExtractPipe(source, expressions, true)
   }
+
+  private def canMerge(source:ExtractPipe, expressions: Map[String, Expression]) = {
+    val symbols = source.source.symbols.identifiers.keySet
+    val expressionsDependenciesMet = expressions.values.forall(_.symbolDependenciesMet(source.source.symbols))
+    val expressionsDependOnIntroducedSymbols = expressions.values.exists {
+      case e => e.exists {
+        case Identifier(x) => symbols.contains(x)
+        case _             => false
+      }
+    }
+
+    expressionsDependenciesMet && !expressionsDependOnIntroducedSymbols
+  }
+
 }
 
 case class ExtractPipe(source: Pipe, expressions: Map[String, Expression], hack_remove_this:Boolean)

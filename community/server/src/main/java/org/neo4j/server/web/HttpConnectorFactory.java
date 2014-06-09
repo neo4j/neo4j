@@ -19,19 +19,27 @@
  */
 package org.neo4j.server.web;
 
-import org.eclipse.jetty.server.*;
-
 import java.util.Arrays;
+
+import org.eclipse.jetty.server.ConnectionFactory;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 
 public class HttpConnectorFactory
 {
-
     public ConnectionFactory createHttpConnectionFactory()
+    {
+        return new HttpConnectionFactory( createHttpConfig() );
+    }
+
+    protected HttpConfiguration createHttpConfig()
     {
         HttpConfiguration httpConfig = new HttpConfiguration();
         httpConfig.setRequestHeaderSize( 20 * 1024 );
         httpConfig.setResponseHeaderSize( 20 * 1024 );
-        return new HttpConnectionFactory( httpConfig );
+        return httpConfig;
     }
 
     public ServerConnector createConnector( Server server, String host, int port, int jettyMaxThreads )
