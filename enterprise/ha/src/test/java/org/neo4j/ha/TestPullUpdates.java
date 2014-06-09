@@ -20,6 +20,7 @@
 package org.neo4j.ha;
 
 import java.io.File;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -193,7 +194,7 @@ public class TestPullUpdates
             masterClusterClient.addClusterListener( new ClusterListener.Adapter()
             {
                 @Override
-                public void leftCluster( InstanceId instanceId )
+                public void leftCluster( InstanceId instanceId, URI member )
                 {
                     slaveLeftLatch.countDown();
                     masterClusterClient.removeClusterListener( this );

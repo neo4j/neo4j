@@ -5,6 +5,11 @@ o Deprecated Function and Function2 interfaces, as they are internal utility API
   longer considered official API. Users are expected to choose a utility library like
   Guava or apache commons for their utility needs.
 
+2.1.2
+-----
+o Resolves a dangerous recovery issue, where multiple crashes in a row without clean shutdown or log rotation
+  in between could cause data loss.
+
 2.1.0
 -----
 o Fixes potential leak of transaction state in entity locks that could

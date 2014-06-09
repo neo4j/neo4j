@@ -127,7 +127,7 @@ public class ConsistencyPerformanceCheck
         jobScheduler = new Neo4jJobScheduler();
         fileSystem = new DefaultFileSystemAbstraction();
         pageCache = new LifecycledPageCache( fileSystem, jobScheduler, tuningConfiguration );
-        jobScheduler.start();
+        jobScheduler.init();
         pageCache.start();
         DirectStoreAccess directStoreAccess = createScannableStores( configuration.get( DataGenerator.store_dir ),
                 tuningConfiguration );
@@ -142,7 +142,7 @@ public class ConsistencyPerformanceCheck
         finally
         {
             pageCache.stop();
-            jobScheduler.stop();
+            jobScheduler.shutdown();
         }
     }
 

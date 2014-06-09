@@ -21,10 +21,22 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, LogicalPlanningTestSupport2}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{LabelName, UsingIndexHint}
 
 class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
+  val GIVEN_FIXED_COST = new given {
+    cost = {
+      case _ => Cost(100)
+    }
+  }
+
+  val hint1: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
+  val hint2: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("age"))_
+  val hint3: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("income"))_
+
   test("picks the right plan by cost, no matter the cardinality") {
     val a = fakeQueryPlanFor("a")
     val b = fakeQueryPlanFor("b")
@@ -36,7 +48,6 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 
       }
     })
   }
-
 
   test("picks the right plan by cost, no matter the size of the covered ids") {
     val ab = fakeQueryPlanFor("a", "b")
@@ -56,13 +67,28 @@ class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 
     val ab = fakeQueryPlanFor("a", "b")
     val c = fakeQueryPlanFor("c")
 
-    val GIVEN = new given {
-      cost = {
-        case _ => Cost(100)
-      }
-    }
+    assertTopPlan(winner = ab, ab, c)(GIVEN_FIXED_COST)
+  }
 
-    assertTopPlan(winner = ab, ab, c)(GIVEN)
+  test("Prefers plans that solves a hint over plan that solves no hint") {
+    val a = fakeQueryPlanFor("a").updateSolved(_.updateGraph(_.addHints(Some(hint1))))
+    val b = fakeQueryPlanFor("a")
+
+    assertTopPlan(winner = a, a, b)(GIVEN_FIXED_COST)
+  }
+
+  test("Prefers plans that solve more hints") {
+    val a = fakeQueryPlanFor("a").updateSolved(_.updateGraph(_.addHints(Some(hint1))))
+    val b = fakeQueryPlanFor("a").updateSolved(_.updateGraph(_.addHints(Seq(hint1, hint2))))
+
+    assertTopPlan(winner = b, a, b)(GIVEN_FIXED_COST)
+  }
+
+  test("Prefers plans that solve more hints in tails") {
+    val a = fakeQueryPlanFor("a").updateSolved(_.updateGraph(_.addHints(Some(hint1))))
+    val b = fakeQueryPlanFor("a").updateSolved(_.withTail(PlannerQuery.empty.updateGraph(_.addHints(Seq(hint1, hint2)))))
+
+    assertTopPlan(winner = b, a, b)(GIVEN_FIXED_COST)
   }
 
   private def assertTopPlan(winner: QueryPlan, candidates: QueryPlan*)(GIVEN: given) {

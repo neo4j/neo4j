@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
+import scala.collection.GenTraversableOnce
 
 trait QueryGraph {
   def patternRelationships: Set[PatternRelationship]
@@ -30,6 +31,7 @@ trait QueryGraph {
   def argumentIds: Set[IdName]
   def selections: Selections
   def optionalMatches: Seq[QueryGraph]
+  def hints: Set[Hint]
 
   def addPatternNodes(nodes: IdName*): QueryGraph
   def addPatternRel(rel: PatternRelationship): QueryGraph
@@ -37,6 +39,7 @@ trait QueryGraph {
   def addArgumentId(newIds: Seq[IdName]): QueryGraph
   def addSelections(selections: Selections): QueryGraph
   def addPredicates(predicates: Expression*): QueryGraph
+  def addHints(addedHints: GenTraversableOnce[Hint]): QueryGraph
 
   def withoutArguments(): QueryGraph = withArgumentIds(Set.empty)
   def withArgumentIds(argumentIds: Set[IdName]): QueryGraph
@@ -52,12 +55,16 @@ trait QueryGraph {
   def findRelationshipsEndingOn(id: IdName): Set[PatternRelationship] =
     patternRelationships.filter { r => r.left == id || r.right == id }
 
-
   def coveredIds: Set[IdName] = {
     val patternIds = QueryGraph.coveredIdsForPatterns(patternNodes, patternRelationships)
     val optionalMatchIds = optionalMatches.flatMap(_.coveredIds)
     patternIds ++ argumentIds ++ optionalMatchIds
   }
+
+  val allHints: Set[Hint] =
+    if (optionalMatches.isEmpty) hints else hints ++ optionalMatches.flatMap(_.allHints)
+
+  def numHints = allHints.size
 
   def ++(other: QueryGraph): QueryGraph =
     QueryGraph(
@@ -65,7 +72,8 @@ trait QueryGraph {
       patternNodes = patternNodes ++ other.patternNodes,
       patternRelationships = patternRelationships ++ other.patternRelationships,
       optionalMatches = optionalMatches ++ other.optionalMatches,
-      argumentIds = argumentIds ++ other.argumentIds
+      argumentIds = argumentIds ++ other.argumentIds,
+      hints = hints ++ other.hints
     )
 
   def isCoveredBy(other: QueryGraph): Boolean = {
@@ -86,8 +94,9 @@ object QueryGraph {
             patternNodes: Set[IdName] = Set.empty,
             argumentIds: Set[IdName] = Set.empty,
             selections: Selections = Selections(),
-            optionalMatches: Seq[QueryGraph] = Seq.empty): QueryGraph =
-    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, optionalMatches)
+            optionalMatches: Seq[QueryGraph] = Seq.empty,
+            hints: Set[Hint] = Set.empty): QueryGraph =
+    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints)
 
   val empty = QueryGraph()
 
@@ -103,7 +112,8 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
                           patternNodes: Set[IdName] = Set.empty,
                           argumentIds: Set[IdName] = Set.empty,
                           selections: Selections = Selections(),
-                          optionalMatches: Seq[QueryGraph] = Seq.empty)
+                          optionalMatches: Seq[QueryGraph] = Seq.empty,
+                          hints: Set[Hint] = Set.empty)
   extends QueryGraph with internalDocBuilder.AsPrettyToString {
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
@@ -136,6 +146,8 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
     val newSelections = Selections(predicates.flatMap(SelectionPredicates.extractPredicates).toSet)
     copy(selections = selections ++ newSelections)
   }
+
+  def addHints(addedHints: GenTraversableOnce[Hint]) = copy(hints = hints ++ addedHints)
 }
 
 object SelectionPredicates {

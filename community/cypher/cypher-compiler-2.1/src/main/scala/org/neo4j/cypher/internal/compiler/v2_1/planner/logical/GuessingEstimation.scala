@@ -29,8 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.SemanticTable
 object GuessingEstimation {
   val LABEL_NOT_FOUND_SELECTIVITY = Multiplier(0.0)
   val PREDICATE_SELECTIVITY = Multiplier(0.2)
-  val INDEX_SEEK_SELECTIVITY = Multiplier(0.08)
-  val UNIQUE_INDEX_SEEK_SELECTIVITY = Multiplier(0.05)
+  val INDEX_SEEK_SELECTIVITY = Multiplier(0.02)
   val DEFAULT_EXPAND_RELATIONSHIP_DEGREE = Multiplier(2.0)
 }
 
@@ -56,7 +55,7 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       statistics.nodesCardinality * INDEX_SEEK_SELECTIVITY
 
     case NodeIndexUniqueSeek(_, _, _, _) =>
-      statistics.nodesCardinality * UNIQUE_INDEX_SEEK_SELECTIVITY
+      Cardinality(1)
 
     case NodeHashJoin(_, left, right) =>
       Cardinality(math.min(cardinality(left).amount, cardinality(right).amount))

@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberChangeEvent;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
+import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -36,6 +40,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class UpdatePuller implements Lifecycle
 {
+    private final HighAvailabilityMemberStateMachine memberStateMachine;
     private final HaXaDataSourceManager xaDataSourceManager;
     private final Master master;
     private final RequestContextFactory requestContextFactory;
@@ -46,14 +51,15 @@ public class UpdatePuller implements Lifecycle
     private final JobScheduler scheduler;
     private final StringLogger logger;
     private final CappedOperation<Pair<String, ? extends Exception>> cappedLogger;
-    private boolean pullUpdates = false;
-    private ScheduledThreadPoolExecutor updatePuller;
+    private volatile boolean pullUpdates = false;
+    private final UpdatePullerHighAvailabilityMemberListener listener;
 
-    public UpdatePuller( HaXaDataSourceManager xaDataSourceManager, Master master,
+    public UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine, HaXaDataSourceManager xaDataSourceManager, Master master,
                          RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
                          AvailabilityGuard availabilityGuard, LastUpdateTime lastUpdateTime, Config config,
                          JobScheduler scheduler, final StringLogger logger )
     {
+        this.memberStateMachine = memberStateMachine;
         this.xaDataSourceManager = xaDataSourceManager;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
@@ -72,6 +78,8 @@ public class UpdatePuller implements Lifecycle
                 logger.warn( event.first(), event.other() );
             }
         };
+
+        listener = new UpdatePullerHighAvailabilityMemberListener( config.get( ClusterSettings.server_id ) );
     }
 
     public void pullUpdates()
@@ -88,10 +96,9 @@ public class UpdatePuller implements Lifecycle
     public void init() throws Throwable
     {
         long pullInterval = config.get( HaSettings.pull_interval );
-        if ( pullInterval > 0 && updatePuller == null )
+        if ( pullInterval > 0 )
         {
-            updatePuller = new ScheduledThreadPoolExecutor( 1 );
-            updatePuller.scheduleWithFixedDelay( new Runnable()
+            scheduler.scheduleRecurring( JobScheduler.Group.pullUpdates, new Runnable()
             {
                 @Override
                 public void run()
@@ -122,32 +129,45 @@ public class UpdatePuller implements Lifecycle
     public void start() throws Throwable
     {
         this.pullUpdates = true;
+        memberStateMachine.addHighAvailabilityMemberListener( listener );
     }
 
     @Override
     public void stop() throws Throwable
     {
         this.pullUpdates = false;
+        memberStateMachine.removeHighAvailabilityMemberListener( listener );
     }
 
     @Override
     public void shutdown() throws Throwable
     {
-        if ( updatePuller != null )
+    }
+
+    private class UpdatePullerHighAvailabilityMemberListener extends HighAvailabilityMemberListener.Adapter
+    {
+        private final InstanceId myInstanceId;
+
+        private UpdatePullerHighAvailabilityMemberListener( InstanceId myInstanceId )
         {
-            try
+            this.myInstanceId = myInstanceId;
+        }
+
+        @Override
+        public void masterIsAvailable( HighAvailabilityMemberChangeEvent event )
+        {
+            if ( event.getInstanceId().equals( myInstanceId ) )
             {
-                /*
-                * Be gentle, interrupting running threads could leave the
-                * file channels in a bad shape.
-                */
-                this.updatePuller.shutdown();
-                this.updatePuller.awaitTermination( 5, TimeUnit.SECONDS );
+                pullUpdates = false;
             }
-            catch ( InterruptedException e )
+        }
+
+        @Override
+        public void slaveIsAvailable( HighAvailabilityMemberChangeEvent event )
+        {
+            if ( event.getInstanceId().equals( myInstanceId ) )
             {
-                logger.logMessage(
-                        "Got exception while waiting for update puller termination", e, true );
+                pullUpdates = true;
             }
         }
     }

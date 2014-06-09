@@ -1442,7 +1442,7 @@ public class DenseNodeTransactionTranslatorTest
     public void setUp()
     {
         jobScheduler = new Neo4jJobScheduler();
-        jobScheduler.start();
+        jobScheduler.init();
         pageCache = new LifecycledPageCache( fs.get(), jobScheduler, new Config() );
         pageCache.start();
     }
@@ -1451,7 +1451,7 @@ public class DenseNodeTransactionTranslatorTest
     public void tearDown()
     {
         pageCache.stop();
-        jobScheduler.stop();
+        jobScheduler.shutdown();
     }
 
     private List<LogEntry> transaction( TransactionContents contents ) throws IOException

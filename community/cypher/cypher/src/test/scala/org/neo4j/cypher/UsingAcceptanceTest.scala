@@ -21,7 +21,7 @@ package org.neo4j.cypher
 
 import org.neo4j.graphdb.NotFoundException
 
-class UsingAcceptanceTest extends ExecutionEngineFunSuite {
+class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
 
   test("fail if using index with start clause") {
     // GIVEN
@@ -38,7 +38,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite {
 
     // WHEN
     intercept[SyntaxException](
-      execute("match n-->() using index n:Person(name) where n.name = 'kabam' return n"))
+      executeWithNewPlanner("match n-->() using index n:Person(name) where n.name = 'kabam' return n"))
   }
 
   test("fail if using an hint for a non existing index") {
@@ -46,7 +46,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite {
 
     // WHEN
     intercept[IndexHintException](
-      execute("match (n:Person)-->() using index n:Person(name) where n.name = 'kabam' return n"))
+      executeWithNewPlanner("match (n:Person)-->() using index n:Person(name) where n.name = 'kabam' return n"))
   }
 
   test("fail if using hints with unusable equality predicate") {
@@ -55,7 +55,7 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite {
 
     // WHEN
     intercept[SyntaxException](
-      execute("match (n:Person)-->() using index n:Person(name) where n.name <> 'kabam' return n"))
+      executeWithNewPlanner("match (n:Person)-->() using index n:Person(name) where n.name <> 'kabam' return n"))
   }
 
   test("fail if joining index hints in equality predicates") {
@@ -65,7 +65,11 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite {
 
     // WHEN
     intercept[NotFoundException](
-      execute("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
+      executeWithNewPlanner("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
+  }
+
+  test("scan hints are handled by ronja") {
+    executeWithNewPlanner("match (n:Person) using scan n:Person return n").toList
   }
 
   test("fail when equality checks are done with OR") {
@@ -74,6 +78,87 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite {
 
     // WHEN
     intercept[SyntaxException](
-      execute("match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n"))
+      executeWithNewPlanner("match n-->() using index n:Person(name) where n.name = 'kabam' OR n.name = 'kaboom' return n"))
   }
+
+  test("should be able to use index hints on IN expressions") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = executeWithNewPlanner("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob'] RETURN n")
+
+    //THEN
+    result.toList should equal (List(Map("n" -> jake)))
+  }
+
+  test("should be able to use index hints on IN collections with duplicates") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = executeWithNewPlanner("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN ['Jacob','Jacob'] RETURN n")
+
+    //THEN
+    result.toList should equal (List(Map("n" -> jake)))
+  }
+
+  test("should be able to use index hints on IN an empty collections") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = executeWithNewPlanner("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN [] RETURN n")
+
+    //THEN
+    result.toList should equal (List())
+  }
+
+  test("should be able to use index hints on IN a null value") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = executeWithNewPlanner("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN null RETURN n")
+
+    //THEN
+    result.toList should equal (List())
+  }
+
+  test("should be able to use index hints on IN a collection parameter") {
+    //GIVEN
+    val andres = createLabeledNode(Map("name" -> "Andres"), "Person")
+    val jake = createLabeledNode(Map("name" -> "Jacob"), "Person")
+    relate(andres, createNode())
+    relate(jake, createNode())
+
+    graph.createIndex("Person", "name")
+
+    //WHEN
+    val result = executeWithNewPlanner("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name IN {coll} RETURN n","coll"->List("Jacob"))
+
+    //THEN
+    result.toList should equal (List(Map("n" -> jake)))
+  }
+
 }

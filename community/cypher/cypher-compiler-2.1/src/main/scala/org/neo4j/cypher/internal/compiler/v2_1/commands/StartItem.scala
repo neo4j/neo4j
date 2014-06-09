@@ -86,8 +86,22 @@ sealed abstract class SchemaIndexKind
 case object AnyIndex extends SchemaIndexKind
 case object UniqueIndex extends SchemaIndexKind
 
-case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[Expression])
-  extends StartItem(identifier, query.map(Arguments.LegacyExpression).toSeq :+ Arguments.Index(label, property))
+trait QueryExpression[T] {
+  def expression: T
+
+  def map[R](f: T => R): QueryExpression[R]
+}
+case class SingleQueryExpression[T](expression: T) extends QueryExpression[T] {
+  def map[R](f: (T) => R) = SingleQueryExpression(f(expression))
+}
+
+case class ManyQueryExpression[T](expression: T) extends QueryExpression[T] {
+  def map[R](f: (T) => R) = ManyQueryExpression(f(expression))
+}
+
+
+case class SchemaIndex(identifier: String, label: String, property: String, kind: SchemaIndexKind, query: Option[QueryExpression[Expression]])
+  extends StartItem(identifier, query.map(q => Arguments.LegacyExpression(q.expression)).toSeq :+ Arguments.Index(label, property))
   with ReadOnlyStartItem with Hint with NodeStartItemIdentifiers
 
 case class NodeById(varName: String, expression: Expression)

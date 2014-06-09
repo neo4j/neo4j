@@ -196,6 +196,27 @@ class CypherParserTest extends CypherFunSuite {
             Property(Identifier("a"), PropertyKey("d")),
             Property(Identifier("a"), PropertyKey("e"))))
         , "a.a/a.b*a.c-a.d*a.e")))
+
+    expectQuery(
+      "start a = NODE(1) return (10 - 5)^2 * COS(3.1415927/4)^2",
+      Query.
+        start(NodeById("a", 1)).
+        returns(ReturnItem(
+        Multiply(
+          Pow(
+            Subtract(
+              Literal(10),
+              Literal(5)),
+            Literal(2)),
+          Pow(
+            CosFunction(
+              Divide(
+                Literal(3.1415927),
+                Literal(4)
+              )
+            ),
+            Literal(2)))
+        , "(10 - 5)^2 * COS(3.1415927/4)^2")))
   }
 
   test("shouldFilterOnPropWithDecimals") {
@@ -2613,6 +2634,16 @@ class CypherParserTest extends CypherFunSuite {
       "match (n:Person)-->() using index n:Person(name) where n.name = 'Andres' return n",
       Query.matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("Person"))), SingleNode("  UNNAMED20"), "  UNNAMED16", Seq(), Direction.OUTGOING, Map.empty)).
         where(Equals(Property(Identifier("n"), PropertyKey("name")), Literal("Andres"))).
+        using(SchemaIndex("n", "Person", "name", AnyIndex, None)).
+        returns(ReturnItem(Identifier("n"), "n"))
+    )
+  }
+
+  test("simple in expression with index hint") {
+    expectQuery(
+      "match (n:Person)-->() using index n:Person(name) where n.name IN ['Andres'] return n",
+      Query.matches(RelatedTo(SingleNode("n", Seq(UnresolvedLabel("Person"))), SingleNode("  UNNAMED20"), "  UNNAMED16", Seq(), Direction.OUTGOING, Map.empty)).
+        where(AnyInCollection(Collection(Literal("Andres")), "-_-INNER-_-",  Equals(Property(Identifier("n"), PropertyKey("name")), Identifier("-_-INNER-_-")))).
         using(SchemaIndex("n", "Person", "name", AnyIndex, None)).
         returns(ReturnItem(Identifier("n"), "n"))
     )

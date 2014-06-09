@@ -41,6 +41,8 @@ case object queryGraphDocBuilder extends CachingDocBuilder[Any] {
 
       val where = section("WHERE", inner(qg.selections))
 
-      group(args :+: patterns :+: optional :+: where)
+      val hints = breakList(qg.hints.map(inner))
+
+      group(args :+: patterns :+: optional :+: hints :+: where)
   }
 }

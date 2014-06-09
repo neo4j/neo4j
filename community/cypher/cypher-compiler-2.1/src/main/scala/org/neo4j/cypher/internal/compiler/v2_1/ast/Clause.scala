@@ -104,7 +104,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
           || !containsPropertyPredicate(identifier, property) =>
         SemanticError(
           """|Cannot use index hint in this context.
-             | Index hints require using a simple equality comparison in WHERE (either directly or as part of a
+             | Index hints require using a simple equality comparison or IN condition in WHERE (either directly or as part of a
              | top-level AND).
              | Note that the label and property comparison must be specified on a
              | non-optional node""".stripLinesAndMargins, hint.position)
@@ -155,7 +155,9 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
           (acc, _) => acc :+ name
         case Equals(_, Property(Identifier(id), PropertyKeyName(name))) if id == identifier =>
           (acc, _) => acc :+ name
-        case _: Where | _: And =>
+        case In(Property(Identifier(id), PropertyKeyName(name)),_) if id == identifier =>
+          (acc, _) => acc :+ name
+        case _: Where | _: And | _: Ands | _: Set[_] =>
           (acc, children) => children(acc)
         case _ =>
           (acc, _) => acc
@@ -179,7 +181,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
       case Some(where) => where.treeFold(labels) {
         case HasLabels(Identifier(id), labels) if id == identifier =>
           (acc, _) => acc ++ labels.map(_.name)
-        case _: Where | _: And =>
+        case _: Where | _: And | _: Ands | _: Set[_] =>
           (acc, children) => children(acc)
         case _ =>
           (acc, _) => acc

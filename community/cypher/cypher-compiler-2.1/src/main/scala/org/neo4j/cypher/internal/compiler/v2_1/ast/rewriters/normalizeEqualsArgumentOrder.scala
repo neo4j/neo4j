@@ -19,11 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
+import org.neo4j.cypher.internal.compiler.v2_1.{topDown, Rewriter}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{FunctionName, FunctionInvocation, Identifier, Equals}
 
 object normalizeEqualsArgumentOrder extends Rewriter {
-  override def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  override def apply(that: AnyRef): Option[AnyRef] = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
     // moved identifiers on equals to the left

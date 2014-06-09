@@ -45,7 +45,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
     val rewrittenAst: Statement = if (normalize) {
       val step1 = astRewriter.rewrite(query, ast)._1
-      val step2 = step1.rewrite(bottomUp(inSequence(nameVarLengthRelationships, namePatternPredicates))).asInstanceOf[Statement]
+      val step2 = step1.rewrite(inSequence(nameVarLengthRelationships, namePatternPredicates)).asInstanceOf[Statement]
       val step3 = inlineProjections(step2)
       step3
     } else {
@@ -114,13 +114,19 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     ))
 
     query.graph.selections should equal(Selections(Set(
-      Predicate(Set(IdName("n")), Ors(Set(
-        HasLabels(nIdent, Seq(X))(pos),
-        Ands(Set(
-          HasLabels(nIdent, Seq(A))(pos),
+      Predicate(Set(IdName("n")),
+        Ors(Set(
+          HasLabels(nIdent, Seq(X))(pos),
           HasLabels(nIdent, Seq(B))(pos)
-        ))(pos)))_
-      ))))
+        ))(pos)
+      ),
+      Predicate(Set(IdName("n")),
+        Ors(Set(
+          HasLabels(nIdent, Seq(X))(pos),
+          HasLabels(nIdent, Seq(A))(pos)
+        ))(pos)
+      )
+    )))
 
     query.graph.patternNodes should equal(Set(IdName("n")))
   }
@@ -738,6 +744,12 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.selections.predicates should be (empty)
     query.graph.patternRelationships should be (empty)
     query.graph.patternNodes should be (Set(IdName("n")))
+  }
+
+  test("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n") {
+    val (query, _) = buildPlannerQuery("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n")
+
+    query.graph.hints should equal(Set[Hint](UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_))
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_

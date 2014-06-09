@@ -47,7 +47,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     }
 
     @Override
-    public void start()
+    public void init()
     {
         this.executor = newCachedThreadPool( new DaemonThreadFactory( "Neo4j " + id ) );
         this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2 );
@@ -73,7 +73,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     }
 
     @Override
-    public void stop()
+    public void shutdown()
     {
         RuntimeException exception = null;
         try

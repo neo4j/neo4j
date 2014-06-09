@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.perty._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{UsingIndexHint, RelTypeName}
 
 case object astDocBuilder extends CachingDocBuilder[Any] {
 
@@ -29,5 +29,8 @@ case object astDocBuilder extends CachingDocBuilder[Any] {
   override protected def newNestedDocGenerator = {
     case relTypeName: RelTypeName => (inner) =>
       text(relTypeName.name)
+
+    case hint: UsingIndexHint => (inner) =>
+      group("USING" :/: "INDEX" :/: group(inner(hint.identifier) :: block(inner(hint.label))(inner(hint.property))))
   }
 }
