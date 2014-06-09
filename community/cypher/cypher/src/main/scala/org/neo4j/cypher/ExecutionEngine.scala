@@ -47,6 +47,10 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   protected val kernelMonitors = graphAPI.getDependencyResolver.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])
   protected val compiler = createCompiler()
 
+  case class QueryPreparationResult(plan: ExecutionPlan,
+                                    extractedLiteralParams: Map[String, Any],
+                                    txInfo: TransactionInfo)
+
   private val cacheMonitor = kernelMonitors.newMonitor(classOf[StringCacheMonitor])
   private val cacheAccessor = new MonitoringCacheAccessor[String, (ExecutionPlan, Map[String, Any])](cacheMonitor)
 
@@ -58,8 +62,8 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def profile(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    val (plan, extractedParams, txInfo) = prepare(query)
-    plan.profile(graphAPI, txInfo, params ++ extractedParams)
+    val preparedResult = prepare(query)
+    preparedResult.plan.profile(graphAPI, preparedResult.txInfo, params ++ preparedResult.extractedLiteralParams)
   }
 
   @throws(classOf[SyntaxException])
@@ -71,12 +75,15 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   @throws(classOf[SyntaxException])
   def execute(query: String, params: Map[String, Any]): ExecutionResult = {
     logger.debug(query)
-    val (plan, extractedParams, txInfo) = prepare(query)
-    plan.execute(graphAPI, txInfo, params ++ extractedParams)
+    val preparedResult = prepare(query)
+    preparedResult.plan.execute(graphAPI, preparedResult.txInfo, params ++ preparedResult.extractedLiteralParams)
   }
 
+  def explain(query: String): PlanDescription =
+    prepare(query).plan.description
+
   @throws(classOf[SyntaxException])
-  private def prepare(query: String): (ExecutionPlan, Map[String, Any], TransactionInfo) = {
+  private def prepare(query: String): QueryPreparationResult = {
     var n = 0
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
       // create transaction and query context
@@ -112,7 +119,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
         // close the old statement reference after the statement has been "upgraded"
         // to either a schema data or a schema statement, so that the locks are "handed over".
         statement.close()
-        return (plan, extractedParameters, TransactionInfo(tx, isTopLevelTx, txBridge.instance()))
+        return QueryPreparationResult(plan, extractedParameters, TransactionInfo(tx, isTopLevelTx, txBridge.instance()))
       }
 
       n += 1

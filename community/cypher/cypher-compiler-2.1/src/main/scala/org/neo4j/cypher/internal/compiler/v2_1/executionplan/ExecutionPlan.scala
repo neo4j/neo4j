@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
-import org.neo4j.cypher.ExecutionResult
+import org.neo4j.cypher.{PlanDescription, ExecutionResult}
 
 abstract class ExecutionPlan {
   def execute(queryContext: QueryContext, params: Map[String, Any]):ExecutionResult
   def profile(queryContext: QueryContext, params: Map[String, Any]):ExecutionResult
+  def description : PlanDescription
 }
 

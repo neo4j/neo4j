@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal
 
-import org.neo4j.cypher.ExecutionResult
+import org.neo4j.cypher.{PlanDescription, ExecutionResult}
 import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.graphdb.Transaction
 import org.neo4j.kernel.api.Statement
@@ -29,4 +29,5 @@ final case class TransactionInfo(tx: Transaction, isTopLevelTx: Boolean, stateme
 trait ExecutionPlan {
   def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]): ExecutionResult
   def profile(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]): ExecutionResult
+  def description : PlanDescription
 }

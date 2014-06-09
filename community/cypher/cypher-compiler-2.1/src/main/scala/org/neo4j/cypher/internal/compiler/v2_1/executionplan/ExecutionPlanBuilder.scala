@@ -68,6 +68,8 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
 
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
+
+      def description: PlanDescription = pipe.planDescription
     }
   }
 
@@ -126,8 +128,6 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
             new PipeExecutionResult(closingIterator, columns, state, descriptor)
       }
     }
-
-  private def containsLoadCsv(pipe: Pipe): Boolean = pipe.exists(_.isInstanceOf[LoadCSVPipe])
 }
 
 class ExecutionWorkflowBuilder(initialQueryContext: QueryContext) {

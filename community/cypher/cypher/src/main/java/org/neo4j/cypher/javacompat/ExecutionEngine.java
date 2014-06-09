@@ -128,4 +128,16 @@ public class ExecutionEngine
     {
         return inner.prettify( query );
     }
+
+
+    /**
+     * Returns the execution plan for a query, without running it.
+     *
+     * @param query The query to get an execution plan for
+     * @return The execution plan in the form of a PlanDescription
+     */
+    public PlanDescription explain( String query )
+    {
+        return inner.explain( query ).asJava();
+    }
 }
