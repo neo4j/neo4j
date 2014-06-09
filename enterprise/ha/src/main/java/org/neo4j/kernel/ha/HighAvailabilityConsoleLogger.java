@@ -88,9 +88,9 @@ public class HighAvailabilityConsoleLogger
      * @param instanceId
      */
     @Override
-    public void leftCluster( InstanceId instanceId )
+    public void leftCluster( InstanceId instanceId, URI member )
     {
-        console.log( "Instance " + instanceId + " has left the cluster" );
+        console.log( "Instance " + printId( instanceId, member ) + " has left the cluster" );
     }
 
     /**
@@ -194,9 +194,7 @@ public class HighAvailabilityConsoleLogger
 
     private String printId( InstanceId id, URI member )
     {
-        String memberName = member == null ? null : parameter( "memberName" ).apply( member );
-        String memberNameOrId = memberName == null ? id.toString() : memberName;
-
-        return memberNameOrId + (id.equals( myId ) ? " (this server) " : " ");
+        String name = id.instanceNameFromURI( member );
+        return name + (id.equals( myId ) ? " (this server) " : " ");
     }
 }

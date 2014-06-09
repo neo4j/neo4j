@@ -19,6 +19,9 @@
  */
 package org.neo4j.server;
 
+import java.io.IOException;
+import java.security.KeyManagementException;
+import java.security.NoSuchAlgorithmException;
 import java.security.SecureRandom;
 import java.security.cert.CertificateException;
 import java.security.cert.X509Certificate;
@@ -29,24 +32,23 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.X509TrustManager;
 
 import org.junit.After;
-import org.junit.Rule;
+import org.junit.Before;
 import org.junit.Test;
-import org.neo4j.server.rest.RESTDocsGenerator;
-import org.neo4j.test.TestData;
 import org.neo4j.test.server.ExclusiveServerTestBase;
+import org.neo4j.test.server.HTTP;
 
+import static org.hamcrest.CoreMatchers.startsWith;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.*;
 import static org.neo4j.server.helpers.CommunityServerBuilder.server;
 import static org.neo4j.test.server.HTTP.GET;
+import static org.neo4j.test.server.HTTP.POST;
+import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 
-public class HttpsEnabledDocIT extends ExclusiveServerTestBase
+public class HttpsAccessIT extends ExclusiveServerTestBase
 {
-
     private CommunityNeoServer server;
-
-    public @Rule
-    TestData<RESTDocsGenerator> gen = TestData.producedThrough( RESTDocsGenerator.PRODUCER );
+    private String httpsUri;
 
     @After
     public void stopTheServer()
@@ -54,38 +56,16 @@ public class HttpsEnabledDocIT extends ExclusiveServerTestBase
         server.stop();
     }
 
-    @Test
-    public void serverShouldSupportSsl() throws Exception
+    @Before
+    public void startServer() throws NoSuchAlgorithmException, KeyManagementException, IOException
     {
         server = server().withHttpsEnabled()
                 .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
                 .build();
-        server.start();
+        httpsUri = server.httpsUri().toASCIIString();
 
-        assertThat( server.getHttpsEnabled(), is( true ) );
-
-        trustAllSslCerts();
-
-        assertThat( GET(server.httpsUri().toASCIIString()).status(), is( 200 ) );
-    }
-
-    @Test
-    public void webadminShouldBeRetrievableViaSsl() throws Exception
-    {
-        server = server().withHttpsEnabled()
-                .usingDatabaseDir( folder.getRoot().getAbsolutePath() )
-                .build();
-        server.start();
-
-        assertThat( server.getHttpsEnabled(), is( true ) );
-
-        trustAllSslCerts();
-
-        assertThat( GET(server.httpsUri().toASCIIString() + "webadmin/" ).status(), is( 200 ) );
-    }
-
-    private void trustAllSslCerts()
-    {
+        // Because we are generating a non-CA-signed certificate, we need to turn off verification in the client.
+        // This is ironic, since there is no proper verification on the CA side in the first place, but I digress.
 
         TrustManager[] trustAllCerts = new TrustManager[]{new X509TrustManager()
         {
@@ -106,16 +86,44 @@ public class HttpsEnabledDocIT extends ExclusiveServerTestBase
         }};
 
         // Install the all-trusting trust manager
-        try
-        {
-            SSLContext sc = SSLContext.getInstance( "TLS" );
-            sc.init( null, trustAllCerts, new SecureRandom() );
-            HttpsURLConnection.setDefaultSSLSocketFactory( sc.getSocketFactory() );
-        }
-        catch ( Exception e )
-        {
-            ;
-        }
+        SSLContext sc = SSLContext.getInstance( "TLS" );
+        sc.init( null, trustAllCerts, new SecureRandom() );
+        HttpsURLConnection.setDefaultSSLSocketFactory( sc.getSocketFactory() );
     }
 
+    @Test
+    public void serverShouldSupportSsl() throws Exception
+    {
+        // When
+        server.start();
+
+        // Then
+        assertThat( server.getHttpsEnabled(), is( true ) );
+        assertThat( GET(httpsUri).status(), is( 200 ) );
+    }
+
+    @Test
+    public void webadminShouldBeRetrievableViaSsl() throws Exception
+    {
+        // When
+        server.start();
+
+        // Then
+        assertThat( GET(httpsUri + "webadmin/" ).status(), is( 200 ) );
+    }
+
+    @Test
+    public void txEndpointShouldReplyWithHttpsWhenItReturnsURLs() throws Exception
+    {
+        // Given
+        server.start();
+
+        // When
+        HTTP.Response response = POST( httpsUri + "db/data/transaction",
+                quotedJson( "{'statements':[]}" ) );
+
+        // Then
+        assertThat( response.location(), startsWith( httpsUri ) );
+        assertThat( response.get( "commit" ).asText(), startsWith( httpsUri ));
+    }
 }

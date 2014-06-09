@@ -129,7 +129,7 @@ public class MultiPaxosServer
                 }
 
                 @Override
-                public void leftCluster( InstanceId instanceId )
+                public void leftCluster( InstanceId instanceId, URI member )
                 {
                     System.out.println( "Left cluster:" + instanceId );
                 }
