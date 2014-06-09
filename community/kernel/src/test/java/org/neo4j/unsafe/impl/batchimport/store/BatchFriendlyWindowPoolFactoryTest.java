@@ -19,17 +19,26 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
+import static java.nio.ByteBuffer.wrap;
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.anyInt;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.SYNCHRONOUS;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.MappedByteBuffer;
 import java.nio.channels.FileChannel.MapMode;
 import java.nio.channels.FileLock;
+import java.util.Arrays;
 
 import org.junit.After;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.Buffer;
 import org.neo4j.kernel.impl.nioneo.store.OperationType;
@@ -40,17 +49,6 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode;
-
-import static java.nio.ByteBuffer.wrap;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.anyInt;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-
-import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.SYNCHRONOUS;
 
 public class BatchFriendlyWindowPoolFactoryTest
 {
@@ -143,6 +141,30 @@ public class BatchFriendlyWindowPoolFactoryTest
         }
         verifyData( recordId( 0, 0 ), someBytes );
         verifyData( recordId( 0, 3 ), someOtherBytes );
+    }
+
+    @Test
+    public void shouldZeroOutWindowBetweenUses() throws Exception
+    {
+        // GIVEN
+        byte[] someBytes = new byte[]{1, 2, 3, 4, 5};
+        Monitor monitor = mock( Monitor.class );
+        WindowPool pool = pool( monitor, Mode.APPEND_ONLY );
+
+        // WHEN
+        {
+            PersistenceWindow window = pool.acquire( recordId( 1, 2 ), OperationType.WRITE );
+            window.getOffsettedBuffer( recordId( 1, 2 ) ).put( someBytes );
+        }
+
+        PersistenceWindow window = pool.acquire( recordId( 2, 2 ), OperationType.WRITE );
+        byte[] readBack = new byte[someBytes.length];
+        window.getOffsettedBuffer( recordId( 2, 2 ) ).get( readBack );
+
+        byte[] zeros = new byte[someBytes.length];
+        Arrays.fill( zeros, (byte) 0 );
+
+        assertArrayEquals( zeros, readBack );
     }
 
     private void verifyData( long recordId, byte[] expectedData ) throws IOException

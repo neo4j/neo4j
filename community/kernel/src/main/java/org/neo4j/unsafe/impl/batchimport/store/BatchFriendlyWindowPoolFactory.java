@@ -33,6 +33,7 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
 
+import static java.lang.Math.min;
 import static java.nio.ByteBuffer.allocateDirect;
 
 /**
@@ -43,6 +44,10 @@ import static java.nio.ByteBuffer.allocateDirect;
  */
 public class BatchFriendlyWindowPoolFactory implements WindowPoolFactory
 {
+    /* Used for zeroing the data in a buffer. This is a direct buffer and the target buffer is
+     * also direct, so put(ByteBuffer) will result in unsafe memory copy. */
+    private static final ByteBuffer ZEROS = ByteBuffer.allocateDirect( 1024*4 );
+
     public interface WriterFactory
     {
         Writer create( File file, StoreChannel channel, Monitor monitor );
@@ -245,6 +250,28 @@ public class BatchFriendlyWindowPoolFactory implements WindowPoolFactory
             if ( mode.canReadFrom( windowIndex ) )
             {
                 readBufferFromChannel();
+            }
+            else
+            {
+                zeroBuffer();
+            }
+            // buffer position after we placed the window is irrelevant since every future access
+            // will set offset explicitly before use.
+        }
+
+        private void zeroBuffer()
+        {
+            // Duplicate for thread safety
+            ByteBuffer zeros = ZEROS.duplicate();
+            reusableBuffer.reset();
+            ByteBuffer buffer = reusableBuffer.getBuffer();
+
+            while ( buffer.hasRemaining() )
+            {
+                int chunkSize = min( buffer.remaining(), zeros.capacity() );
+                zeros.clear();
+                zeros.limit( chunkSize );
+                buffer.put( zeros );
             }
         }
 
