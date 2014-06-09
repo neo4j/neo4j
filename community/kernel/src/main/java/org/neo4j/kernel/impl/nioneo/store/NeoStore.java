@@ -215,6 +215,10 @@ public class NeoStore extends AbstractStore
         }
     }
 
+    /**
+     * This runs as part of verifyFileSizeAndTruncate, which runs before the store file has been
+     * mapped in the page cache. It is therefore okay for it to access the file channel directly.
+     */
     private void insertRecord( int recordPosition, long value ) throws IOException
     {
         try
