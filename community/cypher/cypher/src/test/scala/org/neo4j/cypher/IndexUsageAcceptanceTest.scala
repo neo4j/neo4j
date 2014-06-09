@@ -19,7 +19,21 @@
  */
 package org.neo4j.cypher
 
+
+
 class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite {
+  test("should be able to use indexes") {
+    // Given
+    execute("CREATE (_0:Matrix { name:'The Architect' }),(_1:Matrix { name:'Agent Smith' }),(_2:Matrix:Crew { name:'Cypher' }),(_3:Crew { name:'Trinity' }),(_4:Crew { name:'Morpheus' }),(_5:Crew { name:'Neo' }), _1-[:CODED_BY]->_0, _2-[:KNOWS]->_1, _4-[:KNOWS]->_3, _4-[:KNOWS]->_2, _5-[:KNOWS]->_4, _5-[:LOVES]->_3")
+    graph.createIndex("Crew", "name")
+
+    // When
+    val result = execute("MATCH (n:Crew) WHERE n.name = 'Neo' RETURN n")
+
+    // Then
+    result.executionPlanDescription.toString should include("SchemaIndex")
+  }
+
   test("should not forget predicates") {
     // Given
     execute("CREATE (_0:Matrix { name:'The Architect' }),(_1:Matrix { name:'Agent Smith' }),(_2:Matrix:Crew { name:'Cypher' }),(_3:Crew { name:'Trinity' }),(_4:Crew { name:'Morpheus' }),(_5:Crew { name:'Neo' }), _1-[:CODED_BY]->_0, _2-[:KNOWS]->_1, _4-[:KNOWS]->_3, _4-[:KNOWS]->_2, _5-[:KNOWS]->_4, _5-[:LOVES]->_3")
@@ -27,20 +41,34 @@ class IndexUsageAcceptanceTest extends ExecutionEngineFunSuite {
 
 
     // When
-    val result = execute("MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name= 'Morpheus' RETURN n")
+    val result = execute("cypher 2.1 MATCH (n:Crew) WHERE n.name = 'Neo' AND n.name = 'Morpheus' RETURN n")
 
     // Then
-    assert(result.isEmpty, "Should not find anything here")
+    result shouldBe empty
+    result.executionPlanDescription.toString should include("SchemaIndex")
   }
 
-  test("should handle dependencies coming from UNWIND properly") {
+  test("should use index when there are multiple labels on the node") {
+    // Given
+    execute("CREATE (_0:Matrix { name:'The Architect' }),(_1:Matrix { name:'Agent Smith' }),(_2:Matrix:Crew { name:'Cypher' }),(_3:Crew { name:'Trinity' }),(_4:Crew { name:'Morpheus' }),(_5:Crew { name:'Neo' }), _1-[:CODED_BY]->_0, _2-[:KNOWS]->_1, _4-[:KNOWS]->_3, _4-[:KNOWS]->_2, _5-[:KNOWS]->_4, _5-[:LOVES]->_3")
+    graph.createIndex("Crew", "name")
+
+    // When
+    val result = execute("MATCH (n:Matrix:Crew) WHERE n.name = 'Neo' RETURN n")
+
+    // Then
+    result.executionPlanDescription.toString should include("SchemaIndex")
+  }
+
+  test("should be able to use value coming from UNWIND for index seek") {
     // Given
     graph.createIndex("Prop", "id")
 
     // When
-    val result = execute("unwind [1,2,3] as x match (n:Prop) using index n:Prop(id) where n.id = x return *;")
+    val result = execute("unwind [1,2,3] as x match (n:Prop) where n.id = x return *;")
 
     // Then
-    assert(result.isEmpty, "Should not find anything here")
+    result shouldBe empty
+    result.executionPlanDescription.toString should include("SchemaIndex")
   }
 }

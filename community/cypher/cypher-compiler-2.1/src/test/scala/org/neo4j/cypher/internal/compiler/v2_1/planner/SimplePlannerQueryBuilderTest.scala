@@ -20,10 +20,9 @@
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp}
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.{inlineProjections, namePatternPredicates, nameVarLengthRelationships}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters.inlineProjections
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 
 class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
@@ -45,9 +44,8 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
     val rewrittenAst: Statement = if (normalize) {
       val step1 = astRewriter.rewrite(query, ast)._1
-      val step2 = step1.rewrite(inSequence(nameVarLengthRelationships, namePatternPredicates)).asInstanceOf[Statement]
-      val step3 = inlineProjections(step2)
-      step3
+      val step2 = Planner.rewriteStatement(step1)
+      inlineProjections(step2)
     } else {
       ast
     }

@@ -45,9 +45,7 @@ case class Planner(monitors: Monitors,
     producePlan(inputQuery.statement, inputQuery.semanticTable, inputQuery.queryText)(planContext)
 
   private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo = {
-    // TODO: When Ronja is the only planner around, move this to ASTRewriter
-    val rewrittenStatement = rewriteStatement(statement)
-    rewrittenStatement match {
+    Planner.rewriteStatement(statement) match {
       case ast: Query =>
         monitor.startedPlanning(query)
         val logicalPlan = produceQueryPlan(ast, semanticTable)(planContext).plan
@@ -61,17 +59,6 @@ case class Planner(monitors: Monitors,
     }
   }
 
-  def rewriteStatement(statement: Statement) = {
-    val namedStatement = statement.rewrite(bottomUp(
-      inSequence(nameVarLengthRelationships, namePatternPredicates)
-    )).asInstanceOf[Statement]
-
-    val statementWithInlinedProjections = inlineProjections(namedStatement)
-    val statementWithAliasedSortSkipAndLimit = statementWithInlinedProjections.rewrite(bottomUp(useAliasesInSortSkipAndLimit))
-
-    statementWithAliasedSortSkipAndLimit
-  }
-
   def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): QueryPlan = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val (plannerQuery, subQueriesLookupTable) = plannerQueryBuilder.produce(ast)
@@ -81,6 +68,20 @@ case class Planner(monitors: Monitors,
     val context = LogicalPlanningContext(planContext, metrics, semanticTable, plannerQuery, queryGraphSolver, subQueriesLookupTable)
     val plan = strategy.plan(context)
     plan
+  }
+}
+
+object Planner {
+  def rewriteStatement(statement: Statement): Statement = {
+    val cnfStatement = statement.typedRewrite[Statement](CNFNormalizer)
+    val namedStatement = cnfStatement.typedRewrite[Statement](bottomUp(
+      inSequence(nameVarLengthRelationships, namePatternPredicates)
+    ))
+
+    val statementWithInlinedProjections = inlineProjections(namedStatement)
+    val statementWithAliasedSortSkipAndLimit = statementWithInlinedProjections.typedRewrite[Statement](bottomUp(useAliasesInSortSkipAndLimit))
+
+    statementWithAliasedSortSkipAndLimit
   }
 }
 
