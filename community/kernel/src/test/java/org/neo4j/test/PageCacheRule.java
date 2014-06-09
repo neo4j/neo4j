@@ -47,7 +47,7 @@ public class PageCacheRule extends ExternalResource
     protected void before() throws Throwable
     {
         jobScheduler = new Neo4jJobScheduler();
-        jobScheduler.start();
+        jobScheduler.init();
     }
 
     @Override
@@ -58,6 +58,6 @@ public class PageCacheRule extends ExternalResource
             pageCache.stop();
             pageCache = null;
         }
-        jobScheduler.stop();
+        jobScheduler.shutdown();
     }
 }

@@ -276,7 +276,7 @@ public class ClusterNetworkTest
             }
 
             @Override
-            public void leftCluster( InstanceId instanceId )
+            public void leftCluster( InstanceId instanceId, URI member )
             {
                 logger.getLogger().debug( uri + " sees a leave:" + instanceId );
                 config.get().left( instanceId );

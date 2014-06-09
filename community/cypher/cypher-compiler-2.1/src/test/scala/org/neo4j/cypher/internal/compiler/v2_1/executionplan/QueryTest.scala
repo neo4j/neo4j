@@ -46,4 +46,15 @@ class QueryTest extends Assertions {
 
     assert(expected === compacted)
   }
+
+  @Test
+  def shouldCompactManyCreateStatementsWithoutBlowingUp() {
+    val allHeads = (1 to 10000).map(x => Query.updates(CreateNode(s"a$x", Map.empty, Seq.empty)).returns())
+    val query = allHeads.reduceLeft[Query] {
+      case (acc, update) => update.copy( tail = Some(acc) )
+    }
+
+    // does not throw
+    query.compact
+  }
 }

@@ -41,8 +41,20 @@ public interface IndexReader extends Resource
         }
 
         @Override
+        public boolean hasIndexed( long nodeId, Object propertyValue )
+        {
+            return false;
+        }
+
+        @Override
         public void close()
         {
         }
     };
+
+    /**
+     * Verifies that the given nodeId is indexed with the given property value, and returns true if that's
+     * the case. Returns false otherwise.
+     */
+    boolean hasIndexed( long nodeId, Object propertyValue );
 }

@@ -22,6 +22,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.commands
 import org.neo4j.cypher.internal.compiler.v2_1.mutation._
 import expressions.{Expression, AggregationExpression}
 import org.neo4j.cypher.internal.compiler.v2_1.commands
+import scala.annotation.tailrec
 
 object Query {
   def start(startItems: StartItem*) = new QueryBuilder().startItems(startItems:_*)
@@ -79,51 +80,55 @@ case class Query(returns: Return,
                  queryString: QueryString = QueryString.empty) extends AbstractQuery {
 
   def compact: Query = {
-    val compactableStart = start.forall(_.mutating) &&
-        start.forall(!_.isInstanceOf[CreateUniqueStartItem]) &&
-        hints.isEmpty &&
-        returns == Return(List("*"), AllIdentifiers()) &&
-        where == True() &&
-        matching.isEmpty &&
-        sort.isEmpty &&
-        slice.isEmpty
+    @tailrec
+    def allTails(acc: Vector[Query], query: Query): Vector[Query] = query.tail match {
+      case Some(remaining) => allTails(acc :+ query.copy(tail = None), remaining)
+      case None            => acc :+ query
+    }
 
-    lazy val tailQ = tail.map(_.compact).get
-
-    val compactableEnd = tail.nonEmpty &&
-      tailQ.matching.isEmpty &&
-      tailQ.where == True() &&
-      tailQ.start.forall(_.mutating) &&
-      tailQ.start.forall(!_.isInstanceOf[CreateUniqueStartItem]) &&
-      tailQ.hints.isEmpty &&
-      tailQ.sort.isEmpty &&
-      tailQ.slice.isEmpty &&
-      tailQ.aggregation.isEmpty &&
-      !tailQ.updatedCommands.exists(containsMergeForPattern)
-
-    // If we have updating actions, we can't merge with a tail part that has updating start items
-    // That would mess with the order of actions
-    val noUpdateClashes = tail.nonEmpty && !(updatedCommands.nonEmpty && tail.get.start.exists(_.mutating))
-
-    if (compactableStart && compactableEnd && noUpdateClashes) {
-      val result = commands.Query(
-        hints = hints ++ tailQ.hints,
-        start = start ++ tailQ.start,
-        returns = tailQ.returns,
-        updatedCommands = updatedCommands ++ tailQ.updatedCommands,
-        matching = Seq(),
-        optional = false,
-        where = True(),
-        aggregation = None,
-        sort = Seq(),
-        slice = None,
-        namedPaths = namedPaths ++ tailQ.namedPaths,
-        tail = tailQ.tail
-      )
-      result
-    } else this
-
+    allTails(Vector.empty, this).reduceRight[Query] {
+      case (head, remaining) =>
+        if (head.compactableStart &&
+            remaining.compactableTail &&
+            // If we have updating actions, we can't merge with a tail part that has updating start items
+            // That would mess with the order of actions
+            !(head.updatedCommands.nonEmpty && remaining.start.exists(_.mutating))) {
+          head.compactWith(remaining)
+        } else
+          head.copy(tail = Some(remaining))
+    }
   }
+
+  private def compactableStart =
+    compactable && returns == Return(List("*"), AllIdentifiers())
+
+  private def compactableTail =
+    compactable && aggregation.isEmpty && !updatedCommands.exists(containsMergeForPattern)
+
+  private def compactable =
+    start.forall(!_.isInstanceOf[CreateUniqueStartItem]) &&
+    hints.isEmpty &&
+    matching.isEmpty &&
+    sort.isEmpty &&
+    slice.isEmpty &&
+    where == True() &&
+    start.forall(_.mutating)
+
+  private def compactWith(other: Query) =
+    commands.Query(
+      hints = hints ++ other.hints,
+      start = start ++ other.start,
+      returns = other.returns,
+      updatedCommands = updatedCommands ++ other.updatedCommands,
+      matching = Seq(),
+      optional = false,
+      where = True(),
+      aggregation = None,
+      sort = Seq(),
+      slice = None,
+      namedPaths = namedPaths ++ other.namedPaths,
+      tail = other.tail
+    )
 
   private def containsMergeForPattern(action: UpdateAction): Boolean = action match {
     case _: MergePatternAction => true

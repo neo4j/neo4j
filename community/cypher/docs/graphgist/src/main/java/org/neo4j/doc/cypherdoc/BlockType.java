@@ -25,6 +25,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
 import org.apache.commons.lang3.StringUtils;
 import org.neo4j.graphdb.Transaction;
@@ -100,6 +101,20 @@ enum BlockType
             return isACommentWith( block, "output" );
         }
     },
+    PROFILE
+            {
+                @Override
+                String process( Block block, State state )
+                {
+                    return AsciidocHelper.createOutputSnippet( state.latestResult.profile );
+                }
+
+                @Override
+                boolean isA( List<String> block )
+                {
+                    return isACommentWith( block, "profile" );
+                }
+            },
     TABLE
     {
         @Override
@@ -206,6 +221,13 @@ enum BlockType
 
             state.latestResult = new Result( fileQuery, state.engine.profile( fileQuery ) );
             String prettifiedQuery = state.engine.prettify( webQuery );
+
+            try ( Transaction tx = state.database.beginTx() )
+            {
+                state.database.schema().awaitIndexesOnline( 2000, TimeUnit.MILLISECONDS );
+                tx.success();
+            }
+
 
             return AsciidocHelper.createCypherSnippetFromPreformattedQuery( prettifiedQuery ) + CypherDoc.EOL +
                     CypherDoc.EOL;

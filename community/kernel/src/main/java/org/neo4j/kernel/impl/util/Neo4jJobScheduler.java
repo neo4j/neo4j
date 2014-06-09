@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import static java.util.concurrent.Executors.newCachedThreadPool;
+
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
@@ -26,8 +28,6 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.helpers.DaemonThreadFactory;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static java.util.concurrent.Executors.newCachedThreadPool;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
@@ -47,7 +47,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     }
 
     @Override
-    public void start()
+    public void init()
     {
         this.executor = newCachedThreadPool( new DaemonThreadFactory( "Neo4j " + id ) );
         this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2 );
@@ -73,7 +73,7 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
     }
 
     @Override
-    public void stop()
+    public void shutdown()
     {
         RuntimeException exception = null;
         try

@@ -46,7 +46,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
     rewriters += isolateAggregation
     rewriters += aliasReturnItems
 
-    val rewriter = bottomUp(inSequence(rewriters.result(): _*))
+    val rewriter = inSequence(rewriters.result(): _*)
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
 
     rewritingMonitor.finishRewriting(queryText, rewrittenStatement)

@@ -154,7 +154,7 @@ public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
 
     public ByteBuffer asByteBuffer()
     {
-        return ByteBuffer.wrap( bytes );
+        return ByteBuffer.wrap( bytes, readIndex, writeIndex );
     }
 
     public int read( ByteBuffer dst ) throws IOException

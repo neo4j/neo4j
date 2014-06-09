@@ -19,6 +19,16 @@
  */
 package org.neo4j.perftest.enterprise.ccheck;
 
+import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
+import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
+import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.enumSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
+import static org.neo4j.perftest.enterprise.windowpool.MemoryMappingConfiguration.addLegacyMemoryMappingConfiguration;
+
 import java.io.File;
 import java.util.Map;
 
@@ -48,16 +58,6 @@ import org.neo4j.perftest.enterprise.generator.DataGenerator;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
-
-import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
-import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
-import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
-import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
-import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.enumSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
-import static org.neo4j.perftest.enterprise.windowpool.MemoryMappingConfiguration.addLegacyMemoryMappingConfiguration;
 
 public class ConsistencyPerformanceCheck
 {
@@ -127,7 +127,7 @@ public class ConsistencyPerformanceCheck
         jobScheduler = new Neo4jJobScheduler();
         fileSystem = new DefaultFileSystemAbstraction();
         pageCache = new LifecycledPageCache( fileSystem, jobScheduler, tuningConfiguration );
-        jobScheduler.start();
+        jobScheduler.init();
         pageCache.start();
         DirectStoreAccess directStoreAccess = createScannableStores( configuration.get( DataGenerator.store_dir ),
                 tuningConfiguration );
@@ -142,7 +142,7 @@ public class ConsistencyPerformanceCheck
         finally
         {
             pageCache.stop();
-            jobScheduler.stop();
+            jobScheduler.shutdown();
         }
     }
 

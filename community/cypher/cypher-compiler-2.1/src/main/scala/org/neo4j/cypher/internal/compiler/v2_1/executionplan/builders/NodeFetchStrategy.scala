@@ -145,6 +145,9 @@ object IndexSeekStrategy extends NodeStrategy {
 
       case predicate @ Equals(expression, Property(Identifier(id), propertyKey))
         if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
+
+      case predicate @ AnyInCollection(expression, _, Equals(Property(Identifier(id), propertyKey),Identifier(_)))
+        if id == identifier && predicate.symbolDependenciesMet(symbols) => SolvedPredicate(propertyKey.name, predicate)
     }
   }
 }

@@ -22,6 +22,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, PatternRelationship}
+import scala.annotation.tailrec
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Hint
 
 trait PlannerQuery {
   def graph: QueryGraph
@@ -31,6 +33,18 @@ trait PlannerQuery {
   def withTail(newTail: PlannerQuery): PlannerQuery
   def withProjection(projection: QueryProjection): PlannerQuery
   def withGraph(graph: QueryGraph): PlannerQuery
+
+  def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
+
+  val allHints: Set[Hint] = tail match {
+    case Some(tailPlannerQuery) => graph.allHints ++ tailPlannerQuery.allHints
+    case None                   => graph.allHints
+  }
+
+  val numHints: Int = tail match {
+    case Some(tailPlannerQuery) => graph.numHints + tailPlannerQuery.numHints
+    case None                   => graph.numHints
+  }
 
   def updateGraph(f: QueryGraph => QueryGraph): PlannerQuery = withGraph(f(graph))
   def updateProjections(f: QueryProjection => QueryProjection): PlannerQuery = withProjection(f(projection))

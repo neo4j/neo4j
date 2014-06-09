@@ -1,9 +1,18 @@
+<<<<<<< HEAD
 2.2.0-SNAPSHOT
 --------------
 o Deprecated Function and Function2 interfaces, as they are internal utility APIs.
   Users may still use the new org.neo4j.function.Function interface, but these are no
   longer considered official API. Users are expected to choose a utility library like
   Guava or apache commons for their utility needs.
+=======
+2.1.2
+-----
+o Resolves a dangerous recovery issue, where multiple crashes in a row without clean shutdown or log rotation
+  in between could cause data loss.
+o BatchImporter properly zeroes out reused buffers, which could lead to introducing corruption during
+  a store migration
+>>>>>>> 2.1-maint
 
 2.1.0
 -----

@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
+import static org.junit.Assert.assertThat;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collection;
@@ -35,7 +38,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
@@ -65,10 +67,6 @@ import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
 import org.neo4j.test.EphemeralFileSystemRule;
-
-import static org.junit.Assert.assertThat;
-
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class DenseNodeTransactionTranslatorTest
 {
@@ -1442,7 +1440,7 @@ public class DenseNodeTransactionTranslatorTest
     public void setUp()
     {
         jobScheduler = new Neo4jJobScheduler();
-        jobScheduler.start();
+        jobScheduler.init();
         pageCache = new LifecycledPageCache( fs.get(), jobScheduler, new Config() );
         pageCache.start();
     }
@@ -1451,7 +1449,7 @@ public class DenseNodeTransactionTranslatorTest
     public void tearDown()
     {
         pageCache.stop();
-        jobScheduler.stop();
+        jobScheduler.shutdown();
     }
 
     private List<LogEntry> transaction( TransactionContents contents ) throws IOException

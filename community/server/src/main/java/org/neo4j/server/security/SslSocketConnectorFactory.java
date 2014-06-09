@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.security;
 
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.*;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -27,6 +28,20 @@ import org.neo4j.server.web.HttpConnectorFactory;
 
 public class SslSocketConnectorFactory extends HttpConnectorFactory
 {
+    @Override
+    protected HttpConfiguration createHttpConfig()
+    {
+        HttpConfiguration httpConfig = super.createHttpConfig();
+        httpConfig.addCustomizer( new HttpConfiguration.Customizer()
+        {
+            @Override
+            public void customize( Connector connector, HttpConfiguration channelConfig, Request request )
+            {
+                request.setScheme( HttpScheme.HTTPS.asString() );
+            }
+        } );
+        return httpConfig;
+    }
 
     public ServerConnector createConnector( Server server, KeyStoreInformation config, String host, int port, int jettyMaxThreads )
     {

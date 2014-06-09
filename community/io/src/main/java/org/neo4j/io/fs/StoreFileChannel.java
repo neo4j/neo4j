@@ -66,10 +66,10 @@ public class StoreFileChannel implements StoreChannel
     @Override
     public void writeAll( ByteBuffer src, long position ) throws IOException
     {
-        long bufferStartPosition = position;
-        long expectedEndPosition = src.limit() - src.position();
+        long filePosition = position;
+        long expectedEndPosition = filePosition + src.limit() - src.position();
         int bytesWritten;
-        while((bufferStartPosition += (bytesWritten = write( src, bufferStartPosition ))) < expectedEndPosition)
+        while((filePosition += (bytesWritten = write( src, filePosition ))) < expectedEndPosition)
         {
             if( bytesWritten <= 0 )
             {

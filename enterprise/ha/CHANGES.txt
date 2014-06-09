@@ -1,3 +1,9 @@
+2.1.2
+-----
+o Fixes issue with Forseti lock manager, which could miss grabbing
+  locks under a race condition
+o Update puller on master no longer tries to pull updates
+  from itself
 
 2.1.0-RC1
 ---------

@@ -175,7 +175,6 @@ public class LogMatchers
             public void describeTo( Description description )
             {
                 description.appendText( String.format( "1PC[%d, txId=%d, <Any Date>],", identifier, txId ) );
-
             }
         };
     }
@@ -195,6 +194,25 @@ public class LogMatchers
             public void describeTo( Description description )
             {
                 description.appendText( String.format( "Done[%d]", identifier ) );
+            }
+        };
+    }
+
+    public static Matcher<? extends LogEntry> commandEntry( final int identifier )
+    {
+        return new TypeSafeMatcher<LogEntry.Command>()
+        {
+
+            @Override
+            public boolean matchesSafely( LogEntry.Command cmd )
+            {
+                return cmd != null && cmd.getIdentifier() == identifier;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( String.format( "Command[%d]", identifier ) );
             }
         };
     }
