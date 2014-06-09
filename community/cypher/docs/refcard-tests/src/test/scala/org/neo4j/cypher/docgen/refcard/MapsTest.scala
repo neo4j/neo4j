@@ -82,9 +82,10 @@ RETURN p
 Maps can be passed in as parameters and used as map or by accessing keys.
 
 ###assertion=returns-one
-MATCH (matchedNode:Person)
+//
 
-RETURN matchedNode AS map
+MATCH (matchedNode:Person)
+RETURN matchedNode
 
 ###
 
