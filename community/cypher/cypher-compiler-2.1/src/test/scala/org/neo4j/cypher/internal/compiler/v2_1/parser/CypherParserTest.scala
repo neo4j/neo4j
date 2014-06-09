@@ -196,6 +196,27 @@ class CypherParserTest extends CypherFunSuite {
             Property(Identifier("a"), PropertyKey("d")),
             Property(Identifier("a"), PropertyKey("e"))))
         , "a.a/a.b*a.c-a.d*a.e")))
+
+    expectQuery(
+      "start a = NODE(1) return (10 - 5)^2 * COS(3.1415927/4)^2",
+      Query.
+        start(NodeById("a", 1)).
+        returns(ReturnItem(
+        Multiply(
+          Pow(
+            Subtract(
+              Literal(10),
+              Literal(5)),
+            Literal(2)),
+          Pow(
+            CosFunction(
+              Divide(
+                Literal(3.1415927),
+                Literal(4)
+              )
+            ),
+            Literal(2)))
+        , "(10 - 5)^2 * COS(3.1415927/4)^2")))
   }
 
   test("shouldFilterOnPropWithDecimals") {

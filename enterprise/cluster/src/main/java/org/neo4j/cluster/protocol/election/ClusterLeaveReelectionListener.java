@@ -19,6 +19,8 @@
  */
 package org.neo4j.cluster.protocol.election;
 
+import java.net.URI;
+
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -39,10 +41,11 @@ public class ClusterLeaveReelectionListener
     }
 
     @Override
-    public void leftCluster( InstanceId member )
+    public void leftCluster( InstanceId instanceId, URI member )
     {
-        logger.warn( "Demoting member " + member + " because it left the cluster" );
+        String name = instanceId.instanceNameFromURI( member );
+        logger.warn( "Demoting member " + name + " because it left the cluster" );
         // Suggest reelection for all roles of this node
-        election.demote( member );
+        election.demote( instanceId );
     }
 }

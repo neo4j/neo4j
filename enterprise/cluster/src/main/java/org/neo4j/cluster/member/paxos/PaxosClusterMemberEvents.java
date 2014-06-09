@@ -19,11 +19,6 @@
  */
 package org.neo4j.cluster.member.paxos;
 
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.toList;
-
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
@@ -59,6 +54,11 @@ import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.toList;
 
 /**
  * Paxos based implementation of {@link org.neo4j.cluster.member.ClusterMemberEvents}
@@ -338,7 +338,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
         }
 
         @Override
-        public void leftCluster( final InstanceId member )
+        public void leftCluster( final InstanceId instanceId, URI member )
         {
             // Notify unavailability of members
             Listeners.notifyListeners( listeners, new Listeners.Notification<ClusterMemberListener>()
@@ -346,14 +346,14 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
                 @Override
                 public void notify( ClusterMemberListener listener )
                 {
-                    for ( MemberIsAvailable memberIsAvailable : clusterMembersSnapshot.getCurrentAvailable( member ) )
+                    for ( MemberIsAvailable memberIsAvailable : clusterMembersSnapshot.getCurrentAvailable( instanceId ) )
                     {
-                        listener.memberIsUnavailable( memberIsAvailable.getRole(), member );
+                        listener.memberIsUnavailable( memberIsAvailable.getRole(), instanceId );
                     }
                 }
             } );
 
-            clusterMembersSnapshot.unavailableMember( member );
+            clusterMembersSnapshot.unavailableMember( instanceId );
         }
     }
 

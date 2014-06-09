@@ -241,7 +241,7 @@ public class ClusterMockTest
             }
 
             @Override
-            public void leftCluster( InstanceId id )
+            public void leftCluster( InstanceId id, URI member )
             {
                 logger.getLogger().debug( uri + " sees a leave from " + id );
             }
