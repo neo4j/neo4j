@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp, ParsedQuery, Monitors}
+import org.neo4j.cypher.internal.compiler.v2_1.{bottomUp, inSequence, ParsedQuery, Monitors}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
@@ -46,7 +46,7 @@ case class Planner(monitors: Monitors,
 
   private def producePlan(statement: Statement, semanticTable: SemanticTable, query: String)(planContext: PlanContext): PipeInfo = {
     // TODO: When Ronja is the only planner around, move this to ASTRewriter
-    val rewrittenStatement = rewriteStatement(statement)
+    val rewrittenStatement = Planner.rewriteStatement(statement)
     rewrittenStatement match {
       case ast: Query =>
         monitor.startedPlanning(query)
@@ -61,17 +61,6 @@ case class Planner(monitors: Monitors,
     }
   }
 
-  def rewriteStatement(statement: Statement) = {
-    val namedStatement = statement.rewrite(bottomUp(
-      inSequence(nameVarLengthRelationships, namePatternPredicates)
-    )).asInstanceOf[Statement]
-
-    val statementWithInlinedProjections = inlineProjections(namedStatement)
-    val statementWithAliasedSortSkipAndLimit = statementWithInlinedProjections.rewrite(bottomUp(useAliasesInSortSkipAndLimit))
-
-    statementWithAliasedSortSkipAndLimit
-  }
-
   def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): QueryPlan = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val (plannerQuery, subQueriesLookupTable) = plannerQueryBuilder.produce(ast)
@@ -81,6 +70,26 @@ case class Planner(monitors: Monitors,
     val context = LogicalPlanningContext(planContext, metrics, semanticTable, plannerQuery, queryGraphSolver, subQueriesLookupTable)
     val plan = strategy.plan(context)
     plan
+  }
+}
+
+object Planner {
+  def rewriteStatement(statement: Statement): Statement = {
+    val rewrittenStatement = statement.typedRewrite[Statement](
+      inSequence(
+        rewriteEqualityToInCollection,
+        splitInCollectionsToIsolateConstants,
+        CNFNormalizer,
+        collapseInCollectionsContainingConstants,
+        nameVarLengthRelationships,
+        namePatternPredicates
+      )
+    )
+
+    val statementWithInlinedProjections = inlineProjections(rewrittenStatement)
+    val statementWithAliasedSortSkipAndLimit = statementWithInlinedProjections.typedRewrite[Statement](useAliasesInSortSkipAndLimit)
+
+    statementWithAliasedSortSkipAndLimit
   }
 }
 

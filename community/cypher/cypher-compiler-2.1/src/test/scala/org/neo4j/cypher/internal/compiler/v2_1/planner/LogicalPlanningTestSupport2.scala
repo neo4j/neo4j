@@ -249,7 +249,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       semanticChecker.check(queryString, parsedStatement)
       val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement)
       val semanticTable = semanticChecker.check(queryString, rewrittenStatement)
-      SemanticPlan(planner.rewriteStatement(rewrittenStatement) match {
+      SemanticPlan(Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
           planner.produceQueryPlan(ast, semanticTable)(planContext).plan
