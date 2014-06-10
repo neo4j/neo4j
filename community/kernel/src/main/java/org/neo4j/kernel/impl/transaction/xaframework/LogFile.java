@@ -19,27 +19,19 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Sees a log file as bytes, including taking care of rotation of the file into optimal chunks.
- * In order to get hold of {@link #getReader(LogPosition) readers} and {@link #getWriter() writer},
- * {@link #open()} needs to be called first.
  */
-public interface LogFile extends Closeable
+public interface LogFile extends Lifecycle
 {
     public interface LogFileVisitor
     {
         boolean visit( LogPosition position, ReadableLogChannel channel );
     }
-
-    /**
-     * Opens the log file to make readers and writers available.
-     */
-    void open( Visitor<ReadableLogChannel, IOException> recoveredDataVisitor ) throws IOException;
 
     /**
      * @return {@link WritableLogChannel} capable of appending data to this log.

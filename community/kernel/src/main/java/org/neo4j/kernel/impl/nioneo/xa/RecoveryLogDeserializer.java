@@ -21,35 +21,36 @@ package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 
 // TODO 2.2-future check out how deserialization happens on recovery and transfer over anything useful
-public class RecoveryLogDeserializer implements LogReader<StoreChannel>
+public class RecoveryLogDeserializer implements LogReader<ReadableLogChannel>
 {
     private final LogEntryReader logEntryReader;
 
-    public RecoveryLogDeserializer( XaCommandReaderFactory commandReaderFactory )
+    public RecoveryLogDeserializer( CommandReaderFactory commandReaderFactory )
     {
         logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
     }
 
     @Override
-    public Cursor<LogEntry, IOException> cursor( StoreChannel channel )
+    public Cursor<LogEntry, IOException> cursor( ReadableLogChannel channel )
     {
         return new RecoveryCursor( channel );
     }
 
     private class RecoveryCursor implements Cursor<LogEntry, IOException>
     {
-        private final StoreChannel channel;
+        private final ReadableLogChannel channel;
 
-        private RecoveryCursor( StoreChannel channel )
+        private RecoveryCursor( ReadableLogChannel channel )
         {
             this.channel = channel;
         }
@@ -57,7 +58,7 @@ public class RecoveryLogDeserializer implements LogReader<StoreChannel>
         @Override
         public boolean next( Consumer<LogEntry, IOException> consumer ) throws IOException
         {
-            long position = channel.position();
+            LogPosition position = channel.getCurrentPosition();
 
             LogEntry entry = logEntryReader.readLogEntry( channel );
             if ( entry instanceof LogEntry.Start )

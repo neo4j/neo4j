@@ -49,7 +49,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.transaction.xaframework.CommandSerializer;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
@@ -63,8 +63,8 @@ public class LogTruncationTest
 {
     private final InMemoryLogChannel inMemoryChannel = new InMemoryLogChannel();
     private final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader(
-            XaCommandReaderFactory.DEFAULT );
-    private final CommandSerializer serializer = new CommandSerializer( inMemoryChannel );
+            CommandReaderFactory.DEFAULT );
+    private final CommandWriter serializer = new CommandWriter( inMemoryChannel );
     private final LogEntryWriterv1 writer = new LogEntryWriterv1( inMemoryChannel, serializer );
     /** Stores all known commands, and an arbitrary set of different permutations for them */
     private final Map<Class<?>, Command[]> permutations = new HashMap<>();

@@ -27,7 +27,7 @@ import java.nio.channels.FileLock;
 
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
-class PhysicalLogVersionedStoreChannel implements VersionedStoreChannel
+public class PhysicalLogVersionedStoreChannel implements VersionedStoreChannel
 {
     private final StoreChannel delegateChannel;
     private long version;

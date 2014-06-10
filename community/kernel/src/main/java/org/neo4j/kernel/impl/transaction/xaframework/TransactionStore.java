@@ -22,17 +22,13 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.Closeable;
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * Uses {@link LogFile} and using the bytes it provides, sees the bytes as transactions.
  */
-public interface TransactionStore extends Closeable
+public interface TransactionStore extends Closeable, Lifecycle
 {
-    void open( Visitor<TransactionRepresentation, IOException> recoveredTransactionVisitor )
-            throws IOException, TransactionFailureException;
-
     TransactionAppender getAppender();
 
     TransactionCursor getCursor( long transactionIdToStartFrom ) throws NoSuchTransactionException, IOException;

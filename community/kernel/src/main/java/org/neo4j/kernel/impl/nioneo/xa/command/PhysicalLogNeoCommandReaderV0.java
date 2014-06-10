@@ -39,13 +39,13 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
 
-public class PhysicalLogNeoXaCommandReaderV0 implements XaCommandReader
+public class PhysicalLogNeoCommandReaderV0 implements CommandReader
 {
     private interface DynamicRecordAdder<T>
     {

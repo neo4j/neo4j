@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -31,11 +28,15 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 
 /**
  * {@link LogFile} backup by one or more files in a {@link FileSystemAbstraction}.
  */
-public class PhysicalLogFile implements LogFile, LogVersionBridge
+public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVersionBridge
 {
     public static final String DEFAULT_NAME = "nioneo_logical.log";
     private final long rotateAtSize;
@@ -44,16 +45,18 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
     private final TransactionIdStore transactionIdStore;
     private final PhysicalLogFiles logFiles;
     private final LogPositionCache positionCache;
+    private final Visitor<ReadableLogChannel, IOException> recoveredDataVisitor;
     private final Monitor monitor;
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( 16 );
     private final LogRotationControl logRotationControl;
     private WritableLogChannel writer;
     private final LogVersionRepository logVersionRepository;
+    private PhysicalLogVersionedStoreChannel channel;
 
     public PhysicalLogFile( FileSystemAbstraction fileSystem, File directory, String name, long rotateAtSize,
             LogPruneStrategy pruneStrategy, TransactionIdStore transactionIdStore,
             LogVersionRepository logVersionRepository, Monitor monitor, LogRotationControl logRotationControl,
-            LogPositionCache positionCache )
+            LogPositionCache positionCache, Visitor<ReadableLogChannel, IOException> recoveredDataVisitor )
     {
         this.fileSystem = fileSystem;
         this.rotateAtSize = rotateAtSize;
@@ -63,15 +66,15 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
         this.monitor = monitor;
         this.logRotationControl = logRotationControl;
         this.positionCache = positionCache;
+        this.recoveredDataVisitor = recoveredDataVisitor;
         this.logFiles = new PhysicalLogFiles( directory, name, fileSystem );
     }
 
     @Override
-    public void open( Visitor<ReadableLogChannel, IOException> recoveredDataVisitor ) throws IOException
+    public void init() throws Throwable
     {
         long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
-        PhysicalLogVersionedStoreChannel channel = openLogChannelForVersion( lastLogVersionUsed );
-        doRecoveryOn( channel, recoveredDataVisitor );
+        channel = openLogChannelForVersion( lastLogVersionUsed );
         writer = new PhysicalWritableLogChannel( channel, new LogVersionBridge()
         {
             @Override
@@ -87,6 +90,28 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
             }
         } );
     }
+
+    @Override
+    public void start() throws Throwable
+    {
+        doRecoveryOn( channel, recoveredDataVisitor );
+    }
+
+    @Override
+    public synchronized void shutdown() throws IOException
+    {
+        logRotationControl.awaitAllTransactionsClosed();
+        logRotationControl.forceEverything();
+        /*
+         *  We simply increment the version, essentially "rotating" away
+         *  the current active log file, to avoid having a recovery on
+         *  next startup. Not necessary, simply speeds up the startup
+         *  process.
+         */
+        logVersionRepository.incrementAndGetVersion();
+        //        pruneStrategy.prune( this );
+    }
+
 
     private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
     {
@@ -308,21 +333,6 @@ public class PhysicalLogFile implements LogFile, LogVersionBridge
         {
             logger.warn( "Failed to truncate " + logFile + " at correct size", e );
         }
-    }
-
-    @Override
-    public synchronized void close() throws IOException
-    {
-        logRotationControl.awaitAllTransactionsClosed();
-        logRotationControl.forceEverything();
-        /*
-         *  We simply increment the version, essentially "rotating" away
-         *  the current active log file, to avoid having a recovery on
-         *  next startup. Not necessary, simply speeds up the startup
-         *  process.
-         */
-        logVersionRepository.incrementAndGetVersion();
-        //        pruneStrategy.prune( this );
     }
 
     @Override

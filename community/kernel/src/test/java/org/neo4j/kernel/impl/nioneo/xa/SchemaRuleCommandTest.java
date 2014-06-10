@@ -36,8 +36,8 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
-import org.neo4j.kernel.impl.transaction.xaframework.CommandSerializer;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV1;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
 
 import static org.hamcrest.CoreMatchers.instanceOf;
@@ -127,7 +127,7 @@ public class SchemaRuleCommandTest
         when( neoStore.getSchemaStore() ).thenReturn( store );
 
         // WHEN
-        new CommandSerializer( buffer ).visitSchemaRuleCommand( command );
+        new CommandWriter( buffer ).visitSchemaRuleCommand( command );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -149,7 +149,7 @@ public class SchemaRuleCommandTest
         when( neoStore.getSchemaStore() ).thenReturn( store );
 
         // WHEN
-        new CommandSerializer( buffer ).visitSchemaRuleCommand( command );
+        new CommandWriter( buffer ).visitSchemaRuleCommand( command );
         Command readCommand = reader.read( buffer );
 
         // THEN
@@ -167,7 +167,7 @@ public class SchemaRuleCommandTest
     private final IndexingService indexes = mock( IndexingService.class );
     private final NeoTransactionStoreApplier executor = new NeoTransactionStoreApplier( neoStore, indexes,
             mock( CacheAccessBackDoor.class ), LockService.NO_LOCK_SERVICE, txId, false );
-    private final PhysicalLogNeoXaCommandReaderV1 reader = new PhysicalLogNeoXaCommandReaderV1();
+    private final PhysicalLogNeoCommandReaderV1 reader = new PhysicalLogNeoCommandReaderV1();
     private final IndexRule rule = IndexRule.indexRule( id, labelId, propertyKey, PROVIDER_DESCRIPTOR );
 
     private Collection<DynamicRecord> serialize( SchemaRule rule, long id, boolean inUse, boolean created )

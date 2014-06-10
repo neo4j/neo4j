@@ -20,12 +20,12 @@
 package org.neo4j.kernel.impl.nioneo.xa.command;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.util.Cursor;
 
-public interface LogReader<T extends ReadableByteChannel>
+public interface LogReader<T extends ReadableLogChannel>
 {
     public Cursor<LogEntry, IOException> cursor( T channel );
 }

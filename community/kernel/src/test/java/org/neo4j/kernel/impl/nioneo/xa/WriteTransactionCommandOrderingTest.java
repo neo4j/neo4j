@@ -120,6 +120,7 @@ public class WriteTransactionCommandOrderingTest
         nodeChanges.add( updatedNode );
 
         when( nodeRecordChanges.changes() ).thenReturn( nodeChanges );
+        when( nodeRecordChanges.changeSize()).thenReturn( 3 );
         
         when( labelTokenChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Integer,LabelTokenRecord,Void>>emptyList() );
         when( relationshipTypeTokenChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Integer,RelationshipTypeTokenRecord,Void>>emptyList() );

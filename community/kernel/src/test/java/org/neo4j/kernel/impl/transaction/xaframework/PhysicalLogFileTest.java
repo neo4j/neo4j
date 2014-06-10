@@ -32,6 +32,7 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
 
@@ -48,13 +49,14 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        LogFile logFile = new PhysicalLogFile( fs, directory.directory(), name, 1000, LogPruneStrategies.NO_PRUNING,
+        LifeSupport life = new LifeSupport(  );
+        LogFile logFile = life.add(new PhysicalLogFile( fs, directory.directory(), name, 1000, LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new LogPositionCache( 10, 100 ) );
-        logFile.open( NO_RECOVERY_EXPECTED );
+                new LogPositionCache( 10, 100 ), NO_RECOVERY_EXPECTED ));
 
         // WHEN
-        logFile.close();
+        life.start();
+        life.shutdown();
 
         // THEN
         File file = new PhysicalLogFiles( directory.directory(), name, fs ).getHistoryFileName( 1L );
@@ -69,27 +71,36 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        LogFile logFile = new PhysicalLogFile( fs, directory.directory(), name, 1000, LogPruneStrategies.NO_PRUNING,
+        LifeSupport life = new LifeSupport(  );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, directory.directory(), name, 1000,
+                LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new LogPositionCache( 10, 100 ) );
-        logFile.open( NO_RECOVERY_EXPECTED );
+                new LogPositionCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
 
         // WHEN
-        WritableLogChannel writer = logFile.getWriter();
-        LogPosition position = writer.getCurrentPosition();
-        int intValue = 45;
-        long longValue = 4854587;
-        writer.putInt( intValue );
-        writer.putLong( longValue );
-        writer.force();
-
-        // THEN
-        try ( ReadableLogChannel reader = logFile.getReader( position ) )
+        try
         {
-            assertEquals( intValue, reader.getInt() );
-            assertEquals( longValue, reader.getLong() );
+            life.start();
+
+            WritableLogChannel writer = logFile.getWriter();
+            LogPosition position = writer.getCurrentPosition();
+            int intValue = 45;
+            long longValue = 4854587;
+            writer.putInt( intValue );
+            writer.putLong( longValue );
+            writer.force();
+
+            // THEN
+            try ( ReadableLogChannel reader = logFile.getReader( position ) )
+            {
+                assertEquals( intValue, reader.getInt() );
+                assertEquals( longValue, reader.getLong() );
+            }
         }
-        logFile.close();
+        finally
+        {
+            life.shutdown();
+        }
     }
 
     @Test
@@ -98,40 +109,47 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        LogFile logFile = new PhysicalLogFile( fs, directory.directory(), name, 50, LogPruneStrategies.NO_PRUNING,
+        LifeSupport life = new LifeSupport(  );
+        LogFile logFile = life.add(new PhysicalLogFile( fs, directory.directory(), name, 50, LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new LogPositionCache( 10, 100 ) );
-        logFile.open( NO_RECOVERY_EXPECTED );
+                new LogPositionCache( 10, 100 ), NO_RECOVERY_EXPECTED ));
 
         // WHEN
-        WritableLogChannel writer = logFile.getWriter();
-        LogPosition position1 = writer.getCurrentPosition();
-        int intValue = 45;
-        long longValue = 4854587;
-        byte[] someBytes = someBytes( 40 );
-        writer.putInt( intValue );
-        writer.putLong( longValue );
-        writer.put( someBytes, someBytes.length );
-        writer.force();
-        LogPosition position2 = writer.getCurrentPosition();
-        long longValue2 = 123456789L;
-        writer.putLong( longValue2 );
-        writer.put( someBytes, someBytes.length );
-        writer.force();
+        life.start();
+        try
+        {
+            WritableLogChannel writer = logFile.getWriter();
+            LogPosition position1 = writer.getCurrentPosition();
+            int intValue = 45;
+            long longValue = 4854587;
+            byte[] someBytes = someBytes( 40 );
+            writer.putInt( intValue );
+            writer.putLong( longValue );
+            writer.put( someBytes, someBytes.length );
+            writer.force();
+            LogPosition position2 = writer.getCurrentPosition();
+            long longValue2 = 123456789L;
+            writer.putLong( longValue2 );
+            writer.put( someBytes, someBytes.length );
+            writer.force();
 
-        // THEN
-        try ( ReadableLogChannel reader = logFile.getReader( position1 ) )
-        {
-            assertEquals( intValue, reader.getInt() );
-            assertEquals( longValue, reader.getLong() );
-            assertArrayEquals( someBytes, readBytes( reader, 40 ) );
+            // THEN
+            try ( ReadableLogChannel reader = logFile.getReader( position1 ) )
+            {
+                assertEquals( intValue, reader.getInt() );
+                assertEquals( longValue, reader.getLong() );
+                assertArrayEquals( someBytes, readBytes( reader, 40 ) );
+            }
+            try ( ReadableLogChannel reader = logFile.getReader( position2 ) )
+            {
+                assertEquals( longValue2, reader.getLong() );
+                assertArrayEquals( someBytes, readBytes( reader, 40 ) );
+            }
         }
-        try ( ReadableLogChannel reader = logFile.getReader( position2 ) )
+        finally
         {
-            assertEquals( longValue2, reader.getLong() );
-            assertArrayEquals( someBytes, readBytes( reader, 40 ) );
+            life.shutdown();
         }
-        logFile.close();
     }
 
     @Test
@@ -154,28 +172,35 @@ public class PhysicalLogFileTest
         } );
 
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        LogFile logFile = new PhysicalLogFile( fs, directory.directory(), name, 50, LogPruneStrategies.NO_PRUNING,
+        LifeSupport life = new LifeSupport(  );
+        LogFile logFile = life.add(new PhysicalLogFile( fs, directory.directory(), name, 50, LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new LogPositionCache( 10, 100 ) );
-        logFile.open( new Visitor<ReadableLogChannel, IOException>()
+                new LogPositionCache( 10, 100 ), new Visitor<ReadableLogChannel, IOException>()
+                        {
+                            @Override
+                            public boolean visit( ReadableLogChannel element ) throws IOException
+                            {
+                                assertEquals( (byte) 2, element.get() );
+                                assertEquals( 23324, element.getInt() );
+                                try
+                                {
+                                    element.get();
+                                    fail( "There should be no more" );
+                                }
+                                catch ( ReadPastEndException e )
+                                {   // Good
+                                }
+                                return true;
+                            }
+                        } ));
+        try
         {
-            @Override
-            public boolean visit( ReadableLogChannel element ) throws IOException
-            {
-                assertEquals( (byte) 2, element.get() );
-                assertEquals( 23324, element.getInt() );
-                try
-                {
-                    element.get();
-                    fail( "There should be no more" );
-                }
-                catch ( ReadPastEndException e )
-                {   // Good
-                }
-                return true;
-            }
-        } );
-        logFile.close();
+            life.start();
+        }
+        finally
+        {
+            life.shutdown();
+        }
     }
 
     private void writeSomeData( File file, Visitor<ByteBuffer, IOException> visitor ) throws IOException

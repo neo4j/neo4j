@@ -19,18 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.hamcrest.number.OrderingComparison.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
-
 import java.io.File;
-
 import javax.transaction.xa.Xid;
 
 import org.junit.Ignore;
@@ -40,17 +29,27 @@ import org.mockito.invocation.InvocationOnMock;
 import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.XidImpl;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.LoggingMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
 
 @Ignore
 //TODO 2.2-future some tests here may be a good idea to reimplement.
@@ -92,11 +91,12 @@ public class XaLogicalLogTest
                         } ) );
             }
         } );
-        PhysicalLogFile log = new PhysicalLogFile( fs, dir, "logical.log", 14/* <- This is the rotate threshold */, 
+        LifeSupport life = new LifeSupport(  );
+        PhysicalLogFile log = life.add(new PhysicalLogFile( fs, dir, "logical.log", 14/* <- This is the rotate threshold */,
         		NO_PRUNING, mock( TransactionIdStore.class ), mock( LogVersionRepository.class), mock( Monitor.class ), 
-        		mock( LogRotationControl.class), mock( LogPositionCache.class ) );
-        log.open( mock ( Visitor.class ) );
-        
+        		mock( LogRotationControl.class), mock( LogPositionCache.class ), mock ( Visitor.class ) ));
+        life.start();
+
         WritableLogChannel writer = log.getWriter();
 
         // -- set the log up with 10 transactions (with no commands, just start and commit)

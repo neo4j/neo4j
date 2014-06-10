@@ -37,7 +37,7 @@ public class PhysicalTransactionAppender implements TransactionAppender
         this.channel = channel;
         this.txIdGenerator = txIdGenerator;
         this.positionCache = positionCache;
-        this.logEntryWriter = new LogEntryWriterv1( channel, new CommandSerializer( channel ) );
+        this.logEntryWriter = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
     }
 
     @Override

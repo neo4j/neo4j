@@ -1201,16 +1201,17 @@ public class TestNeoStore
     @Test
     public void setVersion() throws Exception
     {
-        String storeDir = "target/test-data/set-version";
-        new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( storeDir ).shutdown();
-        assertEquals( 1, NeoStore.setVersion( fs.get(), new File( storeDir, NeoStore.DEFAULT_NAME ), 10 ) );
-        assertEquals( 10, NeoStore.setVersion( fs.get(), new File( storeDir, NeoStore.DEFAULT_NAME ), 12 ) );
+        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        File storeDir = new File("target/test-data/set-version");
+        new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir.getAbsolutePath() ).shutdown();
+        assertEquals( 1, NeoStore.setVersion( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsoluteFile(), 10 ) );
+        assertEquals( 10, NeoStore.setVersion( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsoluteFile(), 12 ) );
 
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
-        StoreFactory sf = new StoreFactory( configForStoreDir( config, new File( storeDir ) ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, null );
+        StoreFactory sf = new StoreFactory( configForStoreDir( config, storeDir ),
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL, null );
 
-        NeoStore neoStore = sf.newNeoStore( true );
+        NeoStore neoStore = sf.newNeoStore( false );
         assertEquals( 12, neoStore.getCurrentLogVersion() );
         neoStore.close();
     }

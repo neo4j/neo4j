@@ -23,45 +23,43 @@ import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.mockito.Mockito.mock;
 
-import java.nio.ByteBuffer;
-
 import org.junit.Test;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV0;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV0;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV1;
 
-public class XaCommandReaderFactoryTest
+public class CommandReaderFactoryTest
 {
     @Test
     public void testReturnsV0ReaderForVersion0() throws Exception
     {
         // GIVEN
-        XaCommandReaderFactory factory = XaCommandReaderFactory.DEFAULT;
+        CommandReaderFactory factory = CommandReaderFactory.DEFAULT;
 
         // WHEN
-        XaCommandReader reader = factory.newInstance( (byte) 0 );
+        CommandReader reader = factory.newInstance( (byte) 0 );
 
         // THEN
-        assertTrue( reader instanceof PhysicalLogNeoXaCommandReaderV0 );
+        assertTrue( reader instanceof PhysicalLogNeoCommandReaderV0 );
     }
 
     @Test
     public void testReturnsV1ReaderForVersion1() throws Exception
     {
         // GIVEN
-        XaCommandReaderFactory factory = XaCommandReaderFactory.DEFAULT;
+        CommandReaderFactory factory = CommandReaderFactory.DEFAULT;
 
         // WHEN
-        XaCommandReader reader = factory.newInstance( (byte) -1 );
+        CommandReader reader = factory.newInstance( (byte) -1 );
 
         // THEN
-        assertTrue( reader instanceof PhysicalLogNeoXaCommandReaderV1 );
+        assertTrue( reader instanceof PhysicalLogNeoCommandReaderV1 );
     }
 
     @Test
     public void testThrowsExceptionForNonExistingVersion() throws Exception
     {
         // GIVEN
-        XaCommandReaderFactory factory = XaCommandReaderFactory.DEFAULT;
+        CommandReaderFactory factory = CommandReaderFactory.DEFAULT;
 
         // WHEN
         try

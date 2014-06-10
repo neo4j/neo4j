@@ -19,17 +19,11 @@
  */
 package org.neo4j.test;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.core.Is.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.transaction.xa.Xid;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -37,17 +31,27 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.util.Arrays.asList;
+
+import static org.hamcrest.core.Is.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
@@ -115,7 +119,7 @@ public class LogTestUtils
 
             // Read all log entries
             final List<LogEntry> entries = new ArrayList<>();
-            LogDeserializer deserializer = new LogDeserializer( XaCommandReaderFactory.DEFAULT );
+            LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
 
 
             Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
@@ -128,7 +132,9 @@ public class LogTestUtils
                 }
             };
 
-            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
+            ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel), LogVersionBridge.NO_MORE_CHANNELS, 4096);
+
+            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( logChannel ) )
             {
                 cursor.next( consumer );
             }

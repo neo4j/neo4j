@@ -19,34 +19,48 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
-import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
-
+import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.junit.Rule;
+import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.LogFileRecoverer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.TargetDirectory.TestDirectory;
+import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 
 public class PhysicalTransactionStoreTest
 {
+    private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+
+    private File dir = new File( "dir" );
+
+    @Before
+    public void setup()
+    {
+        fs.mkdir( dir );
+    }
+
     @Test
     public void shouldOpenCleanStore() throws Exception
     {
@@ -55,23 +69,31 @@ public class PhysicalTransactionStoreTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LogPositionCache positionCache = new LogPositionCache( 10, 1000 );
 
-        LogFile logFile = new PhysicalLogFile( fs, directory.directory(), DEFAULT_NAME, 1000, NO_PRUNING,
+        LifeSupport life = new LifeSupport(  );
+        LogFile logFile = life.add(new PhysicalLogFile( fs, dir, DEFAULT_NAME, 1000, NO_PRUNING,
                 transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
-                positionCache );
+                positionCache, new Visitor<ReadableLogChannel, IOException>()
+                            {
+                                @Override
+                                public boolean visit( ReadableLogChannel channel ) throws IOException
+                                {
+                                    // THEN
+                                    fail( "Should be nothing to recover" );
+                                    return false;
+                                }
+                            } ));
         TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
-        try ( TransactionStore store = new PhysicalTransactionStore( logFile, txIdGenerator, positionCache,
-                new VersionAwareLogEntryReader( XaCommandReaderFactory.DEFAULT ) ) )
+        TransactionStore store = life.add(new PhysicalTransactionStore( logFile, txIdGenerator, positionCache,
+                new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ) ) );
+
+        try
         {
             // WHEN
-            store.open( new Visitor<TransactionRepresentation, IOException>()
-            {
-                @Override
-                public boolean visit( TransactionRepresentation transaction ) throws IOException
-                {
-                    fail( "Should be nothing to recover" );
-                    return false;
-                }
-            } );
+            life.start();
+        }
+        finally
+        {
+            life.shutdown();
         }
     }
 
@@ -79,57 +101,78 @@ public class PhysicalTransactionStoreTest
     public void shouldOpenAndRecoverExistingData() throws Exception
     {
         // GIVEN
-        InMemoryLogChannel channel = new InMemoryLogChannel();
+        LogRotationControl logRotationControl = mock( LogRotationControl.class );
         TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l );
         TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
         LogPositionCache positionCache = new LogPositionCache( 10, 100 );
         final byte[] additionalHeader = new byte[] {1, 2, 5};
         final int masterId = 2, authorId = 1;
         final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
-        addATransactionAndRewind( channel, txIdGenerator, positionCache,
+        LifeSupport life = new LifeSupport(  );
+        LogFile logFile = life.add(new PhysicalLogFile( fs, dir, DEFAULT_NAME, 1000, NO_PRUNING,
+                transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
+                positionCache, new Visitor<ReadableLogChannel, IOException>()
+                        {
+                            @Override
+                            public boolean visit( ReadableLogChannel element ) throws IOException
+                            {
+                                return false;
+                            }
+                        } ));
+
+        life.start();
+
+        addATransactionAndRewind( logFile.getWriter(), txIdGenerator, positionCache,
                 additionalHeader, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
-        LogFile logFile = new InMemoryLogFile( channel );
+
+        life.shutdown();
+
+        life = new LifeSupport(  );
         final AtomicInteger recoveredTransactions = new AtomicInteger();
+        logFile = life.add(new PhysicalLogFile( fs, dir, DEFAULT_NAME, 1000, NO_PRUNING,
+                        transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
+                        positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ), new Consumer<TransactionRepresentation, IOException>()
+        {
+            @Override
+            public boolean accept( TransactionRepresentation transaction ) throws IOException
+            {
+                assertArrayEquals( additionalHeader, transaction.additionalHeader() );
+                assertEquals( masterId, transaction.getMasterId() );
+                assertEquals( authorId, transaction.getAuthorId() );
+                assertEquals( timeWritten, transaction.getTimeWritten() );
+                assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
+                recoveredTransactions.incrementAndGet();
+                return true;
+            }
+        } )));
+
+        life.add(new PhysicalTransactionStore( logFile, txIdGenerator, positionCache, new VersionAwareLogEntryReader(
+                CommandReaderFactory.DEFAULT ) ) );
 
         // WHEN
-        try ( TransactionStore store = new PhysicalTransactionStore( logFile, txIdGenerator, positionCache,
-                new VersionAwareLogEntryReader( XaCommandReaderFactory.DEFAULT ) ) )
+        try
         {
-            store.open( new Visitor<TransactionRepresentation, IOException>()
-            {
-                @Override
-                public boolean visit( TransactionRepresentation transaction ) throws IOException
-                {
-                    assertArrayEquals( additionalHeader, transaction.additionalHeader() );
-                    assertEquals( masterId, transaction.getMasterId() );
-                    assertEquals( authorId, transaction.getAuthorId() );
-                    assertEquals( timeWritten, transaction.getTimeWritten() );
-                    assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
-                    recoveredTransactions.incrementAndGet();
-                    return true;
-                }
-            } );
+            life.start();
+        }
+        finally
+        {
+            life.shutdown();
         }
 
         // THEN
         assertEquals( 1, recoveredTransactions.get() );
     }
 
-    private void addATransactionAndRewind( InMemoryLogChannel channel, TxIdGenerator txIdGenerator,
+    private void addATransactionAndRewind( WritableLogChannel channel, TxIdGenerator txIdGenerator,
             LogPositionCache positionCache, byte[] additionalHeader, int masterId, int authorId, long timeWritten,
             long latestCommittedTxWhenStarted ) throws IOException
     {
-        int position = channel.writerPosition();
         try ( TransactionAppender appender = new PhysicalTransactionAppender( channel, txIdGenerator, positionCache ) )
         {
             PhysicalTransactionRepresentation transaction =
                     new PhysicalTransactionRepresentation( singleCreateNodeCommand(), false );
             transaction.setHeader( additionalHeader, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
             appender.append( transaction );
-        }
-        finally
-        {
-            channel.positionWriter( position );
         }
     }
 
@@ -148,6 +191,5 @@ public class PhysicalTransactionStoreTest
         return commands;
     }
 
-    private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
+//    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 }

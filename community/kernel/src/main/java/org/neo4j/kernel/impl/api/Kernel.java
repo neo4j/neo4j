@@ -19,62 +19,14 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import java.io.File;
-import java.io.IOException;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.neo4j.graphdb.DatabaseShutdownException;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.Provider;
-import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.helpers.Factory;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TransactionHook;
 import org.neo4j.kernel.api.TxState;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.heuristics.StatisticsData;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
-import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
 import org.neo4j.kernel.impl.api.statistics.StatisticsService;
-import org.neo4j.kernel.impl.api.statistics.StatisticsServiceRepository;
-import org.neo4j.kernel.impl.api.store.PersistenceCache;
-import org.neo4j.kernel.impl.api.store.SchemaCache;
-import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
-import org.neo4j.kernel.impl.core.StartupStatisticsProvider;
-import org.neo4j.kernel.impl.locking.LockService;
-import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.xa.IntegrityValidator;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransactionContext;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransactionContextSupplier;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPositionCache;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
-import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionStore;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 /**
  * This is the beginnings of an implementation of the Kernel API, which is meant to be an internal API for
@@ -131,145 +83,21 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
  */
 public class Kernel extends LifecycleAdapter implements KernelAPI
 {
-    private final UpdateableSchemaState schemaState;
-    private final SchemaWriteGuard schemaWriteGuard;
-    private final IndexingService indexService;
-    private final NeoStore neoStore;
-    private final SchemaCache schemaCache;
-    private final SchemaIndexProviderMap providerMap;
-    private final LabelScanStore labelScanStore;
-    private final StatementOperationParts statementOperations;
-    private final StoreReadLayer storeLayer;
-    private final TransactionHooks hooks = new TransactionHooks();
-    private final LegacyPropertyTrackers legacyPropertyTrackers;
     private final StatisticsService statisticsService;
-    private final FileSystemAbstraction fs;
-    private final Config config;
-    private final JobScheduler scheduler;
-    private final TransactionMonitor transactionMonitor;
-    private final boolean readOnly;
-    private boolean isShutdown = false;
-    private final IntegrityValidator integrityValidator;
-    private final Locks locks;
-    private final NodeManager nodeManager;
-    private final NeoStoreTransactionContextSupplier neoStoreTransactionContextSupplier;
-    private final TxIdGenerator txIdGenerator;
-    private final TransactionRepresentationCommitProcess commitProcess;
-    private final TransactionHeaderInformation transactionHeaderInformation;
-    private final TransactionStore transactionStore;
-    private final StartupStatisticsProvider startupStatistics;
-    private final PersistenceCache persistenceCache;
+    private final Factory<KernelTransaction> transactionFactory;
+    private final TransactionHooks hooks;
 
-    public Kernel( PropertyKeyTokenHolder propertyKeyTokenHolder, UpdateableSchemaState schemaState,
-            SchemaWriteGuard schemaWriteGuard, IndexingService indexService, NodeManager nodeManager,
-            Provider<NeoStore> neoStoreProvider, PersistenceCache persistenceCache, SchemaCache schemaCache,
-            SchemaIndexProviderMap providerMap, FileSystemAbstraction fs, Config config, LabelScanStore labelScanStore,
-            StoreReadLayer storeLayer, JobScheduler scheduler, TransactionMonitor transactionMonitor,
-            KernelHealth kernelHealth, boolean readOnly, CacheAccessBackDoor cacheAccess,
-            IntegrityValidator integrityValidator, Locks locks, LockService lockService, TxIdGenerator txIdGenerator,
-            TransactionHeaderInformation transactionHeaderInformation, LogRotationControl logRotationControl,
-            StartupStatisticsProvider startupStatistics, Logging logging )
+    public Kernel( StatisticsService statisticsService, Factory<KernelTransaction> transactionFactory, TransactionHooks hooks)
     {
-        this.nodeManager = nodeManager;
-        this.persistenceCache = persistenceCache;
-        this.fs = fs;
-        this.config = config;
-        this.schemaState = schemaState;
-        this.providerMap = providerMap;
-        this.transactionMonitor = transactionMonitor;
-        this.readOnly = readOnly;
-        this.schemaWriteGuard = schemaWriteGuard;
-        this.indexService = indexService;
-        this.integrityValidator = integrityValidator;
-        this.locks = locks;
-        this.txIdGenerator = txIdGenerator;
-        this.transactionHeaderInformation = transactionHeaderInformation;
-        this.startupStatistics = startupStatistics;
-        this.neoStore = neoStoreProvider.instance();
-        this.schemaCache = schemaCache;
-        this.labelScanStore = labelScanStore;
-        this.scheduler = scheduler;
-        this.legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
-                nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
-        this.storeLayer = storeLayer;
-        this.statementOperations = buildStatementOperations();
-        this.statisticsService = new StatisticsServiceRepository( fs, config, storeLayer, scheduler ).loadStatistics();
-        this.neoStoreTransactionContextSupplier = new NeoStoreTransactionContextSupplier( neoStore );
-        this.transactionStore = createTransactionStore( logRotationControl, logging );
-        this.commitProcess = new TransactionRepresentationCommitProcess( transactionStore, kernelHealth, indexService,
-                labelScanStore, neoStore, cacheAccess, lockService, false );
-    }
-
-    private TransactionStore createTransactionStore( LogRotationControl logRotationControl, Logging logging )
-    {
-        File directory = config.get( GraphDatabaseSettings.store_dir );
-        LogPositionCache logPositionCache = new LogPositionCache( 1000, 100_000 );
-        LogFile logFile = new PhysicalLogFile( fs, directory, PhysicalLogFile.DEFAULT_NAME,
-                config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), LogPruneStrategies.fromConfigValue(
-                        fs, null, null, null, config.get( GraphDatabaseSettings.keep_logical_logs ) ), neoStore,
-                neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
-                logRotationControl, logPositionCache );
-        return new PhysicalTransactionStore( logFile, txIdGenerator, logPositionCache, new VersionAwareLogEntryReader(
-                XaCommandReaderFactory.DEFAULT ) );
-    }
-
-    @Override
-    public void init() throws Throwable
-    {
-        final AtomicInteger recoveredCount = new AtomicInteger();
-        transactionStore.open( new Visitor<TransactionRepresentation, IOException>()
-        {
-            @Override
-            public boolean visit( TransactionRepresentation transaction ) throws IOException
-            {
-                try
-                {
-                    commitProcess.commit( transaction );
-                    recoveredCount.incrementAndGet();
-                    return true;
-                }
-                catch ( TransactionFailureException e )
-                {
-                    throw new IOException( "Unable to recover transaction " + transaction, e );
-                }
-            }
-        } );
-        startupStatistics.setNumberOfRecoveredTransactions( recoveredCount.get() );
-        indexService.startIndexes();
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-        for ( SchemaRule schemaRule : loop( neoStore.getSchemaStore().loadAllSchemaRules() ) )
-        {
-            schemaCache.addSchemaRule( schemaRule );
-        }
-        statisticsService.start();
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-        isShutdown = true;
-        new StatisticsServiceRepository( fs, config, storeLayer, scheduler );
-        statisticsService.stop();
+        this.transactionFactory = transactionFactory;
+        this.statisticsService = statisticsService;
+        this.hooks = hooks;
     }
 
     @Override
     public KernelTransaction newTransaction()
     {
-        checkIfShutdown();
-        NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
-        Locks.Client locksClient = locks.newClient();
-        context.bind( locksClient );
-        TransactionRecordState neoStoreTransaction = new TransactionRecordState(
-                neoStore.getLastCommittingTransactionId(), neoStore, integrityValidator, context );
-        ConstraintIndexCreator constraintIndexCreator = new ConstraintIndexCreator( this, indexService );
-        return new KernelTransactionImplementation( statementOperations, readOnly, schemaWriteGuard, labelScanStore,
-                indexService, schemaState, neoStoreTransaction, providerMap, neoStore, locksClient, hooks,
-                constraintIndexCreator, transactionHeaderInformation, commitProcess, transactionMonitor, neoStore,
-                persistenceCache, storeLayer );
+        return transactionFactory.newInstance();
     }
 
     @Override
@@ -288,40 +116,5 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     public StatisticsData heuristics()
     {
         return statisticsService.statistics();
-    }
-
-    private void checkIfShutdown()
-    {
-        if ( isShutdown )
-        {
-            throw new DatabaseShutdownException();
-        }
-    }
-
-    private StatementOperationParts buildStatementOperations()
-    {
-        // Bottom layer: Read-access to committed data
-        StoreReadLayer storeLayer = this.storeLayer;
-        // + Transaction state handling
-        StateHandlingStatementOperations stateHandlingContext = new StateHandlingStatementOperations( storeLayer,
-                legacyPropertyTrackers, new ConstraintIndexCreator( this, indexService ) );
-        StatementOperationParts parts = new StatementOperationParts( stateHandlingContext, stateHandlingContext,
-                stateHandlingContext, stateHandlingContext, stateHandlingContext, stateHandlingContext,
-                new SchemaStateConcern( schemaState ), null );
-        // + Constraints
-        ConstraintEnforcingEntityOperations constraintEnforcingEntityOperations = new ConstraintEnforcingEntityOperations(
-                parts.entityWriteOperations(), parts.entityReadOperations(), parts.schemaReadOperations() );
-        // + Data integrity
-        DataIntegrityValidatingStatementOperations dataIntegrityContext = new DataIntegrityValidatingStatementOperations(
-                parts.keyWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations() );
-        parts = parts.override( null, dataIntegrityContext, constraintEnforcingEntityOperations,
-                constraintEnforcingEntityOperations, null, dataIntegrityContext, null, null );
-        // + Locking
-        LockingStatementOperations lockingContext = new LockingStatementOperations( parts.entityReadOperations(),
-                parts.entityWriteOperations(), parts.schemaReadOperations(), parts.schemaWriteOperations(),
-                parts.schemaStateOperations() );
-        parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
-                lockingContext );
-        return parts;
     }
 }

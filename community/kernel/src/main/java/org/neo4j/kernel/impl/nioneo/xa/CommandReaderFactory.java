@@ -19,25 +19,25 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV0;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV0;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV1;
 
-public interface XaCommandReaderFactory
+public interface CommandReaderFactory
 {
-    XaCommandReader newInstance( byte logEntryVersion );
+    CommandReader newInstance( byte logEntryVersion );
 
-    public static final XaCommandReaderFactory DEFAULT = new XaCommandReaderFactory()
+    public static final CommandReaderFactory DEFAULT = new CommandReaderFactory()
     {
         @Override
-        public XaCommandReader newInstance( byte logEntryVersion )
+        public CommandReader newInstance( byte logEntryVersion )
         {
             switch ( logEntryVersion )
             {
                 // These are not thread safe, so if they are to be cached it has to be done in an object pool
                 case 0:
-                    return new PhysicalLogNeoXaCommandReaderV0();
+                    return new PhysicalLogNeoCommandReaderV0();
                 case -1:
-                    return new PhysicalLogNeoXaCommandReaderV1();
+                    return new PhysicalLogNeoCommandReaderV1();
                 default:
                     throw new IllegalArgumentException( "Unknown log entry version " + logEntryVersion );
             }

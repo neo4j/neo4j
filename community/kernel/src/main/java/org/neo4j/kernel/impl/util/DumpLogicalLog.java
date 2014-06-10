@@ -29,7 +29,6 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.TreeSet;
-
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Args;
@@ -37,9 +36,13 @@ import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 
 import static java.util.TimeZone.getTimeZone;
@@ -86,7 +89,9 @@ public class DumpLogicalLog
                     new LogDeserializer( instantiateCommandReaderFactory() );
             PrintingConsumer consumer = new PrintingConsumer( out, timeZone );
 
-            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
+            ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel, logVersion), LogVersionBridge.NO_MORE_CHANNELS, 4096);
+
+            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( logChannel ) )
             {
                 while( cursor.next( consumer ) )
                 {
@@ -103,9 +108,9 @@ public class DumpLogicalLog
         return file.isDirectory() && new File( file, NeoStore.DEFAULT_NAME ).exists();
     }
 
-    protected XaCommandReaderFactory instantiateCommandReaderFactory()
+    protected CommandReaderFactory instantiateCommandReaderFactory()
     {
-        return XaCommandReaderFactory.DEFAULT;
+        return CommandReaderFactory.DEFAULT;
     }
 
     protected String getLogPrefix()

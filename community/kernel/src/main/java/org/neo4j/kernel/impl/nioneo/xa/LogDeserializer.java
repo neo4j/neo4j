@@ -20,35 +20,35 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 
-public class LogDeserializer implements LogReader<ReadableByteChannel>
+public class LogDeserializer implements LogReader<ReadableLogChannel>
 {
-    private final LogEntryReader logEntryReader;
+    private final LogEntryReader<ReadableLogChannel> logEntryReader;
 
-    public LogDeserializer( XaCommandReaderFactory commandReaderFactory )
+    public LogDeserializer( CommandReaderFactory commandReaderFactory )
     {
         logEntryReader = new VersionAwareLogEntryReader( commandReaderFactory );
     }
 
     @Override
-    public Cursor<LogEntry, IOException> cursor( ReadableByteChannel channel )
+    public Cursor<LogEntry, IOException> cursor( ReadableLogChannel channel )
     {
         return new LogCursor( channel );
     }
 
     private class LogCursor implements Cursor<LogEntry, IOException>
     {
-        private final ReadableByteChannel channel;
+        private final ReadableLogChannel channel;
 
-        public LogCursor( ReadableByteChannel channel )
+        public LogCursor( ReadableLogChannel channel )
         {
             this.channel = channel;
         }

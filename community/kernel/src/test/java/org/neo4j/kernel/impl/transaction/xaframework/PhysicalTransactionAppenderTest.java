@@ -27,7 +27,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Test;
 
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.util.Consumer;
 
@@ -57,7 +57,7 @@ public class PhysicalTransactionAppenderTest
 
         // THEN
         TransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(
-                XaCommandReaderFactory.DEFAULT ) );
+                CommandReaderFactory.DEFAULT ) );
         final AtomicInteger visited = new AtomicInteger();
         reader.next( new Consumer<TransactionRepresentation, IOException>()
         {

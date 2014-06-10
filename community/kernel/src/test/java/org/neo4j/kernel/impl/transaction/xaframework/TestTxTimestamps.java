@@ -19,30 +19,28 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
 
 public class TestTxTimestamps
 {
@@ -80,28 +78,40 @@ public class TestTxTimestamps
 //        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
 //                .getNeoStoreDataSource().rotateLogicalLog();
 
-        db.shutdown();
-        ByteBuffer buffer = ByteBuffer.allocate( 1024*500 );
-        StoreChannel channel = fileSystem.open( new File( db.getStoreDir(),
-                GraphDatabaseSettings.logical_log.getDefaultValue() + ".v0" ), "r" );
         try
         {
-            VersionAwareLogEntryReader.readLogHeader( buffer, channel, true );
+            LogFile logFile = db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class ).getDependencyResolver().resolveDependency( LogFile.class );
 
-            AConsumer consumer = new AConsumer( expectedCommitTimestamps, expectedStartTimestamps );
+            final AConsumer consumer = new AConsumer( expectedCommitTimestamps, expectedStartTimestamps );
 
-            LogDeserializer deserializer = new LogDeserializer( XaCommandReaderFactory.DEFAULT );
-
-            try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( channel ) )
+            logFile.accept( new LogFile.LogFileVisitor()
             {
-                while( cursor.next( consumer ) );
-            }
+                LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
+
+                @Override
+                public boolean visit( LogPosition position, ReadableLogChannel channel )
+                {
+                    try
+                    {
+                        try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( channel ) )
+                        {
+                            while( cursor.next( consumer ) );
+                        }
+                        return true;
+                    }
+                    catch ( IOException e )
+                    {
+                        return false;
+                    }
+                }
+            } );
+
 
             assertEquals( expectedCommitTimestamps.length, consumer.getFoundTxCount() );
         }
         finally
         {
-            channel.close();
+            db.shutdown();
         }
     }
 

@@ -40,8 +40,8 @@ import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
-import org.neo4j.kernel.impl.transaction.xaframework.CommandSerializer;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV1;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -61,8 +61,8 @@ public class NodeCommandTest
 {
     private NodeStore nodeStore;
     InMemoryLogChannel channel = new InMemoryLogChannel();
-    private final XaCommandReader commandReader = new PhysicalLogNeoXaCommandReaderV1();
-    private final CommandSerializer commandWriter = new CommandSerializer( channel );
+    private final CommandReader commandReader = new PhysicalLogNeoCommandReaderV1();
+    private final CommandWriter commandWriter = new CommandWriter( channel );
     @Rule
     public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 

@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
-public interface XaCommandReader
+public interface CommandReader
 {
     public Command read( ReadableLogChannel channel ) throws IOException;
 }

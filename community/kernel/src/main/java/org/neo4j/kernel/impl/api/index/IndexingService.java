@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
-import static java.lang.String.format;
-import static java.util.concurrent.TimeUnit.MINUTES;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -63,6 +56,14 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
+import static java.lang.String.format;
+import static java.util.concurrent.TimeUnit.MINUTES;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
+
 /**
  * Manages the indexes that were introduced in 2.0. These indexes depend on the normal neo4j logical log for
  * transactionality. Each index has an {@link org.neo4j.kernel.impl.nioneo.store.IndexRule}, which it uses to filter
@@ -86,6 +87,7 @@ public class IndexingService extends LifecycleAdapter
     private final SchemaIndexProviderMap providerMap;
     private final IndexStoreView storeView;
     private final TokenNameLookup tokenNameLookup;
+    private Iterator<IndexRule> indexRules;
     private final Logging logging;
     private final StringLogger logger;
     private final UpdateableSchemaState updateableSchemaState;
@@ -132,11 +134,13 @@ public class IndexingService extends LifecycleAdapter
                             IndexStoreView storeView,
                             TokenNameLookup tokenNameLookup,
                             UpdateableSchemaState updateableSchemaState,
+                            Iterator<IndexRule> indexRules,
                             Logging logging, Monitor monitor )
     {
         this.scheduler = scheduler;
         this.providerMap = providerMap;
         this.storeView = storeView;
+        this.indexRules = indexRules;
         this.logging = logging;
         this.monitor = monitor;
         this.logger = logging.getMessagesLog( getClass() );
@@ -154,10 +158,8 @@ public class IndexingService extends LifecycleAdapter
 
     /**
      * Called while the database starts up, before recovery.
-     *
-     * @param indexRules Known index rules before recovery.
      */
-    public void initIndexes( Iterator<IndexRule> indexRules )
+    public void init( )
     {
         IndexMap indexMap = indexMapReference.getIndexMapCopy();
 
@@ -201,7 +203,7 @@ public class IndexingService extends LifecycleAdapter
     }
 
     // Recovery semantics: This is to be called after initIndexes, and after the database has run recovery.
-    public void startIndexes() throws IOException
+    public void start() throws IOException
     {
         state = State.STARTING;
 

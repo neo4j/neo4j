@@ -19,57 +19,21 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
-import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandReaderV1;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV1;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
+import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 
 public class RelationshipGroupCommandTest
 {
-    private NodeStore nodeStore;
-    private final XaCommandReader commandReader = new PhysicalLogNeoXaCommandReaderV1();
-
-    @Rule
-    public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-
-    @Before
-    public void before() throws Exception
-    {
-        File storeDir = new File( "dir" );
-        fs.get().mkdirs( storeDir );
-
-        @SuppressWarnings("deprecation")
-        StoreFactory storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ),
-                new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, new DefaultTxHook() );
-        storeFactory.createNodeStore();
-        nodeStore = storeFactory.newNodeStore();
-    }
-
-    @After
-    public void after() throws Exception
-    {
-        nodeStore.close();
-    }
-
     @Test
     public void shouldSerializeAndDeserializeUnusedRecords() throws Exception
     {
@@ -99,7 +63,12 @@ public class RelationshipGroupCommandTest
 
     private void assertSerializationWorksFor( Command.RelationshipGroupCommand cmd ) throws IOException
     {
-        Command.RelationshipGroupCommand result = (Command.RelationshipGroupCommand) commandReader.read( null );
+        InMemoryLogChannel channel = new InMemoryLogChannel();
+        CommandWriter commandWriter = new CommandWriter( channel );
+        commandWriter.visitRelationshipGroupCommand( cmd );
+
+        CommandReader commandReader = new PhysicalLogNeoCommandReaderV1();
+        Command.RelationshipGroupCommand result = (Command.RelationshipGroupCommand) commandReader.read( channel );
 
         RelationshipGroupRecord recordBefore = cmd.getRecord();
         RelationshipGroupRecord recordAfter = result.getRecord();

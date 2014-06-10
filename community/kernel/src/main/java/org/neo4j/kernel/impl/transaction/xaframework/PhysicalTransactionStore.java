@@ -21,11 +21,9 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class PhysicalTransactionStore implements TransactionStore
+public class PhysicalTransactionStore extends LifecycleAdapter implements TransactionStore
 {
     private final LogFile logFile;
     private final LogPositionCache positionCache;
@@ -34,7 +32,7 @@ public class PhysicalTransactionStore implements TransactionStore
     private final LogEntryReader<ReadableLogChannel> logEntryReader;
 
     public PhysicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator, LogPositionCache positionCache,
-            LogEntryReader<ReadableLogChannel> logEntryReader )
+            LogEntryReader<ReadableLogChannel> logEntryReader)
     {
         this.logFile = logFile;
         this.txIdGenerator = txIdGenerator;
@@ -43,31 +41,19 @@ public class PhysicalTransactionStore implements TransactionStore
     }
 
     @Override
-    public void open( final Visitor<TransactionRepresentation, IOException> recoveredTransactionVisitor )
-            throws IOException, TransactionFailureException
+    public void init() throws Throwable
     {
-        final Consumer<TransactionRepresentation, IOException> consumer = new Consumer<TransactionRepresentation, IOException>()
-        {
-            @Override
-            public boolean accept( TransactionRepresentation transaction ) throws IOException
-            {
-                return recoveredTransactionVisitor.visit( transaction );
-            }
-        };
-        logFile.open( new Visitor<ReadableLogChannel, IOException>()
-        {
-            @Override
-            public boolean visit( ReadableLogChannel channel ) throws IOException
-            {
-                TransactionCursor cursor = new PhysicalTransactionCursor( channel, logEntryReader );
-                while ( cursor.next( consumer ) )
-                {
-                    // Just do through the recovery data, handing it on to the consumer.
-                }
-                return true;
-            }
-        } );
         this.appender = new PhysicalTransactionAppender( logFile.getWriter(), txIdGenerator, positionCache );
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        if ( appender != null )
+        {
+            appender.close();
+            appender = null;
+        }
     }
 
     @Override
@@ -99,11 +85,6 @@ public class PhysicalTransactionStore implements TransactionStore
     @Override
     public void close() throws IOException
     {
-        if ( appender != null )
-        {
-            appender.close();
-            appender = null;
-        }
     }
 
     private static class TransactionPositionLocator implements LogFile.LogFileVisitor

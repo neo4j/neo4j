@@ -33,8 +33,8 @@ import org.hamcrest.Matcher;
 
 import org.hamcrest.TypeSafeMatcher;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
@@ -60,7 +60,7 @@ public class LogMatchers
 
             // Read all log entries
             final List<LogEntry> entries = new ArrayList<>();
-            LogDeserializer deserializer = new LogDeserializer( XaCommandReaderFactory.DEFAULT );
+            LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
 
 
             Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
@@ -73,7 +73,9 @@ public class LogMatchers
                 }
             };
 
-            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
+            ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel), LogVersionBridge.NO_MORE_CHANNELS, 4096);
+
+            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( logChannel ) )
             {
                 while ( cursor.next( consumer ) );
             }

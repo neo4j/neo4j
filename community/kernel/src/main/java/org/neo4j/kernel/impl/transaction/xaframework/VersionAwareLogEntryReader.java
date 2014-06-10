@@ -26,8 +26,8 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 
 /**
@@ -35,7 +35,7 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
  * Starting with Neo4j version 2.1, log entries are prefixed with a version. This allows for Neo4j instances of
  * different versions to exchange transaction data, either directly or via logical logs. This implementation of
  * LogEntryReader makes use of the version information to deserialize command entries that hold commands created
- * with previous versions of Neo4j. Support for this comes from the required {@link XaCommandReaderFactory} which can
+ * with previous versions of Neo4j. Support for this comes from the required {@link org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory} which can
  * provide deserializers for Commands given the version.
  */
 public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogChannel>
@@ -43,9 +43,9 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
     private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_LOG_VERSION) & 0xFF;
     static final int LOG_HEADER_SIZE = 16;
 
-    private final XaCommandReaderFactory commandReaderFactory;
+    private final CommandReaderFactory commandReaderFactory;
 
-    public VersionAwareLogEntryReader( XaCommandReaderFactory commandReaderFactory )
+    public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
     {
         this.commandReaderFactory = commandReaderFactory;
     }
@@ -160,7 +160,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
     private LogEntry.Command readTxCommandEntry( byte version, ReadableLogChannel channel )
             throws IOException
     {
-        XaCommandReader commandReader = commandReaderFactory.newInstance( version );
+        CommandReader commandReader = commandReaderFactory.newInstance( version );
         Command command = commandReader.read( channel );
         if ( command == null )
         {

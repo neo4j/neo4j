@@ -26,7 +26,7 @@ import java.util.TimeZone;
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 
 public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
 {
@@ -55,7 +55,7 @@ public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
         }
     }
 
-    protected XaCommandReaderFactory instantiateCommandReaderFactory()
+    protected CommandReaderFactory instantiateCommandReaderFactory()
     {
         // TODO 2.2-future
         return null;

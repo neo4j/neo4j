@@ -20,20 +20,11 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import static org.junit.Assert.assertEquals;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
-
-import java.io.File;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 public class TestApplyTransactions
 {

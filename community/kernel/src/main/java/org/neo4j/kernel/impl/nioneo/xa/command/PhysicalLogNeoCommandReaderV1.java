@@ -48,7 +48,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
@@ -57,7 +57,7 @@ import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
-public class PhysicalLogNeoXaCommandReaderV1 implements XaCommandReader
+public class PhysicalLogNeoCommandReaderV1 implements CommandReader
 {
     private interface DynamicRecordAdder<T>
     {
