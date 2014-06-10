@@ -27,6 +27,11 @@ import java.io.OutputStream;
 import java.io.Reader;
 import java.io.UnsupportedEncodingException;
 import java.io.Writer;
+import java.lang.reflect.InvocationHandler;
+import java.lang.reflect.Method;
+import java.lang.reflect.Proxy;
+import java.util.HashMap;
+import java.util.Map;
 
 import org.neo4j.adversaries.Adversary;
 import org.neo4j.graphdb.NotFoundException;
@@ -169,11 +174,38 @@ public class AdversarialFileSystemAbstraction implements FileSystemAbstraction
         return delegate.tryLock( fileName, channel );
     }
 
+    private final Map<Class<? extends ThirdPartyFileSystem>, ThirdPartyFileSystem> thirdPartyFileSystems =
+            new HashMap<>();
+
     @Override
-    public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz, Function<Class<K>, K>
-            creator )
+    public synchronized <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
+            Class<K> clazz,
+            Function<Class<K>, K> creator )
     {
-        // TODO implement 3rd party file systems in AdversarialFSA
-        return null;
+        ThirdPartyFileSystem fileSystem = thirdPartyFileSystems.get( clazz );
+        if (fileSystem == null)
+        {
+            fileSystem = creator.apply( clazz );
+            fileSystem = adversarialProxy( fileSystem, clazz );
+            thirdPartyFileSystems.put( clazz, fileSystem );
+        }
+        return (K) fileSystem;
+    }
+
+    private <K extends ThirdPartyFileSystem> ThirdPartyFileSystem adversarialProxy(
+            final ThirdPartyFileSystem fileSystem,
+            Class<K> clazz )
+    {
+        InvocationHandler handler = new InvocationHandler()
+        {
+            @Override
+            public Object invoke( Object proxy, Method method, Object[] args ) throws Throwable
+            {
+                adversary.injectFailure( (Class<? extends Throwable>[]) method.getExceptionTypes() );
+                return method.invoke( fileSystem, args );
+            }
+        };
+        ClassLoader loader = Thread.currentThread().getContextClassLoader();
+        return (ThirdPartyFileSystem) Proxy.newProxyInstance( loader, new Class[] { clazz }, handler );
     }
 }
