@@ -7,7 +7,4 @@ retrieving nodes, relationships, paths or properties.
 When packaged as a jar, just drop the plugin into this directory
 before starting up the server. 
 
-References
-----------
 
-* [${neo4j-examples.url.title}](${neo4j-examples.url}) -- online docs
