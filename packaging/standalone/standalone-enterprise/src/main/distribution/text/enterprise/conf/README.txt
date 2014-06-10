@@ -3,11 +3,6 @@ ${server.fullname} Configuration
 
 ${server.fullname} configuration files.
 
-* custom-logback.xml                 -- logging system configuration for the database
-                                        process using standard logback options
-* neo4j-http-logging.xml             -- logging system configuration for the HTTP REST server
-                                        using standard logback options
-* arbiter-wrapper.conf               -- environment and launch settings for the arbiter instance
 * jmx.access                         -- JMX access settings
 * jmx.password                       -- JMX password
 * neo4j-server.properties            -- runtime operational settings
@@ -15,12 +10,11 @@ ${server.fullname} configuration files.
 * neo4j-wrapper.conf                 -- environment and launch settings for Neo4j Server
 * loggging.properties                -- java.util.logging settings for Neo4j Server 
 * windows-wrapper-logging.properties -- java.util.logging settings for the windows service wrapper
-* ssl/                               -- directory holding certificate files for
-                                        HTTPS operation of the REST server
 
 
 References
 ----------
 
-* [Java Logging Overview](http://docs.oracle.com/javase/7/docs/technotes/guides/logging/overview.html)
-* [JMX](http://docs.oracle.com/javase/7/docs/technotes/guides/management/agent.html)
+* [Neo4j Server Usage](/doc/neo4j-server.txt)
+* [Java Logging Overview](http://download.oracle.com/javase/6/docs/technotes/guides/logging/overview.html)
+* [JMX](http://download.oracle.com/javase/6/docs/technotes/guides/management/agent.html)
