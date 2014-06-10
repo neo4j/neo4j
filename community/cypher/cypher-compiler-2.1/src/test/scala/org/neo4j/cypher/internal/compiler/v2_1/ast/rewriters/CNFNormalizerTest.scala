@@ -25,6 +25,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
 class CNFNormalizerTest extends CypherFunSuite with PredicateTestSupport {
   def rewriter: Rewriter = CNFNormalizer
 
+  test("should flatten multiple ANDs in a ANDS") {
+    and(P, and(R, S)) <=> ands(P, R, S)
+    and(and(R, S), P) <=> ands(R, S, P)
+  }
+
   test("should be able to convert a dnf to cnf") {
     or(and(P, Q), and(R, S)) <=> ands(ors(P, R), ors(Q, R), ors(P, S), ors(Q, S))
   }

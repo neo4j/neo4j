@@ -41,7 +41,6 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
     rewriters += normalizeEqualsArgumentOrder
     rewriters += reattachAliasedExpressions
     rewriters += addUniquenessPredicates
-    rewriters += CNFNormalizer // <- do not add any new predicates after this rewriter!
     rewriters += expandStar
     rewriters += isolateAggregation
     rewriters += aliasReturnItems
