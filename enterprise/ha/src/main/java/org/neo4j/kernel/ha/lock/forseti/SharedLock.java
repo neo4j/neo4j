@@ -41,9 +41,7 @@ class SharedLock implements ForsetiLockManager.Lock
      * No more holders than this allowed, don't change this without changing the sizing of
      * {@link #clientsHoldingThisLock}.
      */
-    // TODO This is going to be a problem for the schema-read-lock,
-    // TODO as soon as we get more than 120 concurrent transactions!
-    private static final int MAX_HOLDERS = 120;
+    private static final int MAX_HOLDERS = 4680;
 
     // TODO Investigate inlining and padding the refCount.
     // TODO My gut feeling tells me there's a high chance of false-sharing
@@ -60,11 +58,11 @@ class SharedLock implements ForsetiLockManager.Lock
      * reference arrays:
      *
      * clientsHoldingThisLock[0] = 8 slots
-     * clientsHoldingThisLock[1] = 16 slots
-     * clientsHoldingThisLock[2] = 32 slots
-     * clientsHoldingThisLock[3] = 64 slots
+     * clientsHoldingThisLock[1] = 64 slots
+     * clientsHoldingThisLock[2] = 512 slots
+     * clientsHoldingThisLock[3] = 4096 slots
      *
-     * Allowing a total of 120 transactions holding the same shared lock simultaneously.
+     * Allowing a total of 4680 transactions holding the same shared lock simultaneously.
      *
      * This data structure was chosen over using regular resizing of the array, because we need to be able to increase
      * the size of the array without requiring synchronization between threads writing to the array and threads trying
@@ -333,7 +331,7 @@ class SharedLock implements ForsetiLockManager.Lock
     {
         if( clientsHoldingThisLock[slot] == null )
         {
-            clientsHoldingThisLock[slot] = new AtomicReferenceArray<>( (int) Math.pow(2, (3+slot)) );
+            clientsHoldingThisLock[slot] = new AtomicReferenceArray<>( (int)(8 * Math.pow( 8, slot )) );
         }
         return clientsHoldingThisLock[slot];
     }
