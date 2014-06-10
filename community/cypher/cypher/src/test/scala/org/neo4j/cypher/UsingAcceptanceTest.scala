@@ -19,11 +19,10 @@
  */
 package org.neo4j.cypher
 
-import internal.helpers.GraphIcing
 import org.junit.Test
 import org.scalatest.Assertions
 
-class UsingAcceptanceTest extends ExecutionEngineJUnitSuite {
+class UsingAcceptanceTest extends ExecutionEngineJUnitSuite with Assertions {
 
   @Test
   def failIfUsingIndexWithStartClause() {
@@ -73,5 +72,57 @@ class UsingAcceptanceTest extends ExecutionEngineJUnitSuite {
     // WHEN
     intercept[IndexHintException](
       execute("match (n:Person)-->(m:Food) using index n:Person(name) using index m:Food(name) where n.name = m.name return n"))
+  }
+
+  @Test
+  def doesNotAcceptMultipleIndexHintsForTheSameIdentifier() {
+    // GIVEN
+    graph.createIndex("Entity", "source")
+    graph.createIndex("Person", "first_name")
+    createNode("source" -> "form1")
+    createNode("first_name" -> "John")
+
+    // WHEN THEN
+    val e = intercept[SyntaxException] {
+      execute(
+        "MATCH (n:Entity:Person) " +
+          "USING INDEX n:Person(first_name) " +
+          "USING INDEX n:Entity(source) " +
+          "WHERE n.first_name = \"John\" AND n.source = \"form1\" " +
+          "RETURN n;"
+      )
+    }
+
+    assert(e.getMessage.startsWith("Multiple hints for same identifier are not supported"), "must report duplicate hint")
+  }
+
+  @Test
+  def doesNotAcceptMultipleScanHintsForTheSameIdentifier() {
+    val e = intercept[SyntaxException] {
+      execute(
+        "MATCH (n:Entity:Person) " +
+          "USING SCAN n:Person " +
+          "USING SCAN n:Entity " +
+          "WHERE n.first_name = \"John\" AND n.source = \"form1\" " +
+          "RETURN n;"
+      )
+    }
+
+    assert(e.getMessage.startsWith("Multiple hints for same identifier are not supported"), "must report duplicate hint")
+  }
+
+  @Test
+  def doesNotAcceptMultipleMixedHintsForTheSameIdentifier() {
+    val e = intercept[SyntaxException] {
+      execute(
+        "MATCH (n:Entity:Person) " +
+          "USING SCAN n:Person " +
+          "USING INDEX n:Entity(first_name) " +
+          "WHERE n.first_name = \"John\" AND n.source = \"form1\" " +
+          "RETURN n;"
+      )
+    }
+
+    assert(e.getMessage.startsWith("Multiple hints for same identifier are not supported"), "must report duplicate hint")
   }
 }

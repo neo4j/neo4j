@@ -21,6 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_0.ast
 
 import org.neo4j.cypher.internal.compiler.v2_0._
 import symbols._
+import scala.collection.immutable.Iterable
 
 sealed trait Clause extends ASTNode with SemanticCheckable {
   def name: String
@@ -93,7 +94,17 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
   def semanticCheck =
       pattern.semanticCheck(Pattern.SemanticContext.Match) then
       hints.semanticCheck then
+      uniqueHints then
       where.semanticCheck
+
+  def uniqueHints: SemanticCheck = {
+    val errors = hints.groupBy(_.identifier).collect {
+      case pair @ (ident, identHints) if identHints.size > 1 =>
+        SemanticError("Multiple hints for same identifier are not supported", ident.position, identHints.map(_.position): _*)
+    }.toVector
+
+    (state: SemanticState) => SemanticCheckResult(state, errors)
+  }
 }
 
 case class Merge(pattern: Pattern, actions: Seq[MergeAction])(val position: InputPosition) extends UpdateClause {
