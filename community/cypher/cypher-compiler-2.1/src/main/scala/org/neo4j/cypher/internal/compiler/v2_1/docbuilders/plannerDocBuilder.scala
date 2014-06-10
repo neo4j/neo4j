@@ -20,10 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.perty._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{PatternRelationship, SimplePatternLength, VarPatternLength, IdName}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, Predicate}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
+import org.neo4j.cypher.internal.compiler.v2_1.planner.Predicate
+import scala.Some
 
 case object plannerDocBuilder extends DocBuilderChain[Any] {
 
@@ -67,6 +72,13 @@ case object plannerDocBuilder extends DocBuilderChain[Any] {
       sepList(predicates.map(inner).toList)
   }
 
+  val forNestedShortestPathPattern: DocBuilder[Any] = asDocBuilder[Any] {
+    case ShortestPathPattern(optName, rel, single) => (inner) =>
+      val nameDoc = optName.fold(nil)(name => name.name :: " =")
+      val relDoc = block(if (single) "shortestPath" else "allShortestPath")(inner(rel))
+      nameDoc :+: relDoc
+  }
+
   def relTypeList(list: Seq[RelTypeName])(inner: DocGenerator[Any]): Doc = list.map(inner).foldRight(nil) {
     case (hd, NilDoc) => ":" :: hd
     case (hd, tail)   => ":" :: hd :: "|" :: tail
@@ -77,6 +89,7 @@ case object plannerDocBuilder extends DocBuilderChain[Any] {
       forNestedIdName,
       forNestedPatternLength,
       forNestedPatternRelationship,
+      forNestedShortestPathPattern,
       forNestedPredicate,
       forNestedSelections,
       queryProjectionDocBuilder("WITH"),

@@ -76,6 +76,20 @@ class QueryGraphDocBuilderTest extends DocBuilderTestSuite[Any] {
     )) should equal("GIVEN * MATCH (a), (b), (a)-[r1]->(b)")
   }
 
+  test("renders query graph shortest paths") {
+    format(QueryGraph(
+      patternNodes = Set(IdName("a")),
+      shortestPathPatterns = Set(ShortestPathPattern(None, rel1, single = true))
+    )) should equal("GIVEN * MATCH (a), shortestPath((a)-[r1]->(b))")
+  }
+
+  test("renders query graph named all shortest paths") {
+    format(QueryGraph(
+      patternNodes = Set(IdName("a")),
+      shortestPathPatterns = Set(ShortestPathPattern(Some(IdName("p")), rel1, single = false))
+    )) should equal("GIVEN * MATCH (a), p = allShortestPath((a)-[r1]->(b))")
+  }
+
   test("renders query graph selections") {
     format(QueryGraph(
       patternNodes = Set(IdName("a")),
