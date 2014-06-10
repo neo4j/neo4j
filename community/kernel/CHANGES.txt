@@ -1,9 +1,9 @@
 2.1.2
 -----
-o Resolves a dangerous recovery issue, where multiple crashes in a row without clean shutdown or log rotation
-  in between could cause data loss.
-o BatchImporter properly zeroes out reused buffers, which could lead to introducing corruption during
-  a store migration
+o Resolves a recovery issue, where multiple crashes in a row without clean shutdown or log rotation
+  in between could lead to some transactions not being replayed on recovery
+o BatchImporter properly zeroes out reused buffers, ensuring relationship record backpoints are properly
+  setup during migration
 
 2.1.0
 -----
