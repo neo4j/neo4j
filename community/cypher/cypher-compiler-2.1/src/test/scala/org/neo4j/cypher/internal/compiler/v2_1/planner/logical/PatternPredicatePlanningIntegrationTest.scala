@@ -90,7 +90,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED42", "  UNNAMED34", SimplePatternLength
         ),
         Ors(Set(
-          Equals(Property(Identifier("a")_, PropertyKeyName("prop2")_)_, SignedIntegerLiteral("9")_)_,
+          In(Property(Identifier("a")_, PropertyKeyName("prop2")_)_, Collection(Seq(SignedIntegerLiteral("9")_))_)_,
           GreaterThan(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("4")_)_
         ))_
       )
@@ -105,7 +105,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
           SingleRow(Set("a"))(),
           "a", Direction.OUTGOING, Seq(RelTypeName("X")_), "  UNNAMED45", "  UNNAMED37", SimplePatternLength
         ),
-        Equals(Property(Identifier("a")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("9")_)_
+        In(Property(Identifier("a")_, PropertyKeyName("prop")_)_, Collection(Seq(SignedIntegerLiteral("9")_))_)_
       )
     )
   }
@@ -121,7 +121,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
               "a", Direction.OUTGOING, Seq(RelTypeName("Y") _), "  UNNAMED41", "  UNNAMED33", SimplePatternLength
             ),
             "  FRESHID30",
-            Equals(Property(Identifier("a") _, PropertyKeyName("prop") _) _, SignedIntegerLiteral("9") _) _
+            In(Property(Identifier("a") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedIntegerLiteral("9")_))_)_
           ),
           Expand(
             SingleRow(Set("a"))(),

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp, ParsedQuery, Monitors}
+import org.neo4j.cypher.internal.compiler.v2_1.{bottomUp, inSequence, ParsedQuery, Monitors}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
@@ -73,13 +73,19 @@ case class Planner(monitors: Monitors,
 
 object Planner {
   def rewriteStatement(statement: Statement): Statement = {
-    val cnfStatement = statement.typedRewrite[Statement](CNFNormalizer)
-    val namedStatement = cnfStatement.typedRewrite[Statement](bottomUp(
-      inSequence(nameVarLengthRelationships, namePatternPredicates)
-    ))
+    val rewrittenStatement = statement.typedRewrite[Statement](
+      inSequence(
+        rewriteEqualityToInCollection,
+        splitInCollectionsToIsolateConstants,
+        CNFNormalizer,
+        collapseInCollectionsContainingConstants,
+        nameVarLengthRelationships,
+        namePatternPredicates
+      )
+    )
 
-    val statementWithInlinedProjections = inlineProjections(namedStatement)
-    val statementWithAliasedSortSkipAndLimit = statementWithInlinedProjections.typedRewrite[Statement](bottomUp(useAliasesInSortSkipAndLimit))
+    val statementWithInlinedProjections = inlineProjections(rewrittenStatement)
+    val statementWithAliasedSortSkipAndLimit = statementWithInlinedProjections.typedRewrite[Statement](useAliasesInSortSkipAndLimit)
 
     statementWithAliasedSortSkipAndLimit
   }

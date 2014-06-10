@@ -93,7 +93,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
             Map[String, Expression]("a" -> ident("a"))
           ),
           planSelection(
-            Seq(Equals(Property(Identifier("r1") _, PropertyKeyName("prop") _) _, SignedIntegerLiteral("42") _) _),
+            Seq(In(Property(Identifier("r1") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedIntegerLiteral("42")_))_)_),
             planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
           )
         ),
