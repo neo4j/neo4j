@@ -94,9 +94,9 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     }
 
     @Override
-    public PageCursor newCursor()
+    public PageCursor newPageCursor()
     {
-        return pageCache.newCursor();
+        return pageCache.newPageCursor();
     }
 
     @Override

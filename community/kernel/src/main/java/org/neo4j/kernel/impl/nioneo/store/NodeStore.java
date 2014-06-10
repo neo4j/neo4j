@@ -174,7 +174,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     @Override
     public void forceUpdateRecord( NodeRecord record )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
@@ -197,7 +197,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     @Override
     public void updateRecord( NodeRecord record )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
@@ -233,7 +233,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     private NodeRecord getRecord( long id, NodeRecord record, RecordLoad load )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
@@ -255,7 +255,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     public boolean inUse( long id )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );

@@ -214,7 +214,7 @@ public abstract class SubProcess<T, P> implements Serializable
 
     private static Process start( String... args )
     {
-        ProcessBuilder builder = new ProcessBuilder( args );
+        ProcessBuilder builder = new ProcessBuilder( args ).inheritIO();
         try
         {
             return builder.start();

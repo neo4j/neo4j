@@ -21,12 +21,34 @@ package org.neo4j.io.pagecache.impl.standard;
 
 import java.io.IOException;
 
+import org.neo4j.io.pagecache.PageIO;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+
 public class StandardPageCursor extends OffsetTrackingCursor
 {
+    private final CursorFreelist cursorFreelist;
+    StandardPageCursor nextFree; // for the free-list chain
+
     private PageLock lockTypeHeld;
+    private StandardPagedFile pagedFile;
+    private long pageId;
+    private long nextPageId;
+    private long lastPageId;
+    private int pf_flags;
+    private PageIO pageIO;
+    private long io_context;
+    private long io_flags;
+
+    public StandardPageCursor( CursorFreelist cursorFreelist )
+    {
+
+        this.cursorFreelist = cursorFreelist;
+    }
 
     public PinnablePage page()
     {
@@ -47,9 +69,86 @@ public class StandardPageCursor extends OffsetTrackingCursor
 
     public void assertNotInUse() throws IOException
     {
-        if(lockTypeHeld != null)
+        if ( lockTypeHeld != null )
         {
             throw new IOException( "The cursor is already in use, you need to unpin the cursor before using it again." );
         }
+    }
+
+    @Override
+    public void rewind() throws IOException
+    {
+        nextPageId = pageId;
+        lastPageId = pagedFile.getLastPageId();
+    }
+
+    private static PageLock getLockType( int pf_flags ) throws IOException
+    {
+        // TODO this is an annoying conversion... we should use ints all the way down
+        switch ( pf_flags & (PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK) )
+        {
+            case PF_EXCLUSIVE_LOCK: return PageLock.EXCLUSIVE;
+            case PF_SHARED_LOCK: return PageLock.SHARED;
+            case PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK: throw new IOException(
+                    "Invalid flags: cannot ask to pin a page with both a shared and an exclusive lock" );
+            default: throw new IOException(
+                    "Invalid flags: must specify either shared or exclusive lock for page pinning" );
+        }
+    }
+
+    @Override
+    public boolean next() throws IOException
+    {
+        if ( nextPageId >= lastPageId && (pf_flags & PF_NO_GROW) != 0 )
+        {
+            return false;
+        }
+        if ( page != null )
+        {
+            pagedFile.unpin( this );
+        }
+        try
+        {
+            pagedFile.pin( this, getLockType( pf_flags ), nextPageId );
+            pageIO.apply( nextPageId, page, io_context, io_flags );
+        }
+        catch ( IOException e )
+        {
+            if ( page != null )
+            {
+                pagedFile.unpin( this );
+            }
+            throw e;
+        }
+        nextPageId++;
+        return true;
+    }
+
+    @Override
+    public void close()
+    {
+        if ( page != null )
+        {
+            pagedFile.unpin( this );
+        }
+        pagedFile = null;
+        pageIO = null;
+        cursorFreelist.returnCursor( this );
+    }
+
+    public void initialise(
+            StandardPagedFile pagedFile,
+            long pageId,
+            int pf_flags,
+            PageIO pageIO,
+            long io_context,
+            long io_flags )
+    {
+        this.pagedFile = pagedFile;
+        this.pageId = pageId;
+        this.pf_flags = pf_flags;
+        this.pageIO = pageIO;
+        this.io_context = io_context;
+        this.io_flags = io_flags;
     }
 }

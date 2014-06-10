@@ -17,31 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.impl;
+package org.neo4j.io.pagecache;
 
-import java.util.Collections;
-import java.util.List;
+import java.io.IOException;
 
-import org.junit.runners.model.MultipleFailureException;
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.pagecache.impl.common.Page;
 
-class JUnitMultipleExceptions extends MultipleExceptionsStrategy
+public interface PageIO
 {
-    {
-        // Make sure that we can access the JUnit MultipleFailureException type
-        try
-        {
-            MultipleFailureException.assertEmpty( Collections.<Throwable>emptyList() );
-        }
-        catch ( Throwable e )
-        {
-            throw Exceptions.launderedException( e );
-        }
-    }
-
-    @Override
-    Throwable aggregate( List<Throwable> failures )
-    {
-        return new MultipleFailureException( failures );
-    }
+    /**
+     * Apply the PageIO to the given page by the given pageId, optionally
+     * using the arguments io_context and io_flags, which are passed in through
+     * the call to
+     * {@link org.neo4j.io.pagecache.PagedFile#io(long, int, PageIO, long, long)}
+     * @param pageId
+     * @param page
+     * @param io_context
+     * @param io_flags
+     */
+    void apply( long pageId, Page page, long io_context, long io_flags ) throws IOException;
 }

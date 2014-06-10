@@ -44,7 +44,7 @@ public interface PageCache
     /** Release a handle to a paged file. If this is the last handle to the file, it will be flushed and closed. */
     void unmap( File file ) throws IOException;
 
-    PageCursor newCursor();
+    PageCursor newPageCursor();
 
     /** Flush all dirty pages */
     void flush() throws IOException;

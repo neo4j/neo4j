@@ -50,7 +50,7 @@ public class OutOfDiskSpaceTest
         StandardPageCache cache = new StandardPageCache( fs, 2, 512, monitor );
 
         PagedFile file = cache.map( new File( testDir.directory(), "storefile" ), 512 );
-        PageCursor cursor = cache.newCursor();
+        PageCursor cursor = cache.newPageCursor();
 
         // And given the eviction thread is running
         Thread sweeperThread = new Thread( cache );

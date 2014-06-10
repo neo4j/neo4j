@@ -19,9 +19,17 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-public class DynamicRecord extends Abstract64BitRecord
+import org.neo4j.io.pagecache.PageIO;
+import org.neo4j.io.pagecache.impl.common.Page;
+
+public class DynamicRecord extends Abstract64BitRecord implements PageIO
 {
     private static final int MAX_BYTES_IN_TO_STRING = 8, MAX_CHARS_IN_TO_STRING = 16;
+    public static final long IO_WRITE = 1;
+    public static final long IO_READ_HEADER = 1 << 1;
+    public static final long IO_READ_DATA = 1 << 2;
+    public static final long IO_READ_FORCE = 1 << 3;
+
     private byte[] data = null;
     private int length;
     private long nextBlock = Record.NO_NEXT_BLOCK.intValue();
@@ -45,6 +53,131 @@ public class DynamicRecord extends Abstract64BitRecord
         record.setType( type );
         record.setData( data );
         return record;
+    }
+
+    @Override
+    public void apply( long pageId, Page page, long io_context, long io_flags )
+    {
+        int offset = (int) io_context;
+        if ( (io_flags & IO_WRITE) != 0 )
+        {
+            writeRecord( page, offset );
+            return;
+        }
+        boolean hasDataToRead = true;
+        if ( (io_flags & IO_READ_HEADER) != 0 )
+        {
+            hasDataToRead = readRecordHeader( page, offset, io_flags );
+        }
+        if ( (io_flags & IO_READ_DATA) != 0 && hasDataToRead )
+        {
+            readRecordData( page, offset );
+        }
+    }
+
+    private boolean readRecordHeader( Page page, int offset, long io_flags )
+    {
+        /*
+         * First 4b
+         * [x   ,    ][    ,    ][    ,    ][    ,    ] 0: start record, 1: linked record
+         * [   x,    ][    ,    ][    ,    ][    ,    ] inUse
+         * [    ,xxxx][    ,    ][    ,    ][    ,    ] high next block bits
+         * [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes in the data field in this record
+         *
+         */
+        long firstInteger = page.getUnsignedInt( offset );
+        boolean force = (io_flags & IO_READ_FORCE) != 0;
+        boolean isStartRecord = (firstInteger & 0x80000000) == 0;
+        long maskedInteger = firstInteger & ~0x80000000;
+        int highNibbleInMaskedInteger = (int) ( ( maskedInteger ) >> 28 );
+        boolean inUse = highNibbleInMaskedInteger == Record.IN_USE.intValue();
+        if ( !inUse && !force )
+        {
+            throw new InvalidRecordException( "DynamicRecord Not in use, blockId[" + getId() + "]" );
+        }
+        int dataSize = decodeBlockSizeFlags( io_flags ) - AbstractDynamicStore.BLOCK_HEADER_SIZE;
+
+        int nrOfBytes = (int) ( firstInteger & 0xFFFFFF );
+
+        /*
+         * Pointer to next block 4b (low bits of the pointer)
+         */
+        long nextBlock = page.getUnsignedInt( offset + 4 );
+        long nextModifier = ( firstInteger & 0xF000000L ) << 8;
+
+        long longNextBlock = CommonAbstractStore.longFromIntAndMod( nextBlock, nextModifier );
+        boolean hasDataToRead = true;
+        if ( longNextBlock != Record.NO_NEXT_BLOCK.intValue()
+                && nrOfBytes < dataSize || nrOfBytes > dataSize )
+        {
+            hasDataToRead = false;
+            if ( !force )
+            {
+                throw new InvalidRecordException( "Next block set[" + nextBlock
+                        + "] current block illegal size[" + nrOfBytes + "/" + dataSize + "]" );
+            }
+        }
+        setInUse( inUse );
+        setStartRecord( isStartRecord );
+        setLength( nrOfBytes );
+        setNextBlock( longNextBlock );
+        return hasDataToRead;
+    }
+
+    public static long encodeBlockSizeFlags( int blockSize, long io_flags )
+    {
+        return io_flags + ((long) blockSize << 32);
+    }
+
+    public static int decodeBlockSizeFlags( long io_flags )
+    {
+        return (int) (io_flags >> 32 & 0xFFFFFFFFL);
+    }
+
+    private void readRecordData( Page page, int offset )
+    {
+        int len = getLength();
+        if ( data == null || data.length != len )
+        {
+            data = new byte[len];
+        }
+        page.getBytes( data, offset + AbstractDynamicStore.BLOCK_HEADER_SIZE );
+    }
+
+    private void writeRecord( Page page, int offset )
+    {
+        if ( inUse() )
+        {
+            long nextBlock = getNextBlock();
+            int highByteInFirstInteger = nextBlock == Record.NO_NEXT_BLOCK.intValue() ? 0
+                    : (int) ( ( nextBlock & 0xF00000000L ) >> 8 );
+            highByteInFirstInteger |= ( Record.IN_USE.byteValue() << 28 );
+            highByteInFirstInteger |= (isStartRecord() ? 0 : 1) << 31;
+
+            /*
+             * First 4b
+             * [x   ,    ][    ,    ][    ,    ][    ,    ] 0: start record, 1: linked record
+             * [   x,    ][    ,    ][    ,    ][    ,    ] inUse
+             * [    ,xxxx][    ,    ][    ,    ][    ,    ] high next block bits
+             * [    ,    ][xxxx,xxxx][xxxx,xxxx][xxxx,xxxx] nr of bytes in the data field in this record
+             *
+             */
+            int firstInteger = getLength();
+            assert firstInteger < ( 1 << 24 ) - 1;
+
+            firstInteger |= highByteInFirstInteger;
+
+            page.putInt( firstInteger, offset );
+            page.putInt( (int) nextBlock, offset + 4 );
+            if ( !isLight() )
+            {
+                page.putBytes( getData(), offset + 8 );
+            }
+        }
+        else
+        {
+            page.putByte( Record.NOT_IN_USE.byteValue(), offset );
+        }
     }
 
     public DynamicRecord( long id )

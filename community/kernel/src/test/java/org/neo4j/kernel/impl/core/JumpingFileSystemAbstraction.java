@@ -44,7 +44,7 @@ import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 public class JumpingFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
 {

@@ -43,7 +43,7 @@ public class StandardPageCache implements PageCache, Runnable
 
     public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize )
     {
-        this(fs, maxPages, pageSize, PageCacheMonitor.NULL );
+        this( fs, maxPages, pageSize, PageCacheMonitor.NULL );
     }
 
     public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize, PageCacheMonitor monitor )
@@ -82,10 +82,11 @@ public class StandardPageCache implements PageCache, Runnable
         }
     }
 
+    // TODO remove this
     @Override
-    public PageCursor newCursor()
+    public PageCursor newPageCursor()
     {
-        return new StandardPageCursor();
+        return new StandardPageCursor( null );
     }
 
     @Override

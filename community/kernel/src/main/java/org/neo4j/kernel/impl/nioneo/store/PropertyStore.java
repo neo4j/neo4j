@@ -36,6 +36,7 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
 import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
+import org.neo4j.io.pagecache.impl.standard.StandardPageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
@@ -187,7 +188,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     @Override
     public void updateRecord( PropertyRecord record )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
@@ -337,7 +338,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     @Override
     public PropertyRecord getRecord( long id )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
@@ -359,7 +360,7 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     @Override
     public PropertyRecord forceGetRecord( long id )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
@@ -647,11 +648,12 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
         return arrayPropertyStore.getBlockSize();
     }
 
+    // TODO this is only for rebuilding id generators... remove when those are rewritten
     @Override
     protected boolean isRecordInUse( ByteBuffer buffer )
     {
         // TODO: The next line is an ugly hack, but works.
-        OffsetTrackingCursor cursor = new OffsetTrackingCursor().reset(new ByteBufferPage( buffer ));
+        OffsetTrackingCursor cursor = new StandardPageCursor( null ).reset(new ByteBufferPage( buffer ));
         return buffer.limit() >= RECORD_SIZE && getRecordFromBuffer( 0, cursor ).inUse();
     }
 

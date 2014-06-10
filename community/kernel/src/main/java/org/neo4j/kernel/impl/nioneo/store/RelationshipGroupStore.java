@@ -63,7 +63,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public RelationshipGroupRecord getRecord( long id )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
@@ -151,7 +151,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public void updateRecord( RelationshipGroupRecord record )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
@@ -227,7 +227,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public RelationshipGroupRecord forceGetRecord( long id )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
@@ -255,7 +255,7 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public void forceUpdateRecord( RelationshipGroupRecord record )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );

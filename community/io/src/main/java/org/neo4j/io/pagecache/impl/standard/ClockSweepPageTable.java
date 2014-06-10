@@ -65,7 +65,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
     }
 
     @Override
-    public PinnablePage load( PageIO io, long pageId, PageLock lock ) throws IOException
+    public PinnablePage load( PageSwapper io, long pageId, PageLock lock ) throws IOException
     {
         StandardPinnablePage page = nextFreePage();
         if ( page.pin( null, UNBOUND_PAGE_ID, lock ) )
@@ -115,7 +115,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
     }
 
     @Override
-    public void flush( PageIO io ) throws IOException
+    public void flush( PageSwapper io ) throws IOException
     {
         assertNoSweeperException();
         for ( StandardPinnablePage page : pages )
@@ -138,7 +138,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
 
     private void assertNoSweeperException() throws IOException
     {
-        if(sweeperException != null)
+        if ( sweeperException != null )
         {
             throw new IOException( "Cannot safely flush, page eviction thread has hit IO problems.", sweeperException );
         }
@@ -227,13 +227,13 @@ public class ClockSweepPageTable implements PageTable, Runnable
                 }
                 maxPagesToEvict = loadedPages - minLoadedPages;
             }
-            catch(IOException e)
+            catch ( IOException e )
             {
                 // Failed to write to disk, this is fatal, shut down.
                 sweeperException = e;
                 return;
             }
-            catch(Exception e)
+            catch ( Exception e )
             {
                 // Other than IO Exception, avoid having this thread die at all cost.
                 // TODO: Report this via a monitor rather than like this
@@ -245,7 +245,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
     private void evict( StandardPinnablePage page ) throws IOException
     {
         long pageId = page.pageId();
-        PageIO io = page.io();
+        PageSwapper io = page.io();
 
         page.flush();
         page.evicted();

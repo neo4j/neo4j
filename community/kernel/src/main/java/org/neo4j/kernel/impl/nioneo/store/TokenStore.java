@@ -177,7 +177,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     public T getRecord( int id )
     {
         T record;
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
@@ -207,7 +207,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     @Override
     public T forceGetRecord( long id )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
@@ -248,7 +248,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
     public T getLightRecord( int id )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
@@ -273,7 +273,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     @Override
     public void updateRecord( T record )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ));
@@ -302,7 +302,7 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     @Override
     public void forceUpdateRecord( T record )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ));

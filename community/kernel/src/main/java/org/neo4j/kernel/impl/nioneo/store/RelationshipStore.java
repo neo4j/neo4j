@@ -141,7 +141,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
 
     private RelationshipRecord getRecord( long id, RelationshipRecord target, RecordLoad loadMode )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
@@ -163,7 +163,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     @Override
     public void updateRecord( RelationshipRecord record )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
@@ -185,7 +185,7 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     @Override
     public void forceUpdateRecord( RelationshipRecord record )
     {
-        PageCursor cursor = pageCache.newCursor();
+        PageCursor cursor = pageCache.newPageCursor();
         try
         {
             storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );

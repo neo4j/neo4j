@@ -67,14 +67,14 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     private static final DynamicRelationshipType TYPE = withName( "TYPE" );
 
     private final CountDownLatch breakpointNotification = new CountDownLatch( 1 );
-    private final BreakPoint SET_VERSION = BreakPoint.thatCrashesTheProcess( breakpointNotification, 0,
-            NeoStore.class, "setVersion", long.class );
+    private final BreakPoint INCREMENT_VERSION = BreakPoint.thatCrashesTheProcess( breakpointNotification, 0,
+            NeoStore.class, "incrementVersion" );
     private final BreakPoint RELEASE_CURRENT_LOG_FILE = BreakPoint.thatCrashesTheProcess( breakpointNotification, 0,
             XaLogicalLog.class, "releaseCurrentLogFile" );
     private final BreakPoint RENAME_LOG_FILE = BreakPoint.thatCrashesTheProcess( breakpointNotification, 0,
             XaLogicalLog.class, "renameLogFileToRightVersion", File.class, long.class );
-    private final BreakPoint SET_VERSION_2 = BreakPoint.thatCrashesTheProcess( breakpointNotification, 1,
-            NeoStore.class, "setVersion", long.class );
+    private final BreakPoint INCREMENT_VERSION_2 = BreakPoint.thatCrashesTheProcess( breakpointNotification, 1,
+            NeoStore.class, "incrementVersion" );
     private final BreakPoint RELEASE_CURRENT_LOG_FILE_2 = BreakPoint.thatCrashesTheProcess( breakpointNotification, 1,
             XaLogicalLog.class, "releaseCurrentLogFile" );
     private final BreakPoint RENAME_LOG_FILE_2 = BreakPoint.thatCrashesTheProcess( breakpointNotification, 1,
@@ -85,10 +85,10 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
             BreakPoint.stackTraceMustNotContainClass( LuceneDataSource.class ), XaLogicalLog.class, "renameLogFileToRightVersion", File.class, long.class );
 
     private final BreakPoint[] breakpoints = new BreakPoint[] {
-            SET_VERSION,
+            INCREMENT_VERSION,
             RELEASE_CURRENT_LOG_FILE,
             RENAME_LOG_FILE,
-            SET_VERSION_2,
+            INCREMENT_VERSION_2,
             RELEASE_CURRENT_LOG_FILE_2,
             RENAME_LOG_FILE_2,
             EXIT_RENAME_LOG_FILE_LUCENE,
@@ -267,7 +267,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeNeostoreSetVersion() throws Exception
     {
-        SET_VERSION.enable();
+        INCREMENT_VERSION.enable();
         run( new DoSimpleTransaction() );
         // tx(2) is the first one, for creating the relationship type
         // tx(3) is the second one, for doing the actual transaction in DoSimpleTransaction
@@ -293,7 +293,7 @@ public class TestRecoveryLogTimingIssues extends AbstractSubProcessTestBase
     @Test
     public void logsShouldContainAllTransactionsEvenIfCrashJustBeforeNeostoreSetVersionTwoLogs() throws Exception
     {
-        SET_VERSION_2.enable();
+        INCREMENT_VERSION_2.enable();
         run( new DoSimpleTransaction() );
         run( new RotateLogs() );
         run( new DoSimpleTransaction() );

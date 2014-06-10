@@ -674,6 +674,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         return neoStore.getVersion();
     }
 
+    /** Only used for testing */
     public long incrementAndGetLogVersion()
     {
         return neoStore.incrementVersion();

@@ -23,9 +23,39 @@ import java.io.IOException;
 
 public interface PagedFile
 {
+    /**
+     * Pin the pages with a shared lock.
+     */
+    public static final int PF_SHARED_LOCK = 1;
+    /**
+     * Pin the pages with an exclusive lock.
+     */
+    public static final int PF_EXCLUSIVE_LOCK = 1 << 1;
+    /**
+     * Disallow pinning and navigating to pages outside the range of the underlying file.
+     */
+    public static final int PF_NO_GROW = 1 << 2;
+    /**
+     * Read-ahead hint for sequential forward scanning.
+     */
+    public static final int PF_READ_AHEAD = 1 << 3; // TBD
+    /**
+     * Do not load in the page if it is not loaded already. Only useful with exclusive
+     * locking when you want to overwrite the whole page anyway.
+     */
+    public static final int PF_NO_FAULT = 1 << 4; // TBD
+
+
+
+    // TODO remove pin
     void pin( PageCursor cursor, PageLock lock, long pageId ) throws IOException;
 
+    // TODO remove unpin
     void unpin( PageCursor cursor );
+
+    PageCursor io( long pageId, int pf_flags, PageIO pageIO, long io_context, long io_flags ) throws IOException;
+
+
 
     int pageSize();
 

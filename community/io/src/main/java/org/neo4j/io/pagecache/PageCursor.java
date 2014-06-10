@@ -19,7 +19,9 @@
  */
 package org.neo4j.io.pagecache;
 
-public interface PageCursor
+import java.io.IOException;
+
+public interface PageCursor extends AutoCloseable
 {
     byte getByte();
     void putByte( byte value );
@@ -35,10 +37,19 @@ public interface PageCursor
     void getBytes( byte[] data );
     void putBytes( byte[] data );
 
-    void setOffset( int offset );
 
     short getShort();
     void putShort( short value );
 
+
+    void setOffset( int offset );
     int getOffset();
+
+    // TODO remove all the methods above this comment
+
+    void rewind() throws IOException;
+
+    boolean next() throws IOException;
+
+    void close(); // TODO remove because it's specified by AutoClosable?
 }

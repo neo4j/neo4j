@@ -32,7 +32,7 @@ import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.test.EphemeralFileSystemRule;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
@@ -59,7 +59,7 @@ public class PageCacheTest
         PagedFile mappedFile = cache.map( storeFile, 512 );
 
         // Then I should be able to write to the file
-        PageCursor cursor = cache.newCursor();
+        PageCursor cursor = cache.newPageCursor();
         mappedFile.pin( cursor, PageLock.EXCLUSIVE, 4 );
 
         cursor.setOffset( 33 );
@@ -122,7 +122,7 @@ public class PageCacheTest
         // Given
         StandardPageCache cache = newPageCache();
         PagedFile mappedFile = cache.map( storeFile, 16 );
-        PageCursor cursor = cache.newCursor();
+        PageCursor cursor = cache.newPageCursor();
 
         Thread evictionThread = new Thread( cache );
         evictionThread.start();
@@ -148,7 +148,7 @@ public class PageCacheTest
         // Given
         StandardPageCache cache = newPageCache();
         PagedFile mappedFile = cache.map( storeFile, 16 );
-        PageCursor cursor = cache.newCursor();
+        PageCursor cursor = cache.newPageCursor();
 
         Thread evictionThread = new Thread( cache );
         evictionThread.start();
@@ -168,7 +168,7 @@ public class PageCacheTest
         // Then all modified pages should've been persisted
         cache = newPageCache();
         mappedFile = cache.map( storeFile, 16 );
-        cursor = cache.newCursor();
+        cursor = cache.newPageCursor();
 
         evictionThread = new Thread( cache );
         evictionThread.start();

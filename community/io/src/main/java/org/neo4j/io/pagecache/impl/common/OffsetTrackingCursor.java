@@ -24,7 +24,8 @@ import java.nio.BufferUnderflowException;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-public class OffsetTrackingCursor implements PageCursor
+// TODO remove this class
+public abstract class OffsetTrackingCursor implements PageCursor
 {
     protected Page page;
     private int currentOffset;
@@ -94,7 +95,7 @@ public class OffsetTrackingCursor implements PageCursor
 
     public long getUnsignedInt()
     {
-        return getInt()&0xFFFFFFFFL;
+        return getInt() & 0xFFFFFFFFL;
     }
 
     public void putInt( int i )

@@ -37,7 +37,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     public volatile boolean loaded = false;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private PageIO io;
+    private PageSwapper io;
     private long pageId = UNBOUND_PAGE_ID;
     private boolean dirty;
     private int pageSize;
@@ -50,7 +50,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     }
 
     @Override
-    public boolean pin( PageIO assertIO, long assertPageId, PageLock lockType )
+    public boolean pin( PageSwapper assertIO, long assertPageId, PageLock lockType )
     {
         lock( lockType );
         if( verifyPageBindings( assertIO, assertPageId ) )
@@ -113,7 +113,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
      * Must be called while holding either a SHARED or an EXCLUSIVE lock, in order to prevent
      * racing with eviction.
      */
-    private boolean verifyPageBindings( PageIO assertIO, long assertPageId )
+    private boolean verifyPageBindings( PageSwapper assertIO, long assertPageId )
     {
         return assertPageId == pageId && io == assertIO;
     }
@@ -135,7 +135,8 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
         {
             try
             {
-                buffer = ByteBuffer.allocateDirect( pageSize );
+//                buffer = ByteBuffer.allocateDirect( pageSize );
+                buffer = ByteBuffer.allocate( pageSize );
             }
             catch( OutOfMemoryError e )
             {
@@ -148,7 +149,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     /**
      * Must be call under lock
      */
-    void reset( PageIO io, long pageId )
+    void reset( PageSwapper io, long pageId )
     {
         assertLocked();
         this.io = io;
@@ -188,7 +189,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     void load() throws IOException
     {
         assertLocked();
-        buffer().position(0);
+        buffer().position(0); // TODO remove?
         io.read( pageId, buffer );
         loaded = true;
     }
@@ -205,7 +206,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     /**
      * Must be call under lock
      */
-    boolean isBackedBy( PageIO io )
+    boolean isBackedBy( PageSwapper io )
     {
         assertLocked();
         return this.io != null && this.io.equals( io );
@@ -214,7 +215,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     /**
      * Must be call under lock
      */
-    PageIO io()
+    PageSwapper io()
     {
         assertLocked();
         return io;

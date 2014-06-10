@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageIO;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.PagedFile;
 
@@ -39,9 +40,10 @@ public class StandardPagedFile implements PagedFile
     private final PageTable table;
     private final int filePageSize;
     private final PageCacheMonitor monitor;
-    private final StandardPageIO pageIO;
+    private final StandardPageSwapper swapper;
 
     private final AtomicInteger references = new AtomicInteger( 1 );
+    private final CursorFreelist cursorFreelist = new CursorFreelist();
 
     /** Currently active pages in the file this object manages. */
     private ConcurrentMap<Long, Object> filePages = new ConcurrentHashMap<>();
@@ -66,13 +68,32 @@ public class StandardPagedFile implements PagedFile
         this.table = table;
         this.filePageSize = filePageSize;
         this.monitor = monitor;
-        this.pageIO = new StandardPageIO( file, channel, filePageSize, new RemoveEvictedPage( filePages ) );
+        this.swapper = new StandardPageSwapper( file, channel, filePageSize, new RemoveEvictedPage( filePages ) );
+    }
+
+    @Override
+    public PageCursor io(
+            long pageId,
+            int pf_flags,
+            PageIO pageIO,
+            long io_context,
+            long io_flags ) throws IOException
+    {
+        StandardPageCursor cursor = cursorFreelist.takeCursor();
+        cursor.initialise( this, pageId, pf_flags, pageIO, io_context, io_flags );
+        cursor.rewind();
+        return cursor;
     }
 
     @Override
     public void pin( PageCursor pinToCursor, PageLock lock, long pageId ) throws IOException
     {
         StandardPageCursor cursor = (StandardPageCursor) pinToCursor;
+        pin( cursor, lock, pageId );
+    }
+
+    void pin( StandardPageCursor cursor, PageLock lock, long pageId ) throws IOException
+    {
         cursor.assertNotInUse();
         for (;;)
         {
@@ -86,12 +107,12 @@ public class StandardPagedFile implements PagedFile
                 CountDownLatch latch = new CountDownLatch( 1 );
                 if ( filePages.replace( pageId, pageRef, latch ) )
                 {
-                    PinnablePage page = table.load( pageIO, pageId, lock );
+                    PinnablePage page = table.load( swapper, pageId, lock );
+                    cursor.reset( page, lock );
                     filePages.put( pageId, page );
                     latch.countDown();
 
-                    cursor.reset( page, lock );
-                    monitor.pin( lock, pageId, pageIO );
+                    monitor.pin( lock, pageId, swapper );
                     return; // yay!
                 }
             }
@@ -111,10 +132,10 @@ public class StandardPagedFile implements PagedFile
             {
                 // happy case where we have a page id
                 PinnablePage page = (PinnablePage) pageRef;
-                if ( page.pin( pageIO, pageId, lock ) )
+                if ( page.pin( swapper, pageId, lock ) )
                 {
                     cursor.reset( page, lock );
-                    monitor.pin( lock, pageId, pageIO );
+                    monitor.pin( lock, pageId, swapper );
                     return; // yay!
                 }
                 filePages.replace( pageId, page, NULL );
@@ -130,7 +151,7 @@ public class StandardPagedFile implements PagedFile
         PinnablePage page = standardCursor.page();
         long pageId = page.pageId();
         page.unpin( lock );
-        monitor.unpin( lock, pageId, pageIO );
+        monitor.unpin( lock, pageId, swapper );
         standardCursor.reset( null, null );
     }
 
@@ -171,23 +192,29 @@ public class StandardPagedFile implements PagedFile
         return references.decrementAndGet() == 0;
     }
 
+    // TODO why do we have both this close method, and unmap on the PageCache?
     @Override
     public void close() throws IOException
     {
         force();
-        pageIO.close();
+        swapper.close();
     }
 
     @Override
     public void flush() throws IOException
     {
-        table.flush( pageIO );
+        table.flush( swapper );
         force();
     }
 
     @Override
     public void force() throws IOException
     {
-        pageIO.force();
+        swapper.force();
+    }
+
+    public long getLastPageId() throws IOException
+    {
+        return swapper.getLastPageId();
     }
 }
