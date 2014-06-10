@@ -33,12 +33,6 @@ object idSeekLeafPlanner extends LeafPlanner {
     val predicates: Seq[Expression] = qg.selections.flatPredicates
 
     val candidatePlans = predicates.collect {
-      // MATCH (a)-[r]->b WHERE id(r) = value
-      // MATCH a WHERE id(a) = value
-      case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr))
-      if func.function == Some(functions.Id) =>
-        (predicate, idExpr, Seq(idValueExpr))
-
       // MATCH (a)-[r]->b WHERE id(r) IN value
       // MATCH a WHERE id(a) IN value
       case predicate@In(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))

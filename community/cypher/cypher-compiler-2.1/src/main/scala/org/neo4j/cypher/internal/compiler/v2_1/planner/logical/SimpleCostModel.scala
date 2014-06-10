@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import Metrics._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Collection
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
+import Metrics._
 
 class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 

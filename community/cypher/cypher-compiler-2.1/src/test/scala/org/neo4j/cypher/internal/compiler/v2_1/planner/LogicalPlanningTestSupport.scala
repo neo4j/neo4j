@@ -152,7 +152,7 @@ trait LogicalPlanningTestSupport
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, _) = astRewriter.rewrite(queryText, parsedStatement)
-    planner.rewriteStatement(rewrittenStatement) match {
+    Planner.rewriteStatement(rewrittenStatement) match {
       case ast: Query =>
         val semanticTable = semanticChecker.check(queryText, rewrittenStatement)
         tokenResolver.resolve(ast)(semanticTable, planContext)
