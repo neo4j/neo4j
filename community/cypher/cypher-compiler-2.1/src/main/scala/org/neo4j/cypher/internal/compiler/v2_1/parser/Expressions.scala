@@ -75,23 +75,23 @@ trait Expressions extends Parser
 
   private def Expression7: Rule1[ast.Expression] = rule("an expression") {
     Expression6 ~ zeroOrMore(WS ~ (
-      group(operator("+") ~~ Expression6) ~~>> (ast.Add(_: ast.Expression, _))
-        | group(operator("-") ~~ Expression6) ~~>> (ast.Subtract(_: ast.Expression, _))
-      ))
+        group(operator("+") ~~ Expression6) ~~>> (ast.Add(_: ast.Expression, _))
+      | group(operator("-") ~~ Expression6) ~~>> (ast.Subtract(_: ast.Expression, _))
+    ))
   }
 
   private def Expression6: Rule1[ast.Expression] = rule("an expression") {
     Expression5 ~ zeroOrMore(WS ~ (
-      group(operator("*") ~~ Expression5) ~~>> (ast.Multiply(_: ast.Expression, _))
-        | group(operator("/") ~~ Expression5) ~~>> (ast.Divide(_: ast.Expression, _))
-        | group(operator("%") ~~ Expression5) ~~>> (ast.Modulo(_: ast.Expression, _))
-      ))
+        group(operator("*") ~~ Expression5) ~~>> (ast.Multiply(_: ast.Expression, _))
+      | group(operator("/") ~~ Expression5) ~~>> (ast.Divide(_: ast.Expression, _))
+      | group(operator("%") ~~ Expression5) ~~>> (ast.Modulo(_: ast.Expression, _))
+    ))
   }
 
   private def Expression5: Rule1[ast.Expression] = rule("an expression") {
     Expression4 ~ zeroOrMore(WS ~ (
       group(operator("^") ~~ Expression4) ~~>> (ast.Pow(_: ast.Expression, _))
-      ))
+    ))
   }
 
   private def Expression4: Rule1[ast.Expression] = rule("an expression") (
@@ -140,11 +140,14 @@ trait Expressions extends Parser
     | ShortestPathPattern ~~> ast.ShortestPathExpression
     | RelationshipsPattern ~~> ast.PatternExpression
     | parenthesizedExpression
+    | nestedNotExpression
     | FunctionInvocation
     | Identifier
   )
 
   def parenthesizedExpression: Rule1[ast.Expression] = "(" ~~ Expression ~~ ")"
+
+  def nestedNotExpression: Rule1[ast.Expression] = group(keyword("NOT") ~~ Expression9) ~~>> (ast.Not(_))
 
   def PropertyExpression: Rule1[ast.Property] = rule {
     Expression1 ~ oneOrMore(WS ~ PropertyLookup)
