@@ -50,7 +50,7 @@ trait BeLikeMatcher {
 
 object BeLikeMatcher extends BeLikeMatcher
 
-case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
+case class SemanticPlan(plan: QueryPlan, semanticTable: SemanticTable)
 
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
 
@@ -254,7 +254,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       SemanticPlan(Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          planner.produceQueryPlan(ast, semanticTable)(planContext).plan
+          planner.produceQueryPlan(ast, semanticTable)(planContext)
       }, semanticTable)
     }
 

@@ -44,7 +44,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
           )
         ),
         Map("b" -> ident("b"))
-      ).plan
+      )
     )
   }
 }
