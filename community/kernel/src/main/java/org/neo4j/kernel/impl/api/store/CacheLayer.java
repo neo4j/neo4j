@@ -187,18 +187,6 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index )
-            throws SchemaRuleNotFoundException
-    {
-        IndexRule rule = indexRule( index, SchemaStorage.IndexRuleKind.ALL );
-        if ( rule != null )
-        {
-            return rule.getOwningConstraint();
-        }
-        return diskLayer.indexGetOwningUniquenessConstraintId( index );
-    }
-
-    @Override
     public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
             throws SchemaRuleNotFoundException
     {

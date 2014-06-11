@@ -161,13 +161,6 @@ public class LockingStatementOperations implements
     }
 
     @Override
-    public Long indexGetOwningUniquenessConstraintId( KernelStatement state, IndexDescriptor index ) throws SchemaRuleNotFoundException
-    {
-        state.locks().acquireSchemaReadLock();
-        return schemaReadDelegate.indexGetOwningUniquenessConstraintId( state, index );
-    }
-
-    @Override
     public long indexGetCommittedId( KernelStatement state, IndexDescriptor index, SchemaStorage.IndexRuleKind kind )
             throws SchemaRuleNotFoundException
     {
