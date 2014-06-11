@@ -85,7 +85,7 @@ object inlineProjections extends Rewriter {
         inlineIdentifiers.narrowed(clause)
     }
 
-    input.rewrite(topDown(inliningRewriter)).asInstanceOf[Statement]
+    input.endoRewrite(topDown(inliningRewriter))
   }
 
   private def inlineReturnItemsFactory(inlineExpressions: Expression => Expression) =

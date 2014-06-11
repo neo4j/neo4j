@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{bottomUp, inSequence, ParsedQuery, Monitors}
+import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, ParsedQuery, Monitors}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
@@ -83,8 +83,7 @@ object Planner {
     useAliasesInSortSkipAndLimit
   )
 
-  def rewriteStatement(statement: Statement): Statement =
-    statement.typedRewrite[Statement](rewriter)
+  def rewriteStatement(statement: Statement) = statement.endoRewrite(rewriter)
 }
 
 trait PlanningMonitor {
