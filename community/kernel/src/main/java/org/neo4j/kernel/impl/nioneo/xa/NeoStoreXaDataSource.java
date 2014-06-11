@@ -492,6 +492,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             // "not ok" state and forceGetRecord will always return place holder node records that are not in use.
             // This issue will certainly introduce index inconsistencies.
             life.start();
+
+            neoStore.makeStoreOk();
+
             propertyKeyTokenHolder.addTokens( ((TokenStore<?>) neoStore.getPropertyKeyTokenStore())
                     .getTokens( Integer.MAX_VALUE ) );
             relationshipTypeTokens.addTokens( ((TokenStore<?>) neoStore.getRelationshipTypeTokenStore())

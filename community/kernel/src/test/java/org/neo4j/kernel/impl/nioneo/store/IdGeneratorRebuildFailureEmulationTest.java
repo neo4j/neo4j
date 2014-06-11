@@ -19,22 +19,18 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
 import org.junit.runners.Suite;
 import org.junit.runners.Suite.SuiteClasses;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -59,10 +55,14 @@ import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+
 @RunWith(Suite.class)
 @SuiteClasses({IdGeneratorRebuildFailureEmulationTest.FailureBeforeRebuild.class,
         IdGeneratorRebuildFailureEmulationTest.FailureDuringRebuild.class})
-@Ignore("2.2 broke this. Revisit")
 public class IdGeneratorRebuildFailureEmulationTest
 {
     @RunWith(JUnit4.class)
@@ -114,7 +114,7 @@ public class IdGeneratorRebuildFailureEmulationTest
     @BreakpointTrigger
     private void performTest() throws Exception
     {
-        String file = prefix + File.separator + Thread.currentThread().getStackTrace()[2].getMethodName().replace(
+        String file = storeDir + File.separator + Thread.currentThread().getStackTrace()[2].getMethodName().replace(
                 '_', '.' );
         // emulate the need for rebuilding id generators by deleting it
         fs.deleteFile( new File( file + ".id") );
@@ -147,33 +147,36 @@ public class IdGeneratorRebuildFailureEmulationTest
 
     private FileSystem fs;
     private StoreFactory factory;
-    private String prefix;
+    private final String storeDir = new File( "dir" ).getAbsolutePath();
 
     @Before
     public void initialize()
     {
         fs = new FileSystem();
-        InternalAbstractGraphDatabase graphdb = new Database();
-        prefix = graphdb.getStoreDir();
+        InternalAbstractGraphDatabase graphdb = new Database( storeDir );
         createInitialData( graphdb );
         graphdb.shutdown();
         Map<String, String> config = new HashMap<>();
         config.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
-        factory = new StoreFactory( configForStoreDir( new Config( config, GraphDatabaseSettings.class ), new File( prefix ) ),
+        factory = new StoreFactory( configForStoreDir( new Config( config, GraphDatabaseSettings.class ), new File( storeDir ) ),
                 new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, null );
     }
 
     @After
     public void verifyAndDispose() throws Exception
     {
+        InternalAbstractGraphDatabase graphdb = null;
         try
         {
-            InternalAbstractGraphDatabase graphdb = new Database();
+            graphdb = new Database( storeDir );
             verifyData( graphdb );
-            graphdb.shutdown();
         }
         finally
         {
+            if ( graphdb != null )
+            {
+                graphdb.shutdown();
+            }
             if ( fs != null )
             {
                 fs.disposeAndAssertNoOpenFiles();
@@ -184,8 +187,7 @@ public class IdGeneratorRebuildFailureEmulationTest
 
     private void verifyData( GraphDatabaseService graphdb )
     {
-        Transaction tx = graphdb.beginTx();
-        try
+        try ( Transaction tx = graphdb.beginTx() )
         {
             int nodecount = 0;
             for ( Node node : GlobalGraphOperations.at( graphdb ).getAllNodes() )
@@ -204,16 +206,11 @@ public class IdGeneratorRebuildFailureEmulationTest
             }
             assertEquals( "The database should have 2 nodes.", 2, nodecount );
         }
-        finally
-        {
-            tx.finish();
-        }
     }
 
     private void createInitialData( GraphDatabaseService graphdb )
     {
-        Transaction tx = graphdb.beginTx();
-        try
+        try ( Transaction tx = graphdb.beginTx() )
         {
             Node first = properties( graphdb.createNode() );
             Node other = properties( graphdb.createNode() );
@@ -221,10 +218,6 @@ public class IdGeneratorRebuildFailureEmulationTest
             properties( other.createRelationshipTo( first, DynamicRelationshipType.withName( "DISTRUSTS" ) ) );
 
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 
@@ -269,6 +262,11 @@ public class IdGeneratorRebuildFailureEmulationTest
     @SuppressWarnings("deprecation")
     private class Database extends ImpermanentGraphDatabase
     {
+        public Database( String storeDir )
+        {
+            super( storeDir );
+        }
+
         @Override
         protected FileSystemAbstraction createFileSystemAbstraction()
         {
