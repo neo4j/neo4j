@@ -19,25 +19,26 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics.CostModel
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{ShortestPathPattern, QueryPlan}
 
-case class CandidateList(plans: Seq[QueryPlan] = Seq.empty) {
+object findShortestPaths extends CandidateGenerator[PlanTable] {
 
-  def ++(other: CandidateList): CandidateList = CandidateList(plans ++ other.plans)
+  import QueryPlanProducer._
 
-  def +(plan: QueryPlan) = copy(plans :+ plan)
-
-  def bestPlan(costs: CostModel): Option[QueryPlan] = {
-    val sortedPlans = plans.sortBy[(Int, Cost, Int)](c => (-c.solved.numHints, costs(c.plan), -c.availableSymbols.size))
-    sortedPlans.headOption
+  def apply(input: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
+    val qg = context.queryGraph
+    val patterns = qg.shortestPathPatterns
+    if (patterns.isEmpty)
+      CandidateList()
+    else {
+      val plans = patterns.toSeq.flatMap { (shortestPath: ShortestPathPattern) =>
+        input.plans.collect {
+          case plan if shortestPath.isFindableFrom(plan.availableSymbols) =>
+            planShortestPaths(plan, shortestPath)
+        }
+      }
+      CandidateList(plans)
+    }
   }
-
-  def map(f: QueryPlan => QueryPlan): CandidateList = copy(plans = plans.map(f))
-
-  def isEmpty = plans.isEmpty
-}
-
-object Candidates {
-  def apply(plans: QueryPlan*): CandidateList = CandidateList(plans)
 }
