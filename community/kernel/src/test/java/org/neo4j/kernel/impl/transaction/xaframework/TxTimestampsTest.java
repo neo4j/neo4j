@@ -42,7 +42,7 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
-public class TestTxTimestamps
+public class TxTimestampsTest
 {
     private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     private GraphDatabaseAPI db;

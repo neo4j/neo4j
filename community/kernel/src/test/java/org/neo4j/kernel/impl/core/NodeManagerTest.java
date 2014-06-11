@@ -36,12 +36,9 @@ import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
@@ -94,7 +91,7 @@ public class NodeManagerTest
         node.removeProperty( "wut" );
         node.delete();
         tx.success();
-        tx.finish();
+        tx.close();
 
         //THEN prop is removed only once
         assertThat( tracker.removed, is( "0:wut" ) );
@@ -126,7 +123,7 @@ public class NodeManagerTest
             db.createNode();
             db.createNode();
             tx.success();
-            tx.finish();
+            tx.close();
         }
 
         // WHEN iterator is started
@@ -144,7 +141,7 @@ public class NodeManagerTest
                 assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
                 db.createNode();
                 newTx.success();
-                newTx.finish();
+                newTx.close();
             }
         } );
         thread.start();
@@ -153,7 +150,7 @@ public class NodeManagerTest
 
         // THEN the new node is picked up by the iterator
         assertThat( addToCollection( allNodes, new ArrayList<Node>() ).size(), is( 2 ) );
-        transaction.finish();
+        transaction.close();
     }
 
     @Test
@@ -161,21 +158,34 @@ public class NodeManagerTest
     {
         // GIVEN
         Transaction tx = db.beginTx();
-        Relationship relationship1 = createRelationshipAssumingTxWith( "key", 1 );
-        Relationship relationship2 = createRelationshipAssumingTxWith( "key", 2 );
+        createRelationshipAssumingTxWith( "key", 1 );
+        createRelationshipAssumingTxWith( "key", 2 );
         tx.success();
-        tx.finish();
+        tx.close();
 
         // WHEN
         tx = db.beginTx();
         Iterator<Relationship> allRelationships = GlobalGraphOperations.at( db ).getAllRelationships().iterator();
-        Relationship relationship3 = createRelationshipAssumingTxWith( "key", 3 );
+
+        Thread thread = new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Transaction newTx = db.beginTx();
+                assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
+                createRelationshipAssumingTxWith( "key", 3 );
+                newTx.success();
+                newTx.close();
+            }
+        } );
+        thread.start();
+        thread.join();
 
         // THEN
-        assertEquals( asList( relationship1, relationship2, relationship3 ),
-                addToCollection( allRelationships, new ArrayList<Relationship>() ) );
+        assertThat( addToCollection( allRelationships, new ArrayList<Relationship>() ).size(), is(3) );
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private void delete( Relationship relationship )
@@ -183,7 +193,7 @@ public class NodeManagerTest
         Transaction tx = db.beginTx();
         relationship.delete();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private Node createNodeWith( String key, Object value )
@@ -192,7 +202,7 @@ public class NodeManagerTest
         Node node = db.createNode();
         node.setProperty( key, value );
         tx.success();
-        tx.finish();
+        tx.close();
         return node;
     }
 
@@ -202,7 +212,7 @@ public class NodeManagerTest
         Transaction tx = db.beginTx();
         Relationship relationship = createRelationshipAssumingTxWith( key, value );
         tx.success();
-        tx.finish();
+        tx.close();
         return relationship;
     }
 
@@ -220,7 +230,7 @@ public class NodeManagerTest
         Transaction tx = db.beginTx();
         node.delete();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private class NodeLoggingTracker implements PropertyTracker<Node>

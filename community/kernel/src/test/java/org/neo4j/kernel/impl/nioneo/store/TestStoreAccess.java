@@ -37,6 +37,9 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestStoreAccess
 {
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+    private final File storeDir = new File( "dir" ).getAbsoluteFile();
+
     @Test
     public void openingThroughStoreAccessShouldNotTriggerRecovery() throws Exception
     {
@@ -48,9 +51,6 @@ public class TestStoreAccess
         new StoreAccess( snapshot, storeDir.getPath(), stringMap() ).close();
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
     }
-    
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
-    private final File storeDir = new File( "dir" );
     
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {

@@ -25,8 +25,10 @@ import java.nio.ByteBuffer;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -40,12 +42,14 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.fail;
 
+// TODO 2.2-future
+@Ignore("We don't have active log files anymore")
 public class TestChangingOfLogFormat
 {
     @Test
     public void inabilityToStartFromOldFormatFromNonCleanShutdown() throws Exception
     {
-        File storeDir = new File( "target/var/oldlog" );
+        File storeDir = new File( "target/var/oldlog" ).getAbsoluteFile();
         GraphDatabaseService db = factory.newImpermanentDatabase( storeDir.getPath() );
         File logBaseFileName = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( Config.class ).get( GraphDatabaseSettings.logical_log );
         Transaction tx = db.beginTx();
@@ -90,12 +94,12 @@ public class TestChangingOfLogFormat
     public  Pair<Pair<File, File>, Pair<File, File>> copyLogicalLog( File logBaseFileName ) throws IOException
     {
         EphemeralFileSystemAbstraction fileSystem = fs.get();
-        File activeLog = new File( logBaseFileName.getPath() + ".active" );
+        File activeLog = new File( logBaseFileName.getPath() + ".active" ).getAbsoluteFile();
         StoreChannel af = fileSystem.open( activeLog, "r" );
         ByteBuffer buffer = ByteBuffer.allocate( 1024 );
         af.read( buffer );
         buffer.flip();
-        File activeLogBackup = new File( logBaseFileName.getPath() + ".bak.active" );
+        File activeLogBackup = new File( logBaseFileName.getPath() + ".bak.active" ).getAbsoluteFile();
         StoreChannel activeCopy = fileSystem.open( activeLogBackup, "rw" );
         activeCopy.write( buffer );
         activeCopy.close();
@@ -103,9 +107,9 @@ public class TestChangingOfLogFormat
         buffer.flip();
         char active = buffer.asCharBuffer().get();
         buffer.clear();
-        File currentLog = new File( logBaseFileName.getPath() + "." + active );
+        File currentLog = new File( logBaseFileName.getPath() + "." + active ).getAbsoluteFile();
         StoreChannel source = fileSystem.open( currentLog, "r" );
-        File currentLogBackup = new File( logBaseFileName.getPath() + ".bak." + active );
+        File currentLogBackup = new File( logBaseFileName.getPath() + ".bak." + active ).getAbsoluteFile();
         StoreChannel dest = fileSystem.open( currentLogBackup, "rw" );
         int read;
         do

@@ -54,6 +54,11 @@ public class GraphTransactionRule
         database.clearCache();
     }
 
+    public Transaction current()
+    {
+        return tx;
+    }
+
     public Transaction begin()
     {
         tx = database.getGraphDatabaseService().beginTx();

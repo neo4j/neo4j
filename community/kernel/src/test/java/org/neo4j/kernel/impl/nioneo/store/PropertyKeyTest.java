@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -36,29 +35,36 @@ import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserters;
 
-public class TestPropertyKey
+import static org.junit.Assert.assertEquals;
+
+public class PropertyKeyTest
 {
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+
     @Test
     public void lazyLoadWithinWriteTransaction() throws Exception
     {
+        // Given
         File dir = new File( "dir" );
-        BatchInserter inserter = BatchInserters.inserter( dir.getPath(), fs.get() );
+        BatchInserter inserter = BatchInserters.inserter( dir.getAbsoluteFile().getPath(), fs.get() );
         int count = 3000;
         long nodeId = inserter.createNode( mapWithManyProperties( count /* larger than initial property index load threshold */ ) );
         inserter.shutdown();
         
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( dir.getPath() );
-        Transaction tx = db.beginTx();
-        try
+        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( dir.getAbsoluteFile().getPath() );
+
+        // When
+        try (Transaction tx = db.beginTx())
         {
             db.createNode();
             Node node = db.getNodeById( nodeId );
+
+            // Then
             assertEquals( count, IteratorUtil.count( node.getPropertyKeys() ) );
             tx.success();
         }
         finally
         {
-            tx.finish();
             db.shutdown();
         }
     }
@@ -70,6 +76,4 @@ public class TestPropertyKey
             properties.put( "key:" + i, "value" );
         return properties;
     }
-
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }

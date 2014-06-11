@@ -54,10 +54,12 @@ import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
  */
 public class TestCrashWithRebuildSlow
 {
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+
     @Test
     public void crashAndRebuildSlowWithDynamicStringDeletions() throws Exception
     {
-        String storeDir = "dir";
+        String storeDir = new File("dir").getAbsolutePath();
         final GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory()
                 .setFileSystem( fs.get() ).newImpermanentDatabase( storeDir );
         produceNonCleanDefraggedStringStore( db );
@@ -149,6 +151,4 @@ public class TestCrashWithRebuildSlow
         }
         node.delete();
     }
-
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }

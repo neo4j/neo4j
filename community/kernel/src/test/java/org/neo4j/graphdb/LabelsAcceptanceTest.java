@@ -646,15 +646,24 @@ public class LabelsAcceptanceTest
                         switch ( idType )
                         {
                             case LABEL_TOKEN:
-                                return new EphemeralIdGenerator( idType )
+                            {
+                                IdGenerator generator = generators.get( idType );
+                                if ( generator == null )
                                 {
-                                    @Override
-                                    public long nextId()
-                                    {
-                                        // Same exception as the one thrown by IdGeneratorImpl
-                                        throw new UnderlyingStorageException( "Id capacity exceeded" );
-                                    }
-                                };
+                                    generator = new EphemeralIdGenerator( idType )
+                                                {
+                                                    @Override
+                                                    public long nextId()
+                                                    {
+                                                        // Same exception as the one thrown by IdGeneratorImpl
+                                                        throw new UnderlyingStorageException( "Id capacity exceeded" );
+                                                    }
+                                                };
+                                    generators.put( idType, generator );
+                                }
+                                return generator;
+                            }
+
                             default:
                                 return super.open( fs, fileName, grabSize, idType, Long.MAX_VALUE );
                         }

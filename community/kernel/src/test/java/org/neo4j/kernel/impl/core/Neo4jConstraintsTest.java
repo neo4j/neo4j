@@ -33,7 +33,7 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.fail;
 
-public class TestNeo4jConstrains extends AbstractNeo4jTestCase
+public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
 {
     private final String key = "testproperty";
 
@@ -57,7 +57,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             node.delete();
         }
         tx.success();
-        tx.finish();
+        tx.close();
         tx = getGraphDb().beginTx();
         // the DB should be empty
         // long numNodesPost = getNodeManager().getNumberOfIdsInUse( Node.class
@@ -68,7 +68,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         // TODO: this should be valid, fails right now!
         // assertEquals( 0, numNodesPost );
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     @Test
@@ -82,7 +82,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         {
             Transaction tx = getTransaction();
             tx.success();
-            tx.finish();
+            tx.close();
             fail( "Should not validate" );
         }
         catch ( Exception e )
@@ -104,7 +104,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         {
             Transaction tx = getTransaction();
             tx.success();
-            tx.finish();
+            tx.close();
             fail( "Should not validate" );
         }
         catch ( Exception e )
@@ -127,7 +127,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         rel0.delete();
         Transaction tx = getTransaction();
         tx.success();
-        tx.finish();
+        tx.close();
         setTransaction( getGraphDb().beginTx() );
         node2.delete();
         rel1.delete();
@@ -141,7 +141,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         Node node2 = getGraphDb().createNode();
         Transaction tx = getTransaction();
         tx.success();
-        tx.finish();
+        tx.close();
         tx = getGraphDb().beginTx();
         node1.delete();
         clearCache(); 
@@ -156,7 +156,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         try
         {
             tx.failure();
-            tx.finish();
+            tx.close();
             // fail( "Transaction should be marked rollback" );
         }
         catch ( Exception e )
@@ -194,7 +194,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             node.removeProperty( key );
             Transaction tx = getTransaction();
             tx.success();
-            tx.finish();
+            tx.close();
             fail( "Change property on deleted node should not validate" );
         }
         catch ( Exception e )
@@ -214,7 +214,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             node.setProperty( key, 2 );
             Transaction tx = getTransaction();
             tx.success();
-            tx.finish();
+            tx.close();
             fail( "Change property on deleted node should not validate" );
         }
         catch ( Exception e )
@@ -235,7 +235,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             rel.setProperty( key, 1 );
             Transaction tx = getTransaction();
             tx.success();
-            tx.finish();
+            tx.close();
             fail( "Add property on deleted rel should not validate" );
         }
         catch ( Exception e )
@@ -258,7 +258,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             rel.removeProperty( key );
             Transaction tx = getTransaction();
             tx.success();
-            tx.finish();
+            tx.close();
             fail( "Remove property on deleted rel should not validate" );
         }
         catch ( Exception e )
@@ -282,7 +282,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             rel.setProperty( key, 2 );
             Transaction tx = getTransaction();
             tx.success();
-            tx.finish();
+            tx.close();
             fail( "Change property on deleted rel should not validate" );
         }
         catch ( Exception e )
@@ -303,7 +303,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             node1.delete();
             Transaction tx = getTransaction();
             tx.success();
-            tx.finish();
+            tx.close();
             fail( "Should not validate" );
         }
         catch ( Exception e )
@@ -326,7 +326,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
             rel.delete();
             Transaction tx = getTransaction();
             tx.success();
-            tx.finish();
+            tx.close();
             fail( "Should not validate" );
         }
         catch ( Exception e )
@@ -350,7 +350,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         {
             Transaction tx = getTransaction();
             tx.failure();
-            tx.finish();
+            tx.close();
         }
         setTransaction( getGraphDb().beginTx() );
         try
@@ -378,7 +378,7 @@ public class TestNeo4jConstrains extends AbstractNeo4jTestCase
         {
             Transaction tx = getTransaction();
             tx.success();
-            tx.finish();
+            tx.close();
             fail( "Shouldn't validate" );
         }
         catch ( Exception e )

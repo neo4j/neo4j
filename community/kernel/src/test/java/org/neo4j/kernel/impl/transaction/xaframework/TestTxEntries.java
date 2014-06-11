@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.File;
 import java.util.Random;
-
 import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
 import org.junit.Test;
-import org.mockito.Mockito;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -38,8 +38,9 @@ import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 import static org.mockito.Mockito.mock;
+
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 
 public class TestTxEntries
 {
@@ -49,7 +50,7 @@ public class TestTxEntries
     private final int refMaster = 1;
     private final int refMe = 1;
     private final long startPosition = 1000;
-    private final String storeDir = "dir";
+    private final String storeDir = new File("dir").getAbsolutePath();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 
     /*

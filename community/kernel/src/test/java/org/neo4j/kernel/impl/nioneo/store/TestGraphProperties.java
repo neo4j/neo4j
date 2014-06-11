@@ -297,7 +297,7 @@ public class TestGraphProperties
     @Test
     public void twoUncleanInARow() throws Exception
     {
-        String storeDir = "dir";
+        String storeDir = new File("dir").getAbsolutePath();
         EphemeralFileSystemAbstraction snapshot = produceUncleanStore( fs.get(), storeDir );
         snapshot = produceUncleanStore( snapshot, storeDir );
         snapshot = produceUncleanStore( snapshot, storeDir );

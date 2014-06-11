@@ -23,19 +23,31 @@ import java.util.concurrent.ExecutionException;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.RuleChain;
+import org.junit.rules.TestRule;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Lock;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
+import org.neo4j.test.DatabaseRule;
+import org.neo4j.test.GraphTransactionRule;
+import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.test.OtherThreadExecutor;
 
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-import static org.junit.Assert.*;
 
-public class TestManualAcquireLock extends AbstractNeo4jTestCase
+import static org.junit.Assert.fail;
+
+public class ManualAcquireLockTest
 {
+    public DatabaseRule db = new ImpermanentDatabaseRule(  );
+    public GraphTransactionRule tx = new GraphTransactionRule( db );
+
+    @Rule public TestRule chain = RuleChain.outerRule( db ).around( tx );
+
     private Worker worker;
     
     @Before
@@ -55,10 +67,11 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
     {
         String key = "name";
         Node node = getGraphDb().createNode();
-        
-        Transaction tx = newTransaction();
+
+        tx.success();
+        Transaction current = tx.begin();
         Worker worker = new Worker();
-        Lock nodeLock = tx.acquireWriteLock( node );
+        Lock nodeLock = current.acquireWriteLock( node );
         worker.beginTx();
         try
         {
@@ -80,14 +93,15 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
             // Ok, interrupting the thread while it's waiting for a lock will lead to tx failure.
         }
     }
-    
+
     @Test
     public void canOnlyReleaseOnce() throws Exception
     {
         Node node = getGraphDb().createNode();
-        
-        Transaction tx = newTransaction();
-        Lock nodeLock = tx.acquireWriteLock( node );
+
+        tx.success();
+        Transaction current = tx.begin();
+        Lock nodeLock = current.acquireWriteLock( node );
         nodeLock.release();
         try
         {
@@ -104,9 +118,10 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
     {
         String key = "name";
         Node node = getGraphDb().createNode();
-        
-        Transaction tx = newTransaction();
-        Lock nodeLock = tx.acquireWriteLock( node );
+
+        tx.success();
+        Transaction current = tx.begin();
+        Lock nodeLock = current.acquireWriteLock( node );
         node.setProperty( key, "value" );
         nodeLock.release();
         
@@ -119,11 +134,10 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
         }
         catch ( Exception e )
         {
-            e.printStackTrace();
+            // e.printStackTrace();
         }
-        commit();
+
         tx.success();
-        tx.finish();
 
         try
         {
@@ -135,6 +149,11 @@ public class TestManualAcquireLock extends AbstractNeo4jTestCase
         }
     }
     
+    private GraphDatabaseService getGraphDb()
+    {
+        return db.getGraphDatabaseService();
+    }
+
     private class State
     {
         private final GraphDatabaseService graphDb;

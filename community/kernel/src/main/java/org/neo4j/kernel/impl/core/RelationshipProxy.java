@@ -243,6 +243,12 @@ public class RelationshipProxy implements Relationship
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             statement.dataWriteOperations().relationshipSetProperty( relId, Property.property( propertyKeyId, value ) );
         }
+        catch ( IllegalArgumentException e )
+        {
+            // Trying to set an illegal value is a critical error - fail this transaction
+            statementContextProvider.getKernelTransactionBoundToThisThread( true ).failure();
+            throw e;
+        }
         catch ( EntityNotFoundException e )
         {
             throw new IllegalStateException( e );

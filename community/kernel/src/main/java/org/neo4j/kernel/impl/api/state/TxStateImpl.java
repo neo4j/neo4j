@@ -1041,10 +1041,12 @@ public final class TxStateImpl implements TxState
     @Override
     public PrimitiveLongIterator augmentRelationshipsGetAll( PrimitiveLongIterator committed )
     {
+/*
         if ( !hasChanges() )
         {
             return committed;
         }
+*/
 
         return addedAndRemovedRels().augment( committed );
     }

@@ -37,7 +37,7 @@ public class EphemeralIdGenerator implements IdGenerator
 {
     public static class Factory implements IdGeneratorFactory
     {
-        private final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
+        protected final Map<IdType, IdGenerator> generators = new EnumMap<IdType, IdGenerator>( IdType.class );
 
         @Override
         public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )

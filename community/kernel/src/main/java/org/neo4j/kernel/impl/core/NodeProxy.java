@@ -252,6 +252,11 @@ public class NodeProxy implements Node
             catch ( ConstraintValidationKernelException e )
             {
                 throw new ConstraintViolationException( e.getUserMessage( new StatementTokenNameLookup( statement.readOperations() ) ), e );
+            } catch (IllegalArgumentException e)
+            {
+                // Trying to set an illegal value is a critical error - fail this transaction
+                statementContextProvider.getKernelTransactionBoundToThisThread( true ).failure();
+                throw e;
             }
         }
         catch ( EntityNotFoundException e )

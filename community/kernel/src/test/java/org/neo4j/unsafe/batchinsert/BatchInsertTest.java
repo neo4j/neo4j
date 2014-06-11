@@ -109,7 +109,7 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.index.SchemaIndexTestHelper.singleInstanceSchemaIndexProviderFactory;
 
 @RunWith( Parameterized.class )
-public class TestBatchInsert
+public class BatchInsertTest
 {
     private final int denseNodeThreshold;
 
@@ -123,7 +123,7 @@ public class TestBatchInsert
         return result;
     }
 
-    public TestBatchInsert( int denseNodeThreshold )
+    public BatchInsertTest( int denseNodeThreshold )
     {
         this.denseNodeThreshold = denseNodeThreshold;
     }
@@ -177,7 +177,7 @@ public class TestBatchInsert
 
     private BatchInserter newBatchInserter()
     {
-        return BatchInserters.inserter( "neo-batch-db", fs.get(), configuration() );
+        return BatchInserters.inserter( new File("neo-batch-db").getAbsolutePath(), fs.get(), configuration() );
     }
 
     private BatchInserter newBatchInserterWithSchemaIndexProvider( KernelExtensionFactory<?> provider )

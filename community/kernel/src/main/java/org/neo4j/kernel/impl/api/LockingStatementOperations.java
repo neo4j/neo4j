@@ -237,8 +237,7 @@ public class LockingStatementOperations implements
         }
         catch ( EntityNotFoundException e )
         {
-            // Fine, the relationship is already gone
-            return;
+            throw new IllegalStateException( "Unable to delete relationship[" + relationshipId+ "] since it is already deleted." );
         }
         state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         entityWriteDelegate.relationshipDelete( state, relationshipId );
