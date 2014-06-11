@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, AstConstructionTestSupport, RelTypeName, Query}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
@@ -152,9 +152,9 @@ trait LogicalPlanningTestSupport
     val parsedStatement = parser.parse(queryText)
     semanticChecker.check(queryText, parsedStatement)
     val (rewrittenStatement, _) = astRewriter.rewrite(queryText, parsedStatement)
-    planner.rewriteStatement(rewrittenStatement) match {
+    Planner.rewriteStatement(rewrittenStatement) match {
       case ast: Query =>
-        val semanticTable = semanticChecker.check(queryText, rewrittenStatement)
+        val semanticTable = semanticChecker.check(queryText, ast)
         tokenResolver.resolve(ast)(semanticTable, planContext)
         planner.produceQueryPlan(ast, semanticTable)(planContext)
       case _ =>
