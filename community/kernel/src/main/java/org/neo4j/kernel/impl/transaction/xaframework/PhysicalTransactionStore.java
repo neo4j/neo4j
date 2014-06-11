@@ -64,7 +64,7 @@ public class PhysicalTransactionStore extends LifecycleAdapter implements Transa
     }
 
     @Override
-    public TransactionCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor ) throws NoSuchTransactionException, IOException
+    public IOCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor ) throws NoSuchTransactionException, IOException
     {
         // look up in position cache
         LogPosition position = positionCache.getStartPosition( transactionIdToStartFrom );
@@ -79,7 +79,7 @@ public class PhysicalTransactionStore extends LifecycleAdapter implements Transa
         logFile.accept( transactionPositionLocator);
         position = transactionPositionLocator.getPosition();
         // TODO 2.2-future play forward and cache that position
-        TransactionCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader, visitor );
+        IOCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader, visitor );
         return cursor;
     }
 

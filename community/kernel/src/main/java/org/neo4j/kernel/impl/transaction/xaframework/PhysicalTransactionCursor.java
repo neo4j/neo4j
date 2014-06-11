@@ -26,7 +26,7 @@ import java.util.List;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 
-public class PhysicalTransactionCursor implements TransactionCursor
+public class PhysicalTransactionCursor implements IOCursor
 {
     private final ReadableLogChannel channel;
     private final LogEntryReader<ReadableLogChannel> entryReader;

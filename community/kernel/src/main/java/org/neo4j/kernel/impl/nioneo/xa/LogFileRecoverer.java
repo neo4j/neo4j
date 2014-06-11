@@ -22,9 +22,9 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 
@@ -43,7 +43,7 @@ public class LogFileRecoverer implements Visitor<ReadableLogChannel, IOException
     @Override
     public boolean visit( ReadableLogChannel channel ) throws IOException
     {
-        TransactionCursor cursor = new PhysicalTransactionCursor( channel, logEntryReader, visitor );
+        IOCursor cursor = new PhysicalTransactionCursor( channel, logEntryReader, visitor );
         while ( cursor.next( ) )
         {
             // Just go through the recovery data, handing it on to the consumer.

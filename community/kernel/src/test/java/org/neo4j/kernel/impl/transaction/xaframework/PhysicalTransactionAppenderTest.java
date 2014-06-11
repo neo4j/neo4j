@@ -71,7 +71,7 @@ public class PhysicalTransactionAppenderTest
                 return true;
             }
         };
-        TransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(
+        IOCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(
                 CommandReaderFactory.DEFAULT), visitor  );
         reader.next( );
         assertEquals( 1, visited.get() );

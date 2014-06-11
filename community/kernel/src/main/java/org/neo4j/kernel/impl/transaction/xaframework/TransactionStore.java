@@ -32,5 +32,5 @@ public interface TransactionStore extends Closeable, Lifecycle
 {
     TransactionAppender getAppender();
 
-    TransactionCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor ) throws NoSuchTransactionException, IOException;
+    IOCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor ) throws NoSuchTransactionException, IOException;
 }
