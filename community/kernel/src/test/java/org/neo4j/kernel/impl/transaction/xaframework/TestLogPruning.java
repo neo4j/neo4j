@@ -19,20 +19,21 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.keep_logical_logs;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestLogPruning
 {
@@ -115,7 +116,7 @@ public class TestLogPruning
     private GraphDatabaseAPI newDb( String logPruning )
     {
         fs = new EphemeralFileSystemAbstraction();
-        GraphDatabaseAPI db = (GraphDatabaseAPI) new ImpermanentGraphDatabase( stringMap( keep_logical_logs.name(), logPruning ) )
+        GraphDatabaseAPI db = new ImpermanentGraphDatabase( stringMap( keep_logical_logs.name(), logPruning ) )
         {
             @Override
             protected FileSystemAbstraction createFileSystemAbstraction()
@@ -124,7 +125,7 @@ public class TestLogPruning
             }
         };
         this.db = db;
-        files = new PhysicalLogFiles( new File(db.getStoreDir()), GraphDatabaseSettings.logical_log.getDefaultValue(), fs );
+        files = new PhysicalLogFiles( new File(db.getStoreDir()), PhysicalLogFile.DEFAULT_NAME, fs );
         return db;
     }
 

@@ -19,16 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static org.junit.Assert.assertEquals;
 
 @Ignore( "Needs to be updated for 2.2" )
 public class TransactionMonitorTest

@@ -30,9 +30,9 @@ import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.LogRecoveryCheck;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogRecoveryCheck;
 import org.neo4j.kernel.logging.Logging;
 
 /**
@@ -61,34 +61,23 @@ public class StoreRecoverer
         Config config = new Config( params, GraphDatabaseSettings.class );
 
         File neoStorePath = config.get( GraphDatabaseSettings.neo_store );
-
         if(!fs.fileExists( neoStorePath ))
         {
             // No database in the specified directory.
             return false;
         }
 
-        File baseLogPath = config.get( GraphDatabaseSettings.logical_log );
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( baseLogPath, fs );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
 
         File log = logFiles.getHistoryFileName( logVersionRepository.getCurrentLogVersion() );
 
-        StoreChannel logChannel = null;
-        try
+        try ( StoreChannel logChannel = fs.open( log, "r" ) )
         {
-            logChannel = fs.open( log, "r" );
-            return new XaLogicalLogRecoveryCheck( logChannel ).recoveryRequired();
-        }
-        finally
-        {
-            if ( logChannel != null )
-            {
-                logChannel.close();
-            }
+            return new LogRecoveryCheck( logChannel ).recoveryRequired();
         }
     }
 
-    public void recover( File dataDir, Map<String, String> params, Logging logging ) throws IOException
+    public void recover( File dataDir, Map<String, String> params, Logging logging )
     {
         // For now, just launch a full embedded database on top of the
         // directory.

@@ -168,6 +168,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.String.format;
+
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
 import static org.neo4j.helpers.Functions.identity;
 import static org.neo4j.helpers.Settings.STRING;
@@ -212,7 +213,6 @@ public abstract class InternalAbstractGraphDatabase
         public static final Setting<Boolean> ephemeral = setting( "ephemeral", Settings.BOOLEAN, Settings.FALSE );
         public static final Setting<File> store_dir = GraphDatabaseSettings.store_dir;
         public static final Setting<File> neo_store = GraphDatabaseSettings.neo_store;
-        public static final Setting<File> logical_log = GraphDatabaseSettings.logical_log;
 
         // Kept here to have it not be publicly documented.
         public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );
@@ -963,7 +963,9 @@ public abstract class InternalAbstractGraphDatabase
         try (Statement statement = threadToTransactionBridge.instance())
         {
             if ( !statement.readOperations().nodeExists( id ) )
+            {
                 throw new NotFoundException(format( "Node %d not found", id ));
+            }
 
             return nodeManager.newNodeProxyById( id );
         }
@@ -980,7 +982,9 @@ public abstract class InternalAbstractGraphDatabase
         try (Statement statement = threadToTransactionBridge.instance())
         {
             if ( !statement.readOperations().relationshipExists( id ) )
+            {
                 throw new NotFoundException( format( "Relationship %d not found", id ) );
+            }
 
             return nodeManager.newRelationshipProxyById( id );
         }

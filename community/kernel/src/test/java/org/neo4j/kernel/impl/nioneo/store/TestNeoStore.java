@@ -177,8 +177,7 @@ public class TestNeoStore
     {
         final Config config = new Config( MapUtil.stringMap( additionalConfig,
                 InternalAbstractGraphDatabase.Configuration.store_dir.name(), path.getPath(),
-                InternalAbstractGraphDatabase.Configuration.neo_store.name(), "neo",
-                InternalAbstractGraphDatabase.Configuration.logical_log.name(), file( "nioneo_logical.log" ).getPath() ),
+                InternalAbstractGraphDatabase.Configuration.neo_store.name(), "neo" ),
                 GraphDatabaseSettings.class );
         EphemeralFileSystemAbstraction fs = this.fs.get();
         StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),

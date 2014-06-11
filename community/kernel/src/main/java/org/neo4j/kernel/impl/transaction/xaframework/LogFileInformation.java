@@ -19,7 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.File;
 import java.io.IOException;
 
 interface LogFileInformation

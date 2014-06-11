@@ -30,7 +30,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public abstract class DatabaseRule extends ExternalResource
@@ -150,7 +149,7 @@ public abstract class DatabaseRule extends ExternalResource
     {
         return database;
     }
-    
+
     public static interface RestartAction
     {
         void run( FileSystemAbstraction fs, File storeDirectory );

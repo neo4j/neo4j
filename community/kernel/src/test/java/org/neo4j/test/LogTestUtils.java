@@ -24,9 +24,9 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.transaction.xa.Xid;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
@@ -38,6 +38,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
@@ -169,7 +170,7 @@ public class LogTestUtils
             String storeDir, LogHook<LogEntry> filter ) throws IOException
     {
         List<File> files = new ArrayList<>( asList(
-                oneOrTwo( fileSystem, new File( storeDir, GraphDatabaseSettings.logical_log.getDefaultValue() ) ) ) );
+                oneOrTwo( fileSystem, new File( storeDir, PhysicalLogFile.DEFAULT_NAME ) ) ) );
         gatherHistoricalLogicalLogFiles( fileSystem, storeDir, files );
         for ( File file : files )
         {

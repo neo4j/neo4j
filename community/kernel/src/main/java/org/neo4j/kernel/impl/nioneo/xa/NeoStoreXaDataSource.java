@@ -141,7 +141,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
         public static final Setting<File> store_dir = InternalAbstractGraphDatabase.Configuration.store_dir;
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
-        public static final Setting<File> logical_log = InternalAbstractGraphDatabase.Configuration.logical_log;
     }
 
     private final DependencyResolver.Dependencies dependencies = new DependencyResolver.Dependencies();

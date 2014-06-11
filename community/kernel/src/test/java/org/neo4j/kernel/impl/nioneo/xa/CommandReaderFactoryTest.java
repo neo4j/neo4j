@@ -19,13 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV0;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV1;
+
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class CommandReaderFactoryTest
 {

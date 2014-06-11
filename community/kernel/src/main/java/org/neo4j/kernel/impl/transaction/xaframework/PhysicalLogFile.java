@@ -139,7 +139,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     private void doRecoveryOn( PhysicalLogVersionedStoreChannel toRecover,
             Visitor<ReadableLogChannel, IOException> recoveredDataVisitor ) throws IOException
     {
-        if ( new XaLogicalLogRecoveryCheck( toRecover ).recoveryRequired() )
+        if ( new LogRecoveryCheck( toRecover ).recoveryRequired() )
         { // There are already data in here, which means recovery will need to be performed.
             ReadableLogChannel recoveredDataChannel = new ReadAheadLogChannel( toRecover, NO_MORE_CHANNELS,
                     ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE );

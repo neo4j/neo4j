@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertEquals;
-
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -48,7 +46,7 @@ public class TestApplyTransactions
 //        int latestTxId = (int) ds.getNeoStore().getLastCommittingTransactionId();
 //        InMemoryLogBuffer theTx = new InMemoryLogBuffer();
 //        originNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
-//        
+//
 //        TransactionStore
 //
 //        final GraphDatabaseAPI dest = (GraphDatabaseAPI) new TestGraphDatabaseFactory().setFileSystem( fs.get() )
@@ -69,7 +67,7 @@ public class TestApplyTransactions
 //        theTx = new InMemoryLogBuffer();
 //        long extractedTxId = destNeoDataSource.getLogExtractor( latestTxId, latestTxId ).extractNext( theTx );
 //        assertEquals( latestTxId, extractedTxId );
-//        
+//
 //        LogPositionCache logPositionCache = new LogPositionCache( 1000, 100_000 );
 //        LogFile logFile = new PhysicalLogFile( fs, directory, PhysicalLogFile.DEFAULT_NAME,
 //                config.get( GraphDatabaseSettings.logical_log_rotation_threshold ),
@@ -79,8 +77,8 @@ public class TestApplyTransactions
 //        return new PhysicalTransactionStore( logFile, txIdGenerator, logPositionCache,
 //                new VersionAwareLogEntryReader( XaCommandReaderFactory.DEFAULT ) );
     }
-    
-    
+
+
 
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
 }

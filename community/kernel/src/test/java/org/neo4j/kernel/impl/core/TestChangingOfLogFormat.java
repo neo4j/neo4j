@@ -31,11 +31,9 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -51,7 +49,7 @@ public class TestChangingOfLogFormat
     {
         File storeDir = new File( "target/var/oldlog" ).getAbsoluteFile();
         GraphDatabaseService db = factory.newImpermanentDatabase( storeDir.getPath() );
-        File logBaseFileName = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( Config.class ).get( GraphDatabaseSettings.logical_log );
+        File logBaseFileName = new File( storeDir, PhysicalLogFile.DEFAULT_NAME );
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
