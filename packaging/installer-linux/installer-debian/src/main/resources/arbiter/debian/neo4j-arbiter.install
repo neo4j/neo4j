@@ -13,9 +13,7 @@ server/bin/utils                    var/lib/neo4j-arbiter/bin
 server/lib                          usr/share/neo4j-arbiter
 server/system                       usr/share/neo4j-arbiter
 
-server/conf/arbiter.cfg             etc/neo4j-arbiter
 server/conf/arbiter-wrapper.conf    etc/neo4j-arbiter
-server/conf/log4j.properties        etc/neo4j-arbiter
 server/conf/neo4j.properties        etc/neo4j-arbiter
 server/conf/neo4j-server.properties etc/neo4j-arbiter
 server/conf/neo4j-wrapper.conf      etc/neo4j-arbiter
