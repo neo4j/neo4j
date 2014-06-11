@@ -53,9 +53,6 @@ abstract class IndexLeafPlanner extends LeafPlanner {
 
     CandidateList(
       predicates.collect {
-        case equalityPredicate@Equals(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) =>
-          producePlanFor(name, propertyKeyName, equalityPredicate, SingleQueryExpression(valueExpr))
-
         case inPredicate@In(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) =>
           producePlanFor(name, propertyKeyName, inPredicate, ManyQueryExpression(valueExpr))
       }.flatten

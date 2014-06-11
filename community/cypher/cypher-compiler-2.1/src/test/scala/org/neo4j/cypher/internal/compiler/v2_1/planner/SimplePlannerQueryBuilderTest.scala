@@ -43,9 +43,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     val ast = parser.parse(query)
 
     val rewrittenAst: Statement = if (normalize) {
-      val step1 = astRewriter.rewrite(query, ast)._1
-      val step2 = Planner.rewriteStatement(step1)
-      inlineProjections(step2)
+      Planner.rewriteStatement(astRewriter.rewrite(query, ast)._1)
     } else {
       ast
     }
@@ -169,9 +167,9 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
     query.graph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), HasLabels(nIdent, Seq(A))_),
-      Predicate(Set(IdName("n")), Equals(
+      Predicate(Set(IdName("n")), In(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
-        SignedIntegerLiteral("42")_
+        Collection(Seq(SignedIntegerLiteral("42")_))_
       )_
     ))))
 
@@ -485,9 +483,9 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
     val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val exp2: Expression = Equals(
+    val exp2: Expression = In(
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
-      SignedIntegerLiteral("42")_
+      Collection(Seq(SignedIntegerLiteral("42")_))_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2))_)
     val subQueriesTable = Map(exp1 ->
@@ -516,9 +514,9 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
     val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val exp2: Expression = Equals(
-      Property(Identifier("a") _, PropertyKeyName("prop")_)_,
-      SignedIntegerLiteral("42") _
+    val exp2: Expression = In(
+      Property(Identifier("a")_, PropertyKeyName("prop")_)_,
+      Collection(Seq(SignedIntegerLiteral("42")_))_
     ) _
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2))_)
     val subQueriesTable = Map(exp1 ->
@@ -534,26 +532,26 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     lookupTable should equal(subQueriesTable)
   }
 
-  test("match a where a.prop = 21 OR (a)-->() OR a.prop = 42 return a") {
+  test("match a where a.prop2 = 21 OR (a)-->() OR a.prop = 42 return a") {
     // Given
-    val (query, lookupTable) = buildPlannerQuery("match a where a.prop = 21 OR (a)-->() OR a.prop = 42 return a", normalize = true)
+    val (query, lookupTable) = buildPlannerQuery("match a where a.prop2 = 21 OR (a)-->() OR a.prop = 42 return a", normalize = true)
 
     // Then inner pattern query graph
-    val relName = "  UNNAMED32"
-    val nodeName = "  UNNAMED36"
+    val relName = "  UNNAMED33"
+    val nodeName = "  UNNAMED37"
     val exp1: PatternExpression = PatternExpression(RelationshipsPattern(RelationshipChain(
       NodePattern(Some(Identifier("a")(pos)), Seq(), None, naked = false) _,
       RelationshipPattern(Some(Identifier(relName)(pos)), optional = false, Seq.empty, None, None, Direction.OUTGOING) _,
       NodePattern(Some(Identifier(nodeName)(pos)), Seq(), None, naked = false) _
     ) _) _)
     val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
-    val exp2: Expression = Equals(
-      Property(Identifier("a") _, PropertyKeyName("prop")_)_,
-      SignedIntegerLiteral("42")_
+    val exp2: Expression = In(
+      Property(Identifier("a")_, PropertyKeyName("prop")_)_,
+      Collection(Seq(SignedIntegerLiteral("42")_))_
     )_
-    val exp3: Expression = Equals(
-      Property(Identifier("a") _, PropertyKeyName("prop")_)_,
-      SignedIntegerLiteral("21")_
+    val exp3: Expression = In(
+      Property(Identifier("a")_, PropertyKeyName("prop2")_)_,
+      Collection(Seq(SignedIntegerLiteral("21")_))_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp3, exp2))_)
     val subQueriesTable = Map(exp1 ->
@@ -658,7 +656,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     tailQg.graph.selections.predicates should equal(Set(
       Predicate(
         Set(IdName("b"), IdName("a")),
-        Equals(Property(Identifier("a")_, PropertyKeyName("prop")_)_, FunctionInvocation(FunctionName("id")_, Identifier("b")_)_)_
+        Equals(FunctionInvocation(FunctionName("id")_, Identifier("b")_)_, Property(Identifier("a")_, PropertyKeyName("prop")_)_)_
       )
     ))
     tailQg.projection.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
@@ -671,7 +669,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_),
       Predicate(
         Set(IdName("b"), IdName("a")),
-        Equals(Property(Identifier("a")_, PropertyKeyName("prop")_)_, FunctionInvocation(FunctionName("id")_, Identifier("b")_)_)_
+        Equals(FunctionInvocation(FunctionName("id")_, Identifier("b")_)_, Property(Identifier("a")_, PropertyKeyName("prop")_)_)_
       )
     ))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
@@ -698,7 +696,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     tailQg.graph.selections.predicates should equal(Set(
       Predicate(
         Set(IdName("b"), IdName("property")),
-        Equals(Identifier("property")_, FunctionInvocation(FunctionName("id")_, Identifier("b")_)_)_
+        Equals(FunctionInvocation(FunctionName("id")_, Identifier("b")_)_, Identifier("property")_)_
       )
     ))
     tailQg.projection.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))

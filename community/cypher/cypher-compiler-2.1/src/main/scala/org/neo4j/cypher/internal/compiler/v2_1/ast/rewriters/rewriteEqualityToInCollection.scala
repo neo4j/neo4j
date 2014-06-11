@@ -22,20 +22,18 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 
-object normalizeEqualsArgumentOrder extends Rewriter {
-  override def apply(that: AnyRef): Option[AnyRef] = topDown(instance).apply(that)
+object rewriteEqualityToInCollection extends Rewriter {
+  override def apply(that: AnyRef) = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    // move n.prop on equals to the left
-    case predicate @ Equals(Property(_, _), _) =>
-      predicate
-    case predicate @ Equals(lhs, rhs @ Property(_, _)) =>
-      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
+    // id(a) = value
+    case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), p@ConstantExpression(idValueExpr))
+      if func.function == Some(functions.Id) =>
 
-    // move id(n) on equals to the left
-    case predicate @ Equals(func@FunctionInvocation(_, _, _), _) if func.function == Some(functions.Id) =>
-      predicate
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _)) if rhs.function == Some(functions.Id) =>
-      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
+      In(func, Collection(Seq(idValueExpr))(p.position))(predicate.position)
+    // a.prop = value
+    case predicate@Equals(prop@Property(id: Identifier, propKeyName), p@ConstantExpression(idValueExpr)) =>
+
+      In(prop, Collection(Seq(idValueExpr))(p.position))(predicate.position)
   }
 }

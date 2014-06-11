@@ -26,7 +26,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleQueryExpression
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
 
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
@@ -111,7 +111,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
       Projection(
         Expand(
           Selection(
-            Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
+            Seq(In(Property(Identifier("a")_, PropertyKeyName("name")_)_, Collection(Seq(StringLiteral("Andres")_))_)_),
             AllNodesScan("a")
           ),
           "a", Direction.BOTH, Seq(RelTypeName("x")_), "start", "rel", SimplePatternLength
@@ -132,7 +132,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
     } planFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r").plan should equal(
       Projection(
         Expand(
-          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Andres")_)),
+          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres")_))_)),
           "b", Direction.INCOMING, Seq.empty, "a", "r", SimplePatternLength
         ),
         Map("r" -> ident("r"))
@@ -154,13 +154,13 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         NodeHashJoin(
           "b",
           Selection(
-            Seq(Equals(Property(ident("b"), PropertyKeyName("name")_)_, StringLiteral("Andres")_)_, HasLabels(ident("b"), Seq(LabelName("Person")_))_),
+            Seq(In(Property(ident("b"), PropertyKeyName("name")_)_, Collection(Seq(StringLiteral("Andres")_))_)_, HasLabels(ident("b"), Seq(LabelName("Person")_))_),
             Expand(
-              NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Jakub")_)),
+              NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Jakub")_))_)),
               "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength
             )
           ),
-          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), SingleQueryExpression(StringLiteral("Andres")_))
+          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres")_))_))
         ),
         Map("r" -> ident("r"))
       )

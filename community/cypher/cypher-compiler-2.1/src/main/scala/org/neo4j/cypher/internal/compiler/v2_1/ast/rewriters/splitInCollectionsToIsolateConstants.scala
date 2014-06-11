@@ -22,20 +22,28 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 
-object normalizeEqualsArgumentOrder extends Rewriter {
-  override def apply(that: AnyRef): Option[AnyRef] = topDown(instance).apply(that)
+object splitInCollectionsToIsolateConstants extends Rewriter {
+  override def apply(that: AnyRef) = bottomUp(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    // move n.prop on equals to the left
-    case predicate @ Equals(Property(_, _), _) =>
-      predicate
-    case predicate @ Equals(lhs, rhs @ Property(_, _)) =>
-      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
+    case predicate@In(func@FunctionInvocation(_, _, IndexedSeq(_)), c: Collection)
+      if func.function == Some(functions.Id) =>
+      split(predicate, c, func)
 
-    // move id(n) on equals to the left
-    case predicate @ Equals(func@FunctionInvocation(_, _, _), _) if func.function == Some(functions.Id) =>
-      predicate
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _)) if rhs.function == Some(functions.Id) =>
-      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
+
+    case predicate@In(prop@Property(_: Identifier, _), c: Collection) =>
+      split(predicate, c, prop)
+  }
+
+  private def split(original: Expression, collection: Collection, expr: Expression) = {
+    val (constExpr, otherExpr) = collection.expressions.partition(ConstantExpression.unapply(_).isDefined)
+    if (constExpr.isEmpty || otherExpr.isEmpty)
+      original
+    else {
+      Or(
+        In(expr, Collection(constExpr)(collection.position))(original.position),
+        In(expr, Collection(otherExpr)(collection.position))(original.position)
+      )(original.position)
+    }
   }
 }

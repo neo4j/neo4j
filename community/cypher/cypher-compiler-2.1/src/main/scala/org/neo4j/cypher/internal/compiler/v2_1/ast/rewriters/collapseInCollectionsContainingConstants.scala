@@ -1,3 +1,4 @@
+
 /**
  * Copyright (c) 2002-2014 "Neo Technology,"
  * Network Engine for Objects in Lund AB [http://neotechnology.com]
@@ -19,23 +20,37 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.{bottomUp, Rewriter}
 
-object normalizeEqualsArgumentOrder extends Rewriter {
-  override def apply(that: AnyRef): Option[AnyRef] = topDown(instance).apply(that)
+object collapseInCollectionsContainingConstants extends Rewriter {
+  override def apply(that: AnyRef) = bottomUp(instance).apply(that)
+
+  case class InValue(lhs: Expression, expr: Expression)
 
   private val instance: Rewriter = Rewriter.lift {
-    // move n.prop on equals to the left
-    case predicate @ Equals(Property(_, _), _) =>
-      predicate
-    case predicate @ Equals(lhs, rhs @ Property(_, _)) =>
-      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
+    case predicate@Ors(exprs) =>
+      val (const, nonConst) = exprs.toList.partition {
+        case in@In(_, rhs: Collection) if ConstantExpression.unapply(rhs).isDefined => true
+        case _ => false
+      }
 
-    // move id(n) on equals to the left
-    case predicate @ Equals(func@FunctionInvocation(_, _, _), _) if func.function == Some(functions.Id) =>
-      predicate
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _)) if rhs.function == Some(functions.Id) =>
-      predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
+      val ins = const.flatMap {
+        case In(lhs, rhs: Collection) =>
+          rhs.expressions.map(expr => InValue(lhs, expr))
+      }
+
+      val flattenConst = ins.groupBy(_.lhs).map {
+        case (lhs, values) => {
+          val pos = lhs.position
+          In(lhs, Collection(values.map(_.expr).toSeq)(pos))(pos)
+        }
+      }
+
+      nonConst ++ flattenConst match {
+        case head :: Nil => head
+        case l => Ors(l.toSet)(predicate.position)
+      }
   }
 }
+
