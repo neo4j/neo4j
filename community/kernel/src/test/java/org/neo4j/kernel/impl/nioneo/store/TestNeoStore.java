@@ -214,7 +214,7 @@ public class TestNeoStore
                     {
                         return ds.evaluate();
                     }
-                } ), headerInformation, new StartupStatisticsProvider(), caches, nodeManager );
+                } ), headerInformation, new StartupStatisticsProvider(), caches, nodeManager, null );
         ds.init();
         ds.start();
 

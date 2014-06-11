@@ -96,7 +96,7 @@ public class TestGuard
             getGuard( db ).startOperationsCount( MAX_VALUE );
             n0.createRelationshipTo( n1, withName( "REL" ));
             Guard.OperationsCount ops3 = getGuard( db ).stop();
-            assertEquals( 2, ops3.getOpsCount() );
+            assertEquals( 1, ops3.getOpsCount() );
 
             getGuard( db ).startOperationsCount( MAX_VALUE );
             for ( Path position : Traversal.description().breadthFirst().relationships( withName( "REL" ) ).traverse( n0 ) )
@@ -104,7 +104,7 @@ public class TestGuard
                 ignore( position );
             }
             Guard.OperationsCount ops4 = getGuard( db ).stop();
-            assertEquals( 1, ops4.getOpsCount() );
+            assertEquals( 3, ops4.getOpsCount() );
         }
 
         db.shutdown();

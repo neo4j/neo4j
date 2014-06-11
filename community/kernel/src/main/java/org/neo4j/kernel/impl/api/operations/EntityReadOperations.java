@@ -125,19 +125,6 @@ public interface EntityReadOperations
 
     PrimitiveIntIterator nodeGetRelationshipTypes( KernelStatement statement, long nodeId ) throws EntityNotFoundException;
 
-    Property nodeGetCommittedProperty( KernelStatement statement, long nodeId, int propertyKeyId ) throws
-            EntityNotFoundException;
-
-    Property relationshipGetCommittedProperty( KernelStatement statement, long relationshipId, int propertyKeyId ) throws EntityNotFoundException;
-
-    Iterator<DefinedProperty> relationshipGetAllCommittedProperties( KernelStatement statement, long relId ) throws
-            EntityNotFoundException;
-
-    Iterator<DefinedProperty> nodeGetAllCommittedProperties( KernelStatement statement, long nodeId ) throws
-            EntityNotFoundException;
-
-    PrimitiveIntIterator nodeGetCommittedLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException;
-
     PrimitiveLongIterator nodesGetAll( KernelStatement state );
 
     PrimitiveLongIterator relationshipsGetAll( KernelStatement state );

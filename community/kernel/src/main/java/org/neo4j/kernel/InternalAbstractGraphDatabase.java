@@ -468,7 +468,7 @@ public abstract class InternalAbstractGraphDatabase
         txHook = createTxHook();
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
-        assert guard == null : "Guard not properly implemented for the time being";
+//        assert guard == null : "Guard not properly implemented for the time being";
 
         updateableSchemaState = new KernelSchemaStateStore( newSchemaStateMap() );
 
@@ -800,7 +800,7 @@ public abstract class InternalAbstractGraphDatabase
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
                 storeMigrationProcess, transactionMonitor, kernelHealth, txHook, txIdGenerator,
-                transactionHeaderInformation, startupStatistics, caches, nodeManager );
+                transactionHeaderInformation, startupStatistics, caches, nodeManager, guard );
         dataSourceManager.register( neoDataSource );
     }
 

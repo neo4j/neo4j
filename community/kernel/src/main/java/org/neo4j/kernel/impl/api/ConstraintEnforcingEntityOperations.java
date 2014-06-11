@@ -277,21 +277,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public PrimitiveIntIterator nodeGetCommittedLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException
-    {
-        return entityReadOperations.nodeGetCommittedLabels( state, nodeId );
-    }
-
-    @Override
     public Property nodeGetProperty( KernelStatement state, long nodeId, int propertyKeyId ) throws EntityNotFoundException
     {
         return entityReadOperations.nodeGetProperty( state, nodeId, propertyKeyId );
-    }
-
-    @Override
-    public Property nodeGetCommittedProperty( KernelStatement statement, long nodeId, int propertyKeyId ) throws EntityNotFoundException
-    {
-        return entityReadOperations.nodeGetCommittedProperty( statement, nodeId, propertyKeyId );
     }
 
     @Override
@@ -302,27 +290,9 @@ public class ConstraintEnforcingEntityOperations implements EntityOperations
     }
 
     @Override
-    public Property relationshipGetCommittedProperty( KernelStatement statement, long relationshipId, int propertyKeyId ) throws EntityNotFoundException
-    {
-        return entityReadOperations.relationshipGetCommittedProperty( statement, relationshipId, propertyKeyId );
-    }
-
-    @Override
     public Property graphGetProperty( KernelStatement state, int propertyKeyId )
     {
         return entityReadOperations.graphGetProperty( state, propertyKeyId );
-    }
-
-    @Override
-    public Iterator<DefinedProperty> relationshipGetAllCommittedProperties( KernelStatement statement, long relId ) throws EntityNotFoundException
-    {
-        return entityReadOperations.relationshipGetAllCommittedProperties( statement, relId );
-    }
-
-    @Override
-    public Iterator<DefinedProperty> nodeGetAllCommittedProperties( KernelStatement statement, long nodeId ) throws EntityNotFoundException
-    {
-        return entityReadOperations.nodeGetAllCommittedProperties( statement, nodeId );
     }
 
     @Override

@@ -46,8 +46,10 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.guard.Guard;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.DataIntegrityValidatingStatementOperations;
+import org.neo4j.kernel.impl.api.GuardingStatementOperations;
 import org.neo4j.kernel.impl.api.Kernel;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
@@ -188,6 +190,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private final AtomicInteger recoveredCount = new AtomicInteger();
     private StatementOperationParts statementOperations;
     private TransactionRepresentationCommitProcess commitProcess;
+    private final Guard guard;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -284,7 +287,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                  KernelHealth kernelHealth, RemoteTxHook remoteTxHook,
                                  TxIdGenerator txIdGenerator, TransactionHeaderInformation transactionHeaderInformation,
                                  StartupStatisticsProvider startupStatistics,
-                                 Caches cacheProvider, NodeManager nodeManager )
+                                 Caches cacheProvider, NodeManager nodeManager, Guard guard )
     {
         this.config = config;
         this.tokenNameLookup = tokenNameLookup;
@@ -308,6 +311,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         this.startupStatistics = startupStatistics;
         this.cacheProvider = cacheProvider;
         this.nodeManager = nodeManager;
+        this.guard = guard;
 
         readOnly = config.get( Configuration.read_only );
         msgLog = stringLogger;
@@ -434,10 +438,10 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 }
             };
 
-
             kernel = new Kernel( statisticsService, transactionFactory, hooks );
 
-            this.statementOperations = buildStatementOperations(storeLayer, legacyPropertyTrackers, indexingService, kernel, updateableSchemaState);
+            this.statementOperations = buildStatementOperations( storeLayer, legacyPropertyTrackers,
+                    indexingService, kernel, updateableSchemaState, guard );
 
             life.add( logFile );
             life.add( transactionStore );
@@ -712,11 +716,10 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         return dependencies;
     }
 
-    private StatementOperationParts buildStatementOperations(StoreReadLayer storeReadLayer,
-                                                             LegacyPropertyTrackers legacyPropertyTrackers,
-                                                             IndexingService indexingService,
-                                                             KernelAPI kernel, UpdateableSchemaState updateableSchemaState
-                                                             )
+    private StatementOperationParts buildStatementOperations(
+            StoreReadLayer storeReadLayer, LegacyPropertyTrackers legacyPropertyTrackers,
+            IndexingService indexingService, KernelAPI kernel, UpdateableSchemaState updateableSchemaState,
+            Guard guard )
     {
         // Bottom layer: Read-access to committed data
         StoreReadLayer storeLayer = storeReadLayer;
@@ -740,6 +743,14 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 parts.schemaStateOperations() );
         parts = parts.override( null, null, null, lockingContext, lockingContext, lockingContext, lockingContext,
                 lockingContext );
+        // + Guard
+        if ( guard != null )
+        {
+            GuardingStatementOperations guardingOperations = new GuardingStatementOperations(
+                    parts.entityWriteOperations(), parts.entityReadOperations(), guard );
+            parts = parts.override( null, null, guardingOperations, guardingOperations, null, null, null, null );
+        }
+
         return parts;
     }
 

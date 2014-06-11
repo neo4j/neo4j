@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api;
 
 import java.util.Arrays;
-import java.util.Collections;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Set;
@@ -260,16 +259,6 @@ public class StateHandlingStatementOperations implements
     public PrimitiveLongIterator relationshipsGetAll( KernelStatement state )
     {
         return state.txState().augmentRelationshipsGetAll( storeLayer.relationshipsGetAll() );
-    }
-
-    @Override
-    public PrimitiveIntIterator nodeGetCommittedLabels( KernelStatement state, long nodeId ) throws EntityNotFoundException
-    {
-        if( state.hasTxStateWithChanges() && state.txState().nodeIsAddedInThisTx( nodeId ))
-        {
-            return PrimitiveIntCollections.emptyIterator();
-        }
-        return storeLayer.nodeGetLabels(nodeId);
     }
 
     @Override
@@ -795,17 +784,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Iterator<DefinedProperty> nodeGetAllCommittedProperties( KernelStatement statement, long nodeId )
-            throws EntityNotFoundException
-    {
-        if( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( nodeId ))
-        {
-            return Collections.emptyIterator();
-        }
-        return storeLayer.nodeGetAllProperties( nodeId );
-    }
-
-    @Override
     public PrimitiveLongIterator relationshipGetPropertyKeys( KernelStatement state, long relationshipId )
             throws EntityNotFoundException
     {
@@ -838,28 +816,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public Property nodeGetCommittedProperty( KernelStatement statement, long nodeId, int propertyKeyId )
-            throws EntityNotFoundException
-    {
-        if( statement.hasTxStateWithChanges() && statement.txState().nodeIsAddedInThisTx( nodeId ))
-        {
-            return Property.noNodeProperty( nodeId, propertyKeyId );
-        }
-        return storeLayer.nodeGetProperty( nodeId, propertyKeyId );
-    }
-
-    @Override
-    public Property relationshipGetCommittedProperty( KernelStatement statement, long relationshipId, int propertyKeyId )
-            throws EntityNotFoundException
-    {
-        if( statement.hasTxStateWithChanges() && statement.txState().relationshipIsAddedInThisTx( relationshipId ))
-        {
-            return Property.noRelationshipProperty( relationshipId, propertyKeyId );
-        }
-        return storeLayer.relationshipGetProperty( relationshipId, propertyKeyId );
-    }
-
-    @Override
     public Iterator<DefinedProperty> relationshipGetAllProperties( KernelStatement state, long relationshipId )
             throws EntityNotFoundException
     {
@@ -882,17 +838,6 @@ public class StateHandlingStatementOperations implements
         {
             return storeLayer.relationshipGetAllProperties( relationshipId );
         }
-    }
-
-    @Override
-    public Iterator<DefinedProperty> relationshipGetAllCommittedProperties( KernelStatement statement, long relId )
-            throws EntityNotFoundException
-    {
-        if( statement.hasTxStateWithChanges() && statement.txState().relationshipIsAddedInThisTx( relId ))
-        {
-            return Collections.emptyIterator();
-        }
-        return storeLayer.relationshipGetAllProperties( relId );
     }
 
     @Override
