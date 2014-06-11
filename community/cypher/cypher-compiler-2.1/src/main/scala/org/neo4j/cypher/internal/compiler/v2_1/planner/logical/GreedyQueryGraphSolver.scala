@@ -29,6 +29,8 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
   extends QueryGraphSolver {
 
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None) = {
+  import CandidateGenerator._
+
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
 
@@ -42,16 +44,23 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
 
     def findBestPlan(planGenerator: CandidateGenerator[PlanTable]): PlanTable => PlanTable = {
       (planTable: PlanTable) =>
-        val generated = planGenerator(planTable, queryGraph).plans.toList
+        val generated = step(planGenerator, queryGraph)(planTable, queryGraph).plans.toList
         val selected = generated.map(select(_, queryGraph))
         val best = pickBest(CandidateList(selected))
         best.fold(planTable)(planTable + _)
     }
 
+    def step(planGenerator: CandidateGenerator[PlanTable], queryGraph: QueryGraph): CandidateGenerator[PlanTable] = {
+      if (queryGraph.shortestPathPatterns.isEmpty)
+        planGenerator
+      else
+        planGenerator orElse findShortestPaths
+    }
+
     val leaves: PlanTable = generateLeafPlanTable()
-    val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins) andThen findBestPlan(findShortestPaths))(leaves)
-    val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches) andThen findBestPlan(findShortestPaths))(afterExpandOrJoin)
-    val afterCartesianProduct = iterateUntilConverged(findBestPlan(cartesianProduct) andThen findBestPlan(findShortestPaths))(afterOptionalApplies)
+    val afterExpandOrJoin = iterateUntilConverged(findBestPlan(expandsOrJoins))(leaves)
+    val afterOptionalApplies = iterateUntilConverged(findBestPlan(optionalMatches))(afterExpandOrJoin)
+    val afterCartesianProduct = iterateUntilConverged(findBestPlan(cartesianProduct))(afterOptionalApplies)
 
     afterCartesianProduct.uniquePlan
   }
