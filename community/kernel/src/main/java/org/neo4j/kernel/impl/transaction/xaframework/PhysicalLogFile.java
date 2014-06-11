@@ -98,7 +98,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     }
 
     @Override
-    public synchronized void shutdown() throws IOException
+    public synchronized void stop() throws Throwable
     {
         logRotationControl.awaitAllTransactionsClosed();
         logRotationControl.forceEverything();
@@ -110,6 +110,11 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
          */
         logVersionRepository.incrementAndGetVersion();
         //        pruneStrategy.prune( this );
+    }
+
+    @Override
+    public synchronized void shutdown() throws IOException
+    {
     }
 
 
