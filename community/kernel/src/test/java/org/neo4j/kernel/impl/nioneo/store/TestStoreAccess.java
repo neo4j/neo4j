@@ -21,12 +21,14 @@ package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.impl.recovery.StoreRecoverer;
+import org.neo4j.kernel.impl.transaction.xaframework.DeadSimpleLogVersionRepository;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -47,15 +49,20 @@ public class TestStoreAccess
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
         File messages = new File( storeDir, "messages.log" );
         snapshot.deleteFile( messages );
-        
+
         new StoreAccess( snapshot, storeDir.getPath(), stringMap() ).close();
         assertTrue( "Store should be unclean", isUnclean( snapshot ) );
     }
-    
+
     private EphemeralFileSystemAbstraction produceUncleanStore()
     {
         GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fs.get() )
                 .newImpermanentDatabase( storeDir.getPath() );
+        try ( Transaction tx = db.beginTx() )
+        {
+            db.createNode();
+            tx.success();
+        }
         EphemeralFileSystemAbstraction snapshot = fs.get().snapshot();
         db.shutdown();
         return snapshot;
@@ -63,23 +70,8 @@ public class TestStoreAccess
 
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws IOException
     {
-        char chr = activeLog( fileSystem, storeDir );
-        return chr == '1' || chr == '2';
-    }
-
-    private char activeLog( FileSystemAbstraction fileSystem, File directory ) throws IOException
-    {
-        StoreChannel file = fileSystem.open( new File( directory, "nioneo_logical.log.active" ), "r" );
-        try
-        {
-            ByteBuffer buffer = ByteBuffer.wrap( new byte[2] );
-            file.read( buffer );
-            buffer.flip();
-            return buffer.getChar();
-        }
-        finally
-        {
-            file.close();
-        }
+        return new StoreRecoverer( fileSystem ).recoveryNeededAt( storeDir,
+                new DeadSimpleLogVersionRepository( new NeoStoreUtil( storeDir, fileSystem ).getLogVersion() ),
+                stringMap() );
     }
 }
