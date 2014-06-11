@@ -28,5 +28,5 @@ import org.neo4j.kernel.impl.util.Cursor;
 
 public interface LogReader<T extends ReadableLogChannel>
 {
-    public Cursor<LogEntry, IOException> cursor( T channel, Visitor<LogEntry, IOException> visitor );
+    public Cursor<IOException> cursor( T channel, Visitor<LogEntry, IOException> visitor );
 }

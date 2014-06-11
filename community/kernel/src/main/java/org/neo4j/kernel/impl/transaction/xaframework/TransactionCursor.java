@@ -23,6 +23,6 @@ import java.io.IOException;
 
 import org.neo4j.kernel.impl.util.Cursor;
 
-public interface TransactionCursor extends Cursor<TransactionRepresentation, IOException>
+public interface TransactionCursor extends Cursor<IOException>
 {
 }

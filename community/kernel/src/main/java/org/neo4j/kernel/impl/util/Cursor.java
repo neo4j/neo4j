@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.util;
 
-public interface Cursor<T, E extends Exception> extends AutoCloseable
+public interface Cursor<E extends Exception> extends AutoCloseable
 {
     boolean next() throws E;
 

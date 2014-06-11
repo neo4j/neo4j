@@ -92,12 +92,9 @@ public class DumpLogicalLog
 
             ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel, logVersion), LogVersionBridge.NO_MORE_CHANNELS, 4096);
 
-            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( logChannel, consumer ) )
+            try( Cursor<IOException> cursor = deserializer.cursor( logChannel, consumer ) )
             {
-                while( cursor.next( ) )
-                {
-                    ;
-                }
+                while( cursor.next( ) );
             }
         }
         return logsFound;

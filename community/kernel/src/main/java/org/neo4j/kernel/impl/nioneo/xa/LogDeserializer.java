@@ -39,12 +39,12 @@ public class LogDeserializer implements LogReader<ReadableLogChannel>
     }
 
     @Override
-    public Cursor<LogEntry, IOException> cursor( ReadableLogChannel channel, Visitor<LogEntry, IOException> visitor )
+    public Cursor<IOException> cursor( ReadableLogChannel channel, Visitor<LogEntry, IOException> visitor )
     {
         return new LogCursor( channel, visitor );
     }
 
-    private class LogCursor implements Cursor<LogEntry, IOException>
+    private class LogCursor implements Cursor<IOException>
     {
         private final ReadableLogChannel channel;
         private Visitor<LogEntry, IOException> visitor;
