@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -144,7 +145,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         tx.close();
         tx = getGraphDb().beginTx();
         node1.delete();
-        clearCache(); 
+        clearCache();
         try
         {
             node1.createRelationshipTo( node2, MyRelTypes.TEST );
@@ -404,7 +405,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
             // good
         }
     }
-    
+
     @Test
     public void testNodeRelDeleteSemantics()
     {
@@ -414,7 +415,7 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         Relationship rel2 = node1.createRelationshipTo( node2, MyRelTypes.TEST );
         node1.setProperty( "key1", "value1" );
         rel1.setProperty( "key1", "value1" );
-        
+
         newTransaction();
         node1.delete();
         try
@@ -451,8 +452,6 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         { // good
         }
         clearCache();
-        assertEquals( node1, getGraphDb().getNodeById( node1.getId() ) );
-        assertEquals( node2, getGraphDb().getNodeById( node2.getId() ) );
         try
         {
             node1.getProperty( "key1" );
@@ -512,7 +511,6 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         { // good
         }
         clearCache();
-        assertEquals( rel1, getGraphDb().getRelationshipById( rel1.getId() ) );
         try
         {
             rel1.getProperty( "key1" );
@@ -554,13 +552,13 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         catch ( IllegalStateException e )
         { // good
         }
-        
-        assertEquals( rel2, node1.getSingleRelationship( MyRelTypes.TEST, 
+
+        assertEquals( rel2, node1.getSingleRelationship( MyRelTypes.TEST,
                 Direction.OUTGOING ) );
         clearCache();
-        assertEquals( rel2, node2.getSingleRelationship( MyRelTypes.TEST, 
+        assertEquals( rel2, node2.getSingleRelationship( MyRelTypes.TEST,
                 Direction.INCOMING ) );
-        
+
         clearCache();
         assertEquals( node1, rel1.getStartNode() );
         clearCache();
