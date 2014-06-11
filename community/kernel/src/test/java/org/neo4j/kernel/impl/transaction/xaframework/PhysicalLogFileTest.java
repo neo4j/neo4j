@@ -49,8 +49,9 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        LifeSupport life = new LifeSupport(  );
-        LogFile logFile = life.add(new PhysicalLogFile( fs, directory.directory(), name, 1000, LogPruneStrategies.NO_PRUNING,
+        LifeSupport life = new LifeSupport();
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
+        LogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 1000, LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
                 new LogPositionCache( 10, 100 ), NO_RECOVERY_EXPECTED ));
 
@@ -59,7 +60,7 @@ public class PhysicalLogFileTest
         life.shutdown();
 
         // THEN
-        File file = new PhysicalLogFiles( directory.directory(), name, fs ).getHistoryFileName( 1L );
+        File file = new PhysicalLogFiles( directory.directory(), name, fs ).getVersionFileName( 1L );
         long[] header = VersionAwareLogEntryReader.readLogHeader( fs, file );
         assertEquals( 1L, header[0] );
         assertEquals( 5L, header[1] );
@@ -71,8 +72,9 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        LifeSupport life = new LifeSupport(  );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, directory.directory(), name, 1000,
+        LifeSupport life = new LifeSupport();
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
                 new LogPositionCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
@@ -109,10 +111,11 @@ public class PhysicalLogFileTest
         // GIVEN
         String name = "log";
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        LifeSupport life = new LifeSupport(  );
-        LogFile logFile = life.add(new PhysicalLogFile( fs, directory.directory(), name, 50, LogPruneStrategies.NO_PRUNING,
+        LifeSupport life = new LifeSupport();
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new LogPositionCache( 10, 100 ), NO_RECOVERY_EXPECTED ));
+                new LogPositionCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
 
         // WHEN
         life.start();
@@ -172,8 +175,9 @@ public class PhysicalLogFileTest
         } );
 
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        LifeSupport life = new LifeSupport(  );
-        LogFile logFile = life.add(new PhysicalLogFile( fs, directory.directory(), name, 50, LogPruneStrategies.NO_PRUNING,
+        LifeSupport life = new LifeSupport();
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
                 new LogPositionCache( 10, 100 ), new Visitor<ReadableLogChannel, IOException>()
                         {
@@ -192,7 +196,7 @@ public class PhysicalLogFileTest
                                 }
                                 return true;
                             }
-                        } ));
+                        } ) );
         try
         {
             life.start();

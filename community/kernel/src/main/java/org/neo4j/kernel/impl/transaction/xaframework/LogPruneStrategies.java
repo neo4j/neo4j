@@ -19,14 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
+import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
 
 public class LogPruneStrategies
 {
@@ -56,9 +56,8 @@ public class LogPruneStrategies
         protected final PhysicalLogFiles files;
         protected final LogVersionRepository versionRepo;
 
-
-        AbstractPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
-                LogVersionRepository versionRepo )
+        AbstractPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation,
+                PhysicalLogFiles files, LogVersionRepository versionRepo )
         {
             super();
             this.fileSystem = fileSystem;
@@ -66,54 +65,55 @@ public class LogPruneStrategies
             this.files = files;
             this.versionRepo = versionRepo;
         }
-        
+
         @Override
         public void prune()
         {
-//            if ( source.getCurrentLogVersion() == 0 )
-//            {
-//                return;
-//            }
-//
-//            long upper = source.getCurrentLogVersion()-1;
-//            Threshold threshold = newThreshold();
-//            boolean exceeded = false;
-//            while ( upper >= 0 )
-//            {
-//                File file = source.getFileName( upper );
-//                if ( !fileSystem.fileExists( file ) )
-//                {
-//                    // There aren't logs to prune anything. Just return
-//                    return;
-//                }
-//
-//                if ( fileSystem.getFileSize( file ) > VersionAwareLogEntryReader.LOG_HEADER_SIZE &&
-//                        threshold.reached( file, upper, source ) )
-//                {
-//                    exceeded = true;
-//                    break;
-//                }
-//                upper--;
-//            }
-//
-//            if ( !exceeded )
-//            {
-//                return;
-//            }
-//
-//            // Find out which log is the earliest existing (lower bound to prune)
-//            long lower = upper;
-//            while ( fileSystem.fileExists( source.getFileName( lower-1 ) ) )
-//            {
-//                lower--;
-//            }
-//
-//            // The reason we delete from lower to upper is that if it crashes in the middle
-//            // we can be sure that no holes are created
-//            for ( long version = lower; version < upper; version++ )
-//            {
-//                fileSystem.deleteFile( source.getFileName( version ) );
-//            }
+            long currentLogVersion = versionRepo.getCurrentLogVersion();
+            if ( currentLogVersion == 0 )
+            {
+                return;
+            }
+
+            long upper = currentLogVersion-1;
+            Threshold threshold = newThreshold();
+            boolean exceeded = false;
+            while ( upper >= 0 )
+            {
+                File file = files.getVersionFileName( upper );
+                if ( !fileSystem.fileExists( file ) )
+                {
+                    // There aren't logs to prune anything. Just return
+                    return;
+                }
+
+                if ( fileSystem.getFileSize( file ) > VersionAwareLogEntryReader.LOG_HEADER_SIZE &&
+                        threshold.reached( file, upper, logFileInformation ) )
+                {
+                    exceeded = true;
+                    break;
+                }
+                upper--;
+            }
+
+            if ( !exceeded )
+            {
+                return;
+            }
+
+            // Find out which log is the earliest existing (lower bound to prune)
+            long lower = upper;
+            while ( fileSystem.fileExists( files.getVersionFileName( lower-1 ) ) )
+            {
+                lower--;
+            }
+
+            // The reason we delete from lower to upper is that if it crashes in the middle
+            // we can be sure that no holes are created
+            for ( long version = lower; version < upper; version++ )
+            {
+                fileSystem.deleteFile( files.getVersionFileName( version ) );
+            }
         }
 
         /**

@@ -52,7 +52,7 @@ public class PhysicalTransactionStoreTest
 {
     private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
 
-    private File dir = new File( "dir" );
+    private final File dir = new File( "dir" );
 
     @Before
     public void setup()
@@ -69,7 +69,8 @@ public class PhysicalTransactionStoreTest
         LogPositionCache positionCache = new LogPositionCache( 10, 1000 );
 
         LifeSupport life = new LifeSupport(  );
-        LogFile logFile = life.add(new PhysicalLogFile( fs, dir, DEFAULT_NAME, 1000, NO_PRUNING,
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, DEFAULT_NAME, fs );
+        LogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                 transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
                 positionCache, new Visitor<ReadableLogChannel, IOException>()
                             {
@@ -108,7 +109,8 @@ public class PhysicalTransactionStoreTest
         final int masterId = 2, authorId = 1;
         final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
         LifeSupport life = new LifeSupport(  );
-        LogFile logFile = life.add(new PhysicalLogFile( fs, dir, DEFAULT_NAME, 1000, NO_PRUNING,
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, DEFAULT_NAME, fs );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                 transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
                 positionCache, new Visitor<ReadableLogChannel, IOException>()
                         {
@@ -128,7 +130,7 @@ public class PhysicalTransactionStoreTest
 
         life = new LifeSupport(  );
         final AtomicInteger recoveredTransactions = new AtomicInteger();
-        logFile = life.add(new PhysicalLogFile( fs, dir, DEFAULT_NAME, 1000, NO_PRUNING,
+        logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                         transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
                         positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ), new Visitor<TransactionRepresentation, IOException>()
         {

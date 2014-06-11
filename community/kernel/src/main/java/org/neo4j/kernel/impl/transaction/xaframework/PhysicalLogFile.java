@@ -53,7 +53,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     private final LogVersionRepository logVersionRepository;
     private PhysicalLogVersionedStoreChannel channel;
 
-    public PhysicalLogFile( FileSystemAbstraction fileSystem, File directory, String name, long rotateAtSize,
+    public PhysicalLogFile( FileSystemAbstraction fileSystem, PhysicalLogFiles logFiles, long rotateAtSize,
             LogPruneStrategy pruneStrategy, TransactionIdStore transactionIdStore,
             LogVersionRepository logVersionRepository, Monitor monitor, LogRotationControl logRotationControl,
             LogPositionCache positionCache, Visitor<ReadableLogChannel, IOException> recoveredDataVisitor )
@@ -67,7 +67,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
         this.logRotationControl = logRotationControl;
         this.positionCache = positionCache;
         this.recoveredDataVisitor = recoveredDataVisitor;
-        this.logFiles = new PhysicalLogFiles( directory, name, fileSystem );
+        this.logFiles = logFiles;
     }
 
     @Override
@@ -120,7 +120,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
 
     private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
     {
-        File toOpen = logFiles.getHistoryFileName( forVersion );
+        File toOpen = logFiles.getVersionFileName( forVersion );
         PhysicalLogVersionedStoreChannel channel = openFileChannel( toOpen, "rw" );
         long[] header = readLogHeader( headerBuffer, channel, false );
         if ( header == null )
@@ -170,10 +170,11 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
          * (but haven't yet), discover it's not there. That will lead to creating
          * the file, setting the header and continuing. We'll do just that now.
          * Note that by this point, rotation is done. The next few lines are
-         * "simply overhead" for continuing to work with the new file. 
+         * "simply overhead" for continuing to work with the new file.
          */
         PhysicalLogVersionedStoreChannel newLog = openLogChannelForVersion( newLogVersion );
         currentLog.close();
+        pruneStrategy.prune();
         return newLog;
     }
 
@@ -294,7 +295,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     private PhysicalLogVersionedStoreChannel openLogChannel( LogPosition position ) throws IOException
     {
         long version = position.getLogVersion();
-        File fileToOpen = logFiles.getHistoryFileName( version );
+        File fileToOpen = logFiles.getVersionFileName( version );
         PhysicalLogVersionedStoreChannel channel = openFileChannel( fileToOpen, "r", version );
         channel.position( position.getByteOffset() );
         return channel;

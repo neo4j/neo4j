@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
-interface LogFileInformation
+public interface LogFileInformation
 {
     /**
      * @param version the log version to get first committed tx for.

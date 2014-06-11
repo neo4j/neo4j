@@ -69,7 +69,7 @@ public class StoreRecoverer
 
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
 
-        File log = logFiles.getHistoryFileName( logVersionRepository.getCurrentLogVersion() );
+        File log = logFiles.getVersionFileName( logVersionRepository.getCurrentLogVersion() );
 
         try ( StoreChannel logChannel = fs.open( log, "r" ) )
         {

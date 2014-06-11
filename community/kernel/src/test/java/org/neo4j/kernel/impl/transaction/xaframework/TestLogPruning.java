@@ -70,7 +70,7 @@ public class TestLogPruning
         newDb( size + " size" );
 
         doTransaction();
-        long sizeOfOneLog = fs.getFileSize( files.getHistoryFileName( 0 ) );
+        long sizeOfOneLog = fs.getFileSize( files.getVersionFileName( 0 ) );
         int filesNeededToExceedPruneLimit = (int) Math.ceil( (double) size / (double) sizeOfOneLog );
 
         // When
@@ -146,9 +146,9 @@ public class TestLogPruning
     private int logCount()
     {
         int count = 0;
-        for ( long i = files.getHighestHistoryLogVersion(); i >= 0; i-- )
+        for ( long i = files.getHighestLogVersion(); i >= 0; i-- )
         {
-            if ( fs.fileExists( files.getHistoryFileName( i ) ) )
+            if ( fs.fileExists( files.getVersionFileName( i ) ) )
             {
                 count++;
             }

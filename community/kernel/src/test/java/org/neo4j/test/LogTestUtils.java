@@ -185,10 +185,10 @@ public class LogTestUtils
             List<File> files )
     {
         PhysicalLogFiles logFiles = new PhysicalLogFiles( new File(storeDir), fileSystem );
-        long highestVersion = logFiles.getHighestHistoryLogVersion();
+        long highestVersion = logFiles.getHighestLogVersion();
         for ( long version = 0; version <= highestVersion; version++ )
         {
-            File versionFile = logFiles.getHistoryFileName( version );
+            File versionFile = logFiles.getVersionFileName( version );
             if ( fileSystem.fileExists( versionFile ) )
             {
                 files.add( versionFile );

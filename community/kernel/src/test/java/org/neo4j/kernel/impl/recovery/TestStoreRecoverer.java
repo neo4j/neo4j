@@ -41,6 +41,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionAppender;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
@@ -114,7 +115,8 @@ public class TestStoreRecoverer
         LifeSupport life = new LifeSupport();
         DeadSimpleTransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 2 );
         LogPositionCache positionCache = new LogPositionCache( 10, 10 );
-        LogFile logFile = life.add( new PhysicalLogFile( fileSystem, store, PhysicalLogFile.DEFAULT_NAME, 1000,
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( store, PhysicalLogFile.DEFAULT_NAME, fileSystem );
+        LogFile logFile = life.add( new PhysicalLogFile( fileSystem, logFiles, 1000,
                 LogPruneStrategies.NO_PRUNING, transactionIdStore,
                 new DeadSimpleLogVersionRepository( util.getLogVersion() ), mock( PhysicalLogFile.Monitor.class ),
                 mock( LogRotationControl.class ), positionCache, mock( Visitor.class ) ) );

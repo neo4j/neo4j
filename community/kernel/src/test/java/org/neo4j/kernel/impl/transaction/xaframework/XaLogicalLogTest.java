@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.File;
+
 import javax.transaction.xa.Xid;
 
 import org.junit.Ignore;
@@ -91,10 +92,11 @@ public class XaLogicalLogTest
                         } ) );
             }
         } );
-        LifeSupport life = new LifeSupport(  );
-        PhysicalLogFile log = life.add(new PhysicalLogFile( fs, dir, "logical.log", 14/* <- This is the rotate threshold */,
-        		NO_PRUNING, mock( TransactionIdStore.class ), mock( LogVersionRepository.class), mock( Monitor.class ), 
-        		mock( LogRotationControl.class), mock( LogPositionCache.class ), mock ( Visitor.class ) ));
+        LifeSupport life = new LifeSupport();
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, "logical.log", fs );
+        PhysicalLogFile log = life.add( new PhysicalLogFile( fs, logFiles, 14/* <- This is the rotate threshold */,
+        		NO_PRUNING, mock( TransactionIdStore.class ), mock( LogVersionRepository.class), mock( Monitor.class ),
+        		mock( LogRotationControl.class), mock( LogPositionCache.class ), mock ( Visitor.class ) ) );
         life.start();
 
         WritableLogChannel writer = log.getWriter();
@@ -112,13 +114,13 @@ public class XaLogicalLogTest
     @Test
     public void shouldRespectCustomLogRotationThreshold() throws Exception
     {
-        
+
     }
 
     @Test
     public void shouldDetermineHighestArchivedLogVersionFromFileNamesIfTheyArePresent() throws Exception
     {
-        
+
     }
 
     @Test

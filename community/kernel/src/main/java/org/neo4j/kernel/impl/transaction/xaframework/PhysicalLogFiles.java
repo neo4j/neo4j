@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static java.lang.Math.max;
-
 import java.io.File;
 import java.util.regex.Pattern;
 
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+
+import static java.lang.Math.max;
 
 /**
  * Used to figure out what logical log file to open when the database
@@ -46,17 +46,22 @@ public class PhysicalLogFiles
         this( directory, PhysicalLogFile.DEFAULT_NAME, fileSystem );
     }
 
-    public Pattern getHistoryFileNamePattern()
+    public Pattern getVersionFileNamePattern()
     {
-        return Pattern.compile( logBaseName.getPath() + "\\.v\\d+" );
+        return Pattern.compile( escaped( logBaseName.getPath() ) + "\\.v\\d+" );
     }
 
-    public File getHistoryFileName( long version )
+    private String escaped( String path )
     {
-        return new File( logBaseName.getPath() + ".v" + version );
+        return path.replace( '\\', '/' );
     }
 
-    public long getHistoryLogVersion( File historyLogFile )
+    public File getVersionFileName( long version )
+    {
+        return new File( escaped( logBaseName.getPath() ) + ".v" + version );
+    }
+
+    public long getLogVersion( File historyLogFile )
     { // Get version based on the name
         String name = historyLogFile.getName();
         String toFind = ".v";
@@ -68,15 +73,15 @@ public class PhysicalLogFiles
         return Integer.parseInt( name.substring( index + toFind.length() ) );
     }
 
-    public long getHighestHistoryLogVersion()
+    public long getHighestLogVersion()
     {
-        Pattern logFilePattern = getHistoryFileNamePattern();
+        Pattern logFilePattern = getVersionFileNamePattern();
         long highest = -1;
         for ( File file : fileSystem.listFiles( logBaseName.getAbsoluteFile().getParentFile() ) )
         {
             if ( logFilePattern.matcher( file.getName() ).matches() )
             {
-                highest = max( highest, getHistoryLogVersion( file ) );
+                highest = max( highest, getLogVersion( file ) );
             }
         }
         return highest;
