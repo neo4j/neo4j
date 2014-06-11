@@ -81,7 +81,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.Integer.parseInt;
-import static java.lang.String.format;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.junit.Assert.assertEquals;
@@ -194,11 +193,6 @@ public class BatchInsertTest
         return BatchInserters.inserter( "neo-batch-db", fs.get(), configuration(), extensions );
     }
 
-    private GraphDatabaseService newBatchGraphDatabase()
-    {
-        return BatchInserters.batchDatabase( "neo-batch-db", fs.get(), configuration() );
-    }
-
     @Test
     public void shouldUpdateStringArrayPropertiesOnNodesUsingBatchInserter1()
     {
@@ -240,37 +234,6 @@ public class BatchInsertTest
         assertEquals( rel.getEndNode(), node2 );
         assertEquals( RelTypes.BATCH_TEST.name(), rel.getType().name() );
         graphDb.shutdown();
-    }
-
-    @Test
-    public void testPropertySetFromGraphDbIsPersisted()
-    {
-        GraphDatabaseService gds = newBatchGraphDatabase();
-
-        Node from = gds.createNode();
-        long fromId = from.getId();
-
-        Node to = gds.createNode();
-        long toId = to.getId();
-
-        Relationship rel = from.createRelationshipTo( to,
-                DynamicRelationshipType.withName( "PROP_TEST" ) );
-        long relId = rel.getId();
-
-        from.setProperty( "1", "one" );
-        to.setProperty( "2", "two" );
-        rel.setProperty( "3", "three" );
-
-        gds.shutdown();
-
-        GraphDatabaseService db = newBatchGraphDatabase();
-        from = db.getNodeById( fromId );
-        assertEquals( "one", from.getProperty( "1" ) );
-        to = db.getNodeById( toId );
-        assertEquals( "two", to.getProperty( "2" ) );
-        rel = db.getRelationshipById( relId );
-        assertEquals( "three", rel.getProperty( "3" ) );
-        db.shutdown();
     }
 
     @Test
@@ -536,20 +499,6 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testPropSetAndReset()
-    {
-        BatchInserter graphDb = newBatchInserter();
-        BatchGraphDatabaseImpl gds = new BatchGraphDatabaseImpl( graphDb );
-        long startNode = graphDb.createNode( properties );
-        assertProperties( gds.getNodeById( startNode ) );
-        graphDb.setNodeProperties( startNode, properties );
-        assertProperties( gds.getNodeById( startNode ) );
-        graphDb.setNodeProperties( startNode, properties );
-        assertProperties( gds.getNodeById( startNode ) );
-        gds.shutdown();
-    }
-
-    @Test
     public void makeSureLoopsCanBeCreated()
     {
         BatchInserter graphDb = newBatchInserter();
@@ -719,65 +668,6 @@ public class BatchInsertTest
     }
 
     @Test
-    public void testWithGraphDbService()
-    {
-        GraphDatabaseService graphDb = newBatchGraphDatabase();
-        Node startNode = graphDb.createNode();
-        setProperties( startNode );
-        Node endNodes[] = new Node[25];
-        Set<Relationship> rels = new HashSet<>();
-        for ( int i = 0; i < 25; i++ )
-        {
-            endNodes[i] = graphDb.createNode();
-            setProperties( endNodes[i] );
-            Relationship rel = startNode.createRelationshipTo( endNodes[i],
-                    relTypeArray[i % 5] );
-            rels.add( rel );
-            setProperties( rel );
-        }
-        for ( Relationship rel : startNode.getRelationships() )
-        {
-            assertTrue( rels.contains( rel ) );
-            assertEquals( rel.getStartNode(), startNode );
-        }
-        setProperties( startNode );
-        graphDb.shutdown();
-    }
-
-    @Test
-    public void testGraphDbServiceGetRelationships()
-    {
-        GraphDatabaseService graphDb = newBatchGraphDatabase();
-        Node startNode = graphDb.createNode();
-        for ( int i = 0; i < 5; i++ )
-        {
-            Node endNode = graphDb.createNode();
-            startNode.createRelationshipTo( endNode, relTypeArray[i] );
-        }
-        for ( int i = 0; i < 5; i++ )
-        {
-            assertTrue( format( "Expected a relationship of type %s on node %s", relTypeArray[i], startNode ),
-                    startNode.getSingleRelationship( relTypeArray[i], Direction.OUTGOING ) != null );
-        }
-        for ( int i = 0; i < 5; i++ )
-        {
-            Iterator<Relationship> relItr =
-                startNode.getRelationships( relTypeArray[i],
-                    Direction.OUTGOING ).iterator();
-            relItr.next();
-            assertTrue( !relItr.hasNext() );
-        }
-        for ( int i = 0; i < 5; i++ )
-        {
-            Iterator<Relationship> relItr =
-                startNode.getRelationships( relTypeArray[i] ).iterator();
-            relItr.next();
-            assertTrue( !relItr.hasNext() );
-        }
-        graphDb.shutdown();
-    }
-
-    @Test
     public void createBatchNodeAndRelationshipsDeleteAllInEmbedded() throws Exception
     {
         /*
@@ -806,41 +696,6 @@ public class BatchInsertTest
         }
 
         db.shutdown();
-    }
-
-    @Test
-    public void batchDbShouldBeAbleToSetPropertyOnNodeWithNoProperties()
-    {
-        // GIVEN
-        GraphDatabaseService database = newBatchGraphDatabase();
-        Node node = database.createNode();
-        database.shutdown();
-        database = newBatchGraphDatabase();
-        node = database.getNodeById( node.getId() );
-
-        // WHEN
-        node.setProperty( "test", "test" );
-
-        // THEN
-        assertEquals( "test", node.getProperty( "test" ) );
-    }
-
-    @Test
-    public void batchDbShouldBeAbleToSetPropertyOnRelationshipWithNoProperties()
-    {
-        // GIVEN
-        GraphDatabaseService database = newBatchGraphDatabase();
-        Relationship relationship = database.createNode().createRelationshipTo(
-                database.createNode(), MyRelTypes.TEST );
-        database.shutdown();
-        database = newBatchGraphDatabase();
-        relationship = database.getRelationshipById( relationship.getId() );
-
-        // WHEN
-        relationship.setProperty( "test", "test" );
-
-        // THEN
-        assertEquals( "test", relationship.getProperty( "test" ) );
     }
 
     @Test
@@ -1098,23 +953,6 @@ public class BatchInsertTest
         long nodeId = inserter.createNode( map( "handle", "Jakewins" ), label( "Hacker" ) );
         inserter.shutdown();
         return nodeId;
-    }
-
-    @Test
-    public void shouldCorrectlyJudgeRelationshipType()
-    {
-        // GIVEN
-        GraphDatabaseService database = newBatchGraphDatabase();
-        DynamicRelationshipType type = DynamicRelationshipType.withName( "TEST" );
-        long relationshipId = database.createNode().createRelationshipTo( database.createNode(), type ).getId();
-
-        // WHEN restarting (guaranteeing new RelationshipType instances internally)
-        database.shutdown();
-        database = newBatchGraphDatabase();
-        Relationship relationship = database.getRelationshipById( relationshipId );
-
-        // THEN
-        assertTrue( "Relationship#isType returned false for the correct type", relationship.isType( type ) );
     }
 
     @Test

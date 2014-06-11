@@ -48,9 +48,6 @@ import org.neo4j.unsafe.batchinsert.BatchInserters;
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-
 public class BatchInsertDocTest
 {
     @Test
@@ -128,59 +125,10 @@ public class BatchInsertDocTest
         // END SNIPPET: configFileInsert
     }
 
-    @Test
-    public void batchDb()
-    {
-        // START SNIPPET: batchDb
-        GraphDatabaseService batchDb =
-                BatchInserters.batchDatabase( new File("target/batchdb-example").getAbsolutePath(), fileSystem );
-        Label personLabel = DynamicLabel.label( "Person" );
-        Node mattiasNode = batchDb.createNode( personLabel );
-        mattiasNode.setProperty( "name", "Mattias" );
-        Node chrisNode = batchDb.createNode();
-        chrisNode.setProperty( "name", "Chris" );
-        chrisNode.addLabel( personLabel );
-        RelationshipType knows = DynamicRelationshipType.withName( "KNOWS" );
-        mattiasNode.createRelationshipTo( chrisNode, knows );
-        // END SNIPPET: batchDb
-        long mattiasNodeId = mattiasNode.getId();
-        // START SNIPPET: batchDb
-        batchDb.shutdown();
-        // END SNIPPET: batchDb
-
-        // try it out from a normal db
-        GraphDatabaseService db = new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase(
-                new File("target/batchdb-example").getAbsolutePath() );
-        try ( Transaction tx = db.beginTx() )
-        {
-            Node mNode = db.getNodeById( mattiasNodeId );
-            Node cNode = mNode.getSingleRelationship( knows, Direction.OUTGOING )
-                    .getEndNode();
-            assertThat( cNode, inTx( db, hasProperty( "name" ).withValue( "Chris" ) ) );
-        }
-        finally
-        {
-            db.shutdown();
-        }
-    }
-    
-    @Test
-    public void batchDbWithConfig()
-    {
-        // START SNIPPET: configuredBatchDb
-        Map<String, String> config = new HashMap<>();
-        config.put( "neostore.nodestore.db.mapped_memory", "90M" );
-        GraphDatabaseService batchDb =
-                BatchInserters.batchDatabase( "target/batchdb-example-config", fileSystem, config );
-        // Insert data here ... and then shut down:
-        batchDb.shutdown();
-        // END SNIPPET: configuredBatchDb
-    }
-
     @Rule
     public EphemeralFileSystemRule fileSystemRule = new EphemeralFileSystemRule();
     private EphemeralFileSystemAbstraction fileSystem;
-    
+
     @Before
     public void before() throws Exception
     {
