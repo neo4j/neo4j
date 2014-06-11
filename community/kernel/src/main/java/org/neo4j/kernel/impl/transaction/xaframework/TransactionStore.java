@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.Closeable;
 import java.io.IOException;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -31,5 +32,5 @@ public interface TransactionStore extends Closeable, Lifecycle
 {
     TransactionAppender getAppender();
 
-    TransactionCursor getCursor( long transactionIdToStartFrom ) throws NoSuchTransactionException, IOException;
+    TransactionCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor ) throws NoSuchTransactionException, IOException;
 }

@@ -93,9 +93,9 @@ public class TxTimestampsTest
                 {
                     try
                     {
-                        try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( channel ) )
+                        try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( channel, consumer ) )
                         {
-                            while( cursor.next( consumer ) );
+                            while( cursor.next( ) );
                         }
                         return true;
                     }

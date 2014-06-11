@@ -56,10 +56,8 @@ public class PhysicalTransactionAppenderTest
         appender.append( transaction );
 
         // THEN
-        TransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(
-                CommandReaderFactory.DEFAULT ) );
         final AtomicInteger visited = new AtomicInteger();
-        reader.next( new Visitor<TransactionRepresentation, IOException>()
+        Visitor<TransactionRepresentation, IOException> visitor = new Visitor<TransactionRepresentation, IOException>()
         {
             @Override
             public boolean visit( TransactionRepresentation transaction ) throws IOException
@@ -72,7 +70,10 @@ public class PhysicalTransactionAppenderTest
                 visited.incrementAndGet();
                 return true;
             }
-        } );
+        };
+        TransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(
+                CommandReaderFactory.DEFAULT), visitor  );
+        reader.next( );
         assertEquals( 1, visited.get() );
     }
 

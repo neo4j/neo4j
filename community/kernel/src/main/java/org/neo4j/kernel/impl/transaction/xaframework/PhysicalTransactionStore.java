@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class PhysicalTransactionStore extends LifecycleAdapter implements TransactionStore
@@ -63,22 +64,22 @@ public class PhysicalTransactionStore extends LifecycleAdapter implements Transa
     }
 
     @Override
-    public TransactionCursor getCursor( long transactionIdToStartFrom ) throws NoSuchTransactionException, IOException
+    public TransactionCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor ) throws NoSuchTransactionException, IOException
     {
         // look up in position cache
         LogPosition position = positionCache.getStartPosition( transactionIdToStartFrom );
         if ( position != null )
         {
             // we're good
-            return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
+            return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader, visitor );
         }
 
         // ask LogFile
-        TransactionPositionLocator visitor = new TransactionPositionLocator( transactionIdToStartFrom );
-        logFile.accept( visitor );
-        position = visitor.getPosition();
+        TransactionPositionLocator transactionPositionLocator = new TransactionPositionLocator( transactionIdToStartFrom );
+        logFile.accept( transactionPositionLocator);
+        position = transactionPositionLocator.getPosition();
         // TODO 2.2-future play forward and cache that position
-        TransactionCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader );
+        TransactionCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader, visitor );
         return cursor;
     }
 

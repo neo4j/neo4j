@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import org.neo4j.helpers.collection.Visitor;
-
 public interface Cursor<T, E extends Exception> extends AutoCloseable
 {
-    boolean next( Visitor<T, E> visitor) throws E;
+    boolean next() throws E;
 
     @Override
     void close() throws E;

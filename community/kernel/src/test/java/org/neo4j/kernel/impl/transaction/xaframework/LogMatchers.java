@@ -74,9 +74,9 @@ public class LogMatchers
 
             ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel), LogVersionBridge.NO_MORE_CHANNELS, 4096);
 
-            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( logChannel ) )
+            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( logChannel, consumer ) )
             {
-                while ( cursor.next( consumer ) );
+                while ( cursor.next( ) );
             }
 
             return entries;

@@ -41,22 +41,24 @@ public class RecoveryLogDeserializer implements LogReader<ReadableLogChannel>
     }
 
     @Override
-    public Cursor<LogEntry, IOException> cursor( ReadableLogChannel channel )
+    public Cursor<LogEntry, IOException> cursor( ReadableLogChannel channel, Visitor<LogEntry, IOException> visitor )
     {
-        return new RecoveryCursor( channel );
+        return new RecoveryCursor( channel, visitor );
     }
 
     private class RecoveryCursor implements Cursor<LogEntry, IOException>
     {
         private final ReadableLogChannel channel;
+        private Visitor<LogEntry, IOException> visitor;
 
-        private RecoveryCursor( ReadableLogChannel channel )
+        private RecoveryCursor( ReadableLogChannel channel, Visitor<LogEntry, IOException> visitor )
         {
             this.channel = channel;
+            this.visitor = visitor;
         }
 
         @Override
-        public boolean next( Visitor<LogEntry, IOException> visitor ) throws IOException
+        public boolean next(  ) throws IOException
         {
             LogPosition position = channel.getCurrentPosition();
 
