@@ -21,7 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1.commands.ShortestPath
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PlanBuilder, ExecutionPlanInProgress}
-import collection.Seq
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, ShortestPathPipe, Pipe}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 

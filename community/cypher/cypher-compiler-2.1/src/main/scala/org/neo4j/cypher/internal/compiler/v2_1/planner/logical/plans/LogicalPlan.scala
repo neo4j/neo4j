@@ -19,9 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{ShortestPathExpression, ShortestPaths, RelTypeName}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.ast
 
 /*
 A LogicalPlan is an algebraic query, which is represented by a query tree whose leaves are database relations and
@@ -43,7 +44,8 @@ abstract class LogicalLeafPlan extends LogicalPlan {
 
 final case class IdName(name: String) extends AnyVal
 
-final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean) {
+// TODO: Remove ast representation
+final case class ShortestPathPattern(name: Option[IdName], rel: PatternRelationship, single: Boolean)(val expr: ast.ShortestPaths) {
   def isFindableFrom(symbols: Set[IdName]) = symbols.contains(rel.left) && symbols.contains(rel.right)
   def availableSymbols: Set[IdName] = name.toSet ++ rel.coveredIds
 }

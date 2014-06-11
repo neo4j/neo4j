@@ -37,13 +37,55 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
       None,
       PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
       single = true
-    )
+    )(null)
 
     new given {
       qg = QueryGraph
            .empty
            .addPatternNodes("a", "b")
            .addShortestPath(shortestPath)
+    }.withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+      val left = planCartesianProduct(planAllNodesScan("a"), planAllNodesScan("b"))
+      val candidates = findShortestPaths(PlanTable(Map(Set[IdName]("a", "b") -> left)))(ctx)
+      candidates should equal(Candidates(
+        planShortestPaths(left, shortestPath)
+      ))
+    }
+  }
+
+  test("finds single named shortest path") {
+    val shortestPath = ShortestPathPattern(
+      Some("p"),
+      PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+      single = true
+    )(null)
+
+    new given {
+      qg = QueryGraph
+        .empty
+        .addPatternNodes("a", "b")
+        .addShortestPath(shortestPath)
+    }.withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+      val left = planCartesianProduct(planAllNodesScan("a"), planAllNodesScan("b"))
+      val candidates = findShortestPaths(PlanTable(Map(Set[IdName]("a", "b") -> left)))(ctx)
+      candidates should equal(Candidates(
+        planShortestPaths(left, shortestPath)
+      ))
+    }
+  }
+
+  test("finds all shortest path") {
+    val shortestPath = ShortestPathPattern(
+      None,
+      PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+      single = false
+    )(null)
+
+    new given {
+      qg = QueryGraph
+        .empty
+        .addPatternNodes("a", "b")
+        .addShortestPath(shortestPath)
     }.withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
       val left = planCartesianProduct(planAllNodesScan("a"), planAllNodesScan("b"))
       val candidates = findShortestPaths(PlanTable(Map(Set[IdName]("a", "b") -> left)))(ctx)

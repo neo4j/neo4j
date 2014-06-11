@@ -79,14 +79,14 @@ class QueryGraphDocBuilderTest extends DocBuilderTestSuite[Any] {
   test("renders query graph shortest paths") {
     format(QueryGraph(
       patternNodes = Set(IdName("a")),
-      shortestPathPatterns = Set(ShortestPathPattern(None, rel1, single = true))
+      shortestPathPatterns = Set(ShortestPathPattern(None, rel1, single = true)(null))
     )) should equal("GIVEN * MATCH (a), shortestPath((a)-[r1]->(b))")
   }
 
   test("renders query graph named all shortest paths") {
     format(QueryGraph(
       patternNodes = Set(IdName("a")),
-      shortestPathPatterns = Set(ShortestPathPattern(Some(IdName("p")), rel1, single = false))
+      shortestPathPatterns = Set(ShortestPathPattern(Some(IdName("p")), rel1, single = false)(null))
     )) should equal("GIVEN * MATCH (a), p = allShortestPath((a)-[r1]->(b))")
   }
 

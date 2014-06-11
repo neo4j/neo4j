@@ -53,15 +53,15 @@ object SimplePlannerQueryBuilder {
   object PatternDestructuring {
     def destruct(pattern: Pattern): (Seq[IdName], Seq[PatternRelationship], Seq[ShortestPathPattern]) =
       pattern.patternParts.foldLeft((Seq.empty[IdName], Seq.empty[PatternRelationship], Seq.empty[ShortestPathPattern])) {
-        case ((accIdNames, accRels, accShortest), ShortestPaths(element, single)) =>
-          val (idNames, rels) = destruct(element)
-          val newShortest = ShortestPathPattern(None, rels.head, single)
-          (accIdNames ++ idNames , accRels, accShortest ++ Seq(newShortest))
-
-        case ((accIdNames, accRels, accShortest), NamedPatternPart(ident, ShortestPaths(element, single))) =>
+        case ((accIdNames, accRels, accShortest), NamedPatternPart(ident, sps @ ShortestPaths(element, single))) =>
           val (idNames, rels) = destruct(element)
           val pathName = IdName(ident.name)
-          val newShortest = ShortestPathPattern(Some(pathName), rels.head, single)
+          val newShortest = ShortestPathPattern(Some(pathName), rels.head, single)(sps)
+          (accIdNames ++ idNames , accRels, accShortest ++ Seq(newShortest))
+
+        case ((accIdNames, accRels, accShortest), sps @ ShortestPaths(element, single)) =>
+          val (idNames, rels) = destruct(element)
+          val newShortest = ShortestPathPattern(None, rels.head, single)(sps)
           (accIdNames ++ idNames , accRels, accShortest ++ Seq(newShortest))
 
         case ((accIdNames, accRels, accShortest), everyPath: EveryPath) =>

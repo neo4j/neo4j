@@ -29,7 +29,7 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
 
   import QueryPlanProducer._
 
-  test("finds shortest paths. duh.") {
+  test("finds shortest paths") {
     planFor("MATCH a, b, shortestPath(a-[r]->b) RETURN b").plan should equal(
       planRegularProjection(
         planShortestPaths(
@@ -41,7 +41,26 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
             None,
             PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
             single = true
-          )
+          )(null)
+        ),
+        Map("b" -> ident("b"))
+      )
+    )
+  }
+
+  test("finds all shortest paths") {
+    planFor("MATCH a, b, allShortestPaths(a-[r]->b) RETURN b").plan should equal(
+      planRegularProjection(
+        planShortestPaths(
+          planCartesianProduct(
+            planAllNodesScan("a"),
+            planAllNodesScan("b")
+          ),
+          ShortestPathPattern(
+            None,
+            PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+            single = false
+          )(null)
         ),
         Map("b" -> ident("b"))
       )
