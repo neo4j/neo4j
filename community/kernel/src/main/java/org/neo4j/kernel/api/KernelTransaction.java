@@ -108,4 +108,6 @@ public interface KernelTransaction extends AutoCloseable
      * TODO 2.2-future TRS instead. This must be fixed. This sentiment applies to all accessor methods below.
      */
     TransactionRecordState getTransactionRecordState();
+
+    boolean isOpen();
 }

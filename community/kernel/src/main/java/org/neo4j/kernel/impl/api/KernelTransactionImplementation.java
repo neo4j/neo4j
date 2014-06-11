@@ -152,6 +152,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public boolean isOpen()
+    {
+        return !closed && !closing;
+    }
+
+    @Override
     public KernelStatement acquireStatement()
     {
         assertTransactionOpen();

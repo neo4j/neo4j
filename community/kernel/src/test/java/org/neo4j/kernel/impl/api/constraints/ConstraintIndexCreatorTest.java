@@ -197,6 +197,12 @@ public class ConstraintIndexCreatorTest
                     statements.add( mockedState );
                     return mockedState;
                 }
+
+                @Override
+                public boolean isOpen()
+                {
+                    return true;
+                }
             };
         }
 

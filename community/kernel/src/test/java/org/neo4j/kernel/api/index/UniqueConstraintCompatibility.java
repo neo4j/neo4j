@@ -26,7 +26,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-import javax.transaction.TransactionManager;
 
 import org.hamcrest.Matcher;
 import org.junit.After;
@@ -45,7 +44,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.Function;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -951,23 +952,24 @@ public class UniqueConstraintCompatibility extends IndexProviderCompatibilityTes
 
     // -- Set Up: Advanced transaction handling
 
-    private final Map<Transaction, javax.transaction.Transaction> txMap = new IdentityHashMap<>();
+    private final Map<Transaction, TopLevelTransaction> txMap = new IdentityHashMap<>();
 
     private void suspend( Transaction tx ) throws Exception
     {
-        TransactionManager txManager = getTransactionManager();
-        txMap.put( tx, txManager.suspend() );
+        ThreadToStatementContextBridge txManager = getTransactionManager();
+        txMap.put( tx, txManager.getTopLevelTransactionBoundToThisThread( true ) );
+        txManager.unbindTransactionFromCurrentThread();
     }
 
     private void resume( Transaction tx ) throws Exception
     {
-        TransactionManager txManager = getTransactionManager();
-        txManager.resume( txMap.remove( tx ) );
+        ThreadToStatementContextBridge txManager = getTransactionManager();
+        txManager.bindTransactionToCurrentThread( txMap.remove(tx) );
     }
 
-    private TransactionManager getTransactionManager()
+    private ThreadToStatementContextBridge getTransactionManager()
     {
-        return resolveInternalDependency( TransactionManager.class );
+        return resolveInternalDependency( ThreadToStatementContextBridge.class );
     }
 
     // -- Set Up: Misc. sharp tools

@@ -101,7 +101,8 @@ public class TopLevelTransaction implements Transaction
     {
         try
         {
-            transaction.close();
+            if (transaction.isOpen())
+                transaction.close();
         }
         catch ( Exception e )
         {
