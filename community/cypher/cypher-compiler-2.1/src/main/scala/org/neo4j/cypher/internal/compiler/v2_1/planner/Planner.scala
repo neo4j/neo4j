@@ -72,23 +72,19 @@ case class Planner(monitors: Monitors,
 }
 
 object Planner {
-  def rewriteStatement(statement: Statement): Statement = {
-    val rewrittenStatement = statement.typedRewrite[Statement](
-      inSequence(
-        rewriteEqualityToInCollection,
-        splitInCollectionsToIsolateConstants,
-        CNFNormalizer,
-        collapseInCollectionsContainingConstants,
-        nameVarLengthRelationships,
-        namePatternPredicates
-      )
-    )
+  val rewriter = inSequence(
+    rewriteEqualityToInCollection,
+    splitInCollectionsToIsolateConstants,
+    CNFNormalizer,
+    collapseInCollectionsContainingConstants,
+    nameVarLengthRelationships,
+    namePatternPredicates,
+    inlineProjections,
+    useAliasesInSortSkipAndLimit
+  )
 
-    val statementWithInlinedProjections = inlineProjections(rewrittenStatement)
-    val statementWithAliasedSortSkipAndLimit = statementWithInlinedProjections.typedRewrite[Statement](useAliasesInSortSkipAndLimit)
-
-    statementWithAliasedSortSkipAndLimit
-  }
+  def rewriteStatement(statement: Statement): Statement =
+    statement.typedRewrite[Statement](rewriter)
 }
 
 trait PlanningMonitor {

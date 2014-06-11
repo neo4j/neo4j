@@ -23,9 +23,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
-object inlineProjections extends (Statement => Statement) {
+object inlineProjections extends Rewriter {
 
-  def apply(input: Statement): Statement = {
+  def apply(in: AnyRef): Option[AnyRef] = instance.apply(in)
+
+  val instance = Rewriter.lift { case input: Statement =>
     val context = inliningContextCreator(input)
 
     val removePatternPartNames = TypedRewriter[Pattern](bottomUp(namedPatternPartRemover))
@@ -95,6 +97,3 @@ object inlineProjections extends (Statement => Statement) {
         }
       )(returnItems.position)
 }
-
-
-

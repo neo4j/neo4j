@@ -203,7 +203,7 @@ class InlineProjectionsTest extends CypherFunSuite with AstRewritingTestSupport 
       case Query(_, SingleQuery(Seq(_, Return(_, ListedReturnItems(Seq(AliasedReturnItem(expr, Identifier("p")))), _, _, _)))) => expr
     }
 
-  private def projectionInlinedAst(queryText: String) = inlineProjections(ast(queryText))
+  private def projectionInlinedAst(queryText: String) = ast(queryText).typedRewrite[Statement](inlineProjections)
 
   private def ast(queryText: String) = {
     val parsed = parser.parse(queryText)
