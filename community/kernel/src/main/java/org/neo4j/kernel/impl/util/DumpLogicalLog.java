@@ -32,6 +32,7 @@ import java.util.TreeSet;
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Args;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -251,7 +252,7 @@ public class DumpLogicalLog
         };
     }
 
-    private class PrintingConsumer implements Consumer<LogEntry, IOException>
+    private class PrintingConsumer implements Visitor<LogEntry, IOException>
     {
 
         private final PrintStream out;
@@ -264,7 +265,7 @@ public class DumpLogicalLog
         }
 
         @Override
-        public boolean accept( LogEntry entry ) throws IOException
+        public boolean visit( LogEntry entry ) throws IOException
         {
             out.println( entry.toString( timeZone ) );
             return true;

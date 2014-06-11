@@ -24,14 +24,14 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
-import org.neo4j.kernel.impl.util.Consumer;
 
 /**
  * Handles on-the-fly translation of incoming log entries, forwards them to an underlying handler, generally for
  * applying the entries to the store.
  */
-class TranslatingEntryConsumer implements Consumer<LogEntry, IOException>
+class TranslatingEntryVisitor implements Visitor<LogEntry, IOException>
 {
     private LogEntry.Start startEntry;
 
@@ -40,13 +40,13 @@ class TranslatingEntryConsumer implements Consumer<LogEntry, IOException>
     private List<LogEntry> entries;
     private final Function<List<LogEntry>, List<LogEntry>> translator;
 
-    TranslatingEntryConsumer( Function<List<LogEntry>, List<LogEntry>> translator )
+    TranslatingEntryVisitor( Function<List<LogEntry>, List<LogEntry>> translator )
     {
         this.translator = translator;
     }
 
     @Override
-    public boolean accept( LogEntry logEntry ) throws IOException
+    public boolean visit( LogEntry logEntry ) throws IOException
     {
         if ( startEntry == null )
         {
@@ -88,7 +88,7 @@ class TranslatingEntryConsumer implements Consumer<LogEntry, IOException>
      * This is a necessary call before processing a transaction - bad things will happen if two transactions
      * are processed with this consumer without a proper bind() call in between.
      */
-    public TranslatingEntryConsumer bind( int xidIdentifier, LogHandler handler )
+    public TranslatingEntryVisitor bind( int xidIdentifier, LogHandler handler )
     {
         this.xidIdentifier = xidIdentifier;
         this.handler = handler;

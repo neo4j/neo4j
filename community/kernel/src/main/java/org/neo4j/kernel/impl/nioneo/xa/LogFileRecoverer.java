@@ -27,25 +27,24 @@ import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.util.Consumer;
 
 public class LogFileRecoverer implements Visitor<ReadableLogChannel, IOException>
 {
     private final VersionAwareLogEntryReader logEntryReader;
-    private final Consumer<TransactionRepresentation, IOException> consumer;
+    private final Visitor<TransactionRepresentation, IOException> visitor;
 
-    public LogFileRecoverer( VersionAwareLogEntryReader logEntryReader, Consumer<TransactionRepresentation,
-            IOException> consumer )
+    public LogFileRecoverer( VersionAwareLogEntryReader logEntryReader, Visitor<TransactionRepresentation,
+            IOException> visitor )
     {
         this.logEntryReader = logEntryReader;
-        this.consumer = consumer;
+        this.visitor = visitor;
     }
 
     @Override
     public boolean visit( ReadableLogChannel channel ) throws IOException
     {
         TransactionCursor cursor = new PhysicalTransactionCursor( channel, logEntryReader );
-        while ( cursor.next( consumer ) )
+        while ( cursor.next( visitor ) )
         {
             // Just go through the recovery data, handing it on to the consumer.
         }

@@ -23,8 +23,8 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.util.Consumer;
 
 public class PhysicalTransactionCursor implements TransactionCursor
 {
@@ -39,7 +39,7 @@ public class PhysicalTransactionCursor implements TransactionCursor
     }
 
     @Override
-    public boolean next( Consumer<TransactionRepresentation, IOException> consumer ) throws IOException
+    public boolean next( Visitor<TransactionRepresentation, IOException> visitor ) throws IOException
     {
         entries.clear();
         LogEntry entry = entryReader.readLogEntry( channel );
@@ -68,7 +68,7 @@ public class PhysicalTransactionCursor implements TransactionCursor
         transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
                 startEntry.getLocalId(), startEntry.getTimeWritten(),
                 startEntry.getLastCommittedTxWhenTransactionStarted() );
-        return consumer.accept( transaction );
+        return visitor.visit( transaction );
     }
 
     @Override

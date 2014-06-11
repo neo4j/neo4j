@@ -25,19 +25,18 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
-
 import javax.transaction.xa.Xid;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-
 import org.hamcrest.TypeSafeMatcher;
+
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
@@ -63,10 +62,10 @@ public class LogMatchers
             LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
 
 
-            Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
+            Visitor<LogEntry, IOException> consumer = new Visitor<LogEntry, IOException>()
             {
                 @Override
-                public boolean accept( LogEntry entry ) throws IOException
+                public boolean visit( LogEntry entry ) throws IOException
                 {
                     entries.add( entry );
                     return true;

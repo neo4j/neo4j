@@ -29,6 +29,7 @@ import javax.transaction.xa.Xid;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
@@ -42,7 +43,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreCh
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -122,10 +122,10 @@ public class LogTestUtils
             LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
 
 
-            Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
+            Visitor<LogEntry, IOException> visitor = new Visitor<LogEntry, IOException>()
             {
                 @Override
-                public boolean accept( LogEntry entry ) throws IOException
+                public boolean visit( LogEntry entry ) throws IOException
                 {
                     entries.add( entry );
                     return true;
@@ -136,7 +136,7 @@ public class LogTestUtils
 
             try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( logChannel ) )
             {
-                cursor.next( consumer );
+                cursor.next( visitor );
             }
 
             // Assert entries are what we expected

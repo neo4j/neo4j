@@ -116,7 +116,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
@@ -342,7 +341,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         // TODO: Build a real provider map
         final DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
         storeMigrationProcess.migrateIfNeeded( store.getParentFile() );
-        neoStore = dependencies.add(storeFactory.newNeoStore( false ));
+        neoStore = dependencies.add( storeFactory.newNeoStore( false ) );
 
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
@@ -379,10 +378,10 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             // CHANGE STARTS HERE
             final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
             // Recovery process ties log and commit process together
-            final Consumer<TransactionRepresentation, IOException> consumer = new Consumer<TransactionRepresentation, IOException>()
+            final Visitor<TransactionRepresentation, IOException> visitor = new Visitor<TransactionRepresentation, IOException>()
             {
                 @Override
-                public boolean accept( TransactionRepresentation transaction ) throws IOException
+                public boolean visit( TransactionRepresentation transaction ) throws IOException
                 {
                     try
                     {
@@ -396,7 +395,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     }
                 }
             };
-            Visitor<ReadableLogChannel, IOException> logFileRecoverer = new LogFileRecoverer( logEntryReader, consumer );
+            Visitor<ReadableLogChannel, IOException> logFileRecoverer = new LogFileRecoverer( logEntryReader, visitor );
 
             LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                     nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );

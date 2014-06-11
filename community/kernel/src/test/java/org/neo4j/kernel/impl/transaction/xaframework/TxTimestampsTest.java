@@ -29,12 +29,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
-import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -115,7 +115,7 @@ public class TxTimestampsTest
         }
     }
 
-    private class AConsumer implements Consumer<LogEntry, IOException>
+    private class AConsumer implements Visitor<LogEntry, IOException>
     {
         private int foundTxCount;
         private boolean skippedFirstTx = false;
@@ -134,7 +134,7 @@ public class TxTimestampsTest
         }
 
         @Override
-        public boolean accept( LogEntry entry ) throws IOException
+        public boolean visit( LogEntry entry ) throws IOException
         {
             if ( !skippedFirstTx )
             {   // Since it's the property index transaction

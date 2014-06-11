@@ -26,10 +26,10 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
 
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.util.Consumer;
 
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
@@ -59,10 +59,10 @@ public class PhysicalTransactionAppenderTest
         TransactionCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(
                 CommandReaderFactory.DEFAULT ) );
         final AtomicInteger visited = new AtomicInteger();
-        reader.next( new Consumer<TransactionRepresentation, IOException>()
+        reader.next( new Visitor<TransactionRepresentation, IOException>()
         {
             @Override
-            public boolean accept( TransactionRepresentation transaction ) throws IOException
+            public boolean visit( TransactionRepresentation transaction ) throws IOException
             {
                 assertArrayEquals( additionalHeader, transaction.additionalHeader() );
                 assertEquals( masterId, transaction.getMasterId() );

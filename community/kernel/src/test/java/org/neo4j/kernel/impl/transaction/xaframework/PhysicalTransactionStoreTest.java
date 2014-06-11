@@ -35,7 +35,6 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogFileRecoverer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -131,10 +130,10 @@ public class PhysicalTransactionStoreTest
         final AtomicInteger recoveredTransactions = new AtomicInteger();
         logFile = life.add(new PhysicalLogFile( fs, dir, DEFAULT_NAME, 1000, NO_PRUNING,
                         transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
-                        positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ), new Consumer<TransactionRepresentation, IOException>()
+                        positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ), new Visitor<TransactionRepresentation, IOException>()
         {
             @Override
-            public boolean accept( TransactionRepresentation transaction ) throws IOException
+            public boolean visit( TransactionRepresentation transaction ) throws IOException
             {
                 assertArrayEquals( additionalHeader, transaction.additionalHeader() );
                 assertEquals( masterId, transaction.getMasterId() );
