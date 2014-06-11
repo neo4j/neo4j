@@ -19,13 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
-import org.scalatest.Assertions
+class FunctionsAcceptanceTest extends ExecutionEngineFunSuite {
 
-class FunctionsAcceptanceTest extends ExecutionEngineJUnitSuite {
-
-  @Test
-  def split_should_work_as_expected() {
+  test("split should work as expected") {
     // When
     val result = executeScalar[Long](
       "FOREACH (y in split(\"one1two\",\"1\")| "  +
@@ -40,8 +36,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineJUnitSuite {
     assert(result === 2)
   }
 
-  @Test
-  def toInt_should_work_as_expected() {
+  test("toInt should work as expected") {
     // When
     val result = executeScalar[Long](
       "CREATE (p:Person { age: \"42\" })" +
@@ -54,8 +49,7 @@ class FunctionsAcceptanceTest extends ExecutionEngineJUnitSuite {
     assert(result === 42)
   }
 
-  @Test
-  def toFloat_should_work_as_expected() {
+  test("toFloat should work as expected") {
     // When
     val result = executeScalar[Double](
       "CREATE (m:Movie { rating: 4 })" +
@@ -67,5 +61,4 @@ class FunctionsAcceptanceTest extends ExecutionEngineJUnitSuite {
     // Then
     assert(result === 4.0)
   }
-
 }

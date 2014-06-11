@@ -32,6 +32,8 @@ import org.hamcrest.CoreMatchers.equalTo
 import org.junit.Assert._
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import ast.convert.StatementConverters._
+import org.neo4j.graphmatching.PatternNode
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 
 class CypherParserTest extends CypherFunSuite {
 
@@ -3038,6 +3040,15 @@ class CypherParserTest extends CypherFunSuite {
     intercept[SyntaxException](parser.parse(
       "MATCH n WITH n LOAD CSV WITH HEADERS FROM n.path AS line RETURN line.key"
     ))
+  }
+
+  test("should handle NOT in nested equality") {
+    expectQuery(
+      "RETURN true = not(42 = 32) as n",
+      Query.
+        matches().
+        returns(ReturnItem(Equals(True(), Not(Equals(Literal(42), Literal(32)))), "n"))
+    )
   }
 
   test("should handle load and return") {
