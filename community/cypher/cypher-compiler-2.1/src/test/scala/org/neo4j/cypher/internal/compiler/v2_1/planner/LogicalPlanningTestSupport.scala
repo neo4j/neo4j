@@ -33,6 +33,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionBuilderContext
 
 trait LogicalPlanningTestSupport
   extends CypherTestSupport
@@ -63,6 +64,8 @@ trait LogicalPlanningTestSupport
   }
 
   def newMockedQueryGraph = mock[QueryGraph]
+
+  def newMockedPipeExecutionPlanBuilderContext = mock[PipeExecutionBuilderContext]
 
   def newMetricsFactory = SimpleMetricsFactory
 
@@ -148,7 +151,8 @@ trait LogicalPlanningTestSupport
       case ast: Query =>
         val semanticTable = semanticChecker.check(queryText, ast)
         tokenResolver.resolve(ast)(semanticTable, planContext)
-        planner.produceQueryPlan(ast, semanticTable)(planContext)
+        val (queryPlan, _) = planner.produceQueryPlan(ast, semanticTable)(planContext)
+        queryPlan
       case _ =>
         throw new IllegalArgumentException("produceLogicalPlan only supports ast.Query input")
     }
