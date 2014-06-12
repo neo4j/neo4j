@@ -28,10 +28,9 @@ import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.FreshIdNameGenerator
 
-case class selectPatternPredicates(simpleSelection: PlanTransformer) extends PlanTransformer {
+case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph]) extends PlanTransformer[QueryGraph] {
   private object candidateListProducer extends CandidateGenerator[PlanTable] {
-    def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
-      val queryGraph = context.queryGraph
+    def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
       val applyCandidates =
         for (
           lhs <- planTable.plans;
@@ -40,10 +39,10 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
         yield {
           pattern match {
             case patternExpression: PatternExpression =>
-              val rhs = rhsPlan(context, patternExpression)
+              val rhs = rhsPlan(context, patternExpression, subQueriesLookupTable)
               planSemiApply(lhs, rhs, patternExpression)
             case p@Not(patternExpression: PatternExpression) =>
-              val rhs = rhsPlan(context, patternExpression)
+              val rhs = rhsPlan(context, patternExpression, subQueriesLookupTable)
               planAntiSemiApply(lhs, rhs, patternExpression, p)
             case p@Ors(exprs) =>
               val (patternExpressions, expressions) = exprs.partition {
@@ -60,26 +59,26 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
     }
 
     private def planPredicates(lhs: QueryPlan, patternExpressions: Set[Expression], expressions: Set[Expression], letExpression: Option[Expression])
-                              (implicit context: QueryGraphSolvingContext): (QueryPlan, Set[Expression]) = {
+                              (implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (QueryPlan, Set[Expression]) = {
       patternExpressions.toList match {
         case (patternExpression: PatternExpression) :: Nil =>
-          val rhs = rhsPlan(context, patternExpression)
+          val rhs = rhsPlan(context, patternExpression, subQueriesLookupTable)
           val plan = planSelectOrSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet))
           (plan, expressions + patternExpression)
 
         case (p@Not(patternExpression: PatternExpression)) :: Nil =>
-          val rhs = rhsPlan(context, patternExpression)
+          val rhs = rhsPlan(context, patternExpression, subQueriesLookupTable)
           val plan = planSelectOrAntiSemiApply(lhs, rhs, onePredicate(expressions ++ letExpression.toSet))
           (plan, expressions + p)
 
         case (patternExpression: PatternExpression) :: tail =>
-          val rhs = rhsPlan(context, patternExpression)
+          val rhs = rhsPlan(context, patternExpression, subQueriesLookupTable)
           val (newLhs, newLetExpr) = createLetSemiApply(lhs, rhs, patternExpression, expressions, letExpression)
           val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr))
           (plan, solvedPredicates ++ Set(patternExpression) ++ expressions)
 
         case (p@Not(patternExpression: PatternExpression)) :: tail =>
-          val rhs = rhsPlan(context, patternExpression)
+          val rhs = rhsPlan(context, patternExpression, subQueriesLookupTable)
           val (newLhs, newLetExpr) = createLetAntiSemiApply(lhs, rhs, patternExpression, p, expressions, letExpression)
           val (plan, solvedPredicates) = planPredicates(newLhs, tail.toSet, Set.empty, Some(newLetExpr))
           (plan, solvedPredicates ++ Set(p) ++ expressions)
@@ -105,11 +104,11 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
         (planLetSelectOrAntiSemiApply(lhs, rhs, idName, onePredicate(expressions ++ letExpression.toSet)), ident)
     }
 
-    private def rhsPlan(context: QueryGraphSolvingContext, pattern: PatternExpression) = {
-      val qg = context.subQueriesLookupTable.getOrElse(pattern,
+    private def rhsPlan(context: LogicalPlanningContext, pattern: PatternExpression, subQueryLookupTable: Map[PatternExpression, QueryGraph]) = {
+      val qg = subQueryLookupTable.getOrElse(pattern,
         throw new ThisShouldNotHappenError("Davide/Stefan", s"Did not find QueryGraph for pattern expression $pattern")
       )
-      context.strategy.plan(context.copy(queryGraph = qg))
+      context.strategy.plan(qg)(context, subQueryLookupTable)
     }
 
     private def onePredicate(expressions: Set[Expression]): Expression = if (expressions.size == 1)
@@ -129,12 +128,12 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer) extends Pla
     (IdName(name), Identifier(name)(patternExpression.position))
   }
 
-  def apply(input: QueryPlan)(implicit context: QueryGraphSolvingContext): QueryPlan = {
-    val plan = simpleSelection(input)
+  def apply(input: QueryPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = {
+    val plan = simpleSelection(input, queryGraph)
 
     def findBestPlanForPatternPredicates(plan: QueryPlan): QueryPlan = {
       val secretPlanTable = PlanTable(Map(plan.availableSymbols -> plan))
-      val result: CandidateList = candidateListProducer(secretPlanTable)
+      val result: CandidateList = candidateListProducer(secretPlanTable, queryGraph)
       result.bestPlan(context.cost).getOrElse(plan)
     }
 

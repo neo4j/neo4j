@@ -21,7 +21,7 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
@@ -31,6 +31,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.OtherConverters._
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.AggregationExpression
 
+case class PipeExecutionBuilderContext(patternExpressionPlanLookup: Map[PatternExpression, LogicalPlan])
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
 

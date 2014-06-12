@@ -35,6 +35,7 @@ import scala.collection.mutable
 class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupport {
 
   private val statistics = hardcodedStatistics
+  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   // NOTE: the ronja rewriters make sure that all EQUALS will be rewritten to IN so here only the latter should be tested
 
@@ -57,9 +58,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: NodeByIdSeek => Cardinality(1)
       case _               => Cardinality(Double.MaxValue)
     })
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
     when(context.semanticTable.isNode(identifier)).thenReturn(true)
@@ -98,9 +98,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: DirectedRelationshipByIdSeek => Cardinality(1)
       case _                               => Cardinality(Double.MaxValue)
     })
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
@@ -136,9 +135,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: UndirectedRelationshipByIdSeek => Cardinality(2)
       case _                                 => Cardinality(Double.MaxValue)
     })
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
@@ -180,9 +178,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: UndirectedRelationshipByIdSeek => Cardinality(2)
       case _                                 => Cardinality(Double.MaxValue)
     })
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
       metrics = factory.newMetrics(statistics, semanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)
@@ -228,9 +225,8 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
       case _: UndirectedRelationshipByIdSeek => Cardinality(2)
       case _                                 => Cardinality(Double.MaxValue)
     })
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
       metrics = factory.newMetrics(statistics, semanticTable)
     )
     when(context.semanticTable.isRelationship(rIdent)).thenReturn(true)

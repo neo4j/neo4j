@@ -153,15 +153,14 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
                                            subQueryLookupTable: Map[PatternExpression, QueryGraph],
                                            clauses: Seq[Clause]): (PlannerQuery, Map[PatternExpression, QueryGraph]) =
     clauses match {
-      case Return(false, ListedReturnItems(expressions), optOrderBy, skip, limit) :: tl =>
-
-        // Can't handle pattern expressions as projections yet
-        expressions.foreach(_.expression.exists {
+      case Return(false, ListedReturnItems(items), optOrderBy, skip, limit) :: tl =>
+        // Can't handle pattern items as projections yet
+        items.foreach(_.expression.exists {
           case _:PatternExpression => throw new CantHandleQueryException
         })
 
         val sortItems = produceSortItems(optOrderBy)
-        val projection = produceProjectionsMaps(expressions)
+        val projection = produceProjectionsMaps(items)
           .withSortItems(sortItems)
           .withLimit(limit.map(_.expression))
           .withSkip(skip.map(_.expression))
@@ -269,9 +268,9 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
   private def produceSortItems(optOrderBy: Option[OrderBy]) =
     optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
 
-  private def produceProjectionsMaps(expressions: Seq[ReturnItem]): QueryProjection = {
+  private def produceProjectionsMaps(items: Seq[ReturnItem]): QueryProjection = {
     val (aggregatingItems: Seq[ReturnItem], nonAggrItems: Seq[ReturnItem]) =
-      expressions.partition(item => IsAggregate(item.expression))
+      items.partition(item => IsAggregate(item.expression))
 
     def turnIntoMap(x: Seq[ReturnItem]) = x.map(e => e.name -> e.expression).toMap
 

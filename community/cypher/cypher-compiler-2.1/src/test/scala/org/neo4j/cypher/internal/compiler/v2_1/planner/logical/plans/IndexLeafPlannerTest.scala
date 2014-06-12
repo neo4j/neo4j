@@ -23,7 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.QueryGraphSolvingContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
 import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.ManyQueryExpression
 
@@ -41,9 +41,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given {
       qg = queryGraph(inCollectionValue, hasLabels)
 
-      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+      withLogicalPlanningContext { (ctx: LogicalPlanningContext, table: Map[PatternExpression, QueryGraph]) =>
         // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
 
         // then
         resultPlans.plans shouldBe empty
@@ -54,9 +54,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
     new given {
       qg = queryGraph(inCollectionValue, hasLabels)
 
-      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+      withLogicalPlanningContext { (ctx, table) =>
         // when
-        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx, table)
 
         // then
         resultPlans.plans shouldBe empty
@@ -70,9 +70,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       indexOn("Awesome", "prop")
 
-      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+      withLogicalPlanningContext { (ctx, table) =>
         // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
@@ -88,9 +88,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       indexOn("Awesome", "prop")
 
-      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+      withLogicalPlanningContext { (ctx, table) =>
         // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
@@ -106,9 +106,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       uniqueIndexOn("Awesome", "prop")
 
-      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+      withLogicalPlanningContext { (ctx, table) =>
         // when
-        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx, table)
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
@@ -126,9 +126,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       indexOn("Awesome", "prop")
 
-      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+      withLogicalPlanningContext { (ctx, table) =>
         // when
-        val resultPlans = indexSeekLeafPlanner(qg)(ctx)
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
@@ -150,9 +150,9 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
       uniqueIndexOn("Awesome", "prop")
 
-      withQueryGraphSolvingContext { (ctx: QueryGraphSolvingContext) =>
+      withLogicalPlanningContext { (ctx, table) =>
         // when
-        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx)
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx, table)
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
