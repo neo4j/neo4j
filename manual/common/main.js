@@ -20,7 +20,8 @@ $( document ).ready( function()
     {
       $.cookie( SIDEBAR_COOKIE_NAME, value, { expires: 3, path: '/' } );
     }
-    if ( $.cookie( SIDEBAR_COOKIE_NAME ) === 'no' )
+    var sidebarCookieValue = $.cookie( SIDEBAR_COOKIE_NAME );
+    if ( sidebarCookieValue === 'no' || ( typeof sidebarCookieValue === 'undefined' && $( window ).width() < 769 ) )
     {
       $body.addClass( 'toc-is-hidden' );
     }

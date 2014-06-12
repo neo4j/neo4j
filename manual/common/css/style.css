@@ -173,6 +173,11 @@ span.searchTab {
   font-size: 24px;
 }
 
+#header h1 #book-title {
+  display: block;
+  font-size: 18px;
+}
+
 a#showHideButton,a.navLinkPrevious,a.navLinkNext {
   background: none;
 }
