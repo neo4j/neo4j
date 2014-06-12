@@ -17,14 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher
+package org.neo4j.cypher.internal.compiler.v2_1
 
-class UnionAcceptanceTest extends ExecutionEngineFunSuite {
-  test("should_be_able_to_create_text_output_from_union_queries") {
-    // When
-    val result = execute("merge (a) return a union merge (a) return a")
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
+import org.neo4j.cypher.GraphDatabaseTestSupport
 
-    // Then
-    result.columns should not be empty
+trait QueryStateTestSupport {
+  self: GraphDatabaseTestSupport =>
+
+  def withQueryState[T](f: QueryState => T) = {
+    val tx = graph.beginTx()
+    try {
+      val queryState = QueryStateHelper.queryStateFrom(graph, tx)
+      f(queryState)
+    } finally {
+      tx.close()
+    }
   }
+
 }

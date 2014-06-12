@@ -20,16 +20,12 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.scalatest.Assertions
-import org.junit.Test
 import org.junit.Assert._
 import org.hamcrest.CoreMatchers._
 
-class UniqueConstraintValidationAcceptanceTest
-  extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport with  CollectionSupport {
+class UniqueConstraintValidationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with  CollectionSupport {
 
-  @Test
-  def should_enforce_uniqueness_constraint_on_create_node_with_label_and_property() {
+  test("should_enforce_uniqueness_constraint_on_create_node_with_label_and_property") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
     execute("create ( node:Label1 { key1:'value1' } )")
@@ -47,8 +43,7 @@ class UniqueConstraintValidationAcceptanceTest
     }
   }
 
-  @Test
-  def should_enforce_uniqueness_constraint_on_set_property() {
+  test("should_enforce_uniqueness_constraint_on_set_property") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
     execute("create ( node1:Label1 { seq: 1, key1:'value1' } ), ( node2:Label1 { seq: 2 } )")
@@ -66,8 +61,7 @@ class UniqueConstraintValidationAcceptanceTest
     }
   }
 
-  @Test
-  def should_enforce_uniqueness_constraint_on_add_label() {
+  test("should_enforce_uniqueness_constraint_on_add_label") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
     execute("create ( node1:Label1 { seq: 1, key1:'value1' } ), ( node2 { seq: 2, key1:'value1' } )")
@@ -85,8 +79,7 @@ class UniqueConstraintValidationAcceptanceTest
     }
   }
 
-  @Test
-  def should_enforce_uniqueness_constraint_on_conflicting_data_in_same_statement() {
+  test("should_enforce_uniqueness_constraint_on_conflicting_data_in_same_statement") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
 
@@ -103,8 +96,7 @@ class UniqueConstraintValidationAcceptanceTest
     }
   }
 
-  @Test
-  def should_allow_remove_and_add_conflicting_data_in_one_statement() {
+  test("should_allow_remove_and_add_conflicting_data_in_one_statement") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
     execute("create ( node:Label1 { seq:1, key1:'value1' } )")
@@ -125,13 +117,12 @@ class UniqueConstraintValidationAcceptanceTest
 
       // THEN
       val result: ExecutionResult = execute("match (n:Label1) where n.key1 = 'value1' return n.seq as seq")
-      assertEquals(List(seq), result.columnAs[Int]("seq").toList)
+      result.columnAs[Int]("seq").toList should equal(List(seq))
       seq += 1
     }
   }
 
-  @Test
-  def should_allow_creation_of_non_conflicting_data() {
+  test("should_allow_creation_of_non_conflicting_data") {
     // GIVEN
     execute("create constraint on (node:Label1) assert node.key1 is unique")
     execute("create ( node:Label1 { key1:'value1' } )")
@@ -144,6 +135,6 @@ class UniqueConstraintValidationAcceptanceTest
 
     // THEN
     val result: ExecutionResult = execute("match (n) where id(n) <> 0 return count(*) as nodeCount")
-    assertEquals(List(4), result.columnAs[Int]("nodeCount").toList)
+    result.columnAs[Int]("nodeCount").toList should equal(List(4))
   }
 }
