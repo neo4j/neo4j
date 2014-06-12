@@ -31,5 +31,8 @@ import org.neo4j.cypher.ExecutionEngine
 class ServerExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = StringLogger.DEV_NULL)
   extends ExecutionEngine(graph, logger) {
 
-  def isPeriodicCommit(queryText: String): Boolean = compiler.isPeriodicCommit(queryText)
+  def isPeriodicCommit(queryText: String): Boolean = {
+    val (plan, _, _) = prepare(queryText)
+    plan.isPeriodicCommit
+  }
 }

@@ -76,7 +76,7 @@ class ExecutionEngine(graph: GraphDatabaseService, logger: StringLogger = String
   }
 
   @throws(classOf[SyntaxException])
-  private def prepare(query: String): (ExecutionPlan, Map[String, Any], TransactionInfo) = {
+  protected def prepare(query: String): (ExecutionPlan, Map[String, Any], TransactionInfo) = {
     var n = 0
     while (n < ExecutionEngine.PLAN_BUILDING_TRIES) {
       // create transaction and query context

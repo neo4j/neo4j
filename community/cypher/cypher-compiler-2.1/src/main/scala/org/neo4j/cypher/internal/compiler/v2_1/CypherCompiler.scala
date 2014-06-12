@@ -128,10 +128,4 @@ case class CypherCompiler(parser: CypherParser,
       monitor.cacheFlushDetected(cacheAccessor)
       planCacheFactory()
     })
-
-  @throws(classOf[SyntaxException])
-  def isPeriodicCommit(queryText: String) = parser.parse(queryText) match {
-    case q:Query => q.periodicCommitHint.nonEmpty
-    case _       => false
-  }
 }
