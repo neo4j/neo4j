@@ -24,19 +24,19 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlann
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.allNodesLeafPlanner
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
-class AllNodesLeafPlannerTest
-  extends CypherFunSuite
-  with LogicalPlanningTestSupport {
+class AllNodesLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
+  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   test("simple all nodes scan") {
     // given
     val queryGraph = QueryGraph(patternNodes = Set(IdName("n")))
 
     implicit val planContext = newMockedPlanContext
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = planContext,
-      query = queryGraph,
       metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, newMockedSemanticTable))
 
     // when

@@ -23,13 +23,16 @@ import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
+import scala.collection.mutable
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, QueryGraphSolver, QueryGraphSolvingContext, PlanTable}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
-import scala.collection.mutable
 
 class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
+  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   test("should introduce apply for unsolved exclusive optional match") {
     // OPTIONAL MATCH (a)-[r]->(b)
@@ -49,16 +52,15 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val fakePlan = newMockedQueryPlan(Set(IdName("a"), IdName("b")))
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
       strategy = newMockedStrategy(fakePlan),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
     val planTable = PlanTable(Map())
 
-    optional(planTable).plans should equal(Seq(planOptional(fakePlan)))
+    optional(planTable, qg).plans should equal(Seq(planOptional(fakePlan)))
   }
 
   test("should solve multiple optional matches") {
@@ -87,20 +89,19 @@ class OptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val fakePlan1 = newMockedQueryPlan(Set(IdName("a"), IdName("b")))
     val fakePlan2 = newMockedQueryPlan(Set(IdName("a"), IdName("c")))
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
       strategy = FakePlanningStrategy(fakePlan1, fakePlan2),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
     val planTable = PlanTable(Map())
 
-    optional(planTable).plans should equal(Seq(planOptional(fakePlan1)))
+    optional(planTable, qg).plans should equal(Seq(planOptional(fakePlan1)))
   }
 }
 
 case class FakePlanningStrategy(plans: QueryPlan*) extends QueryGraphSolver {
   val queue = mutable.Queue[QueryPlan](plans:_*)
-  override def plan(implicit context: QueryGraphSolvingContext, leafPlan: Option[QueryPlan]): QueryPlan = queue.dequeue()
+  override def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None) = queue.dequeue()
 }

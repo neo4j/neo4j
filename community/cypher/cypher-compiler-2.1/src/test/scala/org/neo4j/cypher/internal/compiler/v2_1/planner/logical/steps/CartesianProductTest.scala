@@ -21,18 +21,18 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cost, Candidates, PlanTable}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, LogicalPlanningTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.HardcodedGraphStatistics
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  implicit val context = newMockedQueryGraphSolvingContext(
-    planContext = newMockedPlanContext,
-    metrics = newMockedMetricsFactory.newMetrics(hardcodedStatistics, newMockedSemanticTable))
 
+  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
+  private val qg = newMockedQueryGraph
 
   test("single plan does not produce cartesian product") {
     val plan = newMockedQueryPlan("a")
@@ -40,7 +40,7 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val cost = Map(plan.plan -> 1.0)
     implicit val (table, context) = prepare(cost, plan)
 
-    cartesianProduct(table) should equal(Candidates())
+    cartesianProduct(table, qg) should equal(Candidates())
   }
 
   test("cartesian product produces all possible combinations") {
@@ -50,14 +50,14 @@ class CartesianProductTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     implicit val (table, context) = prepare(cost, plan1, plan2)
 
-    cartesianProduct(table).plans.toSet should equal(Set(planCartesianProduct(plan1, plan2), planCartesianProduct(plan2, plan1)))
+    cartesianProduct(table, qg).plans.toSet should equal(Set(planCartesianProduct(plan1, plan2), planCartesianProduct(plan2, plan1)))
   }
 
   private def prepare(cost: LogicalPlan => Double, plans: QueryPlan*) = {
     val factory = newMockedMetricsFactory
 
     when(factory.newCostModel(any())).thenReturn(cost.andThen(Cost.apply))
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
       metrics = factory.newMetrics(HardcodedGraphStatistics, newMockedSemanticTable)
     )

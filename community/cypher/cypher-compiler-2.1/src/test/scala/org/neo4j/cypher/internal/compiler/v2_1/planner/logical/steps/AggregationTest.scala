@@ -38,8 +38,8 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       skip = None
     )
 
+    val query = PlannerQuery(projection = projection)
     val context = newMockedLogicalPlanningContext(
-      query = PlannerQuery(projection = projection),
       planContext = newMockedPlanContext
     )
 
@@ -61,8 +61,8 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       skip = None
     )
 
+    val query = PlannerQuery(projection = projection)
     val context = newMockedLogicalPlanningContext(
-      query = PlannerQuery(projection = projection),
       planContext = newMockedPlanContext
     )
 

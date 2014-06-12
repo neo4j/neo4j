@@ -33,7 +33,7 @@ class PipeExecutionPlanBuilderTest extends CypherFunSuite with LogicalPlanningTe
 
   implicit val planContext = newMockedPlanContext
   implicit val pipeMonitor = monitors.newMonitor[PipeMonitor]()
-  implicit val context = newMockedQueryGraphSolvingContext(planContext)
+  implicit val context = newMockedLogicalPlanningContext(planContext)
   val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
   val planBuilder = new PipeExecutionPlanBuilder(monitors)
