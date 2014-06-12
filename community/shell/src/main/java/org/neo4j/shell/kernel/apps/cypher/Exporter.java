@@ -32,26 +32,25 @@ public class Exporter
 {
     private final SubGraphExporter exporter;
 
-    Exporter(SubGraph graph)
+    Exporter( SubGraph graph )
     {
         exporter = new SubGraphExporter( graph );
     }
 
     public void export( Output out ) throws RemoteException, ShellException
     {
-        // TODO this really needs a proper test; if possible the created output should be feed back
-        // to ensure the script is valid in its entirety
         begin( out );
         exporter.exportSchema( asWriter( out ) );
         commit( out );
 
         begin( out );
         exporter.exportData( asWriter( out ) );
-        out.println(";");
-        commit(out);
+        out.println( ";" );
+        commit( out );
     }
 
-    private PrintWriter asWriter(Output out) {
+    private PrintWriter asWriter( Output out )
+    {
         return new PrintWriter( new OutputAsWriter( out ) );
     }
 
