@@ -19,53 +19,41 @@
  */
 package org.neo4j.com;
 
-import java.util.Collection;
 import java.util.Iterator;
 
-import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.PrefetchingIterator;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
 /**
  * Represents a stream of the data of one or more consecutive transactions.
  */
 public abstract class TransactionStream extends
-        PrefetchingIterator<Triplet<String/*datasource*/, Long/*txid*/, TxExtractor>>
+        PrefetchingIterator<Pair<Long/*txid*/, TransactionRepresentation>>
 {
     public static final TransactionStream EMPTY = new TransactionStream()
     {
         @Override
-        protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
+        protected Pair<Long, TransactionRepresentation> fetchNextOrNull()
         {
             return null;
         }
     };
-    private final String[] datasources;
 
-    public TransactionStream( String... datasources )
+    public static TransactionStream create( Iterable<Pair<Long, TransactionRepresentation>> streamSource )
     {
-        this.datasources = datasources;
-    }
-
-    public String[] dataSourceNames()
-    {
-        return datasources.clone();
-    }
-
-    public static TransactionStream create( Collection<String> datasources,
-            Iterable<Triplet<String, Long, TxExtractor>> streamSource )
-    {
-        final Iterator<Triplet<String, Long, TxExtractor>> stream = streamSource.iterator();
-        return new TransactionStream( datasources.toArray( new String[datasources.size()] ) )
+        final Iterator<Pair<Long, TransactionRepresentation>> stream = streamSource.iterator();
+        return new TransactionStream()
         {
             @Override
-            protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
+            protected Pair<Long, TransactionRepresentation> fetchNextOrNull()
             {
                 if ( stream.hasNext() ) return stream.next();
                 return null;
             }
         };
     }
-    
+
     public void close()
     {
     }

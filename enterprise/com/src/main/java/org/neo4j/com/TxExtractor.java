@@ -20,23 +20,22 @@
 package org.neo4j.com;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
 public abstract class TxExtractor
 {
     public abstract void extract( LogBuffer buffer );
 
-    public abstract ReadableByteChannel extract();
+    public abstract ReadableLogChannel extract();
 
-    public static TxExtractor create( final ReadableByteChannel data )
+    public static TxExtractor create( final ReadableLogChannel data )
     {
         return new TxExtractor()
         {
             @Override
-            public ReadableByteChannel extract()
+            public ReadableLogChannel extract()
             {
                 return data;
             }
@@ -44,21 +43,11 @@ public abstract class TxExtractor
             @Override
             public void extract( LogBuffer buffer )
             {
-                int transferBufSize = 128;
-                ByteBuffer transferBuffer = ByteBuffer.allocateDirect( transferBufSize );
                 try
                 {
-                    for( int read; (read = data.read( transferBuffer )) > -1; )
+                    while ( data.hasMoreData() )
                     {
-                        transferBuffer.flip();
-                        // byte-by-byte should be reasonably fast still, since logbuffer generally is, as the
-                        // name implies, buffered.
-                        while(read --> 0)
-                        {
-                            byte b = transferBuffer.get();
-                            buffer.put( b );
-                        }
-                        transferBuffer.clear();
+                        buffer.put( data.get() );
                     }
                 }
                 catch ( IOException e )

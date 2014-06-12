@@ -19,50 +19,21 @@
  */
 package org.neo4j.com.storecopy;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
-
-import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.junit.Rule;
-import org.junit.Test;
-
-import org.neo4j.com.RequestContext;
-import org.neo4j.com.Response;
-import org.neo4j.com.ServerUtil;
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Service;
-import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.util.StringLogger;
-import org.neo4j.kernel.logging.ConsoleLogger;
-import org.neo4j.kernel.monitoring.BackupMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.tooling.GlobalGraphOperations;
 
 public class RemoteStoreCopierTest
 {
     @Rule
     public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
-
+/*
     @Test
     public void shouldStoreLogFilesAndRunRecovery() throws Exception
     {
@@ -140,7 +111,7 @@ public class RemoteStoreCopierTest
 
         verify( requester, times( 1 ) ).done();
     }
-
+*/
     private List<KernelExtensionFactory<?>> loadKernelExtensions()
     {
         List<KernelExtensionFactory<?>> kernelExtensions = new ArrayList<>();

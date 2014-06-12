@@ -25,15 +25,15 @@ public class Response<T> implements AutoCloseable
 {
     private final T response;
     private final StoreId storeId;
-    private final TransactionStream transactions;
     private final ResourceReleaser releaser;
+    private final TransactionStream txStream;
 
     public Response( T response, StoreId storeId,
-            TransactionStream transactions, ResourceReleaser releaser )
+                     TransactionStream txStream, ResourceReleaser releaser )
     {
         this.storeId = storeId;
         this.response = response;
-        this.transactions = transactions;
+        this.txStream = txStream;
         this.releaser = releaser;
     }
 
@@ -42,14 +42,14 @@ public class Response<T> implements AutoCloseable
         return response;
     }
 
+    public TransactionStream getTxStream()
+    {
+        return txStream;
+    }
+
     public StoreId getStoreId()
     {
         return storeId;
-    }
-
-    public TransactionStream transactions()
-    {
-        return transactions;
     }
 
     @Override
@@ -57,7 +57,7 @@ public class Response<T> implements AutoCloseable
     {
         try
         {
-            transactions.close();
+            txStream.close();
         }
         finally
         {
@@ -65,6 +65,8 @@ public class Response<T> implements AutoCloseable
         }
     }
 
-    public static final Response<Void> EMPTY = new Response<Void>( null, new StoreId( -1, -1 ),
-            TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+    public static <T> Response<T> empty()
+    {
+        return new Response<T>( null, new StoreId( -1, -1 ), null, ResourceReleaser.NO_OP );
+    }
 }

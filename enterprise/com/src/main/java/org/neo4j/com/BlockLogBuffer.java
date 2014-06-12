@@ -151,12 +151,6 @@ public class BlockLogBuffer implements LogBuffer
         return this;
     }
 
-    @Override
-    public void writeOut() throws IOException
-    {
-        // Do nothing
-    }
-
     public void force() throws IOException
     {
         // Do nothing

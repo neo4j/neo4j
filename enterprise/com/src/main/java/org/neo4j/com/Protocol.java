@@ -30,8 +30,10 @@ import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -84,13 +86,17 @@ public class Protocol
         targetBuffer.writeLong( context.getEpoch() );
         targetBuffer.writeInt( context.machineId() );
         targetBuffer.writeInt( context.getEventIdentifier() );
-        RequestContext.Tx[] txs = context.lastAppliedTransactions();
-        targetBuffer.writeByte( txs.length );
-        for ( RequestContext.Tx tx : txs )
-        {
-            writeString( targetBuffer, tx.getDataSourceName() );
-            targetBuffer.writeLong( tx.getTxId() );
-        }
+        RequestContext.Tx tx = context.lastAppliedTransactions();
+        // TODO 2.2-future this used to hold the length of the transaction array. Now it is always 1
+        targetBuffer.writeByte( 1 );
+        // TODO 2.2-future this used to iterate over all ds txs. No longer necessary
+//        for ( RequestContext.Tx tx : txs )
+//        {
+
+//            writeString( targetBuffer, tx.getDataSourceName() );
+        writeString( targetBuffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+        targetBuffer.writeLong( tx.getTxId() );
+//        }
         targetBuffer.writeInt( context.getMasterId() );
         targetBuffer.writeLong( context.getChecksum() );
     }
@@ -107,7 +113,7 @@ public class Protocol
         return new TransactionStream()
         {
             @Override
-            protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
+            protected Pair<Long, TransactionRepresentation> fetchNextOrNull()
             {
                 makeSureNextTransactionIsFullyFetched( buffer );
                 String datasource = datasources[buffer.readUnsignedByte()];
@@ -116,14 +122,9 @@ public class Protocol
                     return null;
                 }
                 long txId = buffer.readLong();
-                TxExtractor extractor = TxExtractor.create( new BlockLogReader( buffer ) );
-                return Triplet.of( datasource, txId, extractor );
-            }
-
-            @Override
-            public String[] dataSourceNames()
-            {
-                return Arrays.copyOfRange( datasources, 1, datasources.length );
+                // TODO 2.2-future this should be a transaction representation extracted from the store
+                TransactionRepresentation txRepr = null;
+                return Pair.of( txId, txRepr );
             }
         };
     }

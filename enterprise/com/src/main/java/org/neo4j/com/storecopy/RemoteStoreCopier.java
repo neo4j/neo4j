@@ -20,34 +20,26 @@
 package org.neo4j.com.storecopy;
 
 import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
 
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
-import org.neo4j.com.TxExtractor;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBufferFactory;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
@@ -59,6 +51,7 @@ public class RemoteStoreCopier
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final ConsoleLogger console;
     private final FileSystemAbstraction fs;
+    private final LogVersionRepository logVersionRepository;
 
     /**
      * This is built as a pluggable interface to allow backup and HA to use this code independently of each other,
@@ -72,12 +65,13 @@ public class RemoteStoreCopier
     }
 
     public RemoteStoreCopier( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                              ConsoleLogger console, FileSystemAbstraction fs )
+                              ConsoleLogger console, FileSystemAbstraction fs, LogVersionRepository logVersionRepository )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
         this.console = console;
         this.fs = fs;
+        this.logVersionRepository = logVersionRepository;
     }
 
     public void copyStore( StoreCopyRequester requester ) throws IOException
@@ -97,14 +91,14 @@ public class RemoteStoreCopier
         try ( Response response = requester.copyStore( decorateWithProgressIndicator( new ToFileStoreWriter( tempStore ) ) ) )
         {
             // Update highest archived log id
-            long highestLogVersion = XaLogicalLog.getHighestHistoryLogVersion( fs, tempStore, LOGICAL_LOG_DEFAULT_NAME );
+            long highestLogVersion = logVersionRepository.getCurrentLogVersion();
             if ( highestLogVersion > -1 )
             {
                 NeoStore.setVersion( fs, new File( tempStore, NeoStore.DEFAULT_NAME ), highestLogVersion + 1 );
             }
 
             // Write pending transactions down to the currently active logical log
-            writeTransactionsToActiveLogFile( tempConfig, response.transactions() );
+            writeTransactionsToActiveLogFile( tempConfig, response.getTxStream() );
         }
         finally
         {
@@ -141,69 +135,69 @@ public class RemoteStoreCopier
 
     private void writeTransactionsToActiveLogFile( Config tempConfig, TransactionStream transactions ) throws IOException
     {
-        Map</*dsName*/String, LogBufferFactory> logWriters = createLogWriters( tempConfig );
-        Map</*dsName*/String, LogBuffer> logFiles = new HashMap<>();
-        try
-        {
-            while(transactions.hasNext())
-            {
-                Triplet<String,Long,TxExtractor> next = transactions.next();
-                LogBuffer log = getOrCreateLogBuffer( logFiles, logWriters, /*dsName*/next.first(), /*txId*/next.second(), tempConfig );
-                next.third().extract( log );
-            }
-        }
-        finally
-        {
-            for ( LogBuffer buf : logFiles.values() )
-            {
-                buf.force();
-                buf.getFileChannel().close();
-            }
-        }
+//        Map</*dsName*/String, LogBufferFactory> logWriters = createLogWriters( tempConfig );
+//        Map</*dsName*/String, LogBuffer> logFiles = new HashMap<>();
+//        try
+//        {
+//            while(transactions.hasNext())
+//            {
+//                Pair<Long, TransactionRepresentation> next = transactions.next();
+//                LogBuffer log = getOrCreateLogBuffer( logFiles, logWriters, /*txId*/next.first(), tempConfig );
+////                next.other().extract( log );
+//            }
+//        }
+//        finally
+//        {
+//            for ( LogBuffer buf : logFiles.values() )
+//            {
+//                buf.force();
+//                buf.getFileChannel().close();
+//            }
+//        }
     }
 
-    private LogBuffer getOrCreateLogBuffer( Map<String, LogBuffer> buffers, Map<String, LogBufferFactory> logWriters, String dsName, Long txId, Config config )
-            throws IOException
-    {
-        LogBuffer buffer = buffers.get(dsName);
-        if(buffer == null)
-        {
-            if(logWriters.containsKey( dsName ))
-            {
-                buffer = logWriters.get( dsName ).createActiveLogFile( config, txId - 1 );
-                buffers.put( dsName, buffer );
-            }
-            else
-            {
-                throw new IllegalStateException( "Got transaction for unknown data source, unable to safely copy " +
-                        "files. Offending data source was '" + dsName + "', please make sure this data source is " +
-                        "available on the classpath." );
-            }
-        }
-        return buffer;
-    }
-
-    private Map<String, LogBufferFactory> createLogWriters( Config config ) throws IOException
-    {
-        Map<String, LogBufferFactory> writers = new HashMap<>();
-        File tempStore = new File( config.get( GraphDatabaseSettings.store_dir ).getAbsolutePath() + ".tmp" );
-        GraphDatabaseAPI db = newTempDatabase( tempStore );
-        try
-        {
-            XaDataSourceManager dsManager = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
-            for ( XaDataSource xaDataSource : dsManager.getAllRegisteredDataSources() )
-            {
-                writers.put( xaDataSource.getName(), xaDataSource.createLogBufferFactory() );
-            }
-            return writers;
-        }
-        finally
-        {
-            db.shutdown();
-            FileUtils.deleteRecursively( tempStore );
-            tempStore.mkdirs();
-        }
-    }
+//    private LogBuffer getOrCreateLogBuffer( Map<String, LogBuffer> buffers, Map<String, LogBufferFactory> logWriters, String dsName, Long txId, Config config )
+//            throws IOException
+//    {
+//        LogBuffer buffer = buffers.get(dsName);
+//        if(buffer == null)
+//        {
+//            if(logWriters.containsKey( dsName ))
+//            {
+//                buffer = logWriters.get( dsName ).createActiveLogFile( config, txId - 1 );
+//                buffers.put( dsName, buffer );
+//            }
+//            else
+//            {
+//                throw new IllegalStateException( "Got transaction for unknown data source, unable to safely copy " +
+//                        "files. Offending data source was '" + dsName + "', please make sure this data source is " +
+//                        "available on the classpath." );
+//            }
+//        }
+//        return buffer;
+//    }
+//
+//    private Map<String, LogBufferFactory> createLogWriters( Config config ) throws IOException
+//    {
+//        Map<String, LogBufferFactory> writers = new HashMap<>();
+//        File tempStore = new File( config.get( GraphDatabaseSettings.store_dir ).getAbsolutePath() + ".tmp" );
+//        GraphDatabaseAPI db = newTempDatabase( tempStore );
+//        try
+//        {
+//            XaDataSourceManager dsManager = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
+//            for ( XaDataSource xaDataSource : dsManager.getAllRegisteredDataSources() )
+//            {
+//                writers.put( xaDataSource.getName(), xaDataSource.createLogBufferFactory() );
+//            }
+//            return writers;
+//        }
+//        finally
+//        {
+//            db.shutdown();
+//            FileUtils.deleteRecursively( tempStore );
+//            tempStore.mkdirs();
+//        }
+//    }
 
     private GraphDatabaseAPI newTempDatabase( File tempStore )
     {

@@ -31,18 +31,11 @@ public final class RequestContext
 {
     public static class Tx
     {
-        private final String dataSourceName;
         private final long txId;
 
-        public Tx( String dataSourceName, long txId )
+        public Tx( long txId )
         {
-            this.dataSourceName = dataSourceName;
             this.txId = txId;
-        }
-
-        public String getDataSourceName()
-        {
-            return dataSourceName;
         }
 
         public long getTxId()
@@ -53,18 +46,18 @@ public final class RequestContext
         @Override
         public String toString()
         {
-            return dataSourceName + "/" + txId;
+            return "txId: " + txId;
         }
 
     }
 
-    public static Tx lastAppliedTx( String dataSourceName, long txId )
+    public static Tx lastAppliedTx( long txId )
     {
-        return new Tx( dataSourceName, txId );
+        return new Tx( txId );
     }
 
     private final int machineId;
-    private final Tx[] lastAppliedTransactions;
+    private final Tx lastAppliedTransactions;
     private final int eventIdentifier;
     private final int hashCode;
     private final long epoch;
@@ -72,7 +65,7 @@ public final class RequestContext
     private final long checksum;
 
     public RequestContext( long epoch, int machineId, int eventIdentifier,
-            Tx[] lastAppliedTransactions, int masterId, long checksum )
+            Tx lastAppliedTransactions, int masterId, long checksum )
     {
         this.epoch = epoch;
         this.machineId = machineId;
@@ -92,7 +85,7 @@ public final class RequestContext
         return machineId;
     }
 
-    public Tx[] lastAppliedTransactions()
+    public Tx lastAppliedTransactions()
     {
         return lastAppliedTransactions;
     }
@@ -141,9 +134,9 @@ public final class RequestContext
         return this.hashCode;
     }
 
-    public static final RequestContext EMPTY = new RequestContext( -1, -1, -1, new Tx[0], -1, -1 );
+    public static final RequestContext EMPTY = new RequestContext( -1, -1, -1, null, -1, -1 );
 
-    public static RequestContext anonymous( Tx[] lastAppliedTransactions )
+    public static RequestContext anonymous( Tx lastAppliedTransactions )
     {
         return new RequestContext( EMPTY.epoch, EMPTY.machineId, EMPTY.eventIdentifier,
                 lastAppliedTransactions, EMPTY.masterId, EMPTY.checksum );

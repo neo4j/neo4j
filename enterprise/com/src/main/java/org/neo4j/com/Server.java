@@ -63,10 +63,10 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
@@ -577,7 +577,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                     response = type.getTargetCaller().call( requestTarget, context, bufferToReadFrom, targetBuffer );
                     type.getObjectSerializer().write( response.response(), targetBuffer );
                     writeStoreId( response.getStoreId(), targetBuffer );
-                    writeTransactionStreams( response.transactions(), targetBuffer, byteCounterMonitor );
+                    writeTransactionStreams( response.getTxStream(), targetBuffer, byteCounterMonitor );
                     targetBuffer.done();
                     responseWritten( type, channel, context );
                 }
@@ -635,22 +635,23 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             return;
         }
 
-        String[] datasources = txStream.dataSourceNames();
-        assert datasources.length <= 255 : "too many data sources";
-        buffer.writeByte( datasources.length );
+        // TODO 2.2-future this used to write the number of datasources - it is now always 1
+        buffer.writeByte( 1 );
         Map<String, Integer> datasourceId = new HashMap<String, Integer>();
-        for ( int i = 0; i < datasources.length; i++ )
-        {
-            String datasource = datasources[i];
-            writeString( buffer, datasource );
-            datasourceId.put( datasource, i + 1/*0 means "no more transactions"*/ );
-        }
-        for ( Triplet<String, Long, TxExtractor> tx : IteratorUtil.asIterable( txStream ) )
+//        for ( int i = 0; i < datasources.length; i++ )
+//        {
+//            String datasource = datasources[i];
+        // TODO 2.2-future this used to write the name of the datasources - no such thing anymore
+            writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+//            datasourceId.put( datasource, i + 1/*0 means "no more transactions"*/ );
+//        }
+        for ( Pair<Long, TransactionRepresentation> tx : IteratorUtil.asIterable( txStream ) )
         {
             buffer.writeByte( datasourceId.get( tx.first() ) );
-            buffer.writeLong( tx.second() );
+            buffer.writeLong( tx.first() );
             BlockLogBuffer blockBuffer = new BlockLogBuffer( buffer, bufferMonitor );
-            tx.third().extract( blockBuffer );
+            // TODO 2.2-future this should extract the tx stream from the TransactionStore
+//            tx.third().extract( blockBuffer );
             blockBuffer.done();
         }
         buffer.writeByte( 0/*no more transactions*/ );
@@ -661,21 +662,12 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         long sessionId = buffer.readLong();
         int machineId = buffer.readInt();
         int eventIdentifier = buffer.readInt();
-        int txsSize = buffer.readByte();
-        Tx[] lastAppliedTransactions = new Tx[txsSize];
-        Tx neoTx = null;
-        for ( int i = 0; i < txsSize; i++ )
-        {
-            String ds = readString( buffer );
-            Tx tx = RequestContext.lastAppliedTx( ds, buffer.readLong() );
-            lastAppliedTransactions[i] = tx;
+        int txsSize = buffer.readByte(); // TODO 2.2-future this will always be 1
+        assert txsSize == 1;
+        String ds = readString( buffer ); // TODO 2.2-future this will always be the same - NeoStoreXaDS
+        assert ds.equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+        Tx neoTx = RequestContext.lastAppliedTx( buffer.readLong() );
 
-            // Only perform checksum checks on the neo data source.
-            if ( ds.equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
-            {
-                neoTx = tx;
-            }
-        }
         int masterId = buffer.readInt();
         long checksum = buffer.readLong();
 
@@ -685,7 +677,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         {
             txVerifier.assertMatch( neoTx.getTxId(), masterId, checksum );
         }
-        return new RequestContext( sessionId, machineId, eventIdentifier, lastAppliedTransactions, masterId, checksum );
+        return new RequestContext( sessionId, machineId, eventIdentifier, neoTx, masterId, checksum );
     }
 
     protected abstract RequestType<T> getRequestContext( byte id );
