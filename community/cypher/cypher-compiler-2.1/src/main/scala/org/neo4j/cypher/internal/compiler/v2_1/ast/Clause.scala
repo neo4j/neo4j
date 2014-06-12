@@ -289,6 +289,18 @@ case class Return(
     skip: Option[Skip],
     limit: Option[Limit])(val position: InputPosition) extends ClosingClause {
   def name = "RETURN"
+
+  override def semanticCheck =
+    super.semanticCheck chain
+    checkIdentifiersInScope
+
+  private def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state =>
+    returnItems match {
+      case _: ReturnAll if state.scope.symbolTable.isEmpty =>
+        Seq(SemanticError("RETURN * is not allowed when there are no identifiers in scope", position))
+      case _            =>
+        Seq()
+    }
 }
 
 case class PeriodicCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with SemanticCheckable {
