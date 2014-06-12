@@ -27,24 +27,24 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class PhysicalTransactionStore extends LifecycleAdapter implements TransactionStore
 {
     private final LogFile logFile;
-    private final LogPositionCache positionCache;
+    private final TransactionMetadataCache transactionMetadataCache;
     private final TxIdGenerator txIdGenerator;
     private TransactionAppender appender;
     private final LogEntryReader<ReadableLogChannel> logEntryReader;
 
-    public PhysicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator, LogPositionCache positionCache,
+    public PhysicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator, TransactionMetadataCache transactionMetadataCache,
             LogEntryReader<ReadableLogChannel> logEntryReader)
     {
         this.logFile = logFile;
         this.txIdGenerator = txIdGenerator;
-        this.positionCache = positionCache;
+        this.transactionMetadataCache = transactionMetadataCache;
         this.logEntryReader = logEntryReader;
     }
 
     @Override
     public void init() throws Throwable
     {
-        this.appender = new PhysicalTransactionAppender( logFile.getWriter(), txIdGenerator, positionCache );
+        this.appender = new PhysicalTransactionAppender( logFile.getWriter(), txIdGenerator, transactionMetadataCache );
     }
 
     @Override
@@ -67,7 +67,7 @@ public class PhysicalTransactionStore extends LifecycleAdapter implements Transa
     public IOCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor ) throws NoSuchTransactionException, IOException
     {
         // look up in position cache
-        LogPosition position = positionCache.getStartPosition( transactionIdToStartFrom );
+        LogPosition position = transactionMetadataCache.getTransactionMetadata( transactionIdToStartFrom ).getStartPosition();
         if ( position != null )
         {
             // we're good

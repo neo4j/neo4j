@@ -82,26 +82,26 @@ public abstract class LogEntry
             Start extends LogEntry
     {
         private final int masterId;
-        private final int myId;
+        private final int authorId;
         private final long timeWritten;
         private final long lastCommittedTxWhenTransactionStarted;
         private final byte[] additionalHeader;
         private LogPosition startPosition;
 
-        public Start( int masterId, int myId, long timeWritten,
+        public Start( int masterId, int authorId, long timeWritten,
                       long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader,
                       LogPosition startPosition )
         {
-            this( CURRENT_LOG_ENTRY_VERSION, masterId, myId, timeWritten,
+            this( CURRENT_LOG_ENTRY_VERSION, masterId, authorId, timeWritten,
                     lastCommittedTxWhenTransactionStarted, additionalHeader, startPosition );
         }
 
-        public Start( byte version, int masterId, int myId, long timeWritten,
+        public Start( byte version, int masterId, int authorId, long timeWritten,
                long lastCommittedTxWhenTransactionStarted, byte[] additionalHeader, LogPosition startPosition )
         {
             super( TX_START, version );
             this.masterId = masterId;
-            this.myId = myId;
+            this.authorId = authorId;
             this.startPosition = startPosition;
             this.timeWritten = timeWritten;
             this.lastCommittedTxWhenTransactionStarted = lastCommittedTxWhenTransactionStarted;
@@ -115,7 +115,7 @@ public abstract class LogEntry
 
         public int getLocalId()
         {
-            return myId;
+            return authorId;
         }
 
         public LogPosition getStartPosition()
@@ -146,12 +146,17 @@ public abstract class LogEntry
         /**
          * @return combines necessary state to get a unique checksum to identify this transaction uniquely.
          */
-        public long getChecksum()
+        public static long checksum( byte[] additionalHeader, int masterId, int authorId)
         {
             // [4 bits combined masterId/myId][4 bits xid hashcode, which combines time/randomness]
             long lowBits = Arrays.hashCode( additionalHeader );
-            long highBits = masterId*37 + myId;
+            long highBits = masterId*37 + authorId;
             return (highBits << 32) | (lowBits & 0xFFFFFFFFL);
+        }
+
+        public static long checksum( LogEntry.Start entry )
+        {
+            return checksum( entry.additionalHeader, entry.masterId, entry.authorId );
         }
 
         @Override
@@ -170,7 +175,7 @@ public abstract class LogEntry
         public String toString( TimeZone timeZone )
         {
             // TODO 2.2-future include additionalHeader in toString?
-            return "Start[master=" + masterId + ",me=" + myId + ",time=" +
+            return "Start[master=" + masterId + ",me=" + authorId + ",time=" +
                     timestamp( timeWritten, timeZone ) + ",lastCommittedTxWhenTransactionStarted="+
                     lastCommittedTxWhenTransactionStarted+"]";
         }

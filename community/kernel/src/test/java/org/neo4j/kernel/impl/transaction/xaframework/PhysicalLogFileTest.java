@@ -19,13 +19,17 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
@@ -35,11 +39,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
 
 public class PhysicalLogFileTest
 {
@@ -53,7 +52,7 @@ public class PhysicalLogFileTest
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 1000, LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new LogPositionCache( 10, 100 ), NO_RECOVERY_EXPECTED ));
+                new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ));
 
         // WHEN
         life.start();
@@ -77,7 +76,7 @@ public class PhysicalLogFileTest
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
                 LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new LogPositionCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
+                new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
 
         // WHEN
         try
@@ -115,7 +114,7 @@ public class PhysicalLogFileTest
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new LogPositionCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
+                new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
 
         // WHEN
         life.start();
@@ -179,7 +178,7 @@ public class PhysicalLogFileTest
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategies.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
-                new LogPositionCache( 10, 100 ), new Visitor<ReadableLogChannel, IOException>()
+                new TransactionMetadataCache( 10, 100 ), new Visitor<ReadableLogChannel, IOException>()
                         {
                             @Override
                             public boolean visit( ReadableLogChannel element ) throws IOException

@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 
 import org.junit.Test;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -36,7 +39,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.DeadSimpleLogVersionReposit
 import org.neo4j.kernel.impl.transaction.xaframework.DeadSimpleTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPositionCache;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
@@ -45,15 +47,12 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionAppender;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.Providers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
 
 public class TestStoreRecoverer
 {
@@ -114,7 +113,7 @@ public class TestStoreRecoverer
 
         LifeSupport life = new LifeSupport();
         DeadSimpleTransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 2 );
-        LogPositionCache positionCache = new LogPositionCache( 10, 10 );
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 10 );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( store, PhysicalLogFile.DEFAULT_NAME, fileSystem );
         LogFile logFile = life.add( new PhysicalLogFile( fileSystem, logFiles, 1000,
                 LogPruneStrategies.NO_PRUNING, transactionIdStore,

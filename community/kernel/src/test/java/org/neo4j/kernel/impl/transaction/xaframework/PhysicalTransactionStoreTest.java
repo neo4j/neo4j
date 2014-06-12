@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -38,15 +45,6 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
-import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 
 public class PhysicalTransactionStoreTest
 {
@@ -66,7 +64,7 @@ public class PhysicalTransactionStoreTest
         // GIVEN
         TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l );
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
-        LogPositionCache positionCache = new LogPositionCache( 10, 1000 );
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 1000 );
 
         LifeSupport life = new LifeSupport(  );
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, DEFAULT_NAME, fs );
@@ -104,7 +102,7 @@ public class PhysicalTransactionStoreTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l );
         TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
-        LogPositionCache positionCache = new LogPositionCache( 10, 100 );
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         final byte[] additionalHeader = new byte[] {1, 2, 5};
         final int masterId = 2, authorId = 1;
         final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
@@ -165,7 +163,8 @@ public class PhysicalTransactionStoreTest
     }
 
     private void addATransactionAndRewind( WritableLogChannel channel, TxIdGenerator txIdGenerator,
-            LogPositionCache positionCache, byte[] additionalHeader, int masterId, int authorId, long timeWritten,
+                                           TransactionMetadataCache positionCache, byte[] additionalHeader,
+                                           int masterId, int authorId, long timeWritten,
             long latestCommittedTxWhenStarted ) throws IOException
     {
         try ( TransactionAppender appender = new PhysicalTransactionAppender( channel, txIdGenerator, positionCache ) )

@@ -19,13 +19,18 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
+
 import java.io.File;
 import java.util.Random;
+
 import javax.transaction.xa.Xid;
 
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -35,12 +40,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Start;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.mockito.Mockito.mock;
-
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 
 public class TestTxEntries
 {
@@ -100,12 +99,12 @@ public class TestTxEntries
 
     private void assertChecksumsNotEqual( Start ref, Start other )
     {
-        assertFalse( ref.getChecksum() == other.getChecksum() );
+        assertFalse( LogEntry.Start.checksum( ref ) == LogEntry.Start.checksum( other ) );
     }
 
     private void assertChecksumsEquals( Start ref, Start other )
     {
-        assertEquals( ref.getChecksum(), other.getChecksum() );
+        assertEquals( LogEntry.Start.checksum( ref ), LogEntry.Start.checksum( other ) );
     }
 
     private Xid randomXid( Boolean trueForPositive )

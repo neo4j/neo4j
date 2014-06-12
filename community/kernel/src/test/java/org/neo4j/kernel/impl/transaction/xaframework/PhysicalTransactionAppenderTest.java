@@ -19,21 +19,20 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
 
 public class PhysicalTransactionAppenderTest
 {
@@ -43,7 +42,7 @@ public class PhysicalTransactionAppenderTest
         // GIVEN
         InMemoryLogChannel channel = new InMemoryLogChannel();
         TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
-        LogPositionCache positionCache = new LogPositionCache( 10, 100 );
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
         TransactionAppender appender = new PhysicalTransactionAppender( channel, txIdGenerator, positionCache );
 
         // WHEN

@@ -28,15 +28,15 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 public class PhysicalLogFileInformation implements LogFileInformation
 {
     private final PhysicalLogFiles logFiles;
-    private final LogPositionCache positionCache;
+    private final TransactionMetadataCache transactionMetadataCache;
     private final FileSystemAbstraction fileSystem;
     private final TransactionIdStore transactionIdStore;
 
-    public PhysicalLogFileInformation( PhysicalLogFiles logFiles, LogPositionCache positionCache,
+    public PhysicalLogFileInformation( PhysicalLogFiles logFiles, TransactionMetadataCache transactionMetadataCache,
             FileSystemAbstraction fileSystem, TransactionIdStore transactionIdStore )
     {
         this.logFiles = logFiles;
-        this.positionCache = positionCache;
+        this.transactionMetadataCache = transactionMetadataCache;
         this.fileSystem = fileSystem;
         this.transactionIdStore = transactionIdStore;
     }
@@ -50,7 +50,7 @@ public class PhysicalLogFileInformation implements LogFileInformation
         }
 
         // First committed tx for version V = last committed tx version V-1 + 1
-        Long header = positionCache.getHeader( version - 1 );
+        Long header = transactionMetadataCache.getHeader( version - 1 );
         if ( header != null )
         {   // It existed in cache
             return header + 1;

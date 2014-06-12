@@ -29,14 +29,14 @@ public class PhysicalTransactionAppender implements TransactionAppender
     private final WritableLogChannel channel;
     private final TxIdGenerator txIdGenerator;
     private final LogEntryWriter logEntryWriter;
-    private final LogPositionCache positionCache;
+    private final TransactionMetadataCache transactionMetadataCache;
 
     public PhysicalTransactionAppender( WritableLogChannel channel, TxIdGenerator txIdGenerator,
-            LogPositionCache positionCache )
+                                        TransactionMetadataCache transactionMetadataCache )
     {
         this.channel = channel;
         this.txIdGenerator = txIdGenerator;
-        this.positionCache = positionCache;
+        this.transactionMetadataCache = transactionMetadataCache;
         this.logEntryWriter = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
     }
 
@@ -55,7 +55,9 @@ public class PhysicalTransactionAppender implements TransactionAppender
         // Write commit record
         long transactionId = txIdGenerator.generate( transaction );
         logEntryWriter.writeCommitEntry( transaction.getTimeWritten(), transactionId );
-        positionCache.putStartPosition( transactionId, logPosition );
+        transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
+                LogEntry.Start.checksum( transaction.additionalHeader(),
+                        transaction.getMasterId(), transaction.getAuthorId() ) );
 
         // force
         channel.force();

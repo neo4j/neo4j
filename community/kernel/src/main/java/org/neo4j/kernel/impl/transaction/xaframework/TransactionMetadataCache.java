@@ -21,12 +21,12 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import org.neo4j.kernel.impl.cache.LruCache;
 
-public class LogPositionCache
+public class TransactionMetadataCache
 {
-    private final LruCache<Long, LogPosition> txStartPositionCache;
+    private final LruCache<Long, TransactionMetadata> txStartPositionCache;
     private final LruCache<Long /*log version*/, Long /*last committed tx*/> logHeaderCache;
 
-    public LogPositionCache( int headerCacheSize, int transactionCacheSize )
+    public TransactionMetadataCache( int headerCacheSize, int transactionCacheSize )
     {
         this.logHeaderCache = new LruCache<>( "Log header cache", headerCacheSize );
         this.txStartPositionCache = new LruCache<>( "Tx start position cache", transactionCacheSize );
@@ -36,11 +36,6 @@ public class LogPositionCache
     {
         logHeaderCache.clear();
         txStartPositionCache.clear();
-    }
-
-    public LogPosition positionOf( long txId )
-    {
-        return txStartPositionCache.get( txId );
     }
 
     public void putHeader( long logVersion, long previousLogLastCommittedTx )
@@ -53,26 +48,51 @@ public class LogPositionCache
         return logHeaderCache.get( logVersion );
     }
 
-    public void putStartPosition( long txId, LogPosition position )
-    {
-        txStartPositionCache.put( txId, position );
-    }
-
-    public LogPosition getStartPosition( long txId )
+    public TransactionMetadata getTransactionMetadata( long txId )
     {
         return txStartPositionCache.get( txId );
     }
 
-//    public synchronized TxPosition cacheStartPosition( long txId, LogEntry.Start startEntry, long logVersion )
-//    {
-//        if ( startEntry.getStartPosition() == -1 )
-//        {
-//            throw new RuntimeException( "StartEntry.position is " + startEntry.getStartPosition() );
-//        }
-//
-//        LogPosition result = new TxPosition( logVersion, startEntry.getMasterId(), startEntry.getIdentifier(),
-//                startEntry.getStartPosition(), startEntry.getChecksum() );
-//        putStartPosition( txId, result );
-//        return result;
-//    }
+    public synchronized TransactionMetadata cacheTransactionMetadata( long txId, LogPosition position, int masterId,
+                                                             long checksum )
+    {
+        if ( position.getByteOffset() == -1 )
+        {
+            throw new RuntimeException( "StartEntry.position is " + position );
+        }
+
+        TransactionMetadata result = new TransactionMetadata( masterId, position, checksum );
+        txStartPositionCache.put( txId, result );
+        return result;
+    }
+
+    public static class TransactionMetadata
+    {
+        private final int masterId;
+        private final LogPosition startPosition;
+        private final long checksum;
+
+        public TransactionMetadata( int masterId, LogPosition startPosition, long checksum )
+        {
+
+            this.masterId = masterId;
+            this.startPosition = startPosition;
+            this.checksum = checksum;
+        }
+
+        public int getMasterId()
+        {
+            return masterId;
+        }
+
+        public LogPosition getStartPosition()
+        {
+            return startPosition;
+        }
+
+        public long getChecksum()
+        {
+            return checksum;
+        }
+    }
 }

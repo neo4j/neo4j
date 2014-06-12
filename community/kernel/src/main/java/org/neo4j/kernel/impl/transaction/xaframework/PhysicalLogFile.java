@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,9 +32,6 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 
 /**
  * {@link LogFile} backup by one or more files in a {@link FileSystemAbstraction}.
@@ -44,7 +44,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     private final LogPruneStrategy pruneStrategy;
     private final TransactionIdStore transactionIdStore;
     private final PhysicalLogFiles logFiles;
-    private final LogPositionCache positionCache;
+    private final TransactionMetadataCache transactionMetadataCache;
     private final Visitor<ReadableLogChannel, IOException> recoveredDataVisitor;
     private final Monitor monitor;
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( 16 );
@@ -56,7 +56,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     public PhysicalLogFile( FileSystemAbstraction fileSystem, PhysicalLogFiles logFiles, long rotateAtSize,
             LogPruneStrategy pruneStrategy, TransactionIdStore transactionIdStore,
             LogVersionRepository logVersionRepository, Monitor monitor, LogRotationControl logRotationControl,
-            LogPositionCache positionCache, Visitor<ReadableLogChannel, IOException> recoveredDataVisitor )
+            TransactionMetadataCache transactionMetadataCache, Visitor<ReadableLogChannel, IOException> recoveredDataVisitor )
     {
         this.fileSystem = fileSystem;
         this.rotateAtSize = rotateAtSize;
@@ -65,7 +65,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
         this.logVersionRepository = logVersionRepository;
         this.monitor = monitor;
         this.logRotationControl = logRotationControl;
-        this.positionCache = positionCache;
+        this.transactionMetadataCache = transactionMetadataCache;
         this.recoveredDataVisitor = recoveredDataVisitor;
         this.logFiles = logFiles;
     }
@@ -128,7 +128,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
             // Either the header is not there in full or the file was new. Don't care
             long lastTxId = transactionIdStore.getLastCommittingTransactionId();
             writeLogHeader( headerBuffer, forVersion, lastTxId );
-            positionCache.putHeader( forVersion, lastTxId );
+            transactionMetadataCache.putHeader( forVersion, lastTxId );
             channel.writeAll( headerBuffer );
             channel.setVersion( forVersion );
             monitor.opened( toOpen, forVersion, lastTxId, true );

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -108,7 +110,6 @@ import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPositionCache;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
@@ -117,6 +118,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionStore;
@@ -131,8 +133,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl
 {
@@ -411,18 +411,18 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
             final TransactionHooks hooks = new TransactionHooks();
             File directory = config.get( GraphDatabaseSettings.store_dir );
-            LogPositionCache logPositionCache = new LogPositionCache( 1000, 100_000 );
+            TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
             PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, PhysicalLogFile.DEFAULT_NAME, fs );
             LogFileInformation logFileInformation = new PhysicalLogFileInformation(
-                    logFiles, logPositionCache, fs, neoStore );
+                    logFiles, transactionMetadataCache, fs, neoStore );
             LogPruneStrategy logPruneStrategy = LogPruneStrategies.fromConfigValue( fs, logFileInformation,
                     logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
             logFile = dependencies.add( new PhysicalLogFile( fs, logFiles,
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
                     neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
-                    this, logPositionCache, logFileRecoverer ) );
+                    this, transactionMetadataCache, logFileRecoverer ) );
             transactionStore = dependencies.add( new PhysicalTransactionStore( logFile, txIdGenerator,
-                    logPositionCache, logEntryReader ) );
+                    transactionMetadataCache, logEntryReader ) );
 
             this.commitProcess = new TransactionRepresentationCommitProcess( transactionStore, kernelHealth, indexingService,
                     labelScanStore, neoStore, cacheAccess, lockService, false );
