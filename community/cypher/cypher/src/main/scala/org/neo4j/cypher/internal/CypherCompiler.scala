@@ -83,16 +83,6 @@ class CypherCompiler(graph: GraphDatabaseService,
     }
   }
 
-  @throws(classOf[SyntaxException])
-  def isPeriodicCommit(query: String): Boolean = {
-    val (version, remainingQuery) = versionedQuery(query)
-
-    version match  {
-      case CypherVersion.v2_1 => ronjaCompiler2_1.isPeriodicCommit(remainingQuery)
-      case _                  => false
-    }
-  }
-
   private def versionedQuery(query: String): (CypherVersion, String) = query match {
       case CypherCompiler.hasVersionDefined(versionName, tail) => (CypherVersion(versionName), tail)
       case _                                                   => (defaultVersion, query)
@@ -124,6 +114,8 @@ class ExecutionPlanWrapperForV2_1(inner: ExecutionPlan_v2_1) extends ExecutionPl
 
   def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
     inner.execute(queryContext(graph, txInfo), params)
+
+  def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 }
 
 class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPlan {
@@ -138,6 +130,8 @@ class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPl
 
   def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
     inner.execute(queryContext(graph, txInfo), params)
+
+  def isPeriodicCommit: Boolean = false
 }
 
 class ExecutionPlanWrapperForV1_9(inner: ExecutionPlan_v1_9) extends ExecutionPlan {
@@ -150,5 +144,7 @@ class ExecutionPlanWrapperForV1_9(inner: ExecutionPlan_v1_9) extends ExecutionPl
 
   def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
     inner.execute(queryContext(graph), txInfo.tx, params)
+
+  def isPeriodicCommit: Boolean = false
 }
 

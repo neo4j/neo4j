@@ -68,6 +68,7 @@ class ExecutionPlanBuilder(graph: GraphDatabaseService,
       def execute(queryContext: QueryContext, params: Map[String, Any]) = func(queryContext, params, false)
 
       def profile(queryContext: QueryContext, params: Map[String, Any]) = func(new UpdateCountingQueryContext(queryContext), params, true)
+      def isPeriodicCommit = periodicCommitInfo.isDefined
     }
   }
 
