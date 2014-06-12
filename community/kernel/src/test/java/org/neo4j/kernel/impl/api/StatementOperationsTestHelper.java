@@ -31,6 +31,8 @@ import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
+import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaStateOperations;
@@ -54,7 +56,9 @@ public abstract class StatementOperationsTestHelper
             mock( SchemaReadOperations.class ),
             mock( SchemaWriteOperations.class ),
             mock( SchemaStateOperations.class ),
-            mock( LockOperations.class ));
+            mock( LockOperations.class ),
+            mock( LegacyIndexReadOperations.class ),
+            mock( LegacyIndexWriteOperations.class ) );
     }
 
     public static KernelStatement mockedState()

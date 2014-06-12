@@ -222,6 +222,26 @@ public interface Status
         }
     }
 
+    enum LegacyIndex implements Status
+    {
+        NoSuchIndex( ClientError, "The request (directly or indirectly) referred to a index that does not exist." )
+
+        ;
+
+        private final Code code;
+
+        @Override
+        public Code code()
+        {
+            return code;
+        }
+
+        private LegacyIndex( Classification classification, String description )
+        {
+            this.code = new Code( classification, this, description );
+        }
+    }
+
     enum General implements Status
     {
         ReadOnly( ClientError, "This is a read only database, writing or modifying the database is not allowed." ),

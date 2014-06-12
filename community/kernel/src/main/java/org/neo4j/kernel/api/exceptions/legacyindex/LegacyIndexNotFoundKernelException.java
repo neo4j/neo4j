@@ -17,8 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api;
+package org.neo4j.kernel.api.exceptions.legacyindex;
 
-public interface ReadOperations extends TokenRead, DataRead, SchemaRead, SchemaState, Locking, LegacyIndexRead
+import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.Status;
+
+public class LegacyIndexNotFoundKernelException extends KernelException
 {
+    protected LegacyIndexNotFoundKernelException( String message, Object[] parameters )
+    {
+        super( Status.LegacyIndex.NoSuchIndex, message, parameters );
+    }
 }
