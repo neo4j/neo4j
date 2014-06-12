@@ -61,6 +61,6 @@ class CollapseInCollectionsContainingConstantsTest extends CypherFunSuite with A
 
   private def parse(query: String) = {
     val parsed = parser.parse(query)
-    parsed.typedRewrite[Statement](CNFNormalizer)
+    parsed.endoRewrite(CNFNormalizer)
   }
 }

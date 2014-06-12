@@ -39,7 +39,7 @@ object SimplePlannerQueryBuilder {
         case _ => identity
       }
 
-      val rewrittenChain = relChain.rewrite(topDown(Rewriter.lift(normalizer.replace))).asInstanceOf[RelationshipChain]
+      val rewrittenChain = relChain.endoRewrite(topDown(Rewriter.lift(normalizer.replace)))
 
       val (patternNodes, relationships) = PatternDestructuring.destruct(rewrittenChain)
       val qg = QueryGraph(
