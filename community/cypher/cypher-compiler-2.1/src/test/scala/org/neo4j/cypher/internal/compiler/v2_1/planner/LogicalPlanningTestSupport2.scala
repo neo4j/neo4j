@@ -31,24 +31,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
 import org.scalatest.mock.MockitoSugar
-import org.scalatest.matchers._
-
-trait BeLikeMatcher {
-  class BeLike(pf: PartialFunction[Object, Unit]) extends Matcher[Object] {
-
-    def apply(left: Object) = {
-      MatchResult(
-        pf.isDefinedAt(left),
-        s"""$left did not match the partial function""",
-        s"""$left matched the partial function"""
-      )
-    }
-  }
-
-  def beLike(pf: PartialFunction[Object, Unit]) = new BeLike(pf)
-}
-
-object BeLikeMatcher extends BeLikeMatcher
 
 case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
 
@@ -56,16 +38,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
   self: CypherTestSuite with MockitoSugar =>
 
-  var kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
-  var monitors = new Monitors(kernelMonitors)
-  var monitorTag = "compiler2.1"
-  var parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
-  var semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
-  var astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
-  var tokenResolver = new SimpleTokenResolver()
-  var monitor = mock[PlanningMonitor]
-  var strategy = new QueryPlanningStrategy()
-  var queryGraphSolver = new GreedyQueryGraphSolver()
+  val kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
+  val monitors = new Monitors(kernelMonitors)
+  val monitorTag = "compiler2.1"
+  val parser = new CypherParser(monitors.newMonitor[ParserMonitor](monitorTag))
+  val semanticChecker = new SemanticChecker(monitors.newMonitor[SemanticCheckMonitor](monitorTag))
+  val astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
+  val tokenResolver = new SimpleTokenResolver()
+  val monitor = mock[PlanningMonitor]
+  val strategy = new QueryPlanningStrategy()
+  val queryGraphSolver = new GreedyQueryGraphSolver()
 
   val realConfig = new RealLogicalPlanningConfiguration
 
@@ -79,6 +61,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def labelCardinality: Map[String, Cardinality]
     def knownLabels: Set[String]
     def qg: QueryGraph
+    def knownRelationshipTypes: Set[String]
 
     class given extends StubbedLogicalPlanningConfiguration(this)
 
@@ -119,16 +102,18 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def labelCardinality = Map.empty
     def knownLabels = Set.empty
     def qg: QueryGraph = ???
+    def knownRelationshipTypes = Set.empty
   }
 
   class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
     var knownLabels: Set[String] = Set.empty
+    var knownRelationshipTypes: Set[String] = Set.empty
     var cardinality: PartialFunction[LogicalPlan, Cardinality] = PartialFunction.empty
     var cost: PartialFunction[LogicalPlan, Cost] = PartialFunction.empty
     var selectivity: PartialFunction[Expression, Multiplier] = PartialFunction.empty
     var labelCardinality: Map[String, Cardinality] = Map.empty
-    var statistics = null
     var qg: QueryGraph = null
+    var statistics: GraphStatistics = null
 
     var indexes: Set[(String, String)] = Set.empty
     var uniqueIndexes: Set[(String, String)] = Set.empty
@@ -180,17 +165,21 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       def addLabelIfUnknown(labelName: String) =
         if (!table.resolvedLabelIds.contains(labelName))
           table.resolvedLabelIds.put(labelName, LabelId(table.resolvedLabelIds.size))
+      def addPropertyIfUnknown(labelName: String) =
+        if (!table.resolvedPropertyKeyNames.contains(labelName))
+          table.resolvedPropertyKeyNames.put(labelName, PropertyKeyId(table.resolvedPropertyKeyNames.size))
 
       config.indexes.foreach { case (label, property) =>
         addLabelIfUnknown(label)
-        table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
+        addPropertyIfUnknown(property)
       }
       config.uniqueIndexes.foreach { case (label, property) =>
         addLabelIfUnknown(label)
-        table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
+        addPropertyIfUnknown(property)
       }
       config.labelCardinality.keys.foreach(addLabelIfUnknown)
       config.knownLabels.foreach(addLabelIfUnknown)
+      config.knownRelationshipTypes.foreach(t => table.resolvedRelTypeNames.put(t, RelTypeId(table.resolvedRelTypeNames.size)))
       table
     }
 
