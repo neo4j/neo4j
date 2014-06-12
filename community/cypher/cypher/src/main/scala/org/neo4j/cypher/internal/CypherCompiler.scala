@@ -124,6 +124,8 @@ class ExecutionPlanWrapperForV2_1(inner: ExecutionPlan_v2_1) extends ExecutionPl
 
   def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
     inner.execute(queryContext(graph, txInfo), params)
+
+  override def isPeriodicCommit: Boolean = inner.isPeriodicCommit
 }
 
 class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPlan {
@@ -138,6 +140,8 @@ class ExecutionPlanWrapperForV2_0(inner: ExecutionPlan_v2_0) extends ExecutionPl
 
   def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
     inner.execute(queryContext(graph, txInfo), params)
+
+  override def isPeriodicCommit: Boolean = false
 }
 
 class ExecutionPlanWrapperForV1_9(inner: ExecutionPlan_v1_9) extends ExecutionPlan {
@@ -150,5 +154,7 @@ class ExecutionPlanWrapperForV1_9(inner: ExecutionPlan_v1_9) extends ExecutionPl
 
   def execute(graph: GraphDatabaseAPI, txInfo: TransactionInfo, params: Map[String, Any]) =
     inner.execute(queryContext(graph), txInfo.tx, params)
+
+  override def isPeriodicCommit: Boolean = false
 }
 
