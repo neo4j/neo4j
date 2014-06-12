@@ -78,7 +78,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result should be(empty)
   }
 
-  ignore("finds no shortest path due to start node being null") {
+  test("finds no shortest path due to start node being null") {
     // a-b-c-d
     relate(nodeA, nodeB)
     relate(nodeB, nodeC)
@@ -86,7 +86,7 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
 
     val result = executeWithNewPlanner("OPTIONAL MATCH (src:Y) WITH src MATCH p = shortestPath(src-[*..1]->dst) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
 
-    result should equal(List(null))
+    result should equal(List())
   }
 
   test("rejects shortest path with minimal length") {
