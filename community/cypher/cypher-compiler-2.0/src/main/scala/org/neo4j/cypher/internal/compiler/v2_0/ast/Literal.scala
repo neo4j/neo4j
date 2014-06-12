@@ -30,8 +30,16 @@ sealed trait Literal extends Expression {
 
 sealed trait NumberLiteral extends Literal
 
-sealed abstract class IntegerLiteral(stringVal: String) extends NumberLiteral with SimpleTyping {
-  lazy val value: java.lang.Long = stringVal.toLong
+
+sealed trait IntegerLiteral extends NumberLiteral {
+  def value: java.lang.Long
+}
+
+sealed trait SignedIntegerLiteral extends IntegerLiteral
+sealed trait UnsignedIntegerLiteral extends IntegerLiteral
+
+sealed abstract class DecimalIntegerLiteral(stringVal: String) extends IntegerLiteral with SimpleTyping {
+  lazy val value: java.lang.Long = java.lang.Long.parseLong(stringVal)
 
   protected def possibleTypes = CTInteger
 
@@ -45,10 +53,36 @@ sealed abstract class IntegerLiteral(stringVal: String) extends NumberLiteral wi
     } then super.semanticCheck(ctx)
 }
 
-case class SignedIntegerLiteral(stringVal: String)(val position: InputPosition) extends IntegerLiteral(stringVal)
-case class UnsignedIntegerLiteral(stringVal: String)(val position: InputPosition) extends IntegerLiteral(stringVal)
+case class SignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with SignedIntegerLiteral
+case class UnsignedDecimalIntegerLiteral(stringVal: String)(val position: InputPosition) extends DecimalIntegerLiteral(stringVal) with UnsignedIntegerLiteral
 
-case class DoubleLiteral(stringVal: String)(val position: InputPosition) extends NumberLiteral with SimpleTyping {
+sealed abstract class HexIntegerLiteral(stringVal: String) extends IntegerLiteral with SimpleTyping {
+  lazy val value: java.lang.Long =
+    if (stringVal.charAt(0) == '-')
+      -java.lang.Long.parseLong(stringVal.substring(3), 16)
+    else
+      java.lang.Long.parseLong(stringVal.substring(2), 16)
+
+  protected def possibleTypes = CTInteger
+
+  override def semanticCheck(ctx: SemanticContext): SemanticCheck =
+    when(!(try {
+      value.isInstanceOf[Any]
+    } catch {
+      case e:java.lang.NumberFormatException => false
+    })) {
+      SemanticError("integer is too large", position)
+    } then super.semanticCheck(ctx)
+}
+
+case class SignedHexIntegerLiteral(stringVal: String)(val position: InputPosition) extends HexIntegerLiteral(stringVal) with SignedIntegerLiteral
+
+
+sealed trait DoubleLiteral extends NumberLiteral {
+  def value: java.lang.Double
+}
+
+case class DecimalDoubleLiteral(stringVal: String)(val position: InputPosition) extends DoubleLiteral with SimpleTyping {
   val value: java.lang.Double = stringVal.toDouble
 
   protected def possibleTypes = CTFloat

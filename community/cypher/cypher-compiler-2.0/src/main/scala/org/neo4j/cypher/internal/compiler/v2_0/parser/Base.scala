@@ -28,12 +28,14 @@ trait Base extends Parser {
 
   def OpChar = rule("an operator char") { anyOf("|^&<>=?!:+-*/%~") }
 
-  def Decimal = rule { (optional(Integer) ~ "." ~ Digits).memoMismatches }
-  def Integer = rule { (optional("-") ~ UnsignedInteger).memoMismatches }
-  def UnsignedInteger = rule { (("1" - "9") ~ Digits | Digit).memoMismatches }
-  def Exponent = rule { ((Decimal | Integer) ~ "E" ~ Integer).memoMismatches }
+  def DecimalReal = rule { (optional(DecimalInteger) ~ "." ~ Digits).memoMismatches }
+  def DecimalInteger = rule { (optional("-") ~ UnsignedDecimalInteger).memoMismatches }
+  def UnsignedDecimalInteger = rule { (("1" - "9") ~ Digits | Digit).memoMismatches }
+  def Exponent = rule { ((DecimalReal | DecimalInteger) ~ "E" ~ DecimalInteger).memoMismatches }
   def Digits = rule { oneOrMore(Digit) }
   def Digit = rule { "0" - "9" }
+  def HexInteger = rule { (optional("-") ~ UnsignedHexInteger).memoMismatches }
+  def UnsignedHexInteger = rule { ("0x" ~ oneOrMore(HexDigit)).memoMismatches }
   def HexDigit = rule { "0" - "9" | "a" - "f" | "A" - "Z" }
   def Dash = rule("'-'") {
     // U+002D ‑ hyphen-minus

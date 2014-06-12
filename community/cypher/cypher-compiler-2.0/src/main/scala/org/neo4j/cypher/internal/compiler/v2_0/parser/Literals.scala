@@ -59,7 +59,7 @@ trait Literals extends Parser
   }
 
   def Parameter: Rule1[ast.Parameter] = rule("a parameter") {
-    ((ch('{') ~~ (IdentifierString | EscapedIdentifierString | UnsignedInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.Parameter(_))
+    ((ch('{') ~~ (IdentifierString | EscapedIdentifierString | UnsignedDecimalInteger ~> (_.toString)) ~~ ch('}')) memoMismatches) ~~>> (ast.Parameter(_))
   }
 
   def NumberLiteral: Rule1[ast.Literal] = rule("a number") (
@@ -67,17 +67,18 @@ trait Literals extends Parser
     | SignedIntegerLiteral
   ).memoMismatches
 
-  def DoubleLiteral: Rule1[ast.DoubleLiteral] = rule("a floating point number") (
-      Exponent ~>>> (ast.DoubleLiteral(_))
-    | Decimal ~>>> (ast.DoubleLiteral(_))
+  def DoubleLiteral: Rule1[ast.DecimalDoubleLiteral] = rule("a floating point number") (
+      Exponent ~>>> (ast.DecimalDoubleLiteral(_))
+    | DecimalReal ~>>> (ast.DecimalDoubleLiteral(_))
   )
 
-  def SignedIntegerLiteral: Rule1[ast.SignedIntegerLiteral] = rule("an integer") {
-    Integer ~>>> (ast.SignedIntegerLiteral(_))
-  }
+  def SignedIntegerLiteral: Rule1[ast.SignedIntegerLiteral] = rule("an integer") (
+      HexInteger ~>>> (ast.SignedHexIntegerLiteral(_))
+    | DecimalInteger ~>>> (ast.SignedDecimalIntegerLiteral(_))
+  )
 
   def UnsignedIntegerLiteral: Rule1[ast.UnsignedIntegerLiteral] = rule("an unsigned integer") {
-    UnsignedInteger ~>>> (ast.UnsignedIntegerLiteral(_))
+    UnsignedDecimalInteger ~>>> (ast.UnsignedDecimalIntegerLiteral(_))
   }
 
   def RangeLiteral: Rule1[ast.Range] = rule (
