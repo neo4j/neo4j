@@ -719,7 +719,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public void nodeAddToLegacyIndex( String indexName, long node, String key, Object value )
+    public void nodeAddToLegacyIndex( String indexName, long node, String key, Object value ) throws EntityNotFoundException
     {
         statement.assertOpen();
         legacyIndexWrite().nodeAddToLegacyIndex( statement, indexName, node, key, value );
@@ -747,11 +747,10 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public void relationshipAddToLegacyIndex( String indexName, long relationship, String key, Object value, long startNode,
-            long endNode )
+    public void relationshipAddToLegacyIndex( String indexName, long relationship, String key, Object value ) throws EntityNotFoundException
     {
         statement.assertOpen();
-        legacyIndexWrite().relationshipAddToLegacyIndex( statement, indexName, relationship, key, value, startNode, endNode );
+        legacyIndexWrite().relationshipAddToLegacyIndex( statement, indexName, relationship, key, value );
     }
 
     @Override
@@ -801,6 +800,64 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     {
         statement.assertOpen();
         return legacyIndexWrite().relationshipLegacyIndexPutIfAbsent( statement, relationship, key, value );
+    }
+
+    @Override
+    public Map<String, String> nodeLegacyIndexGetConfiguration( String indexName )
+            throws LegacyIndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return legacyIndexRead().nodeLegacyIndexGetConfiguration( statement, indexName );
+    }
+
+    @Override
+    public Map<String, String> relationshipLegacyIndexGetConfiguration( String indexName )
+            throws LegacyIndexNotFoundKernelException
+    {
+        statement.assertOpen();
+        return legacyIndexRead().relationshipLegacyIndexGetConfiguration( statement, indexName );
+    }
+
+    @Override
+    public String nodeLegacyIndexSetConfiguration( String indexName, String key, String value )
+    {
+        statement.assertOpen();
+        return legacyIndexWrite().nodeLegacyIndexSetConfiguration( statement, indexName, key, value );
+    }
+
+    @Override
+    public String relationshipLegacyIndexSetConfiguration( String indexName, String key, String value )
+    {
+        statement.assertOpen();
+        return legacyIndexWrite().relationshipLegacyIndexSetConfiguration( statement, indexName, key, value );
+    }
+
+    @Override
+    public String nodeLegacyIndexRemoveConfiguration( String indexName, String key )
+    {
+        statement.assertOpen();
+        return legacyIndexWrite().nodeLegacyIndexRemoveConfiguration( statement, indexName, key );
+    }
+
+    @Override
+    public String relationshipLegacyIndexRemoveConfiguration( String indexName, String key )
+    {
+        statement.assertOpen();
+        return legacyIndexWrite().relationshipLegacyIndexRemoveConfiguration( statement, indexName, key );
+    }
+
+    @Override
+    public String[] nodeLegacyIndexesGetAll()
+    {
+        statement.assertOpen();
+        return legacyIndexRead().nodeLegacyIndexesGetAll( statement );
+    }
+
+    @Override
+    public String[] relationshipLegacyIndexesGetAll()
+    {
+        statement.assertOpen();
+        return legacyIndexRead().relationshipLegacyIndexesGetAll( statement );
     }
     // </Legacy index>
 }

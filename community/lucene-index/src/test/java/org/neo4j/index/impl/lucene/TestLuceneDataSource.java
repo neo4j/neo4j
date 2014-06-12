@@ -40,7 +40,7 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
 
@@ -50,7 +50,7 @@ public class TestLuceneDataSource
 {
     private final FileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
 
-    private IndexStore indexStore;
+    private IndexConfigStore indexStore;
     private LuceneDataSource dataSource;
     File dbPath = getDbPath();
 
@@ -63,7 +63,7 @@ public class TestLuceneDataSource
     public void setup()
     {
         dbPath.mkdirs();
-        indexStore = new IndexStore( dbPath, new DefaultFileSystemAbstraction() );
+        indexStore = new IndexConfigStore( dbPath, new DefaultFileSystemAbstraction() );
         addIndex( "foo" );
     }
 

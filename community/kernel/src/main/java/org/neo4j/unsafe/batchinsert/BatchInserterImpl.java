@@ -79,7 +79,7 @@ import org.neo4j.kernel.impl.coreapi.schema.IndexCreatorImpl;
 import org.neo4j.kernel.impl.coreapi.schema.IndexDefinitionImpl;
 import org.neo4j.kernel.impl.coreapi.schema.InternalSchemaActions;
 import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
@@ -162,7 +162,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private final LifeSupport life;
     private final NeoStore neoStore;
-    private final IndexStore indexStore;
+    private final IndexConfigStore indexStore;
     private final File storeDir;
     private final BatchTokenHolder propertyKeyTokens;
     private final BatchTokenHolder relationshipTypeTokens;
@@ -249,7 +249,7 @@ public class BatchInserterImpl implements BatchInserter
         labelTokens = new BatchTokenHolder( neoStore.getLabelTokenStore().getTokens( Integer.MAX_VALUE ) );
         Token[] types = getRelationshipTypeStore().getTokens( Integer.MAX_VALUE );
         relationshipTypeTokens = new BatchTokenHolder( types );
-        indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
+        indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
         schemaCache = new SchemaCache( neoStore.getSchemaStore() );
 
         KernelExtensions extensions = life
@@ -952,7 +952,7 @@ public class BatchInserterImpl implements BatchInserter
     }
 
     // needed by lucene-index
-    public IndexStore getIndexStore()
+    public IndexConfigStore getIndexStore()
     {
         return this.indexStore;
     }

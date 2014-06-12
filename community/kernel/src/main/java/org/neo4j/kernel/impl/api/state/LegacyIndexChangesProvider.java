@@ -17,18 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.index;
+package org.neo4j.kernel.impl.api.state;
+
+import org.neo4j.kernel.api.LegacyIndexChanges;
 
 /**
- * Registry of currently active index implementations. Indexing extensions should register the implementation
- * here on startup, and unregister it on stop.
+ * Provides {@link LegacyIndexChanges}, which holds transaction state specific to an index.
+ * Which implementation is chosen is dictated by entity type and index name.
  */
-public interface IndexProviders
+public interface LegacyIndexChangesProvider
 {
-    void registerIndexProvider( String name, IndexTransactionSPI index );
+    LegacyIndexChanges nodeChanges( String indexName );
 
-    boolean unregisterIndexProvider( String name );
-
-    // TODO 2.2-future dunno about these getters
-    IndexTransactionSPI getTransactionAPI( String name );
+    LegacyIndexChanges relationshipChanges( String indexName );
 }

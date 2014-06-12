@@ -19,16 +19,19 @@
  */
 package org.neo4j.graphdb.index;
 
+import java.util.Map;
+
+import org.neo4j.kernel.api.LegacyIndexChanges;
+
 /**
- * Registry of currently active index implementations. Indexing extensions should register the implementation
- * here on startup, and unregister it on stop.
+ * Represents an SPI needed for an index implementor to participate in and alter transactions.
  */
-public interface IndexProviders
+public interface IndexTransactionSPI
 {
-    void registerIndexProvider( String name, IndexTransactionSPI index );
+    LegacyIndexChanges newTransactionState();
 
-    boolean unregisterIndexProvider( String name );
+    // TODO 2.2-future these two methods below probably doesn't belong here
+    Map<String, String> fillInDefaults( Map<String, String> config );
 
-    // TODO 2.2-future dunno about these getters
-    IndexTransactionSPI getTransactionAPI( String name );
+    boolean configMatches( Map<String, String> storedConfig, Map<String, String> config );
 }

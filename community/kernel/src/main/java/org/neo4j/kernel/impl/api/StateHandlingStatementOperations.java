@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.api;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
@@ -32,6 +33,7 @@ import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
@@ -41,6 +43,7 @@ import org.neo4j.kernel.api.exceptions.PropertyKeyIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.RelationshipTypeIdNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException;
 import org.neo4j.kernel.api.exceptions.schema.DropIndexFailureException;
@@ -56,11 +59,15 @@ import org.neo4j.kernel.api.properties.PropertyKeyIdIterator;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
 import org.neo4j.kernel.impl.api.operations.KeyReadOperations;
 import org.neo4j.kernel.impl.api.operations.KeyWriteOperations;
+import org.neo4j.kernel.impl.api.operations.LegacyIndexReadOperations;
+import org.neo4j.kernel.impl.api.operations.LegacyIndexWriteOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaWriteOperations;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.store.LegacyIndexReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.util.DiffSets;
 import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
@@ -79,19 +86,27 @@ public class StateHandlingStatementOperations implements
         KeyWriteOperations,
         EntityOperations,
         SchemaReadOperations,
-        SchemaWriteOperations
+        SchemaWriteOperations,
+        LegacyIndexReadOperations,
+        LegacyIndexWriteOperations
 {
     private final StoreReadLayer storeLayer;
     private final LegacyPropertyTrackers legacyPropertyTrackers;
     private final ConstraintIndexCreator constraintIndexCreator;
+    private final LegacyIndexReadLayer legacyIndexReadLayer;
+    private final LegacyIndexStore legacyIndexStore;
 
     public StateHandlingStatementOperations(
             StoreReadLayer storeLayer, LegacyPropertyTrackers propertyTrackers,
-            ConstraintIndexCreator constraintIndexCreator )
+            ConstraintIndexCreator constraintIndexCreator,
+            LegacyIndexReadLayer legacyIndexReadLayer,
+            LegacyIndexStore legacyIndexStore )
     {
         this.storeLayer = storeLayer;
         this.legacyPropertyTrackers = propertyTrackers;
         this.constraintIndexCreator = constraintIndexCreator;
+        this.legacyIndexReadLayer = legacyIndexReadLayer;
+        this.legacyIndexStore = legacyIndexStore;
     }
 
     @Override
@@ -1214,14 +1229,264 @@ public class StateHandlingStatementOperations implements
         return types;
     }
 
+    // <Legacy index>
     @Override
     public void relationshipVisit( KernelStatement statement, long relId, RelationshipVisitor visitor )
             throws EntityNotFoundException
     {
-        TxState txState = statement.txState();
-        if ( !txState.relationshipVisit( relId, visitor ) )
+        if ( statement.hasTxState() )
         {
-            storeLayer.visit( relId, visitor );
+            TxState txState = statement.txState();
+            if ( txState.relationshipVisit( relId, visitor ) )
+            {
+                return;
+            }
         }
+        storeLayer.visit( relId, visitor );
     }
+
+    @Override
+    public LegacyIndexHits nodeLegacyIndexGet( KernelStatement statement, String indexName, String key, Object value )
+            throws LegacyIndexNotFoundKernelException
+    {
+        if ( statement.hasTxState() )
+        {
+            TxState txState = statement.txState();
+            if ( txState.hasNodeLegacyIndexChanges( indexName ) )
+            {
+                return txState.getNodeLegacyIndexChanges( indexName ).augmentGet( key, value,
+                        legacyIndexReadLayer.nodeIndexGet( indexName, key, value ) );
+            }
+        }
+        return legacyIndexReadLayer.nodeIndexGet( indexName, key, value );
+    }
+
+    @Override
+    public LegacyIndexHits nodeLegacyIndexQuery( KernelStatement statement, String indexName, String key,
+            Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException
+    {
+        if ( statement.hasTxState() )
+        {
+            TxState txState = statement.txState();
+            if ( txState.hasNodeLegacyIndexChanges( indexName ) )
+            {
+                return txState.getNodeLegacyIndexChanges( indexName ).augmentQuery( key, queryOrQueryObject,
+                        legacyIndexReadLayer.nodeIndexQuery( indexName, key, queryOrQueryObject ) );
+            }
+        }
+        return legacyIndexReadLayer.nodeIndexQuery( indexName, key, queryOrQueryObject );
+    }
+
+    @Override
+    public LegacyIndexHits nodeLegacyIndexQuery( KernelStatement statement, String indexName, Object queryOrQueryObject )
+            throws LegacyIndexNotFoundKernelException
+    {
+        if ( statement.hasTxState() )
+        {
+            TxState txState = statement.txState();
+            if ( txState.hasNodeLegacyIndexChanges( indexName ) )
+            {
+                return txState.getNodeLegacyIndexChanges( indexName ).augmentQuery( queryOrQueryObject,
+                        legacyIndexReadLayer.nodeIndexQuery( indexName, queryOrQueryObject ) );
+            }
+        }
+        return legacyIndexReadLayer.nodeIndexQuery( indexName, queryOrQueryObject );
+    }
+
+    @Override
+    public LegacyIndexHits relationshipLegacyIndexGet( KernelStatement statement, String indexName, String key,
+            Object value ) throws LegacyIndexNotFoundKernelException
+    {
+        if ( statement.hasTxState() )
+        {
+            TxState txState = statement.txState();
+            if ( txState.hasRelationshipLegacyIndexChanges( indexName ) )
+            {
+                return txState.getRelationshipLegacyIndexChanges( indexName ).augmentGet( key, value,
+                        legacyIndexReadLayer.relationshipIndexGet( indexName, key, value ) );
+            }
+        }
+        return legacyIndexReadLayer.relationshipIndexGet( indexName, key, value );
+    }
+
+    @Override
+    public LegacyIndexHits relationshipLegacyIndexQuery( KernelStatement statement, String indexName, String key,
+            Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException
+    {
+        if ( statement.hasTxState() )
+        {
+            TxState txState = statement.txState();
+            if ( txState.hasRelationshipLegacyIndexChanges( indexName ) )
+            {
+                return txState.getRelationshipLegacyIndexChanges( indexName ).augmentQuery( key, queryOrQueryObject,
+                        legacyIndexReadLayer.relationshipIndexQuery( indexName, key, queryOrQueryObject ) );
+            }
+        }
+        return legacyIndexReadLayer.relationshipIndexQuery( indexName, key, queryOrQueryObject );
+    }
+
+    @Override
+    public LegacyIndexHits relationshipLegacyIndexQuery( KernelStatement statement, String indexName,
+            Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException
+    {
+        if ( statement.hasTxState() )
+        {
+            TxState txState = statement.txState();
+            if ( txState.hasRelationshipLegacyIndexChanges( indexName ) )
+            {
+                return txState.getRelationshipLegacyIndexChanges( indexName ).augmentQuery( queryOrQueryObject,
+                        legacyIndexReadLayer.relationshipIndexQuery( indexName, queryOrQueryObject ) );
+            }
+        }
+        return legacyIndexReadLayer.relationshipIndexQuery( indexName, queryOrQueryObject );
+    }
+
+    @Override
+    public void nodeLegacyIndexCreateLazily( KernelStatement statement, String indexName,
+            Map<String, String> customConfig )
+    {
+        legacyIndexStore.getOrCreateNodeIndexConfig( indexName, customConfig );
+    }
+
+    @Override
+    public void relationshipLegacyIndexCreateLazily( KernelStatement statement, String indexName,
+            Map<String, String> customConfig )
+    {
+        legacyIndexStore.getOrCreateRelationshipIndexConfig( indexName, customConfig );
+    }
+
+    @Override
+    public void nodeAddToLegacyIndex( KernelStatement statement, String indexName, long node, String key, Object value )
+    {
+        statement.txState().getNodeLegacyIndexChanges( indexName ).add( node, key, value );
+    }
+
+    @Override
+    public void nodeRemoveFromLegacyIndex( KernelStatement statement, String indexName, long node, String key,
+            Object value )
+    {
+        statement.txState().getNodeLegacyIndexChanges( indexName ).remove( node, key, value );
+    }
+
+    @Override
+    public void nodeRemoveFromLegacyIndex( KernelStatement statement, String indexName, long node, String key )
+    {
+        statement.txState().getNodeLegacyIndexChanges( indexName ).remove( node, key );
+    }
+
+    @Override
+    public void nodeRemoveFromLegacyIndex( KernelStatement statement, String indexName, long node )
+    {
+        statement.txState().getNodeLegacyIndexChanges( indexName ).remove( node );
+    }
+
+    @Override
+    public void relationshipAddToLegacyIndex( final KernelStatement statement, final String indexName,
+            final long relationship, final String key, final Object value ) throws EntityNotFoundException
+    {
+        relationshipVisit( statement, relationship, new RelationshipVisitor()
+        {
+            @Override
+            public void visit( long relId, long startNode, long endNode, int type )
+            {
+                statement.txState().getRelationshipLegacyIndexChanges( indexName ).addRelationship(
+                        relationship, key, value, startNode, endNode );
+            }
+        } );
+    }
+
+    @Override
+    public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship,
+            String key, Object value )
+    {
+        statement.txState().getRelationshipLegacyIndexChanges( indexName ).remove( relationship, key, value );
+    }
+
+    @Override
+    public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship,
+            String key )
+    {
+        statement.txState().getRelationshipLegacyIndexChanges( indexName ).remove( relationship, key );
+    }
+
+    @Override
+    public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship )
+    {
+        statement.txState().getRelationshipLegacyIndexChanges( indexName ).remove( relationship );
+    }
+
+    @Override
+    public void nodeLegacyIndexDrop( KernelStatement statement, String indexName )
+    {
+        statement.txState().getNodeLegacyIndexChanges( indexName ).drop();
+    }
+
+    @Override
+    public void relationshipLegacyIndexDrop( KernelStatement statement, String indexName )
+    {
+        statement.txState().getRelationshipLegacyIndexChanges( indexName ).drop();
+    }
+
+    @Override
+    public long nodeLegacyIndexPutIfAbsent( KernelStatement statement, long node, String key, Object value )
+    {
+        throw new UnsupportedOperationException( "Please implement" );
+    }
+
+    @Override
+    public long relationshipLegacyIndexPutIfAbsent( KernelStatement statement, long relationship, String key,
+            Object value )
+    {
+        throw new UnsupportedOperationException( "Please implement" );
+    }
+
+    @Override
+    public String nodeLegacyIndexSetConfiguration( KernelStatement statement, String indexName, String key, String value )
+    {
+        return legacyIndexStore.setNodeIndexConfiguration( indexName, key, value );
+    }
+
+    @Override
+    public String relationshipLegacyIndexSetConfiguration( KernelStatement statement, String indexName, String key,
+            String value )
+    {
+        return legacyIndexStore.setRelationshipIndexConfiguration( indexName, key, value );
+    }
+
+    @Override
+    public String nodeLegacyIndexRemoveConfiguration( KernelStatement statement, String indexName, String key )
+    {
+        return legacyIndexStore.removeNodeIndexConfiguration( indexName, key );
+    }
+
+    @Override
+    public String relationshipLegacyIndexRemoveConfiguration( KernelStatement statement, String indexName, String key )
+    {
+        return legacyIndexStore.removeRelationshipIndexConfiguration( indexName, key );
+    }
+
+    @Override
+    public Map<String, String> nodeLegacyIndexGetConfiguration( KernelStatement statement, String indexName )
+    {
+        return legacyIndexStore.getNodeIndexConfiguration( indexName );
+    }
+
+    @Override
+    public Map<String, String> relationshipLegacyIndexGetConfiguration( KernelStatement statement, String indexName )
+    {
+        return legacyIndexStore.getRelationshipIndexConfiguration( indexName );
+    }
+
+    @Override
+    public String[] nodeLegacyIndexesGetAll( KernelStatement statement )
+    {
+        return legacyIndexStore.getAllNodeIndexNames();
+    }
+
+    @Override
+    public String[] relationshipLegacyIndexesGetAll( KernelStatement statement )
+    {
+        return legacyIndexStore.getAllRelationshipIndexNames();
+    }
+    // </Legacy index>
 }

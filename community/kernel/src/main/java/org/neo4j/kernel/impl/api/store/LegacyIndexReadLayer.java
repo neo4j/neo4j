@@ -17,18 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.graphdb.index;
+package org.neo4j.kernel.impl.api.store;
 
-/**
- * Registry of currently active index implementations. Indexing extensions should register the implementation
- * here on startup, and unregister it on stop.
- */
-public interface IndexProviders
+import org.neo4j.kernel.api.LegacyIndexHits;
+
+public interface LegacyIndexReadLayer
 {
-    void registerIndexProvider( String name, IndexTransactionSPI index );
+    LegacyIndexHits nodeIndexGet( String indexName, String key, Object value );
 
-    boolean unregisterIndexProvider( String name );
+    LegacyIndexHits nodeIndexQuery( String indexName, String key, Object queryOrQueryObject );
 
-    // TODO 2.2-future dunno about these getters
-    IndexTransactionSPI getTransactionAPI( String name );
+    LegacyIndexHits nodeIndexQuery( String indexName, Object queryOrQueryObject );
+
+    LegacyIndexHits relationshipIndexGet( String indexName, String key, Object value );
+
+    LegacyIndexHits relationshipIndexQuery( String indexName, String key, Object queryOrQueryObject );
+
+    LegacyIndexHits relationshipIndexQuery( String indexName, Object queryOrQueryObject );
 }

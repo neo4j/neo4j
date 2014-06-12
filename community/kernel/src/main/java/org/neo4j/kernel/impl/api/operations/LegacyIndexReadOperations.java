@@ -19,12 +19,20 @@
  */
 package org.neo4j.kernel.impl.api.operations;
 
+import java.util.Map;
+
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
 public interface LegacyIndexReadOperations
 {
+    Map<String, String> nodeLegacyIndexGetConfiguration( KernelStatement statement, String indexName )
+            throws LegacyIndexNotFoundKernelException;
+
+    Map<String, String> relationshipLegacyIndexGetConfiguration( KernelStatement statement, String indexName )
+            throws LegacyIndexNotFoundKernelException;
+
     LegacyIndexHits nodeLegacyIndexGet( KernelStatement statement, String indexName, String key, Object value )
             throws LegacyIndexNotFoundKernelException;
 
@@ -42,4 +50,8 @@ public interface LegacyIndexReadOperations
 
     LegacyIndexHits relationshipLegacyIndexQuery( KernelStatement statement, String indexName, Object queryOrQueryObject )
             throws LegacyIndexNotFoundKernelException;
+
+    String[] nodeLegacyIndexesGetAll( KernelStatement statement );
+
+    String[] relationshipLegacyIndexesGetAll( KernelStatement statement );
 }

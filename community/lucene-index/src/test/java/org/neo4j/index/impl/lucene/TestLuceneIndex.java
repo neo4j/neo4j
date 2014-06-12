@@ -56,7 +56,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.lucene.QueryContext;
 import org.neo4j.index.lucene.ValueContext;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 
 import static org.apache.lucene.search.NumericRangeQuery.newIntRange;
 import static org.hamcrest.core.Is.is;
@@ -1757,7 +1757,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
 
         // THEN - assert that there's no index config about this index left behind
         assertFalse( "There should be no index config for index '" + currentIndexName() + "' left behind",
-                ((GraphDatabaseAPI)graphDb).getDependencyResolver().resolveDependency( IndexStore.class ).has(
+                ((GraphDatabaseAPI)graphDb).getDependencyResolver().resolveDependency( IndexConfigStore.class ).has(
                         Node.class, currentIndexName() ) );
     }
 

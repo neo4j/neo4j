@@ -24,7 +24,7 @@ import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -40,7 +40,7 @@ public class LuceneKernelExtensionFactory extends KernelExtensionFactory<LuceneK
 
         IndexProviders getIndexProviders();
 
-        IndexStore getIndexStore();
+        IndexConfigStore getIndexStore();
     }
 
     public LuceneKernelExtensionFactory()

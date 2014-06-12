@@ -77,7 +77,7 @@ import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.index.IndexProviderStore;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -142,7 +142,7 @@ public class LuceneDataSource implements Lifecycle
     private IndexClockCache indexSearchers;
     private File baseStorePath;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    final IndexStore indexStore;
+    final IndexConfigStore indexStore;
     IndexProviderStore providerStore;
     private IndexTypeCache typeCache;
     private boolean closed;
@@ -159,7 +159,7 @@ public class LuceneDataSource implements Lifecycle
      * @throws InstantiationException if the data source couldn't be
      *                                instantiated
      */
-    public LuceneDataSource( Config config, IndexStore indexStore, FileSystemAbstraction fileSystemAbstraction )
+    public LuceneDataSource( Config config, IndexConfigStore indexStore, FileSystemAbstraction fileSystemAbstraction )
     {
         this.config = config;
         this.indexStore = indexStore;

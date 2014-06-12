@@ -79,7 +79,7 @@ public class TxStateVisitorTest
     @Before
     public void before() throws Exception
     {
-        state = new TxStateImpl( mock( TransactionRecordState.class ), mock( TxState.IdGeneration.class ) );
+        state = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexChangesProvider.class ) );
     }
 
     static class GatheringVisitor extends TxState.VisitorAdapter

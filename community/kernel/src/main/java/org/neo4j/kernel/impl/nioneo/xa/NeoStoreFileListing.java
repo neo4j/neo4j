@@ -31,7 +31,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 import static org.neo4j.helpers.SillyUtils.nonNull;
@@ -103,7 +103,7 @@ public class NeoStoreFileListing
 
     private boolean neoStoreFile( String name )
     {
-        return (name.startsWith( NeoStore.DEFAULT_NAME ) || name.equals( IndexStore.INDEX_DB_FILE_NAME ))
+        return (name.startsWith( NeoStore.DEFAULT_NAME ) || name.equals( IndexConfigStore.INDEX_DB_FILE_NAME ))
                 && !name.endsWith( ".id" );
     }
 

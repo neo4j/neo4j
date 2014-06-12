@@ -26,7 +26,7 @@ import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.index.impl.lucene.LuceneDataSource;
 import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -34,7 +34,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
 {
     private final Config config;
     private final GraphDatabaseService gdb;
-    private final IndexStore indexStore;
+    private final IndexConfigStore indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final IndexProviders indexProviders;
 
@@ -43,7 +43,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
     }
 
-    public LuceneKernelExtension( Config config, GraphDatabaseService gdb, IndexStore indexStore,
+    public LuceneKernelExtension( Config config, GraphDatabaseService gdb, IndexConfigStore indexStore,
             FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders )
     {
         this.config = config;

@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.unsafe.batchinsert.BatchInserter;
 import org.neo4j.unsafe.batchinsert.BatchInserterImpl;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
@@ -49,7 +49,7 @@ public class LuceneBatchInserterIndexProviderNewImpl implements BatchInserterInd
     private final BatchInserter inserter;
     private final Map<IndexIdentifier, LuceneBatchInserterIndex> indexes =
             new HashMap<IndexIdentifier, LuceneBatchInserterIndex>();
-    final IndexStore indexStore;
+    final IndexConfigStore indexStore;
     final EntityType nodeEntityType;
     final EntityType relationshipEntityType;
 

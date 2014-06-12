@@ -34,6 +34,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.api.LegacyIndexChanges;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -139,11 +140,17 @@ public final class TxStateImpl implements TxState
     private Map<UniquenessConstraint, Long> createdConstraintIndexesByConstraint;
 
     private final TransactionRecordState neoStoreTransaction;
+    private final LegacyIndexChangesProvider legacyChangesIndexProvider;
+    private Map<String, LegacyIndexChanges> nodeLegacyIndexChanges;
+    private Map<String, LegacyIndexChanges> relationshipLegacyIndexChanges;
+
     private boolean hasChanges;
 
-    public TxStateImpl( TransactionRecordState neoStoreTransaction, IdGeneration idGeneration )
+    public TxStateImpl( TransactionRecordState neoStoreTransaction,
+            LegacyIndexChangesProvider legacyChangesIndexProvider )
     {
         this.neoStoreTransaction = neoStoreTransaction;
+        this.legacyChangesIndexProvider = legacyChangesIndexProvider;
     }
 
     @Override
@@ -1061,5 +1068,56 @@ public final class TxStateImpl implements TxState
             return true;
         }
         return false;
+    }
+
+    @Override
+    public boolean hasNodeLegacyIndexChanges( String indexName )
+    {
+        if ( nodeLegacyIndexChanges != null )
+        {
+            return nodeLegacyIndexChanges.containsKey( indexName );
+        }
+        return false;
+    }
+
+    @Override
+    public LegacyIndexChanges getNodeLegacyIndexChanges( String indexName )
+    {
+        if ( nodeLegacyIndexChanges == null )
+        {
+            nodeLegacyIndexChanges = new HashMap<>();
+        }
+        LegacyIndexChanges changes = nodeLegacyIndexChanges.get( indexName );
+        if ( changes == null )
+        {
+            nodeLegacyIndexChanges.put( indexName, changes = legacyChangesIndexProvider.nodeChanges( indexName ) );
+        }
+        return changes;
+    }
+
+    @Override
+    public boolean hasRelationshipLegacyIndexChanges( String indexName )
+    {
+        if ( relationshipLegacyIndexChanges != null )
+        {
+            return relationshipLegacyIndexChanges.containsKey( indexName );
+        }
+        return false;
+    }
+
+    @Override
+    public LegacyIndexChanges getRelationshipLegacyIndexChanges( String indexName )
+    {
+        if ( relationshipLegacyIndexChanges == null )
+        {
+            relationshipLegacyIndexChanges = new HashMap<>();
+        }
+        LegacyIndexChanges changes = relationshipLegacyIndexChanges.get( indexName );
+        if ( changes == null )
+        {
+            relationshipLegacyIndexChanges.put( indexName,
+                    changes = legacyChangesIndexProvider.relationshipChanges( indexName ) );
+        }
+        return changes;
     }
 }

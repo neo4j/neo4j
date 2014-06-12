@@ -41,7 +41,9 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
+import org.neo4j.kernel.impl.api.store.LegacyIndexReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 import static org.junit.Assert.assertEquals;
@@ -250,7 +252,7 @@ public class SchemaTransactionStateTest
     public void before() throws Exception
     {
         txState = new TxStateImpl( mock( TransactionRecordState.class ),
-                mock( TxState.IdGeneration.class ) );
+                mock( LegacyIndexChangesProvider.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
 
         store = mock( StoreReadLayer.class );
@@ -259,7 +261,8 @@ public class SchemaTransactionStateTest
         when( store.indexesGetAll() ).then( asAnswer( Collections.<IndexDescriptor>emptyList() ) );
 
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
-                mock( ConstraintIndexCreator.class ));
+                mock( ConstraintIndexCreator.class ), mock( LegacyIndexReadLayer.class ),
+                mock( LegacyIndexStore.class ) );
     }
 
     private static <T> Answer<Iterator<T>> asAnswer( final Iterable<T> values )

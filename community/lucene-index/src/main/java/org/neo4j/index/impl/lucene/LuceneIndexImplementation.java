@@ -28,10 +28,12 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
+import org.neo4j.graphdb.index.IndexTransactionSPI;
 import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.api.LegacyIndexChanges;
 
-public class LuceneIndexImplementation implements IndexImplementation
+public class LuceneIndexImplementation implements IndexImplementation, IndexTransactionSPI
 {
     static final String KEY_TYPE = "type";
     static final String KEY_ANALYZER = "analyzer";
@@ -51,12 +53,12 @@ public class LuceneIndexImplementation implements IndexImplementation
     public static final int DEFAULT_LAZY_THRESHOLD = 100;
 
     private final GraphDatabaseService graphDb;
-    private LuceneDataSource dataSource;
+    private final LuceneDataSource dataSource;
     final int lazynessThreshold;
 
     public LuceneIndexImplementation( GraphDatabaseService db,
                                       LuceneDataSource dataSource
-                                      
+
     )
     {
         this.graphDb = db;
@@ -153,5 +155,11 @@ public class LuceneIndexImplementation implements IndexImplementation
     public GraphDatabaseService graphDb()
     {
         return graphDb;
+    }
+
+    @Override
+    public LegacyIndexChanges newTransactionState()
+    {
+        throw new UnsupportedOperationException( "Please implement" );
     }
 }

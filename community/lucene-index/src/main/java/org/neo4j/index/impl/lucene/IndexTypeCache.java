@@ -24,15 +24,15 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 
 class IndexTypeCache
 {
     private final Map<IndexIdentifier, Pair<Integer, IndexType>> cache = Collections.synchronizedMap(
             new HashMap<IndexIdentifier, Pair<Integer, IndexType>>() );
-    private final IndexStore indexStore;
+    private final IndexConfigStore indexStore;
     
-    IndexTypeCache( IndexStore indexStore )
+    IndexTypeCache( IndexConfigStore indexStore )
     {
         this.indexStore = indexStore;
     }

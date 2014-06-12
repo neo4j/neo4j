@@ -19,19 +19,37 @@
  */
 package org.neo4j.kernel.api;
 
+import java.util.Map;
+
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 
 public interface LegacyIndexRead
 {
-    LegacyIndexHits nodeLegacyIndexGet( String indexName, String key, Object value ) throws LegacyIndexNotFoundKernelException;
+    Map<String, String> nodeLegacyIndexGetConfiguration( String indexName )
+            throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits nodeLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException;
+    Map<String, String> relationshipLegacyIndexGetConfiguration( String indexName )
+            throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits nodeLegacyIndexQuery( String indexName, Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException;
+    LegacyIndexHits nodeLegacyIndexGet( String indexName, String key, Object value )
+            throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits relationshipLegacyIndexGet( String indexName, String key, Object value ) throws LegacyIndexNotFoundKernelException;
+    LegacyIndexHits nodeLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject )
+            throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException;
+    LegacyIndexHits nodeLegacyIndexQuery( String indexName, Object queryOrQueryObject )
+            throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException;
+    LegacyIndexHits relationshipLegacyIndexGet( String indexName, String key, Object value )
+            throws LegacyIndexNotFoundKernelException;
+
+    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject )
+            throws LegacyIndexNotFoundKernelException;
+
+    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, Object queryOrQueryObject )
+            throws LegacyIndexNotFoundKernelException;
+
+    String[] nodeLegacyIndexesGetAll();
+
+    String[] relationshipLegacyIndexesGetAll();
 }

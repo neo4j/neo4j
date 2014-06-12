@@ -98,6 +98,7 @@ import org.neo4j.kernel.impl.core.DefaultCaches;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
+import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -117,10 +118,11 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.coreapi.IndexManagerImpl;
+import org.neo4j.kernel.impl.coreapi.LegacyIndexProxy;
 import org.neo4j.kernel.impl.coreapi.NodeAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.RelationshipAutoIndexerImpl;
 import org.neo4j.kernel.impl.coreapi.schema.SchemaImpl;
-import org.neo4j.kernel.impl.index.IndexStore;
+import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
@@ -248,7 +250,7 @@ public abstract class InternalAbstractGraphDatabase
     protected FileSystemAbstraction fileSystem;
     protected Locks lockManager;
     protected IdGeneratorFactory idGeneratorFactory;
-    protected IndexStore indexStore;
+    protected IndexConfigStore indexStore;
     protected TxIdGenerator txIdGenerator;
     protected StoreFactory storeFactory;
     protected DiagnosticsManager diagnosticsManager;
@@ -497,7 +499,7 @@ public abstract class InternalAbstractGraphDatabase
         transactionEventHandlers = new TransactionEventHandlers( createNodeLookup(), createRelationshipLookups(),
                 threadToTransactionBridge  );
 
-        indexStore = life.add( new IndexStore( this.storeDir, fileSystem ) );
+        indexStore = life.add( new IndexConfigStore( this.storeDir, fileSystem ) );
 
         diagnosticsManager.prependProvider( config );
 
@@ -507,7 +509,8 @@ public abstract class InternalAbstractGraphDatabase
 
         schema = new SchemaImpl( threadToTransactionBridge );
 
-        indexManager = new IndexManagerImpl( config, indexStore, threadToTransactionBridge, dataSourceManager );
+        LegacyIndexProxy.Lookup indexLookup = createIndexLookup();
+        indexManager = new IndexManagerImpl( indexLookup, threadToTransactionBridge );
         nodeAutoIndexer = life.add( new NodeAutoIndexerImpl( config, indexManager, nodeManager ) );
         relAutoIndexer = life.add( new RelationshipAutoIndexerImpl( config, indexManager, nodeManager ) );
 
@@ -537,6 +540,24 @@ public abstract class InternalAbstractGraphDatabase
 
         // TODO This is probably too coarse-grained and we should have some strategy per user of config instead
         life.add( new ConfigurationChangedRestarter() );
+    }
+
+    protected LegacyIndexProxy.Lookup createIndexLookup()
+    {
+        return new LegacyIndexProxy.Lookup()
+        {
+            @Override
+            public GraphDatabaseService getGraphDatabaseService()
+            {
+                return InternalAbstractGraphDatabase.this;
+            }
+
+            @Override
+            public EntityFactory getEntityFactory()
+            {
+                return nodeManager;
+            }
+        };
     }
 
     protected TransactionHeaderInformation createTransactionHeaderInformation()
@@ -1145,7 +1166,7 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( logging );
             }
-            else if ( IndexStore.class.isAssignableFrom( type ) && type.isInstance( indexStore ) )
+            else if ( IndexConfigStore.class.isAssignableFrom( type ) && type.isInstance( indexStore ) )
             {
                 return type.cast( indexStore );
             }
@@ -1161,9 +1182,9 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( guard );
             }
-            else if ( IndexProviders.class.isAssignableFrom( type ) && type.isInstance( indexManager ) )
+            else if ( IndexProviders.class.isAssignableFrom( type ) && type.isInstance( neoDataSource ) )
             {
-                return type.cast( indexManager );
+                return type.cast( neoDataSource );
             }
             else if ( KernelData.class.isAssignableFrom( type ) && type.isInstance( extensions ) )
             {

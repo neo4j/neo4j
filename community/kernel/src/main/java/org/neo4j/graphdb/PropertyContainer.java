@@ -37,18 +37,23 @@ package org.neo4j.graphdb;
 public interface PropertyContainer
 {
     /**
+     * @return the id of this entity.
+     */
+    long getId();
+
+    /**
      * Get the {@link GraphDatabaseService} that this {@link Node} or
      * {@link Relationship} belongs to.
-     * 
+     *
      * @return The GraphDatabase this Node or Relationship belongs to.
      */
     GraphDatabaseService getGraphDatabase();
-    
+
     /**
      * Returns <code>true</code> if this property container has a property
      * accessible through the given key, <code>false</code> otherwise. If key is
      * <code>null</code>, this method returns <code>false</code>.
-     * 
+     *
      * @param key the property key
      * @return <code>true</code> if this property container has a property
      *         accessible through the given key, <code>false</code> otherwise
@@ -65,7 +70,7 @@ public interface PropertyContainer
      * unknown key and instead get <code>null</code> back is to use a default
      * value: {@link #getProperty(String, Object) Object valueOrNull =
      * nodeOrRel.getProperty( key, null )}
-     * 
+     *
      * @param key the property key
      * @return the property value associated with the given key
      * @throws NotFoundException if there's no property associated with
@@ -77,7 +82,7 @@ public interface PropertyContainer
      * Returns the property value associated with the given key, or a default
      * value. The value is of one of the valid property types, i.e. a Java
      * primitive, a {@link String String} or an array of any of the valid types.
-     * 
+     *
      * @param key the property key
      * @param defaultValue the default value that will be returned if no
      *            property value was associated with the given key
@@ -101,7 +106,7 @@ public interface PropertyContainer
      * </ul>
      * <p>
      * This means that <code>null</code> is not an accepted property value.
-     * 
+     *
      * @param key the key with which the new property value will be associated
      * @param value the new property value, of one of the valid property types
      * @throws IllegalArgumentException if <code>value</code> is of an
@@ -113,7 +118,7 @@ public interface PropertyContainer
      * Removes the property associated with the given key and returns the old
      * value. If there's no property associated with the key, <code>null</code>
      * will be returned.
-     * 
+     *
      * @param key the property key
      * @return the property value that used to be associated with the given key
      */
@@ -122,7 +127,7 @@ public interface PropertyContainer
     /**
      * Returns all existing property keys, or an empty iterable if this property
      * container has no properties.
-     * 
+     *
      * @return all property keys on this property container
      */
     // TODO: figure out concurrency semantics

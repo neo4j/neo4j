@@ -37,7 +37,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class IndexStore extends LifecycleAdapter
+public class IndexConfigStore extends LifecycleAdapter
 {
     public static final String INDEX_DB_FILE_NAME = "index.db";
     private static final byte[] MAGICK = new byte[] { 'n', 'e', 'o', '4', 'j', '-', 'i', 'n', 'd', 'e', 'x' };
@@ -50,7 +50,7 @@ public class IndexStore extends LifecycleAdapter
     private ByteBuffer dontUseBuffer = ByteBuffer.allocate( 100 );
     private final FileSystemAbstraction fileSystem;
     
-    public IndexStore( File graphDbStoreDir, FileSystemAbstraction fileSystem )
+    public IndexConfigStore( File graphDbStoreDir, FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
         this.file = new File( graphDbStoreDir, INDEX_DB_FILE_NAME );

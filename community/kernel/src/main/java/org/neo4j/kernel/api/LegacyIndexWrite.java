@@ -21,13 +21,24 @@ package org.neo4j.kernel.api;
 
 import java.util.Map;
 
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+
 public interface LegacyIndexWrite
 {
     void nodeLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig );
 
     void relationshipLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig );
 
-    void nodeAddToLegacyIndex( String indexName, long node, String key, Object value );
+    String nodeLegacyIndexSetConfiguration( String indexName, String key, String value );
+
+    String relationshipLegacyIndexSetConfiguration( String indexName, String key, String value );
+
+    String nodeLegacyIndexRemoveConfiguration( String indexName, String key );
+
+    String relationshipLegacyIndexRemoveConfiguration( String indexName, String key );
+
+    void nodeAddToLegacyIndex( String indexName, long node, String key, Object value )
+            throws EntityNotFoundException;
 
     void nodeRemoveFromLegacyIndex( String indexName, long node, String key, Object value );
 
@@ -35,8 +46,8 @@ public interface LegacyIndexWrite
 
     void nodeRemoveFromLegacyIndex( String indexName, long node );
 
-    void relationshipAddToLegacyIndex( String indexName, long relationship, String key, Object value, long startNode,
-            long endNode );
+    void relationshipAddToLegacyIndex( String indexName, long relationship, String key, Object value )
+            throws EntityNotFoundException;
 
     void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key, Object value );
 

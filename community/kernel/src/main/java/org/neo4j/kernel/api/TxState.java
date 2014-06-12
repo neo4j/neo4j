@@ -103,14 +103,6 @@ public interface TxState
         boolean hasTxStateWithChanges();
 
     }
-    /**
-     * Ability to generate the leaking id types (node ids and relationship ids).
-     */
-    public interface IdGeneration
-    {
-        long newNodeId();
-        long newRelationshipId();
-    }
 
     public interface Visitor
     {
@@ -327,4 +319,14 @@ public interface TxState
      * visited from the store.
      */
     boolean relationshipVisit( long relId, RelationshipVisitor visitor );
+
+    // <Legacy index>
+    boolean hasNodeLegacyIndexChanges( String indexName );
+
+    LegacyIndexChanges getNodeLegacyIndexChanges( String indexName );
+
+    boolean hasRelationshipLegacyIndexChanges( String indexName );
+
+    LegacyIndexChanges getRelationshipLegacyIndexChanges( String indexName );
+    // </Legacy index>
 }

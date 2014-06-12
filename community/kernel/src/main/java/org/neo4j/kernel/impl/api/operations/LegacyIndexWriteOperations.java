@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.api.operations;
 
 import java.util.Map;
 
+import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.impl.api.KernelStatement;
 
 public interface LegacyIndexWriteOperations
@@ -30,7 +31,17 @@ public interface LegacyIndexWriteOperations
     void relationshipLegacyIndexCreateLazily( KernelStatement statement, String indexName,
             Map<String, String> customConfig );
 
-    void nodeAddToLegacyIndex( KernelStatement statement, String indexName, long node, String key, Object value );
+    String nodeLegacyIndexSetConfiguration( KernelStatement statement, String indexName, String key, String value );
+
+    String relationshipLegacyIndexSetConfiguration( KernelStatement statement, String indexName, String key,
+            String value );
+
+    String nodeLegacyIndexRemoveConfiguration( KernelStatement statement, String indexName, String key );
+
+    String relationshipLegacyIndexRemoveConfiguration( KernelStatement statement, String indexName, String key );
+
+    void nodeAddToLegacyIndex( KernelStatement statement, String indexName, long node, String key, Object value )
+            throws EntityNotFoundException;
 
     void nodeRemoveFromLegacyIndex( KernelStatement statement, String indexName, long node, String key, Object value );
 
@@ -39,7 +50,7 @@ public interface LegacyIndexWriteOperations
     void nodeRemoveFromLegacyIndex( KernelStatement statement, String indexName, long node );
 
     void relationshipAddToLegacyIndex( KernelStatement statement, String indexName, long relationship, String key,
-            Object value, long startNode, long endNode );
+            Object value ) throws EntityNotFoundException;
 
     void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship, String key,
             Object value );
