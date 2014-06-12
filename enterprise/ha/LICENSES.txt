@@ -3,7 +3,6 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
-  Apache Log4j
   JTA 1.1
   Lucene Core
   The Netty Project

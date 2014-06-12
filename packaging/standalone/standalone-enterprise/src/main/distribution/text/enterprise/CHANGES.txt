@@ -1,4 +1,4 @@
-For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
+For Release Notes, see http://neo4j.com/release-notes/neo4j-${project.version}/
 
 2.1.2
 -----
