@@ -73,11 +73,9 @@ class StatisticsBackedCardinalityModel(statistics: GraphStatistics,
       cardinality(left) * Multiplier(math.pow(degree, averagePathLength(length))) * predicateSelectivity(predicates)
 
     case FindShortestPaths(left, ShortestPathPattern(_, rel, true)) =>
-      // TODO: This is probably very wrong probabilistically
       cardinality(left) * DEFAULT_CONNECTIVITY_CHANCE
 
     case FindShortestPaths(left, ShortestPathPattern(_, rel, false)) =>
-      // TODO: This is probably very wrong probabilistically
       val degree = degreeByRelationshipTypesAndDirection(rel.types, rel.dir).coefficient
       cardinality(left) * Multiplier(math.pow(degree, averagePathLength(rel.length)))
 

@@ -44,17 +44,11 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
 
     def findBestPlan(planGenerator: CandidateGenerator[PlanTable]): PlanTable => PlanTable = {
       (planTable: PlanTable) =>
-        val generated = step(planGenerator, queryGraph)(planTable, queryGraph).plans.toList
+        val step = planGenerator +||+ findShortestPaths
+        val generated = step(planTable, queryGraph).plans
         val selected = generated.map(select(_, queryGraph))
         val best = pickBest(CandidateList(selected))
         best.fold(planTable)(planTable + _)
-    }
-
-    def step(planGenerator: CandidateGenerator[PlanTable], queryGraph: QueryGraph): CandidateGenerator[PlanTable] = {
-      if (queryGraph.shortestPathPatterns.isEmpty)
-        planGenerator
-      else
-        planGenerator orElse findShortestPaths
     }
 
     val leaves: PlanTable = generateLeafPlanTable()

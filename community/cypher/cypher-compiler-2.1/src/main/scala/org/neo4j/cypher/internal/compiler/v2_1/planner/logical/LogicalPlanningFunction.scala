@@ -45,6 +45,11 @@ object CandidateGenerator {
         if (ownCandidates.isEmpty) other(input1, input2) else ownCandidates
       }
     }
+
+    def +||+(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
+      override def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList =
+        self(input1, input2) ++ other(input1, input2)
+    }
   }
 }
 
