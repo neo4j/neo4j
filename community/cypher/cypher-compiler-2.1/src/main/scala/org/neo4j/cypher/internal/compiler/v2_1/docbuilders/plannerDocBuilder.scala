@@ -19,21 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
+import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
 import org.neo4j.cypher.internal.compiler.v2_1.perty._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.RelTypeName
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{Predicate, Selections}
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{Selections, Predicate}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Selections
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.planner.Predicate
-import scala.Some
 
 case object plannerDocBuilder extends DocBuilderChain[Any] {
 
-  import Doc._
-  import DocBuilder._
+  import org.neo4j.cypher.internal.compiler.v2_1.perty.Doc._
+  import org.neo4j.cypher.internal.compiler.v2_1.perty.DocBuilder._
 
   val forNestedIdName = asDocBuilder[Any] {
     case idName: IdName => (inner) =>
