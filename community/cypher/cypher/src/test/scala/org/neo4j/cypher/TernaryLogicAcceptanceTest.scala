@@ -19,59 +19,45 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
+class TernaryLogicAcceptanceTest extends ExecutionEngineFunSuite {
 
-@RunWith(value = classOf[Parameterized])
-class TernaryLogicAcceptanceTest(expectedResult: Any, comparison: String) extends ExecutionEngineJUnitSuite {
+  test("test") {
+    "not null" =>> null
+    "null IS NULL" =>> true
 
-  @Test def test() {
-    assert(expectedResult === executeScalar[Any]("RETURN " + comparison))
+    "null = null" =>> null
+    "null <> null" =>> null
+
+    "null and null" =>> null
+    "null and true" =>> null
+    "true and null" =>> null
+    "false and null" =>> false
+    "null and false" =>> false
+
+    "null or null" =>> null
+    "null or true" =>> true
+    "true or null" =>> true
+    "false or null" =>> null
+    "null or false" =>> null
+
+    "null xor null" =>> null
+    "null xor true" =>> null
+    "true xor null" =>> null
+    "false xor null" =>> null
+    "null xor false" =>> null
+
+    "null in [1,2,3]" =>> null
+    "null in [1,2,3,null]" =>> null
+    "null in []" =>> false
+    "1 in [1,2,3, null]" =>> true
+    "5 in [1,2,3, null]" =>> null
   }
-}
 
-object TernaryLogicAcceptanceTest {
-  @Parameters(name = "{1} => {0}")
-  def parameters: java.util.Collection[Array[Any]] = {
-    val list = new java.util.ArrayList[Array[Any]]()
+  implicit class Evaluate(comparison: String) {
+    def =>>(expectedResult: Any) = {
+      val output = executeScalar[Any]("RETURN " + comparison)
 
-    def add(expectedResult: Any, comparison: String) {
-      list.add(Array(expectedResult, comparison))
+      output should equal(expectedResult)
     }
-
-    add(null, "not null")
-    add(true, "null IS NULL")
-
-    add(null, "null = null")
-    add(null, "null <> null")
-
-    add(null, "null and null")
-    add(null, "null and true")
-    add(null, "true and null")
-    add(false, "false and null")
-    add(false, "null and false")
-
-    add(null, "null or null")
-    add(true, "null or true")
-    add(true, "true or null")
-    add(null, "false or null")
-    add(null, "null or false")
-
-    add(null, "null xor null")
-    add(null, "null xor true")
-    add(null, "true xor null")
-    add(null, "false xor null")
-    add(null, "null xor false")
-
-    add(null, "null in [1,2,3]")
-    add(null, "null in [1,2,3,null]")
-    add(false, "null in []")
-    add(true, "1 in [1,2,3, null]")
-    add(null, "5 in [1,2,3, null]")
-
-    list
   }
-
 }

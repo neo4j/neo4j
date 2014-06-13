@@ -20,24 +20,22 @@
 package org.neo4j.cypher.internal.compiler.v2_1
 
 import commands.expressions.Literal
-import org.scalatest.Assertions
-import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport}
-import org.junit.Test
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.mutation.CreateNode
-import org.scalautils.LegacyTripleEquals
 
-class CreateNodeActionTest extends ExecutionEngineJUnitSuite {
+class CreateNodeActionTest extends ExecutionEngineFunSuite {
 
-  @Test def mixed_types_are_not_ok() {
+  test("demixed types are not ok") {
     val action = CreateNode("id", Map("*" -> Literal(Map("name" -> "Andres", "age" -> 37))), Seq.empty)
 
     graph.inTx {
       action.exec(ExecutionContext.empty, QueryStateHelper.queryStateFrom(graph, graph.beginTx())).size
     }
-
     val n = graph.createdNodes.dequeue()
 
-    assertInTx(n.getProperty("name") === "Andres")
-    assertInTx(n.getProperty("age") === 37)
+    graph.inTx {
+      n.getProperty("name") should equal("Andres")
+      n.getProperty("age") should equal(37)
+    }
   }
 }

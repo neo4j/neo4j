@@ -19,24 +19,25 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
 import org.neo4j.kernel.api.exceptions.schema.{NoSuchIndexException, DropIndexFailureException}
 import java.util.concurrent.TimeUnit
 import java.io.{FileOutputStream, File}
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
 import org.neo4j.graphdb.GraphDatabaseService
 
-class IndexOpAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
+class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
-  @Test def createIndex() {
+  test("createIndex") {
     // WHEN
     execute("CREATE INDEX ON :Person(name)")
 
     // THEN
-    assertInTx(List(List("name")) === graph.indexPropsForLabel("Person"))
+    graph.inTx{
+      graph.indexPropsForLabel("Person") should equal(List(List("name")))
+    }
   }
 
-  @Test def createIndexShouldBeIdempotent() {
+  test("createIndexShouldBeIdempotent") {
     // GIVEN
     execute("CREATE INDEX ON :Person(name)")
 
@@ -46,7 +47,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
     // THEN no exception is thrown
   }
 
-  @Test def secondIndexCreationShouldFailIfIndexesHasFailed() {
+  test("secondIndexCreationShouldFailIfIndexesHasFailed") {
     // GIVEN
     val graph = createDbWithFailedIndex
     try {
@@ -55,6 +56,39 @@ class IndexOpAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
     } finally {
       graph.shutdown()
       new File("target/test-data/impermanent-db").deleteAll()
+    }
+  }
+
+  test("dropIndex") {
+    // GIVEN
+    execute("CREATE INDEX ON :Person(name)")
+
+    // WHEN
+    execute("DROP INDEX ON :Person(name)")
+
+    // THEN
+    graph.inTx{
+      graph.indexPropsForLabel("Person") shouldBe empty
+    }
+  }
+
+  test("drop_index_that_does_not_exist") {
+    // WHEN
+    val e = intercept[CypherExecutionException](execute("DROP INDEX ON :Person(name)"))
+    assert(e.getCause.isInstanceOf[DropIndexFailureException])
+    assert(e.getCause.getCause.isInstanceOf[NoSuchIndexException])
+  }
+
+  implicit class FileHelper(file: File) {
+    def deleteAll(): Unit = {
+      def deleteFile(dfile: File): Unit = {
+        if (dfile.isDirectory)
+          dfile.listFiles.foreach {
+            f => deleteFile(f)
+          }
+        dfile.delete
+      }
+      deleteFile(file)
     }
   }
 
@@ -81,38 +115,4 @@ class IndexOpAcceptanceTest extends ExecutionEngineJUnitSuite with QueryStatisti
     engine = new ExecutionEngine(graph)
     graph
   }
-
-  @Test def dropIndex() {
-    // GIVEN
-    execute("CREATE INDEX ON :Person(name)")
-
-    // WHEN
-    execute("DROP INDEX ON :Person(name)")
-
-    // THEN
-    assertInTx(List.empty[List[String]] === graph.indexPropsForLabel("Person"))
-  }
-
-  @Test def drop_index_that_does_not_exist() {
-    // WHEN
-    val e = intercept[CypherExecutionException](execute("DROP INDEX ON :Person(name)"))
-    assert(e.getCause.isInstanceOf[DropIndexFailureException])
-    assert(e.getCause.getCause.isInstanceOf[NoSuchIndexException])
-  }
-
-  implicit class FileHelper(file: File) {
-    def deleteAll(): Unit = {
-      def deleteFile(dfile: File): Unit = {
-        if (dfile.isDirectory)
-          dfile.listFiles.foreach {
-            f => deleteFile(f)
-          }
-        dfile.delete
-      }
-      deleteFile(file)
-    }
-  }
-
 }
-
-
