@@ -256,8 +256,16 @@ public abstract class CommonAbstractStore implements IdSequence
 
     protected abstract int getEffectiveRecordSize();
 
+    /**
+     * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
+     * operate on the store files directly. This method is called by constructors.
+     */
     protected abstract void verifyFileSizeAndTruncate() throws IOException;
 
+    /**
+     * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
+     * operate on the store files directly. This method is called by constructors.
+     */
     protected abstract void readAndVerifyBlockSize() throws IOException;
 
     private void loadIdGenerator()
@@ -289,6 +297,10 @@ public abstract class CommonAbstractStore implements IdSequence
         }
     }
 
+    /**
+     * Note: This method runs before the file has been mapped by the page cache, and therefore needs to
+     * operate on the store files directly. This method is called by constructors.
+     */
     protected void verifyCorrectTypeDescriptorAndVersion() throws IOException
     {
         String expectedTypeDescriptorAndVersion = getTypeAndVersionDescriptor();
@@ -324,7 +336,14 @@ public abstract class CommonAbstractStore implements IdSequence
         }
     }
 
-    /** Should rebuild the id generator from scratch. */
+    /**
+     * Should rebuild the id generator from scratch.
+     * <p>
+     * Note: This method may be called both while the store has the store file mapped in the
+     * page cache, and while the store file is not mapped. Implementors must therefore
+     * map their own temporary PagedFile for the store file, and do their file IO through that,
+     * if they need to access the data in the store file.
+     */
     protected abstract void rebuildIdGenerator();
 
     /**
@@ -333,6 +352,9 @@ public abstract class CommonAbstractStore implements IdSequence
      * method returns. Override this method to clean up stuff the constructor.
      * <p>
      * This default implementation does nothing.
+     * <p>
+     * Note: This method runs before the store file is unmapped from the page cache,
+     * and is therefore not allowed to operate on the store files directly.
      */
     protected void closeStorage()
     {
@@ -494,7 +516,14 @@ public abstract class CommonAbstractStore implements IdSequence
         return storageFileName;
     }
 
-    /** Opens the {@link IdGenerator} used by this store. */
+    /**
+     * Opens the {@link IdGenerator} used by this store.
+     *
+     * Note: This method may be called both while the store has the store file mapped in the
+     * page cache, and while the store file is not mapped. Implementors must therefore
+     * map their own temporary PagedFile for the store file, and do their file IO through that,
+     * if they need to access the data in the store file.
+     */
     protected void openIdGenerator()
     {
         idGenerator = openIdGenerator( new File( storageFileName.getPath() + ".id" ), idType.getGrabSize() );
@@ -507,12 +536,26 @@ public abstract class CommonAbstractStore implements IdSequence
         updateHighId();
     }
 
+    /**
+     * Opens the {@link IdGenerator} given by the fileName.
+     *
+     * Note: This method may be called both while the store has the store file mapped in the
+     * page cache, and while the store file is not mapped. Implementors must therefore
+     * map their own temporary PagedFile for the store file, and do their file IO through that,
+     * if they need to access the data in the store file.
+     */
     protected IdGenerator openIdGenerator( File fileName, int grabSize )
     {
         return idGeneratorFactory
                 .open( fileSystemAbstraction, fileName, grabSize, getIdType(), figureOutHighestIdInUse() );
     }
 
+    /**
+     * Note: This method may be called both while the store has the store file mapped in the
+     * page cache, and while the store file is not mapped. Implementors must therefore
+     * map their own temporary PagedFile for the store file, and do their file IO through that,
+     * if they need to access the data in the store file.
+     */
     protected abstract long figureOutHighestIdInUse();
 
     protected void createIdGenerator( File fileName )
@@ -648,6 +691,9 @@ public abstract class CommonAbstractStore implements IdSequence
      * Returns a <CODE>StoreChannel</CODE> to this storage's file. If
      * <CODE>close()</CODE> method has been invoked <CODE>null</CODE> will be
      * returned.
+     * <p>
+     * Note: You can only operate directly on the StoreChannel while the file
+     * is not mapped in the page cache.
      *
      * @return A file channel to this storage
      */
