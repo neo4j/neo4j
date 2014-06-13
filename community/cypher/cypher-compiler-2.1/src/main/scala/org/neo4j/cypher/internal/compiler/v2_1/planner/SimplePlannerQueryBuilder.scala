@@ -182,7 +182,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
   override def produce(ast: Query): QueryPlanInput = ast match {
     case Query(None, SingleQuery(clauses)) =>
       val (query, subQueryTable, patternExprTable) = produceQueryGraphFromClauses(PlannerQuery.empty, Map.empty, Map.empty, clauses)
-      QueryPlanInput(query, subQueryTable, patternExprTable)
+      QueryPlanInput(UnionQuery(Seq(query), distinct = false), subQueryTable, patternExprTable)
 
     case _ =>
       throw new CantHandleQueryException
