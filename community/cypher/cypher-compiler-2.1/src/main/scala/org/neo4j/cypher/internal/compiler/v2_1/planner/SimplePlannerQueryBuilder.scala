@@ -154,9 +154,10 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
     (Selections(predicates), subQueries.toSeq)
   }
 
-  override def produce(ast: Query): (PlannerQuery, Map[PatternExpression, QueryGraph]) = ast match {
+  override def produce(ast: Query): (UnionQuery, Map[PatternExpression, QueryGraph]) = ast match {
     case Query(None, SingleQuery(clauses)) =>
-      produceQueryGraphFromClauses(PlannerQuery.empty, Map.empty, clauses)
+      val (plannerQuery, lookupTable) = produceQueryGraphFromClauses(PlannerQuery.empty, Map.empty, clauses)
+      (UnionQuery(Seq(plannerQuery), distinct = false), lookupTable)
 
     case _ =>
       throw new CantHandleQueryException

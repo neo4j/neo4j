@@ -48,7 +48,9 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       ast
     }
 
-    builder.produce(rewrittenAst.asInstanceOf[Query])
+    val (unionQuery, lookupTable) = builder.produce(rewrittenAst.asInstanceOf[Query])
+    unionQuery.queries should have size 1
+    (unionQuery.queries.head, lookupTable)
   }
 
   test("RETURN 42") {
