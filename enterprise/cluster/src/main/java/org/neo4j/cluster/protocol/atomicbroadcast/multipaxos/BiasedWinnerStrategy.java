@@ -24,9 +24,10 @@ import java.util.Collections;
 import java.util.List;
 
 import org.neo4j.cluster.InstanceId;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.ElectionContextImpl;
 import org.neo4j.cluster.protocol.cluster.ClusterContext;
 
-class BiasedWinnerStrategy implements MultiPaxosContext.WinnerStrategy
+public class BiasedWinnerStrategy implements WinnerStrategy
 {
     private ClusterContext electionContext;
     private final InstanceId biasedNode;
@@ -52,7 +53,7 @@ class BiasedWinnerStrategy implements MultiPaxosContext.WinnerStrategy
     @Override
     public org.neo4j.cluster.InstanceId pickWinner( Collection<Vote> votes )
     {
-        List<Vote> eligibleVotes = MultiPaxosContext.removeBlankVotes( votes );
+        List<Vote> eligibleVotes = ElectionContextImpl.removeBlankVotes( votes );
 
         moveMostSuitableCandidatesToTop(eligibleVotes);
 
