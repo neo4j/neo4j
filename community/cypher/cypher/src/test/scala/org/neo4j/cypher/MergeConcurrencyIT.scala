@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
-import scala.collection.immutable.Seq
-
-class MergeConcurrencyIT extends ExecutionEngineJUnitSuite {
+class MergeConcurrencyIT extends ExecutionEngineFunSuite {
 
   val nodeCount = 100
   val threadCount = Runtime.getRuntime.availableProcessors() * 2
 
-  @Test def should_handle_ten_simultaneous_threads() {
+  test("should_handle_ten_simultaneous_threads") {
       // Given a constraint on :Label(id), create a linked list
       execute("CREATE CONSTRAINT ON (n:Label) ASSERT n.id IS UNIQUE")
 
@@ -50,6 +47,6 @@ class MergeConcurrencyIT extends ExecutionEngineJUnitSuite {
 
       // Now check that the list exists and is a single one:
       val result = execute(s"match p=(:Label {id:1})-[*..1000]->({id:$nodeCount}) return 1")
-      assert(result.size === 1)
+      result.size should equal(1)
   }
 }

@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import Metrics._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Collection
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
+import Metrics._
 
 class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
@@ -136,6 +136,10 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       cost(outerJoin.right) +
       cardinality(outerJoin.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
       cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
+
+    case shortestPath: FindShortestPaths =>
+      cost(shortestPath.left) +
+      cardinality(shortestPath) * STORE_ACCESS_COST_PER_ROW
 
     case s@Sort(input, _) =>
       cost(input) +

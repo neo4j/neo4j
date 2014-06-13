@@ -19,11 +19,9 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
+class UniquenessAcceptanceTest extends ExecutionEngineFunSuite {
 
-class UniquenessAcceptanceTest extends ExecutionEngineJUnitSuite {
-
-  @Test def should_not_reuse_the_relationship_that_has_just_been_traversed() {
+  test("should_not_reuse_the_relationship_that_has_just_been_traversed") {
     // Given
     relate(createNode("Me"), createNode("Bob"))
 
@@ -31,10 +29,10 @@ class UniquenessAcceptanceTest extends ExecutionEngineJUnitSuite {
     val result = execute("MATCH a-->()-->b WHERE a.name = 'Me' RETURN b.name")
 
     // Then
-    assert(List() === result.toList)
+    result.toList shouldBe empty
   }
 
-  @Test def should_not_reuse_a_relationship_that_was_used_earlier() {
+  test("should_not_reuse_a_relationship_that_was_used_earlier") {
     // Given a graph: n1-->n2, n2-->n2
     val n1 = createNode("start")
     val n2 = createNode()
@@ -45,10 +43,10 @@ class UniquenessAcceptanceTest extends ExecutionEngineJUnitSuite {
     val result = execute("match a--b-->c--d where a.name = 'start' return d")
 
     // Then
-    assert(List() === result.toList)
+    result.toList shouldBe empty
   }
 
-  @Test def should_reuse_relationships_that_were_used_in_a_different_clause() {
+  test("should_reuse_relationships_that_were_used_in_a_different_clause") {
     // Given
     // leaf1-->parent
     // leaf2-->parent
@@ -62,10 +60,10 @@ class UniquenessAcceptanceTest extends ExecutionEngineJUnitSuite {
     val result = execute("MATCH x-->parent WHERE x.name = 'leaf1' WITH parent MATCH leaf-->parent RETURN leaf")
 
     // Then
-    assert(2 === result.size)
+    result should have size 2
   }
 
-  @Test def should_reuse_relationships_even_though_they_are_in_context_but_not_used_in_a_pattern() {
+  test("should_reuse_relationships_even_though_they_are_in_context_but_not_used_in_a_pattern") {
     // Given
     // leaf1-->parent
     // leaf2-->parent
@@ -79,6 +77,6 @@ class UniquenessAcceptanceTest extends ExecutionEngineJUnitSuite {
     val result = execute("MATCH x-[r]->parent WHERE x.name = 'leaf1' WITH r, parent MATCH leaf-->parent RETURN r, leaf")
 
     // Then
-    assert(2 === result.size)
+    result should have size 2
   }
 }

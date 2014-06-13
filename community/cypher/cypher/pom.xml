@@ -38,7 +38,7 @@
       </comments>
     </license>
   </licenses>
-  
+
   <properties>
     <version-package>cypher.internal</version-package>
     <maven.site.skip>false</maven.site.skip>

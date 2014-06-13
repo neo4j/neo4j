@@ -27,6 +27,7 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
   def rewrite(queryText: String, statement: Statement): (Statement, Map[String, Any]) = {
     rewritingMonitor.startRewriting(queryText, statement)
 
+<<<<<<< HEAD
     val (extractParameters: Rewriter, extractedParameters: Map[String, Any]) = literalReplacement(statement)
 
     val rewriters = Seq.newBuilder[Rewriter]
@@ -46,9 +47,30 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
     rewriters += aliasReturnItems
 
     val rewriter = inSequence(rewriters.result(): _*)
+=======
+    val (extractParameters, extractedParameters) = if (shouldExtractParameters)
+      literalReplacement(statement)
+    else
+      (Rewriter.lift(PartialFunction.empty), Map.empty[String, Any])
+
+    val rewriters = Seq(
+      foldConstants,
+      extractParameters,
+      nameMatchPatternElements,
+      normalizeMatchPredicates,
+      normalizeNotEquals,
+      normalizeEqualsArgumentOrder,
+      reattachAliasedExpressions,
+      addUniquenessPredicates,
+      expandStar,
+      isolateAggregation,
+      aliasReturnItems)
+
+    val rewriter = inSequence(rewriters: _*)
+>>>>>>> 2.1-maint
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
 
     rewritingMonitor.finishRewriting(queryText, rewrittenStatement)
-    (rewrittenStatement, if (shouldExtractParameters) extractedParameters else Map.empty)
+    (rewrittenStatement, extractedParameters)
   }
 }

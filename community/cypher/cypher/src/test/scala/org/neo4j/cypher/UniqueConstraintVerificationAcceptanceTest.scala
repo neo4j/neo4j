@@ -20,18 +20,13 @@
 package org.neo4j.cypher
 
 import org.neo4j.cypher.internal.helpers.CollectionSupport
-import org.scalatest.Assertions
-import org.junit.Test
-import org.junit.Assert._
 import collection.JavaConverters._
 import org.neo4j.kernel.api.exceptions.schema.CreateConstraintFailureException
 import org.neo4j.kernel.impl.api.OperationsFacade
 
-class UniqueConstraintVerificationAcceptanceTest
-  extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport with CollectionSupport {
+class UniqueConstraintVerificationAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CollectionSupport {
 
-  @Test
-  def should_add_constraint_with_no_existing_data() {
+  test("should_add_constraint_with_no_existing_data") {
     //GIVEN
 
     //WHEN
@@ -45,12 +40,11 @@ class UniqueConstraintVerificationAcceptanceTest
 
         val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
-        assert(constraints.size === 1)
+        constraints should have size 1
     }
   }
 
-  @Test
-  def should_add_constraint_when_existing_data_is_unique() {
+  test("should_add_constraint_when_existing_data_is_unique") {
     // GIVEN
     execute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
 
@@ -65,12 +59,11 @@ class UniqueConstraintVerificationAcceptanceTest
 
         val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
-        assertTrue("Constraint should exist", constraints.size == 1)
+        constraints should have size 1
     }
   }
 
-  @Test
-  def should_add_constraint_using_recreated_unique_data() {
+  test("should_add_constraint_using_recreated_unique_data") {
     // GIVEN
     execute("create (a:Person{name:\"Alistair\"}), (b:Person{name:\"Stefan\"})")
     execute("match (n:Person) delete n")
@@ -87,12 +80,11 @@ class UniqueConstraintVerificationAcceptanceTest
 
         val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
-        assertTrue("Constraint should exist", constraints.size == 1)
+        constraints should have size 1
     }
   }
 
-  @Test
-  def should_drop_constraint() {
+  test("should_drop_constraint") {
     //GIVEN
     execute("create constraint on (node:Label) assert node.propertyKey is unique")
 
@@ -107,12 +99,11 @@ class UniqueConstraintVerificationAcceptanceTest
 
         val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
-        assertTrue("No constraints should exist", constraints.isEmpty)
+        constraints shouldBe empty
     }
   }
 
-  @Test
-  def should_fail_to_add_constraint_when_existing_data_conflicts() {
+  test("should_fail_to_add_constraint_when_existing_data_conflicts") {
     // GIVEN
     execute("create (a:Person{id:1}), (b:Person{id:1})")
 
@@ -137,7 +128,7 @@ class UniqueConstraintVerificationAcceptanceTest
 
         val constraints = context.constraintsGetForLabelAndPropertyKey(label, prop).asScala
 
-        assertTrue("No constraints should exist", constraints.isEmpty)
+        constraints shouldBe empty
     }
   }
 }

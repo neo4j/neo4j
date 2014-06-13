@@ -7,7 +7,7 @@
     Y11 [label="Year 2011"]
     root -> Y10 [label="2010",penwidth=3,color=green]
     root -> Y11 [label="2011"]
-    
+
   }
     subgraph months {
     Y10M12 [label="Month 12"]

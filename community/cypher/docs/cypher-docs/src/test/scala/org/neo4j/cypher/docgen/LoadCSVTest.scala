@@ -23,6 +23,7 @@ import org.neo4j.cypher.QueryStatisticsTestSupport
 import org.neo4j.visualization.graphviz.{AsciiDocSimpleStyle, GraphStyle}
 import org.junit.Test
 import java.io.File
+import org.junit.Assert._
 
 class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport {
   override protected def getGraphvizStyle: GraphStyle =
@@ -54,16 +55,22 @@ class LoadCSVTest extends DocumentingTestBase with QueryStatisticsTestSupport {
     Seq("4", "The Cardigans", "1992")
   )
 
+  private val artistsWithEscapeChar = new CsvFile("artists-with-escape-char.csv").withContentsF(
+    Seq("1", """"The \"Symbol\""""", "1992")
+  )
+
   filePaths = Map(
     "%ARTIST%" -> CsvFile.urify(artist),
     "%ARTIS_WITH_HEADER%" -> CsvFile.urify(artistWithHeaders),
-    "%ARTIST_WITH_FIELD_DELIMITER%" -> CsvFile.urify(artistFieldTerminator)
+    "%ARTIST_WITH_FIELD_DELIMITER%" -> CsvFile.urify(artistFieldTerminator),
+    "%ARTIST_WITH_ESCAPE_CHAR%" -> CsvFile.urify(artistsWithEscapeChar)
   )
 
   urls = Map(
     "%ARTIST%" -> (baseUrl + artist.getName),
     "%ARTIS_WITH_HEADER%" -> (baseUrl + artistWithHeaders.getName),
-    "%ARTIST_WITH_FIELD_DELIMITER%" -> (baseUrl + artistFieldTerminator.getName)
+    "%ARTIST_WITH_FIELD_DELIMITER%" -> (baseUrl + artistFieldTerminator.getName),
+    "%ARTIST_WITH_ESCAPE_CHAR%" -> (baseUrl + artistsWithEscapeChar.getName)
   )
 
   @Test def should_import_data_from_a_csv_file() {
@@ -147,5 +154,15 @@ For more information, see <<query-periodic-commit>>.
       queryText = s"USING PERIODIC COMMIT 500 LOAD CSV FROM '%ARTIST%' AS line CREATE (:Artist {name: line[1], year: toInt(line[2])})",
       optionalResultExplanation = "",
       assertions = (p) => assertStats(p, nodesCreated = 4, propertiesSet = 8, labelsAdded = 4))
+  }
+
+  @Test def should_import_data_from_a_csv_file_which_uses_the_escape_char() {
+    testQuery(
+      title = "Import data containing escape characters",
+      text = "",
+      queryText = s"LOAD CSV FROM '%ARTIST_WITH_ESCAPE_CHAR%' AS line CREATE (a:Artist {name: line[1], year: toInt(line[2])}) return a.name as name",
+      optionalResultExplanation = "",
+      assertions = (p) => assertEquals(List(Map("name" -> """"The "Symbol""""")), p.toList)
+    )
   }
 }

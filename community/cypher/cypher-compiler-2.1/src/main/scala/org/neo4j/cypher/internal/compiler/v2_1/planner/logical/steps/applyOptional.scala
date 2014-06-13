@@ -23,14 +23,15 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 object applyOptional extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
+  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
     val applyCandidates =
-      for (optionalQG <- context.queryGraph.optionalMatches;
+      for (optionalQG <- queryGraph.optionalMatches;
            lhs <- planTable.plans if applicable(lhs, optionalQG))
       yield {
-        val rhs = context.strategy.plan(context.copy(queryGraph = optionalQG))
+        val rhs = context.strategy.plan(optionalQG)
         planApply(lhs, planOptional(rhs))
       }
 

@@ -39,12 +39,14 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{PlanTransformer, QueryGraphSolvingContext}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanningContext, PlanTransformer}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
-object selectCovered extends PlanTransformer {
-  def apply(plan: QueryPlan)(implicit context: QueryGraphSolvingContext): QueryPlan = {
-    val unsolvedPredicates = context.queryGraph.selections
+object selectCovered extends PlanTransformer[QueryGraph] {
+  def apply(plan: QueryPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = {
+    val unsolvedPredicates = queryGraph.selections
       .scalarPredicatesGiven(plan.availableSymbols)
       .filterNot(predicate => plan.solved.exists(_.graph.selections.contains(predicate)))
     if (unsolvedPredicates.isEmpty)

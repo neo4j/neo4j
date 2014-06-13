@@ -14,7 +14,10 @@ include::import-data-from-a-csv-file-with-a-custom-field-delimiter.asciidoc[]
 
 include::importing-large-amounts-of-data.asciidoc[]
 
+include::import-data-containing-escape-characters.asciidoc[]
+
 :leveloffset: 3
 
 include::setting-the-rate-of-periodic-commits.asciidoc[]
 
+include::csv-file-format.asciidoc[]

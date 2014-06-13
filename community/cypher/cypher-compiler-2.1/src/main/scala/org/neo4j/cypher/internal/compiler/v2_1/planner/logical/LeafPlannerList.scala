@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 case class LeafPlannerList(leafPlanners: LeafPlanner*) {
-  def candidateLists(qg: QueryGraph)(implicit context: QueryGraphSolvingContext): Iterable[CandidateList] = {
+  def candidateLists(qg: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): Iterable[CandidateList] = {
     val queryPlans = leafPlanners.flatMap(_(qg).plans)
     queryPlans.groupBy(_.availableSymbols).values.map(CandidateList)
   }

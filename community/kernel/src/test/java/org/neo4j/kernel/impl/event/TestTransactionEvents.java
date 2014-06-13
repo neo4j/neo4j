@@ -21,18 +21,22 @@ package org.neo4j.kernel.impl.event;
 
 import java.util.ArrayList;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 
 import org.junit.ClassRule;
 import org.junit.Test;
 
+import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.TransactionFailureException;
+import org.neo4j.graphdb.event.LabelEntry;
 import org.neo4j.graphdb.event.PropertyEntry;
 import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
@@ -43,6 +47,7 @@ import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
@@ -647,6 +652,157 @@ public class TestTransactionEvents
         // Then
         assertThat(node, inTx(db, hasProperty(key).withValue(value2)));
         db.unregisterTransactionEventHandler( handler );
+    }
+
+    @Test
+    public void shouldAccessAssignedLabels() throws Exception
+    {
+        // given
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+
+        ChangedLabels labels = (ChangedLabels) db.registerTransactionEventHandler( new ChangedLabels() );
+        try
+        {
+            // when
+            try ( Transaction tx = db.beginTx() )
+            {
+                Node node1 = db.createNode(), node2 = db.createNode(), node3 = db.createNode();
+
+                labels.add( node1, "Foo" );
+                labels.add( node2, "Bar" );
+                labels.add( node3, "Baz" );
+                labels.add( node3, "Bar" );
+
+                labels.activate();
+                tx.success();
+            }
+            // then
+            assertTrue( labels.isEmpty() );
+        }
+        finally
+        {
+            db.unregisterTransactionEventHandler( labels );
+        }
+    }
+
+    @Test
+    public void shouldAccessRemovedLabels() throws Exception
+    {
+        // given
+        GraphDatabaseService db = dbRule.getGraphDatabaseService();
+
+        ChangedLabels labels = (ChangedLabels) db.registerTransactionEventHandler( new ChangedLabels() );
+        try
+        {
+            Node node1, node2, node3;
+            try ( Transaction tx = db.beginTx() )
+            {
+                node1 = db.createNode();
+                node2 = db.createNode();
+                node3 = db.createNode();
+
+                labels.add( node1, "Foo" );
+                labels.add( node2, "Bar" );
+                labels.add( node3, "Baz" );
+                labels.add( node3, "Bar" );
+
+                tx.success();
+            }
+            labels.clear();
+
+            // when
+            try ( Transaction tx = db.beginTx() )
+            {
+                labels.remove(node1, "Foo");
+                labels.remove(node2, "Bar");
+                labels.remove(node3, "Baz");
+                labels.remove(node3, "Bar");
+
+                labels.activate();
+                tx.success();
+            }
+            // then
+            assertTrue( labels.isEmpty() );
+        }
+        finally
+        {
+            db.unregisterTransactionEventHandler( labels );
+        }
+    }
+
+    private static final class ChangedLabels extends TransactionEventHandler.Adapter<Void>
+    {
+        private final Map<Node,Set<String>> added = new HashMap<>(), removed = new HashMap<>();
+        private boolean active = false;
+
+        @Override
+        public Void beforeCommit( TransactionData data ) throws Exception
+        {
+            if ( active )
+            {
+                check( added, "added to", data.assignedLabels() );
+                check( removed, "removed from", data.removedLabels() );
+            }
+            active = false;
+            return null;
+        }
+
+        private void check( Map<Node, Set<String>> expected, String change, Iterable<LabelEntry> changes )
+        {
+            for ( LabelEntry entry : changes )
+            {
+                Set<String> labels = expected.get(entry.node());
+                String message = String.format("':%s' should not be %s %s",
+                        entry.label().name(), change, entry.node() );
+                assertNotNull( message, labels );
+                assertTrue( message, labels.remove( entry.label().name() ) );
+                if ( labels.isEmpty() )
+                {
+                    expected.remove( entry.node() );
+                }
+            }
+            assertTrue(String.format("Expected more labels %s nodes: %s", change, expected), expected.isEmpty());
+        }
+
+        public boolean isEmpty()
+        {
+            return added.isEmpty() && removed.isEmpty();
+        }
+
+        public void add( Node node, String label )
+        {
+            node.addLabel( DynamicLabel.label( label ) );
+            put( added, node, label );
+        }
+
+        public void remove( Node node, String label )
+        {
+            node.removeLabel(DynamicLabel.label(label));
+            put( removed, node, label );
+        }
+
+        private void put( Map<Node, Set<String>> changes, Node node, String label )
+        {
+            Set<String> labels = changes.get(node);
+            if (labels == null)
+            {
+                changes.put( node, labels = new HashSet<>() );
+            }
+            labels.add( label );
+        }
+
+        public void activate()
+        {
+            assertFalse( isEmpty() );
+            active = true;
+        }
+
+        public void clear()
+        {
+            added.clear();
+            removed.clear();
+            active = false;
+        }
     }
     
     public static final @ClassRule DatabaseRule dbRule = new ImpermanentDatabaseRule()
