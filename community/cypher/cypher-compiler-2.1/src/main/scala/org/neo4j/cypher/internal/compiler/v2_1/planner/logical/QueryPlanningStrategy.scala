@@ -28,11 +28,14 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
 
   import QueryPlanProducer._
 
-  def plan(query: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): QueryPlan = {
-    val firstPart = planPart(query, leafPlan)
-    val projectedFirstPart = planEventHorizon(query, firstPart)
-    val finalPlan = plan(projectedFirstPart, query.tail)
-    verifyBestPlan(finalPlan, query)
+  def plan(queries: UnionQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): QueryPlan = queries match {
+    case UnionQuery(Seq(query), false) =>
+      val firstPart = planPart(query, leafPlan)
+      val projectedFirstPart = planEventHorizon(query, firstPart)
+      val finalPlan = plan(projectedFirstPart, query.tail)
+      verifyBestPlan(finalPlan, query)
+
+    case _ => throw new CantHandleQueryException
   }
 
   private def plan(pred: QueryPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = remaining match {
