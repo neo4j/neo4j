@@ -37,7 +37,7 @@ import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
-import org.neo4j.kernel.impl.api.state.LegacyIndexChangesProvider;
+import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
@@ -61,7 +61,7 @@ public class TxStateTransactionDataViewTest
     private final Statement stmt = mock(Statement.class);
     private final StoreReadLayer ops = mock(StoreReadLayer.class);
     private final TxState state = new TxStateImpl( mock( TransactionRecordState.class ),
-            mock( LegacyIndexChangesProvider.class) );
+            mock( LegacyIndexTransactionState.class) );
 
 
     @Before

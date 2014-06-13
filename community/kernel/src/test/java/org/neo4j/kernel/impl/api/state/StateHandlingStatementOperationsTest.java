@@ -33,7 +33,6 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
-import org.neo4j.kernel.impl.api.store.LegacyIndexReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
@@ -110,7 +109,7 @@ public class StateHandlingStatementOperationsTest
     {
         // given
         UniquenessConstraint constraint = new UniquenessConstraint( 10, 66 );
-        TxState txState = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexChangesProvider.class ) );
+        TxState txState = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexTransactionState.class ) );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
@@ -132,7 +131,7 @@ public class StateHandlingStatementOperationsTest
         UniquenessConstraint constraint1 = new UniquenessConstraint( 11, 66 );
         UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
 
-        TxState txState = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexChangesProvider.class ) );
+        TxState txState = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexTransactionState.class ) );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
@@ -160,7 +159,7 @@ public class StateHandlingStatementOperationsTest
         UniquenessConstraint constraint1 = new UniquenessConstraint( 10, 66 );
         UniquenessConstraint constraint2 = new UniquenessConstraint( 11, 99 );
 
-        TxState txState = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexChangesProvider.class ) );
+        TxState txState = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexTransactionState.class ) );
         KernelStatement state = mockedState( txState );
         when( inner.constraintsGetForLabelAndPropertyKey( 10, 66 ) )
             .thenAnswer( asAnswer( Collections.emptyList() ) );
@@ -193,6 +192,6 @@ public class StateHandlingStatementOperationsTest
     {
         return new StateHandlingStatementOperations( delegate,
                 mock( LegacyPropertyTrackers.class ), mock( ConstraintIndexCreator.class ),
-                mock( LegacyIndexReadLayer.class ), mock( LegacyIndexStore.class ) );
+                mock( LegacyIndexStore.class ) );
     }
 }

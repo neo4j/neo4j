@@ -23,17 +23,15 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.index.Index;
+import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.IndexTransactionSPI;
-import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.api.LegacyIndexChanges;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class LuceneIndexImplementation implements IndexImplementation, IndexTransactionSPI
+public class LuceneIndexImplementation extends LifecycleAdapter implements IndexImplementation
 {
     static final String KEY_TYPE = "type";
     static final String KEY_ANALYZER = "analyzer";
@@ -52,42 +50,26 @@ public class LuceneIndexImplementation implements IndexImplementation, IndexTran
 
     public static final int DEFAULT_LAZY_THRESHOLD = 100;
 
-    private final GraphDatabaseService graphDb;
     private final LuceneDataSource dataSource;
     final int lazynessThreshold;
 
-    public LuceneIndexImplementation( GraphDatabaseService db,
-                                      LuceneDataSource dataSource
-
-    )
+    public LuceneIndexImplementation( LuceneDataSource dataSource )
     {
-        this.graphDb = db;
         this.dataSource = dataSource;
         this.lazynessThreshold = DEFAULT_LAZY_THRESHOLD;
     }
 
-    LuceneDataSource dataSource()
-    {
-        return dataSource;
-    }
-
     @Override
-    public Index<Node> nodeIndex( String indexName, Map<String, String> config )
+    public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
     {
-        return dataSource.nodeIndex(indexName, graphDb, this);
-    }
-
-    @Override
-    public RelationshipIndex relationshipIndex( String indexName, Map<String, String> config )
-    {
-        return dataSource.relationshipIndex( indexName, graphDb, this );
+        return new LuceneLegacyIndexTransaction( dataSource, commandFactory );
     }
 
     @Override
     public Map<String, String> fillInDefaults( Map<String, String> source )
     {
         Map<String, String> result = source != null ?
-                new HashMap<String, String>( source ) : new HashMap<String, String>();
+                new HashMap<>( source ) : new HashMap<String, String>();
         String analyzer = result.get( KEY_ANALYZER );
         if ( analyzer == null )
         {
@@ -142,24 +124,32 @@ public class LuceneIndexImplementation implements IndexImplementation, IndexTran
     }
 
     @Override
-    public String getDataSourceName()
+    public NeoCommandHandler newApplier()
     {
-        return LuceneDataSource.DEFAULT_NAME;
-    }
-
-    public boolean matches( GraphDatabaseService gdb )
-    {
-        return this.graphDb.equals(gdb);
-    }
-
-    public GraphDatabaseService graphDb()
-    {
-        return graphDb;
+        return new LuceneCommandApplier( dataSource );
     }
 
     @Override
-    public LegacyIndexChanges newTransactionState()
+    public void init() throws Throwable
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        dataSource.init();
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        dataSource.start();
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        dataSource.stop();
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+        dataSource.shutdown();
     }
 }

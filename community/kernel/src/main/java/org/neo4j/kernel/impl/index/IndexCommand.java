@@ -25,8 +25,8 @@ import java.util.Map;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.CommandRecordVisitor;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandType;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandType;
 
 /**
  * Created from {@link IndexDefineCommand} or read from a logical log.
@@ -35,9 +35,6 @@ import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
  */
 public abstract class IndexCommand extends Command
 {
-    public static final byte NODE = (byte) 0;
-    public static final byte RELATIONSHIP = (byte) 1;
-
     public static final byte VALUE_TYPE_NULL = (byte) 0;
     public static final byte VALUE_TYPE_SHORT = (byte) 1;
     public static final byte VALUE_TYPE_INT = (byte) 2;
@@ -89,7 +86,7 @@ public abstract class IndexCommand extends Command
     {
         return value;
     }
-    
+
     @Override
     public void accept( CommandRecordVisitor visitor )
     {
@@ -154,34 +151,36 @@ public abstract class IndexCommand extends Command
         return null;
     }
 
-    public static class AddCommand extends IndexCommand
+    public static class AddNodeCommand extends IndexCommand
     {
-        public void init( byte indexNameId, byte entityType, long entityId, byte keyId, Object value )
+        public void init( byte indexNameId, long entityId, byte keyId, Object value )
         {
-            super.init( NeoCommandType.INDEX_ADD_COMMAND, indexNameId, entityType, entityId, keyId, value );
+            super.init( NeoCommandType.INDEX_ADD_COMMAND, indexNameId, IndexEntityType.node.id(),
+                    entityId, keyId, value );
         }
 
         @Override
         public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
-            return visitor.visitAddIndexCommand( this );
+            return visitor.visitIndexAddNodeCommand( this );
         }
     }
-    
+
     protected static byte needsLong( long value )
     {
         return value > Integer.MAX_VALUE ? (byte)1 : (byte)0;
     }
-    
+
     public static class AddRelationshipCommand extends IndexCommand
     {
         private long startNode;
         private long endNode;
 
-        public void init( byte indexNameId, byte entityType, long entityId, byte keyId,
+        public void init( byte indexNameId, long entityId, byte keyId,
                 Object value, long startNode, long endNode )
         {
-            super.init( NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND, indexNameId, entityType, entityId, keyId, value );
+            super.init( NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND, indexNameId, IndexEntityType.relationship.id(),
+                    entityId, keyId, value );
             this.startNode = startNode;
             this.endNode = endNode;
         }
@@ -226,7 +225,7 @@ public abstract class IndexCommand extends Command
             AddRelationshipCommand other = (AddRelationshipCommand) obj;
             return startNode == other.startNode && endNode == other.endNode;
         }
-        
+
         @Override
         public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
@@ -244,7 +243,7 @@ public abstract class IndexCommand extends Command
         @Override
         public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
-            return visitor.visitRemoveIndexCommand( this );
+            return visitor.visitIndexRemoveCommand( this );
         }
 
     }
@@ -272,7 +271,7 @@ public abstract class IndexCommand extends Command
     public static class CreateCommand extends IndexCommand
     {
         private Map<String, String> config;
-        
+
         public void init( byte indexNameId, byte entityType, Map<String, String> config )
         {
             super.init( NeoCommandType.INDEX_CREATE_COMMAND, indexNameId, entityType, 0L, (byte)0, null );
@@ -307,7 +306,6 @@ public abstract class IndexCommand extends Command
         {
             return visitor.visitIndexCreateCommand( this );
         }
-
     }
 
     @Override
@@ -336,5 +334,4 @@ public abstract class IndexCommand extends Command
     {
         return valueType;
     }
-
 }

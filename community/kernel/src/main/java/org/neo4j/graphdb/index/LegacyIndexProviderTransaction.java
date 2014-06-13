@@ -17,21 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.store;
+package org.neo4j.graphdb.index;
 
-import org.neo4j.kernel.api.LegacyIndexHits;
+import java.io.Closeable;
+import java.util.Map;
 
-public interface LegacyIndexReadLayer
+import org.neo4j.kernel.api.LegacyIndex;
+
+/**
+ * Provides access to {@link LegacyIndex indexes}. Holds transaction state for a specific provider in a transaction.
+ * This interface is implemented by the index provider.
+ */
+public interface LegacyIndexProviderTransaction extends Closeable
 {
-    LegacyIndexHits nodeIndexGet( String indexName, String key, Object value );
+    LegacyIndex nodeIndex( String indexName, Map<String, String> configuration );
 
-    LegacyIndexHits nodeIndexQuery( String indexName, String key, Object queryOrQueryObject );
+    LegacyIndex relationshipIndex( String indexName, Map<String, String> configuration );
 
-    LegacyIndexHits nodeIndexQuery( String indexName, Object queryOrQueryObject );
-
-    LegacyIndexHits relationshipIndexGet( String indexName, String key, Object value );
-
-    LegacyIndexHits relationshipIndexQuery( String indexName, String key, Object queryOrQueryObject );
-
-    LegacyIndexHits relationshipIndexQuery( String indexName, Object queryOrQueryObject );
+    @Override
+    void close();
 }

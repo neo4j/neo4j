@@ -44,7 +44,7 @@ public class PrimitiveLongCollections
     public static abstract class PrimitiveLongBaseIterator implements PrimitiveLongIterator
     {
         private boolean hasNext;
-        private long next;
+        protected long next;
 
         @Override
         public boolean hasNext()
@@ -176,10 +176,10 @@ public class PrimitiveLongCollections
 
     public static class PrimitiveLongConcatingIterator extends PrimitiveLongBaseIterator
     {
-        private final Iterator<PrimitiveLongIterator> iterators;
+        private final Iterator<? extends PrimitiveLongIterator> iterators;
         private PrimitiveLongIterator currentIterator;
 
-        public PrimitiveLongConcatingIterator( Iterator<PrimitiveLongIterator> iterators )
+        public PrimitiveLongConcatingIterator( Iterator<? extends PrimitiveLongIterator> iterators )
         {
             this.iterators = iterators;
         }

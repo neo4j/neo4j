@@ -26,6 +26,7 @@ import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.locking.NoOpClient;
@@ -49,6 +50,7 @@ public class KernelTransactionFactory
                 mock( ConstraintIndexCreator.class ), headerInformation,
                 mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
                 mock( TransactionIdStore.class ), mock( PersistenceCache.class ),
-                mock( StoreReadLayer.class ) );
+                mock( StoreReadLayer.class ),
+                mock( LegacyIndexTransactionState.class ) );
     }
 }

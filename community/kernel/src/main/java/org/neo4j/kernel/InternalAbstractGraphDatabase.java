@@ -821,7 +821,7 @@ public abstract class InternalAbstractGraphDatabase
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
                 storeMigrationProcess, transactionMonitor, kernelHealth, txHook, txIdGenerator,
-                transactionHeaderInformation, startupStatistics, caches, nodeManager, guard );
+                transactionHeaderInformation, startupStatistics, caches, nodeManager, guard, indexStore );
         dataSourceManager.register( neoDataSource );
     }
 

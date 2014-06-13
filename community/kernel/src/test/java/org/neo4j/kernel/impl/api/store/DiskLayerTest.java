@@ -288,7 +288,7 @@ public class DiskLayerTest
                 indexingService );
         this.state = new KernelStatement( null, new IndexReaderFactory.Caching( indexingService ),
                 resolver.resolveDependency( LabelScanStore.class ), null,
-                null, null, null );
+                null, null, null, null );
     }
 
     @After

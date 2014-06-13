@@ -19,15 +19,11 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
@@ -41,8 +37,6 @@ import org.apache.lucene.analysis.LowerCaseFilter;
 import org.apache.lucene.analysis.TokenStream;
 import org.apache.lucene.analysis.WhitespaceTokenizer;
 import org.apache.lucene.document.Document;
-import org.apache.lucene.document.Field;
-import org.apache.lucene.document.Field.Store;
 import org.apache.lucene.document.Fieldable;
 import org.apache.lucene.index.IndexCommit;
 import org.apache.lucene.index.IndexReader;
@@ -59,28 +53,29 @@ import org.apache.lucene.store.Directory;
 import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
+
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexManager;
-import org.neo4j.graphdb.index.RelationshipIndex;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingResourceIterator;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
-import org.neo4j.kernel.impl.index.IndexProviderStore;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.index.IndexEntityType;
+import org.neo4j.kernel.impl.index.IndexProviderStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.lifecycle.Lifecycle;
+
+import static org.neo4j.index.impl.lucene.MultipleBackupDeletionPolicy.SNAPSHOT_ID;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 /**
  * An {@link XaDataSource} optimized for the {@link LuceneIndexImplementation}.
@@ -147,12 +142,9 @@ public class LuceneDataSource implements Lifecycle
     private IndexTypeCache typeCache;
     private boolean closed;
     private Cache caching;
-    EntityType nodeEntityType;
-    EntityType relationshipEntityType;
-    final Map<IndexIdentifier, LuceneIndex<? extends PropertyContainer>> indexes = new HashMap<IndexIdentifier, LuceneIndex<? extends PropertyContainer>>();
     private LuceneFilesystemFacade filesystemFacade;
     // Used for assertion after recovery has been completed.
-    private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<IndexIdentifier>();
+    private final Set<IndexIdentifier> expectedFutureRecoveryDeletions = new HashSet<>();
 
     /**
      * Constructs this data source.
@@ -187,40 +179,6 @@ public class LuceneDataSource implements Lifecycle
         this.providerStore = newIndexStore( baseStorePath, fileSystemAbstraction, allowUpgrade );
         this.typeCache = new IndexTypeCache( indexStore );
         boolean isReadOnly = config.get( Configuration.read_only );
-        nodeEntityType = new EntityType()
-        {
-            @Override
-            public Document newDocument( Object entityId )
-            {
-                return IndexType.newBaseDocument( (Long) entityId );
-            }
-
-            @Override
-            public Class<? extends PropertyContainer> getType()
-            {
-                return Node.class;
-            }
-        };
-        relationshipEntityType = new EntityType()
-        {
-            @Override
-            public Document newDocument( Object entityId )
-            {
-                RelationshipId relId = (RelationshipId) entityId;
-                Document doc = IndexType.newBaseDocument( relId.id );
-                doc.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + relId.startNode, Store.YES,
-                        org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
-                doc.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + relId.endNode, Store.YES,
-                        org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
-                return doc;
-            }
-
-            @Override
-            public Class<? extends PropertyContainer> getType()
-            {
-                return Relationship.class;
-            }
-        };
         //        XaCommandReaderFactory commandReaderFactory = new LuceneCommandReaderFactory( nodeEntityType,
         //                relationshipEntityType );
         //        LuceneCommandWriterFactory commandWriterFactory = new LuceneCommandWriterFactory();
@@ -251,11 +209,6 @@ public class LuceneDataSource implements Lifecycle
             //
             //            setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
         }
-    }
-
-    private File logBaseName( File baseDirectory )
-    {
-        return new File( baseDirectory, "lucene.log" );
     }
 
     private File baseDirectory( File storeDir )
@@ -307,45 +260,6 @@ public class LuceneDataSource implements Lifecycle
     @Override
     public void shutdown()
     {
-    }
-
-    public Index<Node> nodeIndex( String indexName, GraphDatabaseService graphDb,
-            LuceneIndexImplementation luceneIndexImplementation )
-    {
-        IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE, nodeEntityType, indexName );
-        synchronized ( indexes )
-        {
-            LuceneIndex index = indexes.get( identifier );
-            if ( index == null )
-            {
-                index = new LuceneIndex.NodeIndex( luceneIndexImplementation, graphDb, identifier );
-                indexes.put( identifier, index );
-            }
-            return index;
-        }
-    }
-
-    public RelationshipIndex relationshipIndex( String indexName, GraphDatabaseService gdb,
-            LuceneIndexImplementation luceneIndexImplementation )
-    {
-        IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.RELATIONSHIP, relationshipEntityType, indexName );
-        synchronized ( indexes )
-        {
-            LuceneIndex index = indexes.get( identifier );
-            if ( index == null )
-            {
-                index = new LuceneIndex.RelationshipIndex( luceneIndexImplementation, gdb, identifier );
-                indexes.put( identifier, index );
-            }
-            return (RelationshipIndex) index;
-        }
-    }
-
-    public LuceneXaConnection getXaConnection()
-    {
-        //        return new LuceneXaConnection( baseStorePath, xaContainer
-        //                .getResourceManager(), getBranchId() );
-        return null;
     }
 
     //    public static class LuceneCommandReaderFactory implements XaCommandReaderFactory
@@ -506,28 +420,16 @@ public class LuceneDataSource implements Lifecycle
         }
     }
 
-    static File getFileDirectory( File storeDir, byte entityType )
+    static File getFileDirectory( File storeDir, IndexEntityType type )
     {
         File path = new File( storeDir, "lucene" );
-        String extra = null;
-        if ( entityType == LuceneCommand.NODE )
-        {
-            extra = "node";
-        }
-        else if ( entityType == LuceneCommand.RELATIONSHIP )
-        {
-            extra = "relationship";
-        }
-        else
-        {
-            throw new RuntimeException( "" + entityType );
-        }
+        String extra = type.name();
         return new File( path, extra );
     }
 
     static File getFileDirectory( File storeDir, IndexIdentifier identifier )
     {
-        return new File( getFileDirectory( storeDir, identifier.entityTypeByte ), identifier.indexName );
+        return new File( getFileDirectory( storeDir, identifier.entityType ), identifier.indexName );
     }
 
     static Directory getDirectory( File storeDir, IndexIdentifier identifier ) throws IOException
@@ -646,20 +548,12 @@ public class LuceneDataSource implements Lifecycle
         deleteFileOrDirectory( getFileDirectory( baseStorePath, identifier ) );
         invalidateCache( identifier );
         boolean removeFromIndexStore = !recovery
-                || (recovery && indexStore.has( identifier.entityType.getType(), identifier.indexName ));
+                || (recovery && indexStore.has( identifier.entityType.entityClass(), identifier.indexName ));
         if ( removeFromIndexStore )
         {
-            indexStore.remove( identifier.entityType.getType(), identifier.indexName );
+            indexStore.remove( identifier.entityType.entityClass(), identifier.indexName );
         }
         typeCache.invalidate( identifier );
-        synchronized ( indexes )
-        {
-            LuceneIndex<? extends PropertyContainer> index = indexes.remove( identifier );
-            if ( index != null )
-            {
-                index.markAsDeleted();
-            }
-        }
     }
 
     private static void deleteFileOrDirectory( File file )
@@ -834,7 +728,7 @@ public class LuceneDataSource implements Lifecycle
         providerStore.setLastCommittedTx( txId );
     }
 
- 
+
     public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
     { // Never include logical logs since they are of little importance
         final Collection<File> files = new ArrayList<>();
@@ -924,7 +818,7 @@ public class LuceneDataSource implements Lifecycle
             Map<String, String> config = indexStore.get( Node.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE, nodeEntityType, name );
+                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.node, name );
                 getIndexSearcher( identifier );
             }
         }
@@ -933,8 +827,7 @@ public class LuceneDataSource implements Lifecycle
             Map<String, String> config = indexStore.get( Relationship.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.RELATIONSHIP, relationshipEntityType,
-                        name );
+                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.relationship, name );
                 getIndexSearcher( identifier );
             }
         }

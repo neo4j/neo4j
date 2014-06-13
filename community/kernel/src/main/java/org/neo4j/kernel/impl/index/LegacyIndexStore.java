@@ -32,14 +32,15 @@ import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
-import org.neo4j.graphdb.index.IndexProviders;
-import org.neo4j.graphdb.index.IndexTransactionSPI;
+import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.LegacyIndexApplier;
+import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 
@@ -50,11 +51,11 @@ public class LegacyIndexStore
 {
     private final IndexConfigStore indexStore;
     private final Config config;
-    private final IndexProviders indexProviders;
+    private final ProviderLookup indexProviders;
     private final KernelAPI kernel;
 
     public LegacyIndexStore( Config config, IndexConfigStore indexStore, KernelAPI kernel,
-            IndexProviders indexProviders )
+            LegacyIndexApplier.ProviderLookup indexProviders )
     {
         this.config = config;
         this.indexStore = indexStore;
@@ -64,29 +65,17 @@ public class LegacyIndexStore
 
     public Map<String, String> getOrCreateNodeIndexConfig( String indexName, Map<String, String> customConfiguration )
     {
-        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig( Node.class,
+        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig( IndexEntityType.node,
                 indexName, customConfiguration );
         return config.first();
-
-        // TODO 2.2-future move this auto index stuff into a kernel layer
-//        if ( NodeAutoIndexerImpl.NODE_AUTO_INDEX.equals( indexName ) )
-//        {
-//            toReturn = new AbstractAutoIndexerImpl.ReadOnlyIndexToIndexAdapter<Node>( toReturn );
-//        }
     }
 
     public Map<String, String> getOrCreateRelationshipIndexConfig( String indexName,
             Map<String, String> customConfiguration )
     {
-        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig( Relationship.class,
+        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig( IndexEntityType.relationship,
                 indexName, customConfiguration );
         return config.first();
-
-        // TODO 2.2-future move this auto index stuff into a kernel layer
-//        if ( RelationshipAutoIndexerImpl.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
-//        {
-//            toReturn = new AbstractAutoIndexerImpl.ReadOnlyIndexToIndexAdapter<Relationship>( toReturn );
-//        }
     }
 
     private Pair<Map<String, String>, Boolean/*true=needs to be set*/> findIndexConfig( Class<? extends
@@ -111,7 +100,7 @@ public class LegacyIndexStore
 
         // Check db config properties for provider
         String provider = null;
-        IndexTransactionSPI indexProvider = null;
+        IndexImplementation indexProvider = null;
         if ( configToUse == null )
         {
             provider = getDefaultProvider( indexName, dbConfig );
@@ -122,7 +111,7 @@ public class LegacyIndexStore
             provider = configToUse.get( PROVIDER );
             provider = provider == null ? getDefaultProvider( indexName, dbConfig ) : provider;
         }
-        indexProvider = indexProviders.getTransactionAPI( provider );
+        indexProvider = indexProviders.lookup( provider );
         configToUse = indexProvider.fillInDefaults( configToUse );
         configToUse = injectDefaultProviderIfMissing( indexName, dbConfig, configToUse );
 
@@ -143,7 +132,7 @@ public class LegacyIndexStore
         return Pair.of( Collections.unmodifiableMap( configToUse ), needsToBeSet );
     }
 
-    private void assertConfigMatches( IndexTransactionSPI indexProvider, String indexName,
+    private void assertConfigMatches( IndexImplementation indexProvider, String indexName,
                                       Map<String, String> storedConfig, Map<String, String> suppliedConfig )
     {
         if ( suppliedConfig != null && !indexProvider.configMatches( storedConfig, suppliedConfig ) )
@@ -187,20 +176,20 @@ public class LegacyIndexStore
     }
 
     private Pair<Map<String, String>, /*was it created now?*/Boolean> getOrCreateIndexConfig(
-            Class<? extends PropertyContainer> cls, String indexName, Map<String, String> suppliedConfig )
+            IndexEntityType entityType, String indexName, Map<String, String> suppliedConfig )
     {
-        Pair<Map<String, String>, Boolean> result = findIndexConfig( cls,
+        Pair<Map<String, String>, Boolean> result = findIndexConfig( entityType.entityClass(),
                 indexName, suppliedConfig, config.getParams() );
         boolean createdNow = false;
         if ( result.other() )
         {   // Ok, we need to create this config
             synchronized ( this )
             {   // Were we the first ones to get here?
-                Map<String, String> existing = indexStore.get( cls, indexName );
+                Map<String, String> existing = indexStore.get( entityType.entityClass(), indexName );
                 if ( existing != null )
                 {
                     // No, someone else made it before us, cool
-                    assertConfigMatches( indexProviders.getTransactionAPI( existing.get( PROVIDER ) ), indexName,
+                    assertConfigMatches( indexProviders.lookup( existing.get( PROVIDER ) ), indexName,
                             existing, result.first() );
                     return Pair.of( result.first(), false );
                 }
@@ -209,8 +198,9 @@ public class LegacyIndexStore
                 ExecutorService executorService = Executors.newSingleThreadExecutor();
                 try
                 {
-                    executorService.submit( new IndexCreatorJob( cls, indexName, result.first() ) ).get();
-                    indexStore.set( cls, indexName, result.first() );
+                    executorService.submit( new IndexCreatorJob( entityType, indexName, result.first() ) ).get();
+                    // TODO 2.2-future make sure this gets set by the transaction instead
+//                    indexStore.set( entityType.entityClass(), indexName, result.first() );
                     createdNow = true;
                 }
                 catch ( ExecutionException ex )
@@ -233,14 +223,13 @@ public class LegacyIndexStore
 
     private class IndexCreatorJob implements Callable
     {
+        private final IndexEntityType entityType;
         private final String indexName;
         private final Map<String, String> config;
-        private final Class<? extends PropertyContainer> cls;
 
-        IndexCreatorJob( Class<? extends PropertyContainer> cls, String indexName,
-                         Map<String, String> config )
+        IndexCreatorJob( IndexEntityType entityType, String indexName, Map<String, String> config )
         {
-            this.cls = cls;
+            this.entityType = entityType;
             this.indexName = indexName;
             this.config = config;
         }
@@ -249,23 +238,10 @@ public class LegacyIndexStore
         public Object call()
                 throws Exception
         {
-//            String provider = config.get( PROVIDER );
-//            String dataSourceName = getIndexProvider( provider ).getDataSourceName();
-//            try ( Transaction tx = graphDatabaseAPI.tx().begin() )
-//            {
-//                XaDataSource dataSource = xaDataSourceManager.getXaDataSource( dataSourceName );
-//                IndexXaConnection connection = (IndexXaConnection) dataSource.getXaConnection();
-//                javax.transaction.Transaction javaxTx = txManager.getTransaction();
-//                connection.enlistResource( javaxTx );
-//                connection.createIndex( cls, indexName, config );
-//                tx.success();
-//            }
-
             try ( KernelTransaction transaction = kernel.newTransaction();
                     Statement statement = transaction.acquireStatement() )
             {
-                // TODO 2.2-future
-//                transaction.createIndex( cls, indexName, config );
+                transaction.getLegacyIndexTransactionState().createIndex( entityType, indexName, config );
                 transaction.success();
             }
             return null;

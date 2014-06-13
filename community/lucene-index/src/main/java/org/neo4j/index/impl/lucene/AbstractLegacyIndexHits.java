@@ -19,12 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import org.apache.lucene.document.Document;
-import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.kernel.api.LegacyIndexHits;
 
-interface EntityType
+public abstract class AbstractLegacyIndexHits extends PrimitiveLongBaseIterator implements LegacyIndexHits
 {
-    Document newDocument( Object entityId );
-    
-    Class<? extends PropertyContainer> getType();
+    @Override
+    public void close()
+    {   // Nothing to close by default
+    }
 }

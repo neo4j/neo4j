@@ -279,7 +279,8 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
             {
                 try
                 {
-                    return entityOf( PrimitiveLongCollections.single( ids ) );
+                    long singleId = PrimitiveLongCollections.single( ids, -1L );
+                    return singleId == -1 ? null : entityOf( singleId );
                 }
                 finally
                 {

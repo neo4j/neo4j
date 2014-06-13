@@ -77,6 +77,8 @@ public class IndexManagerImpl implements IndexManager
     public Index<Node> forNodes( String indexName, Map<String, String> customConfiguration )
     {
         Index<Node> toReturn = getOrCreateNodeIndex( indexName, customConfiguration );
+
+        // TODO 2.2-future move this into kernel layer
         if ( NodeAutoIndexerImpl.NODE_AUTO_INDEX.equals( indexName ) )
         {
             toReturn = new AbstractAutoIndexerImpl.ReadOnlyIndexToIndexAdapter<Node>( toReturn );
@@ -160,6 +162,8 @@ public class IndexManagerImpl implements IndexManager
     {
         RelationshipIndex toReturn = getOrCreateRelationshipIndex( indexName,
                 customConfiguration );
+
+        // TODO 2.2-future move this into kernel layer
         if ( RelationshipAutoIndexerImpl.RELATIONSHIP_AUTO_INDEX.equals( indexName ) )
         {
             toReturn = new RelationshipAutoIndexerImpl.RelationshipReadOnlyIndexToIndexAdapter(
@@ -182,11 +186,11 @@ public class IndexManagerImpl implements IndexManager
     {
         try ( Statement statement = transactionBridge.instance() )
         {
-            if ( index.equals( Node.class ) )
+            if ( index.getEntityType().equals( Node.class ) )
             {
                 return statement.readOperations().nodeLegacyIndexGetConfiguration( index.getName() );
             }
-            if ( index.equals( Relationship.class ) )
+            if ( index.getEntityType().equals( Relationship.class ) )
             {
                 return statement.readOperations().relationshipLegacyIndexGetConfiguration( index.getName() );
             }

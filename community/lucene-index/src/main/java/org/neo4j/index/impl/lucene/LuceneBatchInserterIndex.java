@@ -19,9 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
-import static org.neo4j.index.impl.lucene.LuceneDataSource.getDirectory;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,17 +37,25 @@ import org.apache.lucene.index.IndexWriterConfig;
 import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.TopDocs;
+
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.index.lucene.ValueContext;
+import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.impl.cache.LruCache;
+import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.unsafe.batchinsert.BatchInserterIndex;
+
+import static org.neo4j.index.impl.lucene.LuceneDataSource.LUCENE_VERSION;
+import static org.neo4j.index.impl.lucene.LuceneDataSource.getDirectory;
 
 class LuceneBatchInserterIndex implements BatchInserterIndex
 {
     private final IndexIdentifier identifier;
     private final IndexType type;
-    
+
     private IndexWriter writer;
     private boolean writerModified;
     private IndexSearcher searcher;
@@ -58,21 +63,28 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     private Map<String, LruCache<String, Collection<Long>>> cache;
     private int updateCount;
     private int commitBatchSize = 500000;
+    private final RelationshipLookup relationshipLookup;
+
+    interface RelationshipLookup
+    {
+        RelationshipId lookup( long id );
+    }
 
     LuceneBatchInserterIndex( File dbStoreDir,
-            IndexIdentifier identifier, Map<String, String> config )
+            IndexIdentifier identifier, Map<String, String> config, RelationshipLookup relationshipLookup )
     {
         File storeDir = getStoreDir( dbStoreDir );
         this.createdNow = !LuceneDataSource.getFileDirectory( storeDir, identifier ).exists();
         this.identifier = identifier;
-        this.type = IndexType.getIndexType( identifier, config );
+        this.type = IndexType.getIndexType( config );
+        this.relationshipLookup = relationshipLookup;
         this.writer = instantiateWriter( storeDir );
     }
-    
+
     /**
      * Sets the number of modifications that will be the threshold for a commit
      * to happen. This will free up memory.
-     * 
+     *
      * @param size the threshold for triggering a commit.
      */
     public void setCommitBatchSize( int size )
@@ -81,16 +93,16 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
     }
 
     @Override
-    public void add( long entityId, Map<String, Object> properties )
+    public void add( long id, Map<String, Object> properties )
     {
         try
         {
-            Document document = identifier.entityType.newDocument( entityId );
+            Document document = IndexType.newDocument( entityId( id ) );
             for ( Map.Entry<String, Object> entry : properties.entrySet() )
             {
                 String key = entry.getKey();
                 Object value = entry.getValue();
-                addSingleProperty(entityId, document, key, value);
+                addSingleProperty( id, document, key, value );
             }
             writer.addDocument( document );
             if ( ++updateCount == commitBatchSize )
@@ -103,6 +115,16 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         {
             throw new RuntimeException( e );
         }
+    }
+
+    private Object entityId( long id )
+    {
+        if ( identifier.entityType == IndexEntityType.node )
+        {
+            return id;
+        }
+
+        return relationshipLookup.lookup( id );
     }
 
     private void addSingleProperty( long entityId, Document document, String key, Object value ) {
@@ -127,7 +149,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         {
             return;
         }
-        
+
         String valueAsString = value.toString();
         LruCache<String, Collection<Long>> cache = this.cache.get( key );
         if ( cache != null )
@@ -141,14 +163,14 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             ids.add( entityId );
         }
     }
-    
+
     private void addToCache( Collection<Long> ids, String key, Object value )
     {
         if ( this.cache == null )
         {
             return;
         }
-        
+
         String valueAsString = value.toString();
         LruCache<String, Collection<Long>> cache = this.cache.get( key );
         if ( cache != null )
@@ -157,13 +179,13 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
     }
 
-    private IndexHits<Long> getFromCache( String key, Object value )
+    private LegacyIndexHits getFromCache( String key, Object value )
     {
         if ( this.cache == null )
         {
             return null;
         }
-        
+
         String valueAsString = value.toString();
         LruCache<String, Collection<Long>> cache = this.cache.get( key );
         if ( cache != null )
@@ -171,12 +193,12 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             Collection<Long> ids = cache.get( valueAsString );
             if ( ids != null )
             {
-                return new ConstantScoreIterator<Long>( ids, Float.NaN );
+                return new ConstantScoreIterator( ids, Float.NaN );
             }
         }
         return null;
     }
-    
+
     @Override
     public void updateOrAdd( long entityId, Map<String, Object> properties )
     {
@@ -208,14 +230,14 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             }
         }
     }
-    
+
     private void removeFromCache( long entityId, String key, Object value )
     {
         if ( this.cache == null )
         {
             return;
         }
-        
+
         String valueAsString = value.toString();
         LruCache<String, Collection<Long>> cache = this.cache.get( key );
         if ( cache != null )
@@ -242,7 +264,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             throw new RuntimeException( e );
         }
     }
-    
+
     private double determineGoodBufferSize( double atLeast )
     {
         double heapHint = Runtime.getRuntime().maxMemory()/(1024*1024*14);
@@ -289,7 +311,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
             this.searcher = result;
         }
     }
-    
+
     private void closeWriter()
     {
         try
@@ -316,35 +338,32 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         {
             Hits hits = new Hits( searcher(), query, null );
             HitsIterator result = new HitsIterator( hits );
+            LegacyIndexHits primitiveHits = null;
             if ( key == null || this.cache == null || !this.cache.containsKey( key ) )
             {
-                return new DocToIdIterator( result, Collections.<Long>emptyList(), null );
+                primitiveHits = new DocToIdIterator( result, Collections.<Long>emptyList(), null );
             }
             else
             {
-                return new DocToIdIterator( result, Collections.<Long>emptyList(), null )
+                primitiveHits = new DocToIdIterator( result, Collections.<Long>emptyList(), null )
                 {
-                    private final Collection<Long> ids = new ArrayList<Long>();
-                    
+                    // TODO 2.2-future primitive longs instead
+                    private final Collection<Long> ids = new ArrayList<>();
+
                     @Override
-                    protected Long fetchNextOrNull()
+                    protected boolean fetchNext()
                     {
-                        Long result = super.fetchNextOrNull();
-                        if ( result != null )
+                        if ( super.fetchNext() )
                         {
-                            ids.add( result );
+                            ids.add( next );
+                            return true;
                         }
-                        return result;
-                    }
-                    
-                    @Override
-                    protected void endReached()
-                    {
-                        super.endReached();
                         addToCache( ids, key, value );
+                        return false;
                     }
                 };
             }
+            return wrapIndexHits( primitiveHits );
         }
         catch ( IOException e )
         {
@@ -352,11 +371,73 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
     }
 
+    private IndexHits<Long> wrapIndexHits( final LegacyIndexHits ids )
+    {
+        return new IndexHits<Long>()
+        {
+            @Override
+            public boolean hasNext()
+            {
+                return ids.hasNext();
+            }
+
+            @Override
+            public Long next()
+            {
+                return ids.next();
+            }
+
+            @Override
+            public void remove()
+            {
+                throw new UnsupportedOperationException();
+            }
+
+            @Override
+            public ResourceIterator<Long> iterator()
+            {
+                return this;
+            }
+
+            @Override
+            public int size()
+            {
+                return ids.size();
+            }
+
+            @Override
+            public void close()
+            {
+                ids.close();
+            }
+
+            @Override
+            public Long getSingle()
+            {
+                try
+                {
+                    long singleId = PrimitiveLongCollections.single( ids, -1L );
+                    return singleId == -1 ? null : singleId;
+                }
+                finally
+                {
+                    close();
+                }
+            }
+
+            @Override
+            public float currentScore()
+            {
+                return 0;
+            }
+        };
+    }
+
     @Override
     public IndexHits<Long> get( String key, Object value )
     {
-        IndexHits<Long> cached = getFromCache( key, value );
-        return cached != null ? cached : query( type.get( key, value ), key, value );
+        LegacyIndexHits cached = getFromCache( key, value );
+        return cached != null ? wrapIndexHits( cached ) : query( type.get( key, value ), key, value );
     }
 
     @Override
@@ -387,13 +468,13 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
         }
         return dir;
     }
-    
+
     @Override
     public void flush()
     {
         writerModified = true;
     }
-    
+
     @Override
     public void setCacheCapacity( String key, int size )
     {

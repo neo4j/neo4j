@@ -19,22 +19,19 @@
  */
 package org.neo4j.kernel.api;
 
-import java.util.List;
-
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-
-public interface LegacyIndexChanges
+/**
+ * The main way to access a legacy index. Even pure reads will need to get a hold of an object of this class
+ * and to a query on. Blending of transaction state must also be handled within this object.
+ */
+public interface LegacyIndex
 {
-    LegacyIndexHits augmentGet( String key, Object value, LegacyIndexHits committed );
+    LegacyIndexHits get( String key, Object value );
 
-    LegacyIndexHits augmentQuery( String key, Object queryOrQueryObject, LegacyIndexHits committed );
+    LegacyIndexHits query( String key, Object queryOrQueryObject );
 
-    LegacyIndexHits augmentQuery( Object queryOrQueryObject, LegacyIndexHits committed );
+    LegacyIndexHits query( Object queryOrQueryObject );
 
-    void add( long entity, String key, Object value );
-
-    // TODO 2.2-future This method looks misplaced
-    void addRelationship( long entity, String key, Object value, long startNode, long endNode );
+    void addNode( long entity, String key, Object value );
 
     void remove( long entity, String key, Object value );
 
@@ -44,5 +41,12 @@ public interface LegacyIndexChanges
 
     void drop();
 
-    void extractCommands( List<Command> commands );
+    // Relationship-index-specific accessors
+    LegacyIndexHits get( String key, Object value, long startNode, long endNode );
+
+    LegacyIndexHits query( String key, Object queryOrQueryObject, long startNode, long endNode );
+
+    LegacyIndexHits query( Object queryOrQueryObject, long startNode, long endNode );
+
+    void addRelationship( long entity, String key, Object value, long startNode, long endNode );
 }

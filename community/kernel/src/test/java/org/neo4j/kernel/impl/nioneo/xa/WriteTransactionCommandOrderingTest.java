@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.nioneo.xa;
 
 import java.io.IOException;
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -28,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.junit.Test;
 
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.nioneo.store.AbstractBaseRecord;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -44,6 +46,7 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.RecordChanges.RecordChange;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
@@ -74,10 +77,18 @@ public class WriteTransactionCommandOrderingTest
         TransactionRecordState tx = injectAllPossibleCommands();
 
         // When
-        PhysicalTransactionRepresentation commands = tx.doPrepare();
-        
+        PhysicalTransactionRepresentation commands = transactionRepresentationOf( tx );
+
         // Then
         commands.accept( new NeoCommandHandler.HandlerVisitor( new OrderVerifyingCommandHandler() ));
+    }
+
+    private PhysicalTransactionRepresentation transactionRepresentationOf( TransactionRecordState tx )
+            throws TransactionFailureException
+    {
+        List<Command> commands = new ArrayList<>();
+        tx.extractCommands( commands );
+        return new PhysicalTransactionRepresentation( commands, false );
     }
 
     private TransactionRecordState injectAllPossibleCommands()
@@ -101,19 +112,19 @@ public class WriteTransactionCommandOrderingTest
         when( context.getPropertyRecords() ).thenReturn( propertyRecordChanges );
         when( context.getRelGroupRecords() ).thenReturn( relationshipGroupChanges );
         when( context.getSchemaRuleChanges() ).thenReturn( schemaRuleChanges );
-        
+
         List<RecordChange<Long, NodeRecord, Void>> nodeChanges = new LinkedList<>();
-        
+
         RecordChange<Long, NodeRecord, Void> deletedNode = mock( RecordChange.class );
         when( deletedNode.getBefore() ).thenReturn( inUseNode() );
         when( deletedNode.forReadingLinkage() ).thenReturn( missingNode() );
         nodeChanges.add( deletedNode );
-        
+
         RecordChange<Long, NodeRecord, Void> createdNode = mock( RecordChange.class );
         when( createdNode.getBefore() ).thenReturn( missingNode() );
         when( createdNode.forReadingLinkage() ).thenReturn( createdNode() );
         nodeChanges.add( createdNode );
-        
+
         RecordChange<Long, NodeRecord, Void> updatedNode = mock( RecordChange.class );
         when( updatedNode.getBefore() ).thenReturn( inUseNode() );
         when( updatedNode.forReadingLinkage() ).thenReturn( inUseNode() );
@@ -121,7 +132,7 @@ public class WriteTransactionCommandOrderingTest
 
         when( nodeRecordChanges.changes() ).thenReturn( nodeChanges );
         when( nodeRecordChanges.changeSize()).thenReturn( 3 );
-        
+
         when( labelTokenChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Integer,LabelTokenRecord,Void>>emptyList() );
         when( relationshipTypeTokenChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Integer,RelationshipTypeTokenRecord,Void>>emptyList() );
         when( propertyKeyTokenChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Integer,PropertyKeyTokenRecord,Void>>emptyList() );
@@ -129,13 +140,13 @@ public class WriteTransactionCommandOrderingTest
         when( propertyRecordChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Long,PropertyRecord,PrimitiveRecord>>emptyList() );
         when( relationshipGroupChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Long,RelationshipGroupRecord,Integer>>emptyList() );
         when( schemaRuleChanges.changes() ).thenReturn( Collections.<RecordChanges.RecordChange<Long,Collection<DynamicRecord>,SchemaRule>>emptyList() );
-        
-        
-        
-        
+
+
+
+
         return new TransactionRecordState( 1, mock( NeoStore.class), mock( IntegrityValidator.class), context );
-        
-//        
+
+//
 //        Command.PropertyCommand updatedProp = new Command.PropertyCommand();
 //        updatedProp.init( inUseProperty(), inUseProperty() );
 //        tx.injectCommand( updatedProp );
@@ -344,7 +355,7 @@ public class WriteTransactionCommandOrderingTest
             nodeVisited = true;
             assertFalse( relationshipVisited );
             assertFalse( propertyVisited );
-            
+
             switch( command.getMode() )
             {
                 case CREATE:
@@ -362,6 +373,6 @@ public class WriteTransactionCommandOrderingTest
             }
             return true;
         }
-        
+
     }
 }

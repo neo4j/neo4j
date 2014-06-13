@@ -104,23 +104,23 @@ public abstract class IndexType
             return "EXACT";
         }
     };
-    
+
     private static class CustomType extends IndexType
     {
         private final Similarity similarity;
-        
+
         CustomType( Analyzer analyzer, boolean toLowerCase, Similarity similarity )
         {
             super( analyzer, toLowerCase );
             this.similarity = similarity;
         }
-        
+
         @Override
         Similarity getSimilarity()
         {
             return this.similarity;
         }
-        
+
         @Override
         public Query deletionQuery( long entityId, String key, Object value )
         {
@@ -151,7 +151,7 @@ public abstract class IndexType
             document.add( new Field( exactKey( key ), value.toString(), Store.YES, Index.NOT_ANALYZED ) );
             document.add( instantiateField( key, value, Index.ANALYZED ) );
         }
-        
+
         @Override
         void removeFieldsFromDocument( Document document, String key, Object value )
         {
@@ -183,17 +183,17 @@ public abstract class IndexType
             return "FULLTEXT";
         }
     };
-    
+
     final Analyzer analyzer;
     private final boolean toLowerCase;
-    
+
     private IndexType( Analyzer analyzer, boolean toLowerCase )
     {
         this.analyzer = analyzer;
         this.toLowerCase = toLowerCase;
     }
-    
-    static IndexType getIndexType( IndexIdentifier identifier, Map<String, String> config )
+
+    static IndexType getIndexType( Map<String, String> config )
     {
         String type = config.get( LuceneIndexImplementation.KEY_TYPE );
         IndexType result = null;
@@ -208,14 +208,14 @@ public abstract class IndexType
             {
                 // In the exact case we default to false
                 boolean toLowerCase = TRUE.equals( toLowerCaseUnbiased ) ? true : false;
-                
+
                 result = toLowerCase ? new CustomType( new LowerCaseKeywordAnalyzer(), toLowerCase, similarity ) : EXACT;
             }
             else if ( type.equals( "fulltext" ) )
             {
                 // In the fulltext case we default to true
                 boolean toLowerCase = FALSE.equals( toLowerCaseUnbiased ) ? false : true;
-                
+
                 Analyzer analyzer = customAnalyzer;
                 if ( analyzer == null )
                 {
@@ -229,7 +229,7 @@ public abstract class IndexType
         {
             // In the custom case we default to true
             boolean toLowerCase = FALSE.equals( toLowerCaseUnbiased ) ? false : true;
-            
+
             // Use custom analyzer
             if ( customAnalyzer == null )
             {
@@ -247,12 +247,12 @@ public abstract class IndexType
     {
         return string == null ? valueIfNull : Boolean.parseBoolean( string );
     }
-    
+
     private static Similarity getCustomSimilarity( Map<String, String> config )
     {
         return getByClassName( config, LuceneIndexImplementation.KEY_SIMILARITY, Similarity.class );
     }
-    
+
     private static Analyzer getCustomAnalyzer( Map<String, String> config )
     {
         return getByClassName( config, LuceneIndexImplementation.KEY_ANALYZER, Analyzer.class );
@@ -276,21 +276,21 @@ public abstract class IndexType
     }
 
     abstract Query deletionQuery( long entityId, String key, Object value );
-    
+
     abstract Query get( String key, Object value );
-    
+
     TxData newTxData( LuceneIndex index )
     {
         return new ExactTxData( index );
     }
-    
+
     Query query( String keyOrNull, Object value, QueryContext contextOrNull )
     {
         if ( value instanceof Query )
         {
             return (Query) value;
         }
-        
+
         QueryParser parser = new QueryParser( Version.LUCENE_30, keyOrNull, analyzer );
         parser.setAllowLeadingWildcard( true );
         parser.setLowercaseExpandedTerms( toLowerCase );
@@ -307,9 +307,9 @@ public abstract class IndexType
             throw new RuntimeException( e );
         }
     }
-    
+
     abstract void addToDocument( Document document, String key, Object value );
-    
+
     public static Fieldable instantiateField( String key, Object value, Index analyzed )
     {
         Fieldable field;
@@ -342,7 +342,7 @@ public abstract class IndexType
         field.setOmitNorms( true );
         return field;
     }
-    
+
     final void removeFromDocument( Document document, String key, Object value )
     {
         if ( key == null && value == null )
@@ -354,7 +354,7 @@ public abstract class IndexType
             removeFieldsFromDocument( document, key, value );
         }
     }
-    
+
     abstract void removeFieldsFromDocument( Document document, String key, Object value );
 
     private void clearDocument( Document document )
@@ -370,7 +370,7 @@ public abstract class IndexType
             document.removeFields( name );
         }
     }
-    
+
     public static Document newBaseDocument( long entityId )
     {
         Document doc = new Document();
@@ -379,21 +379,36 @@ public abstract class IndexType
         return doc;
     }
 
+    public static Document newDocument( Object entityId )
+    {
+        if ( entityId instanceof RelationshipId )
+        {
+            RelationshipId relationshipId = (RelationshipId) entityId;
+            Document document = newBaseDocument( relationshipId.id );
+            document.add( new Field( LuceneIndex.KEY_START_NODE_ID, "" + relationshipId.startNode, Store.YES,
+                    org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
+            document.add( new Field( LuceneIndex.KEY_END_NODE_ID, "" + relationshipId.endNode, Store.YES,
+                    org.apache.lucene.document.Field.Index.NOT_ANALYZED ) );
+            return document;
+        }
+        return newBaseDocument( (Long) entityId );
+    }
+
     public Term idTerm( long entityId )
     {
         return new Term( LuceneIndex.KEY_DOC_ID, "" + entityId );
     }
-    
+
     Query idTermQuery( long entityId )
     {
         return new TermQuery( idTerm( entityId ) );
     }
-    
+
     Similarity getSimilarity()
     {
         return null;
     }
-    
+
     Query queryForGet( String key, Object value )
     {
         if ( value instanceof ValueContext )

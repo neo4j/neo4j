@@ -28,7 +28,7 @@ import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.schema.MalformedSchemaRuleException;
 import org.neo4j.kernel.impl.index.IndexCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
@@ -132,7 +132,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
         }
         case NeoCommandType.INDEX_ADD_COMMAND:
         {
-            command = new IndexCommand.AddCommand();
+            command = new IndexCommand.AddNodeCommand();
             break;
         }
         case NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND:
@@ -634,12 +634,12 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
         };
 
         @Override
-        public boolean visitAddIndexCommand( AddCommand command ) throws IOException
+        public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
         {
             IndexCommandHeader header = readIndexCommandHeader();
             Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
             Object value = readIndexValue( header.valueType );
-            command.init( header.indexNameId, header.entityType, entityId.longValue(), header.keyId, value );
+            command.init( header.indexNameId, entityId.longValue(), header.keyId, value );
             return true;
         }
 
@@ -651,13 +651,13 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             Object value = readIndexValue( header.valueType );
             Number startNode = header.startNodeNeedsLong ? channel.getLong() : channel.getInt();
             Number endNode = header.endNodeNeedsLong ? channel.getLong() : channel.getInt();
-            command.init( header.indexNameId, header.entityType, entityId.longValue(), header.keyId, value,
+            command.init( header.indexNameId, entityId.longValue(), header.keyId, value,
                     startNode.longValue(), endNode.longValue() );
             return true;
         }
 
         @Override
-        public boolean visitRemoveIndexCommand( RemoveCommand command ) throws IOException
+        public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
         {
             IndexCommandHeader header = readIndexCommandHeader();
             Number entityId = header.entityIdNeedsLong ? channel.getLong() : channel.getInt();
@@ -724,7 +724,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             boolean endNodeNeedsLong = (headerBytes[1] & 0x40) > 0;
 
             byte keyId = headerBytes[2];
-            return new IndexCommandHeader( valueType, entityType, entityIdNeedsLong, 
+            return new IndexCommandHeader( valueType, entityType, entityIdNeedsLong,
                     indexNameId, startNodeNeedsLong, endNodeNeedsLong, keyId );
         }
 
@@ -749,6 +749,11 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
             default:
                 throw new RuntimeException( "Unknown value type " + valueType );
             }
+        }
+
+        @Override
+        public void close()
+        {   // Nothing to close
         }
     }
 

@@ -121,6 +121,6 @@ public class KernelTransactionImplementationTest
     {
         return new KernelTransactionImplementation( null, false, null, null, null, null, recordState,
                 null, neoStore, new NoOpClient(), hooks, null, null, null, transactionMonitor, neoStore,
-                null, null );
+                null, null, null );
     }
 }

@@ -21,23 +21,25 @@ package org.neo4j.index.impl.lucene;
 
 import java.util.Iterator;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.PrefetchingIterator;
 
-
-//TODO this is generic and should move out of the Lucene - component
 public abstract class AbstractIndexHits<T> extends PrefetchingIterator<T> implements IndexHits<T>
 {
-    public IndexHits<T> iterator()
+    @Override
+    public ResourceIterator<T> iterator()
     {
         return this;
     }
 
+    @Override
     public void close()
-    {
+    {   // Nothing to close by default
     }
-    
+
+    @Override
     public T getSingle()
     {
         try

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.nioneo.xa.command;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.index.IndexCommand.AddCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
@@ -45,7 +45,7 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command.SchemaRuleCommand;
  * the actual work to implementations that hold related functionality together, using a Facade pattern.
  * For example, it is conceivable that a CommandWriterHandler would use a NeoCommandHandler and a SchemaCommandHandler.
  */
-public interface NeoCommandHandler
+public interface NeoCommandHandler extends AutoCloseable
 {
     // NeoStore commands
     boolean visitNodeCommand( Command.NodeCommand command ) throws IOException;
@@ -59,12 +59,15 @@ public interface NeoCommandHandler
     boolean visitNeoStoreCommand( Command.NeoStoreCommand command ) throws IOException;
 
     // Index commands
-    boolean visitAddIndexCommand( AddCommand command ) throws IOException;
+    boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException;
     boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command ) throws IOException;
-    boolean visitRemoveIndexCommand( RemoveCommand command ) throws IOException;
+    boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException;
     boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException;
     boolean visitIndexCreateCommand( CreateCommand command ) throws IOException;
     boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException;
+
+    @Override
+    void close();
 
     public static class Adapter implements NeoCommandHandler
     {
@@ -123,46 +126,51 @@ public interface NeoCommandHandler
         }
 
         @Override
-        public boolean visitAddIndexCommand( AddCommand command ) throws IOException
+        public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
         {
             return true;
         }
 
         @Override
-        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand addRelationshipCommand )
+        public boolean visitIndexAddRelationshipCommand( AddRelationshipCommand command )
                 throws IOException
         {
             return true;
         }
 
         @Override
-        public boolean visitRemoveIndexCommand( RemoveCommand removeCommand ) throws IOException
+        public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
         {
             return true;
         }
 
         @Override
-        public boolean visitIndexDeleteCommand( DeleteCommand deleteCommand ) throws IOException
+        public boolean visitIndexDeleteCommand( DeleteCommand command ) throws IOException
         {
             return true;
         }
 
         @Override
-        public boolean visitIndexCreateCommand( CreateCommand createCommand ) throws IOException
+        public boolean visitIndexCreateCommand( CreateCommand command ) throws IOException
         {
             return true;
         }
 
         @Override
-        public boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand ) throws IOException
+        public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
         {
             return true;
+        }
+
+        @Override
+        public void close()
+        {
         }
     }
 
     public static class HandlerVisitor implements Visitor<Command, IOException>
     {
-        private NeoCommandHandler handler;
+        private final NeoCommandHandler handler;
 
         public HandlerVisitor( NeoCommandHandler handler )
         {

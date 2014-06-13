@@ -39,7 +39,6 @@ import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
 import org.neo4j.kernel.impl.api.operations.EntityOperations;
-import org.neo4j.kernel.impl.api.store.LegacyIndexReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
@@ -324,7 +323,7 @@ public class IndexQueryTransactionStateTest
     @Before
     public void before() throws Exception
     {
-        TxState txState = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexChangesProvider.class ) );
+        TxState txState = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexTransactionState.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
 
         int labelId1 = 10, labelId2 = 12;
@@ -341,7 +340,6 @@ public class IndexQueryTransactionStateTest
                 store,
                 mock( LegacyPropertyTrackers.class ),
                 mock( ConstraintIndexCreator.class ),
-                mock( LegacyIndexReadLayer.class ),
                 mock( LegacyIndexStore.class ) );
         txContext = new ConstraintEnforcingEntityOperations(
                 stateHandlingOperations, stateHandlingOperations, stateHandlingOperations );

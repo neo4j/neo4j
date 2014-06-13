@@ -19,19 +19,16 @@
  */
 package org.neo4j.kernel.impl.index;
 
-import static org.neo4j.helpers.collection.MapUtil.reverse;
-
 import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.CommandRecordVisitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
+
+import static org.neo4j.helpers.collection.MapUtil.reverse;
 
 /**
  * A command which have to be first in the transaction. It will map index names
@@ -45,8 +42,8 @@ import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
  */
 public class IndexDefineCommand extends Command
 {
-    private AtomicInteger nextIndexNameId = new AtomicInteger();
-    private AtomicInteger nextKeyId = new AtomicInteger();
+    private final AtomicInteger nextIndexNameId = new AtomicInteger();
+    private final AtomicInteger nextKeyId = new AtomicInteger();
     private Map<String, Byte> indexNameIdRange;
     private Map<String, Byte> keyIdRange;
     private Map<Byte, String> idToIndexName;
@@ -59,7 +56,7 @@ public class IndexDefineCommand extends Command
         idToIndexName = new HashMap<>();
         idToKey = new HashMap<>();
     }
-    
+
     public void init( Map<String, Byte> indexNames, Map<String, Byte> keys )
     {
         this.setIndexNameIdRange( indexNames );
@@ -70,6 +67,10 @@ public class IndexDefineCommand extends Command
 
     private static String getFromMap( Map<Byte, String> map, byte id )
     {
+        if ( id == -1 )
+        {
+            return null;
+        }
         String result = map.get( id );
         if ( result == null )
         {
@@ -88,19 +89,40 @@ public class IndexDefineCommand extends Command
         return getFromMap( idToKey, id );
     }
 
-    public static byte entityTypeId( Class<?> entityType )
+    public byte getOrAssignIndexNameId( String indexName )
     {
-        return entityType.equals( Relationship.class ) ? IndexCommand.RELATIONSHIP : IndexCommand.NODE;
+        return getOrAssignId( indexNameIdRange, idToIndexName, nextIndexNameId, indexName );
     }
 
-    public static Class<? extends PropertyContainer> entityType( byte id )
+    public byte getOrAssignKeyId( String key )
     {
-        switch ( id )
+        return getOrAssignId( keyIdRange, idToKey, nextKeyId, key );
+    }
+
+    private byte getOrAssignId( Map<String, Byte> stringToId, Map<Byte, String> idToString,
+            AtomicInteger nextId, String string )
+    {
+        if ( string == null )
         {
-        case IndexCommand.NODE: return Node.class;
-        case IndexCommand.RELATIONSHIP: return Relationship.class;
-        default: throw new IllegalArgumentException( "" + id );
+            return -1;
         }
+
+        Byte id = stringToId.get( string );
+        if ( id != null )
+        {
+            return id.byteValue();
+        }
+
+        int nextIdInt = nextId.incrementAndGet();
+        id = (byte) nextIdInt;
+        if ( nextIdInt != id )
+        {
+            throw new IllegalArgumentException( "Too many names " + nextIdInt );
+        }
+
+        stringToId.put( string, id );
+        idToString.put( id, string );
+        return id.byteValue();
     }
 
 

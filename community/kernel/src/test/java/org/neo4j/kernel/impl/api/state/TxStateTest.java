@@ -369,7 +369,7 @@ public class TxStateTest
     @Before
     public void before() throws Exception
     {
-        state = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexChangesProvider.class )
+        state = new TxStateImpl( mock( TransactionRecordState.class ), mock( LegacyIndexTransactionState.class )
         );
     }
 }

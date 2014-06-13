@@ -19,11 +19,6 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotSame;
-import static org.junit.Assert.assertSame;
-import static org.junit.Assert.assertTrue;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Map;
@@ -34,6 +29,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexManager;
@@ -41,8 +37,14 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
+import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.FileUtils;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotSame;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertTrue;
 
 // TODO 2.2-future
 @Ignore("2.2")
@@ -74,7 +76,7 @@ public class TestLuceneDataSource
 
     private IndexIdentifier identifier( String name )
     {
-        return new IndexIdentifier( LuceneCommand.NODE, dataSource.nodeEntityType, name );
+        return new IndexIdentifier( IndexEntityType.node, name );
     }
 
     @After
@@ -228,7 +230,7 @@ public class TestLuceneDataSource
 //                        new DefaultFileSystemAbstraction(), new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
 //                        LogPruneStrategies.NO_PRUNING, mock( KernelHealth.class ) ), null );
         dataSource.start();
-        IndexIdentifier identifier = new IndexIdentifier( LuceneCommand.NODE, dataSource.nodeEntityType, "foo" );
+        IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.node, "foo" );
         IndexReference oldSearcher = dataSource.getIndexSearcher( identifier );
         dataSource.invalidateIndexSearcher( identifier );
         IndexReference newSearcher = dataSource.getIndexSearcher( identifier );

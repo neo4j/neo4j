@@ -29,6 +29,7 @@ import org.apache.lucene.search.ScoreDoc;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TopDocs;
 import org.apache.lucene.search.TopFieldCollector;
+
 import org.neo4j.helpers.collection.ArrayIterator;
 import org.neo4j.index.lucene.QueryContext;
 
@@ -38,7 +39,7 @@ class TopDocsIterator extends AbstractIndexHits<Document>
     private ScoreDoc currentDoc;
     private final int size;
     private final IndexSearcher searcher;
-    
+
     TopDocsIterator( Query query, QueryContext context, IndexSearcher searcher ) throws IOException
     {
         TopDocs docs = toTopDocs( query, context, searcher );
@@ -70,7 +71,7 @@ class TopDocsIterator extends AbstractIndexHits<Document>
         }
         return topDocs;
     }
-    
+
     @Override
     protected Document fetchNextOrNull()
     {
@@ -89,11 +90,13 @@ class TopDocsIterator extends AbstractIndexHits<Document>
         }
     }
 
+    @Override
     public float currentScore()
     {
         return currentDoc.score;
     }
-    
+
+    @Override
     public int size()
     {
         return this.size;

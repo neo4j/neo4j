@@ -19,7 +19,6 @@
  */
 package org.neo4j.index.lucene;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.IndexProviders;
@@ -33,21 +32,20 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 public class LuceneKernelExtension extends LifecycleAdapter
 {
     private final Config config;
-    private final GraphDatabaseService gdb;
     private final IndexConfigStore indexStore;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final IndexProviders indexProviders;
+    private LuceneDataSource luceneDataSource;
 
     public static abstract class Configuration
     {
         public static final Setting<Boolean> read_only = GraphDatabaseSettings.read_only;
     }
 
-    public LuceneKernelExtension( Config config, GraphDatabaseService gdb, IndexConfigStore indexStore,
+    public LuceneKernelExtension( Config config, IndexConfigStore indexStore,
             FileSystemAbstraction fileSystemAbstraction, IndexProviders indexProviders )
     {
         this.config = config;
-        this.gdb = gdb;
         this.indexStore = indexStore;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.indexProviders = indexProviders;
@@ -56,8 +54,11 @@ public class LuceneKernelExtension extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        LuceneDataSource luceneDataSource = new LuceneDataSource( config, indexStore, fileSystemAbstraction );
-        LuceneIndexImplementation indexImplementation = new LuceneIndexImplementation( gdb, luceneDataSource );
+        luceneDataSource = new LuceneDataSource( config, indexStore, fileSystemAbstraction );
+        // TODO For <name>'s sake, don't do this here, do proper life cycle management. Just here for testing.
+        luceneDataSource.init();
+        luceneDataSource.start();
+        LuceneIndexImplementation indexImplementation = new LuceneIndexImplementation( luceneDataSource );
         indexProviders.registerIndexProvider( LuceneIndexImplementation.SERVICE_NAME, indexImplementation );
     }
 
@@ -65,5 +66,8 @@ public class LuceneKernelExtension extends LifecycleAdapter
     public void stop() throws Throwable
     {
         indexProviders.unregisterIndexProvider( LuceneIndexImplementation.SERVICE_NAME );
+        // TODO For <name>'s sake, don't do this here, do proper life cycle management. Just here for testing.
+        luceneDataSource.stop();
+        luceneDataSource.shutdown();
     }
 }

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.api;
 
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
+import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 /**
@@ -108,6 +109,8 @@ public interface KernelTransaction extends AutoCloseable
      * TODO 2.2-future TRS instead. This must be fixed. This sentiment applies to all accessor methods below.
      */
     TransactionRecordState getTransactionRecordState();
+
+    LegacyIndexTransactionState getLegacyIndexTransactionState();
 
     boolean isOpen();
 }

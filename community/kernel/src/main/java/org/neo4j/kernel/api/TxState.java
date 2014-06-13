@@ -321,12 +321,8 @@ public interface TxState
     boolean relationshipVisit( long relId, RelationshipVisitor visitor );
 
     // <Legacy index>
-    boolean hasNodeLegacyIndexChanges( String indexName );
+    LegacyIndex getNodeLegacyIndexChanges( String indexName );
 
-    LegacyIndexChanges getNodeLegacyIndexChanges( String indexName );
-
-    boolean hasRelationshipLegacyIndexChanges( String indexName );
-
-    LegacyIndexChanges getRelationshipLegacyIndexChanges( String indexName );
+    LegacyIndex getRelationshipLegacyIndexChanges( String indexName );
     // </Legacy index>
 }

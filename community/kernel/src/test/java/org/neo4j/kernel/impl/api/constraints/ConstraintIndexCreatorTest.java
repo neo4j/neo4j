@@ -40,6 +40,7 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.index.IndexProxy;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 
 import static org.junit.Assert.assertEquals;
@@ -202,6 +203,12 @@ public class ConstraintIndexCreatorTest
                 public boolean isOpen()
                 {
                     return true;
+                }
+
+                @Override
+                public LegacyIndexTransactionState getLegacyIndexTransactionState()
+                {
+                    throw new UnsupportedOperationException( "Please implement" );
                 }
             };
         }

@@ -49,7 +49,6 @@ import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.nioneo.xa.RecordChanges.RecordChange;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command.Mode;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.util.ArrayMap;
 
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
@@ -113,7 +112,7 @@ public class TransactionRecordState
                 context.getRelationshipTypeTokenRecords().changeSize() == 0;
     }
 
-    public PhysicalTransactionRepresentation doPrepare() throws TransactionFailureException
+    public void extractCommands( List<Command> target ) throws TransactionFailureException
     {
     	assert !prepared : "Transaction has already been prepared";
 
@@ -211,7 +210,7 @@ public class TransactionRecordState
 
         integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
         prepared = true;
-        return new PhysicalTransactionRepresentation( commands, false );
+        target.addAll( commands );
     }
 
     public void relationshipCreate( long id, int typeId, long startNodeId, long endNodeId )

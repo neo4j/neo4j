@@ -24,7 +24,7 @@ import java.util.Collection;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.index.IndexCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
@@ -196,7 +196,7 @@ public class CommandWriter implements NeoCommandHandler
     }
 
     @Override
-    public boolean visitAddIndexCommand( AddCommand command ) throws IOException
+    public boolean visitIndexAddNodeCommand( AddNodeCommand command ) throws IOException
     {
         channel.put( NeoCommandType.INDEX_ADD_COMMAND );
         writeToFile( command );
@@ -214,7 +214,7 @@ public class CommandWriter implements NeoCommandHandler
     }
 
     @Override
-    public boolean visitRemoveIndexCommand( RemoveCommand command ) throws IOException
+    public boolean visitIndexRemoveCommand( RemoveCommand command ) throws IOException
     {
         channel.put( NeoCommandType.INDEX_REMOVE_COMMAND );
         writeToFile( command );
@@ -440,5 +440,10 @@ public class CommandWriter implements NeoCommandHandler
             writePropertyBlock( block );
         }
         writeDynamicRecords( record.getDeletedRecords() );
+    }
+
+    @Override
+    public void close()
+    {
     }
 }

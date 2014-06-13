@@ -68,13 +68,13 @@ public class LogEntryWriterv1 implements LogEntryWriter
         writeLogEntryHeader( LogEntry.TX_1P_COMMIT );
         channel.putLong( transactionId ).putLong( timeWritten );
     }
-    
+
     @Override
     public void serialize( TransactionRepresentation tx ) throws IOException
     {
         tx.accept( new CommandSerializer() );
     }
-    
+
     public void writeCommandEntry( Command command ) throws IOException
     {
         writeLogEntryHeader( LogEntry.COMMAND );
@@ -90,5 +90,4 @@ public class LogEntryWriterv1 implements LogEntryWriter
             return true;
         }
     }
-
 }

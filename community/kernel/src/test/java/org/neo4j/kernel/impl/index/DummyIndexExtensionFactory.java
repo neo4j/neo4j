@@ -21,15 +21,17 @@ package org.neo4j.kernel.impl.index;
 
 import java.util.Map;
 
+import org.neo4j.graphdb.index.IndexCommandFactory;
+import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
-import org.neo4j.graphdb.index.IndexTransactionSPI;
+import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.api.LegacyIndexChanges;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class DummyIndexExtensionFactory extends
-        KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies> implements IndexTransactionSPI, Lifecycle
+        KernelExtensionFactory<DummyIndexExtensionFactory.Dependencies> implements IndexImplementation, Lifecycle
 {
     static final String IDENTIFIER = "test-dummy-neo-index";
     private InternalAbstractGraphDatabase db;
@@ -84,13 +86,19 @@ public class DummyIndexExtensionFactory extends
     }
 
     @Override
-    public boolean configMatches( Map<String, String> storedConfig, Map<String, String> config )
+    public boolean configMatches( Map<String, String> storedConfig, Map<String, String> suppliedConfig )
     {
         return true;
     }
 
     @Override
-    public LegacyIndexChanges newTransactionState()
+    public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
+    {
+        throw new UnsupportedOperationException( "Please implement" );
+    }
+
+    @Override
+    public NeoCommandHandler newApplier()
     {
         throw new UnsupportedOperationException( "Please implement" );
     }

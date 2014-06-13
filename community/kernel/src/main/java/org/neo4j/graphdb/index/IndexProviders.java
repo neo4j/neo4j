@@ -25,10 +25,7 @@ package org.neo4j.graphdb.index;
  */
 public interface IndexProviders
 {
-    void registerIndexProvider( String name, IndexTransactionSPI index );
+    void registerIndexProvider( String name, IndexImplementation index );
 
     boolean unregisterIndexProvider( String name );
-
-    // TODO 2.2-future dunno about these getters
-    IndexTransactionSPI getTransactionAPI( String name );
 }

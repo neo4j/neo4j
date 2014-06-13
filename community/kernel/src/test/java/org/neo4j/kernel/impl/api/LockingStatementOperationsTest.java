@@ -50,7 +50,7 @@ public class LockingStatementOperationsTest
     private final SchemaWriteOperations schemaWriteOps;
     private final Locks.Client locks = mock( Locks.Client.class );
     private final InOrder order;
-    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null, null );
+    private final KernelStatement state = new KernelStatement( null, null, null, null, locks, null, null, null );
 
     public LockingStatementOperationsTest()
     {

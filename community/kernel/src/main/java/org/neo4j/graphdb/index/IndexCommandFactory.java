@@ -17,17 +17,15 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.api.state;
+package org.neo4j.graphdb.index;
 
-import org.neo4j.kernel.api.LegacyIndexChanges;
-
-/**
- * Provides {@link LegacyIndexChanges}, which holds transaction state specific to an index.
- * Which implementation is chosen is dictated by entity type and index name.
- */
-public interface LegacyIndexChangesProvider
+public interface IndexCommandFactory
 {
-    LegacyIndexChanges nodeChanges( String indexName );
+    void addNode( String indexName, long id, String key, Object value );
 
-    LegacyIndexChanges relationshipChanges( String indexName );
+    void addRelationship( String indexName, long id, String key, Object value, long startNode, long endNode );
+
+    void removeNode( String indexName, long id, String keyOrNull, Object valueOrNull );
+
+    void removeRelationship( String indexName, long id, String keyOrNull, Object valueOrNull );
 }

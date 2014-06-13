@@ -36,7 +36,6 @@ import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationsTestHelper;
-import org.neo4j.kernel.impl.api.store.LegacyIndexReadLayer;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
@@ -280,11 +279,10 @@ public class LabelTransactionStateTest
         when( store.indexesGetAll() ).then( answerAsIteratorFrom( Collections.<IndexDescriptor>emptyList() ) );
 
         txState = new TxStateImpl( mock( TransactionRecordState.class ),
-                mock( LegacyIndexChangesProvider.class ) );
+                mock( LegacyIndexTransactionState.class ) );
         state = StatementOperationsTestHelper.mockedState( txState );
         txContext = new StateHandlingStatementOperations( store, mock( LegacyPropertyTrackers.class ),
-                mock( ConstraintIndexCreator.class ), mock( LegacyIndexReadLayer.class ),
-                mock( LegacyIndexStore.class ) );
+                mock( ConstraintIndexCreator.class ), mock( LegacyIndexStore.class ) );
     }
 
     private static class Labels

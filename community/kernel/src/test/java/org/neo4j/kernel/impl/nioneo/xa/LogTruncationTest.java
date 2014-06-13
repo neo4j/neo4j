@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.util.Arrays.asList;
-import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -31,15 +26,17 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.index.IndexCommand;
-import org.neo4j.kernel.impl.index.IndexCommand.AddCommand;
+import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddRelationshipCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.CreateCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.DeleteCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.RemoveCommand;
 import org.neo4j.kernel.impl.index.IndexDefineCommand;
+import org.neo4j.kernel.impl.index.IndexEntityType;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
@@ -54,6 +51,13 @@ import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+
+import static java.util.Arrays.asList;
+
+import static junit.framework.TestCase.assertNull;
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
 
 /**
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands
@@ -95,23 +99,23 @@ public class LogTruncationTest
 
         // Index commands
         AddRelationshipCommand addRelationshipCommand = new AddRelationshipCommand();
-        addRelationshipCommand.init( (byte) 1, IndexCommand.NODE, 1l, (byte) 1, "some value", 1, 1 );
+        addRelationshipCommand.init( (byte) 1, 1l, (byte) 1, "some value", 1, 1 );
         permutations.put( AddRelationshipCommand.class, new Command[] { addRelationshipCommand } );
 
         CreateCommand createCommand = new CreateCommand();
-        createCommand.init( (byte) 1, IndexCommand.RELATIONSHIP, MapUtil.stringMap( "string1", "string 2" ) );
+        createCommand.init( (byte) 1, IndexEntityType.relationship.id(), MapUtil.stringMap( "string1", "string 2" ) );
         permutations.put( CreateCommand.class, new Command[] { createCommand } );
 
-        AddCommand addCommand = new AddCommand();
-        addCommand.init( (byte) 1, IndexCommand.NODE, 122l, (byte) 2, "value" );
-        permutations.put( AddCommand.class, new Command[] { addCommand } );
+        AddNodeCommand addCommand = new AddNodeCommand();
+        addCommand.init( (byte) 1, 122l, (byte) 2, "value" );
+        permutations.put( AddNodeCommand.class, new Command[] { addCommand } );
 
         DeleteCommand deleteCommand = new DeleteCommand();
-        deleteCommand.init( (byte) 1, IndexCommand.RELATIONSHIP );
+        deleteCommand.init( (byte) 1, IndexEntityType.relationship.id() );
         permutations.put( DeleteCommand.class, new Command[] { deleteCommand } );
 
         RemoveCommand removeCommand = new RemoveCommand();
-        removeCommand.init( (byte) 1, IndexCommand.NODE, 126, (byte) 3, "the value" );
+        removeCommand.init( (byte) 1, IndexEntityType.node.id(), 126, (byte) 3, "the value" );
         permutations.put( RemoveCommand.class, new Command[] { removeCommand } );
 
         IndexDefineCommand indexDefineCommand = new IndexDefineCommand();

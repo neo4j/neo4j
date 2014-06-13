@@ -22,33 +22,34 @@ package org.neo4j.index.impl.lucene;
 import java.util.Collection;
 import java.util.Iterator;
 
-
-class ConstantScoreIterator<T> extends AbstractIndexHits<T>
+class ConstantScoreIterator extends AbstractLegacyIndexHits
 {
-    private final Iterator<T> items;
+    private final Iterator<Long> items;
     private final int size;
     private final float score;
 
-    ConstantScoreIterator( Collection<T> items, float score )
+    ConstantScoreIterator( Collection<Long> items, float score )
     {
         this.items = items.iterator();
         this.score = score;
         this.size = items.size();
     }
-    
+
+    @Override
     public float currentScore()
     {
         return this.score;
     }
 
+    @Override
     public int size()
     {
         return this.size;
     }
 
     @Override
-    protected T fetchNextOrNull()
+    protected boolean fetchNext()
     {
-        return items.hasNext() ? items.next() : null;
+        return items.hasNext() ? next( items.next() ) : false;
     }
 }

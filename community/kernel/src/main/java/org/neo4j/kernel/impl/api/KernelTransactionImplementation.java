@@ -19,7 +19,9 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.neo4j.helpers.ThisShouldNotHappenError;
@@ -40,6 +42,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.SchemaIndexProviderMap;
 import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.api.state.TxStateImpl;
 import org.neo4j.kernel.impl.api.store.PersistenceCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
@@ -50,6 +53,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 
@@ -89,6 +93,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     private final TransactionIdStore transactionIdStore;
     private final PersistenceCache persistenceCache;
     private final StoreReadLayer storeLayer;
+    private final LegacyIndexTransactionState legacyIndexTransactionState;
 
     public KernelTransactionImplementation( StatementOperationParts operations, boolean readOnly,
                                             SchemaWriteGuard schemaWriteGuard, LabelScanStore labelScanStore,
@@ -103,7 +108,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             TransactionMonitor transactionMonitor,
                                             TransactionIdStore transactionIdStore,
                                             PersistenceCache persistenceCache,
-                                            StoreReadLayer storeLayer )
+                                            StoreReadLayer storeLayer,
+                                            LegacyIndexTransactionState legacyIndexTransaction )
     {
         this.operations = operations;
         this.readOnly = readOnly;
@@ -122,6 +128,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         this.transactionIdStore = transactionIdStore;
         this.persistenceCache = persistenceCache;
         this.storeLayer = storeLayer;
+        this.legacyIndexTransactionState = legacyIndexTransaction;
         this.schemaStorage = new SchemaStorage( neoStore.getSchemaStore() );
     }
 
@@ -152,6 +159,12 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     }
 
     @Override
+    public LegacyIndexTransactionState getLegacyIndexTransactionState()
+    {
+        return legacyIndexTransactionState;
+    }
+
+    @Override
     public boolean isOpen()
     {
         return !closed && !closing;
@@ -166,7 +179,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             currentStatement = new KernelStatement( this, new IndexReaderFactory.Caching( indexService ),
                     labelScanStore, this, locks, operations,
                     // Just use forReading since read/write has been decided prior to this
-                    recordState );
+                    recordState, legacyIndexTransactionState );
         }
         currentStatement.acquire();
         return currentStatement;
@@ -238,7 +251,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
     {
         if ( !hasTxState() )
         {
-            txState = new TxStateImpl( recordState, null );
+            txState = new TxStateImpl( recordState, legacyIndexTransactionState );
         }
         return txState;
     }
@@ -448,7 +461,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     public boolean isReadOnly()
     {
-        return (!hasTxState() || !txState.hasChanges()) && recordState.isReadOnly();
+        return (!hasTxState() || !txState.hasChanges()) && recordState.isReadOnly() &&
+                legacyIndexTransactionState.isReadOnly();
     }
 
     private enum TransactionType
@@ -533,11 +547,20 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
             // Convert changes into commands and commit
             if ( !isReadOnly() )
             {
-                PhysicalTransactionRepresentation transactionRepresentation = recordState.doPrepare();
+                // Gather up commands from the various sources
+                List<Command> commands = new ArrayList<>();
+                recordState.extractCommands( commands );
+                legacyIndexTransactionState.extractCommands( commands );
+
+                // Finish up the whole transaction representation
+                PhysicalTransactionRepresentation transactionRepresentation =
+                        new PhysicalTransactionRepresentation( commands, false );
                 transactionRepresentation.setHeader( headerInformation.getAdditionalHeader(),
                         headerInformation.getMasterId(),
                         headerInformation.getAuthorId(), currentTimeMillis(),
                         transactionIdStore.getLastCommittingTransactionId() );
+
+                // Commit the transaction
                 commitProcess.commit( transactionRepresentation );
 
                 // TODO 2.2-future do the TxIdGenerator#committed thing
