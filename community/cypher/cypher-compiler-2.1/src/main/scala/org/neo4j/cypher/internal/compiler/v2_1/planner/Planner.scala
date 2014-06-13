@@ -63,16 +63,16 @@ case class Planner(monitors: Monitors,
 
   def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (QueryPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
-    val QueryPlanInput(plannerQuery, subQueriesLookupTable, patternInExpression) = plannerQueryBuilder.produce(ast)
+    val QueryPlanInput(plannerQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
 
     val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
-    val plan = strategy.plan(plannerQuery)(context, subQueriesLookupTable)
+    val plan = strategy.plan(plannerQuery)(context, patternInExpression)
 
     val pipeBuildContext = PipeExecutionBuilderContext(patternInExpression.mapValues{ qg =>
       val argLeafPlan = Some(planQueryArgumentRow(qg))
-      val queryPlan = queryGraphSolver.plan(qg)(context, subQueriesLookupTable, argLeafPlan)
+      val queryPlan = queryGraphSolver.plan(qg)(context, patternInExpression, argLeafPlan)
       queryPlan.plan
     })
 
