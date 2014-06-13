@@ -20,9 +20,10 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator.isNamed
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+
 import scala.collection.GenTraversableOnce
 
 trait QueryGraph {
@@ -167,29 +168,27 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
 }
 
 object SelectionPredicates {
-  def fromWhere(where: Where): Set[Predicate] = extractPredicates(where.expression).map(filterUnnamed)
+  def fromWhere(where: Where): Set[Predicate] = extractPredicates(where.expression)
 
   def idNames(predicate: Expression): Set[IdName] = predicate.treeFold(Set.empty[IdName]) {
-    case Identifier(name) => (acc: Set[IdName], _) => acc + IdName(name)
+    case p: FilteringExpression =>
+      (acc, _) => acc ++ (idNames(p.expression) ++ p.innerPredicate.map(idNames).getOrElse(Set.empty) - IdName(p.identifier.name))
+    case Identifier(name) =>
+      (acc, _) => acc + IdName(name)
   }
 
   def extractPredicates(predicate: Expression): Set[Predicate] = predicate.treeFold(Set.empty[Predicate]) {
     // n:Label
-    case predicate@HasLabels(identifier@Identifier(name), labels) =>
+    case p@HasLabels(Identifier(name), labels) =>
       (acc, _) => acc ++ labels.map {
         label: LabelName =>
-          Predicate(Set(IdName(name)), predicate.copy(labels = Seq(label))(predicate.position))
+          Predicate(Set(IdName(name)), p.copy(labels = Seq(label))(p.position))
       }
     // and
     case _: Ands =>
       (acc, children) => children(acc)
-    // iterable expression should not depend on the identifier they introduce
-    case predicate: IterablePredicateExpression =>
-      val innerDeps = predicate.innerPredicate.map(idNames).getOrElse(Set.empty) - IdName(predicate.identifier.name)
-      (acc, _) => acc + Predicate(idNames(predicate.expression) ++ innerDeps, predicate)
-    // generic expression
-    case predicate: Expression =>
-      (acc, _) => acc + Predicate(idNames(predicate), predicate)
+    case p: Expression =>
+      (acc, _) => acc + Predicate(idNames(p), p)
   }.map(filterUnnamed).toSet
 
   private def filterUnnamed(predicate: Predicate): Predicate = predicate match {
@@ -200,12 +199,31 @@ object SelectionPredicates {
     case Predicate(deps, ors@Ors(exprs)) =>
       val newDeps = exprs.foldLeft(Set.empty[IdName]) { (acc, exp) =>
         exp match {
-          case exp: PatternExpression        => acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
-          case exp@Not(_: PatternExpression) => acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
-          case exp                           => acc ++ SelectionPredicates.idNames(exp)
+          case exp: PatternExpression =>
+            acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
+          case exp@Not(_: PatternExpression) =>
+            acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
+          case exp if exp.exists { case _: PatternExpression => true} =>
+            acc ++ (SelectionPredicates.idNames(exp) -- unnamedIdNamesInNestedPatternExpressions(exp))
+          case exp =>
+            acc ++ SelectionPredicates.idNames(exp)
         }
       }
       Predicate(newDeps, ors)
+    case Predicate(deps, expr) if expr.exists { case _: PatternExpression => true} =>
+      Predicate(deps -- unnamedIdNamesInNestedPatternExpressions(expr), expr)
     case p => p
+  }
+
+  private def unnamedIdNamesInNestedPatternExpressions(expression: Expression) = {
+    val patternExpressions = expression.treeFold(Seq.empty[PatternExpression]) {
+      case p: PatternExpression => (acc, _) => acc :+ p
+    }
+
+    val unnamedIdsInPatternExprs = patternExpressions.flatMap(idNames)
+      .filterNot(x => isNamed(x.name))
+      .toSet
+
+    unnamedIdsInPatternExprs
   }
 }

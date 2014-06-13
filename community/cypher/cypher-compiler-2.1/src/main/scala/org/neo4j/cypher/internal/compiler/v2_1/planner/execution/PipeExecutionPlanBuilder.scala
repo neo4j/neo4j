@@ -59,7 +59,6 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
     }
 
     def buildPredicate(expr: ast.Expression): CommandPredicate = {
-
       val rewrittenExpr = expr.endoRewrite(buildPipeExpressions)
       rewrittenExpr.asCommandPredicate
     }
