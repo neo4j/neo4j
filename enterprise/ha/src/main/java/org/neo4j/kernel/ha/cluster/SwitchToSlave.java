@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -93,6 +90,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 public class SwitchToSlave
 {
@@ -208,6 +208,21 @@ public class SwitchToSlave
             RequestContext context = requestContextFactory.newRequestContext( -1 );
             xaDataSourceManager.applyTransactions( checkConsistencyMaster.pullUpdates( context ) );
             console.log( "Now consistent with master" );
+        }
+        catch ( NoSuchLogVersionException e )
+        {
+            msgLog.logMessage( "Cannot catch up to master by pulling updates, because I cannot find the archived " +
+                    "logical log file that has the transaction I would start from. I'm going to copy the whole " +
+                    "store from the master instead." );
+            try
+            {
+                stopServicesAndHandleBranchedStore( config.get( HaSettings.branched_data_policy ) );
+            }
+            catch ( Throwable throwable )
+            {
+                msgLog.warn( "Failed preparing for copying the store from the master instance", throwable );
+            }
+            throw e;
         }
         catch ( StoreUnableToParticipateInClusterException upe )
         {
@@ -379,23 +394,13 @@ public class SwitchToSlave
     }
 
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master, NeoStoreXaDataSource nioneoDataSource )
+            throws NoSuchLogVersionException
     {
         long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
         Pair<Integer, Long> myMaster;
         try
         {
             myMaster = nioneoDataSource.getMasterForCommittedTx( myLastCommittedTx );
-        }
-        catch ( NoSuchLogVersionException e )
-        {
-            msgLog.logMessage(
-                    "Logical log file for txId "
-                            + myLastCommittedTx
-                            + " missing [version="
-                            + e.getVersion()
-                            + "]. If this is startup then it will be recovered later, " +
-                            "otherwise it might be a problem." );
-            return;
         }
         catch ( IOException e )
         {
