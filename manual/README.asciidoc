@@ -7,7 +7,7 @@ The documents use the asciidoc format, see:
 
 == Building the documentation ==
 
-Python is required, as well as graphviz and make.
+Python is required, as well as graphviz, bash and make.
 
 http://maven.apache.org/[Apache Maven] together with http://www.gnu.org/software/make/[Make] are used to unpack the pieces of the manual and to execute asciidoc on them.
 Note that running parallel jobs with Make (-j option) is not supported.
