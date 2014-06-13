@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 trait LogicalPlanningFunction1[-A, +B] {
@@ -35,7 +35,18 @@ trait LogicalPlanningFunction2[-A1, -A2, +B] {
   def asFunctionInContext(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (A1, A2) => B = apply
 }
 
-trait CandidateGenerator[-T] extends LogicalPlanningFunction2[T, QueryGraph, CandidateList]
+trait CandidateGenerator[T] extends LogicalPlanningFunction2[T, QueryGraph, CandidateList]
+
+object CandidateGenerator {
+  implicit final class RichCandidateGenerator[T](self: CandidateGenerator[T]) {
+    def orElse(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
+      def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
+        val ownCandidates = self(input1, input2)
+        if (ownCandidates.isEmpty) other(input1, input2) else ownCandidates
+      }
+    }
+  }
+}
 
 trait PlanTransformer[-T] extends LogicalPlanningFunction2[QueryPlan, T, QueryPlan]
 

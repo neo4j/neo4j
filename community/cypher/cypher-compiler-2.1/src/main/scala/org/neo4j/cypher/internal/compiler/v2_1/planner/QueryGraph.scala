@@ -28,6 +28,8 @@ import scala.collection.GenTraversableOnce
 trait QueryGraph {
   def patternRelationships: Set[PatternRelationship]
   def patternNodes: Set[IdName]
+  def shortestPathPatterns: Set[ShortestPathPattern]
+
   def argumentIds: Set[IdName]
   def selections: Selections
   def optionalMatches: Seq[QueryGraph]
@@ -36,6 +38,8 @@ trait QueryGraph {
   def addPatternNodes(nodes: IdName*): QueryGraph
   def addPatternRel(rel: PatternRelationship): QueryGraph
   def addPatternRels(rels: Seq[PatternRelationship]): QueryGraph
+  def addShortestPath(shortestPath: ShortestPathPattern): QueryGraph
+  def addShortestPaths(shortestPaths: ShortestPathPattern*): QueryGraph = shortestPaths.foldLeft(this)((qg, p) => qg.addShortestPath(p))
   def addArgumentId(newIds: Seq[IdName]): QueryGraph
   def addSelections(selections: Selections): QueryGraph
   def addPredicates(predicates: Expression*): QueryGraph
@@ -73,7 +77,8 @@ trait QueryGraph {
       patternRelationships = patternRelationships ++ other.patternRelationships,
       optionalMatches = optionalMatches ++ other.optionalMatches,
       argumentIds = argumentIds ++ other.argumentIds,
-      hints = hints ++ other.hints
+      hints = hints ++ other.hints,
+      shortestPathPatterns = shortestPathPatterns ++ other.shortestPathPatterns
     )
 
   def isCoveredBy(other: QueryGraph): Boolean = {
@@ -81,7 +86,8 @@ trait QueryGraph {
       patternRelationships.subsetOf(other.patternRelationships) &&
       argumentIds.subsetOf(other.argumentIds) &&
       optionalMatches.toSet.subsetOf(other.optionalMatches.toSet) &&
-      selections.predicates.subsetOf(other.selections.predicates)
+      selections.predicates.subsetOf(other.selections.predicates) &&
+      shortestPathPatterns.subsetOf(other.shortestPathPatterns)
   }
 
   def covers(other: QueryGraph): Boolean = other.isCoveredBy(this)
@@ -95,8 +101,9 @@ object QueryGraph {
             argumentIds: Set[IdName] = Set.empty,
             selections: Selections = Selections(),
             optionalMatches: Seq[QueryGraph] = Seq.empty,
-            hints: Set[Hint] = Set.empty): QueryGraph =
-    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints)
+            hints: Set[Hint] = Set.empty,
+            shortestPathPatterns: Set[ShortestPathPattern] = Set.empty): QueryGraph =
+    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints, shortestPathPatterns)
 
   val empty = QueryGraph()
 
@@ -113,7 +120,8 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
                           argumentIds: Set[IdName] = Set.empty,
                           selections: Selections = Selections(),
                           optionalMatches: Seq[QueryGraph] = Seq.empty,
-                          hints: Set[Hint] = Set.empty)
+                          hints: Set[Hint] = Set.empty,
+                          shortestPathPatterns: Set[ShortestPathPattern] = Set.empty)
   extends QueryGraph with internalDocBuilder.AsPrettyToString {
 
   def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
@@ -131,6 +139,14 @@ case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.e
 
   def addPatternRels(rels: Seq[PatternRelationship]) =
     rels.foldLeft[QueryGraph](this)((qg, rel) => qg.addPatternRel(rel))
+
+  def addShortestPath(shortestPath: ShortestPathPattern): QueryGraph = {
+    val rel = shortestPath.rel
+    copy (
+      patternNodes = patternNodes + rel.nodes._1 + rel.nodes._2,
+      shortestPathPatterns = shortestPathPatterns + shortestPath
+    )
+  }
 
   def addArgumentId(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
 

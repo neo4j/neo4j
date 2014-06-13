@@ -17,20 +17,11 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
+case class FindShortestPaths(left: LogicalPlan, shortestPath: ShortestPathPattern) extends LogicalPlan {
+  val lhs = Some(left)
+  def rhs = None
 
-class SingleRowPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
-  test("should build plans containing single row") {
-    planFor("RETURN 42").plan.plan should equal(
-      Projection(
-        SingleRow(Set.empty)(), expressions = Map("42" -> SignedIntegerLiteral("42")_)
-      )
-    )
-  }
+  def availableSymbols = left.availableSymbols ++ shortestPath.availableSymbols
 }

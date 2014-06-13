@@ -37,7 +37,7 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
         case _: SingleRow => 1
         case _ => Double.MaxValue
       }
-    } planFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b").plan should equal(
+    } planFor "MATCH (a:X)-[r1]->(b) OPTIONAL MATCH (b)-[r2]->(c:Y) RETURN b").plan.plan should equal(
       Projection(
         OuterHashJoin("b",
           Expand(NodeByLabelScan("a", Left("X")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength),
@@ -49,13 +49,13 @@ class OptionalMatchPlanningIntegrationTest extends CypherFunSuite with LogicalPl
   }
 
   test("should build simple optional match plans") {
-    planFor("OPTIONAL MATCH a RETURN a").plan should equal(
+    planFor("OPTIONAL MATCH a RETURN a").plan.plan should equal(
       Optional(AllNodesScan("a"))
     )
   }
 
   test("should solve multiple optional matches") {
-    planFor("MATCH a OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2").plan should equal(
+    planFor("MATCH a OPTIONAL MATCH (a)-[:R1]->(x1) OPTIONAL MATCH (a)-[:R2]->(x2) RETURN a, x1, x2").plan.plan should equal(
       Projection(
         OptionalExpand(
           OptionalExpand(

@@ -29,10 +29,12 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
   extends QueryGraphSolver {
 
   def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None) = {
+  import CandidateGenerator._
+
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
 
-    def generateLeafPlanTable() = {
+    def generateLeafPlanTable(): PlanTable = {
       val leafPlanCandidateLists = config.leafPlanners.candidateLists(queryGraph)
       val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
       val bestLeafPlans: Iterable[QueryPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
@@ -40,12 +42,19 @@ class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStr
       bestLeafPlans.foldLeft(startTable)(_ + _)
     }
 
-    def findBestPlan(planGenerator: CandidateGenerator[PlanTable]) = {
+    def findBestPlan(planGenerator: CandidateGenerator[PlanTable]): PlanTable => PlanTable = {
       (planTable: PlanTable) =>
-        val generated = planGenerator(planTable, queryGraph).plans.toList
+        val generated = step(planGenerator, queryGraph)(planTable, queryGraph).plans.toList
         val selected = generated.map(select(_, queryGraph))
         val best = pickBest(CandidateList(selected))
         best.fold(planTable)(planTable + _)
+    }
+
+    def step(planGenerator: CandidateGenerator[PlanTable], queryGraph: QueryGraph): CandidateGenerator[PlanTable] = {
+      if (queryGraph.shortestPathPatterns.isEmpty)
+        planGenerator
+      else
+        planGenerator orElse findShortestPaths
     }
 
     val leaves: PlanTable = generateLeafPlanTable()

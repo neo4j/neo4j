@@ -43,7 +43,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           right = planSingleRow()
         ),
         Map[String, Expression]("b" -> SignedIntegerLiteral("1") _)
-      ).plan
+      )
 
     result should equal(expected)
   }
@@ -74,7 +74,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           planSingleRow()
         ),
         Map[String, Expression]("b" -> ident("b"))
-      ).plan
+      )
 
     result should equal(expected)
   }
@@ -98,7 +98,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           )
         ),
         Map[String, Expression]("r1" -> ident("r1"))
-      ).plan
+      )
 
     result should equal(expected)
   }
@@ -123,7 +123,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           )
         ),
         Map[String, Expression]("b" -> ident("b"))
-      ).plan
+      )
 
     result should equal(expected)
   }

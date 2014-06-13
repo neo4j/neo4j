@@ -24,6 +24,15 @@ import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
 
 object inliningContextCreator extends (ast.Statement => InliningContext) {
+
+  object InlineablePatternPart {
+    def unapply(v: Any): Option[AnonymousPatternPart] = v match {
+      case p: ShortestPaths        => None
+      case p: AnonymousPatternPart => Some(p)
+      case _                       => None
+    }
+  }
+
   def apply(input: ast.Statement): InliningContext = {
     input.treeFold(InliningContext()) {
       case (With(false, ListedReturnItems(items), _, _, _, _)) =>
@@ -47,7 +56,7 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
 
   private def namedPatternPartPathExpressions(parts: Seq[PatternPart]): Map[Identifier, PathExpression] =
     parts.collect {
-      case part @ NamedPatternPart(identifier, patternPart) =>
+      case part @ NamedPatternPart(identifier, InlineablePatternPart(patternPart)) =>
         identifier -> PathExpression(patternPartPathExpression(patternPart))(part.position)
     }.toMap
 
@@ -71,3 +80,4 @@ object inliningContextCreator extends (ast.Statement => InliningContext) {
     }
   }
 }
+

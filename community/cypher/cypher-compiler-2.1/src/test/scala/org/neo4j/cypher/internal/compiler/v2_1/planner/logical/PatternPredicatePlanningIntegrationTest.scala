@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast._
 
 class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans containing semi apply for a single pattern predicate") {
-   planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a").plan should equal(
+   planFor("MATCH (a) WHERE (a)-[:X]->() RETURN a").plan.plan should equal(
       SemiApply(
         AllNodesScan("a"),
         Expand(
@@ -39,7 +39,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing anti semi apply for a single negated pattern predicate") {
-    planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE NOT (a)-[:X]->() RETURN a").plan.plan should equal(
       AntiSemiApply(
         AllNodesScan("a"),
         Expand(
@@ -51,7 +51,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing semi apply for two pattern predicates") {
-    planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE (a)-[:X]->() AND (a)-[:Y]->() RETURN a").plan.plan should equal(
       SemiApply(
         SemiApply(
           AllNodesScan("a"),
@@ -69,7 +69,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing select or semi apply for a pattern predicate and an expression") {
-    planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE (a)-[:X]->() OR a.prop > 4 RETURN a").plan.plan should equal(
       SelectOrSemiApply(
         AllNodesScan("a"),
         Expand(
@@ -82,7 +82,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing select or semi apply for a pattern predicate and multiple expressions") {
-    planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE a.prop2 = 9 OR (a)-[:X]->() OR a.prop > 4 RETURN a").plan.plan should equal(
       SelectOrSemiApply(
         AllNodesScan("a"),
         Expand(
@@ -98,7 +98,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing select or anti semi apply for a single negated pattern predicate") {
-    planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE a.prop = 9 OR NOT (a)-[:X]->() RETURN a").plan.plan should equal(
       SelectOrAntiSemiApply(
         AllNodesScan("a"),
         Expand(
@@ -111,7 +111,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing let select or semi apply and select or semi apply for two pattern predicates") {
-    planFor("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE a.prop = 9 OR (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan.plan should equal(
       Projection(
         SelectOrAntiSemiApply(
           LetSelectOrSemiApply(
@@ -135,7 +135,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing let semi apply and select or semi apply for two pattern predicates") {
-    planFor("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan.plan should equal(
       Projection(
         SelectOrAntiSemiApply(
           LetSemiApply(
@@ -158,7 +158,7 @@ class PatternPredicatePlanningIntegrationTest extends CypherFunSuite with Logica
   }
 
   test("should build plans containing let anti semi apply and select or semi apply for two pattern predicates") {
-    planFor("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan should equal(
+    planFor("MATCH (a) WHERE NOT (a)-[:Y]->() OR NOT (a)-[:X]->() RETURN a").plan.plan should equal(
       Projection(
         SelectOrAntiSemiApply(
           LetAntiSemiApply(

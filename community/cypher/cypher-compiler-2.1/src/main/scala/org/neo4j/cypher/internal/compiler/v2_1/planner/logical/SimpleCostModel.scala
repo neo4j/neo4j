@@ -137,6 +137,10 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       cardinality(outerJoin.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
       cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
 
+    case shortestPath: FindShortestPaths =>
+      cost(shortestPath.left) +
+      cardinality(shortestPath) * STORE_ACCESS_COST_PER_ROW
+
     case s@Sort(input, _) =>
       cost(input) +
       cardinality(s) * SORT_COST_PER_ROW

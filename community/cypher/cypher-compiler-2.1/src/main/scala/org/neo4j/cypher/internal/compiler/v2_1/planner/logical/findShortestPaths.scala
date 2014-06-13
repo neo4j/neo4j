@@ -17,19 +17,24 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{ShortestPaths, NamedPatternPart}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.ShortestPathPattern
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
+import QueryPlanProducer._
 
-object namedPatternPartRemover extends Rewriter {
-  val instance = Rewriter.lift {
-    case namedPart @ NamedPatternPart(_, part) => part match {
-      case _: ShortestPaths => namedPart
-      case _                => part
-    }
+object findShortestPaths extends CandidateGenerator[PlanTable] {
+  def apply(input: PlanTable, qg: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
+
+    val patterns = qg.shortestPathPatterns
+    val plans = patterns.flatMap { (shortestPath: ShortestPathPattern) =>
+        input.plans.collect {
+          case plan if shortestPath.isFindableFrom(plan.availableSymbols) =>
+            planShortestPaths(plan, shortestPath)
+        }
+      }
+      CandidateList(plans.toSeq)
   }
-
-  def apply(v: AnyRef): Option[AnyRef] = instance.apply(v)
 }

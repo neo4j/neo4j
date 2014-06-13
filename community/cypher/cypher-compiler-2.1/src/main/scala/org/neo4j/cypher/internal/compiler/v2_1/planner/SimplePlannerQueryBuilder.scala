@@ -51,13 +51,25 @@ object SimplePlannerQueryBuilder {
   }
 
   object PatternDestructuring {
-    def destruct(pattern: Pattern): (Seq[IdName], Seq[PatternRelationship]) =
-      pattern.patternParts.foldLeft((Seq.empty[IdName], Seq.empty[PatternRelationship])) {
-        case ((accIdNames, accRels), everyPath: EveryPath) =>
-          val (idNames, rels) = destruct(everyPath.element)
-          (accIdNames ++ idNames, accRels ++ rels)
+    def destruct(pattern: Pattern): (Seq[IdName], Seq[PatternRelationship], Seq[ShortestPathPattern]) =
+      pattern.patternParts.foldLeft((Seq.empty[IdName], Seq.empty[PatternRelationship], Seq.empty[ShortestPathPattern])) {
+        case ((accIdNames, accRels, accShortest), NamedPatternPart(ident, sps @ ShortestPaths(element, single))) =>
+          val (idNames, rels) = destruct(element)
+          val pathName = IdName(ident.name)
+          val newShortest = ShortestPathPattern(Some(pathName), rels.head, single)(sps)
+          (accIdNames ++ idNames , accRels, accShortest ++ Seq(newShortest))
 
-        case _ => throw new CantHandleQueryException
+        case ((accIdNames, accRels, accShortest), sps @ ShortestPaths(element, single)) =>
+          val (idNames, rels) = destruct(element)
+          val newShortest = ShortestPathPattern(None, rels.head, single)(sps)
+          (accIdNames ++ idNames , accRels, accShortest ++ Seq(newShortest))
+
+        case ((accIdNames, accRels, accShortest), everyPath: EveryPath) =>
+          val (idNames, rels) = destruct(everyPath.element)
+          (accIdNames ++ idNames, accRels ++ rels, accShortest)
+
+        case _ =>
+          throw new CantHandleQueryException
       }
 
     private def destruct(element: PatternElement): (Seq[IdName], Seq[PatternRelationship]) = element match {
@@ -81,7 +93,8 @@ object SimplePlannerQueryBuilder {
         val resultRels = rels :+ PatternRelationship(IdName(relId.name), (leftNode, rightNode), direction, relTypes, asPatternLength(length))
         (idNames :+ rightNode, resultRels)
 
-      case _ => throw new CantHandleQueryException
+      case _ =>
+        throw new CantHandleQueryException
     }
 
     private def destruct(node: NodePattern): (Seq[IdName], Seq[PatternRelationship]) =
@@ -171,26 +184,28 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         case Match(optional@false, pattern: Pattern, hints, optWhere) :: tl =>
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
-          val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
+          val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
 
           val newQuery = querySoFar.updateGraph {
             qg => qg.
               addSelections(selections).
               addPatternNodes(nodeIds: _*).
               addPatternRels(rels).
-              addHints(hints)
+              addHints(hints).
+              addShortestPaths(shortest: _*)
           }
 
           produceQueryGraphFromClauses(newQuery, subQueryLookupTable ++ subQueries, tl)
 
         case Match(optional@true, pattern: Pattern, hints, optWhere) :: tl =>
-          val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship]) = destruct(pattern)
+          val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
           val optionalMatch = QueryGraph(
             selections = selections,
             patternNodes = nodeIds.toSet,
             patternRelationships = rels.toSet,
-            hints = hints.toSet
+            hints = hints.toSet,
+            shortestPathPatterns = shortest.toSet
           )
 
           val newQuery = querySoFar.updateGraph {

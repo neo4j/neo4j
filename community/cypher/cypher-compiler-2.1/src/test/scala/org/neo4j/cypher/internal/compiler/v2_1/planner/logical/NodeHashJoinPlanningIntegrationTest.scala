@@ -38,7 +38,7 @@ class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPla
         case _: NodeHashJoin                      => 20
         case _                                    => Double.MaxValue
       }
-    } planFor "MATCH (a)<-[r1]-(b)-[r2]->(c) RETURN b").plan should equal(
+    } planFor "MATCH (a)<-[r1]-(b)-[r2]->(c) RETURN b").plan.plan should equal(
       Projection(
         Selection(
           Seq(NotEquals(Identifier("r1")_,Identifier("r2")_)_),

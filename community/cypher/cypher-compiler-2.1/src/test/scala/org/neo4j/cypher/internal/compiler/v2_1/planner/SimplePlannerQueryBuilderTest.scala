@@ -748,5 +748,35 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.hints should equal(Set[Hint](UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_))
   }
 
+  test("MATCH shortestPath(a-[r]->b) RETURN r") {
+    val (query, _) = buildPlannerQuery("MATCH shortestPath(a-[r]->b) RETURN r")
+
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    query.graph.shortestPathPatterns should equal(Set(
+      ShortestPathPattern(None, PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null)
+    ))
+    query.tail should be(empty)
+  }
+
+  test("MATCH allShortestPaths(a-[r]->b) RETURN r") {
+    val (query, _) = buildPlannerQuery("MATCH allShortestPaths(a-[r]->b) RETURN r")
+
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    query.graph.shortestPathPatterns should equal(Set(
+      ShortestPathPattern(None, PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength), single = false)(null)
+    ))
+    query.tail should be(empty)
+  }
+
+  test("MATCH p = shortestPath(a-[r]->b) RETURN p") {
+    val (query, _) = buildPlannerQuery("MATCH p = shortestPath(a-[r]->b) RETURN p", normalize = true)
+
+    query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
+    query.graph.shortestPathPatterns should equal(Set(
+      ShortestPathPattern(Some(IdName("p")), PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null)
+    ))
+    query.tail should be(empty)
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }
