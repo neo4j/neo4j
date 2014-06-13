@@ -91,25 +91,19 @@ class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with Logic
       }
     } planFor "MATCH (a)<-[r1]-(b)-[r2]->(c), p = shortestPath((a)-[r]->(c)) RETURN p").plan should equal(
       planRegularProjection(
-        planSelection(
-          Vector(
-            NotEquals(Identifier("r") _, Identifier("r1") _) _,
-            NotEquals(Identifier("r") _, Identifier("r2") _) _
+        planShortestPaths(
+          planSelection(
+            Vector(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
+            planNodeHashJoin("b",
+              planExpand(planAllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength, r1),
+              planExpand(planAllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength, r2)
+            )
           ),
-          planShortestPaths(
-            planSelection(
-              Vector(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
-              planNodeHashJoin("b",
-                planExpand(planAllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength, r1),
-                planExpand(planAllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength, r2)
-              )
-            ),
-            ShortestPathPattern(
-              Some("p"),
-              PatternRelationship("r", ("a", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
-              single = true
-            )(null)
-          )
+          ShortestPathPattern(
+            Some("p"),
+            PatternRelationship("r", ("a", "c"), Direction.OUTGOING, Seq.empty, SimplePatternLength),
+            single = true
+          )(null)
         ),
         expressions = Map("p" -> Identifier("p") _)
       )
