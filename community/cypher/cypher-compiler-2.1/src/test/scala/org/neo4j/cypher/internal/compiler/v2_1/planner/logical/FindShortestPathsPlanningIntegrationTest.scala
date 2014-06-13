@@ -20,24 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, NotEquals}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, NotEquals}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeHashJoin
-import org.neo4j.cypher.internal.compiler.v2_1.ast.NotEquals
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.ShortestPathPattern
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Expand
-import scala.Some
 
 class FindShortestPathsPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  import QueryPlanProducer._
+  import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
   test("finds shortest paths") {
     planFor("MATCH a, b, shortestPath(a-[r]->b) RETURN b").plan should equal(
