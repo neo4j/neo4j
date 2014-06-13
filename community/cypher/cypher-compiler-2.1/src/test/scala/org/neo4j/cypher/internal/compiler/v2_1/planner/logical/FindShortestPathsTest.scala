@@ -74,7 +74,6 @@ class FindShortestPathsTest extends CypherFunSuite with LogicalPlanningTestSuppo
         ))
       }
     }
-
   }
 
   test("finds all shortest path") {

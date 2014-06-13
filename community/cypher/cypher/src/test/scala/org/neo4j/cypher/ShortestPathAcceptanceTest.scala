@@ -51,6 +51,21 @@ class ShortestPathAcceptanceTest extends ExecutionEngineFunSuite with NewPlanner
     result should equal(List(List(nodeA, nodeB, nodeD)))
   }
 
+  test("optionally finds shortest path") {
+    /*
+       a-b-c-d
+       b-d
+     */
+    relate(nodeA, nodeB)
+    relate(nodeB, nodeC)
+    relate(nodeC, nodeD)
+    relate(nodeB, nodeD)
+
+    val result = executeWithNewPlanner("OPTIONAL MATCH p = shortestPath((src:A)-[*]->(dst:D)) RETURN nodes(p) AS nodes").columnAs[List[Node]]("nodes").toList
+
+    result should equal(List(List(nodeA, nodeB, nodeD)))
+  }
+
   test("finds shortest path rels") {
     /*
        a-b-c-d
