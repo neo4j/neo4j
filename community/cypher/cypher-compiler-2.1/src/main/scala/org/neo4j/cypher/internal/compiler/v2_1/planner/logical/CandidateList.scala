@@ -34,6 +34,8 @@ case class CandidateList(plans: Seq[QueryPlan] = Seq.empty) {
   }
 
   def map(f: QueryPlan => QueryPlan): CandidateList = copy(plans = plans.map(f))
+
+  def isEmpty = plans.isEmpty
 }
 
 object Candidates {

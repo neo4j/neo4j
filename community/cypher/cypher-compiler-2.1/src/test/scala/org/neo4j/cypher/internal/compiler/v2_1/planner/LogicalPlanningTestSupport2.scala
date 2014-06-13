@@ -50,7 +50,7 @@ trait BeLikeMatcher {
 
 object BeLikeMatcher extends BeLikeMatcher
 
-case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
+case class SemanticPlan(plan: QueryPlan, semanticTable: SemanticTable)
 
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
 
@@ -86,8 +86,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       LogicalPlanningEnvironment(this).planFor(queryString)
     }
 
-    def withQueryGraphSolvingContext[T](f: QueryGraphSolvingContext => T): T = {
-      LogicalPlanningEnvironment(this).withQueryGraphSolvingContext(qg)(f)
+    def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {
+      LogicalPlanningEnvironment(this).withLogicalPlanningContext(f)
     }
 
     protected def mapCardinality(pf:PartialFunction[LogicalPlan, Double]): PartialFunction[LogicalPlan, Cardinality] = pf.andThen(Cardinality.apply)
@@ -203,6 +203,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.cardinalityModel(statistics, selectivity, semanticTable)
     }
 
+    def table = Map.empty[PatternExpression, QueryGraph]
+
     def planContext = new PlanContext {
       def statistics: GraphStatistics =
         config.graphStatistics
@@ -252,20 +254,18 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       SemanticPlan(Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          planner.produceQueryPlan(ast, semanticTable)(planContext).plan
+          planner.produceQueryPlan(ast, semanticTable)(planContext)
       }, semanticTable)
     }
 
-    def withQueryGraphSolvingContext[T](qg: QueryGraph)(f: QueryGraphSolvingContext => T): T = {
-      val ctx = QueryGraphSolvingContext(
+    def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {
+      val ctx = LogicalPlanningContext(
         planContext = planContext,
         metrics = metricsFactory.newMetrics(config.graphStatistics, semanticTable),
         semanticTable = semanticTable,
-        queryGraph = qg,
-        subQueriesLookupTable = Map.empty,
         strategy = queryGraphSolver
       )
-      f(ctx)
+      f(ctx, table)
     }
   }
 

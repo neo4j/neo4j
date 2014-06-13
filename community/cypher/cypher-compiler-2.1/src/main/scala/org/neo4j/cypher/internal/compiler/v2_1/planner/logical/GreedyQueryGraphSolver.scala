@@ -22,28 +22,39 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 import org.neo4j.cypher.internal.helpers.Converge.iterateUntilConverged
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.cartesianProduct
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 class GreedyQueryGraphSolver(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default)
   extends QueryGraphSolver {
 
-  def plan(implicit context: QueryGraphSolvingContext, leafPlan: Option[QueryPlan] = None): QueryPlan = {
+  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None) = {
+  import CandidateGenerator._
+
     val select = config.applySelections.asFunctionInContext
     val pickBest = config.pickBestCandidate.asFunctionInContext
 
-    def generateLeafPlanTable() = {
-      val leafPlanCandidateLists = config.leafPlanners.candidateLists(context.queryGraph)
-      val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select))
+    def generateLeafPlanTable(): PlanTable = {
+      val leafPlanCandidateLists = config.leafPlanners.candidateLists(queryGraph)
+      val leafPlanCandidateListsWithSelections = leafPlanCandidateLists.map(_.map(select(_, queryGraph)))
       val bestLeafPlans: Iterable[QueryPlan] = leafPlanCandidateListsWithSelections.flatMap(pickBest(_))
       val startTable: PlanTable = leafPlan.foldLeft(PlanTable.empty)(_ + _)
       bestLeafPlans.foldLeft(startTable)(_ + _)
     }
 
-    def findBestPlan(planGenerator: CandidateGenerator[PlanTable]) = {
+    def findBestPlan(planGenerator: CandidateGenerator[PlanTable]): PlanTable => PlanTable = {
       (planTable: PlanTable) =>
-        val generated = planGenerator(planTable).plans.toList
-        val selected = generated.map(select)
+        val generated = step(planGenerator, queryGraph)(planTable, queryGraph).plans.toList
+        val selected = generated.map(select(_, queryGraph))
         val best = pickBest(CandidateList(selected))
         best.fold(planTable)(planTable + _)
+    }
+
+    def step(planGenerator: CandidateGenerator[PlanTable], queryGraph: QueryGraph): CandidateGenerator[PlanTable] = {
+      if (queryGraph.shortestPathPatterns.isEmpty)
+        planGenerator
+      else
+        planGenerator orElse findShortestPaths
     }
 
     val leaves: PlanTable = generateLeafPlanTable()

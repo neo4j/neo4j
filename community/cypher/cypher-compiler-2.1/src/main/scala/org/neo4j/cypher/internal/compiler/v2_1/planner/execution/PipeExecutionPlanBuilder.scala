@@ -20,17 +20,19 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.execution
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
-import org.neo4j.cypher.internal.compiler.v2_1.pipes._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.Monitors
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
-import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{SingleQueryExpression, True}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.OtherConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.PatternConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.CantHandleQueryException
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_1.commands.True
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.AggregationExpression
+import org.neo4j.cypher.internal.compiler.v2_1.Monitors
 
+case class PipeExecutionBuilderContext(patternExpressionPlanLookup: Map[PatternExpression, LogicalPlan])
 
 class PipeExecutionPlanBuilder(monitors: Monitors) {
 
@@ -136,6 +138,11 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
             buildPipe(input),
             groupingExpressions.mapValues(_.asCommandExpression),
             aggregatingExpressions.mapValues(_.asCommandExpression.asInstanceOf[AggregationExpression]))
+
+        case FindShortestPaths(input, shortestPath) =>
+          val legacyShortestPaths = shortestPath.expr.asLegacyPatterns(shortestPath.name.map(_.name))
+          val legacyShortestPath = legacyShortestPaths.head //.copy(relIterator = Some(shortestPath.rel.name.name))
+          new ShortestPathPipe(buildPipe(input), legacyShortestPath)
 
         case _ =>
           throw new CantHandleQueryException

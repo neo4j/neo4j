@@ -22,50 +22,47 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
 
   import QueryPlanProducer._
 
-  def plan(implicit context: LogicalPlanningContext, leafPlan: Option[QueryPlan] = None): QueryPlan = {
-    val query = context.query
+  def plan(query: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): QueryPlan = {
     val firstPart = planPart(query, leafPlan)
-    val projectedFirstPart = planEventHorizon(query.projection, firstPart)
-    val finalPlan = plan(projectedFirstPart, query.tail, context)
-    verifyBestPlan(finalPlan)
+    val projectedFirstPart = planEventHorizon(query, firstPart)
+    val finalPlan = plan(projectedFirstPart, query.tail)
+    verifyBestPlan(finalPlan, query)
   }
 
-  private def plan(pred: QueryPlan, remaining: Option[PlannerQuery], context: LogicalPlanningContext): QueryPlan = remaining match {
+  private def plan(pred: QueryPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = remaining match {
     case Some(query) =>
-      val innerContext = context.copy(query = query)
       val lhs = pred
-      val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))(innerContext)
+      val rhs = planPart(query, Some(planQueryArgumentRow(query.graph)))
       val applyPlan = planTailApply(lhs, rhs)
-      val projectedPlan = planEventHorizon(query.projection, applyPlan)(innerContext)
-      plan( projectedPlan, query.tail, innerContext )
+      val projectedPlan = planEventHorizon(query, applyPlan)(context, subQueryLookupTable)
+      plan(projectedPlan, query.tail)
     case None =>
       pred
   }
 
-  private def planPart(query: PlannerQuery, leafPlan: Option[QueryPlan] = None)(implicit context: LogicalPlanningContext): QueryPlan = {
-    val graphSolvingContext = context.asQueryGraphSolvingContext(query.graph)
-    val afterSolvingPattern = context.strategy.plan(graphSolvingContext, leafPlan)
-
-    afterSolvingPattern
+  private def planPart(query: PlannerQuery, leafPlan: Option[QueryPlan] = None)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = {
+    context.strategy.plan(query.graph)(context, subQueryLookupTable, leafPlan)
   }
 
-  private def planEventHorizon(queryProjection: QueryProjection, plan: QueryPlan)(implicit context: LogicalPlanningContext) = {
-    val graph = context.query.graph
-    val selectedPlan = config.applySelections(plan)(context.asQueryGraphSolvingContext(graph))
+  private def planEventHorizon(query: PlannerQuery, plan: QueryPlan)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]) = {
+    val selectedPlan = config.applySelections(plan, query.graph)
+    val queryProjection = query.projection
     val projectedPlan = queryProjection match {
-      case aggr:AggregationProjection =>
+      case aggr: AggregationProjection =>
         val aggregationPlan = aggregation(selectedPlan, aggr)
-        sortSkipAndLimit(aggregationPlan)
+        sortSkipAndLimit(aggregationPlan, query)
 
       case _ =>
-        val sortedAndLimited = sortSkipAndLimit(selectedPlan)
+        val sortedAndLimited = sortSkipAndLimit(selectedPlan, query)
         projection(sortedAndLimited, queryProjection.projections)
     }
+
     projectedPlan
   }
 }

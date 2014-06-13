@@ -24,9 +24,9 @@ import commands._
 import commands.expressions.ShortestPathExpression
 import symbols._
 import org.neo4j.cypher.internal.helpers._
-import org.neo4j.graphdb.Path
+import org.neo4j.graphdb.{Relationship, Path}
 import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.IntroducedIdentifier
-
+import collection.JavaConverters._
 /**
  * Shortest pipe inserts a single shortest path between two already found nodes
  */
@@ -42,10 +42,26 @@ class ShortestPathPipe(source: Pipe, ast: ShortestPath)
       case path: Path    => Stream(path)
     }
 
-    result.map(x => ctx.newWith(pathName -> x))
+    result.map {
+      (path: Path) =>
+        val newValues: Seq[(String, Any)] = Seq(pathName -> path) ++ getRelIterator(path)
+        ctx.newWith(newValues)
+    }
   })
 
-  val symbols = source.symbols.add(pathName, CTPath)
+  val symbols = {
+    val withPath = source.symbols.add(pathName, CTPath)
+    ast.relIterator match {
+      case None    => withPath
+      case Some(x) => withPath.add(x, CTCollection(CTRelationship))
+    }
+  }
+
+  private def getRelIterator(p: Path): TraversableOnce[(String, Seq[Relationship])] = {
+    ast.relIterator.map {
+      relName => relName -> p.relationships().asScala.toSeq
+    }
+  }
 
   override def planDescription =
     source.planDescription.andThen(this, "ShortestPath", IntroducedIdentifier(ast.pathName))

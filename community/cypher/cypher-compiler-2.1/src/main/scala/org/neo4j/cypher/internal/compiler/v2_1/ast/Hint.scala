@@ -22,7 +22,9 @@ package org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1._
 import symbols._
 
-sealed trait Hint extends ASTNode with SemanticCheckable
+sealed trait Hint extends ASTNode with SemanticCheckable {
+  def identifier: Identifier
+}
 
 case class UsingIndexHint(identifier: Identifier, label: LabelName, property: Identifier)(val position: InputPosition) extends Hint {
   def semanticCheck = identifier.ensureDefined chain identifier.expectType(CTNode.covariant)

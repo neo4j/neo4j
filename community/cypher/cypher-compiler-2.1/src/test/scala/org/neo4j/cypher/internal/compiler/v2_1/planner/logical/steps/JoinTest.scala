@@ -25,8 +25,11 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, CandidateList, PlanTable}
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
+  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   private def createQuery(rels: PatternRelationship*) = QueryGraph(patternRelationships = rels.toSet)
   val aNode = IdName("a")
@@ -41,9 +44,8 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val r3Rel = PatternRelationship(r3Name, (cNode, dNode), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
   test("finds a single join") {
-    implicit val context = newMockedQueryGraphSolvingContext(
-      planContext = newMockedPlanContext,
-      query = createQuery(r1Rel, r2Rel)
+    implicit val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext
     )
     val left = newMockedQueryPlan(Set(aNode, bNode))
     val right = newMockedQueryPlan(Set(bNode, cNode))
@@ -52,16 +54,17 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Set(bNode, cNode) -> right
     ))
 
-    join(planTable) should equal(Candidates(
+    val qg = createQuery(r1Rel, r2Rel)
+
+    join(planTable, qg) should equal(Candidates(
       planNodeHashJoin(IdName("b"), left, right),
       planNodeHashJoin(IdName("b"), right, left)
     ))
   }
 
   test("finds multiple joins") {
-    implicit val context = newMockedQueryGraphSolvingContext(
-      planContext = newMockedPlanContext,
-      query = createQuery(r1Rel, r2Rel, r3Rel)
+    implicit val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext
     )
     val left = newMockedQueryPlanWithPatterns(Set(aNode, bNode))
     val middle = newMockedQueryPlanWithPatterns(Set(bNode, cNode))
@@ -72,7 +75,9 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Set(cNode, dNode) -> right
     ))
 
-    join(planTable) should equal(Candidates(
+    val qg = createQuery(r1Rel, r2Rel, r3Rel)
+
+    join(planTable, qg) should equal(Candidates(
       planNodeHashJoin(IdName("b"), left, middle),
       planNodeHashJoin(IdName("b"), middle, left),
       planNodeHashJoin(IdName("c"), middle, right),
@@ -81,9 +86,8 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
   }
 
   test("does not introduce joins if plans do not overlap") {
-    implicit val context = newMockedQueryGraphSolvingContext(
-      planContext = newMockedPlanContext,
-      query = createQuery(r1Rel)
+    implicit val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext
     )
     val left = newMockedQueryPlanWithPatterns(Set(aNode, bNode))
     val right = newMockedQueryPlanWithPatterns(Set(cNode))
@@ -91,18 +95,23 @@ class JoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Set(aNode, bNode) -> left,
       Set(cNode) -> right
     ))
-    join(planTable) should equal(CandidateList())
+
+    val qg = createQuery(r1Rel)
+
+    join(planTable, qg) should equal(CandidateList())
   }
 
   test("does not join a plan with itself") {
-    implicit val context = newMockedQueryGraphSolvingContext(
-      planContext = newMockedPlanContext,
-      query = createQuery()
+    implicit val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext
     )
     val left = newMockedQueryPlanWithPatterns(Set(aNode))
     val planTable = PlanTable(Map(
       Set(aNode) -> left
     ))
-    join(planTable) should equal(CandidateList())
+
+    val qg = createQuery()
+
+    join(planTable, qg) should equal(CandidateList())
   }
 }

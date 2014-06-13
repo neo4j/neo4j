@@ -1191,6 +1191,16 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
+  test("testShortestPathWithMaxDepth and rel iterator") {
+    expectQuery(
+      """start a=node(0), b=node(1) match p = shortestPath( a-[r*..6]->b ) return p""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, Some(6), single = true, Some("r"))).
+        returns(ReturnItem(Identifier("p"), "p"))
+    )
+  }
+
   test("testShortestPathWithType") {
     expectQuery(
       """start a=node(0), b=node(1) match p = shortestPath( a-[:KNOWS*..6]->b ) return p""",

@@ -65,17 +65,17 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
                              limit: Option[ast.Expression] = None,
                              sortItems: Seq[ast.SortItem] = Seq.empty,
                              projectionsMap: Map[String, ast.Expression] = Map("n" -> ast.Identifier("n")(pos))): (LogicalPlanningContext, QueryPlan) = {
-    val projections = QueryProjection(
-      limit = limit,
-      skip = skip,
-      sortItems = sortItems,
-      projections = projectionsMap)
-
-    val qg = QueryGraph(patternNodes = Set(IdName("n")))
+//    val projections = QueryProjection(
+//      limit = limit,
+//      skip = skip,
+//      sortItems = sortItems,
+//      projections = projectionsMap)
+//
+//    val qg = QueryGraph(patternNodes = Set(IdName("n")))
+//    val query = PlannerQuery(qg, projections)
 
     val context = newMockedLogicalPlanningContext(
-      planContext = newMockedPlanContext,
-      query = PlannerQuery(qg, projections)
+      planContext = newMockedPlanContext
     )
 
     val plan = QueryPlan(

@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.Assertions
-import org.junit.Test
 import org.junit.Assert._
 import java.util.regex.Pattern
 
-class ExecutionResultTest extends ExecutionEngineJUnitSuite {
-  @Test def columnOrderIsPreserved() {
+class ExecutionResultTest extends ExecutionEngineFunSuite {
+  test("columnOrderIsPreserved") {
     val columns = List("zero", "one", "two", "three", "four", "five", "six", "seven", "eight", "nine")
 
     columns.foreach(createNode)
@@ -39,10 +37,10 @@ class ExecutionResultTest extends ExecutionEngineJUnitSuite {
     val regex = "zero.*one.*two.*three.*four.*five.*six.*seven.*eight.*nine"
     val pattern = Pattern.compile(regex)
 
-    assertTrue( "Columns did not apperar in the expected order: \n" + result.dumpToString(), pattern.matcher(result.dumpToString()).find() )
+    assertTrue( "Columns did not appear in the expected order: \n" + result.dumpToString(), pattern.matcher(result.dumpToString()).find() )
   }
 
-  @Test def correctLabelStatisticsForCreate() {
+  test("correctLabelStatisticsForCreate") {
     val result = execute("create (n:foo:bar)")
     val stats  = result.queryStatistics()
 
@@ -50,7 +48,7 @@ class ExecutionResultTest extends ExecutionEngineJUnitSuite {
     assert(stats.labelsRemoved === 0)
   }
 
-  @Test def correctLabelStatisticsForAdd() {
+  test("correctLabelStatisticsForAdd") {
     val n      = createNode()
     val result = execute(s"start n=node(${n.getId}) set n:foo:bar")
     val stats  = result.queryStatistics()
@@ -59,7 +57,7 @@ class ExecutionResultTest extends ExecutionEngineJUnitSuite {
     assert(stats.labelsRemoved === 0)
   }
 
-  @Test def correctLabelStatisticsForRemove() {
+  test("correctLabelStatisticsForRemove") {
     val n      = createNode()
     execute(s"start n=node(${n.getId}) set n:foo:bar")
     val result = execute(s"start n=node(${n.getId}) remove n:foo:bar")
@@ -69,7 +67,7 @@ class ExecutionResultTest extends ExecutionEngineJUnitSuite {
     assert(stats.labelsRemoved === 2)
   }
 
-  @Test def correctLabelStatisticsForAddAndRemove() {
+  test("correctLabelStatisticsForAddAndRemove") {
     val n      = createLabeledNode("foo", "bar")
     val result = execute(s"start n=node(${n.getId}) set n:baz remove n:foo:bar")
     val stats  = result.queryStatistics()
@@ -79,7 +77,7 @@ class ExecutionResultTest extends ExecutionEngineJUnitSuite {
   }
 
 
-  @Test def correctLabelStatisticsForLabelAddedTwice() {
+  test("correctLabelStatisticsForLabelAddedTwice") {
     val n      = createLabeledNode("foo", "bar")
     val result = execute(s"start n=node(${n.getId}) set n:bar:baz")
     val stats  = result.queryStatistics()
@@ -88,7 +86,7 @@ class ExecutionResultTest extends ExecutionEngineJUnitSuite {
     assert(stats.labelsRemoved === 0)
   }
 
-  @Test def correctLabelStatisticsForRemovalOfUnsetLabel() {
+  test("correctLabelStatisticsForRemovalOfUnsetLabel") {
     val n      = createLabeledNode("foo", "bar")
     val result = execute(s"start n=node(${n.getId}) remove n:baz:foo")
     val stats  = result.queryStatistics()
@@ -97,7 +95,7 @@ class ExecutionResultTest extends ExecutionEngineJUnitSuite {
     assert(stats.labelsRemoved === 1)
   }
 
-  @Test def correctIndexStatisticsForIndexAdded() {
+  test("correctIndexStatisticsForIndexAdded") {
     val result = execute("create index on :Person(name)")
     val stats  = result.queryStatistics()
 
@@ -105,7 +103,7 @@ class ExecutionResultTest extends ExecutionEngineJUnitSuite {
     assert(stats.indexesRemoved === 0)
   }
 
-  @Test def correctIndexStatisticsForIndexAddedTwice() {
+  test("correctIndexStatisticsForIndexAddedTwice") {
     execute("create index on :Person(name)")
 
     val result = execute("create index on :Person(name)")
@@ -115,7 +113,7 @@ class ExecutionResultTest extends ExecutionEngineJUnitSuite {
     assert(stats.indexesRemoved === 0)
   }
 
-  @Test def correctConstraintStatisticsForUniquenessConstraintAdded() {
+  test("correctConstraintStatisticsForUniquenessConstraintAdded") {
     val result = execute("create constraint on (n:Person) assert n.name is unique")
     val stats  = result.queryStatistics()
 
@@ -123,7 +121,7 @@ class ExecutionResultTest extends ExecutionEngineJUnitSuite {
     assert(stats.constraintsRemoved === 0)
   }
 
-  @Test def correctConstraintStatisticsForUniquenessConstraintAddedTwice() {
+  test("correctConstraintStatisticsForUniquenessConstraintAddedTwice") {
     execute("create constraint on (n:Person) assert n.name is unique")
 
     val result = execute("create constraint on (n:Person) assert n.name is unique")

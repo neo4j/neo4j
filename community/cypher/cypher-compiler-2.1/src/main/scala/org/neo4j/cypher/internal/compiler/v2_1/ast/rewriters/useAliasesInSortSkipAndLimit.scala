@@ -54,9 +54,9 @@ object useAliasesInSortSkipAndLimit extends Rewriter {
         Identifier(rewriteMap(e))(e.position)
     })
 
-    val newOrderBy = optOrderBy.rewrite(rewriter).asInstanceOf[Option[OrderBy]]
-    val newSkip = optSkip.rewrite(rewriter).asInstanceOf[Option[Skip]]
-    val newLimit = optLimit.rewrite(rewriter).asInstanceOf[Option[Limit]]
+    val newOrderBy = optOrderBy.endoRewrite(rewriter)
+    val newSkip = optSkip.endoRewrite(rewriter)
+    val newLimit = optLimit.endoRewrite(rewriter)
     (newOrderBy, newSkip, newLimit)
   }
 

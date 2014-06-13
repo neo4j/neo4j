@@ -20,13 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{optionalExpand, outerJoin, optional, applyOptional}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 object optionalMatches extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
-    val optionalApplies = applyOptional(planTable)
-    val optionals = optional(planTable)
-    val outerJoins = outerJoin(planTable)
-    val optionalExpands = optionalExpand(planTable)
+  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
+    val optionalApplies = applyOptional(planTable, queryGraph)
+    val optionals = optional(planTable, queryGraph)
+    val outerJoins = outerJoin(planTable, queryGraph)
+    val optionalExpands = optionalExpand(planTable, queryGraph)
     optionalApplies ++ optionals ++ outerJoins ++ optionalExpands
   }
 }

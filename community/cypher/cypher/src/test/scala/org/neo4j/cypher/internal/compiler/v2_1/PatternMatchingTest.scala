@@ -24,47 +24,32 @@ import commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.UnresolvedLabel
 import executionplan.builders.PatternGraphBuilder
 import symbols._
-import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Direction
-import org.junit.{After, Test}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.PatternMatchingBuilder
 
-class PatternMatchingTest extends ExecutionEngineJUnitSuite with PatternGraphBuilder {
+class PatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {
   val symbols = new SymbolTable(Map("a" -> CTNode))
   val patternRelationship: RelatedTo = RelatedTo("a", "b", "r", Seq.empty, Direction.OUTGOING)
   val rightNode = patternRelationship.right
-
   val label = UnresolvedLabel("Person")
 
-  var tx : org.neo4j.graphdb.Transaction = null
-
-  private def queryState = {
-    if(tx == null) tx = graph.beginTx()
-    QueryStateHelper.queryStateFrom(graph, tx)
-  }
-
-  @After
-  def cleanup()
-  {
-    if(tx != null) tx.close()
-  }
-
-
-  @Test def should_handle_a_single_relationship_with_no_matches() {
-
+  test("should_handle_a_single_relationship_with_no_matches") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
     val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
     val aNode = createNode()
 
     // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
+    val result = withQueryState { queryState =>
+      matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
+    }
 
     // Then
-    assert(result === List.empty)
+    result shouldBe empty
   }
 
-  @Test def should_handle_a_single_relationship_with_1_match() {
+  test("should_handle_a_single_relationship_with_1_match") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
     val matcher = new PatternMatchingBuilder(patternGraph, Seq.empty, Set("a", "r", "b"))
@@ -73,13 +58,15 @@ class PatternMatchingTest extends ExecutionEngineJUnitSuite with PatternGraphBui
     val relationship = relate(aNode, bNode)
 
     // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
+    val result = withQueryState { queryState =>
+      matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
+    }
 
     // Then
-    assert(result === List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
+    result should equal(List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
   }
 
-  @Test def should_handle_a_mandatory_labeled_node_with_no_matches() {
+  test("should_handle_a_mandatory_labeled_node_with_no_matches") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
     val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Identifier("b"), label)), Set("a", "r", "b"))
@@ -88,13 +75,15 @@ class PatternMatchingTest extends ExecutionEngineJUnitSuite with PatternGraphBui
     relate(aNode, bNode)
 
     // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
+    val result = withQueryState { queryState =>
+      matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
+    }
 
     // Then
-    assert(result === List())
+    result shouldBe empty
   }
 
-  @Test def should_handle_a_mandatory_labeled_node_with_matches() {
+  test("should_handle_a_mandatory_labeled_node_with_matches") {
     // Given
     val patternGraph = buildPatternGraph(symbols, Seq(patternRelationship))
     val matcher = new PatternMatchingBuilder(patternGraph, Seq(HasLabel(Identifier("b"), label)), Set("a", "r", "b"))
@@ -103,9 +92,11 @@ class PatternMatchingTest extends ExecutionEngineJUnitSuite with PatternGraphBui
     val relationship = relate(aNode, bNode)
 
     // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
+    val result = withQueryState { queryState =>
+      matcher.getMatches(ExecutionContext.empty.newWith("a" -> aNode), queryState).toList
+    }
 
     // Then
-    assert(result === List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
+    result should equal(List(Map("a" -> aNode, "b" -> bNode, "r" -> relationship)))
   }
 }

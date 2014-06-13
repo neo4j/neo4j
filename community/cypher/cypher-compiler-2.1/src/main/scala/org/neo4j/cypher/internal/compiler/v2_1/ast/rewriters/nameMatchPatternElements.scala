@@ -39,7 +39,7 @@ object nameMatchPatternElements extends Rewriter {
 
   private val findingRewriter: Rewriter = Rewriter.lift {
     case m: Match =>
-      val rewrittenPattern = m.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[Pattern]
+      val rewrittenPattern = m.pattern.endoRewrite(bottomUp(namingRewriter))
       m.copy(pattern = rewrittenPattern)(m.position)
   }
 }
@@ -56,7 +56,7 @@ object nameVarLengthRelationships extends Rewriter {
 
   private val findingRewriter: Rewriter = Rewriter.lift {
     case m: Match =>
-      val rewrittenPattern = m.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[Pattern]
+      val rewrittenPattern = m.pattern.endoRewrite(bottomUp(namingRewriter))
       m.copy(pattern = rewrittenPattern)(m.position)
   }
 }
@@ -77,7 +77,7 @@ object namePatternPredicates extends Rewriter {
 
   private val findingRewriter: Rewriter = Rewriter.lift {
     case exp: PatternExpression =>
-      val rewrittenPattern = exp.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[RelationshipsPattern]
+      val rewrittenPattern = exp.pattern.endoRewrite(bottomUp(namingRewriter))
       exp.copy(pattern = rewrittenPattern)
   }
 }

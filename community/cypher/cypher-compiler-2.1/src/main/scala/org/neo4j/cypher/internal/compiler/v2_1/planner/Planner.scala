@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPlanBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp, ParsedQuery, Monitors}
+import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, ParsedQuery, Monitors}
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
@@ -65,24 +65,25 @@ case class Planner(monitors: Monitors,
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
 
-    val context = LogicalPlanningContext(planContext, metrics, semanticTable, plannerQuery, queryGraphSolver, subQueriesLookupTable)
-    val plan = strategy.plan(context)
+    val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
+    val plan = strategy.plan(plannerQuery)(context, subQueriesLookupTable)
     plan
   }
 }
 
 object Planner {
-  def rewriteStatement(statement: Statement): Statement = {
-    val cnfStatement = statement.typedRewrite[Statement](CNFNormalizer)
-    val namedStatement = cnfStatement.typedRewrite[Statement](bottomUp(
-      inSequence(nameVarLengthRelationships, namePatternPredicates)
-    ))
+  val rewriter = inSequence(
+    rewriteEqualityToInCollection,
+    splitInCollectionsToIsolateConstants,
+    CNFNormalizer,
+    collapseInCollectionsContainingConstants,
+    nameVarLengthRelationships,
+    namePatternPredicates,
+    inlineProjections,
+    useAliasesInSortSkipAndLimit
+  )
 
-    val statementWithInlinedProjections = inlineProjections(namedStatement)
-    val statementWithAliasedSortSkipAndLimit = statementWithInlinedProjections.typedRewrite[Statement](bottomUp(useAliasesInSortSkipAndLimit))
-
-    statementWithAliasedSortSkipAndLimit
-  }
+  def rewriteStatement(statement: Statement) = statement.endoRewrite(rewriter)
 }
 
 trait PlanningMonitor {
