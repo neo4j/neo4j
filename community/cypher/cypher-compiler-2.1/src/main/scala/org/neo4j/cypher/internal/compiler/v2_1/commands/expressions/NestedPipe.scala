@@ -17,12 +17,23 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Query}
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Pipe, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-case class QueryPlanInput(query: PlannerQuery, subQueryLookupTable: Map[PatternExpression, QueryGraph], patternInExpression: Map[PatternExpression, QueryGraph])
+case class NestedPipe(pipe: Pipe, path: ProjectedPath) extends Expression {
+  def apply(ctx: ExecutionContext)(implicit state: QueryState): Any = {
+    val innerState = state.copy(initialContext = Some(ctx))
+    pipe.createResults(innerState).map(ctx => path(ctx)).toSeq
+  }
 
-trait PlannerQueryBuilder {
-  def produce(ast: Query): QueryPlanInput
+  def rewrite(f: (Expression) => Expression) = f(this)
+
+  def arguments = Nil
+
+  def calculateType(symbols: SymbolTable): CypherType = CTCollection(CTPath)
+
+  def symbolTableDependencies = Set()
 }

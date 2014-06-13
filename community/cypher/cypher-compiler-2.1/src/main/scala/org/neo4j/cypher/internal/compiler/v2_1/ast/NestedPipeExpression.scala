@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner
+package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Query}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.Pipe
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
 
-case class QueryPlanInput(query: PlannerQuery, subQueryLookupTable: Map[PatternExpression, QueryGraph], patternInExpression: Map[PatternExpression, QueryGraph])
-
-trait PlannerQueryBuilder {
-  def produce(ast: Query): QueryPlanInput
+case class NestedPipeExpression(pipe: Pipe, path: PathExpression)(val position: InputPosition) extends Expression {
+  def semanticCheck(ctx: SemanticContext): SemanticCheck = SemanticCheckResult.success
 }

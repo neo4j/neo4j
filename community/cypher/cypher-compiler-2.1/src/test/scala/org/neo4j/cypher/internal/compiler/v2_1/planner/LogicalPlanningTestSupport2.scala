@@ -254,7 +254,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       SemanticPlan(Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          planner.produceQueryPlan(ast, semanticTable)(planContext)
+          val (queryPlan, _) = planner.produceQueryPlan(ast, semanticTable)(planContext)
+          queryPlan
       }, semanticTable)
     }
 
