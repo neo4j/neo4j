@@ -22,17 +22,20 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, PatternRelationship}
-import scala.annotation.tailrec
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Hint
 
-trait PlannerQuery {
-  def graph: QueryGraph
-  def projection: QueryProjection
-  def tail: Option[PlannerQuery]
+case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean)
 
-  def withTail(newTail: PlannerQuery): PlannerQuery
-  def withProjection(projection: QueryProjection): PlannerQuery
-  def withGraph(graph: QueryGraph): PlannerQuery
+case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
+                        projection: QueryProjection = QueryProjection.empty,
+                        tail: Option[PlannerQuery] = None) extends internalDocBuilder.AsPrettyToString {
+  def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
+    case None => copy(tail = Some(newTail))
+    case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
+  }
+
+  def withProjection(projection: QueryProjection): PlannerQuery = copy(projection = projection)
+  def withGraph(graph: QueryGraph): PlannerQuery = copy(graph = graph)
 
   def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
 
@@ -48,7 +51,11 @@ trait PlannerQuery {
 
   def updateGraph(f: QueryGraph => QueryGraph): PlannerQuery = withGraph(f(graph))
   def updateProjections(f: QueryProjection => QueryProjection): PlannerQuery = withProjection(f(projection))
-  def updateTail(f: PlannerQuery => PlannerQuery): PlannerQuery
+  def updateTail(f: PlannerQuery => PlannerQuery) = tail match {
+    case None            => this
+    case Some(tailQuery) => copy(tail = Some(f(tailQuery)))
+  }
+
 
   def updateTailOrSelf(f: PlannerQuery => PlannerQuery): PlannerQuery = tail match {
     case None            => f(this)
@@ -70,13 +77,14 @@ trait PlannerQuery {
     case (s@Some(_), None) => s
     case (None, s) => s
   }
+
+  // This is here to stop usage of copy from the outside
+  private def copy(graph: QueryGraph = graph,
+                   projection: QueryProjection = projection,
+                   tail: Option[PlannerQuery] = tail) = PlannerQuery(graph, projection, tail)
 }
 
 object PlannerQuery {
-  def apply(graph: QueryGraph = QueryGraph.empty,
-            projection: QueryProjection = QueryProjection.empty,
-            tail: Option[PlannerQuery] = None): PlannerQuery = PlannerQueryImpl(graph, projection, tail)
-
   val empty = PlannerQuery()
 
   def coveredIdsForPatterns(patternNodeIds: Set[IdName], patternRels: Set[PatternRelationship]) = {
@@ -84,24 +92,3 @@ object PlannerQuery {
     patternNodeIds ++ patternRelIds
   }
 }
-
-case class PlannerQueryImpl(graph: QueryGraph,
-                            projection: QueryProjection,
-                            tail: Option[PlannerQuery] = None)
-  extends PlannerQuery with internalDocBuilder.AsPrettyToString {
-
-  def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
-    case None => copy(tail = Some(newTail))
-    case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
-  }
-
-  def updateTail(f: PlannerQuery => PlannerQuery) = tail match {
-    case None            => this
-    case Some(tailQuery) => copy(tail = Some(f(tailQuery)))
-  }
-
-  def withProjection(projection: QueryProjection): PlannerQuery = copy(projection = projection)
-
-  def withGraph(graph: QueryGraph): PlannerQuery = copy(graph = graph)
-}
-
