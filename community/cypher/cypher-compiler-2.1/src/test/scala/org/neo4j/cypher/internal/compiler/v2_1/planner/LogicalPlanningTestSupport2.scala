@@ -64,7 +64,10 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   var astRewriter = new ASTRewriter(monitors.newMonitor[AstRewritingMonitor](monitorTag), shouldExtractParameters = false)
   var tokenResolver = new SimpleTokenResolver()
   var monitor = mock[PlanningMonitor]
-  var strategy = new QueryPlanningStrategy()
+  var strategy = new QueryPlanningStrategy() {
+    def internalPlan(query: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): QueryPlan =
+     planSingleQuery(query)
+  }
   var queryGraphSolver = new GreedyQueryGraphSolver()
 
   val realConfig = new RealLogicalPlanningConfiguration
@@ -251,12 +254,17 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       semanticChecker.check(queryString, parsedStatement)
       val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement)
       val semanticTable = semanticChecker.check(queryString, rewrittenStatement)
-      SemanticPlan(Planner.rewriteStatement(rewrittenStatement) match {
+      val plannerQuery: QueryPlan = Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          val (queryPlan, _) = planner.produceQueryPlan(ast, semanticTable)(planContext)
-          queryPlan
-      }, semanticTable)
+          val QueryPlanInput(unionQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
+          val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
+          val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
+          val plannerQuery = unionQuery.queries.head
+          strategy.internalPlan(plannerQuery)(context, patternInExpression)
+      }
+
+      SemanticPlan(plannerQuery, semanticTable)
     }
 
     def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {

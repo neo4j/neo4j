@@ -51,12 +51,12 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("RETURN 42") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _) = buildPlannerQuery("RETURN 42")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) = buildPlannerQuery("RETURN 42")
     query.projection.projections should equal(Map[String, Literal]("42" -> SignedDecimalIntegerLiteral("42")_))
   }
 
   test("RETURN 42, 'foo'") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("RETURN 42, 'foo'")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("RETURN 42, 'foo'")
     query.projection.projections should equal(Map[String, Literal](
       "42" -> SignedDecimalIntegerLiteral("42")_,
       "'foo'" -> StringLiteral("foo")_
@@ -64,7 +64,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match n return n") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match n return n")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match n return n")
     query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
@@ -73,7 +73,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH n WHERE n:A:B RETURN n") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH n WHERE n:A:B RETURN n")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH n WHERE n:A:B RETURN n")
     query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
@@ -87,7 +87,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match n where n:X OR n:Y return n") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match n where n:X OR n:Y return n", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match n where n:X OR n:Y return n", normalize = true)
     query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
@@ -103,7 +103,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n", normalize = true)
     query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
@@ -127,7 +127,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH n WHERE id(n) = 42 RETURN n") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH n WHERE id(n) = 42 RETURN n")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH n WHERE id(n) = 42 RETURN n")
     query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
@@ -143,7 +143,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH n WHERE id(n) IN [42, 43] RETURN n") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH n WHERE id(n) IN [42, 43] RETURN n")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH n WHERE id(n) IN [42, 43] RETURN n")
     query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
@@ -159,7 +159,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH n WHERE n:A AND id(n) = 42 RETURN n") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH n WHERE n:A AND id(n) = 42 RETURN n", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH n WHERE n:A AND id(n) = 42 RETURN n", normalize = true)
     query.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
@@ -176,7 +176,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match p = (a) return p") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match p = (a) return p", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match p = (a) return p", normalize = true)
     query.graph.patternRelationships should equal(Set())
     query.graph.patternNodes should equal(Set[IdName]("a"))
     query.graph.selections should equal(Selections(Set.empty))
@@ -186,7 +186,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match p = (a)-[r]->(b) return a,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match p = (a)-[r]->(b) return a,r", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match p = (a)-[r]->(b) return a,r", normalize = true)
     query.graph.patternRelationships should equal(Set(patternRel))
     query.graph.patternNodes should equal(Set[IdName]("a", "b"))
     query.graph.selections should equal(Selections(Set.empty))
@@ -197,7 +197,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a)-[r]->(b)-[r2]->(c) return a,r,b") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a)-[r]->(b)-[r2]->(c) return a,r,b")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a)-[r]->(b)-[r2]->(c) return a,r,b")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
@@ -211,7 +211,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a)-[r]->(b)-[r2]->(a) return a,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a)-[r]->(b)-[r2]->(a) return a,r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a)-[r]->(b)-[r2]->(a) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
@@ -224,7 +224,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a)<-[r]-(b)-[r2]-(c) return a,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a)<-[r]-(b)-[r2]-(c) return a,r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a)<-[r]-(b)-[r2]-(c) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
@@ -237,7 +237,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a)<-[r]-(b), (b)-[r2]-(c) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, SimplePatternLength),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
@@ -250,7 +250,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a), (n)-[r:Type]-(c) where b:A return a,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a), (n)-[r:Type]-(c) where n:A return a,r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a), (n)-[r:Type]-(c) where n:A return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("n"), IdName("c")), Direction.BOTH, Seq(relType("Type")), SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("n"), IdName("c")))
@@ -264,7 +264,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a)-[r:Type|Foo]-(b) return a,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a)-[r:Type|Foo]-(b) return a,r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a)-[r:Type|Foo]-(b) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type"), relType("Foo")), SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
@@ -276,7 +276,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a)-[r:Type*]-(b) return a,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a)-[r:Type*]-(b) return a,r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a)-[r:Type*]-(b) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(1, None))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
@@ -288,7 +288,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a)-[r1:CONTAINS*0..1]->b-[r2:FRIEND*0..1]->c return a,b,c")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r1"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq(relType("CONTAINS")), VarPatternLength(0, Some(1))),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq(relType("FRIEND")), VarPatternLength(0, Some(1)))))
@@ -302,7 +302,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a)-[r:Type*3..]-(b) return a,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a)-[r:Type*3..]-(b) return a,r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a)-[r:Type*3..]-(b) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(3, None))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
@@ -314,7 +314,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a)-[r:Type*5]-(b) return a,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a)-[r:Type*5]-(b) return a,r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a)-[r:Type*5]-(b) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength.fixed(5))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
@@ -326,7 +326,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a)<-[r*]-(b)-[r2*]-(c) return a,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a)<-[r*]-(b)-[r2*]-(c) return a,r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a)<-[r*]-(b)-[r2*]-(c) return a,r")
     query.graph.patternRelationships should equal(Set(
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.INCOMING, Seq.empty, VarPatternLength(1, None)),
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, VarPatternLength(1, None))))
@@ -339,7 +339,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("optional match (a) return a") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("optional match (a) return a")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("optional match (a) return a")
     query.graph.patternRelationships should equal(Set())
     query.graph.patternNodes should equal(Set())
     query.graph.selections should equal(Selections(Set.empty))
@@ -359,7 +359,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("optional match (a)-[r]->(b) return a,b,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("optional match (a)-[r]->(b) return a,b,r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("optional match (a)-[r]->(b) return a,b,r")
     query.graph.patternRelationships should equal(Set())
     query.graph.patternNodes should equal(Set())
     query.graph.selections should equal(Selections(Set.empty))
@@ -384,7 +384,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match a optional match (a)-[r]->(b) return a,b,r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match a optional match (a)-[r]->(b) return a,b,r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match a optional match (a)-[r]->(b) return a,b,r")
     query.graph.patternNodes should equal(Set(IdName("a")))
     query.graph.patternRelationships should equal(Set())
     query.graph.selections should equal(Selections(Set.empty))
@@ -408,7 +408,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("match a where (a)-->() return a") {
     // Given
-    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable, _) = buildPlannerQuery("match a where (a)-->() return a", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable) = buildPlannerQuery("match a where (a)-->() return a", normalize = true)
 
     // Then inner pattern query graph
     val relName = "  UNNAMED17"
@@ -435,7 +435,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("match n return n.prop order by n.prop2 DESC") {
     // Given
-    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable, _) = buildPlannerQuery("match n return n.prop order by n.prop2 DESC", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable) = buildPlannerQuery("match n return n.prop order by n.prop2 DESC", normalize = true)
 
     // Then inner pattern query graph
     query.graph.selections should equal(Selections())
@@ -446,21 +446,21 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH (a) WITH 1 as b RETURN b") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH (a) WITH 1 as b RETURN b", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (a) WITH 1 as b RETURN b", normalize = true)
     query.graph.patternNodes should equal(Set(IdName("a")))
     query.projection.projections should equal(Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1")_))
     query.tail should equal(None)
   }
 
   test("WITH 1 as b RETURN b") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("WITH 1 as b RETURN b", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("WITH 1 as b RETURN b", normalize = true)
 
     query.projection.projections should equal(Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1")_))
     query.tail should equal(None)
   }
 
   test("MATCH (a) WITH a WHERE TRUE RETURN a") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH (a) WITH a WHERE TRUE RETURN a", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (a) WITH a WHERE TRUE RETURN a", normalize = true)
     query.tail should be(empty)
     query.graph.patternNodes should equal(Set(IdName("a")))
     query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
@@ -471,7 +471,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("match a where a.prop = 42 OR (a)-->() return a") {
     // Given
-    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable, _) = buildPlannerQuery("match a where a.prop = 42 OR (a)-->() return a", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable) = buildPlannerQuery("match a where a.prop = 42 OR (a)-->() return a", normalize = true)
 
     // Then inner pattern query graph
     val relName = "  UNNAMED32"
@@ -502,7 +502,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("match a where (a)-->() OR a.prop = 42 return a") {
     // Given
-    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable, _) = buildPlannerQuery("match a where (a)-->() OR a.prop = 42 return a", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable) = buildPlannerQuery("match a where (a)-->() OR a.prop = 42 return a", normalize = true)
 
     // Then inner pattern query graph
     val relName = "  UNNAMED17"
@@ -533,7 +533,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("match a where a.prop2 = 21 OR (a)-->() OR a.prop = 42 return a") {
     // Given
-    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable, _) = buildPlannerQuery("match a where a.prop2 = 21 OR (a)-->() OR a.prop = 42 return a", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable) = buildPlannerQuery("match a where a.prop2 = 21 OR (a)-->() OR a.prop = 42 return a", normalize = true)
 
     // Then inner pattern query graph
     val relName = "  UNNAMED33"
@@ -568,7 +568,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("match n return n limit 10") {
     // Given
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match n return n limit 10", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match n return n limit 10", normalize = true)
 
     // Then inner pattern query graph
     query.graph.selections should equal(Selections())
@@ -580,7 +580,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("match n return n skip 10") {
     // Given
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match n return n skip 10", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match n return n skip 10", normalize = true)
 
     // Then inner pattern query graph
     query.graph.selections should equal(Selections())
@@ -591,14 +591,14 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("match (a) with * return a") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("match (a) with * return a")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("match (a) with * return a")
     query.graph.patternNodes should equal(Set(IdName("a")))
     query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
     query.tail should equal(None)
   }
 
   test("MATCH a WITH a LIMIT 1 MATCH a-[r]->b RETURN a, b") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH a WITH a LIMIT 1 MATCH a-[r]->b RETURN a, b", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH a WITH a LIMIT 1 MATCH a-[r]->b RETURN a, b", normalize = true)
     query.graph should equal(
       QueryGraph
       .empty
@@ -617,7 +617,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("optional match (a:Foo) with a match (a)-[r]->(b) return a") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("optional match (a:Foo) with a match (a)-[r]->(b) return a", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("optional match (a:Foo) with a match (a)-[r]->(b) return a", normalize = true)
 
     query.graph should equal(
       QueryGraph
@@ -640,7 +640,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property LIMIT 1 MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
     query.tail should not be empty
     query.graph.selections.predicates should equal(Set(
       Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_)
@@ -662,7 +662,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH (a:Start) WITH a.prop AS property MATCH (b) WHERE id(b) = property RETURN b") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
     query.tail should be(empty)
     query.graph.selections.predicates should equal(Set(
       Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_),
@@ -677,7 +677,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b", normalize = true)
     query.tail should not be empty
     query.graph.selections.predicates should equal(Set(
       Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_)
@@ -702,7 +702,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH n RETURN count(*)") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH n RETURN count(*)")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH n RETURN count(*)")
 
     query.projection match {
       case AggregationProjection(groupingKeys, aggregationExpression, sorting, limit, skip) =>
@@ -722,7 +722,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH n RETURN n.prop, count(*)") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH n RETURN n.prop, count(*)")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH n RETURN n.prop, count(*)")
 
     query.projection match {
       case AggregationProjection(groupingKeys, aggregationExpression, sorting, limit, skip) =>
@@ -742,13 +742,13 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH (n:Awesome {prop: 42}) USING INDEX n:Awesome(prop) RETURN n")
 
     query.graph.hints should equal(Set[Hint](UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_))
   }
 
   test("MATCH shortestPath(a-[r]->b) RETURN r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH shortestPath(a-[r]->b) RETURN r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH shortestPath(a-[r]->b) RETURN r")
 
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.shortestPathPatterns should equal(Set(
@@ -758,7 +758,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH allShortestPaths(a-[r]->b) RETURN r") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH allShortestPaths(a-[r]->b) RETURN r")
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH allShortestPaths(a-[r]->b) RETURN r")
 
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.shortestPathPatterns should equal(Set(
@@ -768,13 +768,45 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("MATCH p = shortestPath(a-[r]->b) RETURN p") {
-    val QueryPlanInput(UnionQuery(query :: Nil, _), _, _)  = buildPlannerQuery("MATCH p = shortestPath(a-[r]->b) RETURN p", normalize = true)
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _)  = buildPlannerQuery("MATCH p = shortestPath(a-[r]->b) RETURN p", normalize = true)
 
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.shortestPathPatterns should equal(Set(
       ShortestPathPattern(Some(IdName("p")), PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null)
     ))
     query.tail should be(empty)
+  }
+
+  test("RETURN 1 as x UNION RETURN 2 as x") {
+    val QueryPlanInput(query, _) = buildPlannerQuery("RETURN 1 as x UNION RETURN 2 as x")
+    query.distinct should equal(true)
+    query.queries should have size 2
+
+    val q1 = query.queries.head
+    q1.graph.patternNodes shouldBe empty
+    q1.projection should equal(QueryProjection(Map("x" -> SignedDecimalIntegerLiteral("1")(pos))))
+
+    val q2 = query.queries.last
+    q2.graph.patternNodes shouldBe empty
+    q2.projection should equal(QueryProjection(Map("x" -> SignedDecimalIntegerLiteral("2")(pos))))
+  }
+
+  test("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x") {
+    val QueryPlanInput(query, _) = buildPlannerQuery("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x")
+    query.distinct should equal(false)
+    query.queries should have size 3
+
+    val q1 = query.queries.head
+    q1.graph.patternNodes shouldBe empty
+    q1.projection should equal(QueryProjection(Map("x" -> SignedDecimalIntegerLiteral("1")(pos))))
+
+    val q2 = query.queries.tail.head
+    q2.graph.patternNodes shouldBe empty
+    q2.projection should equal(QueryProjection(Map("x" -> SignedDecimalIntegerLiteral("2")(pos))))
+
+    val q3 = query.queries.last
+    q3.graph.patternNodes shouldBe empty
+    q3.projection should equal(QueryProjection(Map("x" -> SignedDecimalIntegerLiteral("3")(pos))))
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_
