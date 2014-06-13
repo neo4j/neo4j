@@ -37,6 +37,7 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
   val LABEL_INDEX_OVERHEAD_COST_PER_ROW        = CostPerRow(2.0)
   val SORT_COST_PER_ROW                        = CostPerRow(0.01)
   val STORE_ACCESS_COST_PER_ROW                = CostPerRow(1)
+  val DIJKSTRA_OVERHEAD                        = CostPerRow(0.05)
 
   def apply(plan: LogicalPlan): Cost = plan match {
     case _: SingleRow =>
@@ -138,8 +139,13 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
 
     case shortestPath: FindShortestPaths =>
-      cost(shortestPath.left) +
-      cardinality(shortestPath) * STORE_ACCESS_COST_PER_ROW
+      // TODO: shortest path should take two childs
+      val sqNodes = cardinality(shortestPath.left)
+      val nodes = sqNodes.map(Math.sqrt)
+      val edges = sqNodes * GuessingEstimation.DEFAULT_CONNECTIVITY_CHANCE
+      val storeCost = (sqNodes + edges) * STORE_ACCESS_COST_PER_ROW
+      val dijkstraCost = sqNodes * edges.map(Math.log) * DIJKSTRA_OVERHEAD
+      cost(shortestPath.left) + dijkstraCost + storeCost
 
     case s@Sort(input, _) =>
       cost(input) +

@@ -141,7 +141,7 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
 
         case FindShortestPaths(input, shortestPath) =>
           val legacyShortestPaths = shortestPath.expr.asLegacyPatterns(shortestPath.name.map(_.name))
-          val legacyShortestPath = legacyShortestPaths.head //.copy(relIterator = Some(shortestPath.rel.name.name))
+          val legacyShortestPath = legacyShortestPaths.head
           new ShortestPathPipe(buildPipe(input), legacyShortestPath)
 
         case _ =>
