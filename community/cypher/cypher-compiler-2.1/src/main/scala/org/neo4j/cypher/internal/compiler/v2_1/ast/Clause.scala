@@ -94,8 +94,18 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
     checkUsageBoundIds chain
     pattern.semanticCheck(Pattern.SemanticContext.Match) chain
     hints.semanticCheck chain
+    uniqueHints chain
     where.semanticCheck chain
     checkHints
+
+  def uniqueHints: SemanticCheck = {
+    val errors = hints.groupBy(_.identifier).collect {
+      case pair@(ident, identHints) if identHints.size > 1 =>
+        SemanticError("Multiple hints for same identifier are not supported", ident.position, identHints.map(_.position): _*)
+    }.toVector
+
+    (state: SemanticState) => SemanticCheckResult(state, errors)
+  }
 
   def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {

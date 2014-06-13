@@ -35,48 +35,26 @@ function versionSwitcher( $ )
   loadVersions();
 
   /**
-  * Load an array of version into a div element and check if the current page actually exists in these versions.
-  * Non-existing entries will be unlinked.
-  * Current version will be marked as such.
-  */
+   * Load an array of version into a div element and check if the current page actually exists in these versions.
+   * Non-existing entries will be unlinked. Current version will be marked as such.
+   */
   function loadVersions()
   {
     var $navHeader = $( '#navheader' );
-    var $versionSelector = $( '<div id="versions"/>' );
-    var $links = $( '<ul class="list-inline"/>' ).appendTo( $versionSelector );
-    var extraVersions = [];
-    var stableCount = 0;
+    var $additionalVersions = $( '<ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu1"/>' );
     $.each( availableDocVersions, function( index, version )
     {
       if ( version === currentVersion )
       {
         return;
       }
-      var firstChar = version.charAt( 0 );
-      if ( firstChar < '0' || firstChar > '9' )
+      else
       {
-        extraVersions.push( version );
-        return;
+        addVersion( version, $additionalVersions );
       }
-      if ( version.indexOf( 'M' ) === -1 )
-      {
-        stableCount++;
-        if ( stableCount > MAX_STABLE_COUNT )
-        {
-          extraVersions.push( version );
-          return;
-        }
-      }
-      addVersion( version, $links );
     } );
-    $navHeader.append( $versionSelector );
 
-    var $dropdown = $( '<div id="additional-versions"><div class="dropdown"><a class="dropdown-toggle"id="dropdownMenu1" data-toggle="dropdown"><i class="fa fa-caret-down"></i></a></div></div>' );
-    var $additionalVersions = $( '<ul class="dropdown-menu dropdown-menu-right" role="menu" aria-labelledby="dropdownMenu1"/>' );
-    $.each( extraVersions, function( index, version )
-    {
-      addVersion( version, $additionalVersions );
-    } );
+    var $dropdown = $( '<div id="additional-versions"><div class="dropdown"><a class="dropdown-toggle"id="dropdownMenu1" data-toggle="dropdown">Other versions <i class="fa fa-caret-down"></i></a></div></div>' );
     $dropdown.children().first().append( $additionalVersions );
     $navHeader.append( $dropdown );
   }
