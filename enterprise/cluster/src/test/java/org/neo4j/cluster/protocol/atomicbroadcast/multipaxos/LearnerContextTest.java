@@ -25,6 +25,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.election.ElectionRole;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context.MultiPaxosContext;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
