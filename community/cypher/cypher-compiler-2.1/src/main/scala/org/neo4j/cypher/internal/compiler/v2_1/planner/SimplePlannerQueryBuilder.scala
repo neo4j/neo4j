@@ -159,8 +159,15 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
       val (plannerQuery, lookupTable) = produceQueryGraphFromClauses(PlannerQuery.empty, Map.empty, clauses)
       (UnionQuery(Seq(plannerQuery), distinct = false), lookupTable)
 
-    case _ =>
-      throw new CantHandleQueryException
+    case Query(None, u: Union) =>
+      val queries = u.unionedQueries
+      val distinct = u match {
+        case _: UnionAll      => false
+        case _: UnionDistinct => true
+      }
+      val plannedQueries = queries.reverseMap(x => produceQueryGraphFromClauses(PlannerQuery.empty, Map.empty, x.clauses))
+      val table = plannedQueries.map(_._2).reduce(_ ++ _)
+      (UnionQuery(plannedQueries.map(_._1), distinct), table)
   }
 
   private def produceQueryGraphFromClauses(querySoFar: PlannerQuery,

@@ -39,7 +39,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
-  def buildPlannerQuery(query: String, normalize:Boolean = false): (PlannerQuery, Map[PatternExpression, QueryGraph]) = {
+  def buildUnionQuery(query: String, normalize: Boolean = false): (UnionQuery, Map[PatternExpression, QueryGraph]) = {
     val ast = parser.parse(query)
 
     val rewrittenAst: Statement = if (normalize) {
@@ -48,7 +48,12 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       ast
     }
 
-    val (unionQuery, lookupTable) = builder.produce(rewrittenAst.asInstanceOf[Query])
+    builder.produce(rewrittenAst.asInstanceOf[Query])
+  }
+
+  def buildPlannerQuery(query: String, normalize: Boolean = false): (PlannerQuery, Map[PatternExpression, QueryGraph]) = {
+
+    val (unionQuery, lookupTable) = buildUnionQuery(query, normalize)
     unionQuery.queries should have size 1
     (unionQuery.queries.head, lookupTable)
   }
@@ -778,6 +783,38 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       ShortestPathPattern(Some(IdName("p")), PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.OUTGOING, Seq.empty, SimplePatternLength), single = true)(null)
     ))
     query.tail should be(empty)
+  }
+
+  test("RETURN 1 as x UNION RETURN 2 as x") {
+    val (query, _) = buildUnionQuery("RETURN 1 as x UNION RETURN 2 as x")
+    query.distinct should equal(true)
+    query.queries should have size 2
+
+    val q1 = query.queries.head
+    q1.graph.patternNodes shouldBe empty
+    q1.projection should equal(QueryProjection(Map("x" -> SignedIntegerLiteral("1")(pos))))
+
+    val q2 = query.queries.last
+    q2.graph.patternNodes shouldBe empty
+    q2.projection should equal(QueryProjection(Map("x" -> SignedIntegerLiteral("2")(pos))))
+  }
+
+  test("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x") {
+    val (query, _) = buildUnionQuery("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x")
+    query.distinct should equal(false)
+    query.queries should have size 3
+
+    val q1 = query.queries.head
+    q1.graph.patternNodes shouldBe empty
+    q1.projection should equal(QueryProjection(Map("x" -> SignedIntegerLiteral("1")(pos))))
+
+    val q2 = query.queries.tail.head
+    q2.graph.patternNodes shouldBe empty
+    q2.projection should equal(QueryProjection(Map("x" -> SignedIntegerLiteral("2")(pos))))
+
+    val q3 = query.queries.last
+    q3.graph.patternNodes shouldBe empty
+    q3.projection should equal(QueryProjection(Map("x" -> SignedIntegerLiteral("3")(pos))))
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_
