@@ -38,7 +38,7 @@ class NormalizeEqualsArgumentOrderTest extends CypherFunSuite with AstConstructi
   }
 
   test("12 = a.prop rewritten to: a.prop = 12") {
-    val lhs: Expression = SignedIntegerLiteral("12")_
+    val lhs: Expression = SignedDecimalIntegerLiteral("12")_
     val rhs: Expression = Property(ident("a"), PropertyKeyName("prop")_)_
 
     val input: Expression = Equals(lhs, rhs)_
@@ -57,7 +57,7 @@ class NormalizeEqualsArgumentOrderTest extends CypherFunSuite with AstConstructi
   }
 
   test("23 = id(a) rewritten to: id(a) = 23") {
-    val lhs: Expression = SignedIntegerLiteral("12")_
+    val lhs: Expression = SignedDecimalIntegerLiteral("12")_
     val rhs: Expression = id("a")
 
     val input: Expression = Equals(lhs, rhs)_

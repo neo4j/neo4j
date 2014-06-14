@@ -25,15 +25,15 @@ import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.SortDescription
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, UnsignedIntegerLiteral, AscSortItem}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{UnsignedDecimalIntegerLiteral, PatternExpression, AscSortItem}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.Ascending
 
 class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   import QueryPlanProducer._
 
-  val x: ast.Expression = ast.UnsignedIntegerLiteral("110") _
-  val y: ast.Expression = ast.UnsignedIntegerLiteral("10") _
+  val x: ast.Expression = ast.UnsignedDecimalIntegerLiteral("110") _
+  val y: ast.Expression = ast.UnsignedDecimalIntegerLiteral("10") _
   val identifierSortItem: AscSortItem = ast.AscSortItem(ast.Identifier("n") _) _
   val sortDescription: SortDescription = Ascending("n")
 
@@ -99,7 +99,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should add projection before sort if query graph contains sort items that are not identifiers") {
     // given
-    val exp: ast.Expression = ast.Add(UnsignedIntegerLiteral("10") _, UnsignedIntegerLiteral("10") _) _
+    val exp: ast.Expression = ast.Add(UnsignedDecimalIntegerLiteral("10") _, UnsignedDecimalIntegerLiteral("10") _) _
     val expressionSortItem: AscSortItem = ast.AscSortItem(exp) _
 
     implicit val (query, context, startPlan) = queryGraphWith(
@@ -125,7 +125,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
   test("should add projection before sort with mixed identifier and non-identifier expressions") {
     // given
-    val exp: ast.Expression = ast.Add(UnsignedIntegerLiteral("10") _, UnsignedIntegerLiteral("10") _) _
+    val exp: ast.Expression = ast.Add(UnsignedDecimalIntegerLiteral("10") _, UnsignedDecimalIntegerLiteral("10") _) _
     val expressionSortItem: AscSortItem = ast.AscSortItem(exp) _
 
     implicit val (query, context, startPlan) = queryGraphWith(

@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, SignedIntegerLiteral, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{SignedDecimalIntegerLiteral, PatternExpression, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, IdName}
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
@@ -81,7 +81,7 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("when a predicate is already solved, it should not be applied again") {
     // Given
     val coveredIds = Set(IdName("x"))
-    val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, SignedIntegerLiteral("1")_))))
+    val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, SignedDecimalIntegerLiteral("1")_))))
     val queryPlan = newMockedQueryPlanWithProjections("x").copy(solved = PlannerQuery(qg))
 
     // When

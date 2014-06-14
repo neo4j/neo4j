@@ -19,19 +19,21 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.junit.Assert._
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
 
-class RangeTest extends Assertions {
+class HexIntegerLiteralTest extends CypherFunSuite {
+  test("correctly parses hexidecimal numbers") {
+    assert(SignedHexIntegerLiteral("0x22")(DummyPosition(0)).value === 0x22)
+    assert(SignedHexIntegerLiteral("0x0")(DummyPosition(0)).value === 0)
+    assert(SignedHexIntegerLiteral("0xffFF")(DummyPosition(0)).value === 0xffff)
+    assert(SignedHexIntegerLiteral("-0x9abc")(DummyPosition(0)).value === -0x9abc)
+  }
 
-  @Test
-  def shouldBeSingleLengthOnlyWhenUpperAndLowerAre1() {
-    val position = DummyPosition(0)
-    assertTrue(Range(Some(UnsignedDecimalIntegerLiteral("1")(DummyPosition(0))), Some(UnsignedDecimalIntegerLiteral("1")(DummyPosition(4))))(position).isSingleLength)
-    assertFalse(Range(None, Some(UnsignedDecimalIntegerLiteral("1")(DummyPosition(4))))(position).isSingleLength)
-    assertFalse(Range(Some(UnsignedDecimalIntegerLiteral("1")(DummyPosition(0))), None)(position).isSingleLength)
-    assertFalse(Range(Some(UnsignedDecimalIntegerLiteral("1")(DummyPosition(0))), Some(UnsignedDecimalIntegerLiteral("2")(DummyPosition(4))))(position).isSingleLength)
+  test("throws error for too large hexidecimal numbers") {
+    val literal = SignedHexIntegerLiteral("0xfffffffffffffffff")(DummyPosition(4))
+    val result = literal.semanticCheck(SemanticContext.Simple)(SemanticState.clean)
+    assert(result.errors === Vector(SemanticError("integer is too large", DummyPosition(4))))
   }
 }

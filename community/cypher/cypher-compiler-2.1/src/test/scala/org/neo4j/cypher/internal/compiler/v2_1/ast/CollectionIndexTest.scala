@@ -32,7 +32,7 @@ class CollectionIndexTest extends Assertions {
   @Test
   def shouldReturnCollectionInnerTypesOfExpression() {
     val index = CollectionIndex(dummyCollection,
-      SignedIntegerLiteral("1")(DummyPosition(5))
+      SignedDecimalIntegerLiteral("1")(DummyPosition(5))
     )(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
@@ -43,7 +43,7 @@ class CollectionIndexTest extends Assertions {
   @Test
   def shouldRaiseErrorIfIndexingByFraction() {
     val index = CollectionIndex(dummyCollection,
-      DoubleLiteral("1.3")(DummyPosition(5))
+      DecimalDoubleLiteral("1.3")(DummyPosition(5))
     )(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)

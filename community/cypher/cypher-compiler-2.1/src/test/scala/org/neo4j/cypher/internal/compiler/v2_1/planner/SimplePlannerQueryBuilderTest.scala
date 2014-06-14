@@ -34,8 +34,8 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   val B: LabelName = LabelName("B")_
   val X: LabelName = LabelName("X")_
   val Y: LabelName = LabelName("Y")_
-  val lit42: SignedIntegerLiteral = SignedIntegerLiteral("42")_
-  val lit43: SignedIntegerLiteral = SignedIntegerLiteral("43")_
+  val lit42: SignedIntegerLiteral = SignedDecimalIntegerLiteral("42")_
+  val lit43: SignedIntegerLiteral = SignedDecimalIntegerLiteral("43")_
 
   val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
 
@@ -53,13 +53,13 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("RETURN 42") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("RETURN 42")
-    query.projection.projections should equal(Map[String, Literal]("42" -> SignedIntegerLiteral("42")_))
+    query.projection.projections should equal(Map[String, Literal]("42" -> SignedDecimalIntegerLiteral("42")_))
   }
 
   test("RETURN 42, 'foo'") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("RETURN 42, 'foo'")
     query.projection.projections should equal(Map[String, Literal](
-      "42" -> SignedIntegerLiteral("42")_,
+      "42" -> SignedDecimalIntegerLiteral("42")_,
       "'foo'" -> StringLiteral("foo")_
     ))
   }
@@ -136,7 +136,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), Equals(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
-        SignedIntegerLiteral("42")_
+        SignedDecimalIntegerLiteral("42")_
       )_
     ))))
 
@@ -169,7 +169,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       Predicate(Set(IdName("n")), HasLabels(nIdent, Seq(A))_),
       Predicate(Set(IdName("n")), In(
         FunctionInvocation(FunctionName("id")_, distinct = false, Vector(Identifier("n")(pos)))(pos),
-        Collection(Seq(SignedIntegerLiteral("42")_))_
+        Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
       )_
     ))))
 
@@ -449,14 +449,14 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   test("MATCH (a) WITH 1 as b RETURN b") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("MATCH (a) WITH 1 as b RETURN b", normalize = true)
     query.graph.patternNodes should equal(Set(IdName("a")))
-    query.projection.projections should equal(Map[String, Expression]("b" -> SignedIntegerLiteral("1")_))
+    query.projection.projections should equal(Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1")_))
     query.tail should equal(None)
   }
 
   test("WITH 1 as b RETURN b") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("WITH 1 as b RETURN b", normalize = true)
 
-    query.projection.projections should equal(Map[String, Expression]("b" -> SignedIntegerLiteral("1")_))
+    query.projection.projections should equal(Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1")_))
     query.tail should equal(None)
   }
 
@@ -485,7 +485,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val exp2: Expression = In(
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
-      Collection(Seq(SignedIntegerLiteral("42")_))_
+      Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2))_)
     val subQueriesTable = Map(exp1 ->
@@ -516,7 +516,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val exp2: Expression = In(
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
-      Collection(Seq(SignedIntegerLiteral("42")_))_
+      Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     ) _
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp2))_)
     val subQueriesTable = Map(exp1 ->
@@ -547,11 +547,11 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     val relationship = PatternRelationship(IdName(relName), (IdName("a"), IdName(nodeName)), Direction.OUTGOING, Seq.empty, SimplePatternLength)
     val exp2: Expression = In(
       Property(Identifier("a")_, PropertyKeyName("prop")_)_,
-      Collection(Seq(SignedIntegerLiteral("42")_))_
+      Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     )_
     val exp3: Expression = In(
       Property(Identifier("a")_, PropertyKeyName("prop2")_)_,
-      Collection(Seq(SignedIntegerLiteral("21")_))_
+      Collection(Seq(SignedDecimalIntegerLiteral("21")_))_
     )_
     val orPredicate = Predicate(Set(IdName("a")), Ors(Set(exp1, exp3, exp2))_)
     val subQueriesTable = Map(exp1 ->
@@ -575,7 +575,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.selections should equal(Selections())
     query.graph.patternNodes should equal(Set(IdName("n")))
     query.projection.sortItems should equal(Seq.empty)
-    query.projection.limit should equal(Some(UnsignedIntegerLiteral("10")(pos)))
+    query.projection.limit should equal(Some(UnsignedDecimalIntegerLiteral("10")(pos)))
     query.projection.skip should equal(None)
   }
 
@@ -588,7 +588,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.patternNodes should equal(Set(IdName("n")))
     query.projection.sortItems should equal(Seq.empty)
     query.projection.limit should equal(None)
-    query.projection.skip should equal(Some(UnsignedIntegerLiteral("10")(pos)))
+    query.projection.skip should equal(Some(UnsignedDecimalIntegerLiteral("10")(pos)))
   }
 
   test("match (a) with * return a") {
@@ -605,7 +605,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       .empty
       .addPatternNodes(IdName("a"))
     )
-    query.projection.limit should equal(Some(UnsignedIntegerLiteral("1")(pos)))
+    query.projection.limit should equal(Some(UnsignedDecimalIntegerLiteral("1")(pos)))
     query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
     query.tail should not be empty
     query.tail.get.graph should equal(
@@ -648,7 +648,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     ))
     query.graph.patternNodes should equal(Set(IdName("a")))
     query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
-    query.projection.limit should equal(Some(UnsignedIntegerLiteral("1")(null)))
+    query.projection.limit should equal(Some(UnsignedDecimalIntegerLiteral("1")(null)))
 
     val tailQg = query.tail.get
     tailQg.graph.patternNodes should equal(Set(IdName("b")))

@@ -32,8 +32,8 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
   val idName = IdName("n")
   val hasLabels = HasLabels(ident("n"), Seq(LabelName("Awesome") _)) _
   val property = Property(ident("n"), PropertyKeyName("prop") _)_
-  val lit42 = SignedIntegerLiteral("42") _
-  val lit6 = SignedIntegerLiteral("6") _
+  val lit42 = SignedDecimalIntegerLiteral("42") _
+  val lit6 = SignedDecimalIntegerLiteral("6") _
 
   val inCollectionValue = In(property, Collection(Seq(lit42))_)_
 
@@ -76,7 +76,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(SignedIntegerLiteral("42")))))) => ()
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
         }
       }
     }
@@ -94,7 +94,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(SignedIntegerLiteral("42")))))) => ()
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
         }
       }
     }
@@ -112,7 +112,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(SignedIntegerLiteral("42")))))) => ()
+          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
         }
       }
     }
@@ -132,7 +132,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(SignedIntegerLiteral("42")))))) => ()
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
         }
 
         resultPlans.plans.map(_.solved.graph) should beLike {
@@ -156,7 +156,7 @@ class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
         // then
         resultPlans.plans.map(_.plan) should beLike {
-          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(SignedIntegerLiteral("42")))))) => ()
+          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
         }
 
         resultPlans.plans.map(_.solved.graph) should beLike {

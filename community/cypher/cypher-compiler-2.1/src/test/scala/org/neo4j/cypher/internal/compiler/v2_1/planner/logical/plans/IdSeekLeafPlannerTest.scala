@@ -45,7 +45,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val expr = In(
       FunctionInvocation(FunctionName("id")_, distinct = false, Array(identifier))_,
       Collection(
-        Seq(SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_)
+        Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
       )_
     )_
     val qg = QueryGraph(
@@ -70,7 +70,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     // then
     resultPlans should equal(Candidates(
       planNodeByIdSeek(IdName("n"), Seq(
-        SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
+        SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
       ), Seq(expr))
     ))
   }
@@ -81,7 +81,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val expr = In(
       FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
       Collection(
-        Seq(SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_)
+        Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
       )_
     )_
     val from = IdName("from")
@@ -109,7 +109,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(Candidates(planDirectedRelationshipByIdSeek(IdName("r"), Seq(
-      SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
+      SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
     ), from, end, patternRel, Seq(expr))))
   }
 
@@ -119,7 +119,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val expr = In(
       FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
       Collection(
-        Seq(SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_)
+        Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_)
       )_
     )_
     val from = IdName("from")
@@ -146,7 +146,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
 
     // then
     resultPlans should equal(Candidates(planUndirectedRelationshipByIdSeek(IdName("r"), Seq(
-      SignedIntegerLiteral("42")_, SignedIntegerLiteral("43")_, SignedIntegerLiteral("43")_
+      SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("43")_, SignedDecimalIntegerLiteral("43")_
     ), from, end, patternRel, Seq(expr))))
   }
 
@@ -155,7 +155,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val rIdent: Identifier = Identifier("r")_
     val expr = In(
       FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
-      Collection(Seq(SignedIntegerLiteral("42")_))_
+      Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     )_
     val from = IdName("from")
     val end = IdName("to")
@@ -191,7 +191,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     resultPlans should equal(Candidates(
       planHiddenSelection(
         Seq(Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("X")_)_),
-        planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
+        planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedDecimalIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
       )
     ))
   }
@@ -201,7 +201,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
     val rIdent: Identifier = Identifier("r")_
     val expr = In(
       FunctionInvocation(FunctionName("id")_, distinct = false, Array(rIdent))_,
-      Collection(Seq(SignedIntegerLiteral("42")_))_
+      Collection(Seq(SignedDecimalIntegerLiteral("42")_))_
     )_
     val from = IdName("from")
     val end = IdName("to")
@@ -243,7 +243,7 @@ class IdSeekLeafPlannerTest extends CypherFunSuite  with LogicalPlanningTestSupp
             Equals(FunctionInvocation(FunctionName("type")_, rIdent)_, StringLiteral("Y")_)(pos)
           ))_
         ),
-        planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
+        planUndirectedRelationshipByIdSeek(IdName("r"), Seq(SignedDecimalIntegerLiteral("42")_), from, end, patternRel, Seq(expr))
     )))
   }
 }
