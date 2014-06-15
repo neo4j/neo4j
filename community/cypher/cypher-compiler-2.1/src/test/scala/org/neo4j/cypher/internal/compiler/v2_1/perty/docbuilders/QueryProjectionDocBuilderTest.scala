@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{SignedDecimalIntegerLiteral, DescSortItem, AscSortItem}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryProjection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryShuffle, RegularQueryProjection, QueryProjection}
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{plannerDocBuilder, queryProjectionDocBuilder}
 
 class QueryProjectionDocBuilderTest extends DocBuilderTestSuite[Any] {
@@ -36,19 +36,19 @@ class QueryProjectionDocBuilderTest extends DocBuilderTestSuite[Any] {
   }
 
   test("renders regular projections") {
-    format(QueryProjection(projections = Map("a" -> ident("b")))) should equal("WITH Identifier(\"b\") AS `a`")
+    format(RegularQueryProjection(projections = Map("a" -> ident("b")))) should equal("WITH Identifier(\"b\") AS `a`")
   }
 
   test("renders skip") {
-    format(QueryProjection(skip = Some(SignedDecimalIntegerLiteral("1")_))) should equal("WITH * SKIP SignedDecimalIntegerLiteral(\"1\")")
+    format(RegularQueryProjection(shuffle = QueryShuffle(skip = Some(SignedDecimalIntegerLiteral("1")_)))) should equal("WITH * SKIP SignedDecimalIntegerLiteral(\"1\")")
   }
 
   test("renders limit") {
-    format(QueryProjection(limit = Some(SignedDecimalIntegerLiteral("1")_))) should equal("WITH * LIMIT SignedDecimalIntegerLiteral(\"1\")")
+    format(RegularQueryProjection(shuffle = QueryShuffle(limit = Some(SignedDecimalIntegerLiteral("1")_)))) should equal("WITH * LIMIT SignedDecimalIntegerLiteral(\"1\")")
   }
 
   test("renders order by") {
-    format(QueryProjection(sortItems = Seq(AscSortItem(ident("a"))_))) should equal("WITH * ORDER BY Identifier(\"a\")")
-    format(QueryProjection(sortItems = Seq(DescSortItem(ident("a"))_))) should equal("WITH * ORDER BY Identifier(\"a\") DESC")
+    format(RegularQueryProjection(shuffle = QueryShuffle(sortItems = Seq(AscSortItem(ident("a"))_)))) should equal("WITH * ORDER BY Identifier(\"a\")")
+    format(RegularQueryProjection(shuffle = QueryShuffle(sortItems = Seq(DescSortItem(ident("a"))_)))) should equal("WITH * ORDER BY Identifier(\"a\") DESC")
   }
 }

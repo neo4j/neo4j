@@ -53,12 +53,12 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("RETURN 42") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("RETURN 42")
-    query.projection.projections should equal(Map[String, Literal]("42" -> SignedDecimalIntegerLiteral("42")_))
+    query.horizon.projection.projections should equal(Map[String, Literal]("42" -> SignedDecimalIntegerLiteral("42")_))
   }
 
   test("RETURN 42, 'foo'") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("RETURN 42, 'foo'")
-    query.projection.projections should equal(Map[String, Literal](
+    query.horizon.projection.projections should equal(Map[String, Literal](
       "42" -> SignedDecimalIntegerLiteral("42")_,
       "'foo'" -> StringLiteral("foo")_
     ))
@@ -66,7 +66,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("match n return n") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("match n return n")
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
@@ -75,7 +75,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("MATCH n WHERE n:A:B RETURN n") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("MATCH n WHERE n:A:B RETURN n")
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
@@ -89,7 +89,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("match n where n:X OR n:Y return n") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("match n where n:X OR n:Y return n", normalize = true)
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
@@ -105,7 +105,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("MATCH n WHERE n:X OR (n:A AND n:B) RETURN n", normalize = true)
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
@@ -129,7 +129,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("MATCH n WHERE id(n) = 42 RETURN n") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("MATCH n WHERE id(n) = 42 RETURN n")
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
@@ -145,7 +145,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("MATCH n WHERE id(n) IN [42, 43] RETURN n") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("MATCH n WHERE id(n) IN [42, 43] RETURN n")
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
@@ -161,7 +161,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
   test("MATCH n WHERE n:A AND id(n) = 42 RETURN n") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("MATCH n WHERE n:A AND id(n) = 42 RETURN n", normalize = true)
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "n" -> nIdent
     ))
 
@@ -181,7 +181,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.patternRelationships should equal(Set())
     query.graph.patternNodes should equal(Set[IdName]("a"))
     query.graph.selections should equal(Selections(Set.empty))
-    query.projection.projections should equal(Map[String, Expression](
+    query.horizon.projection.projections should equal(Map[String, Expression](
       "p" -> PathExpression(NodePathStep(Identifier("a")_, NilPathStep))_
     ))
   }
@@ -191,7 +191,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.patternRelationships should equal(Set(patternRel))
     query.graph.patternNodes should equal(Set[IdName]("a", "b"))
     query.graph.selections should equal(Selections(Set.empty))
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
@@ -204,7 +204,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     query.graph.selections should equal(Selections(Set.empty))
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_,
       "b" -> Identifier("b")_
@@ -218,7 +218,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("a")), Direction.OUTGOING, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.selections should equal(Selections(Set.empty))
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
@@ -231,7 +231,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     query.graph.selections should equal(Selections(Set.empty))
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
@@ -244,7 +244,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     query.graph.selections should equal(Selections())
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
@@ -258,7 +258,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.selections should equal(Selections(Set(
       Predicate(Set(IdName("n")), HasLabels(nIdent, Seq(A))_)
     )))
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
@@ -270,7 +270,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type"), relType("Foo")), SimplePatternLength)))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.selections should equal(Selections())
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
@@ -282,7 +282,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(1, None))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.selections should equal(Selections())
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
@@ -295,7 +295,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.OUTGOING, Seq(relType("FRIEND")), VarPatternLength(0, Some(1)))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     query.graph.selections should equal(Selections())
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "b" -> Identifier("b")_,
       "c" -> Identifier("c")_
@@ -308,7 +308,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength(3, None))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.selections should equal(Selections())
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
@@ -320,7 +320,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       PatternRelationship(IdName("r"), (IdName("a"), IdName("b")), Direction.BOTH, Seq(relType("Type")), VarPatternLength.fixed(5))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
     query.graph.selections should equal(Selections())
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
@@ -333,7 +333,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       PatternRelationship(IdName("r2"), (IdName("b"), IdName("c")), Direction.BOTH, Seq.empty, VarPatternLength(1, None))))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b"), IdName("c")))
     query.graph.selections should equal(Selections(Set.empty))
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "r" -> Identifier("r")_
     ))
@@ -344,7 +344,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.patternRelationships should equal(Set())
     query.graph.patternNodes should equal(Set())
     query.graph.selections should equal(Selections(Set.empty))
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_
     ))
 
@@ -364,7 +364,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.patternRelationships should equal(Set())
     query.graph.patternNodes should equal(Set())
     query.graph.selections should equal(Selections(Set.empty))
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "b" -> Identifier("b")_,
       "r" -> Identifier("r")_
@@ -389,7 +389,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.patternNodes should equal(Set(IdName("a")))
     query.graph.patternRelationships should equal(Set())
     query.graph.selections should equal(Selections(Set.empty))
-    query.projection.projections should equal(Map[String, Identifier](
+    query.horizon.projection.projections should equal(Map[String, Identifier](
       "a" -> Identifier("a")_,
       "b" -> Identifier("b")_,
       "r" -> Identifier("r")_
@@ -443,20 +443,20 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.graph.patternNodes should equal(Set(IdName("n")))
     lookupTable should be(empty)
     val sortItem: DescSortItem = DescSortItem(Property(Identifier("n")_, PropertyKeyName("prop2")_)_)_
-    query.projection.sortItems should equal(Seq(sortItem))
+    query.horizon.projection.shuffle.sortItems should equal(Seq(sortItem))
   }
 
   test("MATCH (a) WITH 1 as b RETURN b") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("MATCH (a) WITH 1 as b RETURN b", normalize = true)
     query.graph.patternNodes should equal(Set(IdName("a")))
-    query.projection.projections should equal(Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1")_))
+    query.horizon.projection.projections should equal(Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1")_))
     query.tail should equal(None)
   }
 
   test("WITH 1 as b RETURN b") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("WITH 1 as b RETURN b", normalize = true)
 
-    query.projection.projections should equal(Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1")_))
+    query.horizon.projection.projections should equal(Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1")_))
     query.tail should equal(None)
   }
 
@@ -464,7 +464,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     val QueryPlanInput(query, _, _) = buildPlannerQuery("MATCH (a) WITH a WHERE TRUE RETURN a", normalize = true)
     query.tail should be(empty)
     query.graph.patternNodes should equal(Set(IdName("a")))
-    query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    query.horizon.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
     query.graph.selections.predicates should equal(
       Set(Predicate(Set.empty, True()_))
     )
@@ -574,9 +574,9 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     // Then inner pattern query graph
     query.graph.selections should equal(Selections())
     query.graph.patternNodes should equal(Set(IdName("n")))
-    query.projection.sortItems should equal(Seq.empty)
-    query.projection.limit should equal(Some(UnsignedDecimalIntegerLiteral("10")(pos)))
-    query.projection.skip should equal(None)
+    query.horizon.projection.shuffle.sortItems should equal(Seq.empty)
+    query.horizon.projection.shuffle.limit should equal(Some(UnsignedDecimalIntegerLiteral("10")(pos)))
+    query.horizon.projection.shuffle.skip should equal(None)
   }
 
   test("match n return n skip 10") {
@@ -586,15 +586,15 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     // Then inner pattern query graph
     query.graph.selections should equal(Selections())
     query.graph.patternNodes should equal(Set(IdName("n")))
-    query.projection.sortItems should equal(Seq.empty)
-    query.projection.limit should equal(None)
-    query.projection.skip should equal(Some(UnsignedDecimalIntegerLiteral("10")(pos)))
+    query.horizon.projection.shuffle.sortItems should equal(Seq.empty)
+    query.horizon.projection.shuffle.limit should equal(None)
+    query.horizon.projection.shuffle.skip should equal(Some(UnsignedDecimalIntegerLiteral("10")(pos)))
   }
 
   test("match (a) with * return a") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("match (a) with * return a")
     query.graph.patternNodes should equal(Set(IdName("a")))
-    query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    query.horizon.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
     query.tail should equal(None)
   }
 
@@ -605,8 +605,8 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       .empty
       .addPatternNodes(IdName("a"))
     )
-    query.projection.limit should equal(Some(UnsignedDecimalIntegerLiteral("1")(pos)))
-    query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    query.horizon.projection.shuffle.limit should equal(Some(UnsignedDecimalIntegerLiteral("1")(pos)))
+    query.horizon.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
     query.tail should not be empty
     query.tail.get.graph should equal(
       QueryGraph
@@ -629,7 +629,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
         .addPatternNodes(IdName("a"))
         .addSelections(Selections(Set(Predicate(Set("a"), HasLabels(ident("a"), Seq(LabelName("Foo")_))_))))
     ))
-    query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    query.horizon.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
     query.tail should not be empty
     query.tail.get.graph should equal(
       QueryGraph
@@ -647,8 +647,8 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_)
     ))
     query.graph.patternNodes should equal(Set(IdName("a")))
-    query.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
-    query.projection.limit should equal(Some(UnsignedDecimalIntegerLiteral("1")(null)))
+    query.horizon.projection.projections should equal(Map[String, Expression]("a" -> Identifier("a")_))
+    query.horizon.projection.shuffle.limit should equal(Some(UnsignedDecimalIntegerLiteral("1")(null)))
 
     val tailQg = query.tail.get
     tailQg.graph.patternNodes should equal(Set(IdName("b")))
@@ -659,7 +659,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
         Equals(FunctionInvocation(FunctionName("id")_, Identifier("b")_)_, Property(Identifier("a")_, PropertyKeyName("prop")_)_)_
       )
     ))
-    tailQg.projection.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
+    tailQg.horizon.projection.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
   }
 
   test("MATCH (a:Start) WITH a.prop AS property MATCH (b) WHERE id(b) = property RETURN b") {
@@ -673,8 +673,8 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       )
     ))
     query.graph.patternNodes should equal(Set(IdName("a"), IdName("b")))
-    query.projection.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
-    query.projection.limit should equal(None)
+    query.horizon.projection.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
+    query.horizon.projection.shuffle.limit should equal(None)
   }
 
   test("MATCH (a:Start) WITH a.prop AS property, count(*) AS count MATCH (b) WHERE id(b) = property RETURN b") {
@@ -684,10 +684,9 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       Predicate(Set(IdName("a")), HasLabels(Identifier("a")_, Seq(LabelName("Start")(null)))_)
     ))
     query.graph.patternNodes should equal(Set(IdName("a")))
-    query.projection should equal(AggregationProjection(
+    query.horizon.projection should equal(AggregatingQueryProjection(
       Map("property" -> Property(Identifier("a")_, PropertyKeyName("prop")_)_),
-      Map("count" -> CountStar()_),
-      Seq.empty, None, None
+      Map("count" -> CountStar()_)
     ))
 
     val tailQg = query.tail.get
@@ -699,14 +698,14 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
         Equals(FunctionInvocation(FunctionName("id")_, Identifier("b")_)_, Identifier("property")_)_
       )
     ))
-    tailQg.projection.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
+    tailQg.horizon.projection.projections should equal(Map[String, Expression]("b" -> Identifier("b")_))
   }
 
   test("MATCH n RETURN count(*)") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("MATCH n RETURN count(*)")
 
-    query.projection match {
-      case AggregationProjection(groupingKeys, aggregationExpression, sorting, limit, skip) =>
+    query.horizon.projection match {
+      case AggregatingQueryProjection(groupingKeys, aggregationExpression, QueryShuffle(sorting, limit, skip)) =>
         groupingKeys should be (empty)
         sorting should be (empty)
         limit should be (empty)
@@ -725,8 +724,8 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   test("MATCH n RETURN n.prop, count(*)") {
     val QueryPlanInput(query, _, _) = buildPlannerQuery("MATCH n RETURN n.prop, count(*)")
 
-    query.projection match {
-      case AggregationProjection(groupingKeys, aggregationExpression, sorting, limit, skip) =>
+    query.horizon.projection match {
+      case AggregatingQueryProjection(groupingKeys, aggregationExpression, QueryShuffle(sorting, limit, skip)) =>
         groupingKeys should equal(Map("n.prop" -> Property(Identifier("n")(pos), PropertyKeyName("prop")(pos))(pos)))
         sorting should be (empty)
         limit should be (empty)

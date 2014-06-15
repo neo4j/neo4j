@@ -196,12 +196,9 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
       case Return(false, ListedReturnItems(items), optOrderBy, skip, limit) :: tl =>
         val newPatternInExpressionTable = patternInExpressionTable ++ getPatternInExpressionQueryGraphs(items.map(_.expression))
         val sortItems = produceSortItems(optOrderBy)
-        val projection = produceProjectionsMaps(items)
-          .withSortItems(sortItems)
-          .withLimit(limit.map(_.expression))
-          .withSkip(skip.map(_.expression))
-
-        val newQG = querySoFar.withProjection(projection)
+        val shuffle = QueryShuffle(sortItems, skip.map(_.expression), limit.map(_.expression))
+        val projection = produceProjectionsMaps(items).withShuffle(shuffle)
+        val newQG = querySoFar.withHorizon(QueryHorizon(projection = projection))
         produceQueryGraphFromClauses(newQG, subQueryLookupTable, newPatternInExpressionTable, tl)
 
         case Match(optional@false, pattern: Pattern, hints, optWhere) :: tl =>
@@ -253,9 +250,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
           val newQuery = querySoFar
             .updateGraph(_.addSelections(selections))
-            .updateProjections(
-               _.withSortItems(produceSortItems(optOrderBy))
-            )
+            .updateHorizon(_.updateProjection(_.updateShuffle(_.withSortItems(produceSortItems(optOrderBy)))))
 
           produceQueryGraphFromClauses(newQuery, newSubQueryPlanTable, patternInExpressionTable, tl)
 
@@ -273,14 +268,18 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
           val inputIds = querySoFar.graph.coveredIds
           val argumentIds = inputIds intersect tailQuery.graph.coveredIds
 
+          val newProjection =
+            QueryProjection
+              .forIds(inputIds)
+              .withShuffle(QueryShuffle(
+                produceSortItems(optOrderBy),
+                skip.map(_.expression),
+                limit.map(_.expression)
+              ))
+
           val newQuery =
             querySoFar
-              .withProjection(
-                QueryProjection.forIds(inputIds)
-                  .withSortItems( produceSortItems(optOrderBy))
-                  .withLimit(limit.map(_.expression))
-                  .withSkip(skip.map(_.expression))
-              )
+              .withHorizon(QueryHorizon(projection =  newProjection))
               .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
 
           (newQuery, tailSubQuery, tailPatternInExpression)
@@ -288,10 +287,8 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         case With(false, ListedReturnItems(items), optOrderBy, skip, limit, optWhere) :: tl =>
           val newPatternInExpressionTable = patternInExpressionTable ++ getPatternInExpressionQueryGraphs(items.map(_.expression))
           val orderBy = produceSortItems(optOrderBy)
-          val projection = produceProjectionsMaps(items)
-            .withSortItems(orderBy)
-            .withLimit(limit.map(_.expression))
-            .withSkip(skip.map(_.expression))
+          val shuffle = QueryShuffle(orderBy, skip.map(_.expression), limit.map(_.expression))
+          val projection = produceProjectionsMaps(items).withShuffle(shuffle)
 
           val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
           val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
@@ -308,7 +305,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
           val newQuery =
             querySoFar
-              .withProjection(projection)
+              .withHorizon(QueryHorizon(projection = projection))
               .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
 
           (newQuery, tailSubQuery, tailPatternInExpression)
@@ -336,8 +333,8 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
       throw new InternalException("Grouping keys contains aggregation. AST has not been rewritten?")
 
     if (aggregationsMap.isEmpty)
-      QueryProjection(projections = projectionMap)
+      RegularQueryProjection(projections = projectionMap)
     else
-      AggregationProjection(groupingKeys = projectionMap, aggregationExpressions = aggregationsMap)
+      AggregatingQueryProjection(groupingKeys = projectionMap, aggregationExpressions = aggregationsMap)
   }
 }
