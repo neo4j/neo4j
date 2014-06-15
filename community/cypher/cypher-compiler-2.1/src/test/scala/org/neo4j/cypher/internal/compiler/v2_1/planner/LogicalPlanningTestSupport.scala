@@ -104,11 +104,11 @@ trait LogicalPlanningTestSupport
   }
 
   def newMockedQueryPlanWithProjections(ids: String*)(implicit context: LogicalPlanningContext) = {
-    val projections = QueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
+    val projections = RegularQueryProjection(projections = ids.map((id) => id -> ident(id)).toMap)
     QueryPlan(
       newMockedLogicalPlan(ids: _*),
       PlannerQuery(
-        projection = projections,
+        horizon = QueryHorizon(projection = projections),
         graph = QueryGraph.empty.addPatternNodes(ids.map(IdName).toSeq: _*)
       )
     )

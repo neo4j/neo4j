@@ -36,15 +36,15 @@ case object plannerQueryDocBuilder extends CachingDocBuilder[Any] {
   @tailrec
   private def queryDocs(inner: DocGenerator[Any], optQuery: Option[PlannerQuery], docs: List[Doc]): List[Doc] = {
     optQuery match {
-      case None => docs.reverse
+      case None        => docs.reverse
       case Some(query) => queryDocs(inner, query.tail, queryDoc(inner, query) :: docs)
     }
   }
 
   private def queryDoc(inner: DocGenerator[Any], query: PlannerQuery) = {
     val graphDoc = inner(query.graph)
-    val projectionPrefix = query.tail.map(_ => "WITH").getOrElse("RETURN")
-    val projectionDoc = queryProjectionDocBuilder(projectionPrefix).nestedDocGenerator(query.projection)(inner)
+    val projectionPrefix = query.tail.fold("RETURN")(_ => "WITH")
+    val projectionDoc = queryProjectionDocBuilder(projectionPrefix).nestedDocGenerator(query.horizon.projection)(inner)
     group(graphDoc :/: projectionDoc)
   }
 }
