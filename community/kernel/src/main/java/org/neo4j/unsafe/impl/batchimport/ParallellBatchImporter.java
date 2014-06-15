@@ -85,7 +85,7 @@ public class ParallellBatchImporter implements BatchImporter
     public void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships,
             NodeIdMapping nodeIdMapping ) throws IOException
     {
-        logger.log( "Starting CSV import [TODO source info]" );
+        // TODO log about import starting
 
         try ( BatchFriendlyNeoStore neoStore = new BatchFriendlyNeoStore( fileSystem, storeDir, config,
                 logging, monitors ) )

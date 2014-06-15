@@ -20,41 +20,52 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
+import org.neo4j.cypher.internal.compiler.v2_1.{InputPosition, DummyPosition}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
 
-class NormalizeEqualsArgumentOrderTest extends CypherFunSuite {
+class NormalizeEqualsArgumentOrderTest extends CypherFunSuite with AstConstructionTestSupport {
 
-  val pos = DummyPosition(0)
+  test("a.prop = b.prop rewritten to: a.prop = b.prop") {
+    val lhs: Expression = Property(ident("a"), PropertyKeyName("prop")_)_
+    val rhs: Expression = Property(ident("b"), PropertyKeyName("prop")_)_
 
-  test("a = b rewritten to: a = b") {
-    val input = Equals(Identifier("a")(pos), Identifier("b")(pos))(pos)
+    val input: Expression = Equals(lhs, rhs)_
 
     normalizeEqualsArgumentOrder(input) should equal(Some(input))
   }
 
-  test("12 = a rewritten to: a = 12") {
-    val lhs = SignedIntegerLiteral("12")(pos)
-    val rhs = Identifier("a")(pos)
+  test("12 = a.prop rewritten to: a.prop = 12") {
+    val lhs: Expression = SignedDecimalIntegerLiteral("12")_
+    val rhs: Expression = Property(ident("a"), PropertyKeyName("prop")_)_
 
-    normalizeEqualsArgumentOrder(Equals(lhs, rhs)(pos)) should equal(Some(Equals(rhs, lhs)(pos)))
+    val input: Expression = Equals(lhs, rhs)_
+    val expected: Expression = Equals(rhs, lhs)_
+
+    normalizeEqualsArgumentOrder(input) should equal(Some(expected))
   }
 
   test("id(a) = id(b) rewritten to: id(a) = id(b)") {
-    val input = Equals(id("a"), id("b"))(pos)
+    val lhs: Expression = id("a")
+    val rhs: Expression = id("b")
+
+    val input: Expression = Equals(lhs, rhs)_
 
     normalizeEqualsArgumentOrder(input) should equal(Some(input))
   }
 
   test("23 = id(a) rewritten to: id(a) = 23") {
-    val lhs = SignedIntegerLiteral("12")(pos)
-    val rhs = id("a")
+    val lhs: Expression = SignedDecimalIntegerLiteral("12")_
+    val rhs: Expression = id("a")
 
-    normalizeEqualsArgumentOrder(Equals(lhs, rhs)(pos)) should equal(Some(Equals(rhs, lhs)(pos)))
+    val input: Expression = Equals(lhs, rhs)_
+    val expected: Expression = Equals(rhs, lhs)_
+
+    normalizeEqualsArgumentOrder(input) should equal(Some(expected))
   }
 
-  private def id(name: String) = FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Identifier(name)(pos)))(pos)
+  private def id(name: String): FunctionInvocation =
+    FunctionInvocation(FunctionName("id")(pos), distinct = false, Array(Identifier(name)(pos)))(pos)
 }

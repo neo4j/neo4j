@@ -21,6 +21,8 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, Query}
 
+case class QueryPlanInput(query: PlannerQuery, subQueryLookupTable: Map[PatternExpression, QueryGraph], patternInExpression: Map[PatternExpression, QueryGraph])
+
 trait PlannerQueryBuilder {
-  def produce(ast: Query): (PlannerQuery, Map[PatternExpression, QueryGraph])
+  def produce(ast: Query): QueryPlanInput
 }

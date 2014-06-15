@@ -22,13 +22,12 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import commands.expressions.{Expression, Literal}
 import mutation.{RelationshipEndpoint, CreateRelationship, CreateNode, DeleteEntityAction}
 import symbols._
-import org.neo4j.cypher.{ExecutionEngineJUnitSuite, CypherTypeException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, CypherTypeException}
 import org.neo4j.graphdb.{Node, NotFoundException}
-import org.junit.{After, Test}
 import collection.mutable.{Map => MutableMap}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, QueryState, ExecuteUpdateCommandsPipe, NullPipe}
 
-class MutationTest extends ExecutionEngineJUnitSuite {
+class MutationTest extends ExecutionEngineFunSuite {
 
   var tx : org.neo4j.graphdb.Transaction = null
   private implicit val monitor = mock[PipeMonitor]
@@ -38,13 +37,12 @@ class MutationTest extends ExecutionEngineJUnitSuite {
     QueryStateHelper.countStats(QueryStateHelper.queryStateFrom(graph, tx))
   }
 
-  @After
-  def cleanup() {
-//    if(tx != null) tx.close()
+  override protected def afterEach() {
+    super.afterEach()
+    //    if(tx != null) tx.close()
   }
 
-  @Test
-  def create_node() {
+  test("create_node") {
     val tx = graph.beginTx()
     val start = NullPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
@@ -60,8 +58,7 @@ class MutationTest extends ExecutionEngineJUnitSuite {
     tx.close()
   }
 
-  @Test
-  def join_existing_transaction_and_rollback() {
+  test("join_existing_transaction_and_rollback") {
     val tx = graph.beginTx()
     val start = NullPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
@@ -74,8 +71,7 @@ class MutationTest extends ExecutionEngineJUnitSuite {
     intercept[NotFoundException](graph.inTx(graph.getNodeById(1)))
   }
 
-  @Test
-  def join_existing_transaction_and_commit() {
+  test("join_existing_transaction_and_commit") {
     val tx = graph.beginTx()
     val start = NullPipe()
     val createNode = new ExecuteUpdateCommandsPipe(start, Seq(CreateNode("n", Map("name" -> Literal("Andres")), Seq.empty)))
@@ -85,13 +81,14 @@ class MutationTest extends ExecutionEngineJUnitSuite {
     tx.success()
     tx.finish()
 
-    assertInTx(graph.getNodeById(0).getProperty("name") === "Andres")
+    graph.inTx{
+      graph.getNodeById(0).getProperty("name") should equal("Andres")
+    }
   }
 
   private def getNode(key: String, n: Node) = InjectValue(n, CTNode)
 
-  @Test
-  def create_rel() {
+  test("create_rel") {
     val a = createNode()
     val b = createNode()
     val tx = graph.beginTx()
@@ -107,16 +104,15 @@ class MutationTest extends ExecutionEngineJUnitSuite {
     val results: List[MutableMap[String, Any]] = createNodePipe.createResults(state).map(ctx => ctx.m).toList
 
     val r = graph.getRelationshipById(0)
-    assert(r.getProperty("I") === "was here")
-    assert(results === List(Map("r" -> r)))
-    assert(state.getStatistics.relationshipsCreated === 1)
-    assert(state.getStatistics.propertiesSet === 1)
+    r.getProperty("I") should equal("was here")
+    results should equal(List(Map("r" -> r)))
+    state.getStatistics.relationshipsCreated should equal(1)
+    state.getStatistics.propertiesSet should equal(1)
 
     tx.close()
   }
 
-  @Test
-  def throw_exception_if_wrong_stuff_to_delete() {
+  test("throw_exception_if_wrong_stuff_to_delete") {
     val tx = graph.beginTx()
     val createRel = DeleteEntityAction(Literal("some text"))
 
@@ -124,8 +120,7 @@ class MutationTest extends ExecutionEngineJUnitSuite {
     tx.close()
   }
 
-  @Test
-  def delete_node() {
+  test("delete_node") {
     val tx = graph.beginTx()
     val a: Node = createNode()
     val node_id: Long = a.getId

@@ -23,6 +23,7 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
 
 class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
+
   test("does not introduce predicate not needed") {
     assertIsNotRewritten("RETURN 42")
     assertIsNotRewritten("MATCH n RETURN n")
@@ -42,6 +43,26 @@ class AddUniquenessPredicatesTest extends CypherFunSuite with RewriteTest {
     assertRewrite(
       "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) RETURN *",
       "MATCH (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d) WHERE r1 <> r2 AND r1 <> r3 AND r2 <> r3 RETURN *")
+  }
+
+  test("ignores shortestPath relationships for uniqueness") {
+    assertRewrite(
+      "MATCH (a)-[r1]->(b), shortestPath((a)-[r]->(b)) RETURN *",
+      "MATCH (a)-[r1]->(b), shortestPath((a)-[r]->(b)) RETURN *")
+
+    assertRewrite(
+      "MATCH (a)-[r1]->(b)-[r2]->c, shortestPath((a)-[r]->(b)) RETURN *",
+      "MATCH (a)-[r1]->(b)-[r2]->c, shortestPath((a)-[r]->(b)) WHERE r1 <> r2 RETURN *")
+  }
+
+  test("ignores allShortestPaths relationships for uniqueness") {
+    assertRewrite(
+      "MATCH (a)-[r1]->(b), allShortestPaths((a)-[r]->(b)) RETURN *",
+      "MATCH (a)-[r1]->(b), allShortestPaths((a)-[r]->(b)) RETURN *")
+
+    assertRewrite(
+      "MATCH (a)-[r1]->(b)-[r2]->c, allShortestPaths((a)-[r]->(b)) RETURN *",
+      "MATCH (a)-[r1]->(b)-[r2]->c, allShortestPaths((a)-[r]->(b)) WHERE r1 <> r2 RETURN *")
   }
 
   val rewriterUnderTest: Rewriter = addUniquenessPredicates

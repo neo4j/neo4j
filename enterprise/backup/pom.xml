@@ -23,7 +23,7 @@
   </properties>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/enterprise/backup</url>
+    <url>https://github.com/neo4j/neo4j/tree/master/enterprise/backup</url>
   </scm>
 
   <licenses>
@@ -63,8 +63,8 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
-    	<groupId>ch.qos.logback</groupId>
-    	<artifactId>logback-classic</artifactId>
+      <groupId>ch.qos.logback</groupId>
+      <artifactId>logback-classic</artifactId>
       <optional>true</optional>
     </dependency>
     <dependency>

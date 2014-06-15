@@ -125,7 +125,9 @@
       <xsl:call-template name="webhelpheader.logo" />
       <!-- Display the page title and the main heading(parent) of it -->
       <h1>
-        <xsl:apply-templates select="/*[1]" mode="title.markup" />
+        <span id="book-title">
+          <xsl:apply-templates select="/*[1]" mode="title.markup" />
+        </span>
         <xsl:choose>
           <xsl:when test="not(generate-id(.) = generate-id(/*))">
             <span>

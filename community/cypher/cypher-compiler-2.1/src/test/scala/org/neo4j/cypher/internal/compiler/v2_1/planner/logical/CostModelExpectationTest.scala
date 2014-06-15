@@ -70,7 +70,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
       Selection(
         Seq(
           Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
-          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedIntegerLiteral("12")_)_
+          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
         ),
         AllNodesScan("b")
       )
@@ -93,7 +93,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
       Selection(
         Seq(
           Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
-          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedIntegerLiteral("12")_)_
+          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
         ),
         AllNodesScan("b")
       )
@@ -114,7 +114,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
         Selection(
           Seq(
             Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
-            Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedIntegerLiteral("12")_)_
+            Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
           ),
           AllNodesScan("b")
         ),

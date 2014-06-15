@@ -22,28 +22,14 @@ package org.neo4j.cypher.internal.compiler.v2_1
 import commands.RelatedTo
 import executionplan.builders.PatternGraphBuilder
 import symbols._
-import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport}
+import org.neo4j.cypher.ExecutionEngineFunSuite
 import org.neo4j.graphdb.Direction
-import org.junit.{After, Test}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.SimplePatternMatcherBuilder
 
-class SimplePatternMatchingTest extends ExecutionEngineJUnitSuite with PatternGraphBuilder {
+class SimplePatternMatchingTest extends ExecutionEngineFunSuite with PatternGraphBuilder with QueryStateTestSupport {
   val symbols = new SymbolTable(Map("a" -> CTNode))
 
-  var tx : org.neo4j.graphdb.Transaction = null
-
-  private def queryState = {
-    if(tx == null) tx = graph.beginTx()
-    QueryStateHelper.queryStateFrom(graph, tx)
-  }
-
-  @After
-  def cleanup()
-  {
-    if(tx != null) tx.close()
-  }
-
-  @Test def should_only_return_matches_that_fulfill_the_uniqueness_constraint() {
+  test("should_only_return_matches_that_fulfill_the_uniqueness_constraint") {
     // Given MATCH (a)--(b)--(c)
     val r1 = RelatedTo("a", "b", "r1", Seq.empty, Direction.BOTH)
     val r2 = RelatedTo("b", "c", "r2", Seq.empty, Direction.BOTH)
@@ -55,13 +41,15 @@ class SimplePatternMatchingTest extends ExecutionEngineJUnitSuite with PatternGr
     relate(n0, n1)
 
     // When
-    val result = matcher.getMatches(ExecutionContext.empty.newWith("a" -> n0), queryState).toList
+    val result = withQueryState { queryState =>
+      matcher.getMatches(ExecutionContext.empty.newWith("a" -> n0), queryState).toList
+    }
 
     // Then
-    assert(result === List.empty)
+    result shouldBe empty
   }
 
-  @Test def should_exclude_matches_overlapping_previously_found_relationships() {
+  test("should_exclude_matches_overlapping_previously_found_relationships") {
     // Given MATCH (a)-[r1]-(b)-[r2]-(c)
     // This matcher is responsible for (b)-[r2]-(c), and needs to check the result from previous steps
     val r2 = RelatedTo("b", "c", "r2", Seq.empty, Direction.BOTH)
@@ -76,13 +64,15 @@ class SimplePatternMatchingTest extends ExecutionEngineJUnitSuite with PatternGr
     val startingState = ExecutionContext.empty.newWith(Map("a" -> n0, "b" -> n1, "r" -> rel))
 
     // When
-    val result = matcher.getMatches(startingState, queryState).toList
+    val result = withQueryState { queryState =>
+      matcher.getMatches(startingState, queryState).toList
+    }
 
     // Then
-    assert(result === List.empty)
+    result shouldBe empty
   }
 
-  @Test def should_ignore_earlier_matches_overlapping_previously_found_relationships() {
+  test("should_ignore_earlier_matches_overlapping_previously_found_relationships") {
     // Given MATCH (b)-[r2]-(c), with a and r1 already in scope
     // This matcher is responsible for (b)-[r2]-(c), and needs to check the result from previous steps
     val r2 = RelatedTo("b", "c", "r2", Seq.empty, Direction.BOTH)
@@ -97,9 +87,11 @@ class SimplePatternMatchingTest extends ExecutionEngineJUnitSuite with PatternGr
     val startingState = ExecutionContext.empty.newWith(Map("a" -> n0, "b" -> n1, "r" -> rel))
 
     // When
-    val result = matcher.getMatches(startingState, queryState).toList
+    val result = withQueryState { queryState =>
+      matcher.getMatches(startingState, queryState).toList
+    }
 
     // Then
-    assert(result === List(Map("a" -> n0, "b" -> n1, "r" -> rel, "r2" -> rel, "c" -> n0)))
+    result should equal(List(Map("a" -> n0, "b" -> n1, "r" -> rel, "r2" -> rel, "c" -> n0)))
   }
 }

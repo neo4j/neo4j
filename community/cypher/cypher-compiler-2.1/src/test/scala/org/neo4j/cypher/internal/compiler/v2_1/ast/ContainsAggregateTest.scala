@@ -24,13 +24,13 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 class ContainsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
 
   test("finds nested aggregate expressions") {
-    val expr: Expression = Add(SignedIntegerLiteral("1")_, CountStar()_)_
+    val expr: Expression = Add(SignedDecimalIntegerLiteral("1")_, CountStar()_)_
 
     containsAggregate(expr) should equal(true)
   }
 
   test("does not match non-aggregate expressions") {
-    val expr: Expression = Add(SignedIntegerLiteral("1")_, SignedIntegerLiteral("2")_)_
+    val expr: Expression = Add(SignedDecimalIntegerLiteral("1")_, SignedDecimalIntegerLiteral("2")_)_
 
     containsAggregate(expr) should equal(false)
   }

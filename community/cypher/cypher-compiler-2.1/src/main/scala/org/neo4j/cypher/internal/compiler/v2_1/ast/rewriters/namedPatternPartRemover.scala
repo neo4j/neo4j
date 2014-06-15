@@ -20,11 +20,15 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
 import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_1.ast.NamedPatternPart
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{ShortestPaths, NamedPatternPart}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.ShortestPathPattern
 
 object namedPatternPartRemover extends Rewriter {
   val instance = Rewriter.lift {
-    case NamedPatternPart(_, part) => part
+    case namedPart @ NamedPatternPart(_, part) => part match {
+      case _: ShortestPaths => namedPart
+      case _                => part
+    }
   }
 
   def apply(v: AnyRef): Option[AnyRef] = instance.apply(v)

@@ -31,7 +31,8 @@ case object queryGraphDocBuilder extends CachingDocBuilder[Any] {
       val args = section("GIVEN", "*" :?: sepList(qg.argumentIds.map(inner)))
       val patterns = section("MATCH", sepList(
         qg.patternNodes.map(id => "(" :: inner(id) :: ")") ++
-        qg.patternRelationships.map(inner)
+        qg.patternRelationships.map(inner) ++
+        qg.shortestPathPatterns.map(inner)
       ))
 
       val optionalMatches = qg.optionalMatches.map(inner)

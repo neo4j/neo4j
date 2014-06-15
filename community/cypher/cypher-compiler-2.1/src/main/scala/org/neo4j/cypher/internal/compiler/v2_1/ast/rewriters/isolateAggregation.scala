@@ -66,7 +66,7 @@ case object isolateAggregation extends Rewriter {
           val pos = c.position
           val withClause = With(distinct = false, ListedReturnItems(withReturnItems)(pos), None, None, None, None)(pos)
 
-          val resultClause = c.rewrite(bottomUp(Rewriter.lift {
+          val resultClause = c.endoRewrite(bottomUp(Rewriter.lift {
             case unalteredItem@UnaliasedReturnItem(id:Identifier, _) if originalExpressions.contains(id) =>
               unalteredItem
 
@@ -78,7 +78,7 @@ case object isolateAggregation extends Rewriter {
               withReturnItems.collectFirst {
                 case AliasedReturnItem(expression, identifier) if e == expression => identifier
               }.getOrElse(e)
-          })).asInstanceOf[Clause]
+          }))
 
           Seq(withClause, resultClause)
       }

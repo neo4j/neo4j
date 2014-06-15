@@ -19,31 +19,25 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
 import collection.JavaConverters._
-import org.scalatest.Assertions
 import org.neo4j.graphdb.{Path, Node, Relationship}
-import org.scalautils.LegacyTripleEquals
 
-class CreateUniqueAcceptanceTest
-  extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
+class CreateUniqueAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
   val stats = QueryStatistics()
 
-  @Test
-  def create_unique_accepts_undirected_relationship() {
-    val a = createNode("id" -> 1)
-    val b = createNode("id" -> 2)
+  test("create unique accepts undirected relationship") {
+    createNode("id" -> 1)
+    createNode("id" -> 2)
 
     val rel = executeScalar[Relationship]("MATCH (a {id: 1}), (b {id: 2}) CREATE UNIQUE (a)-[r:X]-(b) RETURN r")
     graph.inTx {
-      assert(1 === rel.getStartNode.getProperty("id"))
-      assert(2 === rel.getEndNode.getProperty("id"))
+      rel.getStartNode.getProperty("id") should equal(1)
+      rel.getEndNode.getProperty("id") should equal(2)
     }
   }
 
-  @Test
-  def create_new_node_with_labels_on_the_right() {
+  test("create_new_node_with_labels_on_the_right") {
     val a = createNode()
     val b = createNode()
     relate(a, b, "X")
@@ -52,11 +46,12 @@ class CreateUniqueAcceptanceTest
     val createdNode = result.columnAs[Node]("b").toList.head
 
     assertStats(result, relationshipsCreated =  1, nodesCreated = 1, labelsAdded = 1)
-    assertInTx(createdNode.labels === List("FOO"))
+    graph.inTx {
+      createdNode.labels should equal(List("FOO"))
+    }
   }
 
-  @Test
-  def create_new_node_with_labels_on_the_left() {
+  test("create_new_node_with_labels_on_the_left") {
     val a = createNode()
     val b = createNode()
     relate(a, b, "X")
@@ -65,22 +60,24 @@ class CreateUniqueAcceptanceTest
     val createdNode = result.columnAs[Node]("a").toList.head
 
     assertStats(result, relationshipsCreated =  1, nodesCreated = 1, labelsAdded = 1)
-    assertInTx(createdNode.labels === List("FOO"))
+    graph.inTx {
+      createdNode.labels should equal(List("FOO"))
+    }
   }
 
-  @Test
-  def create_new_node_with_labels_everywhere() {
+  test("create_new_node_with_labels_everywhere") {
     val a = createNode()
 
     val result = execute("start a = node(0) create unique a-[:X]->(b:FOO)-[:X]->(c:BAR)-[:X]->(d:BAZ) RETURN d")
     val createdNode = result.columnAs[Node]("d").toList.head
 
     assertStats(result, relationshipsCreated = 3, nodesCreated = 3, labelsAdded = 3)
-    assertInTx(createdNode.labels === List("BAZ"))
+    graph.inTx {
+      createdNode.labels should equal(List("BAZ"))
+    }
   }
 
-  @Test
-  def create_new_node_with_labels_and_values() {
+  test("create_new_node_with_labels_and_values") {
     val a = createLabeledNode(Map("name"-> "Andres"), "FOO")
     val b = createNode()
     relate(a, b, "X")
@@ -92,12 +89,11 @@ class CreateUniqueAcceptanceTest
     val resultB = row("b").asInstanceOf[Node]
 
     assertStats(result)
-    assert(resultA === a)
-    assert(resultB === b)
+    resultA should equal(a)
+    resultB should equal(b)
   }
 
-  @Test
-  def create_a_missing_relationship() {
+  test("create_a_missing_relationship") {
     val a = createNode()
     val b = createNode()
 
@@ -109,12 +105,13 @@ class CreateUniqueAcceptanceTest
     val r = graph.inTx(a.getRelationships.asScala.head)
 
     assert(createdRel === r)
-    assertInTx(r.getStartNode === a)
-    assertInTx(r.getEndNode === b)
+    graph.inTx {
+      r.getStartNode should equal(a)
+      r.getEndNode should equal(b)
+    }
   }
 
-  @Test
-  def should_be_able_to_handle_a_param_as_map() {
+  test("should_be_able_to_handle_a_param_as_map") {
     val a = createNode()
 
     val nodeProps = Map("name"->"Lasse")
@@ -126,13 +123,14 @@ class CreateUniqueAcceptanceTest
 
     val r = graph.inTx(a.getRelationships.asScala.head)
 
-    assert(createdRel === r)
-    assertInTx(r.getStartNode === a)
-    assertInTx(r.getEndNode.getProperty("name") === "Lasse")
+    createdRel should equal(r)
+    graph.inTx {
+      r.getStartNode should equal(a)
+      r.getEndNode.getProperty("name") should equal("Lasse")
+    }
   }
 
-  @Test
-  def should_be_able_to_handle_a_param_as_map_in_a_path() {
+  test("should_be_able_to_handle_a_param_as_map_in_a_path") {
     createNode()
     val nodeProps = Map("name"->"Lasse")
 
@@ -140,12 +138,12 @@ class CreateUniqueAcceptanceTest
     val endNode = result.columnAs[Node]("last(nodes(path))").toList.head
 
     assertStats(result, relationshipsCreated = 1, nodesCreated = 1, propertiesSet = 1)
-
-    assertInTx(endNode.getProperty("name") === "Lasse")
+    graph.inTx {
+      endNode.getProperty("name") should equal("Lasse")
+    }
   }
 
-  @Test
-  def should_be_able_to_handle_two_params() {
+  test("should_be_able_to_handle_two_params") {
     createNode()
     val props1 = Map("name"->"Andres", "position"->"Developer")
     val props2 = Map("name"->"Lasse", "awesome"->true)
@@ -156,15 +154,14 @@ class CreateUniqueAcceptanceTest
     val resultMap = result.toList.head
 
     graph.inTx {
-      assert(resultMap("a").asInstanceOf[Node].getProperty("name") === "Andres")
-      assert(resultMap("a").asInstanceOf[Node].getProperty("position") === "Developer")
-      assert(resultMap("b").asInstanceOf[Node].getProperty("name") === "Lasse")
-      assert(resultMap("b").asInstanceOf[Node].getProperty("awesome") === true)
+      resultMap("a").asInstanceOf[Node].getProperty("name") should equal("Andres")
+      resultMap("a").asInstanceOf[Node].getProperty("position") should equal("Developer")
+      resultMap("b").asInstanceOf[Node].getProperty("name") should equal("Lasse")
+      resultMap("b").asInstanceOf[Node].getProperty("awesome") should equal(true)
     }
   }
 
-  @Test
-  def should_be_able_to_handle_two_params_without_named_nodes() {
+  test("should_be_able_to_handle_two_params_without_named_nodes") {
     createNode()
 
     val props1 = Map("name"->"Andres", "position"->"Developer")
@@ -179,33 +176,32 @@ class CreateUniqueAcceptanceTest
     val andres = path.nodes().asScala.toList(1)
 
     graph.inTx {
-      assert(andres.getProperty("name") === "Andres")
-      assert(andres.getProperty("position") === "Developer")
-      assert(lasse.getProperty("name") === "Lasse")
-      assert(lasse.getProperty("awesome") === true)
+      andres.getProperty("name") should equal("Andres")
+      andres.getProperty("position") should equal("Developer")
+      lasse.getProperty("name") should equal("Lasse")
+      lasse.getProperty("awesome") should equal(true)
     }
   }
 
-  @Test
-  def should_be_able_to_handle_a_param_as_node() {
+  test("should_be_able_to_handle_a_param_as_node") {
     val n = createNode()
     intercept[CypherTypeException](execute("start a = node(0) create unique a-[r:X]->({param}) return r", "param" -> n))
   }
 
-  @Test
-  def does_not_create_a_missing_relationship() {
+  test("does_not_create_a_missing_relationship") {
     val a = createNode()
     val b = createNode()
     val r = relate(a, b, "X")
     val result = execute("start a = node(0), b=node(1) create unique a-[r:X]->b return r")
     val createdRel = result.columnAs[Relationship]("r").toList.head
 
-    assertInTx(a.getRelationships.asScala.size === 1)
-    assert(createdRel === r)
+    createdRel should equal(r)
+    graph.inTx {
+      a.getRelationships.asScala should have size 1
+    }
   }
 
-  @Test
-  def creates_rel_if_it_is_of_wrong_type() {
+  test("creates_rel_if_it_is_of_wrong_type") {
     val a = createNode()
     val b = createNode()
     val r = relate(a, b, "BAR")
@@ -214,12 +210,13 @@ class CreateUniqueAcceptanceTest
 
     assertStats(result, relationshipsCreated = 1)
 
-    assertInTx(a.getRelationships.asScala.size === 2)
-    assert(createdRel != r, "A new relationship should have been created")
+    createdRel should not equal (r)
+    graph.inTx {
+      a.getRelationships.asScala should have size 2
+    }
   }
 
-  @Test
-  def creates_minimal_amount_of_nodes() {
+  test("creates_minimal_amount_of_nodes") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -228,112 +225,114 @@ class CreateUniqueAcceptanceTest
     val result = execute("start a = node(0,1), b=node(2), c=node(3) create unique a-[:X]->b-[:X]->c")
 
     assertStats(result, relationshipsCreated = 3)
-
-    assertInTx(a.getRelationships.asScala.size === 1)
-    assertInTx(b.getRelationships.asScala.size === 1)
-    assertInTx(c.getRelationships.asScala.size === 3)
-    assertInTx(d.getRelationships.asScala.size === 1)
+    graph.inTx {
+      a.getRelationships.asScala should have size 1
+      b.getRelationships.asScala should have size 1
+      c.getRelationships.asScala should have size 3
+      d.getRelationships.asScala should have size 1
+    }
   }
 
-  @Test
-  def creates_minimal_amount_of_nodes_reverse() {
+  test("creates_minimal_amount_of_nodes_reverse") {
     val a = createNode()
 
     val result = execute("start a = node(0) create unique c-[:X]->b-[:X]->a")
 
     assertStats(result, nodesCreated = 2, relationshipsCreated = 2)
-
-    val aRels = graph.inTx(a.getRelationships.asScala.toList)
-    assert(aRels.size === 1)
-    val bRels = graph.inTx(aRels.head.getOtherNode(a).getRelationships.asScala.toList)
-    assert(bRels.size === 2)
+    graph.inTx {
+      val aRels = a.getRelationships.asScala.toList
+      aRels should have size 1
+      val bRels = aRels.head.getOtherNode(a).getRelationships.asScala.toList
+      bRels should have size 2
+    }
   }
 
-  @Test
-  def creates_node_if_it_is_missing() {
+  test("creates_node_if_it_is_missing") {
     val a = createNode()
 
     val result = execute("start a = node(0) create unique a-[:X]->root return root")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
-
-    assertInTx(a.getRelationships.asScala.size === 1)
+    graph.inTx {
+      a.getRelationships.asScala should have size 1
+    }
   }
 
-  @Test
-  def creates_node_if_it_is_missing_pattern_reversed() {
+  test("creates_node_if_it_is_missing_pattern_reversed") {
     val a = createNode()
 
     val result = execute("start a = node(0) create unique root-[:X]->a return root")
 
     assertStats(result, nodesCreated = 1, relationshipsCreated = 1)
-
-    assertInTx(a.getRelationships.asScala.size === 1)
+    graph.inTx {
+      a.getRelationships.asScala should have size 1
+    }
   }
 
-  @Test
-  def creates_node_if_it_is_missing_a_property() {
+  test("creates_node_if_it_is_missing_a_property") {
     val a = createNode()
     val b = createNode("name" -> "Michael")
     relate(a, b, "X")
 
     val createdNode = executeScalar[Node]("start a = node(0) create unique a-[:X]->(b {name:'Andres'}) return b")
 
-    assert(b != createdNode, "We should have created a new node - this one doesn't match")
-    assertInTx(createdNode.getProperty("name") === "Andres")
+    createdNode should not equal b
+    graph.inTx {
+      createdNode.getProperty("name") should equal("Andres")
+    }
   }
 
-  @Test
-  def discards_rel_based_on_props() {
+  test("discards_rel_based_on_props") {
     val a = createNode()
     val b = createNode()
     relate(a, b, "X", Map("foo" -> "bar"))
 
     val createdNode = executeScalar[Node]("start a = node(0) create unique a-[:X {foo:'not bar'}]->b return b")
 
-    assert(b != createdNode, "We should have created a new node - this one doesn't match")
-    assertInTx(createdNode.getRelationships.asScala.toList.head.getProperty("foo") === "not bar")
+    createdNode should not equal b
+    graph.inTx {
+      createdNode.getRelationships.asScala.toList.head.getProperty("foo") should equal("not bar")
+    }
   }
 
-  @Test
-  def discards_rel_based_on_props_between_nodes() {
+  test("discards_rel_based_on_props_between_nodes") {
     val a = createNode()
     val b = createNode()
     val r = relate(a, b, "X", Map("foo" -> "bar"))
 
     val createdRel = executeScalar[Relationship]("start a = node(0), b = node(1) create unique a-[r:X {foo:'not bar'}]->b return r")
 
+    createdRel should not equal r
+
     graph.inTx {
-      assert(r != createdRel, "We should have created a new rel - this one doesn't match")
-      assert(createdRel.getProperty("foo") === "not bar")
-      assert(createdRel.getStartNode === a)
-      assert(createdRel.getEndNode === b)
+      createdRel.getProperty("foo") should equal("not bar")
+      createdRel.getStartNode should equal(a)
+      createdRel.getEndNode should equal(b)
     }
   }
 
-  @Test
-  def creates_single_node_if_it_is_missing() {
+  test("creates_single_node_if_it_is_missing") {
     val a = createNode()
     val b = createNode()
 
     val result = execute("start a = node(0), b = node(1) create unique a-[:X]->root<-[:X]-b return root")
+
     assertStats(result, nodesCreated = 1, relationshipsCreated = 2)
+    graph.inTx {
+      val aRels = a.getRelationships.asScala.toList
+      val bRels = b.getRelationships.asScala.toList
+      aRels should have size 1
+      bRels should have size 1
 
-    val aRels = graph.inTx(a.getRelationships.asScala.toList)
-    val bRels = graph.inTx(b.getRelationships.asScala.toList)
-    assert(aRels.size === 1)
-    assert(bRels.size === 1)
-
-    val aOpposite = graph.inTx(aRels.head.getEndNode)
-    val bOpposite = graph.inTx(bRels.head.getEndNode)
-    assert(aOpposite != b)
-    assert(bOpposite != a)
-
-    assert(aOpposite === bOpposite)
+      val aOpposite = aRels.head.getEndNode
+      val bOpposite = bRels.head.getEndNode
+      aOpposite should not equal b
+      bOpposite should not equal a
+      aOpposite should equal(bOpposite)
+    }
   }
 
-  @Test
-  def creates_node_with_value_if_it_is_missing() {
+  test("creates_node_with_value_if_it_is_missing") {
     /*        This is the pattern we're looking for
                 tagRoot
                    ^
@@ -370,14 +369,14 @@ return book
 
     val book = result.toList.head("book").asInstanceOf[Node]
 
-    val bookTags = graph.inTx(book.getRelationships.asScala.map(_.getOtherNode(book)).toList)
-
-    assert(bookTags.contains(a), "Should have been tagged")
-    assert(bookTags.contains(c), "Should have been tagged")
+    graph.inTx {
+      val bookTags = book.getRelationships.asScala.map(_.getOtherNode(book)).toList
+      bookTags should contain(a)
+      bookTags should contain(c)
+    }
   }
 
-  @Test
-  def creates_node_with_value_if_it_is_missing_simple() {
+  test("creates_node_with_value_if_it_is_missing_simple") {
     /*        This is the pattern we're looking for
                 tagRoot
                    ^
@@ -402,11 +401,11 @@ FOREACH(name in ['a','b','c'] |
 
     graph.inTx {
       val bookTags = tagRoot.getRelationships.asScala.map(_.getOtherNode(tagRoot)).map(_.getProperty("name")).toSet
-      assert(bookTags === Set("a", "b", "c"))
+      bookTags should equal(Set("a", "b", "c"))
     }
   }
 
-  @Test def should_find_nodes_with_properties_first() {
+  test("should_find_nodes_with_properties_first") {
     createNode()
     val b = createNode()
     val wrongX = createNode("foo" -> "absolutely not bar")
@@ -422,7 +421,7 @@ RETURN x""")
     assertStats(result, nodesCreated = 2, relationshipsCreated = 3, propertiesSet = 1)
   }
 
-  @Test def should_not_create_unnamed_parts_unnecessarily() {
+  test("should_not_create_unnamed_parts_unnecessarily") {
     val a = createNode()
     val b = createNode()
 
@@ -434,7 +433,7 @@ CREATE UNIQUE
     assertStats(result, nodesCreated = 2, relationshipsCreated = 3)
   }
 
-  @Test def should_find_nodes_with_properties_first2() {
+  test("should_find_nodes_with_properties_first2") {
     createNode()
     val b = createNode()
     val wrongX = createNode("foo" -> "absolutely not bar")
@@ -450,7 +449,7 @@ RETURN x""")
     assertStats(result, nodesCreated = 2, relationshipsCreated = 4, propertiesSet = 2)
   }
 
-  @Test def should_work_well_inside_foreach() {
+  test("should_work_well_inside_foreach") {
     createNode()
     createNode()
     createNode()
@@ -470,8 +469,7 @@ FOREACH( x in nodes |
   }
 
 
-  @Test
-  def two_outgoing_parts() {
+  test("two_outgoing_parts") {
     val a = createNode()
     val b1 = createNode()
     val b2 = createNode()
@@ -481,8 +479,8 @@ FOREACH( x in nodes |
 
     intercept[UniquePathNotUniqueException](execute("""START a = node(0) CREATE UNIQUE a-[:X]->b-[:X]->d"""))
   }
-  @Test
-  def tree_structure() {
+
+  test("tree_structure") {
     val a = createNode()
 
     val result = execute("""START root=node(0)

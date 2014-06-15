@@ -19,32 +19,30 @@
  */
 package org.neo4j.cypher
 
-import org.junit.{Before, Test}
-
-class ColumnNameTest extends ExecutionEngineJUnitSuite {
+class ColumnNameTest extends ExecutionEngineFunSuite {
 
   override def initTest() {
     super.initTest()
     createNode()
   }
 
-  @Test def shouldKeepUsedExpression1() {
+  test("should keep used expression 1") {
     val result = execute("start n=node(0) return cOuNt( * )")
-    assert(result.columns === List("cOuNt( * )"))
+    result.columns should equal(List("cOuNt( * )"))
   }
 
-  @Test def shouldKeepUsedExpression2() {
+  test("should keep used expression 2") {
     val result = execute("start n=node(0) match p=n-->b return nOdEs( p )")
-    assert(result.columns === List("nOdEs( p )"))
+    result.columns should equal(List("nOdEs( p )"))
   }
 
-  @Test def shouldKeepUsedExpression3() {
+  test("should keep used expression 3") {
     val result = execute("start n=node(0) match p=n-->b return coUnt( dIstInct p )")
-    assert(result.columns === List("coUnt( dIstInct p )"))
+    result.columns should equal(List("coUnt( dIstInct p )"))
   }
 
-  @Test def shouldKeepUsedExpression4() {
+  test("should keep used expression 4") {
     val result = execute("start n=node(0) match p=n-->b return aVg(    n.aGe     )")
-    assert(result.columns === List("aVg(    n.aGe     )"))
+    result.columns should equal(List("aVg(    n.aGe     )"))
   }
 }

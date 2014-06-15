@@ -31,11 +31,15 @@ object addUniquenessPredicates extends Rewriter {
   private val instance: Rewriter = Rewriter.lift {
 
     case m@Match(_, pattern: Pattern, _, where: Option[Where]) =>
-      val relNames: Seq[String] = pattern.fold(Seq.empty[String]) {
-        case RelationshipChain(_, RelationshipPattern(r, _, _, None, _, _), _) => (acc: Seq[String]) =>
+      val relNames: Seq[String] = pattern.treeFold(Seq.empty[String]) {
+        case _: ShortestPaths =>
+          (acc, _) => acc
 
-          val relName: String = r.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns")).name
-          acc :+ relName
+        case RelationshipChain(_, RelationshipPattern(r, _, _, None, _, _), _) =>
+          (acc, children) => {
+            val relName: String = r.getOrElse(throw new InternalException("This rewriter cannot work with unnamed patterns")).name
+            children(acc :+ relName)
+          }
       }
 
       if (relNames.size < 2) {

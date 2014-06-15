@@ -85,9 +85,9 @@ object Rewritable {
     }
   }
 
-  implicit class RewritableAny(val that: AnyRef) extends AnyVal {
+  implicit class RewritableAny[T <: AnyRef](val that: T) extends AnyVal {
     def rewrite(rewriter: Rewriter): AnyRef = rewriter.apply(that).getOrElse(that)
-    def typedRewrite[T](rewriter: Rewriter): T = rewriter.apply(that).getOrElse(that).asInstanceOf[T]
+    def endoRewrite(rewriter: Rewriter): T = rewrite(rewriter).asInstanceOf[T]
   }
 }
 

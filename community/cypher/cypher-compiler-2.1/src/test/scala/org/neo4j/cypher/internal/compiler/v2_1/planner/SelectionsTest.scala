@@ -66,7 +66,7 @@ class SelectionsTest extends CypherFunSuite with LogicalPlanningTestSupport {
       Predicate(idNames("a"), aIsPerson),
       Predicate(idNames("a"), aIsPerson),
       Predicate(idNames("b"), bIsAnimal),
-      Predicate(idNames("c"), Equals(Identifier("c") _, SignedIntegerLiteral("42") _) _)
+      Predicate(idNames("c"), Equals(Identifier("c") _, SignedDecimalIntegerLiteral("42") _) _)
     ))
 
     selections.labelPredicates should equal(Map(

@@ -20,9 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, QueryGraphSolvingContext, CandidateSelector}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanningContext, CandidateList, CandidateSelector}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 object pickBestPlan extends CandidateSelector {
-  def apply(candidateList: CandidateList)(implicit context: QueryGraphSolvingContext): Option[QueryPlan] =
+  def apply(candidateList: CandidateList)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): Option[QueryPlan] =
     candidateList.bestPlan(context.cost)
 }

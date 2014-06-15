@@ -22,7 +22,7 @@ package org.neo4j.cypher
 import org.scalatest.Matchers
 import org.neo4j.graphdb.Node
 
-class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matchers with NewPlannerTestSupport{
+class PatternPredicateAcceptanceTest extends ExecutionEngineFunSuite with Matchers with NewPlannerTestSupport {
 
   test("should filter relationships with properties") {
     // given

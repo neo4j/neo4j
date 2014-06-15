@@ -22,12 +22,13 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.PipeExecutionPlanBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.{inSequence, bottomUp, ParsedQuery, Monitors}
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
+import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
 
 /* This class is responsible for taking a query from an AST object to a runnable object.  */
 case class Planner(monitors: Monitors,
@@ -48,9 +49,10 @@ case class Planner(monitors: Monitors,
     Planner.rewriteStatement(statement) match {
       case ast: Query =>
         monitor.startedPlanning(query)
-        val logicalPlan = produceQueryPlan(ast, semanticTable)(planContext).plan
+        val (queryPlan, pipeBuildContext) = produceQueryPlan(ast, semanticTable)(planContext)
+        val logicalPlan = queryPlan.plan
         monitor.foundPlan(query, logicalPlan)
-        val result = executionPlanBuilder.build(logicalPlan)
+        val result = executionPlanBuilder.build(logicalPlan)(pipeBuildContext)
         monitor.successfulPlanning(query, result)
         result
 
@@ -59,30 +61,38 @@ case class Planner(monitors: Monitors,
     }
   }
 
-  def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): QueryPlan = {
+  def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (QueryPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
-    val (plannerQuery, subQueriesLookupTable) = plannerQueryBuilder.produce(ast)
+    val QueryPlanInput(plannerQuery, subQueriesLookupTable, patternInExpression) = plannerQueryBuilder.produce(ast)
 
     val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
 
-    val context = LogicalPlanningContext(planContext, metrics, semanticTable, plannerQuery, queryGraphSolver, subQueriesLookupTable)
-    val plan = strategy.plan(context)
-    plan
+    val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
+    val plan = strategy.plan(plannerQuery)(context, subQueriesLookupTable)
+
+    val pipeBuildContext = PipeExecutionBuilderContext(patternInExpression.mapValues{ qg =>
+      val argLeafPlan = Some(planQueryArgumentRow(qg))
+      val queryPlan = queryGraphSolver.plan(qg)(context, subQueriesLookupTable, argLeafPlan)
+      queryPlan.plan
+    })
+
+    (plan, pipeBuildContext)
   }
 }
 
 object Planner {
-  def rewriteStatement(statement: Statement): Statement = {
-    val cnfStatement = statement.typedRewrite[Statement](CNFNormalizer)
-    val namedStatement = cnfStatement.typedRewrite[Statement](bottomUp(
-      inSequence(nameVarLengthRelationships, namePatternPredicates)
-    ))
+  val rewriter = inSequence(
+    rewriteEqualityToInCollection,
+    splitInCollectionsToIsolateConstants,
+    CNFNormalizer,
+    collapseInCollectionsContainingConstants,
+    nameVarLengthRelationships,
+    namePatternPredicates,
+    inlineProjections,
+    useAliasesInSortSkipAndLimit
+  )
 
-    val statementWithInlinedProjections = inlineProjections(namedStatement)
-    val statementWithAliasedSortSkipAndLimit = statementWithInlinedProjections.typedRewrite[Statement](bottomUp(useAliasesInSortSkipAndLimit))
-
-    statementWithAliasedSortSkipAndLimit
-  }
+  def rewriteStatement(statement: Statement) = statement.endoRewrite(rewriter)
 }
 
 trait PlanningMonitor {

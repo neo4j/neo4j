@@ -19,18 +19,12 @@
  */
 package org.neo4j.cypher
 
-import org.scalatest.Assertions
-import org.junit.Test
-
-
-class UnionAcceptanceTest extends ExecutionEngineJUnitSuite {
-  @Test
-  def should_be_able_to_create_text_output_from_union_queries() {
-
+class UnionAcceptanceTest extends ExecutionEngineFunSuite {
+  test("should_be_able_to_create_text_output_from_union_queries") {
     // When
     val result = execute("merge (a) return a union merge (a) return a")
 
     // Then
-    assert(result.columns.nonEmpty, "Union queries must have columns")
+    result.columns should not be empty
   }
 }

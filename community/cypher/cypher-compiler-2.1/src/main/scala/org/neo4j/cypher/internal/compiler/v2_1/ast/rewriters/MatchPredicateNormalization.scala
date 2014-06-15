@@ -52,7 +52,7 @@ class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends 
         }
 
         m.copy(
-          pattern = pattern.rewrite(topDown(Rewriter.lift(normalizer.replace))).asInstanceOf[Pattern],
+          pattern = pattern.endoRewrite(topDown(Rewriter.lift(normalizer.replace))),
           where = newWhere
         )(m.position)
       }

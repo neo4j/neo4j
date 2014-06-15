@@ -29,7 +29,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.commands.{SingleQueryExpression, 
 
 
 abstract class IndexLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: QueryGraphSolvingContext) = {
+  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]) = {
     implicit val semanticTable = context.semanticTable
     val predicates: Seq[Expression] = qg.selections.flatPredicates
     val labelPredicateMap: Map[IdName, Set[HasLabels]] = qg.selections.labelPredicates
@@ -53,9 +53,6 @@ abstract class IndexLeafPlanner extends LeafPlanner {
 
     CandidateList(
       predicates.collect {
-        case equalityPredicate@Equals(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) =>
-          producePlanFor(name, propertyKeyName, equalityPredicate, SingleQueryExpression(valueExpr))
-
         case inPredicate@In(Property(identifier@Identifier(name), propertyKeyName), ConstantExpression(valueExpr)) =>
           producePlanFor(name, propertyKeyName, inPredicate, ManyQueryExpression(valueExpr))
       }.flatten
@@ -66,11 +63,13 @@ abstract class IndexLeafPlanner extends LeafPlanner {
                               label: LabelToken,
                               propertyKey: PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
-                              hint: Option[UsingIndexHint])(implicit context: QueryGraphSolvingContext): (Seq[Expression]) => QueryPlan
+                              hint: Option[UsingIndexHint])
+                             (implicit context: LogicalPlanningContext,
+                              subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan
 
 
 
-  protected def findIndexesFor(label: String, property: String)(implicit context: QueryGraphSolvingContext): Option[IndexDescriptor]
+  protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor]
 }
 
 object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
@@ -79,12 +78,13 @@ object uniqueIndexSeekLeafPlanner extends IndexLeafPlanner {
                               propertyKey: PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint])
-                              (implicit context: QueryGraphSolvingContext): (Seq[Expression]) => QueryPlan =
+                             (implicit context: LogicalPlanningContext,
+                              subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
       planNodeIndexUniqueSeek(idName, label, propertyKey, valueExpr, predicates, hint)
 
 
-  protected def findIndexesFor(label: String, property: String)(implicit context: QueryGraphSolvingContext): Option[IndexDescriptor] =
+  protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
     context.planContext.getUniqueIndexRule(label, property)
 }
 
@@ -94,11 +94,12 @@ object indexSeekLeafPlanner extends IndexLeafPlanner {
                               propertyKey: PropertyKeyToken,
                               valueExpr: QueryExpression[Expression],
                               hint: Option[UsingIndexHint])
-                             (implicit context: QueryGraphSolvingContext): (Seq[Expression]) => QueryPlan =
+                             (implicit context: LogicalPlanningContext,
+                              subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (Seq[Expression]) => QueryPlan =
     (predicates: Seq[Expression]) =>
       planNodeIndexSeek(idName, label, propertyKey, valueExpr, predicates, hint)
 
-  protected def findIndexesFor(label: String, property: String)(implicit context: QueryGraphSolvingContext): Option[IndexDescriptor] =
+  protected def findIndexesFor(label: String, property: String)(implicit context: LogicalPlanningContext): Option[IndexDescriptor] =
     context.planContext.getIndexRule(label, property)
 
 }

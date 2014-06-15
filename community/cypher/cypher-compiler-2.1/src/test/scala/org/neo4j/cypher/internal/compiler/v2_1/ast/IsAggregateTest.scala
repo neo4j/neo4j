@@ -48,7 +48,7 @@ class IsAggregateTest extends CypherFunSuite with AstConstructionTestSupport {
   }
 
   test("1 is not an aggregate expression") {
-    val expr: Expression = SignedIntegerLiteral("1")_
+    val expr: Expression = SignedDecimalIntegerLiteral("1")_
 
     IsAggregate.unapply(expr) should equal(None)
   }
