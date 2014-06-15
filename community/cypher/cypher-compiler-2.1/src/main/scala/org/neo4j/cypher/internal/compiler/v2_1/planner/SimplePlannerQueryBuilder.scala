@@ -204,120 +204,120 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         val newQG = querySoFar.withProjection(projection)
         produceQueryGraphFromClauses(newQG, subQueryLookupTable, newPatternInExpressionTable, tl)
 
-        case Match(optional@false, pattern: Pattern, hints, optWhere) :: tl =>
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-          val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
+      case Match(optional@false, pattern: Pattern, hints, optWhere) :: tl =>
+        val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+        val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
 
-          val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
-          val newPatternInExpressionTable = patternInExpressionTable ++ nestedPatternPredicates
+        val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
+        val newPatternInExpressionTable = patternInExpressionTable ++ nestedPatternPredicates
 
-          val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
+        val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
 
-          val newQuery = querySoFar.updateGraph {
-            qg => qg.
-              addSelections(selections).
-              addPatternNodes(nodeIds: _*).
-              addPatternRels(rels).
-              addHints(hints).
-              addShortestPaths(shortest: _*)
-          }
+        val newQuery = querySoFar.updateGraph {
+          qg => qg.
+            addSelections(selections).
+            addPatternNodes(nodeIds: _*).
+            addPatternRels(rels).
+            addHints(hints).
+            addShortestPaths(shortest: _*)
+        }
 
-          produceQueryGraphFromClauses(newQuery, newSubQueryPlanTable, newPatternInExpressionTable, tl)
+        produceQueryGraphFromClauses(newQuery, newSubQueryPlanTable, newPatternInExpressionTable, tl)
 
-        case Match(optional@true, pattern: Pattern, hints, optWhere) :: tl =>
-          val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
+      case Match(optional@true, pattern: Pattern, hints, optWhere) :: tl =>
+        val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
 
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-          val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
+        val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+        val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
 
-          val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
-          val newPatternInExpressionTable = patternInExpressionTable ++ nestedPatternPredicates
+        val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
+        val newPatternInExpressionTable = patternInExpressionTable ++ nestedPatternPredicates
 
-          val optionalMatch = QueryGraph(
-            selections = selections,
-            patternNodes = nodeIds.toSet,
-            patternRelationships = rels.toSet,
-            hints = hints.toSet,
-            shortestPathPatterns = shortest.toSet
+        val optionalMatch = QueryGraph(
+          selections = selections,
+          patternNodes = nodeIds.toSet,
+          patternRelationships = rels.toSet,
+          hints = hints.toSet,
+          shortestPathPatterns = shortest.toSet
+        )
+
+        val newQuery = querySoFar.updateGraph {
+          qg => qg.withAddedOptionalMatch(optionalMatch)
+        }
+
+        produceQueryGraphFromClauses(newQuery, newSubQueryPlanTable, newPatternInExpressionTable, tl)
+
+      case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl if !querySoFar.graph.hasOptionalPatterns =>
+        val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+        val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
+
+        val newQuery = querySoFar
+          .updateGraph(_.addSelections(selections))
+          .updateProjections(
+            _.withSortItems(produceSortItems(optOrderBy))
           )
 
-          val newQuery = querySoFar.updateGraph {
-            qg => qg.withAddedOptionalMatch(optionalMatch)
-          }
+        produceQueryGraphFromClauses(newQuery, newSubQueryPlanTable, patternInExpressionTable, tl)
 
-          produceQueryGraphFromClauses(newQuery, newSubQueryPlanTable, newPatternInExpressionTable, tl)
+      case With(false, _: ReturnAll, optOrderBy, skip, limit, optWhere) :: tl =>
+        val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+        val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
 
-        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl if !querySoFar.graph.hasOptionalPatterns =>
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-          val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
+        val (tailQuery: PlannerQuery, tailSubQuery, tailPatternInExpression) = produceQueryGraphFromClauses(
+          PlannerQuery(QueryGraph(selections = selections)),
+          newSubQueryPlanTable,
+          patternInExpressionTable,
+          tl
+        )
 
-          val newQuery = querySoFar
-            .updateGraph(_.addSelections(selections))
-            .updateProjections(
-               _.withSortItems(produceSortItems(optOrderBy))
+        val inputIds = querySoFar.graph.coveredIds
+        val argumentIds = inputIds intersect tailQuery.graph.coveredIds
+
+        val newQuery =
+          querySoFar
+            .withProjection(
+              QueryProjection.forIds(inputIds)
+                .withSortItems(produceSortItems(optOrderBy))
+                .withLimit(limit.map(_.expression))
+                .withSkip(skip.map(_.expression))
             )
+            .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
 
-          produceQueryGraphFromClauses(newQuery, newSubQueryPlanTable, patternInExpressionTable, tl)
+        (newQuery, tailSubQuery, tailPatternInExpression)
 
-        case With(false, _: ReturnAll, optOrderBy, skip, limit, optWhere) :: tl =>
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-          val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
+      case With(false, ListedReturnItems(items), optOrderBy, skip, limit, optWhere) :: tl =>
+        val newPatternInExpressionTable = patternInExpressionTable ++ getPatternInExpressionQueryGraphs(items.map(_.expression))
+        val orderBy = produceSortItems(optOrderBy)
+        val projection = produceProjectionsMaps(items)
+          .withSortItems(orderBy)
+          .withLimit(limit.map(_.expression))
+          .withSkip(skip.map(_.expression))
 
-          val (tailQuery: PlannerQuery, tailSubQuery, tailPatternInExpression) = produceQueryGraphFromClauses(
-            PlannerQuery(QueryGraph(selections = selections)),
-            newSubQueryPlanTable,
-            patternInExpressionTable,
-            tl
-          )
+        val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+        val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
 
-          val inputIds = querySoFar.graph.coveredIds
-          val argumentIds = inputIds intersect tailQuery.graph.coveredIds
+        val (tailQuery: PlannerQuery, tailSubQuery, tailPatternInExpression) = produceQueryGraphFromClauses(
+          PlannerQuery(QueryGraph(selections = selections)),
+          newSubQueryPlanTable,
+          newPatternInExpressionTable,
+          tl
+        )
 
-          val newQuery =
-            querySoFar
-              .withProjection(
-                QueryProjection.forIds(inputIds)
-                  .withSortItems( produceSortItems(optOrderBy))
-                  .withLimit(limit.map(_.expression))
-                  .withSkip(skip.map(_.expression))
-              )
-              .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
+        val inputIds = projection.keySet.map(IdName)
+        val argumentIds = inputIds intersect tailQuery.graph.coveredIds
 
-          (newQuery, tailSubQuery, tailPatternInExpression)
+        val newQuery =
+          querySoFar
+            .withProjection(projection)
+            .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
 
-        case With(false, ListedReturnItems(items), optOrderBy, skip, limit, optWhere) :: tl =>
-          val newPatternInExpressionTable = patternInExpressionTable ++ getPatternInExpressionQueryGraphs(items.map(_.expression))
-          val orderBy = produceSortItems(optOrderBy)
-          val projection = produceProjectionsMaps(items)
-            .withSortItems(orderBy)
-            .withLimit(limit.map(_.expression))
-            .withSkip(skip.map(_.expression))
+        (newQuery, tailSubQuery, tailPatternInExpression)
 
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-          val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
+      case Seq() =>
+        (querySoFar, subQueryLookupTable, patternInExpressionTable)
 
-          val (tailQuery: PlannerQuery, tailSubQuery, tailPatternInExpression) = produceQueryGraphFromClauses(
-            PlannerQuery(QueryGraph(selections = selections)),
-            newSubQueryPlanTable,
-            newPatternInExpressionTable,
-            tl
-          )
-
-          val inputIds = projection.keySet.map(IdName)
-          val argumentIds = inputIds intersect tailQuery.graph.coveredIds
-
-          val newQuery =
-            querySoFar
-              .withProjection(projection)
-              .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
-
-          (newQuery, tailSubQuery, tailPatternInExpression)
-
-        case Seq() =>
-          (querySoFar, subQueryLookupTable, patternInExpressionTable)
-
-        case _ =>
-          throw new CantHandleQueryException
+      case _ =>
+        throw new CantHandleQueryException
       }
 
   private def produceSortItems(optOrderBy: Option[OrderBy]) =
