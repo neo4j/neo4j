@@ -58,8 +58,4 @@ public interface LegacyIndexWrite
     void nodeLegacyIndexDrop( String indexName );
 
     void relationshipLegacyIndexDrop( String indexName );
-
-    long nodeLegacyIndexPutIfAbsent( long node, String key, Object value );
-
-    long relationshipLegacyIndexPutIfAbsent( long relationship, String key, Object value );
 }

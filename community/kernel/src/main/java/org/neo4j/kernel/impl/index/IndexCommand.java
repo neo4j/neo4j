@@ -28,6 +28,8 @@ import org.neo4j.kernel.impl.nioneo.xa.command.CommandRecordVisitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandType;
 
+import static java.lang.String.format;
+
 /**
  * Created from {@link IndexDefineCommand} or read from a logical log.
  * Contains all the different types of commands that an {@link Index} need
@@ -253,6 +255,12 @@ public abstract class IndexCommand extends Command
             return visitor.visitIndexRemoveCommand( this );
         }
 
+        @Override
+        public String toString()
+        {
+            return format( "Remove%s[index:%d, id:%d, key:%d, value:%s]",
+                    IndexEntityType.byId( entityType ).name(), indexNameId, keyId, value );
+        }
     }
 
     public static class DeleteCommand extends IndexCommand
@@ -272,6 +280,12 @@ public abstract class IndexCommand extends Command
         public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexDeleteCommand( this );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Delete[index:" + indexNameId + ", type:" + IndexEntityType.byId( entityType ).name() + "]";
         }
     }
 
@@ -312,6 +326,12 @@ public abstract class IndexCommand extends Command
         public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexCreateCommand( this );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "Create[index:" + indexNameId + ", config:" + config + "]";
         }
     }
 

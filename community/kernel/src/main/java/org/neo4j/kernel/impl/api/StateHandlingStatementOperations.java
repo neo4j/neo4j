@@ -1373,19 +1373,6 @@ public class StateHandlingStatementOperations implements
     }
 
     @Override
-    public long nodeLegacyIndexPutIfAbsent( KernelStatement statement, long node, String key, Object value )
-    {
-        throw new UnsupportedOperationException( "Please implement" );
-    }
-
-    @Override
-    public long relationshipLegacyIndexPutIfAbsent( KernelStatement statement, long relationship, String key,
-            Object value )
-    {
-        throw new UnsupportedOperationException( "Please implement" );
-    }
-
-    @Override
     public String nodeLegacyIndexSetConfiguration( KernelStatement statement, String indexName, String key, String value )
     {
         return legacyIndexStore.setNodeIndexConfiguration( indexName, key, value );

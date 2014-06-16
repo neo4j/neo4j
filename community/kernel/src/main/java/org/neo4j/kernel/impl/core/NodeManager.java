@@ -23,18 +23,12 @@ import java.util.LinkedList;
 import java.util.List;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.index.Index;
 import org.neo4j.kernel.PropertyTracker;
-import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static java.lang.System.currentTimeMillis;
-
-import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
 
 public class NodeManager extends LifecycleAdapter implements EntityFactory
 {
@@ -92,36 +86,6 @@ public class NodeManager extends LifecycleAdapter implements EntityFactory
     public GraphPropertiesImpl newGraphProperties()
     {
         return new GraphPropertiesImpl( epoch, threadToTransactionBridge );
-    }
-
-    public <T extends PropertyContainer> T indexPutIfAbsent( Index<T> index, T entity, String key, Object value )
-    {
-        T existing = index.get( key, value ).getSingle();
-        if ( existing != null )
-        {
-            return existing;
-        }
-
-        // Grab lock
-        try(Statement statement = threadToTransactionBridge.instance())
-        {
-            statement.readOperations().acquireExclusive(
-                    ResourceTypes.LEGACY_INDEX, legacyIndexResourceId( index.getName(), key ) );
-
-            // Check again -- now holding the lock
-            existing = index.get( key, value ).getSingle();
-            if ( existing != null )
-            {
-                // Someone else created this entry, release the lock as we won't be needing it
-                statement.readOperations().releaseExclusive(
-                        ResourceTypes.LEGACY_INDEX, legacyIndexResourceId( index.getName(), key ) );
-                return existing;
-            }
-
-            // Add
-            index.add( entity, key, value );
-            return null;
-        }
     }
 
     public List<PropertyTracker<Node>> getNodePropertyTrackers()

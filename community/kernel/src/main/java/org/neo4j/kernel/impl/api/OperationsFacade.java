@@ -789,20 +789,6 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
     }
 
     @Override
-    public long nodeLegacyIndexPutIfAbsent( long node, String key, Object value )
-    {
-        statement.assertOpen();
-        return legacyIndexWrite().nodeLegacyIndexPutIfAbsent( statement, node, key, value );
-    }
-
-    @Override
-    public long relationshipLegacyIndexPutIfAbsent( long relationship, String key, Object value )
-    {
-        statement.assertOpen();
-        return legacyIndexWrite().relationshipLegacyIndexPutIfAbsent( statement, relationship, key, value );
-    }
-
-    @Override
     public Map<String, String> nodeLegacyIndexGetConfiguration( String indexName )
             throws LegacyIndexNotFoundKernelException
     {

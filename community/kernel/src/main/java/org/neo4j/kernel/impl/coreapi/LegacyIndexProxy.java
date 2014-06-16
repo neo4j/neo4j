@@ -42,6 +42,10 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 import static java.lang.String.format;
 
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.LEGACY_INDEX;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
+
 public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
 {
     public interface Lookup
@@ -102,14 +106,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
             {
                 operations.nodeLegacyIndexDrop( name );
             }
-
-            @Override
-            long putIfAbsent( DataWriteOperations operations, long id, String key, Object value )
-                    throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-                    ReadOnlyDatabaseKernelException
-            {
-                return operations.nodeLegacyIndexPutIfAbsent( id, key, value );
-            }
         },
         RELATIONSHIP
         {
@@ -160,14 +156,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
             {
                 operations.relationshipLegacyIndexDrop( name );
             }
-
-            @Override
-            long putIfAbsent( DataWriteOperations operations, long id, String key, Object value )
-                    throws EntityNotFoundException, InvalidTransactionTypeKernelException,
-                    ReadOnlyDatabaseKernelException
-            {
-                return operations.relationshipLegacyIndexPutIfAbsent( id, key, value );
-            }
         }
 
         ;
@@ -190,9 +178,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
 
         abstract void drop( DataWriteOperations operations, String name )
                 throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException;
-
-        abstract long putIfAbsent( DataWriteOperations operations, long id, String key, Object value )
-                throws EntityNotFoundException, InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException;
     }
 
     private final String name;
@@ -226,12 +211,18 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         try ( Statement statement = statementContextBridge.instance() )
         {
-            return wrapIndexHits( statement.readOperations().nodeLegacyIndexGet( name, key, value ) );
+            return wrapIndexHits( internalGet( key, value, statement ) );
         }
         catch ( LegacyIndexNotFoundKernelException e )
         {
             throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
         }
+    }
+
+    private LegacyIndexHits internalGet( String key, Object value, Statement statement )
+            throws LegacyIndexNotFoundKernelException
+    {
+        return statement.readOperations().nodeLegacyIndexGet( name, key, value );
     }
 
     private IndexHits<T> wrapIndexHits( final LegacyIndexHits ids )
@@ -344,7 +335,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         try ( Statement statement = statementContextBridge.instance() )
         {
-            type.add( statement.dataWriteOperations(), name, entity.getId(), key, value );
+            internalAdd( entity, key, value, statement );
         }
         catch ( EntityNotFoundException e )
         {
@@ -433,7 +424,27 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         try ( Statement statement = statementContextBridge.instance() )
         {
-            return entityOf( type.putIfAbsent( statement.dataWriteOperations(), entity.getId(), key, value ) );
+            // Does it already exist?
+            long existing = single( internalGet( key, value, statement ), -1L );
+            if ( existing != -1 )
+            {
+                return entityOf( existing );
+            }
+
+            // No, OK so Grab lock
+            statement.readOperations().acquireExclusive( LEGACY_INDEX, legacyIndexResourceId( name, key ) );
+            // and check again -- now holding an exclusive lock
+            existing = single( internalGet( key, value, statement ), -1L );
+            if ( existing != -1 )
+            {
+                // Someone else created this entry before us just before we got the lock,
+                // release the lock as we won't be needing it
+                statement.readOperations().releaseExclusive( LEGACY_INDEX, legacyIndexResourceId( name, key ) );
+                return entityOf( existing );
+            }
+
+            internalAdd( entity, key, value, statement );
+            return null;
         }
         catch ( EntityNotFoundException e )
         {
@@ -447,5 +458,15 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         {
             throw new ReadOnlyDbException();
         }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+
+    private void internalAdd( T entity, String key, Object value, Statement statement ) throws EntityNotFoundException,
+            InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException
+    {
+        type.add( statement.dataWriteOperations(), name, entity.getId(), key, value );
     }
 }

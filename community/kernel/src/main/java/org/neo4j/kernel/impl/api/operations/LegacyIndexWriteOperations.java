@@ -62,8 +62,4 @@ public interface LegacyIndexWriteOperations
     void nodeLegacyIndexDrop( KernelStatement statement, String indexName );
 
     void relationshipLegacyIndexDrop( KernelStatement statement, String indexName );
-
-    long nodeLegacyIndexPutIfAbsent( KernelStatement statement, long node, String key, Object value );
-
-    long relationshipLegacyIndexPutIfAbsent( KernelStatement statement, long relationship, String key, Object value );
 }
