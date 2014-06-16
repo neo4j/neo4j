@@ -123,10 +123,18 @@ public class TestAutoIndexing
     public void testAutoIndexesReportReadOnly()
     {
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
-        assertFalse( autoIndexer.getAutoIndex().isWriteable() );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            assertFalse( autoIndexer.getAutoIndex().isWriteable() );
+            tx.success();
+        }
         autoIndexer.startAutoIndexingProperty( "test_uuid" );
         autoIndexer.setEnabled( true );
-        assertFalse( autoIndexer.getAutoIndex().isWriteable() );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            assertFalse( autoIndexer.getAutoIndex().isWriteable() );
+            tx.success();
+        }
     }
 
     @Test

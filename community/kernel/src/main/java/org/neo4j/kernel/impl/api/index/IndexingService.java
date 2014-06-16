@@ -25,7 +25,6 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -61,7 +60,6 @@ import static java.util.concurrent.TimeUnit.MINUTES;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.helpers.collection.Iterables.concatResourceIterators;
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.impl.api.index.IndexPopulationFailure.failure;
 
 /**
@@ -87,7 +85,7 @@ public class IndexingService extends LifecycleAdapter
     private final SchemaIndexProviderMap providerMap;
     private final IndexStoreView storeView;
     private final TokenNameLookup tokenNameLookup;
-    private Iterator<IndexRule> indexRules;
+    private final Iterable<IndexRule> indexRules;
     private final Logging logging;
     private final StringLogger logger;
     private final UpdateableSchemaState updateableSchemaState;
@@ -134,7 +132,7 @@ public class IndexingService extends LifecycleAdapter
                             IndexStoreView storeView,
                             TokenNameLookup tokenNameLookup,
                             UpdateableSchemaState updateableSchemaState,
-                            Iterator<IndexRule> indexRules,
+                            Iterable<IndexRule> indexRules,
                             Logging logging, Monitor monitor )
     {
         this.scheduler = scheduler;
@@ -159,11 +157,12 @@ public class IndexingService extends LifecycleAdapter
     /**
      * Called while the database starts up, before recovery.
      */
-    public void init( )
+    @Override
+    public void init()
     {
         IndexMap indexMap = indexMapReference.getIndexMapCopy();
 
-        for ( IndexRule indexRule : loop( indexRules ) )
+        for ( IndexRule indexRule : indexRules )
         {
             IndexProxy indexProxy;
 
@@ -203,6 +202,7 @@ public class IndexingService extends LifecycleAdapter
     }
 
     // Recovery semantics: This is to be called after initIndexes, and after the database has run recovery.
+    @Override
     public void start() throws IOException
     {
         state = State.STARTING;

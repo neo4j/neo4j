@@ -78,6 +78,7 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.iterator;
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 import static org.neo4j.kernel.api.index.InternalIndexState.ONLINE;
 import static org.neo4j.kernel.api.index.InternalIndexState.POPULATING;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
@@ -280,7 +281,7 @@ public class IndexingServiceTest
                 providerMap,
                 mock( IndexStoreView.class ),
                 mockLookup,
-                mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ).iterator(),
+                mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ),
                 mockLogging( logger ), IndexingService.NO_MONITOR ));
 
 
@@ -323,7 +324,7 @@ public class IndexingServiceTest
                 providerMap,
                 mock( IndexStoreView.class ),
                 mockLookup,
-                mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ).iterator(),
+                mock( UpdateableSchemaState.class ), asList( onlineIndex, populatingIndex, failedIndex ),
                 mockLogging( logger ), IndexingService.NO_MONITOR );
 
         when( provider.getInitialState( onlineIndex.getId() ) ).thenReturn( ONLINE );
@@ -501,7 +502,7 @@ public class IndexingServiceTest
 
         return life.add( new IndexingService(
                 life.add( new Neo4jJobScheduler( logger ) ), new DefaultSchemaIndexProviderMap( indexProvider ),
-                storeView, mock( TokenNameLookup.class ), schemaState, rules, mockLogging( logger ), IndexingService.NO_MONITOR ) );
+                storeView, mock( TokenNameLookup.class ), schemaState, loop( rules ), mockLogging( logger ), IndexingService.NO_MONITOR ) );
     }
 
     private DataUpdates withData( NodePropertyUpdate... updates )

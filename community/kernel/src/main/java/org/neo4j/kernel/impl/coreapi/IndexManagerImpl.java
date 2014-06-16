@@ -228,6 +228,10 @@ public class IndexManagerImpl implements IndexManager
         {
             throw new ReadOnlyDbException();
         }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new NotFoundException( e );
+        }
     }
 
     @Override
@@ -255,6 +259,10 @@ public class IndexManagerImpl implements IndexManager
         catch ( ReadOnlyDatabaseKernelException e )
         {
             throw new ReadOnlyDbException();
+        }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new NotFoundException( e );
         }
     }
 

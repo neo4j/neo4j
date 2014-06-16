@@ -818,6 +818,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public String nodeLegacyIndexSetConfiguration( String indexName, String key, String value )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.assertOpen();
         return legacyIndexWrite().nodeLegacyIndexSetConfiguration( statement, indexName, key, value );
@@ -825,6 +826,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public String relationshipLegacyIndexSetConfiguration( String indexName, String key, String value )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.assertOpen();
         return legacyIndexWrite().relationshipLegacyIndexSetConfiguration( statement, indexName, key, value );
@@ -832,6 +834,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public String nodeLegacyIndexRemoveConfiguration( String indexName, String key )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.assertOpen();
         return legacyIndexWrite().nodeLegacyIndexRemoveConfiguration( statement, indexName, key );
@@ -839,6 +842,7 @@ public class OperationsFacade implements ReadOperations, DataWriteOperations, Sc
 
     @Override
     public String relationshipLegacyIndexRemoveConfiguration( String indexName, String key )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.assertOpen();
         return legacyIndexWrite().relationshipLegacyIndexRemoveConfiguration( statement, indexName, key );

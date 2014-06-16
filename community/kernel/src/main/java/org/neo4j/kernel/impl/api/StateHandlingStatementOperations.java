@@ -1397,37 +1397,42 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public String nodeLegacyIndexSetConfiguration( KernelStatement statement, String indexName, String key, String value )
+            throws LegacyIndexNotFoundKernelException
     {
         return legacyIndexStore.setNodeIndexConfiguration( indexName, key, value );
     }
 
     @Override
     public String relationshipLegacyIndexSetConfiguration( KernelStatement statement, String indexName, String key,
-            String value )
+            String value ) throws LegacyIndexNotFoundKernelException
     {
         return legacyIndexStore.setRelationshipIndexConfiguration( indexName, key, value );
     }
 
     @Override
     public String nodeLegacyIndexRemoveConfiguration( KernelStatement statement, String indexName, String key )
+            throws LegacyIndexNotFoundKernelException
     {
         return legacyIndexStore.removeNodeIndexConfiguration( indexName, key );
     }
 
     @Override
     public String relationshipLegacyIndexRemoveConfiguration( KernelStatement statement, String indexName, String key )
+            throws LegacyIndexNotFoundKernelException
     {
         return legacyIndexStore.removeRelationshipIndexConfiguration( indexName, key );
     }
 
     @Override
     public Map<String, String> nodeLegacyIndexGetConfiguration( KernelStatement statement, String indexName )
+            throws LegacyIndexNotFoundKernelException
     {
         return legacyIndexStore.getNodeIndexConfiguration( indexName );
     }
 
     @Override
     public Map<String, String> relationshipLegacyIndexGetConfiguration( KernelStatement statement, String indexName )
+            throws LegacyIndexNotFoundKernelException
     {
         return legacyIndexStore.getRelationshipIndexConfiguration( indexName );
     }

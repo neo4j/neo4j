@@ -398,7 +398,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         try
         {
             indexingService = new IndexingService( scheduler, providerMap, new NeoStoreIndexStoreView(
-                    lockService, neoStore ), tokenNameLookup, updateableSchemaState, Collections.<IndexRule>emptyList().iterator(), logging, indexingServiceMonitor ); // TODO 2.2-future What index rules should be
+                    lockService, neoStore ), tokenNameLookup, updateableSchemaState, indexRuleLoader(), logging, indexingServiceMonitor ); // TODO 2.2-future What index rules should be
             integrityValidator = new IntegrityValidator( neoStore, indexingService );
             labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                     LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore();
@@ -563,6 +563,18 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             }
             throw Exceptions.launderedException( e );
         }
+    }
+
+    private Iterable<IndexRule> indexRuleLoader()
+    {
+        return new Iterable<IndexRule>()
+        {
+            @Override
+            public Iterator<IndexRule> iterator()
+            {
+                return new SchemaStorage( neoStore.getSchemaStore() ).allIndexRules();
+            }
+        };
     }
 
     private AutoLoadingCache.Loader<RelationshipImpl> relationshipLoader( final RelationshipStore relationshipStore )

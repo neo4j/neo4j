@@ -46,7 +46,6 @@ import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
@@ -1370,7 +1369,7 @@ public class NeoStoreTransactionTest
                     new DefaultSchemaIndexProviderMap( NO_INDEX_PROVIDER ),
                     new NeoStoreIndexStoreView( locks, neoStore ),
                     null,
-                    new KernelSchemaStateStore(), IteratorUtil.<IndexRule>emptyIterator(),
+                    new KernelSchemaStateStore(), Collections.<IndexRule>emptyList(),
                     new SingleLoggingService( DEV_NULL ), IndexingService.NO_MONITOR
                 );
         }

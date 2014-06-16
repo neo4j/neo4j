@@ -28,7 +28,6 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 
 import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -38,6 +37,7 @@ import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
@@ -247,6 +247,7 @@ public class LegacyIndexStore
     }
 
     public String setNodeIndexConfiguration( String indexName, String key, String value )
+            throws LegacyIndexNotFoundKernelException
     {
         assertLegalConfigKey( key );
         Map<String, String> config = new HashMap<>( getNodeIndexConfiguration( indexName ) );
@@ -256,6 +257,7 @@ public class LegacyIndexStore
     }
 
     public String setRelationshipIndexConfiguration( String indexName, String key, String value )
+            throws LegacyIndexNotFoundKernelException
     {
         assertLegalConfigKey( key );
         Map<String, String> config = new HashMap<>( getRelationshipIndexConfiguration( indexName ) );
@@ -265,6 +267,7 @@ public class LegacyIndexStore
     }
 
     public String removeNodeIndexConfiguration( String indexName, String key )
+            throws LegacyIndexNotFoundKernelException
     {
         assertLegalConfigKey( key );
         Map<String, String> config = new HashMap<>( getNodeIndexConfiguration( indexName ) );
@@ -277,6 +280,7 @@ public class LegacyIndexStore
     }
 
     public String removeRelationshipIndexConfiguration( String indexName, String key )
+            throws LegacyIndexNotFoundKernelException
     {
         assertLegalConfigKey( key );
         Map<String, String> config = new HashMap<>( getRelationshipIndexConfiguration( indexName ) );
@@ -288,22 +292,23 @@ public class LegacyIndexStore
         return value;
     }
 
-    public Map<String, String> getNodeIndexConfiguration( String indexName )
+    public Map<String, String> getNodeIndexConfiguration( String indexName ) throws LegacyIndexNotFoundKernelException
     {
         Map<String, String> config = indexStore.get( Node.class, indexName );
         if ( config == null )
         {
-            throw new NotFoundException( "No node index '" + indexName + "' found" );
+            throw new LegacyIndexNotFoundKernelException( "No node index '" + indexName + "' found" );
         }
         return config;
     }
 
     public Map<String, String> getRelationshipIndexConfiguration( String indexName )
+            throws LegacyIndexNotFoundKernelException
     {
         Map<String, String> config = indexStore.get( Relationship.class, indexName );
         if ( config == null )
         {
-            throw new NotFoundException( "No relationship index '" + indexName + "' found" );
+            throw new LegacyIndexNotFoundKernelException( "No relationship index '" + indexName + "' found" );
         }
         return config;
     }

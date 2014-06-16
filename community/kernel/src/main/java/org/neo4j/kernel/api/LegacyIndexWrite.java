@@ -30,13 +30,17 @@ public interface LegacyIndexWrite
 
     void relationshipLegacyIndexCreateLazily( String indexName, Map<String, String> customConfig );
 
-    String nodeLegacyIndexSetConfiguration( String indexName, String key, String value );
+    String nodeLegacyIndexSetConfiguration( String indexName, String key, String value )
+            throws LegacyIndexNotFoundKernelException;
 
-    String relationshipLegacyIndexSetConfiguration( String indexName, String key, String value );
+    String relationshipLegacyIndexSetConfiguration( String indexName, String key, String value )
+            throws LegacyIndexNotFoundKernelException;
 
-    String nodeLegacyIndexRemoveConfiguration( String indexName, String key );
+    String nodeLegacyIndexRemoveConfiguration( String indexName, String key )
+            throws LegacyIndexNotFoundKernelException;
 
-    String relationshipLegacyIndexRemoveConfiguration( String indexName, String key );
+    String relationshipLegacyIndexRemoveConfiguration( String indexName, String key )
+            throws LegacyIndexNotFoundKernelException;
 
     void nodeAddToLegacyIndex( String indexName, long node, String key, Object value )
             throws EntityNotFoundException, LegacyIndexNotFoundKernelException;
