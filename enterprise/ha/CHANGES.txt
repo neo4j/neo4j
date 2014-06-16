@@ -1,3 +1,8 @@
+1.9.8
+-----
+o Slaves will now fall back to a full store copy if the master misses
+  logs old enough to serve inremental updates on join
+
 1.9.7
 -----
 o Fixes issue where instance would deadlock if it was changing role during

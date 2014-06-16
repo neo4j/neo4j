@@ -1,3 +1,10 @@
+1.9.8
+-----
+o Adds version marking in election results, solving problems with
+  incorrect election outcomes and instances failiing to join the cluster
+o Slave only instances will not become coordinators under any
+  circumstances
+
 1.9.7
 -----
 o Adds INSTANCE_ID header to every message, solving class of problems where
