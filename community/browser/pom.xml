@@ -17,9 +17,7 @@
 
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
-
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/cypher-query-lang.html</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <attach-javadoc-phase>none</attach-javadoc-phase>
     <attach-docs-phase>none</attach-docs-phase>
@@ -121,9 +119,6 @@
               <execution>
                 <id>generate-dummy-javadocs-jar</id>
                 <phase>package</phase>
-                <goals>
-                  <goal>jar</goal>
-                </goals>
                 <configuration>
                   <classifier>javadoc</classifier>
                   <excludes>
@@ -146,11 +141,6 @@
       <url>http://m2.neo4j.org/content/repositories/releases/</url>
       <layout>default</layout>
     </repository>
-
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
   </distributionManagement>
 
 </project>

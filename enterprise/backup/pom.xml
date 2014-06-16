@@ -19,7 +19,6 @@
     <bundle.namespace>org.neo4j.backup</bundle.namespace>
     <short-name>backup</short-name>
     <version-package>backup.impl</version-package>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/operations-backup.html</docs.url>
   </properties>
 
   <scm>
@@ -117,33 +116,6 @@
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
-      <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <configuration>
-          <reportPlugins combine.children="append">
-            <plugin>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <configuration>
-                <detectJavaApiLink>true</detectJavaApiLink>
-                <detectLinks>true</detectLinks>
-                <quiet>true</quiet>
-                <excludePackageNames>*.impl.*</excludePackageNames>
-              </configuration>
-              <reports>
-                <report>javadoc</report>
-              </reports>
-            </plugin>
-          </reportPlugins>
-        </configuration>
-        <executions>
-          <execution>
-            <id>attach-descriptor</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
-
 </project>
-
