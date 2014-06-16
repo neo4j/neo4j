@@ -46,7 +46,6 @@
     <version-package>kernel.impl</version-package>
     <git.executable>git</git.executable>
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <git.directory>${project.basedir}/../../.git</git.directory>
   </properties>
@@ -164,65 +163,6 @@ the relevant Commercial Agreement.
             <version>1.8.4</version>
           </dependency>
         </dependencies>
-      </plugin>
-      <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <configuration>
-          <reportPlugins combine.children="append">
-            <plugin>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <configuration>
-                <additionnalDependencies>
-                  <additionnalDependency>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-classic</artifactId>
-                    <version>${logback-classic.version}</version>
-                  </additionnalDependency>
-                  <additionnalDependency>
-                    <groupId>ch.qos.logback</groupId>
-                    <artifactId>logback-core</artifactId>
-                    <version>${logback-classic.version}</version>
-                  </additionnalDependency>
-                  <additionnalDependency>
-                    <groupId>org.slf4j</groupId>
-                    <artifactId>slf4j-api</artifactId>
-                    <version>${slf4j-api.version}</version>
-                  </additionnalDependency>
-                </additionnalDependencies>
-                <detectJavaApiLink>true</detectJavaApiLink>
-                <detectLinks>true</detectLinks>
-                <quiet>true</quiet>
-                <excludePackageNames>org.neo4j.kernel,*.impl.*</excludePackageNames>
-                <groups>
-                  <group>
-                    <title>Graph database</title>
-                    <packages>org.neo4j.graphdb:org.neo4j.graphdb.*</packages>
-                  </group>
-                  <group>
-                    <title>Helpers</title>
-                    <packages>org.neo4j.helpers:org.neo4j.helpers.*</packages>
-                  </group>
-                  <group>
-                    <title>Tooling</title>
-                    <packages>org.neo4j.tooling:org.neo4j.tooling.*</packages>
-                  </group>
-                </groups>
-              </configuration>
-              <reports>
-                <report>javadoc</report>
-              </reports>
-            </plugin>
-            <plugin>
-              <groupId>org.codehaus.mojo</groupId>
-              <artifactId>clirr-maven-plugin</artifactId>
-              <configuration>
-                <includes>
-                  <include>org/neo4j/graphdb/**</include>
-                </includes>
-              </configuration>
-            </plugin>
-          </reportPlugins>
-        </configuration>
       </plugin>
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
@@ -409,12 +349,4 @@ the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
-
 </project>
