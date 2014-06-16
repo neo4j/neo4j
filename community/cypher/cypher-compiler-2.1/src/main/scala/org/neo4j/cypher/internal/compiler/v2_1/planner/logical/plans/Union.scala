@@ -17,16 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, QueryPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{UnionQuery, QueryGraph}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
+case class Union(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
+  def availableSymbols: Set[IdName] = left.availableSymbols
 
-trait PlanningStrategy {
-  def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): LogicalPlan
-}
+  def lhs: Option[LogicalPlan] = Some(left)
 
-trait QueryGraphSolver {
-  def plan(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): QueryPlan
+  def rhs: Option[LogicalPlan] = Some(right)
 }

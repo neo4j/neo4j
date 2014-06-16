@@ -24,6 +24,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, PatternRelationship}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Hint
 
+case class UnionQuery(queries: Seq[PlannerQuery], distinct: Boolean)
+
 case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
                         projection: QueryProjection = QueryProjection.empty,
                         tail: Option[PlannerQuery] = None) extends internalDocBuilder.AsPrettyToString {
