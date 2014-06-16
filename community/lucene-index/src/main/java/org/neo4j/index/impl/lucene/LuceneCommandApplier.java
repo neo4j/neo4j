@@ -40,11 +40,12 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
     private final Map<Byte, CommitContext> nodeContexts = new HashMap<>();
     private final Map<Byte, CommitContext> relationshipContexts = new HashMap<>();
     private IndexDefineCommand definitions;
-    // TODO 2.2-future dataSource.writeLock around a commit? The old thingie did that
+    private final boolean recovery;
 
-    public LuceneCommandApplier( LuceneDataSource dataSource )
+    public LuceneCommandApplier( LuceneDataSource dataSource, boolean recovery )
     {
         this.dataSource = dataSource;
+        this.recovery = recovery;
     }
 
     @Override
@@ -101,7 +102,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
     @Override
     public boolean visitIndexCreateCommand( CreateCommand createCommand ) throws IOException
     {
-        // TODO 2.2-future Indexes are created lazily, they always have been. We could create them here instead
+        // TODO Indexes are created lazily, they always have been. We could create them here instead
         // but that can be changed later.
         return true;
     }
@@ -110,6 +111,7 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
     public boolean visitIndexDefineCommand( IndexDefineCommand indexDefineCommand ) throws IOException
     {
         definitions = indexDefineCommand;
+        dataSource.getWriteLock();
         return true;
     }
 
@@ -131,6 +133,10 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         {
             throw new RuntimeException( "Failure to commit changes to lucene", e );
         }
+        finally
+        {
+            dataSource.releaseWriteLock();
+        }
     }
 
     private CommitContext commitContext( IndexCommand command )
@@ -143,10 +149,10 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
             IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.byId( command.getEntityType() ),
                      definitions.getIndexName( indexNameId ) );
 
-            // TODO 2.2-future the fact that we look up index type from config here using the index store
+            // TODO the fact that we look up index type from config here using the index store
             // directly should be avoided. But how can we do it in, say recovery?
             context = new CommitContext( dataSource, identifier,
-                    dataSource.getType( identifier, false ), false );   // TODO 2.2-future recovery=false
+                    dataSource.getType( identifier, recovery ), recovery );
             contextMap.put( indexNameId, context );
         }
         return context;

@@ -48,11 +48,13 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     private final ProviderLookup providerLookup;
     private final Map<String, NeoCommandHandler> providerAppliers = new HashMap<>();
     private final IndexConfigStore indexConfigStore;
+    private final boolean recovery;
 
-    public LegacyIndexApplier( IndexConfigStore indexConfigStore, ProviderLookup providerLookup )
+    public LegacyIndexApplier( IndexConfigStore indexConfigStore, ProviderLookup providerLookup, boolean recovery )
     {
         this.indexConfigStore = indexConfigStore;
         this.providerLookup = providerLookup;
+        this.recovery = recovery;
     }
 
     private NeoCommandHandler applier( IndexCommand command ) throws IOException
@@ -64,7 +66,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
         {
             IndexEntityType entityType = IndexEntityType.byId( command.getEntityType() );
             String providerName = indexConfigStore.get( entityType.entityClass(), indexName ).get( PROVIDER );
-            applier = providerLookup.lookup( providerName ).newApplier();
+            applier = providerLookup.lookup( providerName ).newApplier( recovery );
             applier.visitIndexDefineCommand( defineCommand );
             providerAppliers.put( indexName, applier );
         }

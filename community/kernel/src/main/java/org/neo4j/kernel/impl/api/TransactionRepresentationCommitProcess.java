@@ -105,7 +105,7 @@ public class TransactionRepresentationCommitProcess
             NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( indexingService,
                     labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess, propertyLoader );
             LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,
-                    legacyIndexProviderLookup );
+                    legacyIndexProviderLookup, recovery );
 
             try ( CommandApplierFacade applier = new CommandApplierFacade(
                     storeApplier, indexApplier, legacyIndexApplier ) )
@@ -128,7 +128,6 @@ public class TransactionRepresentationCommitProcess
         }
         finally
         {
-            // TODO 2.2-future transactionClosed call should be in a finally somewhere
             neoStore.transactionClosed( transactionId );
         }
     }

@@ -128,9 +128,9 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     }
 
     @Override
-    public NeoCommandHandler newApplier()
+    public NeoCommandHandler newApplier( boolean recovery )
     {
-        return new LuceneCommandApplier( dataSource );
+        return new LuceneCommandApplier( dataSource, recovery );
     }
 
     @Override

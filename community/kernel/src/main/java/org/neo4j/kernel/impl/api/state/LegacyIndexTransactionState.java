@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.api.state;
 
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -60,7 +59,8 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
 
     // Commands
     private IndexDefineCommand defineCommand;
-    private final Collection<IndexCommand> commands = new ArrayList<>();
+    private Map<String, List<IndexCommand>> nodeCommands;
+    private Map<String, List<IndexCommand>> relationshipCommands;
 
     public LegacyIndexTransactionState( IndexConfigStore indexConfigStore, ProviderLookup providerLookup )
     {
@@ -107,12 +107,24 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         if ( defineCommand != null )
         {
             target.add( defineCommand );
-            target.addAll( commands );
+            extractCommands( target, nodeCommands );
+            extractCommands( target, relationshipCommands );
         }
 
         for ( LegacyIndexProviderTransaction providerTransaction : transactions.values() )
         {
             providerTransaction.close();
+        }
+    }
+
+    private void extractCommands( List<Command> target, Map<String, List<IndexCommand>> commandMap )
+    {
+        if ( commandMap != null )
+        {
+            for ( List<IndexCommand> commands : commandMap.values() )
+            {
+                target.addAll( commands );
+            }
         }
     }
 
@@ -126,8 +138,48 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         return defineCommand;
     }
 
-    private void addCommand( IndexCommand command )
+    private void addCommand( String indexName, IndexCommand command )
     {
+        addCommand( indexName, command, false );
+    }
+
+    private void addCommand( String indexName, IndexCommand command, boolean clearFirst )
+    {
+        List<IndexCommand> commands = null;
+        if ( command.getEntityType() == IndexEntityType.Node.id() )
+        {
+            if ( nodeCommands == null )
+            {
+                nodeCommands = new HashMap<>();
+            }
+            commands = nodeCommands.get( indexName );
+            if ( commands == null )
+            {
+                nodeCommands.put( indexName, commands = new ArrayList<>() );
+            }
+        }
+        else if ( command.getEntityType() == IndexEntityType.Relationship.id() )
+        {
+            if ( nodeCommands == null )
+            {
+                nodeCommands = new HashMap<>();
+            }
+            commands = nodeCommands.get( indexName );
+            if ( commands == null )
+            {
+                nodeCommands.put( indexName, commands = new ArrayList<>() );
+            }
+        }
+        else
+        {
+            throw new IllegalArgumentException( "" + command.getEntityType() );
+        }
+
+        if ( clearFirst )
+        {
+            commands.clear();
+        }
+
         commands.add( command );
     }
 
@@ -137,7 +189,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         AddNodeCommand command = new AddNodeCommand();
         command.init( definitions().getOrAssignIndexNameId( indexName ),
                 id, definitions().getOrAssignKeyId( key ), value );
-        addCommand( command );
+        addCommand( indexName, command );
     }
 
     @Override
@@ -147,7 +199,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         AddRelationshipCommand command = new AddRelationshipCommand();
         command.init( definitions().getOrAssignIndexNameId( indexName ),
                 id, definitions().getOrAssignKeyId( key ), value, startNode, endNode );
-        addCommand( command );
+        addCommand( indexName, command );
     }
 
     @Override
@@ -157,7 +209,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         RemoveCommand command = new RemoveCommand();
         command.init( definitions().getOrAssignIndexNameId( indexName ),
                 IndexEntityType.Node.id(), id, definitions().getOrAssignKeyId( keyOrNull ), valueOrNull );
-        addCommand( command );
+        addCommand( indexName, command );
     }
 
     @Override
@@ -167,23 +219,21 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         RemoveCommand command = new RemoveCommand();
         command.init( definitions().getOrAssignIndexNameId( indexName ),
                 IndexEntityType.Relationship.id(), id, definitions().getOrAssignKeyId( keyOrNull ), valueOrNull );
-        addCommand( command );
+        addCommand( indexName, command );
     }
 
     public void deleteIndex( IndexEntityType entityType, String indexName )
     {
         DeleteCommand command = new DeleteCommand();
         command.init( definitions().getOrAssignIndexNameId( indexName ), entityType.id() );
-        addCommand( command );
-
-        // TODO also remove any previously added command for this index
+        addCommand( indexName, command, true );
     }
 
     public void createIndex( IndexEntityType entityType, String indexName, Map<String, String> config )
     {
         CreateCommand command = new CreateCommand();
         command.init( definitions().getOrAssignIndexNameId( indexName ), entityType.id(), config );
-        addCommand( command );
+        addCommand( indexName, command );
     }
 
     public boolean isReadOnly()

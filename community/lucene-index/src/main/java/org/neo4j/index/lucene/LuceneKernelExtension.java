@@ -27,6 +27,7 @@ import org.neo4j.index.impl.lucene.LuceneIndexImplementation;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class LuceneKernelExtension extends LifecycleAdapter
@@ -36,6 +37,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
     private final FileSystemAbstraction fileSystemAbstraction;
     private final IndexProviders indexProviders;
     private LuceneDataSource luceneDataSource;
+    private final LifeSupport life = new LifeSupport();
 
     public static abstract class Configuration
     {
@@ -54,10 +56,9 @@ public class LuceneKernelExtension extends LifecycleAdapter
     @Override
     public void start() throws Throwable
     {
-        luceneDataSource = new LuceneDataSource( config, indexStore, fileSystemAbstraction );
-        // TODO For <name>'s sake, don't do this here, do proper life cycle management. Just here for testing.
-        luceneDataSource.init();
-        luceneDataSource.start();
+        luceneDataSource = life.add( new LuceneDataSource( config, indexStore, fileSystemAbstraction ) );
+        // TODO Don't do this here, do proper life cycle management
+        life.start();
         LuceneIndexImplementation indexImplementation = new LuceneIndexImplementation( luceneDataSource );
         indexProviders.registerIndexProvider( LuceneIndexImplementation.SERVICE_NAME, indexImplementation );
     }
@@ -66,8 +67,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
     public void stop() throws Throwable
     {
         indexProviders.unregisterIndexProvider( LuceneIndexImplementation.SERVICE_NAME );
-        // TODO For <name>'s sake, don't do this here, do proper life cycle management. Just here for testing.
-        luceneDataSource.stop();
-        luceneDataSource.shutdown();
+        // TODO Don't do this here, do proper life cycle management
+        life.shutdown();
     }
 }

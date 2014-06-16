@@ -199,8 +199,6 @@ public class LegacyIndexStore
                 try
                 {
                     executorService.submit( new IndexCreatorJob( entityType, indexName, result.first() ) ).get();
-                    // TODO 2.2-future make sure this gets set by the transaction instead
-//                    indexStore.set( entityType.entityClass(), indexName, result.first() );
                     createdNow = true;
                 }
                 catch ( ExecutionException ex )

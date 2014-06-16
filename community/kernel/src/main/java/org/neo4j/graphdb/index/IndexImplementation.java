@@ -25,14 +25,17 @@ import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
- * A provider which can create and instantiate {@link Index}s.
+ * An index provider which can create and give access to index transaction state and means of applying
+ * updates to indexes it provides.
  * An {@link IndexImplementation} is typically tied to one implementation, f.ex.
  * lucene, http://lucene.apache.org/java.
  */
-// TODO Rename to LegacyIndexFactorySPI
 public interface IndexImplementation extends Lifecycle
 {
     /**
+     * Returns a {@link LegacyIndexProviderTransaction} that keeps transaction state for all
+     * indexes for a given provider in a transaction.
+     *
      * @param configuration that return a legacy index SPI for.
      * @return a {@link LegacyIndexSPI} which represents a type of index suitable for the
      * given configuration.
@@ -42,7 +45,7 @@ public interface IndexImplementation extends Lifecycle
     /**
      * @return an index applier that will get notifications about commands to apply.
      */
-    NeoCommandHandler newApplier();
+    NeoCommandHandler newApplier( boolean recovery );
 
     /**
      * Fills in default configuration parameters for indexes provided from this

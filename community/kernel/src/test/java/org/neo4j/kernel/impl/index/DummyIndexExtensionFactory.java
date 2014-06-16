@@ -98,7 +98,7 @@ public class DummyIndexExtensionFactory extends
     }
 
     @Override
-    public NeoCommandHandler newApplier()
+    public NeoCommandHandler newApplier( boolean recovery )
     {
         throw new UnsupportedOperationException( "Please implement" );
     }
