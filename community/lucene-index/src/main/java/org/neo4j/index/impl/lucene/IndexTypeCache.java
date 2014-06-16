@@ -51,7 +51,7 @@ class IndexTypeCache
             {
                 return null;
             }
-            throw new IllegalArgumentException( "Unknown index " + identifier );
+            throw new IllegalStateException( "Unknown index " + identifier );
         }
         type = Pair.of( config.hashCode(), IndexType.getIndexType( config ) );
         cache.put( identifier, type );
