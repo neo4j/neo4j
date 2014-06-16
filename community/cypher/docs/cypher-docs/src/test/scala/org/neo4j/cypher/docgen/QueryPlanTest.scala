@@ -389,4 +389,20 @@ class QueryPlanTest extends DocumentingTestBase {
       assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Apply"))
     )
   }
+
+  @Test def union() {
+    profileQuery(
+      title = "Union",
+      text =
+        "Union concatenates the results from the right plan after the results of the left plan.",
+      queryText =
+        """MATCH (p:Location)
+           RETURN p.name
+           UNION ALL
+           MATCH (p:Country)
+           RETURN p.name
+        """.stripMargin,
+      assertions = (p) => assertThat(p.executionPlanDescription().toString, containsString("Union"))
+    )
+  }
 }

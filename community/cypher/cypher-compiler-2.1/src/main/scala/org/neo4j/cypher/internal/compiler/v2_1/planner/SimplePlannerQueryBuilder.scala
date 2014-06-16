@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_1.{Rewriter, topDown}
@@ -179,7 +180,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
     patternExpressions.map { e => (e, extractQueryGraph(e)) }
   }
 
-  override def produce(ast: Query): QueryPlanInput = ast match {
+  override def produce(parsedQuery: Query): QueryPlanInput = parsedQuery match {
     case Query(None, SingleQuery(clauses)) =>
       val singleQueryPlanInput = produceQueryGraphFromClauses(SingleQueryPlanInput.empty, clauses)
       QueryPlanInput(
@@ -187,7 +188,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         patternInExpression = singleQueryPlanInput.patternExprTable
       )
 
-    case Query(None, u: Union) =>
+    case Query(None, u: ast.Union) =>
       val queries = u.unionedQueries
       val distinct = u match {
         case _: UnionAll      => false
@@ -209,7 +210,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
   }
 
   case class SingleQueryPlanInput(q: PlannerQuery, patternExprTable: Map[PatternExpression, QueryGraph])
-  
+
   private def produceQueryGraphFromClauses(input: SingleQueryPlanInput, clauses: Seq[Clause]): SingleQueryPlanInput =
     clauses match {
       case Return(false, ListedReturnItems(items), optOrderBy, skip, limit) :: tl =>

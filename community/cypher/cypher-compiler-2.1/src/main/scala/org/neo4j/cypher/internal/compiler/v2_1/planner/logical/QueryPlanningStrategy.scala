@@ -21,15 +21,20 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, QueryPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Union, LogicalPlan, QueryPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
 
   import QueryPlanProducer._
 
-  def plan(queries: UnionQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): LogicalPlan = queries match {
-    case UnionQuery(Seq(query), false) => planSingleQuery(query).plan
+  def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): LogicalPlan = unionQuery match {
+    case UnionQuery(queries, false) =>
+      val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p).plan)
+      logicalPlans.reduce[LogicalPlan] {
+        case (p1, p2) => Union(p1, p2)
+      }
+
     case _ => throw new CantHandleQueryException
   }
 
