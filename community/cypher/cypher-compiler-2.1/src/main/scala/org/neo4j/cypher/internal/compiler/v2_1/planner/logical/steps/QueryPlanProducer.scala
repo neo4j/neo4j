@@ -28,7 +28,6 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.SortDescription
 import org.neo4j.cypher.internal.compiler.v2_1.commands.QueryExpression
 import org.neo4j.cypher.internal.compiler.v2_1.ast
-import org.neo4j.cypher.internal.compiler.v2_1.planner.AggregationProjection
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
 object QueryPlanProducer {
@@ -42,7 +41,7 @@ object QueryPlanProducer {
     QueryPlan(
       Aggregation(left.plan, grouping, aggregation),
       left.solved.withProjection(
-        AggregationProjection(groupingKeys = grouping, aggregationExpressions = aggregation, Seq.empty, None, None)
+        projection = AggregatingQueryProjection(groupingKeys = grouping, aggregationExpressions = aggregation)
       )
     )
 
@@ -277,48 +276,49 @@ object QueryPlanProducer {
   def planStarProjection(inner: QueryPlan, expressions: Map[String, Expression]) =
     QueryPlan(
       inner.plan,
-      inner.solved.updateTailOrSelf(_.updateProjections(_.withProjections(expressions)))
+      inner.solved.updateTailOrSelf(_.updateHorizon(_.updateProjection(_.withProjections(expressions))))
     )
 
   def planRegularProjection(inner: QueryPlan, expressions: Map[String, Expression]) =
     QueryPlan(
       Projection(inner.plan, expressions),
-      inner.solved.updateTailOrSelf(_.updateProjections(_.withProjections(expressions)))
-    )
-
-  def planLimit(inner: QueryPlan, count: Expression) =
-    QueryPlan(
-      LimitPlan(inner.plan, count),
-      inner.solved.updateTailOrSelf(_.updateProjections(_.withLimit(Some(count))))
+      inner.solved.updateTailOrSelf(_.updateHorizon(_.updateProjection(_.withProjections(expressions))))
     )
 
   def planSkip(inner: QueryPlan, count: Expression) =
     QueryPlan(
       SkipPlan(inner.plan, count),
-      inner.solved.updateTailOrSelf(_.updateProjections(_.withSkip(Some(count))))
+      inner.solved.updateTailOrSelf(_.updateHorizon(_.updateProjection(_.updateShuffle(_.withSkip(Some(count))))))
+    )
+
+  def planLimit(inner: QueryPlan, count: Expression) =
+    QueryPlan(
+      LimitPlan(inner.plan, count),
+      inner.solved.updateTailOrSelf(_.updateHorizon(_.updateProjection(_.updateShuffle(_.withLimit(Some(count))))))
     )
 
   def planSort(inner: QueryPlan, descriptions: Seq[SortDescription], items: Seq[ast.SortItem]) =
     QueryPlan(
       Sort(inner.plan, descriptions),
-      inner.solved.updateTailOrSelf(_.updateProjections(_.withSortItems(items)))
+      inner.solved.updateTailOrSelf(_.updateHorizon(_.updateProjection(_.updateShuffle(_.withSortItems(items)))))
     )
 
   def planSortedLimit(inner: QueryPlan, limit: Expression, items: Seq[ast.SortItem]) =
     QueryPlan(
       SortedLimit(inner.plan, limit, items),
-      inner.solved.updateTailOrSelf(_.updateProjections(_.withSortItems(items).withLimit(Some(limit))))
+      inner.solved.updateTailOrSelf(_.updateHorizon(_.updateProjection(_.updateShuffle(
+        _.withLimit(Some(limit))
+         .withSortItems(items)))))
     )
 
   def planSortedSkipAndLimit(inner: QueryPlan, skip: Expression, limit: Expression, items: Seq[ast.SortItem]) =
     planSkip(
       QueryPlan(
         SortedLimit(inner.plan, ast.Add(limit, skip)(limit.position), items),
-        inner.solved.updateTailOrSelf(
-          _.updateProjections(
-            _.withSortItems(items)
-             .withLimit(Some(limit))
-          ))
+        inner.solved.updateTailOrSelf(_.updateHorizon(_.updateProjection(_.updateShuffle(
+          _.withSkip(Some(skip))
+           .withLimit(Some(limit))
+           .withSortItems(items)))))
       ),
       skip
     )

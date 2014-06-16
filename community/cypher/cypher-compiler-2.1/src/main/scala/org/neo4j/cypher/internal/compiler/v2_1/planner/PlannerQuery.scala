@@ -25,14 +25,15 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, Pa
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Hint
 
 case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
-                        projection: QueryProjection = QueryProjection.empty,
+                        horizon: QueryHorizon = QueryHorizon.empty,
                         tail: Option[PlannerQuery] = None) extends internalDocBuilder.AsPrettyToString {
   def withTail(newTail: PlannerQuery): PlannerQuery = tail match {
     case None => copy(tail = Some(newTail))
     case Some(_) => throw new InternalException("Attempt to set a second tail on a query graph")
   }
 
-  def withProjection(projection: QueryProjection): PlannerQuery = copy(projection = projection)
+  def withProjection(projection: QueryProjection): PlannerQuery = copy(horizon = QueryHorizon(projection = projection))
+  def withHorizon(horizon: QueryHorizon): PlannerQuery = copy(horizon = horizon)
   def withGraph(graph: QueryGraph): PlannerQuery = copy(graph = graph)
 
   def isCoveredByHints(other: PlannerQuery) = allHints.forall(other.allHints.contains)
@@ -48,7 +49,7 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
   }
 
   def updateGraph(f: QueryGraph => QueryGraph): PlannerQuery = withGraph(f(graph))
-  def updateProjections(f: QueryProjection => QueryProjection): PlannerQuery = withProjection(f(projection))
+  def updateHorizon(f: QueryHorizon => QueryHorizon): PlannerQuery = withHorizon(f(horizon))
   def updateTail(f: PlannerQuery => PlannerQuery) = tail match {
     case None            => this
     case Some(tailQuery) => copy(tail = Some(f(tailQuery)))
@@ -66,7 +67,7 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
   def ++(other: PlannerQuery): PlannerQuery =
     PlannerQuery(
       graph = graph ++ other.graph,
-      projection = projection ++ other.projection,
+      horizon = horizon ++ other.horizon,
       tail = either(tail, other.tail)
     )
 
@@ -78,8 +79,8 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
 
   // This is here to stop usage of copy from the outside
   private def copy(graph: QueryGraph = graph,
-                   projection: QueryProjection = projection,
-                   tail: Option[PlannerQuery] = tail) = PlannerQuery(graph, projection, tail)
+                   horizon: QueryHorizon = horizon,
+                   tail: Option[PlannerQuery] = tail) = PlannerQuery(graph, horizon, tail)
 }
 
 object PlannerQuery {
