@@ -213,6 +213,21 @@ public class SwitchToSlave
             xaDataSourceManager.applyTransactions( checkConsistencyMaster.pullUpdates( context ) );
             console.log( "Now consistent with master" );
         }
+        catch ( NoSuchLogVersionException e )
+        {
+            msgLog.logMessage( "Cannot catch up to master by pulling updates, because I cannot find the archived " +
+                    "logical log file that has the transaction I would start from. I'm going to copy the whole " +
+                    "store from the master instead." );
+            try
+            {
+                stopServicesAndHandleBranchedStore( config.get( HaSettings.branched_data_policy ) );
+            }
+            catch ( Throwable throwable )
+            {
+                msgLog.warn( "Failed preparing for copying the store from the master instance", throwable );
+            }
+            throw e;
+        }
         catch ( StoreUnableToParticipateInClusterException upe )
         {
             console.log( "The store is inconsistent. Will treat it as branched and fetch a new one from the master" );
@@ -388,23 +403,13 @@ public class SwitchToSlave
     }
 
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master, NeoStoreXaDataSource nioneoDataSource )
+            throws NoSuchLogVersionException
     {
         long myLastCommittedTx = nioneoDataSource.getLastCommittedTxId();
         Pair<Integer, Long> myMaster;
         try
         {
             myMaster = nioneoDataSource.getMasterForCommittedTx( myLastCommittedTx );
-        }
-        catch ( NoSuchLogVersionException e )
-        {
-            msgLog.logMessage(
-                    "Logical log file for txId "
-                            + myLastCommittedTx
-                            + " missing [version="
-                            + e.getVersion()
-                            + "]. If this is startup then it will be recovered later, " +
-                            "otherwise it might be a problem." );
-            return;
         }
         catch ( IOException e )
         {

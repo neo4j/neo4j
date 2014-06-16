@@ -25,7 +25,7 @@
   </properties>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/enterprise/consistency-check</url>
+    <url>https://github.com/neo4j/neo4j/tree/master/enterprise/consistency-check</url>
   </scm>
 
   <licenses>
@@ -126,4 +126,3 @@ terms of the relevant Commercial Agreement.
   </build>
 
 </project>
-

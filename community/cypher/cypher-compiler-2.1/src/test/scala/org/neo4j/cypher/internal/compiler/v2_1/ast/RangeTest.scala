@@ -29,9 +29,9 @@ class RangeTest extends Assertions {
   @Test
   def shouldBeSingleLengthOnlyWhenUpperAndLowerAre1() {
     val position = DummyPosition(0)
-    assertTrue(Range(Some(UnsignedIntegerLiteral("1")(DummyPosition(0))), Some(UnsignedIntegerLiteral("1")(DummyPosition(4))))(position).isSingleLength)
-    assertFalse(Range(None, Some(UnsignedIntegerLiteral("1")(DummyPosition(4))))(position).isSingleLength)
-    assertFalse(Range(Some(UnsignedIntegerLiteral("1")(DummyPosition(0))), None)(position).isSingleLength)
-    assertFalse(Range(Some(UnsignedIntegerLiteral("1")(DummyPosition(0))), Some(UnsignedIntegerLiteral("2")(DummyPosition(4))))(position).isSingleLength)
+    assertTrue(Range(Some(UnsignedDecimalIntegerLiteral("1")(DummyPosition(0))), Some(UnsignedDecimalIntegerLiteral("1")(DummyPosition(4))))(position).isSingleLength)
+    assertFalse(Range(None, Some(UnsignedDecimalIntegerLiteral("1")(DummyPosition(4))))(position).isSingleLength)
+    assertFalse(Range(Some(UnsignedDecimalIntegerLiteral("1")(DummyPosition(0))), None)(position).isSingleLength)
+    assertFalse(Range(Some(UnsignedDecimalIntegerLiteral("1")(DummyPosition(0))), Some(UnsignedDecimalIntegerLiteral("2")(DummyPosition(4))))(position).isSingleLength)
   }
 }

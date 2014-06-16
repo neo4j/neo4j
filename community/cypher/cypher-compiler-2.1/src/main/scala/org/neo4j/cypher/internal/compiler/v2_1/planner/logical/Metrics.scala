@@ -52,12 +52,16 @@ case class Cost(gummyBears: Double) extends Ordered[Cost] {
 case class Cardinality(amount: Double) extends Ordered[Cardinality] {
   def compare(that: Cardinality) = amount.compare(that.amount)
   def *(that: Multiplier) = Cardinality(amount * that.coefficient)
+  def +(that: Cardinality) = Cardinality(amount + that.amount)
   def *(that: Cardinality) = Cardinality(amount * that.amount)
   def *(that: CostPerRow) = Cost(amount * that.cost)
   def *(that: Cost) = Cost(amount * that.gummyBears)
+  def map(f: Double => Double) = Cardinality(f(amount))
 }
 
-case class CostPerRow(cost: Double)
+case class CostPerRow(cost: Double) {
+  def +(other: CostPerRow) = CostPerRow(cost + other.cost)
+}
 
 case class Multiplier(coefficient: Double) {
   def +(other: Multiplier): Multiplier = Multiplier(other.coefficient + coefficient)

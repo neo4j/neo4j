@@ -36,14 +36,14 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           left = planStarProjection(
             planLimit(
               planAllNodesScan("a"),
-              UnsignedIntegerLiteral("1") _
+              UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"))
           ),
           right = planSingleRow()
         ),
-        Map[String, Expression]("b" -> SignedIntegerLiteral("1") _)
-      ).plan
+        Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1") _)
+      )
 
     result should equal(expected)
   }
@@ -61,20 +61,20 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                 planStarProjection(
                   planLimit(
                     planAllNodesScan("a"),
-                    UnsignedIntegerLiteral("1") _
+                    UnsignedDecimalIntegerLiteral("1") _
                   ),
                   Map[String, Expression]("a" -> ident("a"))
                 ),
                 planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
               ),
-              UnsignedIntegerLiteral("1") _
+              UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"), "b" -> ident("b"), "r1" -> ident("r1"))
           ),
           planSingleRow()
         ),
         Map[String, Expression]("b" -> ident("b"))
-      ).plan
+      )
 
     result should equal(expected)
   }
@@ -88,17 +88,17 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           planStarProjection(
             planLimit(
               planAllNodesScan("a"),
-              UnsignedIntegerLiteral("1") _
+              UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"))
           ),
           planSelection(
-            Seq(Equals(Property(Identifier("r1") _, PropertyKeyName("prop") _) _, SignedIntegerLiteral("42") _) _),
+            Seq(In(Property(Identifier("r1") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
             planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
           )
         ),
         Map[String, Expression]("r1" -> ident("r1"))
-      ).plan
+      )
 
     result should equal(expected)
   }
@@ -113,7 +113,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           planStarProjection(
             planLimit(
               planAllNodesScan("a"),
-              UnsignedIntegerLiteral("1") _
+              UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"))
           ),
@@ -123,7 +123,7 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
           )
         ),
         Map[String, Expression]("b" -> ident("b"))
-      ).plan
+      )
 
     result should equal(expected)
   }

@@ -23,9 +23,9 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
-import Metrics._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Collection
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
+import Metrics._
 
 class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
@@ -37,6 +37,7 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
   val LABEL_INDEX_OVERHEAD_COST_PER_ROW        = CostPerRow(2.0)
   val SORT_COST_PER_ROW                        = CostPerRow(0.01)
   val STORE_ACCESS_COST_PER_ROW                = CostPerRow(1)
+  val DIJKSTRA_OVERHEAD                        = CostPerRow(0.05)
 
   def apply(plan: LogicalPlan): Cost = plan match {
     case _: SingleRow =>
@@ -136,6 +137,15 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       cost(outerJoin.right) +
       cardinality(outerJoin.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
       cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
+
+    case shortestPath: FindShortestPaths =>
+      // TODO: shortest path should take two childs
+      val sqNodes = cardinality(shortestPath.left)
+      val nodes = sqNodes.map(Math.sqrt)
+      val edges = sqNodes * GuessingEstimation.DEFAULT_CONNECTIVITY_CHANCE
+      val storeCost = (sqNodes + edges) * STORE_ACCESS_COST_PER_ROW
+      val dijkstraCost = sqNodes * edges.map(Math.log) * DIJKSTRA_OVERHEAD
+      cost(shortestPath.left) + dijkstraCost + storeCost
 
     case s@Sort(input, _) =>
       cost(input) +

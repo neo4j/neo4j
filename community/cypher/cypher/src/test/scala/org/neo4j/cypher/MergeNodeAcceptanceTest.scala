@@ -19,80 +19,73 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
 import org.neo4j.graphdb.Node
 
-class MergeNodeAcceptanceTest
-  extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport {
+class MergeNodeAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport {
 
-  @Test
-  def merge_node_when_no_nodes_exist() {
+  test("merge_node_when_no_nodes_exist") {
     // When
     val result = execute("merge (a) return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
 
-    assert(createdNodes.size === 1)
+    createdNodes should have size 1
     assertStats(result, nodesCreated = 1)
   }
 
-  @Test
-  def merge_node_with_label() {
+  test("merge_node_with_label") {
     // When
     val result = execute("merge (a:Label) return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
 
-    assert(createdNodes.size === 1)
+    createdNodes should have size 1
     assertStats(result, nodesCreated = 1, labelsAdded = 1)
 
     graph.inTx {
       createdNodes.foreach {
-        n => assert(n.labels === List("Label"))
+        n => n.labels should equal(List("Label"))
       }
     }
   }
 
-  @Test
-  def merge_node_with_label_add_label_on_create() {
+  test("merge_node_with_label_add_label_on_create") {
     // When
     val result = execute("merge (a:Label) on create set a:Foo return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
 
-    assert(createdNodes.size === 1)
+    createdNodes should have size 1
     assertStats(result, nodesCreated = 1, labelsAdded = 2)
 
     graph.inTx {
       createdNodes.foreach {
-        n => assert(n.labels.toSet === Set("Label", "Foo"))
+        n => n.labels.toSet should equal(Set("Label", "Foo"))
       }
     }
   }
 
-  @Test
-  def merge_node_with_label_add_property_on_update() {
+  test("merge_node_with_label_add_property_on_update") {
     // When
     val result = execute("merge (a:Label) on create set a.prop = 42 return a")
 
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
 
-    assert(createdNodes.size === 1)
+    createdNodes should have size 1
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
 
     graph.inTx {
       createdNodes.foreach {
-        n => assert(n.getProperty("prop") === 42)
+        n => n.getProperty("prop") should equal(42)
       }
     }
   }
 
-  @Test
-  def merge_node_with_label_when_it_exists() {
+  test("merge_node_with_label_when_it_exists") {
     // Given
     val existingNode = createLabeledNode("Label")
 
@@ -102,12 +95,11 @@ class MergeNodeAcceptanceTest
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
 
-    assert(createdNodes === List(existingNode))
+    createdNodes should equal(List(existingNode))
     assertStats(result, nodesCreated = 0)
   }
 
-  @Test
-  def merge_node_with_label_add_label_on_create_when_it_exists() {
+  test("merge_node_with_label_add_label_on_create_when_it_exists") {
     // Given
     val existingNode = createLabeledNode("Label")
 
@@ -117,12 +109,11 @@ class MergeNodeAcceptanceTest
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
 
-    assert(createdNodes === List(existingNode))
+    createdNodes should equal(List(existingNode))
     assertStats(result, nodesCreated = 0, labelsAdded = 1)
   }
 
-  @Test
-  def merge_node_with_label_add_property_on_update_when_it_exists() {
+  test("merge_node_with_label_add_property_on_update_when_it_exists") {
     // Given
     val existingNode = createLabeledNode("Label")
 
@@ -132,11 +123,10 @@ class MergeNodeAcceptanceTest
     // Then
     val createdNodes = result.columnAs[Node]("a").toList
 
-    assert(createdNodes === List(existingNode))
+    createdNodes should equal(List(existingNode))
   }
 
-  @Test
-  def merge_node_and_set_property_on_match() {
+  test("merge_node_and_set_property_on_match") {
     // Given
     val existingNode = createLabeledNode("Label")
 
@@ -144,11 +134,12 @@ class MergeNodeAcceptanceTest
     execute("merge (a:Label) on match set a.prop = 42 return a")
 
     // Then
-    assertInTx(existingNode.getProperty("prop") === 42)
+    graph.inTx{
+      existingNode.getProperty("prop") should equal(42)
+    }
   }
 
-  @Test
-  def merge_node_should_match_properties_given_ad_map() {
+  test("merge_node_should_match_properties_given_ad_map") {
     // Given
     val existingNode = createLabeledNode(Map("prop" -> 42), "Label")
 
@@ -157,11 +148,10 @@ class MergeNodeAcceptanceTest
 
     // Then
     assertStats(result, nodesCreated = 0)
-    assert(result.columnAs[Node]("a").toList === List(existingNode))
+    result.columnAs[Node]("a").toList should equal(List(existingNode))
   }
 
-  @Test
-  def merge_node_should_create_a_node_with_given_properties_when_no_match_is_found() {
+  test("merge_node_should_create_a_node_with_given_properties_when_no_match_is_found") {
     // Given - a node that does not match
     val other = createLabeledNode(Map("prop" -> 666), "Label")
 
@@ -171,14 +161,15 @@ class MergeNodeAcceptanceTest
     // Then
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
     val nodes = result.columnAs[Node]("a").toList
-    assert(nodes.size === 1)
+    nodes should have size 1
     val a = nodes.head
-    assertInTx(a.getProperty("prop") === 42)
-    assertInTx(other.getProperty("prop") === 666)
+    graph.inTx {
+      a.getProperty("prop") should equal(42)
+      other.getProperty("prop") should equal(666)
+    }
   }
 
-  @Test
-  def merge_using_unique_constraint_should_update_existing_node() {
+  test("merge_using_unique_constraint_should_update_existing_node") {
     // given
     graph.createConstraint("Person", "id")
     val node = createLabeledNode("Person")
@@ -192,14 +183,15 @@ class MergeNodeAcceptanceTest
       executeScalar[Node]("merge (a:Person {id: 23, country: 'Sweden'}) on match set a.name='Emil' return a")
 
     // then
-    assert(1 === countNodes())
-    assertInTx(node.getId === result.getId)
-    assertInTx("Sweden" === result.getProperty("country"))
-    assertInTx("Emil" === result.getProperty("name"))
+    countNodes() should equal(1)
+    graph.inTx {
+      result.getId should equal(node.getId)
+      result.getProperty("country") should equal("Sweden")
+      result.getProperty("name") should equal("Emil")
+    }
   }
 
-  @Test
-  def merge_using_unique_constraint_should_create_missing_node() {
+  test("merge_using_unique_constraint_should_create_missing_node") {
     // given
     graph.createConstraint("Person", "id")
 
@@ -208,14 +200,15 @@ class MergeNodeAcceptanceTest
       executeScalar[Node]("merge (a:Person {id: 23, country: 'Sweden'}) on create set a.name='Emil' return a")
 
     // then
-    assert(1 === countNodes())
-    assertInTx(23 === result.getProperty("id"))
-    assertInTx("Sweden" === result.getProperty("country"))
-    assertInTx("Emil" === result.getProperty("name"))
+    countNodes() should equal(1)
+    graph.inTx {
+      result.getProperty("id") should equal(23)
+      result.getProperty("country") should equal("Sweden")
+      result.getProperty("name") should equal("Emil")
+    }
   }
 
-  @Test
-  def should_match_on_merge_using_multiple_unique_indexes_if_only_found_single_node_for_both_indexes() {
+  test("should_match_on_merge_using_multiple_unique_indexes_if_only_found_single_node_for_both_indexes") {
     // given
     graph.createConstraint("Person", "id")
     graph.createConstraint("Person", "mail")
@@ -227,14 +220,15 @@ class MergeNodeAcceptanceTest
       executeScalar[Node]("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
 
     // then
-    assert(1 === countNodes())
-    assertInTx(23 === result.getProperty("id"))
-    assertInTx("emil@neo.com" === result.getProperty("mail"))
-    assertInTx("Sweden" === result.getProperty("country"))
+    countNodes() should equal(1)
+    graph.inTx {
+      result.getProperty("id") should equal(23)
+      result.getProperty("mail") should equal("emil@neo.com")
+      result.getProperty("country") should equal("Sweden")
+    }
   }
 
-  @Test
-  def should_match_on_merge_using_multiple_unique_indexes_and_labels_if_only_found_single_node_for_both_indexes() {
+  test("should_match_on_merge_using_multiple_unique_indexes_and_labels_if_only_found_single_node_for_both_indexes") {
     // given
     graph.createConstraint("Person", "id")
     graph.createConstraint("User", "mail")
@@ -246,14 +240,15 @@ class MergeNodeAcceptanceTest
       executeScalar[Node]("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on match set a.country='Sweden' return a")
 
     // then
-    assert(1 === countNodes())
-    assertInTx(23 === result.getProperty("id"))
-    assertInTx("emil@neo.com" === result.getProperty("mail"))
-    assertInTx("Sweden" === result.getProperty("country"))
+    countNodes() should equal(1)
+    graph.inTx {
+      result.getProperty("id") should equal(23)
+      result.getProperty("mail") should equal("emil@neo.com")
+      result.getProperty("country") should equal("Sweden")
+    }
   }
 
-  @Test
-  def should_match_on_merge_using_multiple_unique_indexes_using_same_key_if_only_found_single_node_for_both_indexes() {
+  test("should_match_on_merge_using_multiple_unique_indexes_using_same_key_if_only_found_single_node_for_both_indexes") {
     // given
     graph.createConstraint("Person", "id")
     graph.createConstraint("User", "id")
@@ -265,13 +260,14 @@ class MergeNodeAcceptanceTest
       executeScalar[Node]("merge (a:Person:User {id: 23}) on match set a.country='Sweden' return a")
 
     // then
-    assert(1 === countNodes())
-    assertInTx(23 === result.getProperty("id"))
-    assertInTx("Sweden" === result.getProperty("country"))
+    countNodes() should equal(1)
+    graph.inTx {
+      result.getProperty("id") should equal(23)
+      result.getProperty("country") should equal("Sweden")
+    }
   }
 
-  @Test
-  def should_fail_on_merge_using_multiple_unique_indexes_using_same_key_if_found_different_nodes() {
+  test("should_fail_on_merge_using_multiple_unique_indexes_using_same_key_if_found_different_nodes") {
     // given
     graph.createConstraint("Person", "id")
     graph.createConstraint("User", "id")
@@ -281,11 +277,10 @@ class MergeNodeAcceptanceTest
 
     // when + then
     intercept[MergeConstraintConflictException](executeScalar[Node]("merge (a:Person:User {id: 23}) return a"))
-    assert(2 === countNodes())
+    countNodes() should equal(2)
   }
 
-  @Test
-  def should_create_on_merge_using_multiple_unique_indexes_if_found_no_nodes() {
+  test("should_create_on_merge_using_multiple_unique_indexes_if_found_no_nodes") {
     // given
     graph.createConstraint("Person", "id")
     graph.createConstraint("Person", "mail")
@@ -295,15 +290,16 @@ class MergeNodeAcceptanceTest
       executeScalar[Node]("merge (a:Person {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
 
     // then
-    assert(1 === countNodes())
-    assertInTx(23 === result.getProperty("id"))
-    assertInTx("emil@neo.com" === result.getProperty("mail"))
-    assertInTx("Sweden" === result.getProperty("country"))
-    assert(Set("Person") === labels(result))
+    countNodes() should equal(1)
+    labels(result) should equal(Set("Person"))
+    graph.inTx {
+      result.getProperty("id") should equal(23)
+      result.getProperty("country") should equal("Sweden")
+      result.getProperty("mail") should equal("emil@neo.com")
+    }
   }
 
-  @Test
-  def should_create_on_merge_using_multiple_unique_indexes_and_labels_if_found_no_nodes() {
+  test("should_create_on_merge_using_multiple_unique_indexes_and_labels_if_found_no_nodes") {
     // given
     graph.createConstraint("Person", "id")
     graph.createConstraint("User", "mail")
@@ -313,15 +309,16 @@ class MergeNodeAcceptanceTest
       executeScalar[Node]("merge (a:Person:User {id: 23, mail: 'emil@neo.com'}) on create set a.country='Sweden' return a")
 
     // then
-    assert(1 === countNodes())
-    assertInTx(23 === result.getProperty("id"))
-    assertInTx("emil@neo.com" === result.getProperty("mail"))
-    assertInTx("Sweden" === result.getProperty("country"))
-    assert(Set("Person", "User") === labels(result))
+    countNodes() should equal(1)
+    labels(result) should equal(Set("Person", "User"))
+    graph.inTx {
+      result.getProperty("id") should equal(23)
+      result.getProperty("country") should equal("Sweden")
+      result.getProperty("mail") should equal("emil@neo.com")
+    }
   }
 
-  @Test
-  def should_fail_on_merge_using_multiple_unique_indexes_if_found_different_nodes() {
+  test("should_fail_on_merge_using_multiple_unique_indexes_if_found_different_nodes") {
     // given
     graph.createConstraint("Person", "id")
     graph.createConstraint("Person", "mail")
@@ -333,11 +330,10 @@ class MergeNodeAcceptanceTest
       "merge (a:Person {id: 23, mail: 'emil@neo.com'}) return a") messageContains
       "Merge did not find a matching node and can not create a new node due to conflicts with existing unique nodes. The conflicting constraints are on: :Person.id and :Person.mail"
 
-    assert(2 === countNodes())
+    countNodes() should equal(2)
   }
 
-  @Test
-  def should_fail_on_merge_using_multiple_unique_indexes_if_it_found_a_node_matching_single_property_only() {
+  test("should_fail_on_merge_using_multiple_unique_indexes_if_it_found_a_node_matching_single_property_only") {
     // given
     graph.createConstraint("Person", "id")
     graph.createConstraint("Person", "mail")
@@ -348,11 +344,11 @@ class MergeNodeAcceptanceTest
     runAndFail[MergeConstraintConflictException](
       "merge (a:Person {id: 23, mail: 'emil@neo.com'}) return a") messageContains
       "Merge did not find a matching node and can not create a new node due to conflicts with both existing and missing unique nodes. The conflicting constraints are on: :Person.id and :Person.mail"
-    assert(1 === countNodes())
+
+    countNodes() should equal(1)
   }
 
-  @Test
-  def should_fail_on_merge_using_multiple_unique_indexes_and_labels_if_found_different_nodes() {
+  test("should_fail_on_merge_using_multiple_unique_indexes_and_labels_if_found_different_nodes") {
     // given
     graph.createConstraint("Person", "id")
     graph.createConstraint("User", "mail")
@@ -366,11 +362,10 @@ class MergeNodeAcceptanceTest
       "Merge did not find a matching node and can not create a new node due to conflicts with existing unique nodes. The conflicting constraints are on: :Person.id and :User.mail"
 
     // then
-    assert(2 === countNodes())
+    countNodes() should equal(2)
   }
 
-  @Test
-  def should_handle_running_merge_inside_a_foreach_loop() {
+  test("should_handle_running_merge_inside_a_foreach_loop") {
     // given an empty database
 
     // when
@@ -380,8 +375,7 @@ class MergeNodeAcceptanceTest
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
   }
 
-  @Test
-  def unrelated_nodes_with_same_property_should_not_clash() {
+  test("unrelated_nodes_with_same_property_should_not_clash") {
     // given
     graph.createConstraint("Person", "id")
     execute("MERGE (a:Item {id:1}) MERGE (b:Person {id:1})")
@@ -392,8 +386,7 @@ class MergeNodeAcceptanceTest
     // then does not throw
   }
 
-  @Test
-  def works_fine_with_index() {
+  test("works_fine_with_index") {
     // given
     execute("create index on :Person(name)")
 
@@ -404,8 +397,7 @@ class MergeNodeAcceptanceTest
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 1)
   }
 
-  @Test
-  def works_with_index_and_constraint() {
+  test("works_with_index_and_constraint") {
     // given
     execute("create index on :Person(name)")
     graph.createConstraint("Person", "id")
@@ -417,8 +409,7 @@ class MergeNodeAcceptanceTest
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 2)
   }
 
-  @Test
-  def works_with_indexed_and_unindexed_property() {
+  test("works_with_indexed_and_unindexed_property") {
     // given
     execute("create index on :Person(name)")
 
@@ -429,8 +420,7 @@ class MergeNodeAcceptanceTest
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 2)
   }
 
-  @Test
-  def works_with_two_indexed_properties() {
+  test("works_with_two_indexed_properties") {
     // given
     execute("create index on :Person(name)")
     execute("create index on :Person(id)")
@@ -442,8 +432,7 @@ class MergeNodeAcceptanceTest
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 2)
   }
 
-  @Test
-  def works_with_property_repeated_in_literal_map_in_set() {
+  test("works_with_property_repeated_in_literal_map_in_set") {
     // given
     graph.createConstraint("Person","ssn")
 
@@ -454,8 +443,7 @@ class MergeNodeAcceptanceTest
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 3/*should really be 2!*/)
   }
 
-  @Test
-  def works_with_property_in_map_that_gets_set() {
+  test("works_with_property_in_map_that_gets_set") {
     // given
     graph.createConstraint("Person","ssn")
 
@@ -467,12 +455,11 @@ class MergeNodeAcceptanceTest
     assertStats(result, nodesCreated = 1, labelsAdded = 1, propertiesSet = 3/*should really be 2!*/)
   }
 
-  @Test def should_work_when_finding_multiple_elements() {
+  test("should_work_when_finding_multiple_elements") {
     assertStats(execute( "CREATE (:X) CREATE (:X) MERGE (:X)"), nodesCreated = 2, labelsAdded = 2)
   }
 
-  @Test
-  def should_support_updates_while_merging() {
+  test("should_support_updates_while_merging") {
     (0 to 2) foreach(x =>
       (0 to 2) foreach( y=>
         createNode("x"->x, "y"->y)

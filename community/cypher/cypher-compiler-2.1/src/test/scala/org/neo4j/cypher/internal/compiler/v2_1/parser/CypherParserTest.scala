@@ -1191,6 +1191,16 @@ class CypherParserTest extends CypherFunSuite {
     )
   }
 
+  test("testShortestPathWithMaxDepth and rel iterator") {
+    expectQuery(
+      """start a=node(0), b=node(1) match p = shortestPath( a-[r*..6]->b ) return p""",
+      Query.
+        start(NodeById("a", 0), NodeById("b", 1)).
+        matches(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, Some(6), single = true, Some("r"))).
+        returns(ReturnItem(Identifier("p"), "p"))
+    )
+  }
+
   test("testShortestPathWithType") {
     expectQuery(
       """start a=node(0), b=node(1) match p = shortestPath( a-[:KNOWS*..6]->b ) return p""",
@@ -2924,10 +2934,15 @@ class CypherParserTest extends CypherFunSuite {
 
   test("test literal numbers") {
     expectQuery(
-      "RETURN 0.5, .5, 50",
+      "RETURN 0.5, .5, 50, -0.3, -33, 1E-10, -4.5E23, 0x45fd, -0xdc5e",
       Query.
         matches().
-        returns(ReturnItem(Literal(0.5), "0.5"), ReturnItem(Literal(0.5), ".5"), ReturnItem(Literal(50), "50"))
+        returns(
+          ReturnItem(Literal(0.5), "0.5"), ReturnItem(Literal(0.5), ".5"), ReturnItem(Literal(50), "50"),
+          ReturnItem(Literal(-0.3), "-0.3"), ReturnItem(Literal(-33), "-33"),
+          ReturnItem(Literal(1E-10), "1E-10"), ReturnItem(Literal(-4.5E23), "-4.5E23"),
+          ReturnItem(Literal(0x45fd), "0x45fd"), ReturnItem(Literal(-0xdc5e), "-0xdc5e")
+        )
     )
   }
 

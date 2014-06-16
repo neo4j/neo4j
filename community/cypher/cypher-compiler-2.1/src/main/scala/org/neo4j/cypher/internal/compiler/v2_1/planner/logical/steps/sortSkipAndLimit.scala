@@ -24,14 +24,14 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.FreshIdNameGenerator
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Descending, Ascending, SortDescription}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.PlannerQuery
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
-object sortSkipAndLimit {
+object sortSkipAndLimit extends PlanTransformer[PlannerQuery] {
 
   import QueryPlanProducer._
 
-  def apply(plan: QueryPlan)(implicit context: LogicalPlanningContext): QueryPlan = {
-    val query = context.query
+  def apply(plan: QueryPlan, query: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = {
     val projection = query.projection
 
     val producedPlan = (projection.sortItems.toList, projection.skip, projection.limit) match {

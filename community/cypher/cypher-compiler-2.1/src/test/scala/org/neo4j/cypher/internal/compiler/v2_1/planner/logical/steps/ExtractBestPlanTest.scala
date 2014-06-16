@@ -24,8 +24,11 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
+  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   test("should throw when finding plan that does not solve all selections") {
     val query = PlannerQuery(
@@ -35,13 +38,12 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       )
     )
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
-      planContext = newMockedPlanContext,
-      query = query)
+      planContext = newMockedPlanContext)
     val plan = newMockedQueryPlan("b")
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))
 
     evaluating {
-      verifyBestPlan(planTable.uniquePlan)
+      verifyBestPlan(planTable.uniquePlan, query)
     } should produce[CantHandleQueryException]
   }
 
@@ -54,14 +56,13 @@ class ExtractBestPlanTest extends CypherFunSuite with LogicalPlanningTestSupport
       )
     )
     implicit val logicalPlanContext = newMockedLogicalPlanningContext(
-      planContext= newMockedPlanContext,
-      query = query
+      planContext= newMockedPlanContext
     )
     val plan = newMockedQueryPlan("b")
     val planTable = PlanTable(Map(Set(IdName("a")) -> plan))
 
     evaluating {
-      verifyBestPlan(planTable.uniquePlan)
+      verifyBestPlan(planTable.uniquePlan, query)
     } should produce[CantHandleQueryException]
   }
 }

@@ -20,10 +20,11 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 case class PlanningStrategyConfiguration(
   leafPlanners: LeafPlannerList,
-  applySelections: PlanTransformer,
+  applySelections: PlanTransformer[QueryGraph],
   pickBestCandidate: CandidateSelector
 )
 

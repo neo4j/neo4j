@@ -66,8 +66,7 @@ class PipeLazynessTest(pipe: Pipe, iter: LazyIterator[_]) extends GraphDatabaseJ
   }
 
   @After
-  def cleanup()
-  {
+  def cleanup() {
     if(tx != null) tx.close()
   }
 }
@@ -182,7 +181,9 @@ object PipeLazynessTest extends MockitoSugar {
   private def shortestPathPipe = {
     val shortestPath = ShortestPath(pathName = "p", left = SingleNode("start"), right = SingleNode("end"), relTypes = Seq.empty,
       dir = Direction.OUTGOING, maxDepth = None, single = true, relIterator = None)
-    val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("start" -> null, "end" -> null))
+    val n1 = mock[Node]
+    when(n1.getRelationships).thenReturn(Iterable.empty[Relationship].asJava)
+    val iter = new LazyIterator[Map[String, Any]](10, (_) => Map("start" -> n1, "end" -> n1))
     val src = new FakePipe(iter, "start" -> CTNode, "end" -> CTNode)
     val pipe = new ShortestPathPipe(src, shortestPath)
     Seq(pipe, iter)

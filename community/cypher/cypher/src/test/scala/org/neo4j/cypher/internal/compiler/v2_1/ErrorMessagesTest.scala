@@ -399,6 +399,13 @@ class ErrorMessagesTest extends ExecutionEngineFunSuite with StringHelper {
     )
   }
 
+  test("should forbid 'RETURN *' when there are no identifiers in scope") {
+    expectError(
+      "match () return *",
+      "RETURN * is not allowed when there are no identifiers in scope"
+    )
+  }
+
   def expectError(query: String, expectedError: String) {
     val error = intercept[CypherException](executeQuery(query))
     assertThat(error.getMessage, containsString(expectedError))

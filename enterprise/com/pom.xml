@@ -22,7 +22,7 @@
   </properties>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/enterprise/com</url>
+    <url>https://github.com/neo4j/neo4j/tree/master/enterprise/com</url>
   </scm>
 
   <licenses>
@@ -166,4 +166,3 @@
   </dependencies>
 
 </project>
-

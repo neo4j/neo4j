@@ -42,7 +42,12 @@ case class Selections(predicates: Set[Predicate] = Set.empty)
 
   def patternPredicatesGiven(ids: Set[IdName]): Seq[Expression] = predicatesGiven(ids).filter(containsPatternPredicates)
 
-  private def containsPatternPredicates(e: Expression) = e.exists { case _:PatternExpression => true }
+  private def containsPatternPredicates(e: Expression): Boolean = e match {
+    case _: PatternExpression      => true
+    case Not(_: PatternExpression) => true
+    case Ors(exprs)                => exprs.exists(containsPatternPredicates)
+    case _                         => false
+  }
 
   def flatPredicates: Seq[Expression] =
     predicates.map(_.exp).toSeq

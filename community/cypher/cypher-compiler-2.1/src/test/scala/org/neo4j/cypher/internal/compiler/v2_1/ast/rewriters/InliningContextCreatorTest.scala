@@ -27,6 +27,7 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
   val identA  = ident("a")
   val identB  = ident("b")
   val identR  = ident("r")
+  val identP  = ident("p")
   val identX1 = ident("x1")
   val identX2 = ident("x2")
 
@@ -37,6 +38,14 @@ class InliningContextCreatorTest extends CypherFunSuite with AstRewritingTestSup
 
     context.projections should equal(Map(identB -> identA))
     context.alias(identB) should equal(Some(identA))
+  }
+
+  test("should ignore named shortest paths") {
+    val ast = parser.parse("match p = shortestPath((a)-[r]->(b)) return p")
+
+    val context = inliningContextCreator(ast)
+
+    context.projections should equal(Map.empty)
   }
 
   test("should not spoil aliased relationship identifiers") {

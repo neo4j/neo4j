@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{DescSortItem, AscSortItem, SignedIntegerLiteral}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{SignedDecimalIntegerLiteral, DescSortItem, AscSortItem}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryProjection
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{plannerDocBuilder, queryProjectionDocBuilder}
 
@@ -40,11 +40,11 @@ class QueryProjectionDocBuilderTest extends DocBuilderTestSuite[Any] {
   }
 
   test("renders skip") {
-    format(QueryProjection(skip = Some(SignedIntegerLiteral("1")_))) should equal("WITH * SKIP SignedIntegerLiteral(\"1\")")
+    format(QueryProjection(skip = Some(SignedDecimalIntegerLiteral("1")_))) should equal("WITH * SKIP SignedDecimalIntegerLiteral(\"1\")")
   }
 
   test("renders limit") {
-    format(QueryProjection(limit = Some(SignedIntegerLiteral("1")_))) should equal("WITH * LIMIT SignedIntegerLiteral(\"1\")")
+    format(QueryProjection(limit = Some(SignedDecimalIntegerLiteral("1")_))) should equal("WITH * LIMIT SignedDecimalIntegerLiteral(\"1\")")
   }
 
   test("renders order by") {

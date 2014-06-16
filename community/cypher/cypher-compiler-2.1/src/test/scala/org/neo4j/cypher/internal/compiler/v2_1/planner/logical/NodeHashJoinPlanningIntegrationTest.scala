@@ -25,29 +25,34 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.NotEquals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer
 
 class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
+  import QueryPlanProducer._
+
   test("should build plans containing joins") {
+    val r1 = PatternRelationship("r1", ("a", "b"), Direction.INCOMING, Seq(), SimplePatternLength)
+    val r2 = PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq(), SimplePatternLength)
 
     (new given {
       cardinality = mapCardinality {
-        case _: AllNodesScan                      => 200
-        case Expand(_, IdName("b"), _, _, _, _,_) => 10000
-        case _: Expand                            => 10
-        case _: NodeHashJoin                      => 20
-        case _                                    => Double.MaxValue
+        case _: AllNodesScan => 200
+        case Expand(_, IdName("b"), _, _, _, _, _) => 10000
+        case _: Expand => 10
+        case _: NodeHashJoin => 20
+        case _ => Double.MaxValue
       }
     } planFor "MATCH (a)<-[r1]-(b)-[r2]->(c) RETURN b").plan should equal(
-      Projection(
-        Selection(
-          Seq(NotEquals(Identifier("r1")_,Identifier("r2")_)_),
-          NodeHashJoin("b",
-            Expand(AllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength),
-            Expand(AllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)
+      planRegularProjection(
+        planSelection(
+          Seq(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
+          planNodeHashJoin("b",
+            planExpand(planAllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength, r1),
+            planExpand(planAllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength, r2)
           )
         ),
-        expressions = Map("b" -> Identifier("b")_)
+        expressions = Map("b" -> Identifier("b") _)
       )
     )
   }

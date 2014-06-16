@@ -322,4 +322,10 @@ object QueryPlanProducer {
       ),
       skip
     )
+
+  def planShortestPaths(inner: QueryPlan, shortestPaths: ShortestPathPattern) =
+    QueryPlan(
+      FindShortestPaths(inner.plan, shortestPaths),
+      inner.solved.updateGraph(_.addShortestPath(shortestPaths))
+    )
 }

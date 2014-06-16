@@ -161,4 +161,52 @@ class UsingAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSup
     result.toList should equal (List(Map("n" -> jake)))
   }
 
+  test("does not accept multiple index hints for the same identifier") {
+    // GIVEN
+    graph.createIndex("Entity", "source")
+    graph.createIndex("Person", "first_name")
+    createNode("source" -> "form1")
+    createNode("first_name" -> "John")
+
+    // WHEN THEN
+    val e = intercept[SyntaxException] {
+      execute(
+        "MATCH (n:Entity:Person) " +
+          "USING INDEX n:Person(first_name) " +
+          "USING INDEX n:Entity(source) " +
+          "WHERE n.first_name = \"John\" AND n.source = \"form1\" " +
+          "RETURN n;"
+      )
+    }
+
+    e.getMessage should startWith("Multiple hints for same identifier are not supported")
+  }
+
+  test("does not accept multiple scan hints for the same identifier") {
+    val e = intercept[SyntaxException] {
+      execute(
+        "MATCH (n:Entity:Person) " +
+          "USING SCAN n:Person " +
+          "USING SCAN n:Entity " +
+          "WHERE n.first_name = \"John\" AND n.source = \"form1\" " +
+          "RETURN n;"
+      )
+    }
+
+    e.getMessage should startWith("Multiple hints for same identifier are not supported")
+  }
+
+  test("does not accept multiple mixed hints for the same identifier") {
+    val e = intercept[SyntaxException] {
+      execute(
+        "MATCH (n:Entity:Person) " +
+          "USING SCAN n:Person " +
+          "USING INDEX n:Entity(first_name) " +
+          "WHERE n.first_name = \"John\" AND n.source = \"form1\" " +
+          "RETURN n;"
+      )
+    }
+
+    e.getMessage should startWith("Multiple hints for same identifier are not supported")
+  }
 }
