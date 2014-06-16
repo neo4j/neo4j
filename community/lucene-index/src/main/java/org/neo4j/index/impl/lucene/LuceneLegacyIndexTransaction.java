@@ -48,7 +48,7 @@ public class LuceneLegacyIndexTransaction implements LegacyIndexProviderTransact
         LuceneIndex index = nodeIndexes.get( indexName );
         if ( index == null )
         {
-            IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.node, indexName );
+            IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Node, indexName );
             index = new LuceneIndex.NodeIndex( dataSource, identifier, luceneTransaction,
                     IndexType.getIndexType( configuration ), commandFactory );
             nodeIndexes.put( indexName, index );
@@ -62,7 +62,7 @@ public class LuceneLegacyIndexTransaction implements LegacyIndexProviderTransact
         LuceneIndex index = relationshipIndexes.get( indexName );
         if ( index == null )
         {
-            IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.relationship, indexName );
+            IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Relationship, indexName );
             index = new LuceneIndex.RelationshipIndex( dataSource, identifier, luceneTransaction,
                     IndexType.getIndexType( configuration ), commandFactory );
             relationshipIndexes.put( indexName, index );

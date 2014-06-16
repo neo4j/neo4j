@@ -25,7 +25,7 @@ import org.neo4j.graphdb.Relationship;
 
 public enum IndexEntityType
 {
-    node( (byte) 0 )
+    Node( (byte) 0 )
     {
         @Override
         public Class<? extends PropertyContainer> entityClass()
@@ -33,7 +33,7 @@ public enum IndexEntityType
             return Node.class;
         }
     },
-    relationship( (byte) 1 )
+    Relationship( (byte) 1 )
     {
         @Override
         public Class<? extends PropertyContainer> entityClass()

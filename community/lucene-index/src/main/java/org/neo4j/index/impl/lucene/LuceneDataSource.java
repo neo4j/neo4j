@@ -818,7 +818,7 @@ public class LuceneDataSource implements Lifecycle
             Map<String, String> config = indexStore.get( Node.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.node, name );
+                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Node, name );
                 getIndexSearcher( identifier );
             }
         }
@@ -827,7 +827,7 @@ public class LuceneDataSource implements Lifecycle
             Map<String, String> config = indexStore.get( Relationship.class, name );
             if ( config.get( IndexManager.PROVIDER ).equals( LuceneIndexImplementation.SERVICE_NAME ) )
             {
-                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.relationship, name );
+                IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Relationship, name );
                 getIndexSearcher( identifier );
             }
         }

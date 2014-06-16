@@ -26,6 +26,7 @@ import org.neo4j.collection.primitive.PrimitiveIntIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -318,11 +319,12 @@ public interface TxState
      * by this current transaction, otherwise {@code false} where the relationship might need to be
      * visited from the store.
      */
-    boolean relationshipVisit( long relId, RelationshipVisitor visitor );
+    <EXCEPTION extends Exception> boolean relationshipVisit(
+            long relId, RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION;
 
     // <Legacy index>
-    LegacyIndex getNodeLegacyIndexChanges( String indexName );
+    LegacyIndex getNodeLegacyIndexChanges( String indexName ) throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndex getRelationshipLegacyIndexChanges( String indexName );
+    LegacyIndex getRelationshipLegacyIndexChanges( String indexName ) throws LegacyIndexNotFoundKernelException;
     // </Legacy index>
 }

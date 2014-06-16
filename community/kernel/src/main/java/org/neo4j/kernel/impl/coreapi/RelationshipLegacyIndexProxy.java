@@ -20,9 +20,12 @@
 package org.neo4j.kernel.impl.coreapi;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.graphdb.index.RelationshipIndex;
+import org.neo4j.kernel.api.Statement;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 public class RelationshipLegacyIndexProxy extends LegacyIndexProxy<Relationship> implements RelationshipIndex
@@ -36,19 +39,48 @@ public class RelationshipLegacyIndexProxy extends LegacyIndexProxy<Relationship>
     @Override
     public IndexHits<Relationship> get( String key, Object valueOrNull, Node startNodeOrNull, Node endNodeOrNull )
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        try ( Statement statement = statementContextBridge.instance() )
+        {
+            return wrapIndexHits( statement.readOperations().relationshipLegacyIndexGet( name, key, valueOrNull,
+                    entityId( startNodeOrNull ), entityId( endNodeOrNull ) ) );
+        }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
+        }
     }
 
     @Override
     public IndexHits<Relationship> query( String key, Object queryOrQueryObjectOrNull, Node startNodeOrNull,
             Node endNodeOrNull )
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        try ( Statement statement = statementContextBridge.instance() )
+        {
+            return wrapIndexHits( statement.readOperations().relationshipLegacyIndexQuery( name, key,
+                    queryOrQueryObjectOrNull, entityId( startNodeOrNull ), entityId( endNodeOrNull ) ) );
+        }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
+        }
     }
 
     @Override
     public IndexHits<Relationship> query( Object queryOrQueryObjectOrNull, Node startNodeOrNull, Node endNodeOrNull )
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        try ( Statement statement = statementContextBridge.instance() )
+        {
+            return wrapIndexHits( statement.readOperations().relationshipLegacyIndexQuery( name,
+                    queryOrQueryObjectOrNull, entityId( startNodeOrNull ), entityId( endNodeOrNull ) ) );
+        }
+        catch ( LegacyIndexNotFoundKernelException e )
+        {
+            throw new NotFoundException( type + " index '" + name + "' doesn't exist" );
+        }
+    }
+
+    private long entityId( Node nodeOrNull )
+    {
+        return nodeOrNull == null ? -1L : nodeOrNull.getId();
     }
 }

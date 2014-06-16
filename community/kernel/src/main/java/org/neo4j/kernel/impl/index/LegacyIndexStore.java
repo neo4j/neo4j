@@ -65,7 +65,7 @@ public class LegacyIndexStore
 
     public Map<String, String> getOrCreateNodeIndexConfig( String indexName, Map<String, String> customConfiguration )
     {
-        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig( IndexEntityType.node,
+        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig( IndexEntityType.Node,
                 indexName, customConfiguration );
         return config.first();
     }
@@ -73,7 +73,7 @@ public class LegacyIndexStore
     public Map<String, String> getOrCreateRelationshipIndexConfig( String indexName,
             Map<String, String> customConfiguration )
     {
-        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig( IndexEntityType.relationship,
+        Pair<Map<String, String>, Boolean> config = getOrCreateIndexConfig( IndexEntityType.Relationship,
                 indexName, customConfiguration );
         return config.first();
     }

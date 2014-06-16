@@ -40,13 +40,27 @@ public interface LegacyIndexRead
     LegacyIndexHits nodeLegacyIndexQuery( String indexName, Object queryOrQueryObject )
             throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits relationshipLegacyIndexGet( String indexName, String key, Object value )
+    /**
+     * @param startNode -1 if ignored.
+     * @param endNode -1 if ignored.
+     */
+    LegacyIndexHits relationshipLegacyIndexGet( String name, String key, Object valueOrNull, long startNode,
+            long endNode ) throws LegacyIndexNotFoundKernelException;
+
+    /**
+     * @param startNode -1 if ignored.
+     * @param endNode -1 if ignored.
+     */
+    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject,
+            long startNode, long endNode )
             throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, String key, Object queryOrQueryObject )
-            throws LegacyIndexNotFoundKernelException;
-
-    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, Object queryOrQueryObject )
+    /**
+     * @param startNode -1 if ignored.
+     * @param endNode -1 if ignored.
+     */
+    LegacyIndexHits relationshipLegacyIndexQuery( String indexName, Object queryOrQueryObject,
+            long startNode, long endNode )
             throws LegacyIndexNotFoundKernelException;
 
     String[] nodeLegacyIndexesGetAll();

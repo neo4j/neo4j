@@ -425,6 +425,7 @@ public abstract class LuceneIndex implements LegacyIndex
             for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
             {
                 transaction.add( this, RelationshipId.of( entity, startNode, endNode ), key, oneValue );
+                commandFactory.addRelationship( identifier.indexName, entity, key, oneValue, startNode, endNode );
             }
         }
 

@@ -76,7 +76,7 @@ public class TestLuceneDataSource
 
     private IndexIdentifier identifier( String name )
     {
-        return new IndexIdentifier( IndexEntityType.node, name );
+        return new IndexIdentifier( IndexEntityType.Node, name );
     }
 
     @After
@@ -230,7 +230,7 @@ public class TestLuceneDataSource
 //                        new DefaultFileSystemAbstraction(), new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
 //                        LogPruneStrategies.NO_PRUNING, mock( KernelHealth.class ) ), null );
         dataSource.start();
-        IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.node, "foo" );
+        IndexIdentifier identifier = new IndexIdentifier( IndexEntityType.Node, "foo" );
         IndexReference oldSearcher = dataSource.getIndexSearcher( identifier );
         dataSource.invalidateIndexSearcher( identifier );
         IndexReference newSearcher = dataSource.getIndexSearcher( identifier );

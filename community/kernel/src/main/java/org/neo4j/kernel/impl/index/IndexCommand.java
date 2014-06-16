@@ -151,7 +151,7 @@ public abstract class IndexCommand extends Command
     {
         public void init( byte indexNameId, long entityId, byte keyId, Object value )
         {
-            super.init( NeoCommandType.INDEX_ADD_COMMAND, indexNameId, IndexEntityType.node.id(),
+            super.init( NeoCommandType.INDEX_ADD_COMMAND, indexNameId, IndexEntityType.Node.id(),
                     entityId, keyId, value );
         }
 
@@ -181,7 +181,7 @@ public abstract class IndexCommand extends Command
         public void init( byte indexNameId, long entityId, byte keyId,
                 Object value, long startNode, long endNode )
         {
-            super.init( NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND, indexNameId, IndexEntityType.relationship.id(),
+            super.init( NeoCommandType.INDEX_ADD_RELATIONSHIP_COMMAND, indexNameId, IndexEntityType.Relationship.id(),
                     entityId, keyId, value );
             this.startNode = startNode;
             this.endNode = endNode;
@@ -331,7 +331,8 @@ public abstract class IndexCommand extends Command
         @Override
         public String toString()
         {
-            return "Create[index:" + indexNameId + ", config:" + config + "]";
+            return format( "Create%sIndex[index:%d, config:%s]",
+                    IndexEntityType.byId( entityType ).name(), indexNameId, config );
         }
     }
 

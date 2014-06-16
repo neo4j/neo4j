@@ -103,7 +103,7 @@ public class LogTruncationTest
         permutations.put( AddRelationshipCommand.class, new Command[] { addRelationshipCommand } );
 
         CreateCommand createCommand = new CreateCommand();
-        createCommand.init( (byte) 1, IndexEntityType.relationship.id(), MapUtil.stringMap( "string1", "string 2" ) );
+        createCommand.init( (byte) 1, IndexEntityType.Relationship.id(), MapUtil.stringMap( "string1", "string 2" ) );
         permutations.put( CreateCommand.class, new Command[] { createCommand } );
 
         AddNodeCommand addCommand = new AddNodeCommand();
@@ -111,11 +111,11 @@ public class LogTruncationTest
         permutations.put( AddNodeCommand.class, new Command[] { addCommand } );
 
         DeleteCommand deleteCommand = new DeleteCommand();
-        deleteCommand.init( (byte) 1, IndexEntityType.relationship.id() );
+        deleteCommand.init( (byte) 1, IndexEntityType.Relationship.id() );
         permutations.put( DeleteCommand.class, new Command[] { deleteCommand } );
 
         RemoveCommand removeCommand = new RemoveCommand();
-        removeCommand.init( (byte) 1, IndexEntityType.node.id(), 126, (byte) 3, "the value" );
+        removeCommand.init( (byte) 1, IndexEntityType.Node.id(), 126, (byte) 3, "the value" );
         permutations.put( RemoveCommand.class, new Command[] { removeCommand } );
 
         IndexDefineCommand indexDefineCommand = new IndexDefineCommand();

@@ -472,7 +472,8 @@ public class CacheLayer implements StoreReadLayer
     }
 
     @Override
-    public void visit( long relationshipId, RelationshipVisitor relationshipVisitor ) throws EntityNotFoundException
+    public <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
+            RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION
     {
         RelationshipImpl relationship = persistenceCache.getRelationship( relationshipId );
         relationshipVisitor.visit( relationshipId, relationship.getStartNodeId(), relationship.getEndNodeId(),

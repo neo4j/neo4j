@@ -33,6 +33,7 @@ import org.neo4j.function.primitive.PrimitiveLongPredicate;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TxState;
@@ -142,7 +143,7 @@ public class StateHandlingStatementOperations implements
         final TxState txState = state.txState();
         if ( txState.relationshipIsAddedInThisTx( relationshipId ) )
         {
-            txState.relationshipVisit( relationshipId, new RelationshipVisitor()
+            txState.relationshipVisit( relationshipId, new RelationshipVisitor<RuntimeException>()
             {
                 @Override
                 public void visit( long relId, long startNode, long endNode, int type )
@@ -156,7 +157,7 @@ public class StateHandlingStatementOperations implements
         {
             try
             {
-                storeLayer.visit( relationshipId, new RelationshipVisitor()
+                storeLayer.relationshipVisit( relationshipId, new RelationshipVisitor<RuntimeException>()
                 {
                     @Override
                     public void visit( long relId, long startNode, long endNode, int type )
@@ -1228,8 +1229,8 @@ public class StateHandlingStatementOperations implements
 
     // <Legacy index>
     @Override
-    public void relationshipVisit( KernelStatement statement, long relId, RelationshipVisitor visitor )
-            throws EntityNotFoundException
+    public <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement,
+            long relId, RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION
     {
         if ( statement.hasTxState() )
         {
@@ -1239,7 +1240,7 @@ public class StateHandlingStatementOperations implements
                 return;
             }
         }
-        storeLayer.visit( relId, visitor );
+        storeLayer.relationshipVisit( relId, visitor );
     }
 
     @Override
@@ -1265,23 +1266,38 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public LegacyIndexHits relationshipLegacyIndexGet( KernelStatement statement, String indexName, String key,
-            Object value ) throws LegacyIndexNotFoundKernelException
+            Object value, long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
     {
-        return statement.txState().getRelationshipLegacyIndexChanges( indexName ).get( key, value );
+        LegacyIndex index = statement.txState().getRelationshipLegacyIndexChanges( indexName );
+        if ( startNode != -1 || endNode != -1 )
+        {
+            return index.get( key, value, startNode, endNode );
+        }
+        return index.get( key, value );
     }
 
     @Override
     public LegacyIndexHits relationshipLegacyIndexQuery( KernelStatement statement, String indexName, String key,
-            Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException
+            Object queryOrQueryObject, long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
     {
-        return statement.txState().getRelationshipLegacyIndexChanges( indexName ).query( key, queryOrQueryObject );
+        LegacyIndex index = statement.txState().getRelationshipLegacyIndexChanges( indexName );
+        if ( startNode != -1 || endNode != -1 )
+        {
+            return index.query( key, queryOrQueryObject, startNode, endNode );
+        }
+        return index.query( key, queryOrQueryObject );
     }
 
     @Override
     public LegacyIndexHits relationshipLegacyIndexQuery( KernelStatement statement, String indexName,
-            Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException
+            Object queryOrQueryObject, long startNode, long endNode ) throws LegacyIndexNotFoundKernelException
     {
-        return statement.txState().getRelationshipLegacyIndexChanges( indexName ).query( queryOrQueryObject );
+        LegacyIndex index = statement.txState().getRelationshipLegacyIndexChanges( indexName );
+        if ( startNode != -1 || endNode != -1 )
+        {
+            return index.query( queryOrQueryObject, startNode, endNode );
+        }
+        return index.query( queryOrQueryObject );
     }
 
     @Override
@@ -1300,37 +1316,42 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public void nodeAddToLegacyIndex( KernelStatement statement, String indexName, long node, String key, Object value )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.txState().getNodeLegacyIndexChanges( indexName ).addNode( node, key, value );
     }
 
     @Override
     public void nodeRemoveFromLegacyIndex( KernelStatement statement, String indexName, long node, String key,
-            Object value )
+            Object value ) throws LegacyIndexNotFoundKernelException
     {
         statement.txState().getNodeLegacyIndexChanges( indexName ).remove( node, key, value );
     }
 
     @Override
     public void nodeRemoveFromLegacyIndex( KernelStatement statement, String indexName, long node, String key )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.txState().getNodeLegacyIndexChanges( indexName ).remove( node, key );
     }
 
     @Override
     public void nodeRemoveFromLegacyIndex( KernelStatement statement, String indexName, long node )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.txState().getNodeLegacyIndexChanges( indexName ).remove( node );
     }
 
     @Override
     public void relationshipAddToLegacyIndex( final KernelStatement statement, final String indexName,
-            final long relationship, final String key, final Object value ) throws EntityNotFoundException
+            final long relationship, final String key, final Object value )
+                    throws EntityNotFoundException, LegacyIndexNotFoundKernelException
     {
-        relationshipVisit( statement, relationship, new RelationshipVisitor()
+        relationshipVisit( statement, relationship, new RelationshipVisitor<LegacyIndexNotFoundKernelException>()
         {
             @Override
             public void visit( long relId, long startNode, long endNode, int type )
+                    throws LegacyIndexNotFoundKernelException
             {
                 statement.txState().getRelationshipLegacyIndexChanges( indexName ).addRelationship(
                         relationship, key, value, startNode, endNode );
@@ -1340,36 +1361,38 @@ public class StateHandlingStatementOperations implements
 
     @Override
     public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship,
-            String key, Object value )
+            String key, Object value ) throws LegacyIndexNotFoundKernelException
     {
         statement.txState().getRelationshipLegacyIndexChanges( indexName ).remove( relationship, key, value );
     }
 
     @Override
     public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship,
-            String key )
+            String key ) throws LegacyIndexNotFoundKernelException
     {
         statement.txState().getRelationshipLegacyIndexChanges( indexName ).remove( relationship, key );
     }
 
     @Override
     public void relationshipRemoveFromLegacyIndex( KernelStatement statement, String indexName, long relationship )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.txState().getRelationshipLegacyIndexChanges( indexName ).remove( relationship );
     }
 
     @Override
-    public void nodeLegacyIndexDrop( KernelStatement statement, String indexName )
+    public void nodeLegacyIndexDrop( KernelStatement statement, String indexName ) throws LegacyIndexNotFoundKernelException
     {
         statement.txState().getNodeLegacyIndexChanges( indexName ).drop();
-        statement.legacyIndexTransactionState().deleteIndex( IndexEntityType.node, indexName );
+        statement.legacyIndexTransactionState().deleteIndex( IndexEntityType.Node, indexName );
     }
 
     @Override
     public void relationshipLegacyIndexDrop( KernelStatement statement, String indexName )
+            throws LegacyIndexNotFoundKernelException
     {
         statement.txState().getRelationshipLegacyIndexChanges( indexName ).drop();
-        statement.legacyIndexTransactionState().deleteIndex( IndexEntityType.relationship, indexName );
+        statement.legacyIndexTransactionState().deleteIndex( IndexEntityType.Relationship, indexName );
     }
 
     @Override

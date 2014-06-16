@@ -22,6 +22,7 @@ package org.neo4j.kernel.api;
 import java.util.Map;
 
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 
 public interface LegacyIndexWrite
 {
@@ -38,24 +39,27 @@ public interface LegacyIndexWrite
     String relationshipLegacyIndexRemoveConfiguration( String indexName, String key );
 
     void nodeAddToLegacyIndex( String indexName, long node, String key, Object value )
-            throws EntityNotFoundException;
+            throws EntityNotFoundException, LegacyIndexNotFoundKernelException;
 
-    void nodeRemoveFromLegacyIndex( String indexName, long node, String key, Object value );
+    void nodeRemoveFromLegacyIndex( String indexName, long node, String key, Object value )
+            throws LegacyIndexNotFoundKernelException;
 
-    void nodeRemoveFromLegacyIndex( String indexName, long node, String key );
+    void nodeRemoveFromLegacyIndex( String indexName, long node, String key ) throws LegacyIndexNotFoundKernelException;
 
-    void nodeRemoveFromLegacyIndex( String indexName, long node );
+    void nodeRemoveFromLegacyIndex( String indexName, long node ) throws LegacyIndexNotFoundKernelException;
 
     void relationshipAddToLegacyIndex( String indexName, long relationship, String key, Object value )
-            throws EntityNotFoundException;
+            throws EntityNotFoundException, LegacyIndexNotFoundKernelException;
 
-    void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key, Object value );
+    void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key, Object value )
+            throws LegacyIndexNotFoundKernelException;
 
-    void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key );
+    void relationshipRemoveFromLegacyIndex( String indexName, long relationship, String key )
+            throws LegacyIndexNotFoundKernelException;
 
-    void relationshipRemoveFromLegacyIndex( String indexName, long relationship );
+    void relationshipRemoveFromLegacyIndex( String indexName, long relationship ) throws LegacyIndexNotFoundKernelException;
 
-    void nodeLegacyIndexDrop( String indexName );
+    void nodeLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
 
-    void relationshipLegacyIndexDrop( String indexName );
+    void relationshipLegacyIndexDrop( String indexName ) throws LegacyIndexNotFoundKernelException;
 }

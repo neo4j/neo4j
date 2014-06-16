@@ -730,7 +730,7 @@ public class TestNeoStore
     {
         try
         {
-            storeLayer.visit( rel, new RelationshipVisitor()
+            storeLayer.relationshipVisit( rel, new RelationshipVisitor<RuntimeException>()
             {
                 @Override
                 public void visit( long relId, long startNode, long endNode, int type )

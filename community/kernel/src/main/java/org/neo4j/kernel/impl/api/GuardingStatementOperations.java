@@ -315,8 +315,9 @@ public class GuardingStatementOperations implements
     }
 
     @Override
-    public void relationshipVisit( KernelStatement statement, long relId, RelationshipVisitor visitor )
-            throws EntityNotFoundException
+    public <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
+            RelationshipVisitor<EXCEPTION> visitor )
+            throws EntityNotFoundException, EXCEPTION
     {
         guard.check();
         entityReadDelegate.relationshipVisit( statement, relId, visitor );

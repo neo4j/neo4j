@@ -114,7 +114,7 @@ public class IndexManagerImpl implements IndexManager
             // TODO 2.2-future there's a sub-o-meta thing here where we create index config,
             // and the index will itself share the same IndexConfigStore as us and pick up and use
             // that. We should pass along config somehow with calls.
-            statement.dataWriteOperations().nodeLegacyIndexCreateLazily( indexName, customConfiguration );
+            statement.dataWriteOperations().relationshipLegacyIndexCreateLazily( indexName, customConfiguration );
             return new RelationshipLegacyIndexProxy( indexName, lookup, transactionBridge );
         }
         catch ( InvalidTransactionTypeKernelException e )

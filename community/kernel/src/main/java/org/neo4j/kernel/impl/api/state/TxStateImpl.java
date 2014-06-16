@@ -37,6 +37,7 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.constraints.UniquenessConstraint;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
@@ -1059,7 +1060,8 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public boolean relationshipVisit( long relId, RelationshipVisitor visitor )
+    public <EXCEPTION extends Exception> boolean relationshipVisit(
+            long relId, RelationshipVisitor<EXCEPTION> visitor ) throws EXCEPTION
     {
         if ( relationshipIsAddedInThisTx( relId ) )
         {
@@ -1071,7 +1073,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public LegacyIndex getNodeLegacyIndexChanges( String indexName )
+    public LegacyIndex getNodeLegacyIndexChanges( String indexName ) throws LegacyIndexNotFoundKernelException
     {
         if ( nodeLegacyIndexChanges == null )
         {
@@ -1086,7 +1088,7 @@ public final class TxStateImpl implements TxState
     }
 
     @Override
-    public LegacyIndex getRelationshipLegacyIndexChanges( String indexName )
+    public LegacyIndex getRelationshipLegacyIndexChanges( String indexName ) throws LegacyIndexNotFoundKernelException
     {
         if ( relationshipLegacyIndexChanges == null )
         {

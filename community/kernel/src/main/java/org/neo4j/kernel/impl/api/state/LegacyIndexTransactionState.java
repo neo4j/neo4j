@@ -26,11 +26,13 @@ import java.util.List;
 import java.util.Map;
 
 import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.kernel.api.LegacyIndex;
+import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
 import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.index.IndexCommand;
 import org.neo4j.kernel.impl.index.IndexCommand.AddNodeCommand;
@@ -66,9 +68,13 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         this.providerLookup = providerLookup;
     }
 
-    public LegacyIndex nodeChanges( String indexName )
+    public LegacyIndex nodeChanges( String indexName ) throws LegacyIndexNotFoundKernelException
     {
         Map<String, String> configuration = indexConfigStore.get( Node.class, indexName );
+        if ( configuration == null )
+        {
+            throw new LegacyIndexNotFoundKernelException( "Node index '" + indexName + " not found" );
+        }
         String providerName = configuration.get( IndexManager.PROVIDER );
         IndexImplementation provider = providerLookup.lookup( providerName );
         LegacyIndexProviderTransaction transaction = transactions.get( providerName );
@@ -79,9 +85,13 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
         return transaction.nodeIndex( indexName, configuration );
     }
 
-    public LegacyIndex relationshipChanges( String indexName )
+    public LegacyIndex relationshipChanges( String indexName ) throws LegacyIndexNotFoundKernelException
     {
-        Map<String, String> configuration = indexConfigStore.get( Node.class, indexName );
+        Map<String, String> configuration = indexConfigStore.get( Relationship.class, indexName );
+        if ( configuration == null )
+        {
+            throw new LegacyIndexNotFoundKernelException( "Relationship index '" + indexName + " not found" );
+        }
         String providerName = configuration.get( IndexManager.PROVIDER );
         IndexImplementation provider = providerLookup.lookup( providerName );
         LegacyIndexProviderTransaction transaction = transactions.get( providerName );
@@ -146,7 +156,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
     {
         RemoveCommand command = new RemoveCommand();
         command.init( definitions().getOrAssignIndexNameId( indexName ),
-                IndexEntityType.node.id(), id, definitions().getOrAssignKeyId( keyOrNull ), valueOrNull );
+                IndexEntityType.Node.id(), id, definitions().getOrAssignKeyId( keyOrNull ), valueOrNull );
         addCommand( command );
     }
 
@@ -156,7 +166,7 @@ public class LegacyIndexTransactionState implements IndexCommandFactory
     {
         RemoveCommand command = new RemoveCommand();
         command.init( definitions().getOrAssignIndexNameId( indexName ),
-                IndexEntityType.relationship.id(), id, definitions().getOrAssignKeyId( keyOrNull ), valueOrNull );
+                IndexEntityType.Relationship.id(), id, definitions().getOrAssignKeyId( keyOrNull ), valueOrNull );
         addCommand( command );
     }
 

@@ -155,7 +155,8 @@ public interface StoreReadLayer
 
     int relationshipTypeGetOrCreateForName( String relationshipTypeName );
 
-    void visit( long relationshipId, RelationshipVisitor relationshipVisitor ) throws EntityNotFoundException;
+    <EXCEPTION extends Exception> void relationshipVisit( long relationshipId,
+            RelationshipVisitor<EXCEPTION> relationshipVisitor ) throws EntityNotFoundException, EXCEPTION;
 
     long highestNodeIdInUse();
 

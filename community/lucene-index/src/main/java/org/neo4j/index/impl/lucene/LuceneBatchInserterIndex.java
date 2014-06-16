@@ -119,7 +119,7 @@ class LuceneBatchInserterIndex implements BatchInserterIndex
 
     private Object entityId( long id )
     {
-        if ( identifier.entityType == IndexEntityType.node )
+        if ( identifier.entityType == IndexEntityType.Node )
         {
             return id;
         }

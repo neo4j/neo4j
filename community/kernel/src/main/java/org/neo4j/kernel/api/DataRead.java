@@ -113,5 +113,6 @@ interface DataRead
 
     Iterator<DefinedProperty> graphGetAllProperties();
 
-    void relationshipVisit( long relId, RelationshipVisitor visitor ) throws EntityNotFoundException;
+    <EXCEPTION extends Exception> void relationshipVisit( long relId, RelationshipVisitor<EXCEPTION> visitor )
+            throws EntityNotFoundException, EXCEPTION;
 }

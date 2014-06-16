@@ -66,7 +66,9 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
         String key = definitions.getKey( command.getKeyId() );
         Object value = command.getValue();
         context.ensureWriterInstantiated();
-        context.indexType.addToDocument( context.getDocument( command.getEntityId(), true ).document, key, value );
+        RelationshipId entityId = RelationshipId.of( command.getEntityId(),
+                command.getStartNode(), command.getEndNode() );
+        context.indexType.addToDocument( context.getDocument( entityId, true ).document, key, value );
         context.dataSource.invalidateCache( context.identifier, key, value );
         return true;
     }
@@ -152,11 +154,11 @@ public class LuceneCommandApplier extends NeoCommandHandler.Adapter
 
     private Map<Byte, CommitContext> commitContextMap( byte entityType )
     {
-        if ( entityType == IndexEntityType.node.id() )
+        if ( entityType == IndexEntityType.Node.id() )
         {
             return nodeContexts;
         }
-        if ( entityType == IndexEntityType.relationship.id() )
+        if ( entityType == IndexEntityType.Relationship.id() )
         {
             return relationshipContexts;
         }

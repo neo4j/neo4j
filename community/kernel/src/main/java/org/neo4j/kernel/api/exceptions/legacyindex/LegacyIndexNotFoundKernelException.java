@@ -24,7 +24,7 @@ import org.neo4j.kernel.api.exceptions.Status;
 
 public class LegacyIndexNotFoundKernelException extends KernelException
 {
-    protected LegacyIndexNotFoundKernelException( String message, Object[] parameters )
+    public LegacyIndexNotFoundKernelException( String message, Object... parameters )
     {
         super( Status.LegacyIndex.NoSuchIndex, message, parameters );
     }

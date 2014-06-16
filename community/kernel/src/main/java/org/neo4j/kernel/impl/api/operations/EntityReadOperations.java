@@ -129,6 +129,6 @@ public interface EntityReadOperations
 
     PrimitiveLongIterator relationshipsGetAll( KernelStatement state );
 
-    void relationshipVisit( KernelStatement statement, long relId, RelationshipVisitor visitor )
-            throws EntityNotFoundException;
+    <EXCEPTION extends Exception> void relationshipVisit( KernelStatement statement, long relId,
+            RelationshipVisitor<EXCEPTION> visitor ) throws EntityNotFoundException, EXCEPTION;
 }

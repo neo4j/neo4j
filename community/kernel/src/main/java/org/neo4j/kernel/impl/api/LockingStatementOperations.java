@@ -225,7 +225,7 @@ public class LockingStatementOperations implements
     {
         try
         {
-            entityReadDelegate.relationshipVisit( state, relationshipId, new RelationshipVisitor()
+            entityReadDelegate.relationshipVisit( state, relationshipId, new RelationshipVisitor<RuntimeException>()
             {
                 @Override
                 public void visit( long relId, long startNode, long endNode, int type )

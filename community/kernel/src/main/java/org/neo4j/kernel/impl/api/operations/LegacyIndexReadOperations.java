@@ -42,13 +42,14 @@ public interface LegacyIndexReadOperations
     LegacyIndexHits nodeLegacyIndexQuery( KernelStatement statement, String indexName, Object queryOrQueryObject )
             throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits relationshipLegacyIndexGet( KernelStatement statement, String indexName, String key, Object value )
-            throws LegacyIndexNotFoundKernelException;
+    LegacyIndexHits relationshipLegacyIndexGet( KernelStatement statement, String indexName, String key, Object value,
+            long startNode, long endNode ) throws LegacyIndexNotFoundKernelException;
 
     LegacyIndexHits relationshipLegacyIndexQuery( KernelStatement statement, String indexName, String key,
-            Object queryOrQueryObject ) throws LegacyIndexNotFoundKernelException;
+            Object queryOrQueryObject, long startNode, long endNode ) throws LegacyIndexNotFoundKernelException;
 
-    LegacyIndexHits relationshipLegacyIndexQuery( KernelStatement statement, String indexName, Object queryOrQueryObject )
+    LegacyIndexHits relationshipLegacyIndexQuery( KernelStatement statement, String indexName,
+            Object queryOrQueryObject, long startNode, long endNode )
             throws LegacyIndexNotFoundKernelException;
 
     String[] nodeLegacyIndexesGetAll( KernelStatement statement );

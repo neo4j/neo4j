@@ -70,7 +70,7 @@ public class LuceneBatchInserterIndexProviderNewImpl implements BatchInserterInd
     public BatchInserterIndex nodeIndex( String indexName, Map<String, String> config )
     {
         config( Node.class, indexName, config );
-        return index( new IndexIdentifier( IndexEntityType.node, indexName ), config );
+        return index( new IndexIdentifier( IndexEntityType.Node, indexName ), config );
     }
 
     private Map<String, String> config( Class<? extends PropertyContainer> cls,
@@ -94,7 +94,7 @@ public class LuceneBatchInserterIndexProviderNewImpl implements BatchInserterInd
     public BatchInserterIndex relationshipIndex( String indexName, Map<String, String> config )
     {
         config( Relationship.class, indexName, config );
-        return index( new IndexIdentifier( IndexEntityType.relationship, indexName ), config );
+        return index( new IndexIdentifier( IndexEntityType.Relationship, indexName ), config );
     }
 
     private BatchInserterIndex index( IndexIdentifier identifier, Map<String, String> config )

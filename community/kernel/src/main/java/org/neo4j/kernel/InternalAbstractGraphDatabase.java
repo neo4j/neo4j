@@ -690,7 +690,8 @@ public abstract class InternalAbstractGraphDatabase
                 }
             };
 
-            private final RelationshipVisitor visitor = new RelationshipVisitor()
+            private final RelationshipVisitor<RuntimeException> visitor =
+                    new RelationshipVisitor<RuntimeException>()
             {
                 @Override
                 public void visit( long relId, long startNode, long endNode, int type )
