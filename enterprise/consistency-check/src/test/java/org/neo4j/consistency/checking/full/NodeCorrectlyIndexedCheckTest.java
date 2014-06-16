@@ -196,6 +196,24 @@ public class NodeCorrectlyIndexedCheckTest
                 }
 
                 @Override
+                public boolean hasIndexed( long nodeId, Object propertyValue )
+                {
+                    long[] canidates = entries.get( propertyValue );
+                    if ( canidates == null )
+                    {
+                        return false;
+                    }
+                    for ( int i = 0; i < canidates.length; i++ )
+                    {
+                        if ( canidates[i] == nodeId )
+                        {
+                            return true;
+                        }
+                    }
+                    return false;
+                }
+
+                @Override
                 public void close()
                 {
                 }
