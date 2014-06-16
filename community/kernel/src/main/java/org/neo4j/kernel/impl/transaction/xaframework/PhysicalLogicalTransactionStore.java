@@ -24,7 +24,7 @@ import java.io.IOException;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class PhysicalTransactionStore extends LifecycleAdapter implements TransactionStore
+public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
 {
     private final LogFile logFile;
     private final TransactionMetadataCache transactionMetadataCache;
@@ -32,8 +32,9 @@ public class PhysicalTransactionStore extends LifecycleAdapter implements Transa
     private TransactionAppender appender;
     private final LogEntryReader<ReadableLogChannel> logEntryReader;
 
-    public PhysicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator, TransactionMetadataCache transactionMetadataCache,
-            LogEntryReader<ReadableLogChannel> logEntryReader)
+    public PhysicalLogicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator, TransactionMetadataCache
+            transactionMetadataCache,
+                                            LogEntryReader<ReadableLogChannel> logEntryReader )
     {
         this.logFile = logFile;
         this.txIdGenerator = txIdGenerator;
@@ -64,7 +65,8 @@ public class PhysicalTransactionStore extends LifecycleAdapter implements Transa
     }
 
     @Override
-    public IOCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor ) throws NoSuchTransactionException, IOException
+    public IOCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor )
+            throws NoSuchTransactionException, IOException
     {
         // look up in position cache
         LogPosition position = transactionMetadataCache.getTransactionMetadata( transactionIdToStartFrom ).getStartPosition();
@@ -81,6 +83,20 @@ public class PhysicalTransactionStore extends LifecycleAdapter implements Transa
         // TODO 2.2-future play forward and cache that position
         IOCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader, visitor );
         return cursor;
+    }
+
+    @Override
+    public TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId )
+    {
+        TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache
+                .getTransactionMetadata( transactionId );
+        if ( transactionMetadata == null )
+        {
+            logFile.accept( new TransactionMetadataFiller( transactionId ) );
+        }
+        transactionMetadata = transactionMetadataCache
+                .getTransactionMetadata( transactionId );
+        return transactionMetadata;
     }
 
     @Override
@@ -108,6 +124,21 @@ public class PhysicalTransactionStore extends LifecycleAdapter implements Transa
         public LogPosition getPosition()
         {
             return position;
+        }
+    }
+
+    private class TransactionMetadataFiller implements LogFile.LogFileVisitor
+    {
+        // TODO 2.2-future this is supposed to fill the metadata cache with information about the passed tx
+        public TransactionMetadataFiller( long transactionId )
+        {
+        }
+
+        @Override
+        public boolean visit( LogPosition position, ReadableLogChannel channel )
+        {
+            // TODO Auto-generated method stub
+            return false;
         }
     }
 }

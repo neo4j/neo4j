@@ -39,7 +39,6 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.Bits;
@@ -60,7 +59,7 @@ public class TestArrayStore
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
         StoreFactory factory = new StoreFactory( config,
-                idGeneratorFactory, new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, new DefaultTxHook() );
+                idGeneratorFactory, new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL );
         File fileName = new File( dir, "arraystore" );
         factory.createDynamicArrayStore( fileName, 120 );
         arrayStore = new DynamicArrayStore( fileName, config, IdType.ARRAY_BLOCK, idGeneratorFactory,

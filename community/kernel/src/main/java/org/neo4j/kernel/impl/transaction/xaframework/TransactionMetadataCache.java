@@ -54,14 +54,14 @@ public class TransactionMetadataCache
     }
 
     public synchronized TransactionMetadata cacheTransactionMetadata( long txId, LogPosition position, int masterId,
-                                                             long checksum )
+                                                                      int authorId, long checksum )
     {
         if ( position.getByteOffset() == -1 )
         {
             throw new RuntimeException( "StartEntry.position is " + position );
         }
 
-        TransactionMetadata result = new TransactionMetadata( masterId, position, checksum );
+        TransactionMetadata result = new TransactionMetadata( masterId, authorId, position, checksum );
         txStartPositionCache.put( txId, result );
         return result;
     }
@@ -69,13 +69,15 @@ public class TransactionMetadataCache
     public static class TransactionMetadata
     {
         private final int masterId;
+        private final int authorId;
         private final LogPosition startPosition;
         private final long checksum;
 
-        public TransactionMetadata( int masterId, LogPosition startPosition, long checksum )
+        public TransactionMetadata( int masterId, int authorId, LogPosition startPosition, long checksum )
         {
 
             this.masterId = masterId;
+            this.authorId = authorId;
             this.startPosition = startPosition;
             this.checksum = checksum;
         }
@@ -83,6 +85,11 @@ public class TransactionMetadataCache
         public int getMasterId()
         {
             return masterId;
+        }
+
+        public int getAuthorId()
+        {
+            return authorId;
         }
 
         public LogPosition getStartPosition()

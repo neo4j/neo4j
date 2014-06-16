@@ -19,6 +19,13 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.nio.ByteBuffer.wrap;
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
@@ -27,21 +34,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.EphemeralFileSystemRule;
-
-import static java.nio.ByteBuffer.wrap;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class SchemaStoreTest
 {
@@ -149,8 +145,7 @@ public class SchemaStoreTest
         config = StoreFactory.configForStoreDir( new Config(), storeDir );
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
-        storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fs.get(), DEV_NULL,
-                new DefaultTxHook() );
+        storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fs.get(), DEV_NULL );
         storeFactory.createSchemaStore();
         store = storeFactory.newSchemaStore();
     }

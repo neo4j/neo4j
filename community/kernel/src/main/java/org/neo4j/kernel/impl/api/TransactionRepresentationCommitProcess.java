@@ -37,11 +37,11 @@ import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 
 public class TransactionRepresentationCommitProcess
 {
-    private final TransactionStore transactionStore;
+    private final LogicalTransactionStore logicalTransactionStore;
     private final KernelHealth kernelHealth;
     private final IndexingService indexingService;
     private final NeoStore neoStore;
@@ -53,12 +53,12 @@ public class TransactionRepresentationCommitProcess
     private final ProviderLookup legacyIndexProviderLookup;
     private final IndexConfigStore indexConfigStore;
 
-    public TransactionRepresentationCommitProcess( TransactionStore transactionStore,
+    public TransactionRepresentationCommitProcess( LogicalTransactionStore logicalTransactionStore,
             KernelHealth kernelHealth, IndexingService indexingService, LabelScanStore labelScanStore, NeoStore neoStore,
             CacheAccessBackDoor cacheAccess, LockService lockService, ProviderLookup legacyIndexProviderLookup,
             IndexConfigStore indexConfigStore, boolean recovery )
     {
-        this.transactionStore = transactionStore;
+        this.logicalTransactionStore = logicalTransactionStore;
         this.labelScanStore = labelScanStore;
         this.neoStore = neoStore;
         this.cacheAccess = cacheAccess;
@@ -77,7 +77,7 @@ public class TransactionRepresentationCommitProcess
         Future<Long> commitFuture;
         try
         {
-            commitFuture = transactionStore.getAppender().append( representation );
+            commitFuture = logicalTransactionStore.getAppender().append( representation );
         }
         catch ( IOException e )
         {

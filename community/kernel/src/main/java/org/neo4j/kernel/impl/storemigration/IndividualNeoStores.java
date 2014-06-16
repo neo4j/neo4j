@@ -19,9 +19,11 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
+import static java.lang.Integer.parseInt;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
+
 import java.io.File;
 
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
@@ -32,10 +34,6 @@ import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.lang.Integer.parseInt;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 
 /**
  * Convenience around a {@link StoreFactory} where individual stores can be created lazily and all closed
@@ -58,7 +56,7 @@ public class IndividualNeoStores
         this.storageFileName = storageFileName;
         this.config = StoreFactory.configForNeoStore( config, storageFileName );
         this.storeFactory = new StoreFactory( this.config, idGeneratorFactory,
-                new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL, new DefaultTxHook() );
+                new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL );
     }
 
     public File getNeoStoreFileName()

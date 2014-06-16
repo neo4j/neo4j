@@ -19,31 +19,27 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
+import static org.neo4j.kernel.impl.nioneo.store.NodeStore.readOwnerFromDynamicLabelsRecord;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
+import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_RELATIONSHIP;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.allocateFromNumbers;
-import static org.neo4j.kernel.impl.nioneo.store.NodeStore.readOwnerFromDynamicLabelsRecord;
-import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_PROPERTY;
-import static org.neo4j.kernel.impl.nioneo.store.Record.NO_NEXT_RELATIONSHIP;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class NodeStoreTest
 {
@@ -109,7 +105,7 @@ public class NodeStoreTest
         Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         WindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
-        StoreFactory factory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fs, DEV_NULL, new DefaultTxHook() );
+        StoreFactory factory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fs, DEV_NULL );
         factory.createNodeStore();
         NodeStore nodeStore = factory.newNodeStore();
 

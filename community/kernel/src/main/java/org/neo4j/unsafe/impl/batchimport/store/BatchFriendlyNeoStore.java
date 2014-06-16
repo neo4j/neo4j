@@ -19,9 +19,16 @@
  */
 package org.neo4j.unsafe.impl.batchimport.store;
 
+import static java.lang.String.valueOf;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode.APPEND_ONLY;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode.UPDATE;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.SYNCHRONOUS;
+
 import java.io.File;
 
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -38,15 +45,6 @@ import org.neo4j.unsafe.impl.batchimport.Configuration;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
-
-import static java.lang.String.valueOf;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.SYNCHRONOUS;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode.APPEND_ONLY;
-import static org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyWindowPoolFactory.Mode.UPDATE;
 
 /**
  * Creator and accessor of {@link NeoStore} with some logic to provide very batch friendly services to the
@@ -88,7 +86,7 @@ public class BatchFriendlyNeoStore implements AutoCloseable
     private NeoStore newNeoStore( WindowPoolFactory windowPoolFactory )
     {
         StoreFactory storeFactory = new StoreFactory( neo4jConfig, new BatchingIdGeneratorFactory(),
-                windowPoolFactory, fileSystem, logger, new DefaultTxHook() );
+                windowPoolFactory, fileSystem, logger );
         return storeFactory.newNeoStore( true );
     }
 

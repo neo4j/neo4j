@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,15 +30,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
 * Factory for Store implementations. Can also be used to create empty stores.
@@ -56,7 +54,6 @@ public class StoreFactory
     private final WindowPoolFactory windowPoolFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final StringLogger stringLogger;
-    private final RemoteTxHook txHook;
 
     public static final String LABELS_PART = ".labels";
     public static final String NAMES_PART = ".names";
@@ -86,18 +83,18 @@ public class StoreFactory
     {
         this( configForStoreDir( new Config(), storeDir ),
                 new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
-                logger, new DefaultTxHook(), StoreVersionMismatchHandler.THROW_EXCEPTION );
+                logger, StoreVersionMismatchHandler.THROW_EXCEPTION );
     }
 
     public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-            FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, RemoteTxHook txHook )
+            FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
     {
-        this( config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger, txHook,
+        this( config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
                 StoreVersionMismatchHandler.THROW_EXCEPTION );
     }
 
     public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                         FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, RemoteTxHook txHook,
+                         FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
                          StoreVersionMismatchHandler versionMismatchHandler )
     {
         this.config = config;
@@ -105,7 +102,6 @@ public class StoreFactory
         this.windowPoolFactory = windowPoolFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.stringLogger = stringLogger;
-        this.txHook = txHook;
         this.versionMismatchHandler = versionMismatchHandler;
         this.neoStoreFileName = config.get( GraphDatabaseSettings.neo_store );
         assert neoStoreFileName != null;
@@ -125,7 +121,7 @@ public class StoreFactory
 
         // The store exists already, start it
         return new NeoStore( neoStoreFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
-                stringLogger, txHook,
+                stringLogger,
                 newRelationshipTypeTokenStore(),
                 newLabelTokenStore(),
                 newPropertyStore(),

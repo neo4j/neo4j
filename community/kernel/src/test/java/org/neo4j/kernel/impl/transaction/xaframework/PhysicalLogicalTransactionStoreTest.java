@@ -46,7 +46,7 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
-public class PhysicalTransactionStoreTest
+public class PhysicalLogicalTransactionStoreTest
 {
     private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
 
@@ -81,7 +81,7 @@ public class PhysicalTransactionStoreTest
                                 }
                             } ));
         TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
-        TransactionStore store = life.add(new PhysicalTransactionStore( logFile, txIdGenerator, positionCache,
+        LogicalTransactionStore store = life.add(new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache,
                 new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ) ) );
 
         try
@@ -145,7 +145,7 @@ public class PhysicalTransactionStoreTest
             }
         } )));
 
-        life.add(new PhysicalTransactionStore( logFile, txIdGenerator, positionCache, new VersionAwareLogEntryReader(
+        life.add(new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, new VersionAwareLogEntryReader(
                 CommandReaderFactory.DEFAULT ) ) );
 
         // WHEN

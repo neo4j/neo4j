@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.String.format;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -32,12 +34,9 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
-
-import static java.lang.String.format;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -91,7 +90,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private LabelTokenStore labelTokenStore;
     private SchemaStore schemaStore;
     private RelationshipGroupStore relGroupStore;
-    private final RemoteTxHook txHook;
     private final AtomicLong lastCommittingTx = new AtomicLong( -1 );
     private final AtomicLong lastAppliedTx = new AtomicLong( -1 );
     private final AtomicLong latestConstraintIntroducingTx = new AtomicLong( -1 );
@@ -101,9 +99,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     public NeoStore( File fileName, Config conf,
                      IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
                      FileSystemAbstraction fileSystemAbstraction,
-                     StringLogger stringLogger, RemoteTxHook txHook,
-                     RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore,
-                     PropertyStore propStore, RelationshipStore relStore,
+                     StringLogger stringLogger, RelationshipTypeTokenStore relTypeStore,
+                     LabelTokenStore labelTokenStore, PropertyStore propStore, RelationshipStore relStore,
                      NodeStore nodeStore, SchemaStore schemaStore, RelationshipGroupStore relGroupStore,
                      StoreVersionMismatchHandler versionMismatchHandler )
     {
@@ -117,7 +114,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         this.schemaStore = schemaStore;
         this.relGroupStore = relGroupStore;
         REL_GRAB_SIZE = conf.get( Configuration.relationship_grab_size );
-        this.txHook = txHook;
 
         /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
          * corresponding store version record was not added. That record was added in the release
@@ -318,11 +314,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     public int getRecordSize()
     {
         return RECORD_SIZE;
-    }
-
-    public boolean freeIdsDuringRollback()
-    {
-        return txHook.freeIdsDuringRollback();
     }
 
     /**

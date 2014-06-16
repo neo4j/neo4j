@@ -19,18 +19,16 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.Closeable;
 import java.io.IOException;
+import java.nio.channels.ReadableByteChannel;
+import java.nio.channels.WritableByteChannel;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 
-/**
- * Uses {@link LogFile} and using the bytes it provides, sees the bytes as transactions.
- */
-public interface TransactionStore extends Closeable, Lifecycle
+public interface TransactionStreamStore
 {
-    TransactionAppender getAppender();
+    WritableByteChannel getAppender();
 
-    IOCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor ) throws NoSuchTransactionException, IOException;
+    IOCursor getCursor( long transactionIdToStartFrom, Visitor<ReadableByteChannel, IOException> visitor )
+            throws NoSuchTransactionException, IOException;
 }

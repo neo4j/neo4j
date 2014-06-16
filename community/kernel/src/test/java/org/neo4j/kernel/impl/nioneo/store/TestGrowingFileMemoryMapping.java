@@ -19,24 +19,21 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assume.assumeTrue;
+import static org.neo4j.graphdb.factory.GraphDatabaseSettings.nodestore_mapped_memory_size;
+import static org.neo4j.helpers.Settings.osIsWindows;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.File;
 
 import org.junit.Test;
-
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assume.assumeTrue;
-
-import static org.neo4j.graphdb.factory.GraphDatabaseSettings.nodestore_mapped_memory_size;
-import static org.neo4j.helpers.Settings.osIsWindows;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestGrowingFileMemoryMapping
 {
@@ -58,8 +55,7 @@ public class TestGrowingFileMemoryMapping
                 Configuration.store_dir.name(), storeDir.getPath() ), NodeStore.Configuration.class );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory,
-                new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL,
-                new DefaultTxHook() );
+                new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(), StringLogger.DEV_NULL );
 
         File fileName = new File( storeDir, NeoStore.DEFAULT_NAME + ".nodestore.db" );
         storeFactory.createEmptyStore( fileName, storeFactory.buildTypeDescriptorAndVersion(

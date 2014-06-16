@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.api.index;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -27,10 +31,8 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.index.NodePropertyUpdate;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
@@ -41,11 +43,6 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.PropertyRecordChange;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
 
 public class PropertyPhysicalToLogicalConverterTest
 {
@@ -212,8 +209,7 @@ public class PropertyPhysicalToLogicalConverterTest
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
         StoreFactory storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                new DefaultTxHook() );
+                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL );
         storeFactory.createPropertyStore();
         store = storeFactory.newPropertyStore();
         converter = new PropertyPhysicalToLogicalConverter( store );

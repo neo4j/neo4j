@@ -38,7 +38,6 @@ import org.apache.lucene.search.IndexSearcher;
 import org.apache.lucene.search.Query;
 import org.apache.lucene.search.Sort;
 import org.apache.lucene.search.TermQuery;
-
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
@@ -93,8 +92,6 @@ public abstract class LuceneIndex implements LegacyIndex
      * transaction. When the transaction has been committed all such queries
      * are guaranteed to return correct results.
      *
-     * @param entity the entity (i.e {@link Node} or {@link Relationship})
-     * to associate the key/value pair with.
      * @param key the key in the key/value pair to associate with the entity.
      * @param value the value in the key/value pair to associate with the
      * entity.

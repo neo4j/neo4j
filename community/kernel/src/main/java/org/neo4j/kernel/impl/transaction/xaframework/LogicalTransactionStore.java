@@ -17,19 +17,20 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
+import java.io.Closeable;
+import java.io.IOException;
 
-/**
- * @deprecated This will be moved to internal packages in the next major release.
- */
-@Deprecated
-public class DefaultTxHook implements RemoteTxHook
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.lifecycle.Lifecycle;
+
+public interface LogicalTransactionStore extends Closeable, Lifecycle
 {
-    @Override
-    public boolean freeIdsDuringRollback()
-    {
-        return true;
-    }
+    TransactionAppender getAppender();
+
+    IOCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor )
+            throws NoSuchTransactionException, IOException;
+
+    TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId );
 }

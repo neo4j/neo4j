@@ -56,7 +56,7 @@ public class PhysicalTransactionAppender implements TransactionAppender
         long transactionId = txIdGenerator.generate( transaction );
         logEntryWriter.writeCommitEntry( transaction.getTimeWritten(), transactionId );
         transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
-                LogEntry.Start.checksum( transaction.additionalHeader(),
+                transaction.getAuthorId(), LogEntry.Start.checksum( transaction.additionalHeader(),
                         transaction.getMasterId(), transaction.getAuthorId() ) );
 
         // force

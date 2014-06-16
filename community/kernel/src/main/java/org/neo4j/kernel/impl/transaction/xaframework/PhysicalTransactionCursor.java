@@ -33,7 +33,8 @@ public class PhysicalTransactionCursor implements IOCursor
     private Visitor<TransactionRepresentation, IOException> visitor;
     private final List<Command> entries = new ArrayList<>();
 
-    public PhysicalTransactionCursor( ReadableLogChannel channel, LogEntryReader<ReadableLogChannel> entryReader, Visitor<TransactionRepresentation, IOException> visitor )
+    public PhysicalTransactionCursor( ReadableLogChannel channel, LogEntryReader<ReadableLogChannel> entryReader,
+                                      Visitor<TransactionRepresentation, IOException> visitor )
     {
         this.channel = channel;
         this.entryReader = entryReader;
@@ -41,7 +42,7 @@ public class PhysicalTransactionCursor implements IOCursor
     }
 
     @Override
-    public boolean next(  ) throws IOException
+    public boolean next() throws IOException
     {
         entries.clear();
         LogEntry entry = entryReader.readLogEntry( channel );

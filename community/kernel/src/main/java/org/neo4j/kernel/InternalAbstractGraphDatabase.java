@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.Functions.identity;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -143,7 +152,6 @@ import org.neo4j.kernel.impl.storemigration.StoreVersionCheck;
 import org.neo4j.kernel.impl.storemigration.UpgradableDatabase;
 import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressMonitor;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
@@ -168,16 +176,6 @@ import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static java.lang.String.format;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.Functions.identity;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -246,7 +244,6 @@ public abstract class InternalAbstractGraphDatabase
     protected Schema schema;
     protected KernelPanicEventGenerator kernelPanicEventGenerator;
     protected KernelHealth kernelHealth;
-    protected RemoteTxHook txHook;
     protected FileSystemAbstraction fileSystem;
     protected Locks lockManager;
     protected IdGeneratorFactory idGeneratorFactory;
@@ -467,7 +464,7 @@ public abstract class InternalAbstractGraphDatabase
         // Anyways please fix this.
         dataSourceManager = life.add( new DataSourceManager() );
 
-        txHook = createTxHook();
+        createTxHook();
 
         guard = config.get( Configuration.execution_guard_enabled ) ? new Guard( msgLog ) : null;
 //        assert guard == null : "Guard not properly implemented for the time being";
@@ -641,7 +638,7 @@ public abstract class InternalAbstractGraphDatabase
     protected StoreFactory createStoreFactory()
     {
         return new StoreFactory( config, idGeneratorFactory, createWindowPoolFactory(), fileSystem,
-                logging.getMessagesLog( StoreFactory.class ), txHook );
+                logging.getMessagesLog( StoreFactory.class ) );
     }
 
     protected DefaultWindowPoolFactory createWindowPoolFactory()
@@ -761,9 +758,8 @@ public abstract class InternalAbstractGraphDatabase
         };
     }
 
-    protected RemoteTxHook createTxHook()
+    protected void createTxHook()
     {
-        return new DefaultTxHook();
     }
 
     protected FileSystemAbstraction createFileSystemAbstraction()
@@ -821,7 +817,7 @@ public abstract class InternalAbstractGraphDatabase
                 dependencyResolver, propertyKeyTokenHolder, labelTokenHolder, relationshipTypeTokenHolder,
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
-                storeMigrationProcess, transactionMonitor, kernelHealth, txHook, txIdGenerator,
+                storeMigrationProcess, transactionMonitor, kernelHealth, txIdGenerator,
                 transactionHeaderInformation, startupStatistics, caches, nodeManager, guard, indexStore );
         dataSourceManager.register( neoDataSource );
     }
@@ -1277,10 +1273,6 @@ public abstract class InternalAbstractGraphDatabase
             else if ( Monitors.class.isAssignableFrom( type ) )
             {
                 return type.cast( monitors );
-            }
-            else if ( RemoteTxHook.class.isAssignableFrom( type ) )
-            {
-                return type.cast( txHook );
             }
             else if( TransactionEventHandlers.class.equals( type ))
             {

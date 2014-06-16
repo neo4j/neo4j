@@ -157,6 +157,7 @@ public class LuceneDataSource implements Lifecycle
         this.indexStore = indexStore;
         this.typeCache = new IndexTypeCache( indexStore );
         this.fileSystemAbstraction = fileSystemAbstraction;
+        start();
     }
 
     @Override

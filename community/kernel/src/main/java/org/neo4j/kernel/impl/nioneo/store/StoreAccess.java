@@ -118,8 +118,7 @@ public class StoreAccess
         this( new StoreFactory( new Config( requiredParams( params, path ) ),
                                 new DefaultIdGeneratorFactory(),
                                 new DefaultWindowPoolFactory(),
-                                fileSystem, StringLogger.DEV_NULL,
-                                new DefaultTxHook() ).newNeoStore( false ) );
+                                fileSystem, StringLogger.DEV_NULL ).newNeoStore( false ) );
         this.closeable = true;
     }
 

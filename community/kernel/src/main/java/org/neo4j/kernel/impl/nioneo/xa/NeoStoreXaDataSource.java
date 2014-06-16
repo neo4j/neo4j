@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -113,22 +115,21 @@ import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -141,13 +142,11 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
     private LogFile logFile;
-    private TransactionStore transactionStore;
+    private LogicalTransactionStore logicalTransactionStore;
 
     @SuppressWarnings( "deprecation" )
     public static abstract class Configuration
@@ -192,7 +191,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private final StoreUpgrader storeMigrationProcess;
     private final TransactionMonitor transactionMonitor;
     private final KernelHealth kernelHealth;
-    private final RemoteTxHook remoteTxHook;
     private final TxIdGenerator txIdGenerator;
     private final TransactionHeaderInformation transactionHeaderInformation;
     private final StartupStatisticsProvider startupStatistics;
@@ -303,8 +301,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                  IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
                                  Function <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory,
                                  StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
-                                 KernelHealth kernelHealth, RemoteTxHook remoteTxHook,
-                                 TxIdGenerator txIdGenerator, TransactionHeaderInformation transactionHeaderInformation,
+                                 KernelHealth kernelHealth, TxIdGenerator txIdGenerator,
+                                 TransactionHeaderInformation transactionHeaderInformation,
                                  StartupStatisticsProvider startupStatistics,
                                  Caches cacheProvider, NodeManager nodeManager, Guard guard,
                                  IndexConfigStore indexConfigStore )
@@ -325,7 +323,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         this.storeMigrationProcess = storeMigrationProcess;
         this.transactionMonitor = transactionMonitor;
         this.kernelHealth = kernelHealth;
-        this.remoteTxHook = remoteTxHook;
         this.txIdGenerator = txIdGenerator;
         this.transactionHeaderInformation = transactionHeaderInformation;
         this.startupStatistics = startupStatistics;
@@ -454,10 +451,10 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
                     neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
                     this, transactionMetadataCache, logFileRecoverer ) );
-            transactionStore = dependencies.add( new PhysicalTransactionStore( logFile, txIdGenerator,
+            logicalTransactionStore = dependencies.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
                     transactionMetadataCache, logEntryReader ) );
 
-            this.commitProcess = new TransactionRepresentationCommitProcess( transactionStore, kernelHealth,
+            this.commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
                     indexingService, labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup,
                     indexConfigStore, false );
 
@@ -490,7 +487,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     indexingService, kernel, updateableSchemaState, guard, legacyIndexStore );
 
             life.add( logFile );
-            life.add( transactionStore );
+            life.add( logicalTransactionStore );
             life.add(new LifecycleAdapter()
             {
                 @Override
