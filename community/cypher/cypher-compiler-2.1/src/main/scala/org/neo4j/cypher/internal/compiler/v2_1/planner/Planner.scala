@@ -25,7 +25,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.execution.{PipeExecutionBuilderContext, PipeExecutionPlanBuilder}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.LogicalPlan
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PipeInfo
@@ -49,8 +49,7 @@ case class Planner(monitors: Monitors,
     Planner.rewriteStatement(statement) match {
       case ast: Query =>
         monitor.startedPlanning(query)
-        val (queryPlan, pipeBuildContext) = produceQueryPlan(ast, semanticTable)(planContext)
-        val logicalPlan = queryPlan.plan
+        val (logicalPlan, pipeBuildContext) = produceQueryPlan(ast, semanticTable)(planContext)
         monitor.foundPlan(query, logicalPlan)
         val result = executionPlanBuilder.build(logicalPlan)(pipeBuildContext)
         monitor.successfulPlanning(query, result)
@@ -61,7 +60,7 @@ case class Planner(monitors: Monitors,
     }
   }
 
-  def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (QueryPlan, PipeExecutionBuilderContext) = {
+  def produceQueryPlan(ast: Query, semanticTable: SemanticTable)(planContext: PlanContext): (LogicalPlan, PipeExecutionBuilderContext) = {
     tokenResolver.resolve(ast)(semanticTable, planContext)
     val QueryPlanInput(plannerQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
 

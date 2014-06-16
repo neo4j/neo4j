@@ -777,5 +777,37 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     query.tail should be(empty)
   }
 
+  test("RETURN 1 as x UNION RETURN 2 as x") {
+    val QueryPlanInput(query, _) = buildPlannerQuery("RETURN 1 as x UNION RETURN 2 as x")
+    query.distinct should equal(true)
+    query.queries should have size 2
+
+    val q1 = query.queries.head
+    q1.graph.patternNodes shouldBe empty
+    q1.projection should equal(QueryProjection(Map("x" -> SignedIntegerLiteral("1")(pos))))
+
+    val q2 = query.queries.last
+    q2.graph.patternNodes shouldBe empty
+    q2.projection should equal(QueryProjection(Map("x" -> SignedIntegerLiteral("2")(pos))))
+  }
+
+  test("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x") {
+    val QueryPlanInput(query, _) = buildPlannerQuery("RETURN 1 as x UNION ALL RETURN 2 as x UNION ALL RETURN 3 as x")
+    query.distinct should equal(false)
+    query.queries should have size 3
+
+    val q1 = query.queries.head
+    q1.graph.patternNodes shouldBe empty
+    q1.projection should equal(QueryProjection(Map("x" -> SignedIntegerLiteral("1")(pos))))
+
+    val q2 = query.queries.tail.head
+    q2.graph.patternNodes shouldBe empty
+    q2.projection should equal(QueryProjection(Map("x" -> SignedIntegerLiteral("2")(pos))))
+
+    val q3 = query.queries.last
+    q3.graph.patternNodes shouldBe empty
+    q3.projection should equal(QueryProjection(Map("x" -> SignedIntegerLiteral("3")(pos))))
+  }
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }

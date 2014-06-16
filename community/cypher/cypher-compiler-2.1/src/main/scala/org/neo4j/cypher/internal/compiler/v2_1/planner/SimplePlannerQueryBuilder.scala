@@ -181,17 +181,33 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
   override def produce(ast: Query): QueryPlanInput = ast match {
     case Query(None, SingleQuery(clauses)) =>
-      val singleQueryPlanInput = produceQueryGraphFromClauses(SingleQueryPlanInput(PlannerQuery.empty, Map.empty), clauses)
+      val singleQueryPlanInput = produceQueryGraphFromClauses(SingleQueryPlanInput.empty, clauses)
       QueryPlanInput(
         query = UnionQuery(Seq(singleQueryPlanInput.q), distinct = false),
         patternInExpression = singleQueryPlanInput.patternExprTable
+      )
+
+    case Query(None, u: Union) =>
+      val queries = u.unionedQueries
+      val distinct = u match {
+        case _: UnionAll      => false
+        case _: UnionDistinct => true
+      }
+      val plannedQueries: Seq[SingleQueryPlanInput] = queries.reverseMap(x => produceQueryGraphFromClauses(SingleQueryPlanInput.empty, x.clauses))
+      val table = plannedQueries.map(_.patternExprTable).reduce(_ ++ _)
+      QueryPlanInput(
+        query = UnionQuery(plannedQueries.map(_.q), distinct),
+        patternInExpression = table
       )
 
     case _ =>
       throw new CantHandleQueryException
   }
 
-  
+  object SingleQueryPlanInput {
+    val empty = new SingleQueryPlanInput(PlannerQuery.empty, Map.empty)
+  }
+
   case class SingleQueryPlanInput(q: PlannerQuery, patternExprTable: Map[PatternExpression, QueryGraph])
   
   private def produceQueryGraphFromClauses(input: SingleQueryPlanInput, clauses: Seq[Clause]): SingleQueryPlanInput =
