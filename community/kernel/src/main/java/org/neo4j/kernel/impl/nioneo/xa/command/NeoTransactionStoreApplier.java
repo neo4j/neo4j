@@ -348,7 +348,8 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
         return true;
     }
 
-    public void done()
+    @Override
+    public void close()
     {
     	if ( recovery )
     	{
