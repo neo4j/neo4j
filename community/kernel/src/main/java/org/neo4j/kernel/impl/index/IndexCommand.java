@@ -44,12 +44,12 @@ public abstract class IndexCommand extends Command
     public static final byte VALUE_TYPE_STRING = (byte) 6;
 
     private byte commandType;
-    private byte indexNameId;
-    private byte entityType;
-    private long entityId;
-    private byte keyId;
-    private byte valueType;
-    private Object value;
+    protected byte indexNameId;
+    protected byte entityType;
+    protected long entityId;
+    protected byte keyId;
+    protected byte valueType;
+    protected Object value;
 
     protected void init( byte commandType, byte indexNameId, byte entityType, long entityId, byte keyId, Object value )
     {
@@ -145,12 +145,6 @@ public abstract class IndexCommand extends Command
         return true;
     }
 
-    @Override
-    public String toString()
-    {
-        return null;
-    }
-
     public static class AddNodeCommand extends IndexCommand
     {
         public void init( byte indexNameId, long entityId, byte keyId, Object value )
@@ -163,6 +157,12 @@ public abstract class IndexCommand extends Command
         public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexAddNodeCommand( this );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "AddNode[index:" + indexNameId + ", id:" + entityId + ", key:" + keyId + ", value:" + value + "]";
         }
     }
 
@@ -230,6 +230,13 @@ public abstract class IndexCommand extends Command
         public boolean handle( NeoCommandHandler visitor ) throws IOException
         {
             return visitor.visitIndexAddRelationshipCommand( this );
+        }
+
+        @Override
+        public String toString()
+        {
+            return "AddRelationship[index:" + indexNameId + ", id:" + entityId + ", key:" + keyId +
+                    ", value:" + value + "]";
         }
     }
 

@@ -181,7 +181,6 @@ public class IndexDefineCommand extends Command
     @Override
     public String toString()
     {
-        // TODO Auto-generated method stub
-        return null;
+        return getClass().getSimpleName() + "[names:" + indexNameIdRange + ", keys:" + keyIdRange + "]";
     }
 }
