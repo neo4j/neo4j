@@ -26,8 +26,6 @@
     <docs.server>neo@docs.neo4j.org</docs.server>
     <docs.rootpath>/data/www/doc/docs.neo4j.org</docs.rootpath>
     <refcard.version>${project.version}</refcard.version>
-    <maven.site.skip>true</maven.site.skip>
-    <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
 
   <dependencies>
@@ -240,13 +238,4 @@
       </releases>
     </repository>
   </repositories>
-
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://justgenerateanerrorplease</url>
-    </site>
-  </distributionManagement>
-
 </project>
-

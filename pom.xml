@@ -38,15 +38,6 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-site-plugin</artifactId>
-        <inherited>false</inherited>
-        <configuration>
-          <skip>true</skip>
-          <skipDeploy>true</skipDeploy>
-        </configuration>
-      </plugin>
-      <plugin>
         <artifactId>maven-antrun-plugin</artifactId>
         <executions>
           <execution>
@@ -680,12 +671,4 @@ public class ComponentVersion extends Version
       </dependency>
     </dependencies>
   </dependencyManagement>
-
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
-
 </project>

@@ -19,8 +19,6 @@
 
   <properties>
     <short-name>enterprise-build</short-name>
-    <maven.site.skip>true</maven.site.skip>
-    <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
 
   <scm>

@@ -26,31 +26,55 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 
 import scala.collection.GenTraversableOnce
 
-trait QueryGraph {
-  def patternRelationships: Set[PatternRelationship]
-  def patternNodes: Set[IdName]
-  def shortestPathPatterns: Set[ShortestPathPattern]
+case class QueryGraph(patternRelationships: Set[PatternRelationship] = Set.empty,
+                      patternNodes: Set[IdName] = Set.empty,
+                      argumentIds: Set[IdName] = Set.empty,
+                      selections: Selections = Selections(),
+                      optionalMatches: Seq[QueryGraph] = Seq.empty,
+                      hints: Set[Hint] = Set.empty,
+                      shortestPathPatterns: Set[ShortestPathPattern] = Set.empty) extends internalDocBuilder.AsPrettyToString{
 
-  def argumentIds: Set[IdName]
-  def selections: Selections
-  def optionalMatches: Seq[QueryGraph]
-  def hints: Set[Hint]
+  def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
+  def addPatternRel(rel: PatternRelationship): QueryGraph =
+    copy(
+      patternNodes = patternNodes + rel.nodes._1 + rel.nodes._2,
+      patternRelationships = patternRelationships + rel
+    )
 
-  def addPatternNodes(nodes: IdName*): QueryGraph
-  def addPatternRel(rel: PatternRelationship): QueryGraph
-  def addPatternRels(rels: Seq[PatternRelationship]): QueryGraph
-  def addShortestPath(shortestPath: ShortestPathPattern): QueryGraph
+  def addPatternRels(rels: Seq[PatternRelationship]) =
+    rels.foldLeft[QueryGraph](this)((qg, rel) => qg.addPatternRel(rel))
+
+  def addShortestPath(shortestPath: ShortestPathPattern): QueryGraph = {
+    val rel = shortestPath.rel
+    copy (
+      patternNodes = patternNodes + rel.nodes._1 + rel.nodes._2,
+      shortestPathPatterns = shortestPathPatterns + shortestPath
+    )
+  }
+
   def addShortestPaths(shortestPaths: ShortestPathPattern*): QueryGraph = shortestPaths.foldLeft(this)((qg, p) => qg.addShortestPath(p))
-  def addArgumentId(newIds: Seq[IdName]): QueryGraph
-  def addSelections(selections: Selections): QueryGraph
-  def addPredicates(predicates: Expression*): QueryGraph
-  def addHints(addedHints: GenTraversableOnce[Hint]): QueryGraph
+  def addArgumentId(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
+  def addSelections(selections: Selections): QueryGraph =
+    copy(selections = Selections(selections.predicates ++ this.selections.predicates))
+
+  def addPredicates(predicates: Expression*): QueryGraph = {
+    val newSelections = Selections(predicates.flatMap(SelectionPredicates.extractPredicates).toSet)
+    copy(selections = selections ++ newSelections)
+  }
+
+  def addHints(addedHints: GenTraversableOnce[Hint]) = copy(hints = hints ++ addedHints)
 
   def withoutArguments(): QueryGraph = withArgumentIds(Set.empty)
-  def withArgumentIds(argumentIds: Set[IdName]): QueryGraph
+  def withArgumentIds(newArgumentIds: Set[IdName]): QueryGraph =
+    copy(argumentIds = newArgumentIds)
 
-  def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph
-  def withSelections(selections: Selections): QueryGraph
+
+  def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
+    val argumentIds = coveredIds intersect optionalMatch.coveredIds
+    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentId(argumentIds.toSeq))
+  }
+
+  def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
 
   def knownLabelsOnNode(node: IdName): Seq[LabelName] =
     selections
@@ -94,77 +118,25 @@ trait QueryGraph {
   def covers(other: QueryGraph): Boolean = other.isCoveredBy(this)
 
   def hasOptionalPatterns = optionalMatches.nonEmpty
+
+  // This is here to stop usage of copy from the outside
+  private def copy(patternRelationships: Set[PatternRelationship] = patternRelationships,
+                   patternNodes: Set[IdName] = patternNodes,
+                   argumentIds: Set[IdName] = argumentIds,
+                   selections: Selections = selections,
+                   optionalMatches: Seq[QueryGraph] = optionalMatches,
+                   hints: Set[Hint] = hints,
+                   shortestPathPatterns: Set[ShortestPathPattern] = shortestPathPatterns) =
+  QueryGraph(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints, shortestPathPatterns)
 }
 
 object QueryGraph {
-  def apply(patternRelationships: Set[PatternRelationship] = Set.empty,
-            patternNodes: Set[IdName] = Set.empty,
-            argumentIds: Set[IdName] = Set.empty,
-            selections: Selections = Selections(),
-            optionalMatches: Seq[QueryGraph] = Seq.empty,
-            hints: Set[Hint] = Set.empty,
-            shortestPathPatterns: Set[ShortestPathPattern] = Set.empty): QueryGraph =
-    QueryGraphImpl(patternRelationships, patternNodes, argumentIds, selections, optionalMatches, hints, shortestPathPatterns)
-
   val empty = QueryGraph()
 
   def coveredIdsForPatterns(patternNodeIds: Set[IdName], patternRels: Set[PatternRelationship]) = {
     val patternRelIds = patternRels.flatMap(_.coveredIds)
     patternNodeIds ++ patternRelIds
   }
-}
-
-
-// An abstract representation of the query graph being solved at the current step
-case class QueryGraphImpl(patternRelationships: Set[PatternRelationship] = Set.empty,
-                          patternNodes: Set[IdName] = Set.empty,
-                          argumentIds: Set[IdName] = Set.empty,
-                          selections: Selections = Selections(),
-                          optionalMatches: Seq[QueryGraph] = Seq.empty,
-                          hints: Set[Hint] = Set.empty,
-                          shortestPathPatterns: Set[ShortestPathPattern] = Set.empty)
-  extends QueryGraph with internalDocBuilder.AsPrettyToString {
-
-  def withAddedOptionalMatch(optionalMatch: QueryGraph): QueryGraph = {
-    val argumentIds = coveredIds intersect optionalMatch.coveredIds
-    copy(optionalMatches = optionalMatches :+ optionalMatch.addArgumentId(argumentIds.toSeq))
-  }
-
-  def addPatternNodes(nodes: IdName*): QueryGraph = copy(patternNodes = patternNodes ++ nodes)
-
-  def addPatternRel(rel: PatternRelationship): QueryGraph =
-    copy(
-      patternNodes = patternNodes + rel.nodes._1 + rel.nodes._2,
-      patternRelationships = patternRelationships + rel
-    )
-
-  def addPatternRels(rels: Seq[PatternRelationship]) =
-    rels.foldLeft[QueryGraph](this)((qg, rel) => qg.addPatternRel(rel))
-
-  def addShortestPath(shortestPath: ShortestPathPattern): QueryGraph = {
-    val rel = shortestPath.rel
-    copy (
-      patternNodes = patternNodes + rel.nodes._1 + rel.nodes._2,
-      shortestPathPatterns = shortestPathPatterns + shortestPath
-    )
-  }
-
-  def addArgumentId(newIds: Seq[IdName]): QueryGraph = copy(argumentIds = argumentIds ++ newIds)
-
-  def withArgumentIds(newArgumentIds: Set[IdName]): QueryGraph =
-    copy(argumentIds = newArgumentIds)
-
-  def withSelections(selections: Selections): QueryGraph = copy(selections = selections)
-
-  def addSelections(selections: Selections): QueryGraph =
-    copy(selections = Selections(selections.predicates ++ this.selections.predicates))
-
-  def addPredicates(predicates: Expression*): QueryGraph = {
-    val newSelections = Selections(predicates.flatMap(SelectionPredicates.extractPredicates).toSet)
-    copy(selections = selections ++ newSelections)
-  }
-
-  def addHints(addedHints: GenTraversableOnce[Hint]) = copy(hints = hints ++ addedHints)
 }
 
 object SelectionPredicates {
@@ -199,14 +171,14 @@ object SelectionPredicates {
     case Predicate(deps, ors@Ors(exprs)) =>
       val newDeps = exprs.foldLeft(Set.empty[IdName]) { (acc, exp) =>
         exp match {
-          case exp: PatternExpression =>
-            acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
-          case exp@Not(_: PatternExpression) =>
-            acc ++ SelectionPredicates.idNames(exp).filter(x => isNamed(x.name))
-          case exp if exp.exists { case _: PatternExpression => true} =>
-            acc ++ (SelectionPredicates.idNames(exp) -- unnamedIdNamesInNestedPatternExpressions(exp))
-          case exp =>
-            acc ++ SelectionPredicates.idNames(exp)
+          case e: PatternExpression =>
+            acc ++ SelectionPredicates.idNames(e).filter(x => isNamed(x.name))
+          case e@Not(_: PatternExpression) =>
+            acc ++ SelectionPredicates.idNames(e).filter(x => isNamed(x.name))
+          case e if e.exists { case _: PatternExpression => true} =>
+            acc ++ (SelectionPredicates.idNames(e) -- unnamedIdNamesInNestedPatternExpressions(e))
+          case e =>
+            acc ++ SelectionPredicates.idNames(e)
         }
       }
       Predicate(newDeps, ors)

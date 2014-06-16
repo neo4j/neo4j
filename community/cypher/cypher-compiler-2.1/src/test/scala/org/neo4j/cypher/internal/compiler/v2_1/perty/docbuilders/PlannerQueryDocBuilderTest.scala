@@ -19,7 +19,7 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryProjection, QueryGraph, PlannerQueryImpl}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryProjection, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{SignedDecimalIntegerLiteral, SignedIntegerLiteral}
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{plannerDocBuilder, plannerQueryDocBuilder}
@@ -29,21 +29,21 @@ class PlannerQueryDocBuilderTest extends DocBuilderTestSuite[Any] {
   val docBuilder = plannerQueryDocBuilder orElse plannerDocBuilder orElse scalaDocBuilder orElse toStringDocBuilder
 
   test("renders tail free empty planner query") {
-    format(PlannerQueryImpl(
+    format(PlannerQuery(
       graph = QueryGraph(),
       projection = QueryProjection()
     )) should equal("GIVEN * RETURN *")
   }
 
   test("renders tail free non-empty planner query") {
-    format(PlannerQueryImpl(
+    format(PlannerQuery(
       graph = QueryGraph(patternNodes = Set(IdName("a"))),
       projection = QueryProjection( projections = Map("a" -> SignedDecimalIntegerLiteral("1")_))
     )) should equal("GIVEN * MATCH (a) RETURN SignedDecimalIntegerLiteral(\"1\") AS `a`")
   }
 
   test("render planner query with tail") {
-    format(PlannerQueryImpl(
+    format(PlannerQuery(
       graph = QueryGraph(patternNodes = Set(IdName("a"))),
       projection = QueryProjection( projections = Map("a" -> SignedDecimalIntegerLiteral("1")_)),
       tail = Some(PlannerQuery.empty)

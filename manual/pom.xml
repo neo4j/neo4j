@@ -27,8 +27,6 @@
     <neo4j.version>${project.version}</neo4j.version>
     <doctools.version>18</doctools.version>
     <attach-docs-phase>none</attach-docs-phase>
-    <maven.site.skip>true</maven.site.skip>
-    <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
   
   <modules>
