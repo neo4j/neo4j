@@ -111,7 +111,7 @@ public abstract class LuceneIndex implements LegacyIndex
         }
     }
 
-    private Object getCorrectValue( Object value )
+    protected Object getCorrectValue( Object value )
     {
         if ( value instanceof ValueContext )
         {
@@ -424,6 +424,7 @@ public abstract class LuceneIndex implements LegacyIndex
             assertValidKey( key );
             for ( Object oneValue : IoPrimitiveUtils.asArray( value ) )
             {
+                oneValue = getCorrectValue( oneValue );
                 transaction.add( this, RelationshipId.of( entity, startNode, endNode ), key, oneValue );
                 commandFactory.addRelationship( identifier.indexName, entity, key, oneValue, startNode, endNode );
             }

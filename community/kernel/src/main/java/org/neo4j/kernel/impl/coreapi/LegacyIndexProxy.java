@@ -19,14 +19,13 @@
  */
 package org.neo4j.kernel.impl.coreapi;
 
-import org.neo4j.collection.primitive.PrimitiveLongCollections;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.ConstraintViolationException;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.IndexHits;
 import org.neo4j.kernel.api.DataWriteOperations;
@@ -37,12 +36,15 @@ import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.InvalidTransactionTypeKernelException;
 import org.neo4j.kernel.api.exceptions.ReadOnlyDatabaseKernelException;
 import org.neo4j.kernel.api.exceptions.legacyindex.LegacyIndexNotFoundKernelException;
+import org.neo4j.kernel.impl.api.legacyindex.AbstractIndexHits;
 import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
+import static java.lang.Math.max;
 import static java.lang.String.format;
 
+import static org.neo4j.collection.primitive.Primitive.longSet;
 import static org.neo4j.collection.primitive.PrimitiveLongCollections.single;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.LEGACY_INDEX;
 import static org.neo4j.kernel.impl.locking.ResourceTypes.legacyIndexResourceId;
@@ -291,31 +293,9 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
 
     protected IndexHits<T> wrapIndexHits( final LegacyIndexHits ids )
     {
-        return new IndexHits<T>()
+        return new AbstractIndexHits<T>()
         {
-            @Override
-            public boolean hasNext()
-            {
-                return ids.hasNext();
-            }
-
-            @Override
-            public T next()
-            {
-                return entityOf( ids.next() );
-            }
-
-            @Override
-            public void remove()
-            {
-                throw new UnsupportedOperationException();
-            }
-
-            @Override
-            public ResourceIterator<T> iterator()
-            {
-                return this;
-            }
+            private final PrimitiveLongSet alreadyReturned = longSet( max( 16, ids.size() ) );
 
             @Override
             public int size()
@@ -324,29 +304,30 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
             }
 
             @Override
-            public void close()
-            {
-                ids.close();
-            }
-
-            @Override
-            public T getSingle()
-            {
-                try
-                {
-                    long singleId = PrimitiveLongCollections.single( ids, -1L );
-                    return singleId == -1 ? null : entityOf( singleId );
-                }
-                finally
-                {
-                    close();
-                }
-            }
-
-            @Override
             public float currentScore()
             {
-                return 0;
+                return ids.currentScore();
+            }
+
+            @Override
+            protected T fetchNextOrNull()
+            {
+                while ( ids.hasNext() )
+                {
+                    long id = ids.next();
+                    if ( alreadyReturned.add( id ) )
+                    {
+                        try
+                        {
+                            return entityOf( id );
+                        }
+                        catch ( NotFoundException e )
+                        {   // By contract this is OK. So just skip it.
+                            // TODO 2.2-future this is probably the place to hook in "abandoned id read-repair as well"
+                        }
+                    }
+                }
+                return null;
             }
         };
     }

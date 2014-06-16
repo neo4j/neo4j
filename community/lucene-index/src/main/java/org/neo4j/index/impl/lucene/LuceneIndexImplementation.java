@@ -86,6 +86,10 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
                 result.put( KEY_TO_LOWER_CASE, "true" );
             }
         }
+
+        // Try it on for size. Calling this will reveal configuration problems.
+        IndexType.getIndexType( result );
+
         return result;
     }
 

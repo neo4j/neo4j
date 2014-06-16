@@ -46,7 +46,8 @@ public interface IndexImplementation extends Lifecycle
 
     /**
      * Fills in default configuration parameters for indexes provided from this
-     * index provider.
+     * index provider. This method will also validate the the configuration is valid to be used
+     * as index configuration for this provider.
      * @param config the configuration map to complete with defaults.
      * @return a {@link Map} filled with decent defaults for an index from
      * this index provider.

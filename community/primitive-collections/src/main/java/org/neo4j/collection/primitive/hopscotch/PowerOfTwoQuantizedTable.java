@@ -35,6 +35,10 @@ public abstract class PowerOfTwoQuantizedTable<VALUE> implements Table<VALUE>
 
     protected PowerOfTwoQuantizedTable( int capacity, int h )
     {
+        if ( capacity <= 0 )
+        {
+            throw new IllegalArgumentException( "Illegal capacity " + capacity );
+        }
         if ( h < 4 || h > 32 )
         {
             throw new IllegalArgumentException( "h needs to be 4 <= h <= 32, was " + h );

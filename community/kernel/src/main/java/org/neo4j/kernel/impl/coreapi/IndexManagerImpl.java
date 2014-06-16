@@ -205,13 +205,15 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public String setConfiguration( Index<? extends PropertyContainer> index, String key, String value )
     {
+        // TODO 2.2-future configuration changes should be done transactionally. However this
+        // has always been done non-transactionally, so it's not a regression.
         try ( Statement statement = transactionBridge.instance() )
         {
-            if ( index.equals( Node.class ) )
+            if ( index.getEntityType().equals( Node.class ) )
             {
                 return statement.dataWriteOperations().nodeLegacyIndexSetConfiguration( index.getName(), key, value );
             }
-            if ( index.equals( Relationship.class ) )
+            if ( index.getEntityType().equals( Relationship.class ) )
             {
                 return statement.dataWriteOperations().relationshipLegacyIndexSetConfiguration(
                         index.getName(), key, value );
@@ -231,13 +233,15 @@ public class IndexManagerImpl implements IndexManager
     @Override
     public String removeConfiguration( Index<? extends PropertyContainer> index, String key )
     {
+        // TODO 2.2-future configuration changes should be done transactionally. However this
+        // has always been done non-transactionally, so it's not a regression.
         try ( Statement statement = transactionBridge.instance() )
         {
-            if ( index.equals( Node.class ) )
+            if ( index.getEntityType().equals( Node.class ) )
             {
                 return statement.dataWriteOperations().nodeLegacyIndexRemoveConfiguration( index.getName(), key );
             }
-            if ( index.equals( Relationship.class ) )
+            if ( index.getEntityType().equals( Relationship.class ) )
             {
                 return statement.dataWriteOperations().relationshipLegacyIndexRemoveConfiguration(
                         index.getName(), key );

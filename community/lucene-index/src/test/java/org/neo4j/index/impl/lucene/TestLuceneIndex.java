@@ -1025,7 +1025,7 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
         float score2 = hits.currentScore();
         assertEquals( node2, hit1 );
         assertEquals( node1, hit2 );
-        assertTrue( score1 > score2 );
+        assertTrue( "Score 1 (" + score1 + ") should have been higher than score 2 (" + score2 + ")", score1 > score2 );
     }
 
     @Test
@@ -1749,12 +1749,12 @@ public class TestLuceneIndex extends AbstractLuceneIndexTest
     }
 
     @Test
-    public void failureToCreateAnIndexShouldNotLeaveConfiguratiobBehind() throws Exception
+    public void failureToCreateAnIndexShouldNotLeaveConfigurationBehind() throws Exception
     {
         // WHEN
         try
         {
-            // StandardAnalyzer is invalid since it has no publi no-arg constructor
+            // StandardAnalyzer is invalid since it has no public no-arg constructor
             nodeIndex( stringMap( "analyzer", StandardAnalyzer.class.getName() ) );
             fail( "Should have failed" );
         }

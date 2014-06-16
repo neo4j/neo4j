@@ -149,7 +149,7 @@ public class LegacyIndexStore
         String provider = config.get( PROVIDER );
         if ( provider == null )
         {
-            config = new HashMap<String, String>( config );
+            config = new HashMap<>( config );
             config.put( PROVIDER, getDefaultProvider( indexName, dbConfig ) );
         }
         return config;
