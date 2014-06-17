@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.8-SNAPSHOT</version>
+    <version>1.9.8</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <artifactId>neo4j</artifactId>
-  <version>1.9.8-SNAPSHOT</version>
+  <version>1.9.8</version>
   <name>Neo4j Community</name>
   <packaging>jar</packaging>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>

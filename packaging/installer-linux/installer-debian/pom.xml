@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.8-SNAPSHOT</version>
+    <version>1.9.8</version>
     <relativePath>../../..</relativePath>
   </parent>
 
   <artifactId>neo4j-installer-debian</artifactId>
-  <version>1.9.8-SNAPSHOT</version>
+  <version>1.9.8</version>
   <packaging>pom</packaging>
 
   <name>Neo4j Debian Installers</name>

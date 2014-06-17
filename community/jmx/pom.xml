@@ -4,12 +4,12 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.8-SNAPSHOT</version>
+    <version>1.9.8</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <artifactId>neo4j-jmx</artifactId>
-  <version>1.9.8-SNAPSHOT</version>
+  <version>1.9.8</version>
   <name>Neo4j - JMX support</name>
   <description>Management support using JMX.</description>
   <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>
