@@ -33,6 +33,7 @@ import org.neo4j.kernel.api.constraints.UniquenessConstraint;
 import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
+import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.ConstraintEnforcingEntityOperations;
 import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.api.LegacyPropertyTrackers;
@@ -48,7 +49,6 @@ import static java.util.Arrays.asList;
 
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
@@ -105,18 +105,14 @@ public class IndexQueryTransactionStateTest
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
-//        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-//                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
-//        when( oldTxState.hasChanges() ).thenReturn( true );
+        state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
+                Property.intProperty( propertyKeyId, 10 ) );
 
         // When
         PrimitiveLongIterator result = txContext.nodesGetFromIndexLookup( state, indexDescriptor, value );
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
-
-        fail( "Shouldn't work. Above is a commented piece of code that mocks a removal of something. " +
-                "With that kept as commented code this test works, so it's a false green" );
     }
 
     @Test
@@ -126,18 +122,14 @@ public class IndexQueryTransactionStateTest
         when( store.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value ) ).thenReturn(
                 asPrimitiveResourceIterator() );
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( false );
-//        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-//                new DiffSets<>( asSet( 1l ), Collections.<Long>emptySet() ) );
-//        when( oldTxState.hasChanges() ).thenReturn( true );
+        state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
+                Property.intProperty( propertyKeyId, 10 ) );
 
         // When
         long result = txContext.nodeGetUniqueFromIndexLookup( state, indexDescriptor, value );
 
         // Then
         assertNoSuchNode( result );
-
-        fail( "Shouldn't work. Above is a commented piece of code that mocks a removal of something. " +
-                "With that kept as commented code this test works, so it's a false green" );
     }
 
     @Test
@@ -278,8 +270,8 @@ public class IndexQueryTransactionStateTest
                 .then( answerAsPrimitiveLongIteratorFrom( asList( 2l, 3l ) ) );
 
         when( store.nodeHasLabel( 1l, labelId ) ).thenReturn( true );
-//        when( oldTxState.getNodesWithChangedProperty( propertyKeyId, value ) ).thenReturn(
-//                new DiffSets<>( Collections.<Long>emptySet(), asSet( 1l ) ) );
+        state.txState().nodeDoReplaceProperty( 1l, Property.noNodeProperty( 1l, propertyKeyId ),
+                Property.intProperty( propertyKeyId, 10 ) );
 
         txContext.nodeAddLabel( state, 1l, labelId );
 
@@ -288,9 +280,6 @@ public class IndexQueryTransactionStateTest
 
         // Then
         assertThat( asSet( result ), equalTo( asSet( 2l, 3l ) ) );
-
-        fail( "Shouldn't work. Above is a commented piece of code that mocks a removal of something. " +
-                "With that kept as commented code this test works, so it's a false green" );
     }
 
     @Test
