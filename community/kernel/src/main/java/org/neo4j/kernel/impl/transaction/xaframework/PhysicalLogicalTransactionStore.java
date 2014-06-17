@@ -45,7 +45,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     @Override
     public void init() throws Throwable
     {
-        this.appender = new PhysicalTransactionAppender( logFile.getWriter(), txIdGenerator, transactionMetadataCache );
+        this.appender = new PhysicalTransactionAppender( logFile, txIdGenerator, transactionMetadataCache );
     }
 
     @Override
@@ -120,7 +120,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
             // TODO Auto-generated method stub
             return false;
         }
-        
+
         public LogPosition getPosition()
         {
             return position;

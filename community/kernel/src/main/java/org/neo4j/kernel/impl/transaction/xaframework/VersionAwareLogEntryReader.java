@@ -52,14 +52,9 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
 
     public static long[] readLogHeader( FileSystemAbstraction fileSystem, File file ) throws IOException
     {
-        StoreChannel channel = fileSystem.open( file, "r" );
-        try
+        try ( StoreChannel channel = fileSystem.open( file, "r" ) )
         {
             return readLogHeader( ByteBuffer.allocateDirect( 100*1000 ), channel, true );
-        }
-        finally
-        {
-            channel.close();
         }
     }
 
@@ -124,7 +119,6 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
                 case LogEntry.COMMAND:
                     return readTxCommandEntry( version, channel );
                 case LogEntry.EMPTY:
-                    System.out.println("Read 0");
                     return null;
                 default:
                     throw new IOException( "Unknown entry[" + type + "]" );
@@ -132,7 +126,6 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         }
         catch ( ReadPastEndException e )
         {
-//            e.printStackTrace();
             return null;
         }
     }

@@ -30,11 +30,13 @@ public class PhysicalTransactionAppender implements TransactionAppender
     private final TxIdGenerator txIdGenerator;
     private final LogEntryWriter logEntryWriter;
     private final TransactionMetadataCache transactionMetadataCache;
+    private final LogFile logFile;
 
-    public PhysicalTransactionAppender( WritableLogChannel channel, TxIdGenerator txIdGenerator,
+    public PhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
                                         TransactionMetadataCache transactionMetadataCache )
     {
-        this.channel = channel;
+        this.logFile = logFile;
+        this.channel = logFile.getWriter();
         this.txIdGenerator = txIdGenerator;
         this.transactionMetadataCache = transactionMetadataCache;
         this.logEntryWriter = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
@@ -43,6 +45,8 @@ public class PhysicalTransactionAppender implements TransactionAppender
     @Override
     public synchronized Future<Long> append( TransactionRepresentation transaction ) throws IOException
     {
+        logFile.checkRotation();
+
         // Write start record
         LogPosition logPosition = channel.getCurrentPosition();
         logEntryWriter.writeStartEntry( transaction.getMasterId(), transaction.getAuthorId(),
@@ -70,63 +74,4 @@ public class PhysicalTransactionAppender implements TransactionAppender
     {
         channel.close();
     }
-
-//    private class PhysicalLogWriterSPI implements LogHandler.SPI
-//    {
-//        private ForceMode forceMode;
-//        private long nextTxId;
-//
-//        @Override
-//        public LogBuffer getWriteBuffer()
-//        {
-//            return writeBuffer;
-//        }
-//
-//        @Override
-//        public void commitTransactionWithoutTxId( LogEntry.Start startEntry ) throws IOException
-//        {
-//            if ( startEntry == null )
-//            {
-//                throw new IOException( "Unable to find start entry" );
-//            }
-//            try
-//            {
-//                injectedTxValidator.assertInjectionAllowed( startEntry.getLastCommittedTxWhenTransactionStarted() );
-//            }
-//            catch ( XAException e )
-//            {
-//                throw new IOException( e );
-//            }
-//
-//            LogEntry.OnePhaseCommit commit = new LogEntry.OnePhaseCommit(
-//                    startEntry.getIdentifier(), nextTxId, System.currentTimeMillis() );
-//
-//            logEntryWriter.writeLogEntry( commit, writeBuffer );
-//            // need to manually force since xaRm.commit will not do it (transaction marked as recovered)
-//            forceMode.force( writeBuffer );
-//            Xid xid = startEntry.getXid();
-//            try
-//            {
-//                XaTransaction xaTx = xaRm.getXaTransaction( xid );
-//                xaTx.setCommitTxId( nextTxId );
-//                positionCache.cacheStartPosition( nextTxId, startEntry, logVersion );
-//                xaRm.commit( xid, true );
-//                LogEntry doneEntry = new LogEntry.Done( startEntry.getIdentifier() );
-//                logEntryWriter.writeLogEntry( doneEntry, writeBuffer );
-//                xidIdentMap.remove( startEntry.getIdentifier() );
-//                recoveredTxMap.remove( startEntry.getIdentifier() );
-//            }
-//            catch ( XAException e )
-//            {
-//                throw new IOException( e );
-//            }
-//        }
-//
-//        public void bind( ForceMode forceMode, long nextTxId )
-//        {
-//            this.forceMode = forceMode;
-//            this.nextTxId = nextTxId;
-//        }
-//    }
-
 }

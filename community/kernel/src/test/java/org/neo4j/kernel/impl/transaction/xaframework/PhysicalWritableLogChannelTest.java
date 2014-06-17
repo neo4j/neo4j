@@ -43,17 +43,8 @@ public class PhysicalWritableLogChannelTest
         // GIVEN
         final File firstFile = new File( directory.directory(), "file1" );
         final File secondFile = new File( directory.directory(), "file2" );
-        LogVersionBridge bridge = new LogVersionBridge()
-        {
-            @Override
-            public VersionedStoreChannel next( VersionedStoreChannel channel ) throws IOException
-            {   // In this test scenario always rotate
-                channel.close();
-                return new PhysicalLogVersionedStoreChannel( fs.open( secondFile, "rw" ), 2 );
-            }
-        };
-        WritableLogChannel channel = new PhysicalWritableLogChannel(
-                new PhysicalLogVersionedStoreChannel( fs.open( firstFile, "rw" ), 1 ), bridge );
+        PhysicalWritableLogChannel channel = new PhysicalWritableLogChannel(
+                new PhysicalLogVersionedStoreChannel( fs.open( firstFile, "rw" ), 1 ) );
 
         // WHEN writing a transaction, of sorts
         byte byteValue = (byte) 4;
@@ -69,9 +60,10 @@ public class PhysicalWritableLogChannelTest
         channel.putShort( shortValue );
         channel.putInt( intValue );
         channel.putLong( longValue );
-
-        // and WHEN forcing -- effectively rotating the log in this test
         channel.force();
+
+        // "Rotate" and continue
+        channel.setChannel( new PhysicalLogVersionedStoreChannel( fs.open( secondFile, "rw" ), 2 ) );
         channel.putFloat( floatValue );
         channel.putDouble( doubleValue );
         channel.put( byteArrayValue, byteArrayValue.length );

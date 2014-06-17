@@ -27,9 +27,9 @@ import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 
 public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChannel
 {
-    private byte[] bytes = new byte[1000];
-    private ByteBuffer asWriter = ByteBuffer.wrap( bytes );
-    private ByteBuffer asReader = ByteBuffer.wrap( bytes );
+    private final byte[] bytes = new byte[1000];
+    private final ByteBuffer asWriter = ByteBuffer.wrap( bytes );
+    private final ByteBuffer asReader = ByteBuffer.wrap( bytes );
 
     public void reset()
     {
@@ -42,7 +42,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public InMemoryLogChannel put( byte b ) throws IOException
     {
         asWriter.put( b );
-        System.out.println("Put byte " + b );
         return this;
     }
 
@@ -50,7 +49,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public InMemoryLogChannel putShort( short s ) throws IOException
     {
         asWriter.putShort( s );
-        System.out.println("Put short " + s );
         return this;
     }
 
@@ -58,7 +56,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public InMemoryLogChannel putInt( int i ) throws IOException
     {
         asWriter.putInt( i );
-        System.out.println("Put int " + i );
         return this;
     }
 
@@ -66,7 +63,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public InMemoryLogChannel putLong( long l ) throws IOException
     {
         asWriter.putLong( l );
-        System.out.println("Put long " + l );
         return this;
     }
 
@@ -88,7 +84,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public InMemoryLogChannel put( byte[] bytes, int length ) throws IOException
     {
         asWriter.put( bytes, 0, length );
-        System.out.println("Put array " + length );
         return this;
     }
 
@@ -132,36 +127,28 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     public byte get() throws ReadPastEndException
     {
         ensureAvailableToRead( 1 );
-        byte b = asReader.get();
-        System.out.println("read byte " + b );
-        return b;
+        return asReader.get();
     }
 
     @Override
     public short getShort() throws ReadPastEndException
     {
         ensureAvailableToRead( 2 );
-        short short1 = asReader.getShort();
-        System.out.println("read short " + short1 );
-        return short1;
+        return asReader.getShort();
     }
 
     @Override
     public int getInt() throws ReadPastEndException
     {
         ensureAvailableToRead( 4 );
-        int int1 = asReader.getInt();
-        System.out.println("read int " + int1 );
-        return int1;
+        return asReader.getInt();
     }
 
     @Override
     public long getLong() throws ReadPastEndException
     {
         ensureAvailableToRead( 8 );
-        long long1 = asReader.getLong();
-        System.out.println("read long " + long1 );
-        return long1;
+        return asReader.getLong();
     }
 
     @Override
@@ -183,7 +170,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     {
         ensureAvailableToRead( length );
         asReader.get( bytes, 0, length );
-        System.out.println("read array " + Arrays.toString( bytes ));
     }
 
     @Override
@@ -191,7 +177,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     {
         ensureAvailableToRead( length * 2 );
         for ( int i = 0; i < length; i++)
-        {            
+        {
             chars[i] = asReader.getChar();
         }
     }
@@ -203,7 +189,7 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
             throw new ReadPastEndException();
         }
     }
-    
+
     @Override
     public LogPosition getCurrentPosition()
     {

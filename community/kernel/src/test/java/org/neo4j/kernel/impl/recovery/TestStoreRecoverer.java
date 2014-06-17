@@ -19,16 +19,13 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -53,6 +50,10 @@ import org.neo4j.kernel.impl.util.Providers;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
 
 public class TestStoreRecoverer
 {
@@ -121,7 +122,7 @@ public class TestStoreRecoverer
                 mock( LogRotationControl.class ), positionCache, mock( Visitor.class ) ) );
         life.start();
 
-        try ( TransactionAppender appender = new PhysicalTransactionAppender( logFile.getWriter(),
+        try ( TransactionAppender appender = new PhysicalTransactionAppender( logFile,
                 new DefaultTxIdGenerator( Providers.<TransactionIdStore>singletonProvider( transactionIdStore ) ),
                 positionCache ) )
         {

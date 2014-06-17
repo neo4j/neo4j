@@ -75,7 +75,6 @@ public class TransactionMetadataCache
 
         public TransactionMetadata( int masterId, int authorId, LogPosition startPosition, long checksum )
         {
-
             this.masterId = masterId;
             this.authorId = authorId;
             this.startPosition = startPosition;

@@ -28,12 +28,10 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
 {
     private VersionedStoreChannel channel;
     private final ByteBuffer buffer = ByteBuffer.allocate( 4*1024 );
-    private final LogVersionBridge bridge;
 
-    public PhysicalWritableLogChannel( VersionedStoreChannel channel, LogVersionBridge bridge )
+    public PhysicalWritableLogChannel( VersionedStoreChannel channel )
     {
         this.channel = channel;
-        this.bridge = bridge;
     }
 
     @Override
@@ -41,8 +39,11 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     {
         emptyBufferIntoChannelAndClearIt();
         channel.force( false );
+    }
 
-        channel = bridge.next( channel );
+    void setChannel( VersionedStoreChannel channel )
+    {
+        this.channel = channel;
     }
 
     private void emptyBufferIntoChannelAndClearIt() throws IOException

@@ -46,19 +46,14 @@ public class PhysicalLogFiles
         this( directory, PhysicalLogFile.DEFAULT_NAME, fileSystem );
     }
 
-    public Pattern getVersionFileNamePattern()
+    private Pattern getVersionFileNamePattern()
     {
-        return Pattern.compile( escaped( logBaseName.getPath() ) + "\\.v\\d+" );
-    }
-
-    private String escaped( String path )
-    {
-        return path.replace( '\\', '/' );
+        return Pattern.compile( logBaseName.getName() + "\\.v\\d+" );
     }
 
     public File getVersionFileName( long version )
     {
-        return new File( escaped( logBaseName.getPath() ) + ".v" + version );
+        return new File( logBaseName.getPath() + ".v" + version );
     }
 
     public long getLogVersion( File historyLogFile )
@@ -77,7 +72,7 @@ public class PhysicalLogFiles
     {
         Pattern logFilePattern = getVersionFileNamePattern();
         long highest = -1;
-        for ( File file : fileSystem.listFiles( logBaseName.getAbsoluteFile().getParentFile() ) )
+        for ( File file : fileSystem.listFiles( logBaseName.getParentFile() ) )
         {
             if ( logFilePattern.matcher( file.getName() ).matches() )
             {

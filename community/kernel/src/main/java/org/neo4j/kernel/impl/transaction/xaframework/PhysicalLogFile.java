@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -32,6 +29,9 @@ import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 
 /**
  * {@link LogFile} backup by one or more files in a {@link FileSystemAbstraction}.
@@ -49,7 +49,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     private final Monitor monitor;
     private final ByteBuffer headerBuffer = ByteBuffer.allocate( 16 );
     private final LogRotationControl logRotationControl;
-    private WritableLogChannel writer;
+    private PhysicalWritableLogChannel writer;
     private final LogVersionRepository logVersionRepository;
     private PhysicalLogVersionedStoreChannel channel;
 
@@ -75,20 +75,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     {
         long lastLogVersionUsed = logVersionRepository.getCurrentLogVersion();
         channel = openLogChannelForVersion( lastLogVersionUsed );
-        writer = new PhysicalWritableLogChannel( channel, new LogVersionBridge()
-        {
-            @Override
-            public VersionedStoreChannel next( VersionedStoreChannel channel ) throws IOException
-            {
-                // Whereas channel.size() should be fine, we're safer calling position() due to possibility
-                // of this file being memory mapped or whatever.
-                if ( channel.position() >= rotateAtSize )
-                {
-                    return rotate( channel );
-                }
-                return channel;
-            }
-        } );
+        writer = new PhysicalWritableLogChannel( channel );
     }
 
     @Override
@@ -109,14 +96,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
          *  process.
          */
         logVersionRepository.incrementAndGetVersion();
-        //        pruneStrategy.prune( this );
     }
-
-    @Override
-    public synchronized void shutdown() throws IOException
-    {
-    }
-
 
     private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
     {
@@ -150,7 +130,20 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
         }
     }
 
-    private synchronized VersionedStoreChannel rotate( VersionedStoreChannel currentLog ) throws IOException
+    @Override
+    public void checkRotation() throws IOException
+    {
+        // Whereas channel.size() should be fine, we're safer calling position() due to possibility
+        // of this file being memory mapped or whatever.
+        if ( channel.position() >= rotateAtSize )
+        {
+            channel = rotate( channel );
+            writer.setChannel( channel );
+        }
+    }
+
+    private synchronized PhysicalLogVersionedStoreChannel rotate( VersionedStoreChannel currentLog )
+            throws IOException
     {
         /*
          * First we flush the store. If we fail now or during the flush, on
@@ -344,6 +337,6 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     @Override
     public void accept( LogFileVisitor visitor )
     {
-        // TODO Auto-generated method stub
+        throw new UnsupportedOperationException( "Please implement" );
     }
 }
