@@ -808,5 +808,47 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     q3.horizon.projection should equal(RegularQueryProjection(Map("x" -> SignedDecimalIntegerLiteral("3")(pos))))
   }
 
+  test("match n return distinct n") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) = buildPlannerQuery("match n return distinct n")
+    query.horizon.projection should equal(AggregatingQueryProjection(
+      groupingKeys = Map("n" -> ident("n")),
+      aggregationExpressions = Map.empty
+    ))
+
+    query.graph.patternNodes should equal(Set(IdName("n")))
+  }
+
+  test("match n with distinct n.prop as x return x") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) = buildPlannerQuery("match n with distinct n.prop as x return x")
+    query.horizon.projection should equal(AggregatingQueryProjection(
+      groupingKeys = Map("x" -> Property(Identifier("n") _, PropertyKeyName("prop") _) _),
+      aggregationExpressions = Map.empty
+    ))
+
+    query.graph.patternNodes should equal(Set(IdName("n")))
+  }
+
+  test("match n with distinct * return x") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) = buildPlannerQuery("match n with distinct * return x")
+    query.horizon.projection should equal(AggregatingQueryProjection(
+      groupingKeys = Map("n" -> ident("n")),
+      aggregationExpressions = Map.empty
+    ))
+
+    query.graph.patternNodes should equal(Set(IdName("n")))
+  }
+
+  test("WITH DISTINCT 1 as b RETURN b") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) = buildPlannerQuery("WITH DISTINCT 1 as b RETURN b", normalize = true)
+
+    query.horizon.projection should equal(AggregatingQueryProjection(
+      groupingKeys = Map("b" -> SignedDecimalIntegerLiteral("1") _),
+      aggregationExpressions = Map.empty
+    ))
+
+    query.tail should not be(empty)
+  }
+
+
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }

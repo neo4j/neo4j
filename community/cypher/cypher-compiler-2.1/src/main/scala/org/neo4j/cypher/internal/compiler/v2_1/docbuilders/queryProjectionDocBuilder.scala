@@ -20,21 +20,32 @@
 package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.perty._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryHorizon, QueryProjection}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{AggregatingQueryProjection, QueryProjection}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{DescSortItem, AscSortItem}
 
 case class queryProjectionDocBuilder(prefix: String = "WITH") extends CachingDocBuilder[Any] {
+
   import Doc._
 
   override protected def newNestedDocGenerator = {
-    case queryProjection: QueryProjection => (inner: DocGenerator[Any]) =>
+    case queryProjection: AggregatingQueryProjection =>
+      val distinct = if (queryProjection.aggregationExpressions.isEmpty) "DISTINCT" else ""
+      generateDoc(queryProjection, distinct)
+
+    case queryProjection: QueryProjection =>
+      generateDoc(queryProjection)
+  }
+
+  private def generateDoc(queryProjection: QueryProjection, initialString: String = ""): DocGenerator[Any] => Doc = {
+    (inner: DocGenerator[Any]) =>
+
       val projectionMapDoc = queryProjection.projections.collect {
-        case (k, v) => group( inner(v) :/: "AS " :: s"`$k`" )
+        case (k, v) => group(inner(v) :/: "AS " :: s"`$k`")
       }
       val projection = if (projectionMapDoc.isEmpty) text("*") else group(sepList(projectionMapDoc))
 
       val sortItemDocs = queryProjection.shuffle.sortItems.collect {
-        case AscSortItem(expr)  => inner(expr)
+        case AscSortItem(expr) => inner(expr)
         case DescSortItem(expr) => inner(expr) :/: "DESC"
       }
       val sortItems = if (sortItemDocs.isEmpty) nil else group("ORDER BY" :/: sepList(sortItemDocs))
