@@ -556,7 +556,7 @@ return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j
     </applications>
   </installerGui>
   <mediaSets>
-    <windows name="Windows64" id="25" customizedId="" mediaFileName="" installDir="Neo4j Community" overridePrincipalLanguage="false" jreBitType="64" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="windows-amd64-1.7.0_25" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="true" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
+    <windows name="Windows64" id="25" customizedId="" mediaFileName="" installDir="Neo4j Community" overridePrincipalLanguage="false" jreBitType="64" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="windows-amd64-1.7.0_45" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="true" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
       <excludedLaunchers />
       <excludedBeans />
       <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
@@ -569,7 +569,7 @@ return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j
       <excludedComponents />
       <includedDownloadableComponents />
     </windows>
-    <windows name="Windows32" id="26" customizedId="" mediaFileName="" installDir="Neo4j Community" overridePrincipalLanguage="false" jreBitType="32" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="windows-x86-1.7.0_25" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="true" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
+    <windows name="Windows32" id="26" customizedId="" mediaFileName="" installDir="Neo4j Community" overridePrincipalLanguage="false" jreBitType="32" runPostProcessor="false" postProcessor="" failOnPostProcessorError="false" useLegacyMediaFileIds="false" legacyMediaFileIds="" includedJRE="windows-x86-1.7.0_45" manualJREEntry="false" bundleType="1" jreURL="" jreShared="false" directDownload="false" installOnlyIfNecessary="true" customInstallBaseDir="" contentFilesType="1" downloadURL="" verifyIntegrity="true">
       <excludedLaunchers />
       <excludedBeans />
       <overriddenPrincipalLanguage id="en" customLocalizationFile="" />
@@ -588,4 +588,3 @@ return "${APPDATA}" + (String) context.getVariable("sys.fileSeparator") + "neo4j
   </buildIds>
   <buildOptions verbose="true" faster="false" disableSigning="false" debug="false" />
 </install4j>
-
