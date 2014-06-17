@@ -85,9 +85,11 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     class given extends StubbedLogicalPlanningConfiguration(this)
 
-    def planFor(queryString: String): SemanticPlan = {
+    def planFor(queryString: String): SemanticPlan =
       LogicalPlanningEnvironment(this).planFor(queryString)
-    }
+
+    def getLogicalPlanFor(query: String): (LogicalPlan, SemanticTable) =
+      LogicalPlanningEnvironment(this).getLogicalPlanFor(query)
 
     def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {
       LogicalPlanningEnvironment(this).withLogicalPlanningContext(f)
@@ -265,6 +267,22 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       }
 
       SemanticPlan(plannerQuery, semanticTable)
+    }
+
+    def getLogicalPlanFor(queryString: String): (LogicalPlan, SemanticTable) = {
+      val parsedStatement = parser.parse(queryString)
+      semanticChecker.check(queryString, parsedStatement)
+      val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement)
+      val semanticTable = semanticChecker.check(queryString, rewrittenStatement)
+
+      Planner.rewriteStatement(rewrittenStatement) match {
+        case ast: Query =>
+          tokenResolver.resolve(ast)(semanticTable, planContext)
+          val QueryPlanInput(unionQuery, patternInExpression) = plannerQueryBuilder.produce(ast)
+          val metrics = metricsFactory.newMetrics(planContext.statistics, semanticTable)
+          val context = LogicalPlanningContext(planContext, metrics, semanticTable, queryGraphSolver)
+          (strategy.plan(unionQuery)(context, patternInExpression), semanticTable)
+      }
     }
 
     def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {
