@@ -21,12 +21,12 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{IdName, QueryPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v2_1.planner.AggregationProjection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.AggregatingQueryProjection
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, Expression}
 
 object aggregation {
-  def apply(plan: QueryPlan, aggregation: AggregationProjection)(implicit context: LogicalPlanningContext): QueryPlan = {
+  def apply(plan: QueryPlan, aggregation: AggregatingQueryProjection)(implicit context: LogicalPlanningContext): QueryPlan = {
 
     // Writes down the grouping values
     val expressionsMap: Map[String, Expression] = aggregation.groupingKeys ++ plan.plan.availableSymbols.map {

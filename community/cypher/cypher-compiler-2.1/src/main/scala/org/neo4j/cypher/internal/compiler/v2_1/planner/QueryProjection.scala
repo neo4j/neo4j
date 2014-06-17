@@ -24,84 +24,125 @@ import org.neo4j.cypher.InternalException
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
 
-trait QueryProjection {
+final case class QueryHorizon(
+  unwinds: Map[String, Expression] = Map.empty,
+  projection: QueryProjection = QueryProjection.empty
+) extends internalDocBuilder.AsPrettyToString {
+
+  def ++(other: QueryHorizon) =
+    QueryHorizon(
+      unwinds ++ other.unwinds,
+      QueryProjection.combine(projection, other.projection)
+    )
+
+  def updateProjection(f: QueryProjection => QueryProjection) = withProjection(f(projection))
+
+  def withUnwinds(unwinds: Map[String, Expression]) = copy(unwinds = unwinds)
+  def withProjection(projection: QueryProjection) = copy(projection = projection)
+}
+
+object QueryHorizon {
+  val empty = QueryHorizon()
+}
+
+sealed abstract class QueryProjection extends internalDocBuilder.AsPrettyToString {
   def projections: Map[String, Expression]
-  def sortItems: Seq[SortItem]
-  def limit: Option[Expression]
-  def skip: Option[Expression]
-  def keySet = projections.keySet
+  def shuffle: QueryShuffle
 
-  def withSkip(skip: Option[Expression]): QueryProjection
-  def withLimit(limit: Option[Expression]): QueryProjection
-  def withSortItems(sortItems: Seq[SortItem]): QueryProjection
+  def keySet: Set[String]
+
+  def updateShuffle(f: QueryShuffle => QueryShuffle) = withShuffle(f(shuffle))
+
   def withProjections(projections: Map[String, Expression]): QueryProjection
-
-  def addProjections(projections: Map[String, Expression]): QueryProjection =
-    withProjections(projections ++ this.projections)
-
-  def ++(other: QueryProjection): QueryProjection
+  def withShuffle(shuffle: QueryShuffle): QueryProjection
 }
 
 object QueryProjection {
-  def apply(projections: Map[String, Expression] = Map.empty,
-            sortItems: Seq[SortItem] = Seq.empty,
-            limit: Option[Expression] = None,
-            skip: Option[Expression] = None) = QueryProjectionImpl(projections, sortItems, limit, skip)
+  val empty = RegularQueryProjection()
 
-  def forIds(coveredIds: Set[IdName]) =
-    apply(coveredIds.toSeq.map( idName => idName.name -> Identifier(idName.name)(null)).toMap)
+  def forIds(coveredIds: Set[IdName]): RegularQueryProjection =
+    RegularQueryProjection(
+      projections = coveredIds.toSeq.map( idName => idName.name -> Identifier(idName.name)(null)).toMap
+    )
 
-  val empty = apply(Map.empty)
+  def combine(lhs: QueryProjection, rhs: QueryProjection): QueryProjection = (lhs, rhs) match {
+    case (left: RegularQueryProjection, right: RegularQueryProjection) =>
+      left ++ right
+
+    case _ =>
+      throw new InternalException("Aggregations cannot be combined")
+  }
 }
 
-case class QueryProjectionImpl(projections: Map[String, Expression], sortItems: Seq[SortItem], limit: Option[Expression],
-                               skip: Option[Expression])
-  extends QueryProjection with internalDocBuilder.AsPrettyToString {
-  def withProjections(projections: Map[String, Expression]): QueryProjection = copy(projections = projections)
+final case class QueryShuffle(
+  sortItems: Seq[SortItem] = Seq.empty,
+  skip: Option[Expression] = None,
+  limit: Option[Expression] = None
+) extends internalDocBuilder.AsPrettyToString {
 
-  def withSortItems(sortItems: Seq[SortItem]): QueryProjection = copy(sortItems = sortItems)
+  def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
+  def withSkip(skip: Option[Expression]) = copy(skip = skip)
+  def withLimit(limit: Option[Expression]) = copy(limit = limit)
 
-  def withSkip(skip: Option[Expression]): QueryProjection = copy(skip = skip)
-
-  def withLimit(limit: Option[Expression]): QueryProjection = copy(limit = limit)
-
-  def ++(other: QueryProjection): QueryProjection =
-    QueryProjection(
-      projections = projections ++ other.projections,
+  def ++(other: QueryShuffle): QueryShuffle =
+    copy(
       sortItems = other.sortItems,
       limit = either("LIMIT", limit, other.limit),
       skip = either("SKIP", skip, other.skip)
     )
 
   private def either[T](what: String, a: Option[T], b: Option[T]): Option[T] = (a, b) match {
-    case (Some(_), Some(_)) => throw new InternalException(s"Can't join two query graphs with different $what")
-    case (s@Some(_), None) => s
-    case (None, s) => s
+    case (Some(_), Some(_)) => throw new InternalException(s"Can't join two query shuffles with different $what")
+    case (s@Some(_), None)  => s
+    case (None, s)          => s
   }
 }
 
-case class AggregationProjection(groupingKeys: Map[String, Expression] = Map.empty,
-                                 aggregationExpressions: Map[String, Expression] = Map.empty,
-                                 sortItems: Seq[SortItem] = Seq.empty,
-                                 limit: Option[Expression] = None,
-                                 skip: Option[Expression] = None)
-  extends QueryProjection with internalDocBuilder.AsPrettyToString {
+object QueryShuffle {
+  val empty = QueryShuffle()
+}
+
+final case class RegularQueryProjection(
+  projections: Map[String, Expression] = Map.empty,
+  shuffle: QueryShuffle = QueryShuffle.empty
+) extends QueryProjection {
+
+  def keySet: Set[String] = projections.keySet
+
+  def ++(other: RegularQueryProjection) =
+    RegularQueryProjection(
+      projections = projections ++ other.projections,
+      shuffle = shuffle ++ other.shuffle
+    )
+
+  override def withProjections(projections: Map[String, Expression]): RegularQueryProjection =
+    copy(projections = projections)
+
+  def withShuffle(shuffle: QueryShuffle) =
+    copy(shuffle = shuffle)
+}
+
+final case class AggregatingQueryProjection(
+   groupingKeys: Map[String, Expression] = Map.empty,
+   aggregationExpressions: Map[String, Expression] = Map.empty,
+   shuffle: QueryShuffle = QueryShuffle.empty
+) extends QueryProjection {
 
   assert(
     !(groupingKeys.isEmpty && aggregationExpressions.isEmpty),
     "Everything can't be empty"
   )
 
-  override def keySet: Set[String] = groupingKeys.keySet ++ aggregationExpressions.keySet
-
-  def withSkip(skip: Option[Expression]) = copy(skip = skip)
-  def withLimit(limit: Option[Expression]) = copy(limit = limit)
-  def withProjections(projections: Map[String, Expression]) =
-    throw new InternalException("Can't change type of projection")
-  def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
-
-  def ++(other: QueryProjection): QueryProjection =
-    throw new InternalException("Aggregations cannot be combined")
-
   def projections: Map[String, Expression] = groupingKeys
+
+  def keySet: Set[String] = groupingKeys.keySet ++ aggregationExpressions.keySet
+
+  override def withProjections(groupingKeys: Map[String, Expression]): AggregatingQueryProjection =
+    copy(groupingKeys = groupingKeys)
+
+  def withAggregatingExpressions(aggregationExpressions: Map[String, Expression]) =
+    copy(aggregationExpressions = aggregationExpressions)
+
+  def withShuffle(shuffle: QueryShuffle) =
+    copy(shuffle = shuffle)
 }
