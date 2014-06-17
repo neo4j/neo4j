@@ -20,7 +20,6 @@
 package org.neo4j.server.rrd.sampler;
 
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 
 public class PropertyCountSampleable extends DatabasePrimitivesSampleableBase
 {

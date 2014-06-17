@@ -19,7 +19,6 @@
  */
 package org.neo4j.graphdb;
 
-
 /**
  * Defines a common API for handling properties on both {@link Node nodes} and
  * {@link Relationship relationships}.
@@ -36,11 +35,6 @@ package org.neo4j.graphdb;
  */
 public interface PropertyContainer
 {
-    /**
-     * @return the id of this entity.
-     */
-    long getId();
-
     /**
      * Get the {@link GraphDatabaseService} that this {@link Node} or
      * {@link Relationship} belongs to.

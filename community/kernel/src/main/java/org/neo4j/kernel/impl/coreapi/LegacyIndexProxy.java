@@ -134,6 +134,12 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
             {
                 operations.nodeLegacyIndexDrop( name );
             }
+
+            @Override
+            long id( PropertyContainer entity )
+            {
+                return ((Node)entity).getId();
+            }
         },
         RELATIONSHIP
         {
@@ -208,6 +214,12 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
             {
                 operations.relationshipLegacyIndexDrop( name );
             }
+
+            @Override
+            long id( PropertyContainer entity )
+            {
+                return ((Relationship)entity).getId();
+            }
         }
 
         ;
@@ -244,6 +256,8 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         abstract void drop( DataWriteOperations operations, String name )
                 throws InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException,
                 LegacyIndexNotFoundKernelException;
+
+        abstract long id( PropertyContainer entity );
     }
 
     protected final String name;
@@ -384,7 +398,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         }
         catch ( EntityNotFoundException e )
         {
-            throw new NotFoundException( format( "%s %d not found", type, entity.getId() ), e );
+            throw new NotFoundException( format( "%s %d not found", type, type.id( entity ) ), e );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -405,7 +419,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         try ( Statement statement = statementContextBridge.instance() )
         {
-            type.remove( statement.dataWriteOperations(), name, entity.getId(), key, value );
+            type.remove( statement.dataWriteOperations(), name, type.id( entity ), key, value );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -426,7 +440,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         try ( Statement statement = statementContextBridge.instance() )
         {
-            type.remove( statement.dataWriteOperations(), name, entity.getId(), key );
+            type.remove( statement.dataWriteOperations(), name, type.id( entity ), key );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -447,7 +461,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     {
         try ( Statement statement = statementContextBridge.instance() )
         {
-            type.remove( statement.dataWriteOperations(), name, entity.getId() );
+            type.remove( statement.dataWriteOperations(), name, type.id( entity ) );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -513,7 +527,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
         }
         catch ( EntityNotFoundException e )
         {
-            throw new NotFoundException( format( "%s %d not found", type, entity.getId() ), e );
+            throw new NotFoundException( format( "%s %d not found", type, type.id( entity ) ), e );
         }
         catch ( InvalidTransactionTypeKernelException e )
         {
@@ -532,6 +546,6 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
     private void internalAdd( T entity, String key, Object value, Statement statement ) throws EntityNotFoundException,
             InvalidTransactionTypeKernelException, ReadOnlyDatabaseKernelException, LegacyIndexNotFoundKernelException
     {
-        type.add( statement.dataWriteOperations(), name, entity.getId(), key, value );
+        type.add( statement.dataWriteOperations(), name, type.id( entity ), key, value );
     }
 }
