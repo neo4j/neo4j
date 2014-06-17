@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -42,6 +34,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -103,6 +96,15 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
 
 public class TestNeoStore
 {
@@ -253,7 +255,7 @@ public class TestNeoStore
     private RelationshipChainLoader relationshipLoader;
     private PropertyLoader propertyLoader;
 
-    private void startTx()
+    private void startTx() throws TransactionFailureException
     {
         txCount++;
         tx = ds.getKernel().newTransaction();

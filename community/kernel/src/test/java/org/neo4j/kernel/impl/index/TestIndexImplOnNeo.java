@@ -25,6 +25,7 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -32,7 +33,10 @@ import org.neo4j.graphdb.index.Index;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.index.IndexManager.PROVIDER;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
@@ -47,7 +51,7 @@ public class TestIndexImplOnNeo
     {
         db = new TestGraphDatabaseFactory().setFileSystem( fs.get() ).newImpermanentDatabase( "mydb" );
     }
-    
+
     private void restartDb() throws Exception
     {
         shutdownDb();
@@ -59,7 +63,7 @@ public class TestIndexImplOnNeo
     {
         db.shutdown();
     }
-    
+
     @Test
     public void createIndexWithProviderThatUsesNeoAsDataSource() throws Exception
     {
@@ -68,38 +72,38 @@ public class TestIndexImplOnNeo
         Map<String, String> config = stringMap( PROVIDER, "test-dummy-neo-index",
                 "config1", "A value", "another config", "Another value" );
 
-        Transaction transaction = db.beginTx();
         Index<Node> index;
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
             index = db.index().forNodes( indexName, config );
             transaction.success();
         }
-        finally
+
+        try ( Transaction tx = db.beginTx() )
         {
-            transaction.finish();
+            assertTrue( indexExists( indexName ) );
+            assertEquals( config, db.index().getConfiguration( index ) );
+            assertEquals( 0, count( (Iterable<Node>) index.get( "key", "something else" ) ) );
+            tx.success();
         }
 
-        assertTrue( indexExists( indexName ) );
-        assertEquals( config, db.index().getConfiguration( index ) );
-
-        assertEquals( 0, count( (Iterable<Node>) index.get( "key", "something else" ) ) );
-        
         restartDb();
-        assertTrue( indexExists( indexName ) );
-        assertEquals( config, db.index().getConfiguration( index ) );
+
+        try ( Transaction tx = db.beginTx() )
+        {
+            assertTrue( indexExists( indexName ) );
+            assertEquals( config, db.index().getConfiguration( index ) );
+            tx.success();
+        }
     }
 
     private boolean indexExists( String indexName )
     {
-        Transaction transaction = db.beginTx();
-        try
+        try ( Transaction transaction = db.beginTx() )
         {
-            return db.index().existsForNodes( indexName );
-        }
-        finally
-        {
-            transaction.finish();
+            boolean exists = db.index().existsForNodes( indexName );
+            transaction.success();
+            return exists;
         }
     }
 }

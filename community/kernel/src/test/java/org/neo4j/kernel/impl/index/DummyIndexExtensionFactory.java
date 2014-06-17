@@ -21,11 +21,14 @@ package org.neo4j.kernel.impl.index;
 
 import java.util.Map;
 
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
+import org.neo4j.kernel.api.LegacyIndex;
+import org.neo4j.kernel.api.LegacyIndexHits;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -91,15 +94,132 @@ public class DummyIndexExtensionFactory extends
         return true;
     }
 
+    private static class EmptyHits extends PrimitiveLongBaseIterator implements LegacyIndexHits
+    {
+        @Override
+        public void close()
+        {   // Nothing to close
+        }
+
+        @Override
+        public int size()
+        {
+            return 0;
+        }
+
+        @Override
+        public float currentScore()
+        {
+            return 0;
+        }
+
+        @Override
+        protected boolean fetchNext()
+        {
+            return false;
+        }
+    }
+
+    private static final LegacyIndexHits NO_HITS = new EmptyHits();
+
+    private static final LegacyIndex EMPTY_LEGACY_INDEX = new LegacyIndex()
+    {
+        @Override
+        public void remove( long entity )
+        {
+        }
+
+        @Override
+        public void remove( long entity, String key )
+        {
+        }
+
+        @Override
+        public void remove( long entity, String key, Object value )
+        {
+        }
+
+        @Override
+        public LegacyIndexHits query( Object queryOrQueryObject, long startNode, long endNode )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public LegacyIndexHits query( String key, Object queryOrQueryObject, long startNode, long endNode )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public LegacyIndexHits query( Object queryOrQueryObject )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public LegacyIndexHits query( String key, Object queryOrQueryObject )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public LegacyIndexHits get( String key, Object value, long startNode, long endNode )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public LegacyIndexHits get( String key, Object value )
+        {
+            return NO_HITS;
+        }
+
+        @Override
+        public void drop()
+        {
+        }
+
+        @Override
+        public void addRelationship( long entity, String key, Object value, long startNode, long endNode )
+        {
+        }
+
+        @Override
+        public void addNode( long entity, String key, Object value )
+        {
+        }
+    };
+
     @Override
     public LegacyIndexProviderTransaction newTransaction( IndexCommandFactory commandFactory )
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        return new LegacyIndexProviderTransaction()
+        {
+            @Override
+            public LegacyIndex relationshipIndex( String indexName, Map<String, String> configuration )
+            {
+                return EMPTY_LEGACY_INDEX;
+            }
+
+            @Override
+            public LegacyIndex nodeIndex( String indexName, Map<String, String> configuration )
+            {
+                return EMPTY_LEGACY_INDEX;
+            }
+
+            @Override
+            public void close()
+            {
+            }
+        };
     }
+
+    private static final NeoCommandHandler NO_APPLIER = new NeoCommandHandler.Adapter();
 
     @Override
     public NeoCommandHandler newApplier( boolean recovery )
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        return NO_APPLIER;
     }
 }

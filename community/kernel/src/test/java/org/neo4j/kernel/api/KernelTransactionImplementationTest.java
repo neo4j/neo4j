@@ -25,6 +25,7 @@ import org.junit.Test;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
+import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
 import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
@@ -109,18 +110,20 @@ public class KernelTransactionImplementationTest
     private final NeoStore neoStore = mock( NeoStore.class );
     private final TransactionHooks hooks = new TransactionHooks();
     private final TransactionRecordState recordState = mock( TransactionRecordState.class );
+    private final LegacyIndexTransactionState legacyIndexState = mock( LegacyIndexTransactionState.class );
     private final TransactionMonitor transactionMonitor = mock( TransactionMonitor.class );
 
     @Before
     public void before()
     {
         when( recordState.isReadOnly() ).thenReturn( true );
+        when( legacyIndexState.isReadOnly() ).thenReturn( true );
     }
 
     private KernelTransactionImplementation newTransaction()
     {
         return new KernelTransactionImplementation( null, false, null, null, null, null, recordState,
                 null, neoStore, new NoOpClient(), hooks, null, null, null, transactionMonitor, neoStore,
-                null, null, null );
+                null, null, legacyIndexState );
     }
 }

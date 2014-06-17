@@ -74,7 +74,7 @@ public abstract class KernelIntegrationTest
         return statement.schemaWriteOperations();
     }
 
-    protected ReadOperations readOperationsInNewTransaction()
+    protected ReadOperations readOperationsInNewTransaction() throws TransactionFailureException
     {
         transaction = kernel.newTransaction();
         statement = transaction.acquireStatement();

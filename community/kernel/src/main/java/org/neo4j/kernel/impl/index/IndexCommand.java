@@ -259,7 +259,7 @@ public abstract class IndexCommand extends Command
         public String toString()
         {
             return format( "Remove%s[index:%d, id:%d, key:%d, value:%s]",
-                    IndexEntityType.byId( entityType ).name(), indexNameId, keyId, value );
+                    IndexEntityType.byId( entityType ).name(), indexNameId, entityId, keyId, value );
         }
     }
 

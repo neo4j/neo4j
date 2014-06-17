@@ -38,4 +38,10 @@ public class TransactionFailureException extends KernelException
     {
         super( statusCode, message, parameters );
     }
+
+    // To satisfy KernelHealth
+    public TransactionFailureException( String message, Throwable cause )
+    {
+        super( Status.Transaction.CouldNotBegin, cause, message );
+    }
 }

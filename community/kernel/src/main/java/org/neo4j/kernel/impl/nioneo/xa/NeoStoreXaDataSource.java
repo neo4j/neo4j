@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -141,6 +139,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
@@ -463,7 +463,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 @Override
                 public KernelTransaction newInstance()
                 {
-
                     checkIfShutdown();
                     NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
                     Locks.Client locksClient = locks.newClient();
@@ -480,7 +479,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 }
             };
 
-            kernel = new Kernel( statisticsService, transactionFactory, hooks );
+            kernel = new Kernel( statisticsService, transactionFactory, hooks, kernelHealth );
             legacyIndexStore = new LegacyIndexStore( config, indexConfigStore, kernel, legacyIndexProviderLookup );
 
             this.statementOperations = buildStatementOperations( storeLayer, legacyPropertyTrackers,

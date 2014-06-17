@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.Functions.identity;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -176,6 +167,16 @@ import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.lang.String.format;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.Functions.identity;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -863,10 +864,17 @@ public abstract class InternalAbstractGraphDatabase
             return new PlaceboTransaction( topLevelTransaction );
         }
 
-        KernelTransaction transaction = kernel.newTransaction();
-        topLevelTransaction = new TopLevelTransaction( transaction, threadToTransactionBridge );
-        threadToTransactionBridge.bindTransactionToCurrentThread( topLevelTransaction );
-        return topLevelTransaction;
+        try
+        {
+            KernelTransaction transaction = kernel.newTransaction();
+            topLevelTransaction = new TopLevelTransaction( transaction, threadToTransactionBridge );
+            threadToTransactionBridge.bindTransactionToCurrentThread( topLevelTransaction );
+            return topLevelTransaction;
+        }
+        catch ( org.neo4j.kernel.api.exceptions.TransactionFailureException e )
+        {
+            throw new TransactionFailureException( "Failure to begin transaction", e );
+        }
     }
 
     @Override
