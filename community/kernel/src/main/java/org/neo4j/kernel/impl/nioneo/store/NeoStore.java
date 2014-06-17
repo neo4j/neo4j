@@ -29,9 +29,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageIO;
-import org.neo4j.io.pagecache.PagedFile;
-import org.neo4j.io.pagecache.impl.common.Page;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -46,6 +43,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SINGLE_PAGE;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -53,7 +51,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
  * anything but extends the AbstractStore for the "type and version" validation
  * performed in there.
  */
-public class NeoStore extends AbstractStore implements PageIO
+public class NeoStore extends AbstractStore
 {
     public static abstract class Configuration
         extends AbstractStore.Configuration
@@ -578,49 +576,33 @@ public class NeoStore extends AbstractStore implements PageIO
         latestConstraintIntroducingTxField = latestConstraintIntroducingTx;
     }
 
-    /**
-     * Since the NeoStore only has a fixed set of small records, or fields, the store itself
-     * can effectively act as its own one and only "super-record".
-     * This method implements reading of all the records from the store file into the NeoStore fields,
-     * or incrementing the version field, depending on which IO_* constant is passed in through
-     * io_flags.
-     */
-    @Override
-    public void apply( long pageId, Page page, long io_context, long io_flags ) throws IOException
-    {
-        if ( io_flags == IO_READ_ALL_FIELDS )
-        {
-            readAllFields( page );
-        }
-        else if ( io_flags == IO_INCREMENT_VERSION_FIELD )
-        {
-            incrementVersion( page, io_context );
-        }
-    }
-
-    private void readAllFields( Page page ) throws IOException
+    private void readAllFields( PageCursor cursor ) throws IOException
     {
         // We're assuming all our records/fields fit in a single page.
-        creationTimeField = getRecordValue( page, TIME_POSITION );
-        randomNumberField = getRecordValue( page, RANDOM_POSITION );
-        versionField = getRecordValue( page, VERSION_POSITION );
-        lastCommittedTxField = getRecordValue( page, LATEST_TX_POSITION );
-        storeVersionField = getRecordValue( page, STORE_VERSION_POSITION );
-        graphNextPropField = getRecordValue( page, NEXT_GRAPH_PROP_POSITION );
-        latestConstraintIntroducingTxField = getRecordValue( page, LATEST_CONSTRAINT_TX_POSITION );
+        creationTimeField = getRecordValue( cursor, TIME_POSITION );
+        randomNumberField = getRecordValue( cursor, RANDOM_POSITION );
+        versionField = getRecordValue( cursor, VERSION_POSITION );
+        lastCommittedTxField = getRecordValue( cursor, LATEST_TX_POSITION );
+        storeVersionField = getRecordValue( cursor, STORE_VERSION_POSITION );
+        graphNextPropField = getRecordValue( cursor, NEXT_GRAPH_PROP_POSITION );
+        latestConstraintIntroducingTxField = getRecordValue( cursor, LATEST_CONSTRAINT_TX_POSITION );
     }
 
-    private long getRecordValue( Page page, int position )
+    private long getRecordValue( PageCursor cursor, int position )
     {
         // The "+ 1" to skip over the inUse byte.
-        return page.getLong( position * getEffectiveRecordSize() + 1 );
+        int offset = position * getEffectiveRecordSize() + 1;
+        cursor.setOffset( offset );
+        return cursor.getLong();
     }
 
-    private void incrementVersion( Page page, long io_context )
+    private void incrementVersion( PageCursor cursor )
     {
-        int offset = (int) (io_context + 1); // +1 to skip the inUse byte.
-        long value = page.getLong( offset ) + 1; // +1 for the increment.
-        page.putLong( value, offset );
+        int offset = VERSION_POSITION * getEffectiveRecordSize();
+        cursor.setOffset( offset + 1 ); // +1 to skip the inUse byte
+        long value = cursor.getLong() + 1; // +1 for the increment.
+        cursor.setOffset( offset + 1 ); // +1 to skip the inUse byte
+        cursor.putLong( value );
         versionField = value;
     }
 
@@ -631,14 +613,17 @@ public class NeoStore extends AbstractStore implements PageIO
 
     private void initialiseFields()
     {
-        scanAllFields( PF_EXCLUSIVE_LOCK );
+        scanAllFields( PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE );
     }
 
     private void scanAllFields( int pf_flags )
     {
-        try ( PageCursor cursor = storeFile.io( 0, pf_flags, this, 0, IO_READ_ALL_FIELDS ) )
+        try ( PageCursor cursor = storeFile.io( 0, pf_flags ) )
         {
-            cursor.next();
+            while ( cursor.next() )
+            {
+                readAllFields( cursor );
+            }
         }
         catch ( IOException e )
         {
@@ -646,30 +631,18 @@ public class NeoStore extends AbstractStore implements PageIO
         }
     }
 
-    private static PageIO neoStoreWriteRecord = new PageIO()
-    {
-        // Neo store records are only 8 bytes and can fit in a long, so we devise this scheme:
-        // We have a special purpose PageIO that can only do one thing: write a record. Then we
-        // use the io_context as the offset, and io_flags for the value itself.
-        @Override
-        public void apply( long pageId, Page page, long io_context, long io_flags ) throws IOException
-        {
-            int offset = (int) io_context;
-            page.putByte( Record.IN_USE.byteValue(), offset );
-            page.putLong( io_flags, offset + 1 );
-        }
-    };
-
     private void setRecord( long id, long value )
     {
-        try ( PageCursor cursor = storeFile.io(
-                    pageIdForRecord( id ),
-                    PagedFile.PF_EXCLUSIVE_LOCK,
-                    neoStoreWriteRecord,
-                    offsetForId( id ),
-                    value ) )
+        long pageId = pageIdForRecord( id );
+        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
         {
-            cursor.next();
+            while ( cursor.next() )
+            {
+                int offset = offsetForId( id );
+                cursor.setOffset( offset );
+                cursor.putByte( Record.IN_USE.byteValue() );
+                cursor.putLong( value );
+            }
         }
         catch ( IOException e )
         {
@@ -682,14 +655,13 @@ public class NeoStore extends AbstractStore implements PageIO
         // This method can expect synchronisation at a higher level,
         // and be effectively single-threaded.
         // The call to getVersion() will most likely optimise to a volatile-read.
-        try ( PageCursor cursor = storeFile.io(
-                    pageIdForRecord( VERSION_POSITION ),
-                    PF_EXCLUSIVE_LOCK,
-                    this,
-                    offsetForId( VERSION_POSITION ),
-                    IO_INCREMENT_VERSION_FIELD ) )
+        long pageId = pageIdForRecord( VERSION_POSITION );
+        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
         {
-            cursor.next();
+            while ( cursor.next() )
+            {
+                incrementVersion( cursor );
+            }
             return versionField - 1; // we return the version as it were before we incremented it
         }
         catch ( IOException e )

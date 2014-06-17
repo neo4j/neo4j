@@ -22,7 +22,8 @@ package org.neo4j.io.pagecache;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ThreadLocalRandom;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
@@ -35,31 +36,37 @@ import org.junit.Test;
 import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.io.pagecache.impl.common.Page;
 
 import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.sameInstance;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.mockito.Mockito.atLeast;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SINGLE_PAGE;
 
 public abstract class PageCacheTest<T extends PageCache>
 {
-    private final File file = new File( "a" );
+    protected final File file = new File( "a" );
 
-    private int recordSize = 9;
-    private int recordCount = 1060;
-    private int maxPages = 20;
-    private int pageCachePageSize = 20;
-    private int filePageSize = 18;
-    private int recordsPerFilePage = filePageSize / recordSize;
+    protected int recordSize = 9;
+    protected int recordCount = 1060;
+    protected int maxPages = 20;
+    protected int pageCachePageSize = 20;
+    protected int filePageSize = 18;
+    protected int recordsPerFilePage = filePageSize / recordSize;
+    protected ByteBuffer bufA = ByteBuffer.allocate( recordSize );
+    protected ByteBuffer bufB = ByteBuffer.allocate( recordSize );
 
-    private EphemeralFileSystemAbstraction fs;
+    protected EphemeralFileSystemAbstraction fs;
 
     protected abstract T createPageCache(
             FileSystemAbstraction fs,
@@ -101,74 +108,25 @@ public abstract class PageCacheTest<T extends PageCache>
         fs.shutdown();
     }
 
-    private static class RecordPageIO implements PageIO
+    private void verifyRecordsMatchExpected( PageCursor cursor )
     {
-        /** Verify that the contents of all the records are what we expect for the given pages. */
-        public static final long IO_FLAGS_VERIFY_RECORDS = 1;
-        public static final long IO_FLAGS_WRITE_RECORDS = 2;
-        public static final long IO_FLAGS_CORRUPT_RECORDS = 3;
-        public int recordSize;
-        public int recordsPerFilePage;
-        public ByteBuffer bufA;
-        public ByteBuffer bufB;
-        public long pageId;
-        public Page page;
-
-        public RecordPageIO( int recordSize, int recordsPerFilePage )
+        long pageId = cursor.getCurrentPageId();
+        for ( int i = 0; i < recordsPerFilePage; i++ )
         {
-            bufA = ByteBuffer.allocate( recordSize );
-            bufB = ByteBuffer.allocate( recordSize );
-            this.recordSize = recordSize;
-            this.recordsPerFilePage = recordsPerFilePage;
+            long recordId = (pageId * recordsPerFilePage) + i;
+            generateRecordForId( recordId, bufA );
+            cursor.getBytes( bufB.array() );
+            assertThat( "Record id: " + recordId, bufB.array(), byteArray( bufA.array() ) );
         }
+    }
 
-        @Override
-        public void apply( long pageId, Page page, long io_context, long io_flags )
+    private void writeRecords( PageCursor cursor )
+    {
+        for ( int i = 0; i < recordsPerFilePage; i++ )
         {
-            if ( io_flags == IO_FLAGS_VERIFY_RECORDS )
-            {
-                verifyRecordsMatchExpected( pageId, page );
-            }
-            else if ( io_flags == IO_FLAGS_WRITE_RECORDS )
-            {
-                writeRecords( pageId, page );
-            }
-            else if ( io_flags == IO_FLAGS_CORRUPT_RECORDS )
-            {
-                corruptRecords( page );
-            }
-
-            this.pageId = pageId;
-            this.page = page;
-        }
-
-        private void verifyRecordsMatchExpected( long pageId, Page page )
-        {
-            for ( int i = 0; i < recordsPerFilePage; i++ )
-            {
-                long recordId = (pageId * recordsPerFilePage) + i;
-                generateRecordForId( recordId, bufA );
-                page.getBytes( bufB.array(), i * recordSize );
-                assertThat( "Record id: " + recordId, bufB.array(), byteArray( bufA.array() ) );
-            }
-        }
-
-        private void writeRecords( long pageId, Page page )
-        {
-            for ( int i = 0; i < recordsPerFilePage; i++ )
-            {
-                long recordId = (pageId * recordsPerFilePage) + i;
-                generateRecordForId( recordId, bufA );
-                page.putBytes( bufA.array(), i * recordSize );
-            }
-        }
-
-        private void corruptRecords( Page page )
-        {
-            ThreadLocalRandom rng = ThreadLocalRandom.current();
-            byte[] bytes = new byte[ recordSize * recordsPerFilePage ];
-            rng.nextBytes( bytes );
-            page.putBytes( bytes, 0 );
+            long recordId = (cursor.getCurrentPageId() * recordsPerFilePage) + i;
+            generateRecordForId( recordId, bufA );
+            cursor.putBytes( bufA.array() );
         }
     }
 
@@ -180,17 +138,12 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        RecordPageIO pageIO = new RecordPageIO( recordSize, recordsPerFilePage );
         int recordId = 0;
-        try ( PageCursor cursor = pagedFile.io(
-                0L,
-                PF_SHARED_LOCK | PF_NO_GROW,
-                pageIO,
-                0,
-                RecordPageIO.IO_FLAGS_VERIFY_RECORDS ) )
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK | PF_NO_GROW ) )
         {
             while ( cursor.next() )
             {
+                verifyRecordsMatchExpected( cursor  );
                 recordId += recordsPerFilePage;
             }
         }
@@ -223,17 +176,12 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        RecordPageIO pageIO = new RecordPageIO( recordSize, recordsPerFilePage );
         int recordId = (int) (startPage * recordsPerFilePage);
-        try ( PageCursor cursor = pagedFile.io(
-                startPage,
-                PF_SHARED_LOCK,
-                pageIO,
-                0,
-                RecordPageIO.IO_FLAGS_VERIFY_RECORDS ) )
+        try ( PageCursor cursor = pagedFile.io( startPage, PF_SHARED_LOCK ) )
         {
-            while ( cursor.next() && pageIO.pageId < endPage )
+            while ( cursor.next() && cursor.getCurrentPageId() < endPage )
             {
+                verifyRecordsMatchExpected( cursor );
                 recordId += recordsPerFilePage;
             }
         }
@@ -247,18 +195,15 @@ public abstract class PageCacheTest<T extends PageCache>
         ByteBuffer buf = ByteBuffer.allocate( recordSize );
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
-        RecordPageIO pageIO = new RecordPageIO( recordSize, recordsPerFilePage );
 
         long startPageId = 0;
         long endPageId = recordCount / recordsPerFilePage;
-        try ( PageCursor cursor = pagedFile.io(
-                startPageId,
-                PF_EXCLUSIVE_LOCK,
-                pageIO,
-                0,
-                RecordPageIO.IO_FLAGS_WRITE_RECORDS ) )
+        try ( PageCursor cursor = pagedFile.io( startPageId, PF_EXCLUSIVE_LOCK ) )
         {
-            while ( pageIO.pageId < endPageId && cursor.next() );
+            while ( cursor.getCurrentPageId() < endPageId && cursor.next() )
+            {
+                writeRecords( cursor );
+            }
         }
 
         pagedFile.flush();
@@ -281,18 +226,15 @@ public abstract class PageCacheTest<T extends PageCache>
         ByteBuffer buf = ByteBuffer.allocate( recordSize );
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
-        RecordPageIO pageIO = new RecordPageIO( recordSize, recordsPerFilePage );
 
         long startPageId = 0;
         long endPageId = recordCount / recordsPerFilePage;
-        try ( PageCursor cursor = pagedFile.io(
-                startPageId,
-                PF_EXCLUSIVE_LOCK,
-                pageIO,
-                0,
-                RecordPageIO.IO_FLAGS_WRITE_RECORDS ) )
+        try ( PageCursor cursor = pagedFile.io( startPageId, PF_EXCLUSIVE_LOCK ) )
         {
-            while ( pageIO.pageId < endPageId && cursor.next() );
+            while ( cursor.getCurrentPageId() < endPageId && cursor.next() )
+            {
+                writeRecords( cursor );
+            }
         }
 
         cache.flush();
@@ -314,14 +256,8 @@ public abstract class PageCacheTest<T extends PageCache>
     {
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
-        RecordPageIO pageIO = new RecordPageIO( recordSize, recordsPerFilePage );
 
-        try ( PageCursor cursor = pagedFile.io(
-                0,
-                PF_SHARED_LOCK | PF_NO_GROW,
-                pageIO,
-                0,
-                RecordPageIO.IO_FLAGS_VERIFY_RECORDS ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK | PF_NO_GROW ) )
         {
             assertFalse( cursor.next() );
         }
@@ -335,16 +271,11 @@ public abstract class PageCacheTest<T extends PageCache>
 
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
-        RecordPageIO pageIO = new RecordPageIO( recordSize, recordsPerFilePage );
 
-        try ( PageCursor cursor = pagedFile.io(
-                0,
-                PF_SHARED_LOCK | PF_NO_GROW,
-                pageIO,
-                0,
-                RecordPageIO.IO_FLAGS_VERIFY_RECORDS ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK | PF_NO_GROW ) )
         {
             assertTrue( cursor.next() );
+            verifyRecordsMatchExpected( cursor );
             assertFalse( cursor.next() );
         }
     }
@@ -357,28 +288,19 @@ public abstract class PageCacheTest<T extends PageCache>
 
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
-        RecordPageIO pageIO = new RecordPageIO( recordSize, recordsPerFilePage );
 
-        try ( PageCursor ignore = pagedFile.io(
-                0,
-                PF_EXCLUSIVE_LOCK,
-                pageIO,
-                0,
-                RecordPageIO.IO_FLAGS_CORRUPT_RECORDS ) )
+        //noinspection EmptyTryBlock
+        try ( PageCursor ignore = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
         {
             // No call to next, so the page should never get pinned in the first place, nor
             // should the page corruption take place.
         }
 
-        try ( PageCursor cursor = pagedFile.io(
-                0,
-                PF_SHARED_LOCK,
-                pageIO,
-                0,
-                RecordPageIO.IO_FLAGS_VERIFY_RECORDS ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
         {
             // We didn't call next before, so the page and its records should still be fine
             cursor.next();
+            verifyRecordsMatchExpected( cursor );
         }
     }
 
@@ -393,19 +315,14 @@ public abstract class PageCacheTest<T extends PageCache>
 
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
-        RecordPageIO pageIO = new RecordPageIO( recordSize, recordsPerFilePage );
 
-        try ( PageCursor cursor = pagedFile.io(
-                0,
-                PF_SHARED_LOCK | PF_NO_GROW,
-                pageIO,
-                0,
-                RecordPageIO.IO_FLAGS_VERIFY_RECORDS ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK | PF_NO_GROW ) )
         {
             for ( int i = 0; i < numberOfRewindsToTest; i++ )
             {
                 while ( cursor.next() )
                 {
+                    verifyRecordsMatchExpected( cursor );
                     actualPageCounter++;
                 }
                 cursor.rewind();
@@ -413,49 +330,6 @@ public abstract class PageCacheTest<T extends PageCache>
         }
 
         assertThat( actualPageCounter, is( expectedPageCounterResult ) );
-    }
-
-    @Test( timeout = 1000 )
-    public void exceptionFromApplyingPageIOMustLeavePageUnpinned() throws IOException
-    {
-        int numberOfRecordsToGenerate = recordsPerFilePage; // one page worth
-        generateFileWithRecords( file, numberOfRecordsToGenerate, recordSize );
-
-        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
-        PagedFile pagedFile = cache.map( file, filePageSize );
-        final RuntimeException exception = new RuntimeException( "boo!" );
-        PageIO pageIO = new PageIO()
-        {
-            @Override
-            public void apply( long pageId, Page page, long io_context, long io_flags ) throws IOException
-            {
-                throw exception;
-            }
-        };
-
-        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK, pageIO, 0, 0 ) )
-        {
-            cursor.next();
-            fail( "Call to next() should have thrown" );
-        }
-        catch ( RuntimeException e )
-        {
-            assertThat( e, sameInstance( exception ) );
-        }
-
-        // Now that the exception has bubbled out, the page must no longer be pinned
-
-        pageIO = new RecordPageIO( recordSize, recordsPerFilePage );
-
-        try ( PageCursor cursor = pagedFile.io(
-                0,
-                PF_SHARED_LOCK,
-                pageIO,
-                0,
-                RecordPageIO.IO_FLAGS_VERIFY_RECORDS ) )
-        {
-            cursor.next();
-        }
     }
 
     @Test
@@ -472,22 +346,18 @@ public abstract class PageCacheTest<T extends PageCache>
     @Test
     public void dirtyPagesMustBeFlushedWhenTheCacheIsClosed() throws IOException
     {
-
         ByteBuffer buf = ByteBuffer.allocate( recordSize );
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
-        RecordPageIO pageIO = new RecordPageIO( recordSize, recordsPerFilePage );
 
         long startPageId = 0;
         long endPageId = recordCount / recordsPerFilePage;
-        try ( PageCursor cursor = pagedFile.io(
-                startPageId,
-                PF_EXCLUSIVE_LOCK,
-                pageIO,
-                0,
-                RecordPageIO.IO_FLAGS_WRITE_RECORDS ) )
+        try ( PageCursor cursor = pagedFile.io( startPageId, PF_EXCLUSIVE_LOCK ) )
         {
-            while ( pageIO.pageId < endPageId && cursor.next() );
+            while ( cursor.getCurrentPageId() < endPageId && cursor.next() )
+            {
+                writeRecords( cursor );
+            }
         }
 
         cache.close();
@@ -503,10 +373,155 @@ public abstract class PageCacheTest<T extends PageCache>
         }
         channel.close();
     }
-    // TODO must unmap all files when the cache is closed
-    // TODO mapping files in a closed cache must throw
+
+    @Test( expected = IllegalStateException.class )
+    public void mappingFilesInClosedCacheMustThrow() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        cache.close();
+        cache.map( file, filePageSize );
+    }
+
+    @Test( expected = IllegalStateException.class )
+    public void flushingClosedCacheMustThrow() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        cache.close();
+        cache.flush();
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void mappingFileWithPageSizeGreaterThanCachePageSizeMustThrow() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        cache.map( file, pageCachePageSize + 1 ); // this must throw
+    }
+
+    @Test
+    public void mappingFileWithPageSizeEqualToCachePageSizeMustNotThrow() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        cache.map( file, pageCachePageSize );// this must NOT throw
+        cache.unmap( file );
+    }
+
+    @Test
+    public void nextMustReturnTrueThenFalseWhenSinglePageIsSpecified() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
+        {
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 0L ) );
+            assertFalse( cursor.next() );
+        }
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void specifyingBothReadAheadAndSinglePageMustThrow() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+        pagedFile.io( 0, PF_SHARED_LOCK | PF_READ_AHEAD | PF_SINGLE_PAGE ); // this must throw
+    }
+
+    @Test( timeout = 1000 )
+    public void mustNotPinPagesAfterNextReturnsFalse() throws Exception
+    {
+        final CountDownLatch startLatch = new CountDownLatch( 1 );
+        final CountDownLatch unpinLatch = new CountDownLatch( 1 );
+        final AtomicReference<Exception> exceptionRef = new AtomicReference<>();
+        final PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        final PagedFile pagedFile = cache.map( file, filePageSize );
+
+
+        Runnable runnable = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try ( PageCursor cursorA = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
+                {
+                    assertTrue( cursorA.next() );
+                    assertFalse( cursorA.next() );
+                    startLatch.countDown();
+                    unpinLatch.await();
+                    cursorA.close();
+                }
+                catch ( Exception e )
+                {
+                    exceptionRef.set( e );
+                }
+            }
+        };
+        Thread thread = new Thread( runnable );
+        thread.start();
+
+        startLatch.await();
+        try ( PageCursor cursorB = pagedFile.io( 1, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
+        {
+            assertTrue( cursorB.next() );
+            assertFalse( cursorB.next() );
+        }
+        unpinLatch.countDown();
+        Exception e = exceptionRef.get();
+        if ( e != null )
+        {
+            throw new Exception( "Child thread got exception", e );
+        }
+    }
+
+    // TODO next must reset cursor offset
+    // TODO next must advance current page id
+    // TODO current page id before calling next is unbound
+    // TODO current page id after calling rewind is unbound
     // TODO must collect all exceptions from closing file channels when the cache is closed
     // TODO scanning with concurrent writes
+    // TODO figure out what should happen when the last reference to a file is unmapped, while pages are still pinned
+    // TODO figure out how closing the cache should work when there are still mapped files
+
+
+
+
+    @Test
+    public void shouldCloseAllFilesWhenClosingThePageCache() throws Exception
+    {
+        // TODO really? close files that have not been unmapped?
+        // Given
+        FileSystemAbstraction fs = mock( FileSystemAbstraction.class );
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        File file1Name = new File( "file1" );
+        File file2Name = new File( "file2" );
+
+        StoreChannel channel1 = mock( StoreChannel.class );
+        StoreChannel channel2 = mock( StoreChannel.class );
+        when( fs.open( file1Name, "rw" ) ).thenReturn( channel1 );
+        when( fs.open( file2Name, "rw" ) ).thenReturn( channel2 );
+
+        // When
+        cache.map( file1Name, filePageSize );
+        cache.map( file1Name, filePageSize );
+        cache.map( file2Name, filePageSize );
+        cache.unmap( file2Name );
+
+        // Then
+        verify( fs ).open( file1Name, "rw" );
+        verify( fs ).open( file2Name, "rw" );
+        verify( channel2, atLeast( 1 ) ).force( false );
+        verify( channel2 ).close();
+        verifyNoMoreInteractions( channel1, channel2, fs );
+
+        // And When
+        cache.close();
+
+        // Then
+        verify( channel1, atLeast( 1 ) ).force( false );
+        verify( channel1 ).close();
+        verifyNoMoreInteractions( channel1, channel2, fs );
+    }
+
 
     private static void generateRecordForId( long id, ByteBuffer buf )
     {

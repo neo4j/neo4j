@@ -41,6 +41,8 @@ public class StandardPageCache implements PageCache, Runnable
     private final Map<File, StandardPagedFile> pagedFiles = new HashMap<>();
     private final ClockSweepPageTable table;
 
+    private boolean closed; // Guarded by synchronised(this)
+
     public StandardPageCache( FileSystemAbstraction fs, int maxPages, int pageSize )
     {
         this( fs, maxPages, pageSize, PageCacheMonitor.NULL );
@@ -56,10 +58,15 @@ public class StandardPageCache implements PageCache, Runnable
     @Override
     public synchronized PagedFile map( File file, int filePageSize ) throws IOException
     {
-        assert filePageSize <= table.pageSize();
-        StandardPagedFile pagedFile;
+        assertNotClosed();
+        if ( filePageSize > table.pageSize() )
+        {
+            throw new IllegalArgumentException( "Cannot map files with a filePageSize (" +
+                    filePageSize + ") that is greater than the cachePageSize (" +
+                    table.pageSize() + ")" );
+        }
 
-        pagedFile = pagedFiles.get( file );
+        StandardPagedFile pagedFile = pagedFiles.get( file );
         if ( pagedFile == null || !pagedFile.claimReference() )
         {
             StoreChannel channel = fs.open( file, "rw" );
@@ -92,6 +99,7 @@ public class StandardPageCache implements PageCache, Runnable
     @Override
     public void flush() throws IOException
     {
+        assertNotClosed();
         table.flush();
         for ( StandardPagedFile file : pagedFiles.values() )
         {
@@ -102,10 +110,23 @@ public class StandardPageCache implements PageCache, Runnable
     @Override
     public synchronized void close() throws IOException
     {
+        // TODO what do we do if people still have files mapped and are using them?
+        // We can't just close their files out from under them. It would be rude.
+        // We also cannot just wait for them to unmap their files, because this method
+        // synchronises on the same lock that unmap does.
+        closed = true;
         table.flush();
         for ( StandardPagedFile file : pagedFiles.values() )
         {
             file.close();
+        }
+    }
+
+    private void assertNotClosed()
+    {
+        if ( closed )
+        {
+            throw new IllegalStateException( "The PageCache has been shut down" );
         }
     }
 

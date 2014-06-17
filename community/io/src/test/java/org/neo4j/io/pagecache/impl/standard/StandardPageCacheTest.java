@@ -27,11 +27,17 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 
 import org.junit.AfterClass;
+import org.junit.Test;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCacheTest;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PagedFile;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertThat;
 
 public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
 {
@@ -67,4 +73,29 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
             future.cancel( true );
         }
     }
+
+    @Test
+    public void shouldRemoveEvictedPages() throws Exception
+    {
+        // Given
+        int pagesInCache = 64;
+        int pagesKeptInUse = (int) (pagesInCache * ClockSweepPageTable.PAGE_UTILISATION_RATIO);
+
+        StandardPageCache cache = getPageCache( fs, pagesInCache, filePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+        // When I pin and unpin a series of pages
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_LOCK ) )
+        {
+            for ( int i = 0; i < 128; i++ )
+            {
+                cursor.next();
+            }
+        }
+
+        // Then
+        Thread.sleep( 50 );
+        assertThat( pagedFile.numberOfCachedPages(), equalTo( pagesKeptInUse ) );
+    }
+
 }

@@ -40,6 +40,8 @@ import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SINGLE_PAGE;
 import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
@@ -174,46 +176,79 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     @Override
     public void forceUpdateRecord( NodeRecord record )
     {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
+        registerIdFromUpdateRecord( record.getId() );
+        long recordId = record.getId();
+        long pageId = pageIdForRecord( recordId );
+        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
         {
-            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+            while ( cursor.next() )
+            {
+                writeRecord( cursor, record, true );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-
-        try
-        {
-            updateRecord( record, cursor, true );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 
     @Override
     public void updateRecord( NodeRecord record )
     {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
+        registerIdFromUpdateRecord( record.getId() );
+        long recordId = record.getId();
+        long pageId = pageIdForRecord( recordId );
+        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
         {
-            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+            while ( cursor.next() )
+            {
+                writeRecord( cursor, record, false );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
         }
-
-        try
+        if ( !record.inUse() && !isInRecoveryMode() )
         {
-            updateRecord( record, cursor, false );
+            freeId( record.getId() );
         }
-        finally
+    }
+
+    private void writeRecord( PageCursor cursor, NodeRecord record, boolean force )
+    {
+        int offset = offsetForId( record.getId() );
+        cursor.setOffset( offset );
+        if ( record.inUse() || force )
         {
-            storeFile.unpin( cursor );
+            long nextRel = record.getNextRel();
+            long nextProp = record.getNextProp();
+
+            short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & 0x700000000L) >> 31);
+            short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp & 0xF00000000L) >> 28);
+
+            // [    ,   x] in use bit
+            // [    ,xxx ] higher bits for rel id
+            // [xxxx,    ] higher bits for prop id
+            short inUseUnsignedByte = ( record.inUse() ? Record.IN_USE : Record.NOT_IN_USE ).byteValue();
+            inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
+
+            cursor.putByte( (byte) inUseUnsignedByte );
+            cursor.putInt( (int) nextRel );
+            cursor.putInt( (int) nextProp );
+
+            // lsb of labels
+            long labelField = record.getLabelField();
+            cursor.putInt( (int) labelField );
+            // msb of labels
+            cursor.putByte( (byte) ((labelField & 0xFF00000000L) >> 32) );
+
+            byte extra = record.isDense() ? (byte)1 : (byte)0;
+            cursor.putByte( extra );
+        }
+        else
+        {
+            cursor.putByte( Record.NOT_IN_USE.byteValue() );
         }
     }
 
@@ -320,48 +355,6 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         record.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
 
         return record;
-    }
-
-    private void updateRecord( NodeRecord record, PageCursor cursor, boolean force )
-    {
-        long id = record.getId();
-        cursor.setOffset( offsetForId( id ) );
-        registerIdFromUpdateRecord( id );
-        if ( record.inUse() || force )
-        {
-            long nextRel = record.getNextRel();
-            long nextProp = record.getNextProp();
-
-            short relModifier = nextRel == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (short)((nextRel & 0x700000000L) >> 31);
-            short propModifier = nextProp == Record.NO_NEXT_PROPERTY.intValue() ? 0 : (short)((nextProp & 0xF00000000L) >> 28);
-
-            // [    ,   x] in use bit
-            // [    ,xxx ] higher bits for rel id
-            // [xxxx,    ] higher bits for prop id
-            short inUseUnsignedByte = ( record.inUse() ? Record.IN_USE : Record.NOT_IN_USE ).byteValue();
-            inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
-
-            cursor.putByte( (byte) inUseUnsignedByte );
-            cursor.putInt( (int) nextRel );
-            cursor.putInt( (int) nextProp );
-
-            // lsb of labels
-            long labelField = record.getLabelField();
-            cursor.putInt( (int) labelField );
-            // msb of labels
-            cursor.putByte( (byte) ((labelField & 0xFF00000000L) >> 32) );
-
-            byte extra = record.isDense() ? (byte)1 : (byte)0;
-            cursor.putByte( extra );
-        }
-        else
-        {
-            cursor.putByte( Record.NOT_IN_USE.byteValue() );
-            if ( !isInRecoveryMode() )
-            {
-                freeId( id );
-            }
-        }
     }
 
     public DynamicArrayStore getDynamicLabelStore()

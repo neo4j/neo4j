@@ -26,9 +26,11 @@ import org.junit.Test;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageIO;
 import org.neo4j.io.pagecache.PageLock;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
@@ -42,7 +44,6 @@ public class StandardPagedFileTest
     private final PageTable table = mock( PageTable.class );
     private final PinnablePage page = mock( PinnablePage.class );
     private final StoreChannel channel = mock( StoreChannel.class);
-    private final PageIO pageIO = mock( PageIO.class );
     private final StandardPageSwapper swapper = new StandardPageSwapper( null, channel, 512, null );
 
     @Test
@@ -51,18 +52,20 @@ public class StandardPagedFileTest
         // Given
         when( table.load( swapper, 12, PageLock.SHARED ) ).thenReturn( page );
         when( page.pin( swapper, 12, PageLock.SHARED ) ).thenReturn( true );
+        when( page.pageId() ).thenReturn( 12L );
 
         StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
 
         // When
-        try ( PageCursor cursor = file.io( 12, PF_SHARED_LOCK, pageIO, 13, 14 ) )
+        try ( PageCursor cursor = file.io( 12, PF_SHARED_LOCK ) )
         {
-            cursor.next();
+            // Then
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 12L ) );
         }
 
-        // Then
+        // And then
         verify( table ).load( swapper, 12, PageLock.SHARED );
-        verify( pageIO ).apply( 12, page, 13, 14 );
     }
 
     @Test
@@ -71,18 +74,18 @@ public class StandardPagedFileTest
         // Given
         when( table.load( swapper, 12, PageLock.SHARED ) ).thenReturn( page );
         when( page.pin( swapper, 12, PageLock.SHARED ) ).thenReturn( true );
+        when( page.pageId() ).thenReturn( 12L );
         when( swapper.getLastPageId() ).thenReturn( 512L );
 
         StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
 
         // When
-        try ( PageCursor cursor = file.io( 12, PF_SHARED_LOCK, pageIO, 13, 14 ) )
+        try ( PageCursor cursor = file.io( 12, PF_SHARED_LOCK ) )
         {
-            cursor.next();
+            // Then
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 12L ) );
         }
-
-        // Then
-        verify( page ).unpin( PageLock.SHARED );
     }
 
     @Test( expected = IOException.class )
@@ -95,9 +98,11 @@ public class StandardPagedFileTest
         StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
 
         // When
-        try ( PageCursor cursor = file.io( 12, 0, pageIO, 13, 14 ) )
+        try ( PageCursor cursor = file.io( 12, 0 ) )
         {
-            cursor.next();
+            // Then
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 12L ) );
         }
     }
 
@@ -112,9 +117,11 @@ public class StandardPagedFileTest
 
         // When
         int pf_flags = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
-        try ( PageCursor cursor = file.io( 12, pf_flags, pageIO , 13, 14 ) )
+        try ( PageCursor cursor = file.io( 12, pf_flags ) )
         {
-            cursor.next();
+            // Then
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 12L ) );
         }
     }
 }

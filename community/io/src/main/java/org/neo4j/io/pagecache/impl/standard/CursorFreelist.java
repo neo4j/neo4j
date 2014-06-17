@@ -37,16 +37,20 @@ class CursorFreelist
         public int counter = 0;
     }
 
-    private final ThreadLocal<CursorRef> freelist = new ThreadLocal<>();
+    private static class CursorRefThreadLocal extends ThreadLocal<CursorRef>
+    {
+        @Override
+        protected CursorRef initialValue()
+        {
+            return new CursorRef();
+        }
+    }
+
+    private final ThreadLocal<CursorRef> freelist = new CursorRefThreadLocal();
 
     public StandardPageCursor takeCursor()
     {
         CursorRef ref = freelist.get();
-        if ( ref == null )
-        {
-            ref = new CursorRef();
-            freelist.set( ref );
-        }
         StandardPageCursor cursor = ref.cursor;
         if ( cursor == null )
         {

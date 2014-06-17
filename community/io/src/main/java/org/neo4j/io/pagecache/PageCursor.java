@@ -37,18 +37,21 @@ public interface PageCursor extends AutoCloseable
     void getBytes( byte[] data );
     void putBytes( byte[] data );
 
-
     short getShort();
     void putShort( short value );
-
 
     void setOffset( int offset );
     int getOffset();
 
-    // TODO remove all the methods above this comment
+    long getCurrentPageId();
 
     void rewind() throws IOException;
 
+    /**
+     * TBD: scanning, idempotent single-page operations
+     * @return
+     * @throws IOException
+     */
     boolean next() throws IOException;
 
     void close(); // TODO remove because it's specified by AutoClosable?

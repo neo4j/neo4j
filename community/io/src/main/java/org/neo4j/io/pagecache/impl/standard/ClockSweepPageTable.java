@@ -40,6 +40,24 @@ import static org.neo4j.io.pagecache.impl.standard.StandardPinnablePage.UNBOUND_
  */
 public class ClockSweepPageTable implements PageTable, Runnable
 {
+    /**
+     * Only evict pages if more than this percentage is used.
+     * For instance, if the ratio is 0.96, then the eviction thread will only do work
+     * if more than 96% of the pages in the cache are in use.
+     */
+    static final double PAGE_UTILISATION_RATIO = getDouble(
+            "org.neo4j.io.pagecache.impl.standard.ClockSweepPageTable.pageUtilisationRatio", 0.96 );
+
+    private static double getDouble( String propertyName, double defaultValue )
+    {
+        String property = System.getProperty( propertyName );
+        if ( property == null )
+        {
+            return defaultValue;
+        }
+        return Double.parseDouble( property );
+    }
+
     private final AtomicReference<StandardPinnablePage> freeList;
     private final StandardPinnablePage[] pages;
     private final int pageSize;
@@ -164,7 +182,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
          * This is the minimum amount of pages to keep around, we will stop
          * evicting pages once we reach this threshold.
          */
-        final int minLoadedPages = (int) Math.round(pages.length * 0.96);
+        final int minLoadedPages = (int) Math.round(pages.length * PAGE_UTILISATION_RATIO );
         int maxPagesToEvict = Math.max( pages.length - minLoadedPages, 1 );
         int clockHand = 0;
 

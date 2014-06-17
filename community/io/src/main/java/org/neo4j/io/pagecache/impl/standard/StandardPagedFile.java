@@ -29,7 +29,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageIO;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.PagedFile;
 
@@ -72,15 +71,15 @@ public class StandardPagedFile implements PagedFile
     }
 
     @Override
-    public PageCursor io(
-            long pageId,
-            int pf_flags,
-            PageIO pageIO,
-            long io_context,
-            long io_flags ) throws IOException
+    public PageCursor io( long pageId, int pf_flags ) throws IOException
     {
+        if ( (pf_flags & PF_READ_AHEAD) != 0 && (pf_flags & PF_SINGLE_PAGE) != 0 )
+        {
+            throw new IllegalArgumentException(
+                    "Cannot specify both PF_READ_AHEAD and PF_SINGLE_PAGE" );
+        }
         StandardPageCursor cursor = cursorFreelist.takeCursor();
-        cursor.initialise( this, pageId, pf_flags, pageIO, io_context, io_flags );
+        cursor.initialise( this, pageId, pf_flags );
         cursor.rewind();
         return cursor;
     }

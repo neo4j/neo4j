@@ -21,13 +21,13 @@ package org.neo4j.io.pagecache.impl.standard;
 
 import java.io.IOException;
 
-import org.neo4j.io.pagecache.PageIO;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SINGLE_PAGE;
 
 public class StandardPageCursor extends OffsetTrackingCursor
 {
@@ -40,9 +40,6 @@ public class StandardPageCursor extends OffsetTrackingCursor
     private long nextPageId;
     private long lastPageId;
     private int pf_flags;
-    private PageIO pageIO;
-    private long io_context;
-    private long io_flags;
 
     public StandardPageCursor( CursorFreelist cursorFreelist )
     {
@@ -76,6 +73,12 @@ public class StandardPageCursor extends OffsetTrackingCursor
     }
 
     @Override
+    public long getCurrentPageId()
+    {
+        return page == null? StandardPinnablePage.UNBOUND_PAGE_ID : page().pageId();
+    }
+
+    @Override
     public void rewind() throws IOException
     {
         nextPageId = pageId;
@@ -99,18 +102,23 @@ public class StandardPageCursor extends OffsetTrackingCursor
     @Override
     public boolean next() throws IOException
     {
-        if ( nextPageId >= lastPageId && (pf_flags & PF_NO_GROW) != 0 )
-        {
-            return false;
-        }
         if ( page != null )
         {
             pagedFile.unpin( this );
         }
+
+        if ( nextPageId >= lastPageId && (pf_flags & PF_NO_GROW) != 0 )
+        {
+            return false;
+        }
+        if ( (pf_flags & PF_SINGLE_PAGE) != 0 && nextPageId > pageId )
+        {
+            return false;
+        }
+
         try
         {
             pagedFile.pin( this, getLockType( pf_flags ), nextPageId );
-            pageIO.apply( nextPageId, page, io_context, io_flags );
         }
         catch ( IOException e )
         {
@@ -132,23 +140,13 @@ public class StandardPageCursor extends OffsetTrackingCursor
             pagedFile.unpin( this );
         }
         pagedFile = null;
-        pageIO = null;
         cursorFreelist.returnCursor( this );
     }
 
-    public void initialise(
-            StandardPagedFile pagedFile,
-            long pageId,
-            int pf_flags,
-            PageIO pageIO,
-            long io_context,
-            long io_flags )
+    public void initialise( StandardPagedFile pagedFile, long pageId, int pf_flags )
     {
         this.pagedFile = pagedFile;
         this.pageId = pageId;
         this.pf_flags = pf_flags;
-        this.pageIO = pageIO;
-        this.io_context = io_context;
-        this.io_flags = io_flags;
     }
 }

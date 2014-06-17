@@ -37,7 +37,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     public volatile boolean loaded = false;
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
-    private PageSwapper io;
+    private PageSwapper swapper;
     private long pageId = UNBOUND_PAGE_ID;
     private boolean dirty;
     private int pageSize;
@@ -50,10 +50,10 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     }
 
     @Override
-    public boolean pin( PageSwapper assertIO, long assertPageId, PageLock lockType )
+    public boolean pin( PageSwapper assertSwapper, long assertPageId, PageLock lockType )
     {
         lock( lockType );
-        if( verifyPageBindings( assertIO, assertPageId ) )
+        if( verifyPageBindings( assertSwapper, assertPageId ) )
         {
             byte stamp = usageStamp;
             if ( stamp < MAX_USAGE_COUNT )
@@ -113,9 +113,9 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
      * Must be called while holding either a SHARED or an EXCLUSIVE lock, in order to prevent
      * racing with eviction.
      */
-    private boolean verifyPageBindings( PageSwapper assertIO, long assertPageId )
+    private boolean verifyPageBindings( PageSwapper assertSwapper, long assertPageId )
     {
-        return assertPageId == pageId && io == assertIO;
+        return assertPageId == pageId && swapper == assertSwapper;
     }
 
     private void assertLocked()
@@ -149,10 +149,10 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     /**
      * Must be call under lock
      */
-    void reset( PageSwapper io, long pageId )
+    void reset( PageSwapper swapper, long pageId )
     {
         assertLocked();
-        this.io = io;
+        this.swapper = swapper;
         this.pageId = pageId;
     }
 
@@ -178,7 +178,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
         if ( dirty )
         {
             buffer().position(0);
-            io.write( pageId, buffer );
+            swapper.write( pageId, buffer );
             dirty = false;
         }
     }
@@ -190,7 +190,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     {
         assertLocked();
         buffer().position(0); // TODO remove?
-        io.read( pageId, buffer );
+        swapper.read( pageId, buffer );
         loaded = true;
     }
 
@@ -200,16 +200,16 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     void evicted()
     {
         assertLocked();
-        io.evicted( pageId );
+        swapper.evicted( pageId );
     }
 
     /**
      * Must be call under lock
      */
-    boolean isBackedBy( PageSwapper io )
+    boolean isBackedBy( PageSwapper swapper )
     {
         assertLocked();
-        return this.io != null && this.io.equals( io );
+        return this.swapper != null && this.swapper.equals( swapper );
     }
 
     /**
@@ -218,7 +218,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     PageSwapper io()
     {
         assertLocked();
-        return io;
+        return swapper;
     }
 
     /**
@@ -239,7 +239,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     {
         return "StandardPinnablePage{" +
                 "buffer=" + buffer +
-                ", io=" + io +
+                ", swapper=" + swapper +
                 ", pageId=" + pageId +
                 ", dirty=" + dirty +
                 ", usageStamp=" + usageStamp +
