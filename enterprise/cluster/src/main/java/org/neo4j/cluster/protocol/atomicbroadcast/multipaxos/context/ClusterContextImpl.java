@@ -238,28 +238,32 @@ class ClusterContextImpl
     @Override
     public void elected( final String roleName, final InstanceId instanceId, InstanceId electorId, long version )
     {
-        if ( electorId.equals( getMyId() )  )
+        if ( electorId != null )
         {
-            getLogger( getClass() ).debug( "I elected instance " + instanceId + " for role "
-                    + roleName + " at version " + version );
-            if ( version < electorVersion )
+            if ( electorId.equals( getMyId() ) )
             {
+                getLogger( getClass() ).debug( "I elected instance " + instanceId + " for role "
+                        + roleName + " at version " + version );
+                if ( version < electorVersion )
+                {
+                    return;
+                }
+            }
+            else if ( version < electorVersion && electorId.equals( lastElector ) )
+            {
+                getLogger( getClass() ).warn( "Election result for role " + roleName +
+                        " received from elector instance " + electorId + " with version " + version +
+                        ". I had version " + electorVersion + " for elector " + lastElector );
                 return;
             }
+            else
+            {
+                getLogger( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
+            }
+            this.electorVersion = version;
+            this.lastElector = electorId;
         }
-        else if ( version < electorVersion && electorId.equals( lastElector ) )
-        {
-            getLogger( getClass() ).warn( "Election result for role " + roleName +
-                    " received from elector instance " + electorId + " with version " + version +
-                    ". I had version " + electorVersion + " for elector " + lastElector );
-            return;
-        }
-        else
-        {
-            getLogger( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
-        }
-        this.electorVersion = version;
-        this.lastElector = electorId;
+
         commonState.configuration().elected( roleName, instanceId );
         Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
         {

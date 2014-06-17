@@ -5,6 +5,19 @@ For Release Notes, see http://neo4j.org/release-notes#neo4j-${project.version}
 Kernel:
 o Fixes potential leak of transaction state in entity locks that could
   lead to excess GC activity
+o Fixes "illegal position" errors from persistence window pool
+o Fixes potential race in XaLogicalLog that could lead to duplicate
+  entries in the log
+
+HA:
+o Slaves will now fall back to a full store copy if the master misses
+  logs old enough to serve inremental updates on join
+
+Cluster:
+o Adds version marking in election results, solving problems with
+  incorrect election outcomes and instances failiing to join the cluster
+o Slave only instances will not become coordinators under any
+  circumstances
 
 2.0.3
 -----
