@@ -3,13 +3,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.8-SNAPSHOT</version>
+    <version>1.9.8</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <groupId>org.neo4j.build</groupId>
   <artifactId>licensecheck-config</artifactId>
-  <version>1.9.8-SNAPSHOT</version>
+  <version>1.9.8</version>
   <name>Licensing configuration</name>
   <description>Licensing configuration for the Neo4j project.</description>
   <packaging>jar</packaging>
