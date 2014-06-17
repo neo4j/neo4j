@@ -44,7 +44,8 @@ import static org.neo4j.helpers.Uris.parameter;
 
 /**
  * Performs the internal switches from pending to slave/master, by listening for
- * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member.ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
+ * ClusterMemberChangeEvents. When finished it will invoke {@link org.neo4j.cluster.member
+ * .ClusterMemberAvailability#memberIsAvailable(String, URI)} to announce
  * to the cluster it's new status.
  */
 public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListener, BindingListener, Lifecycle
@@ -60,7 +61,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
     {
         // Get serverId parameter, default to -1 if it is missing, and parse to integer
         return INSTANCE_ID.apply( withDefaults(
-                Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haUri ));
+                Functions.<URI, String>constant( "-1" ), parameter( "serverId" ) ).apply( haUri ) );
     }
 
     private URI availableMasterId;
@@ -82,7 +83,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                                          SwitchToMaster switchToMaster,
                                          Election election,
                                          ClusterMemberAvailability clusterMemberAvailability,
-                                         StringLogger msgLog)
+                                         StringLogger msgLog )
     {
         this.switchToSlave = switchToSlave;
         this.switchToMaster = switchToMaster;
@@ -207,11 +208,11 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                         haCommunicationLife.shutdown();
                         haCommunicationLife = new LifeSupport();
                     }
-                });
+                } );
 
                 try
                 {
-                    modeSwitcherFuture.get(10, TimeUnit.SECONDS);
+                    modeSwitcherFuture.get( 10, TimeUnit.SECONDS );
                 }
                 catch ( Exception e )
                 {
@@ -258,7 +259,8 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
 
     private void switchToSlave()
     {
-        // Do this with a scheduler, so that if it fails, it can retry later with an exponential backoff with max wait time.
+        // Do this with a scheduler, so that if it fails, it can retry later with an exponential backoff with max
+        // wait time.
         final URI masterUri = availableMasterId;
         final AtomicLong wait = new AtomicLong();
         startModeSwitching( new Runnable()
@@ -266,7 +268,7 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
             @Override
             public void run()
             {
-                if (currentTargetState != HighAvailabilityMemberState.TO_SLAVE)
+                if ( currentTargetState != HighAvailabilityMemberState.TO_SLAVE )
                 {
                     return; // Already switched - this can happen if a second master becomes available while waiting
                 }
@@ -276,22 +278,29 @@ public class HighAvailabilityModeSwitcher implements HighAvailabilityMemberListe
                     haCommunicationLife.shutdown();
                     haCommunicationLife = new LifeSupport();
 
-                    slaveHaURI = switchToSlave.switchToSlave(haCommunicationLife, me, masterUri);
-                } catch (MismatchingStoreIdException | NoSuchLogVersionException e)
+                    slaveHaURI = switchToSlave.switchToSlave( haCommunicationLife, me, masterUri );
+                }
+                catch ( MismatchingStoreIdException e )
                 {
                     // Try again immediately
                     run();
-                } catch ( Throwable t )
+                }
+                catch ( NoSuchLogVersionException e )
+                {
+                    // Try again immediately
+                    run();
+                }
+                catch ( Throwable t )
                 {
                     msgLog.logMessage( "Error while trying to switch to slave", t );
 
                     // Try again later
-                    wait.set( (1 + wait.get()*2) ); // Exponential backoff
-                    wait.set(Math.min(wait.get(), 5*60)); // Wait maximum 5 minutes
+                    wait.set( (1 + wait.get() * 2) ); // Exponential backoff
+                    wait.set( Math.min( wait.get(), 5 * 60 ) ); // Wait maximum 5 minutes
 
                     modeSwitcherFuture = modeSwitcherExecutor.schedule( this, wait.get(), TimeUnit.SECONDS );
 
-                    msgLog.logMessage( "Attempting to switch to slave in "+wait.get()+"s");
+                    msgLog.logMessage( "Attempting to switch to slave in " + wait.get() + "s" );
                 }
             }
         } );
