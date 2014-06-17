@@ -509,35 +509,19 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             // ENDS HERE
 
             kernel.registerTransactionHook( transactionEventHandlers );
-            life.init();
-            //            // TODO 2.2-future: Why isn't this done in the init() method of the indexing service?
-            //            if ( !readOnly )
-            //            {
-            //                neoStore.setRecoveredStatus( true );
-            //                try
-            //                {
-            //                    indexingService.initIndexes( loadIndexRules() );
-            //                    xaContainer.openLogicalLog();
-            //                }
-            //                finally
-            //                {
-            //                    neoStore.setRecoveredStatus( false );
-            //                }
-            //            }
-            //            if ( !xaContainer.getResourceManager().hasRecoveredTransactions() )
-            //            {
-            //                neoStore.makeStoreOk();
-            //            }
-            //            else
-            //            {
-            //                msgLog.debug( "Waiting for TM to take care of recovered " +
-            //                        "transactions." );
-            //            }
-            // TODO Problem here is that we don't know if recovery has been performed at this point
-            // if it hasn't then no index recovery will be performed since the node store is still in
-            // "not ok" state and forceGetRecord will always return place holder node records that are not in use.
-            // This issue will certainly introduce index inconsistencies.
-            life.start();
+            neoStore.setRecoveredStatus( true );
+            try
+            {
+                // Recovery happens in here. Recovery status is needed both in init and start,
+                // init reads which log version to read from.
+                // start reads the log and performs recovery.
+                // Basically.
+                life.start();
+            }
+            finally
+            {
+                neoStore.setRecoveredStatus( false );
+            }
 
             neoStore.makeStoreOk();
 

@@ -124,7 +124,7 @@ public class TransactionRecordState
                            context.getLabelTokenRecords().changeSize() +
                            context.getRelationshipTypeTokenRecords().changeSize() +
                            context.getRelGroupRecords().changeSize() +
-                           (neoStoreRecord != null ? 1 : 0);
+                           (neoStoreRecord != null ? neoStoreRecord.changeSize() : 0);
         List<Command> commands = new ArrayList<>( noOfCommands );
         for ( RecordProxy<Integer, LabelTokenRecord, Void> record : context.getLabelTokenRecords().changes() )
         {
@@ -204,9 +204,8 @@ public class TransactionRecordState
             command.init( change.getBefore(), change.forChangingData(), change.getAdditionalData() );
             commands.add( command );
         }
-        assert commands.size() == noOfCommands : "Expected " + noOfCommands
-                                                 + " final commands, got "
-                                                 + commands.size() + " instead";
+        assert commands.size() == noOfCommands : "Expected " + noOfCommands + " final commands, got "
+                + commands.size() + " instead";
 
         integrityValidator.validateTransactionStartKnowledge( lastCommittedTxWhenTransactionStarted );
         prepared = true;

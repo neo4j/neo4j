@@ -175,10 +175,8 @@ public class LogTruncationTest
     private void assertHandlesLogTruncation( Command cmd ) throws IOException
     {
         inMemoryChannel.reset();
-        System.out.println( "Testing " + cmd.getClass() );
         writer.writeCommandEntry( cmd );
         int bytesSuccessfullyWritten = inMemoryChannel.writerPosition();
-        System.out.println( "Wrote " + bytesSuccessfullyWritten );
         try
         {
             assertEquals( cmd, ((LogEntry.Command) logEntryReader.readLogEntry( inMemoryChannel )).getXaCommand() );
