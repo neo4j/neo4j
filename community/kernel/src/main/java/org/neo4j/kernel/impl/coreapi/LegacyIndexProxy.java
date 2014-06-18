@@ -326,6 +326,7 @@ public class LegacyIndexProxy<T extends PropertyContainer> implements Index<T>
             @Override
             protected T fetchNextOrNull()
             {
+                statementContextBridge.assertInTransaction();
                 while ( ids.hasNext() )
                 {
                     long id = ids.next();
