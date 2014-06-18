@@ -390,7 +390,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 relationshipLoader( neoStore.getRelationshipStore() ) );
         RelationshipLoader relationshipLoader = new RelationshipLoader( relationshipCache, new RelationshipChainLoader(
                 neoStore ) );
-        persistenceCache = new PersistenceCache( nodeCache, relationshipCache, nodeManager.newGraphProperties(),
+        persistenceCache = new PersistenceCache( nodeCache, relationshipCache, nodeManager,
                 relationshipLoader, propertyKeyTokenHolder, relationshipTypeTokens, labelTokens );
         cacheAccess = new BridgingCacheAccess( schemaCache, updateableSchemaState, persistenceCache );
         try

@@ -37,6 +37,7 @@ import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
 import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
+import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
@@ -85,23 +86,25 @@ public class PersistenceCache
     };
     private final AutoLoadingCache<NodeImpl> nodeCache;
     private final AutoLoadingCache<RelationshipImpl> relationshipCache;
-    private final GraphPropertiesImpl graphProperties;
+    private GraphPropertiesImpl graphProperties;
     private final RelationshipLoader relationshipLoader;
     private final PropertyKeyTokenHolder propertyKeyTokenHolder;
     private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
     private final LabelTokenHolder labelTokenHolder;
+    private final EntityFactory entityFactory;
 
     public PersistenceCache(
             AutoLoadingCache<NodeImpl> nodeCache,
             AutoLoadingCache<RelationshipImpl> relationshipCache,
-            GraphPropertiesImpl graphProperties, RelationshipLoader relationshipLoader,
+            EntityFactory entityFactory, RelationshipLoader relationshipLoader,
             PropertyKeyTokenHolder propertyKeyTokenHolder,
             RelationshipTypeTokenHolder relationshipTypeTokenHolder,
             LabelTokenHolder labelTokenHolder )
     {
         this.nodeCache = nodeCache;
         this.relationshipCache = relationshipCache;
-        this.graphProperties = graphProperties;
+        this.entityFactory = entityFactory;
+        this.graphProperties = entityFactory.newGraphProperties();
         this.relationshipLoader = relationshipLoader;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
@@ -328,7 +331,7 @@ public class PersistenceCache
 
     public void evictGraphProperties()
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        graphProperties = entityFactory.newGraphProperties();
     }
 
     public void evictPropertyKey( int id )

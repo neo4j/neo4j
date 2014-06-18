@@ -22,8 +22,8 @@ package org.neo4j.kernel.impl.api.store;
 import org.junit.Before;
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.api.KernelStatement;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
+import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
@@ -90,7 +90,6 @@ public class PersistenceCacheTest
     private PersistenceCache persistenceCache;
     private AutoLoadingCache<NodeImpl> nodeCache;
     private final long nodeId = 1;
-    private final KernelStatement state = mock( KernelStatement.class );
 
     @SuppressWarnings( "unchecked" )
     @Before
@@ -98,7 +97,10 @@ public class PersistenceCacheTest
     {
         nodeCache = mock( AutoLoadingCache.class );
         AutoLoadingCache<RelationshipImpl> relCache = mock( AutoLoadingCache.class );
-        persistenceCache = new PersistenceCache( nodeCache, relCache, mock( GraphPropertiesImpl.class ),
+        EntityFactory entityFactory = mock( EntityFactory.class );
+        GraphPropertiesImpl graphProperties = mock( GraphPropertiesImpl.class );
+        when( entityFactory.newGraphProperties() ).thenReturn( graphProperties );
+        persistenceCache = new PersistenceCache( nodeCache, relCache, entityFactory,
                 mock( RelationshipLoader.class ), null, null, null );
     }
 }
