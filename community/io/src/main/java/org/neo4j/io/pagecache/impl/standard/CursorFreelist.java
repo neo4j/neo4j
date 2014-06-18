@@ -23,7 +23,7 @@ class CursorFreelist
 {
     private static final int MAX_CURSORS_PER_FREELIST = 1000;
 
-    private static class CursorRef
+    static class CursorRef
     {
         public StandardPageCursor cursor;
         // We keep a count of how many cursors are in the freelist, so that the

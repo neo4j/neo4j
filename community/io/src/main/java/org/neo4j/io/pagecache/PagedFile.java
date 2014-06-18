@@ -25,6 +25,8 @@ public interface PagedFile
 {
     /**
      * Pin the pages with a shared lock.
+     * This implies NO_GROW, since pages under shared locks cannot be
+     * safely written to anyway.
      */
     public static final int PF_SHARED_LOCK = 1;
     /**

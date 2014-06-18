@@ -40,7 +40,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SINGLE_PAGE;
 import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
@@ -146,7 +145,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
         NodeRecord result = null;
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE | PF_NO_GROW ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
         {
             while ( cursor.next() )
             {
@@ -296,7 +295,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE | PF_NO_GROW ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
         {
             NodeRecord record = null;
             boolean isInUse = false;
@@ -331,7 +330,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
 
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE | PF_NO_GROW ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
         {
             boolean recordIsInUse = false;
             while ( cursor.next() )

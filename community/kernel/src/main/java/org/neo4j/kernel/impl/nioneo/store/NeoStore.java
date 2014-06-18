@@ -40,7 +40,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static java.lang.String.format;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SINGLE_PAGE;
@@ -608,7 +607,7 @@ public class NeoStore extends AbstractStore
 
     private void refreshFields()
     {
-        scanAllFields( PF_SHARED_LOCK | PF_READ_AHEAD | PF_NO_GROW );
+        scanAllFields( PF_SHARED_LOCK | PF_READ_AHEAD );
     }
 
     private void initialiseFields()

@@ -139,7 +139,7 @@ public abstract class PageCacheTest<T extends PageCache>
         PagedFile pagedFile = cache.map( file, filePageSize );
 
         int recordId = 0;
-        try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK | PF_NO_GROW ) )
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK ) )
         {
             while ( cursor.next() )
             {
@@ -215,6 +215,7 @@ public abstract class PageCacheTest<T extends PageCache>
             generateRecordForId( i, buf );
             observation.position( 0 );
             channel.read( observation );
+            // TODO racy: might not observe changes to later pages
             assertThat( "Record id: " + i, observation.array(), byteArray( buf.array() ) );
         }
         channel.close();
@@ -257,7 +258,7 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK | PF_NO_GROW ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
         {
             assertFalse( cursor.next() );
         }
@@ -272,7 +273,7 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK | PF_NO_GROW ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
         {
             assertTrue( cursor.next() );
             verifyRecordsMatchExpected( cursor );
@@ -304,7 +305,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test
+    @Test( timeout = 1000 )
     public void rewindMustStartScanningOverFromTheBeginning() throws IOException
     {
         int numberOfRewindsToTest = 10;
@@ -316,7 +317,7 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK | PF_NO_GROW ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
         {
             for ( int i = 0; i < numberOfRewindsToTest; i++ )
             {
@@ -411,12 +412,28 @@ public abstract class PageCacheTest<T extends PageCache>
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
 
-        try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
         {
             assertTrue( cursor.next() );
             assertThat( cursor.getCurrentPageId(), is( 0L ) );
             assertFalse( cursor.next() );
         }
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void notSpecifyingAnyPfFlagsMustThrow() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+        pagedFile.io( 0, 0 ); // this must throw
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void notSpecifyingAnyPfLockFlagsMustThrow() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+        pagedFile.io( 0, PF_SINGLE_PAGE ); // this must throw
     }
 
     @Test( expected = IllegalArgumentException.class )
@@ -644,7 +661,7 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    @Test
+    @Test( timeout = 1000 )
     public void newlyWrittenPagesMustBeAccessibleWithNoGrow() throws IOException
     {
         int initialPages = 1;
@@ -653,7 +670,6 @@ public abstract class PageCacheTest<T extends PageCache>
 
         PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         PagedFile pagedFile = cache.map( file, filePageSize );
-
 
         try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK ) )
         {
@@ -665,7 +681,18 @@ public abstract class PageCacheTest<T extends PageCache>
         }
 
         int pagesChecked = 0;
-        try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK | PF_NO_GROW ) )
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            while ( cursor.next() )
+            {
+                verifyRecordsMatchExpected( cursor );
+                pagesChecked++;
+            }
+        }
+        assertThat( pagesChecked, is( initialPages + pagesToAdd ) );
+
+        pagesChecked = 0;
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK ) )
         {
             while ( cursor.next() )
             {
@@ -676,6 +703,25 @@ public abstract class PageCacheTest<T extends PageCache>
         assertThat( pagesChecked, is( initialPages + pagesToAdd ) );
     }
 
+    @Test( timeout = 1000 )
+    public void sharedLockImpliesNoGrow() throws IOException
+    {
+        int initialPages = 3;
+        generateFileWithRecords( file, recordsPerFilePage * initialPages, recordSize );
+
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+        int pagesChecked = 0;
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK ) )
+        {
+            while ( cursor.next() )
+            {
+                pagesChecked++;
+            }
+        }
+        assertThat( pagesChecked, is( initialPages ) );
+    }
     // TODO are we allowed to grow the file without PF_EXCLUSIVE_LOCK???
     // TODO must collect all exceptions from closing file channels when the cache is closed
     // TODO scanning with concurrent writes

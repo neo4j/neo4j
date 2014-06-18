@@ -161,28 +161,6 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
     }
 
     @Override
-    public void updateRecord( RelationshipRecord record )
-    {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
-        {
-            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-        try
-        {
-            updateRecord( record, cursor, false );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
-        }
-    }
-
-    @Override
     public void forceUpdateRecord( RelationshipRecord record )
     {
         PageCursor cursor = pageCache.newPageCursor();
@@ -197,6 +175,28 @@ public class RelationshipStore extends AbstractRecordStore<RelationshipRecord> i
         try
         {
             updateRecord( record, cursor, true );
+        }
+        finally
+        {
+            storeFile.unpin( cursor );
+        }
+    }
+
+    @Override
+    public void updateRecord( RelationshipRecord record )
+    {
+        PageCursor cursor = pageCache.newPageCursor();
+        try
+        {
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            updateRecord( record, cursor, false );
         }
         finally
         {

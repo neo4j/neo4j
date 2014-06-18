@@ -77,11 +77,18 @@ public class StandardPagedFile implements PagedFile
     @Override
     public PageCursor io( long pageId, int pf_flags ) throws IOException
     {
+        if ( (pf_flags & (PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK)) == 0 )
+        {
+            throw new IllegalArgumentException(
+                    "Must specify either PF_EXCLUSIVE_LOCK or PF_SHARED_LOCK" );
+        }
         if ( (pf_flags & PF_READ_AHEAD) != 0 && (pf_flags & PF_SINGLE_PAGE) != 0 )
         {
             throw new IllegalArgumentException(
                     "Cannot specify both PF_READ_AHEAD and PF_SINGLE_PAGE" );
         }
+        // Taking shared locks implies an inability to grow the file
+        pf_flags |= (pf_flags & PF_SHARED_LOCK) != 0? PF_NO_GROW : 0;
         StandardPageCursor cursor = cursorFreelist.takeCursor();
         cursor.initialise( this, pageId, pf_flags );
         cursor.rewind();
