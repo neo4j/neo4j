@@ -4,13 +4,13 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>1.9.8</version>
+    <version>1.9.8-SNAPSHOT</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <groupId>org.neo4j.doc</groupId>
   <artifactId>neo4j-javadocs</artifactId>
-  <version>1.9.8</version>
+  <version>1.9.8-SNAPSHOT</version>
 
   <name>Neo4j Javadocs</name>
   <packaging>pom</packaging>
