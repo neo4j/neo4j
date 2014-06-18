@@ -68,7 +68,7 @@ public class TransactionMonitorImpl implements TransactionMonitor
     @Override
     public long getNumberOfCommittedTransactions()
     {
-        return startedTransactionCount.get() - activeTransactionCount.get();
+        return startedTransactionCount.get() - activeTransactionCount.get() - rolledBackTransactionCount.get();
     }
 
     @Override
