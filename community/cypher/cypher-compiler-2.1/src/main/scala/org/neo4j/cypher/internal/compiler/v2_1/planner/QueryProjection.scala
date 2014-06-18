@@ -117,3 +117,5 @@ final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression
   def withShuffle(shuffle: QueryShuffle) =
     copy(shuffle = shuffle)
 }
+
+case class UnwindProjection(identifier: IdName, exp: Expression) extends QueryHorizon

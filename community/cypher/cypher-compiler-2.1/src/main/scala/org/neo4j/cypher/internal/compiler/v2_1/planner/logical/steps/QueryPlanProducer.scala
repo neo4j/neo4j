@@ -40,9 +40,9 @@ object QueryPlanProducer {
   def planAggregation(left: QueryPlan, grouping: Map[String, Expression], aggregation: Map[String, Expression]) =
     QueryPlan(
       Aggregation(left.plan, grouping, aggregation),
-      left.solved.withHorizon(
+      left.solved.updateTailOrSelf(_.withHorizon(
         AggregatingQueryProjection(groupingKeys = grouping, aggregationExpressions = aggregation)
-      )
+      ))
     )
 
   def planAllNodesScan(idName: IdName) =
@@ -289,6 +289,12 @@ object QueryPlanProducer {
     QueryPlan(
       SkipPlan(inner.plan, count),
       inner.solved.updateTailOrSelf(_.updateQueryProjection(_.updateShuffle(_.withSkip(Some(count)))))
+    )
+
+  def planUnwind(inner: QueryPlan, name: IdName, expression: Expression) =
+    QueryPlan(
+      UnwindPlan(inner.plan, name, expression),
+      inner.solved.updateTailOrSelf(_.withHorizon(UnwindProjection(name, expression)))
     )
 
   def planLimit(inner: QueryPlan, count: Expression) =

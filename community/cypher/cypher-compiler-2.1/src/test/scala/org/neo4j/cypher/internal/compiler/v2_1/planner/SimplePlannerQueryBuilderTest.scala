@@ -18,11 +18,13 @@
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
 
+import org.neo4j.cypher.internal.compiler.v2_1.InputPosition
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+
 
 class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -37,6 +39,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   val lit43: SignedIntegerLiteral = SignedDecimalIntegerLiteral("43")_
 
   val patternRel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq.empty, SimplePatternLength)
+  val property: Expression = Property( Identifier( "n" ) _, PropertyKeyName( "prop" ) _ ) _
 
   def buildPlannerQuery(query: String, normalize:Boolean = false): QueryPlanInput = {
     val ast = parser.parse(query)
@@ -445,7 +448,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
 
     query.horizon should equal(
       RegularQueryProjection(
-        Map("n.prop" -> Property(Identifier("n") _, PropertyKeyName("prop") _) _),
+        Map("n.prop" -> property),
         QueryShuffle(
           sortItems = Seq(sortItem)))
     )
@@ -860,7 +863,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
   test("match n with distinct n.prop as x return x") {
     val QueryPlanInput(UnionQuery(query :: Nil, _), _) = buildPlannerQuery("match n with distinct n.prop as x return x")
     query.horizon should equal(AggregatingQueryProjection(
-      groupingKeys = Map("x" -> Property(Identifier("n") _, PropertyKeyName("prop") _) _),
+      groupingKeys = Map("x" -> property),
       aggregationExpressions = Map.empty
     ))
 
@@ -892,7 +895,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable) = buildPlannerQuery("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner", normalize = true)
 
     query.graph.patternNodes should equal(Set(IdName("owner")))
-    query.horizon.projection should equal(AggregatingQueryProjection(
+      query.horizon should equal(AggregatingQueryProjection(
       groupingKeys = Map("owner" -> ident("owner")),
       aggregationExpressions = Map("collected" -> CountStar()(pos))
     ))
@@ -900,7 +903,7 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
     val tailQuery = query.tail.get
 
     tailQuery.graph.patternNodes should be(empty)
-    tailQuery.horizon.projection should equal(RegularQueryProjection(Map("owner" -> ident("owner"))))
+    tailQuery.horizon should equal(RegularQueryProjection(Map("owner" -> ident("owner"))))
   }
 
   test("MATCH (owner) WITH owner, COUNT(*) AS xyz WITH owner, xyz > 0 as collection WHERE (owner)--() RETURN owner") {
@@ -911,19 +914,110 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
         |WHERE (owner)--()
         |RETURN owner""".stripMargin, normalize = true)
 
-    query.horizon.projection should equal(AggregatingQueryProjection(
+    query.horizon should equal(AggregatingQueryProjection(
       groupingKeys = Map("owner" -> ident("owner")),
       aggregationExpressions = Map("xyz" -> CountStar()(pos))
     ))
 
     val tail1Query = query.tail.get
 
-    tail1Query.horizon.projection should equal(RegularQueryProjection(
+    tail1Query.horizon should equal(RegularQueryProjection(
       Map(
            // Removed by inliner since it never gets returned
            // "collection" -> GreaterThan(ident("xyz"), SignedDecimalIntegerLiteral("0") _) _,
           "owner" -> ident("owner"))
     ))
+  }
+
+  test("UNWIND [1,2,3] AS x RETURN x") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) = buildPlannerQuery("UNWIND [1,2,3] AS x RETURN x", normalize = true)
+
+    val one = SignedDecimalIntegerLiteral("1")(pos)
+    val two = SignedDecimalIntegerLiteral("2")(pos)
+    val three = SignedDecimalIntegerLiteral("3")(pos)
+
+    query.horizon should equal(UnwindProjection(
+      IdName("x"),
+      Collection(Seq(one, two, three))(pos)
+    ))
+
+    val tail = query.tail.get
+
+    tail.horizon should equal(RegularQueryProjection(Map("x" -> ident("x"))))
+  }
+
+  val one = SignedDecimalIntegerLiteral("1")(pos)
+  val two = SignedDecimalIntegerLiteral("2")(pos)
+  val three = SignedDecimalIntegerLiteral("3")(pos)
+  val collection = Collection(Seq(one, two, three))(pos)
+
+  test("UNWIND [1,2,3] AS x MATCH (n) WHERE n.prop = x RETURN n") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("UNWIND [1,2,3] AS x MATCH (n) WHERE n.prop = x RETURN n", normalize = true)
+
+    query.horizon should equal(UnwindProjection(
+      IdName("x"), collection
+    ))
+
+    val tail = query.tail.get
+
+    tail.graph.patternNodes should equal(Set(IdName("n")))
+    val set: Set[Predicate] = Set(
+      Predicate(Set(IdName("n"), IdName("x")), Equals(property, ident("x")) _))
+
+    tail.graph.selections.predicates should equal(set)
+    tail.horizon should equal(RegularQueryProjection(Map("n" -> ident("n"))))
+  }
+
+  test("MATCH n UNWIND n.prop as x RETURN x") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("MATCH n UNWIND n.prop as x RETURN x", normalize = true)
+
+    query.graph.patternNodes should equal(Set(IdName("n")))
+
+    query.horizon should equal(UnwindProjection(
+      IdName("x"),
+      property
+    ))
+
+    val tail = query.tail.get
+    tail.graph.patternNodes should equal(Set.empty)
+    tail.horizon should equal(RegularQueryProjection(Map("x" -> ident("x"))))
+  }
+
+  test("MATCH (row) WITH collect(row) AS rows UNWIND rows AS node RETURN node") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), _) =
+      buildPlannerQuery("MATCH (row) WITH collect(row) AS rows UNWIND rows AS node RETURN node", normalize = true)
+
+    println(query)
+
+    query.graph.patternNodes should equal(Set(IdName("row")))
+
+    val functionName: FunctionName = FunctionName("collect") _
+    val functionInvocation: FunctionInvocation = FunctionInvocation(functionName, ident("row")) _
+
+    query.horizon should equal(
+      AggregatingQueryProjection(
+        groupingKeys = Map.empty,
+        aggregationExpressions = Map("rows" -> functionInvocation),
+        shuffle = QueryShuffle.empty
+      )
+    )
+
+    val tail = query.tail.get
+    tail.graph.patternNodes should equal(Set.empty)
+    tail.horizon should equal(UnwindProjection(
+      IdName("node"),
+      ident("rows")
+    ))
+
+    val tailOfTail = tail.tail.get
+    tailOfTail.graph.patternNodes should equal(Set.empty)
+    tailOfTail.horizon should equal(
+      RegularQueryProjection(
+        projections = Map("node" -> ident("node"))
+      )
+    )
   }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_
