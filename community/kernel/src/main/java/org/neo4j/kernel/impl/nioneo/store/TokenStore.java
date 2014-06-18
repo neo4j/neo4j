@@ -155,21 +155,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         return new Token( getStringFor( record ), record.getId() );
     }
 
-    public Token getToken( int id, boolean recovered )
-    {
-        assert recovered;
-        try
-        {
-            setRecovered();
-            T record = getRecord( id );
-            return new Token( getStringFor( record ), record.getId() );
-        }
-        finally
-        {
-            unsetRecovered();
-        }
-    }
-
     public T getRecord( int id )
     {
         T record;

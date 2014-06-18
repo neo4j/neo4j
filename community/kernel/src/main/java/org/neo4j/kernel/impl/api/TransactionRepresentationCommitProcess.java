@@ -25,50 +25,28 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.api.labelscan.LabelScanStore;
-import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
-import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
-import org.neo4j.kernel.impl.index.IndexConfigStore;
-import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.xa.PropertyLoader;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionIndexApplier;
-import org.neo4j.kernel.impl.nioneo.xa.command.NeoTransactionStoreApplier;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
 public class TransactionRepresentationCommitProcess
 {
     private final LogicalTransactionStore logicalTransactionStore;
     private final KernelHealth kernelHealth;
-    private final IndexingService indexingService;
     private final NeoStore neoStore;
     private final boolean recovery;
-    private final LabelScanStore labelScanStore;
-    private final CacheAccessBackDoor cacheAccess;
-    private final LockService lockService;
-    private final PropertyLoader propertyLoader;
-    private final ProviderLookup legacyIndexProviderLookup;
-    private final IndexConfigStore indexConfigStore;
+    private final TransactionRepresentationStoreApplier storeApplier;
 
     public TransactionRepresentationCommitProcess( LogicalTransactionStore logicalTransactionStore,
-            KernelHealth kernelHealth, IndexingService indexingService, LabelScanStore labelScanStore, NeoStore neoStore,
-            CacheAccessBackDoor cacheAccess, LockService lockService, ProviderLookup legacyIndexProviderLookup,
-            IndexConfigStore indexConfigStore, boolean recovery )
+            KernelHealth kernelHealth, NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
+            boolean recovery )
     {
         this.logicalTransactionStore = logicalTransactionStore;
-        this.labelScanStore = labelScanStore;
         this.neoStore = neoStore;
-        this.cacheAccess = cacheAccess;
-        this.lockService = lockService;
-        this.legacyIndexProviderLookup = legacyIndexProviderLookup;
-        this.indexConfigStore = indexConfigStore;
         this.recovery = recovery;
         this.kernelHealth = kernelHealth;
-        this.indexingService = indexingService;
-        this.propertyLoader = new PropertyLoader( neoStore );
+        this.storeApplier = storeApplier;
     }
 
     public void commit( TransactionRepresentation representation ) throws TransactionFailureException
@@ -97,27 +75,10 @@ public class TransactionRepresentationCommitProcess
             throw new TransactionFailureException( Status.Transaction.CouldNotWriteToLog, e, "" );
         }
 
+        // apply changes to the store
         try
         {
-            // apply changes to the store
-            NeoTransactionStoreApplier storeApplier = new NeoTransactionStoreApplier(
-                    neoStore, indexingService, cacheAccess, lockService, transactionId, recovery );
-            NeoTransactionIndexApplier indexApplier = new NeoTransactionIndexApplier( indexingService,
-                    labelScanStore, neoStore.getNodeStore(), neoStore.getPropertyStore(), cacheAccess, propertyLoader );
-            LegacyIndexApplier legacyIndexApplier = new LegacyIndexApplier( indexConfigStore,
-                    legacyIndexProviderLookup, recovery );
-
-            try ( CommandApplierFacade applier = new CommandApplierFacade(
-                    storeApplier, indexApplier, legacyIndexApplier ) )
-            {
-                representation.accept( applier );
-            }
-
-            // TODO 2.2-future remove updateIdGenerators and setRecovered as a whole
-            if ( recovery )
-            {
-                neoStore.updateIdGenerators();
-            }
+            storeApplier.apply( representation, transactionId, recovery );
         }
         // TODO catch different types of exceptions here, some which are OK
         catch ( IOException e )

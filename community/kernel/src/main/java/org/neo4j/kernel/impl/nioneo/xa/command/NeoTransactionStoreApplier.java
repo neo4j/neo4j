@@ -66,7 +66,7 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     private void addRelationshipType( int id )
     {
         Token type = recovery ?
-                     neoStore.getRelationshipTypeStore().getToken( id, true ) :
+                     neoStore.getRelationshipTypeStore().getToken( id ) :
                      neoStore.getRelationshipTypeStore().getToken( id );
         cacheAccess.addRelationshipTypeToken( type );
     }
@@ -74,7 +74,7 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     private void addLabel( int id )
     {
         Token labelId = recovery ?
-                        neoStore.getLabelTokenStore().getToken( id, true ) :
+                        neoStore.getLabelTokenStore().getToken( id ) :
                         neoStore.getLabelTokenStore().getToken( id );
         cacheAccess.addLabelToken( labelId );
     }
@@ -82,7 +82,7 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     private void addPropertyKey( int id )
     {
         Token index = recovery ?
-                      neoStore.getPropertyKeyTokenStore().getToken( id, true ) :
+                      neoStore.getPropertyKeyTokenStore().getToken( id ) :
                       neoStore.getPropertyKeyTokenStore().getToken( id );
         cacheAccess.addPropertyKeyToken( index );
     }

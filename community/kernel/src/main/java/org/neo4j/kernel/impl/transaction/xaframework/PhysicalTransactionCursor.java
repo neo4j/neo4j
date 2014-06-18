@@ -30,7 +30,7 @@ public class PhysicalTransactionCursor implements IOCursor
 {
     private final ReadableLogChannel channel;
     private final LogEntryReader<ReadableLogChannel> entryReader;
-    private Visitor<CommittedTransactionRepresentation, IOException> visitor;
+    private final Visitor<CommittedTransactionRepresentation, IOException> visitor;
     private final List<Command> entries = new ArrayList<>();
 
     public PhysicalTransactionCursor( ReadableLogChannel channel, LogEntryReader<ReadableLogChannel> entryReader,
@@ -69,6 +69,8 @@ public class PhysicalTransactionCursor implements IOCursor
             entries.add( ((LogEntry.Command) entry).getXaCommand() );
         }
 
+        assert startEntry != null;
+        assert commitEntry != null;
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries, true );
         transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
                 startEntry.getLocalId(), startEntry.getTimeWritten(),

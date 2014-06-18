@@ -19,21 +19,22 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
 public class PhysicalTransactionAppenderTest
 {
@@ -59,7 +60,8 @@ public class PhysicalTransactionAppenderTest
 
         // THEN
         final AtomicInteger visited = new AtomicInteger();
-        Visitor<CommittedTransactionRepresentation, IOException> visitor = new Visitor<CommittedTransactionRepresentation, IOException>()
+        Visitor<CommittedTransactionRepresentation, IOException> visitor =
+                new Visitor<CommittedTransactionRepresentation, IOException>()
         {
             @Override
             public boolean visit( CommittedTransactionRepresentation committedTx ) throws IOException

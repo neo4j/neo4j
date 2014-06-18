@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -48,7 +46,6 @@ import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.TokenNameLookup;
-import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.configuration.Config;
@@ -69,6 +66,7 @@ import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
@@ -142,6 +140,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
@@ -208,6 +208,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private LegacyIndexStore legacyIndexStore;
     private final Map<String, IndexImplementation> indexProviders = new HashMap<>();
     private final ProviderLookup legacyIndexProviderLookup;
+    private TransactionRepresentationStoreApplier storeApplier;
 
     private enum Diagnostics implements DiagnosticsExtractor<NeoStoreXaDataSource>
     {
@@ -415,21 +416,16 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             // CHANGE STARTS HERE
             final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
             // Recovery process ties log and commit process together
-            final Visitor<CommittedTransactionRepresentation, IOException> visitor = new Visitor<CommittedTransactionRepresentation, IOException>()
+            final Visitor<CommittedTransactionRepresentation, IOException> visitor =
+                    new Visitor<CommittedTransactionRepresentation, IOException>()
             {
                 @Override
                 public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
                 {
-                    try
-                    {
-                        commitProcess.commit( transaction.getTransactionRepresentation() );
-                        recoveredCount.incrementAndGet();
-                        return true;
-                    }
-                    catch ( TransactionFailureException e )
-                    {
-                        throw new IOException( "Unable to recover transaction " + transaction, e );
-                    }
+                    storeApplier.apply( transaction.getTransactionRepresentation(),
+                            transaction.getCommitEntry().getTxId(), true );
+                    recoveredCount.incrementAndGet();
+                    return true;
                 }
             };
             Visitor<ReadableLogChannel, IOException> logFileRecoverer = new LogFileRecoverer( logEntryReader, visitor );
@@ -454,9 +450,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             logicalTransactionStore = dependencies.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
                     transactionMetadataCache, logEntryReader ) );
 
-            this.commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
-                    indexingService, labelScanStore, neoStore, cacheAccess, lockService, legacyIndexProviderLookup,
-                    indexConfigStore, false );
+            storeApplier = new TransactionRepresentationStoreApplier( indexingService, labelScanStore, neoStore,
+                    cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore );
+            commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth, neoStore, storeApplier, false );
 
             Factory<KernelTransaction> transactionFactory = new Factory<KernelTransaction>()
             {
