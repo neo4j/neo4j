@@ -5,12 +5,12 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>parent</artifactId>
-        <version>1.9.8-SNAPSHOT</version>
+        <version>1.9.9-SNAPSHOT</version>
         <relativePath>../..</relativePath>
     </parent>
 
     <artifactId>neo4j-installer-linux</artifactId>
-    <version>1.9.8-SNAPSHOT</version>
+    <version>1.9.9-SNAPSHOT</version>
     <packaging>pom</packaging>
 
     <name>Neo4j Linux Installers</name>
