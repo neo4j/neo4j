@@ -23,6 +23,8 @@ import java.io.IOException;
 
 public interface PageCursor extends AutoCloseable
 {
+    long UNBOUND_PAGE_ID = -1;
+
     byte getByte();
     void putByte( byte value );
 

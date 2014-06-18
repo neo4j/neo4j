@@ -143,7 +143,7 @@ public abstract class PageCacheTest<T extends PageCache>
         {
             while ( cursor.next() )
             {
-                verifyRecordsMatchExpected( cursor  );
+                verifyRecordsMatchExpected( cursor );
                 recordId += recordsPerFilePage;
             }
         }
@@ -436,7 +436,6 @@ public abstract class PageCacheTest<T extends PageCache>
         final PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
         final PagedFile pagedFile = cache.map( file, filePageSize );
 
-
         Runnable runnable = new Runnable()
         {
             @Override
@@ -473,10 +472,211 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    // TODO next must reset cursor offset
-    // TODO next must advance current page id
-    // TODO current page id before calling next is unbound
-    // TODO current page id after calling rewind is unbound
+    @Test
+    public void nextMustResetTheCursorOffset() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            cursor.setOffset( 0 );
+            cursor.putByte( (byte) 1 );
+            cursor.putByte( (byte) 2 );
+            cursor.putByte( (byte) 3 );
+            cursor.putByte( (byte) 4 );
+            assertTrue( cursor.next() );
+            cursor.setOffset( 0 );
+            cursor.putByte( (byte) 5 );
+            cursor.putByte( (byte) 6 );
+            cursor.putByte( (byte) 7 );
+            cursor.putByte( (byte) 8 );
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            assertThat( cursor.getByte(), is((byte) 1 ) );
+            assertThat( cursor.getByte(), is((byte) 2 ) );
+            assertThat( cursor.getByte(), is((byte) 3 ) );
+            assertThat( cursor.getByte(), is((byte) 4 ) );
+            assertTrue( cursor.next() );
+            assertThat( cursor.getByte(), is((byte) 5 ) );
+            assertThat( cursor.getByte(), is((byte) 6 ) );
+            assertThat( cursor.getByte(), is((byte) 7 ) );
+            assertThat( cursor.getByte(), is((byte) 8 ) );
+        }
+    }
+
+    @Test
+    public void nextMustAdvanceCurrentPageId() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 0L ) );
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 1L ) );
+        }
+    }
+
+    @Test
+    public void currentPageIdIsUnboundBeforeFirstNextAndAfterRewind() throws IOException
+    {
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK ) )
+        {
+            assertThat( cursor.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 0L ) );
+            cursor.rewind();
+            assertThat( cursor.getCurrentPageId(), is( PageCursor.UNBOUND_PAGE_ID ) );
+        }
+    }
+
+    @Test
+    public void lastPageMustBeAccessibleWithNoGrowSpecified() throws IOException
+    {
+        generateFileWithRecords( file, recordsPerFilePage * 2, recordSize );
+
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertTrue( cursor.next() );
+            assertTrue( cursor.next() );
+            assertFalse( cursor.next() );
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertTrue( cursor.next() );
+            assertFalse( cursor.next() );
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 2L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertFalse( cursor.next() );
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 3L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertFalse( cursor.next() );
+        }
+    }
+
+    @Test
+    public void lastPageMustBeAccessibleWithNoGrowSpecifiedEvenIfLessThanFilePageSize() throws IOException
+    {
+        generateFileWithRecords( file, (recordsPerFilePage * 2) - 1, recordSize );
+
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertTrue( cursor.next() );
+            assertTrue( cursor.next() );
+            assertFalse( cursor.next() );
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertTrue( cursor.next() );
+            assertFalse( cursor.next() );
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 2L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertFalse( cursor.next() );
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 3L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertFalse( cursor.next() );
+        }
+    }
+
+    @Test
+    public void firstPageMustBeAccessibleWithNoGrowSpecifiedIfItIsTheOnlyPage() throws IOException
+    {
+        generateFileWithRecords( file, recordsPerFilePage, recordSize );
+
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertTrue( cursor.next() );
+            assertFalse( cursor.next() );
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertFalse( cursor.next() );
+        }
+    }
+
+    @Test
+    public void firstPageMustBeAccessibleEvenIfTheFileIsSmallerThanFilePageSize() throws IOException
+    {
+        generateFileWithRecords( file, 1, recordSize );
+
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertTrue( cursor.next() );
+            assertFalse( cursor.next() );
+        }
+
+        try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK | PF_NO_GROW ) )
+        {
+            assertFalse( cursor.next() );
+        }
+    }
+
+    @Test
+    public void newlyWrittenPagesMustBeAccessibleWithNoGrow() throws IOException
+    {
+        int initialPages = 1;
+        int pagesToAdd = 3;
+        generateFileWithRecords( file, recordsPerFilePage * initialPages, recordSize );
+
+        PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+        PagedFile pagedFile = cache.map( file, filePageSize );
+
+
+        try ( PageCursor cursor = pagedFile.io( 1L, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( int i = 0; i < pagesToAdd; i++ )
+            {
+                assertTrue( cursor.next() );
+                writeRecords( cursor );
+            }
+        }
+
+        int pagesChecked = 0;
+        try ( PageCursor cursor = pagedFile.io( 0L, PF_SHARED_LOCK | PF_NO_GROW ) )
+        {
+            while ( cursor.next() )
+            {
+                verifyRecordsMatchExpected( cursor );
+                pagesChecked++;
+            }
+        }
+        assertThat( pagesChecked, is( initialPages + pagesToAdd ) );
+    }
+
+    // TODO are we allowed to grow the file without PF_EXCLUSIVE_LOCK???
     // TODO must collect all exceptions from closing file channels when the cache is closed
     // TODO scanning with concurrent writes
     // TODO figure out what should happen when the last reference to a file is unmapped, while pages are still pinned
@@ -511,6 +711,8 @@ public abstract class PageCacheTest<T extends PageCache>
         verify( fs ).open( file2Name, "rw" );
         verify( channel2, atLeast( 1 ) ).force( false );
         verify( channel2 ).close();
+        verify( channel1, atLeast( 0 ) ).size();
+        verify( channel2, atLeast( 0 ) ).size();
         verifyNoMoreInteractions( channel1, channel2, fs );
 
         // And When

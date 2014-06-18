@@ -75,7 +75,7 @@ public class StandardPageCursor extends OffsetTrackingCursor
     @Override
     public long getCurrentPageId()
     {
-        return page == null? StandardPinnablePage.UNBOUND_PAGE_ID : page().pageId();
+        return nextPageId == pageId? UNBOUND_PAGE_ID : nextPageId - 1;
     }
 
     @Override
@@ -107,10 +107,6 @@ public class StandardPageCursor extends OffsetTrackingCursor
             pagedFile.unpin( this );
         }
 
-        if ( nextPageId >= lastPageId && (pf_flags & PF_NO_GROW) != 0 )
-        {
-            return false;
-        }
         if ( (pf_flags & PF_SINGLE_PAGE) != 0 && nextPageId > pageId )
         {
             return false;
@@ -129,6 +125,18 @@ public class StandardPageCursor extends OffsetTrackingCursor
             throw e;
         }
         nextPageId++;
+
+        if ( nextPageId > lastPageId )
+        {
+            if ( (pf_flags & PF_NO_GROW) != 0 )
+            {
+                return false;
+            }
+            else
+            {
+                lastPageId = pagedFile.increaseLastPageIdTo( nextPageId );
+            }
+        }
         return true;
     }
 

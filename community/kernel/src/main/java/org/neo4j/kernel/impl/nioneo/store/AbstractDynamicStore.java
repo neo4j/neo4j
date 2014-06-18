@@ -217,16 +217,12 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         {
             throw new UnderlyingStorageException( e );
         }
-
-        if ( !record.inUse() && !isInRecoveryMode() )
-        {
-            freeId( blockId );
-        }
     }
 
     private void writeRecord( PageCursor cursor, DynamicRecord record )
     {
-        int offset = offsetForId( record.getId() );
+        long recordId = record.getId();
+        int offset = offsetForId( recordId );
         cursor.setOffset( offset );
         if ( record.inUse() )
         {
@@ -259,6 +255,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         else
         {
             cursor.putByte( Record.NOT_IN_USE.byteValue() );
+            if ( !isInRecoveryMode() )
+            {
+                freeId( recordId );
+            }
         }
     }
 

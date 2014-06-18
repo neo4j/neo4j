@@ -27,7 +27,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageLock;
 
-import static org.neo4j.io.pagecache.impl.standard.StandardPinnablePage.UNBOUND_PAGE_ID;
+import static org.neo4j.io.pagecache.PageCursor.UNBOUND_PAGE_ID;
 
 /**
  * An implementation of {@link org.neo4j.io.pagecache.impl.standard.PageTable} which uses

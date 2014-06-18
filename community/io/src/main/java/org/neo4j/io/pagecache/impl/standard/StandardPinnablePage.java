@@ -23,12 +23,12 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
 
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
 
 public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
 {
-    static final long UNBOUND_PAGE_ID = -1;
     static final byte MAX_USAGE_COUNT = 5;
 
     /** Used when the page is part of the free-list, points to next free page */
@@ -38,7 +38,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
 
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     private PageSwapper swapper;
-    private long pageId = UNBOUND_PAGE_ID;
+    private long pageId = PageCursor.UNBOUND_PAGE_ID;
     private boolean dirty;
     private int pageSize;
 
@@ -189,7 +189,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
     void load() throws IOException
     {
         assertLocked();
-        buffer().position(0); // TODO remove?
+        buffer().position(0);
         swapper.read( pageId, buffer );
         loaded = true;
     }

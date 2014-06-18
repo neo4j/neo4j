@@ -31,7 +31,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -41,6 +40,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SINGLE_PAGE;
 import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
@@ -142,23 +143,53 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     public NodeRecord getRecord( long id, NodeRecord record )
     {
-        return getRecord( id, record, RecordLoad.NORMAL);
+        long pageId = pageIdForRecord( id );
+        int offset = offsetForId( id );
+        NodeRecord result = null;
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE | PF_NO_GROW ) )
+        {
+            while ( cursor.next() )
+            {
+                cursor.setOffset( offset );
+
+                // [    ,   x] in use bit
+                // [    ,xxx ] higher bits for rel id
+                // [xxxx,    ] higher bits for prop id
+                long inUseByte = cursor.getByte();
+                if ( !recordIsInUse( inUseByte ) )
+                {
+                    result = null;
+                    continue;
+                }
+                readIntoRecord( cursor, record, inUseByte, true );
+                result = record;
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+
+        if ( result == null )
+        {
+            throw new InvalidRecordException( "NodeRecord[" + id + "] not in use" );
+        }
+        return record;
     }
 
     @Override
     public NodeRecord forceGetRecord( long id )
     {
-        try
+        NodeRecord record = loadLightNode( id );
+        if ( record == null )
         {
-            assertIdExists( id );
+            return new NodeRecord(
+                    id,
+                    false,
+                    Record.NO_NEXT_RELATIONSHIP.intValue(),
+                    Record.NO_NEXT_PROPERTY.intValue() ); // inUse=false by default
         }
-        catch ( InvalidRecordException e )
-        {
-            return new NodeRecord( id, false,
-                    Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() ); // inUse=false by default
-        }
-
-        return getRecord( id, new NodeRecord( id ), RecordLoad.FORCE);
+        return record;
     }
 
     @Override
@@ -263,78 +294,66 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
             return null;
         }
 
-        return getRecord( id, new NodeRecord( id ), RecordLoad.CHECK );
-    }
-
-    private NodeRecord getRecord( long id, NodeRecord record, RecordLoad load )
-    {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
+        long pageId = pageIdForRecord( id );
+        int offset = offsetForId( id );
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE | PF_NO_GROW ) )
         {
-            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+            NodeRecord record = null;
+            boolean isInUse = false;
+            while ( cursor.next() )
+            {
+                cursor.setOffset( offset );
+
+                // [    ,   x] in use bit
+                // [    ,xxx ] higher bits for rel id
+                // [xxxx,    ] higher bits for prop id
+                long inUseByte = cursor.getByte();
+                isInUse = recordIsInUse( inUseByte );
+                if ( isInUse )
+                {
+                    if ( record == null )
+                    {
+                        record = new NodeRecord( id );
+                    }
+                    readIntoRecord( cursor, record, inUseByte, true );
+                }
+            }
+            return isInUse? record : null;
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-
-        try
-        {
-            return getRecord( id, cursor, load, record );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 
     public boolean inUse( long id )
     {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
+        long pageId = pageIdForRecord( id );
+        int offset = offsetForId( id );
+
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE | PF_NO_GROW ) )
         {
-            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+            boolean recordIsInUse = false;
+            while ( cursor.next() )
+            {
+                cursor.setOffset( offset );
+                recordIsInUse = recordIsInUse( (long) cursor.getByte() );
+            }
+            return recordIsInUse;
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
         }
-
-        try
-        {
-            cursor.setOffset( offsetForId( id ) );
-            return ((long) cursor.getByte() & 0x1) == Record.IN_USE.intValue();
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
-        }
     }
 
-    private NodeRecord getRecord( long id, PageCursor cursor,
-        RecordLoad load, NodeRecord record )
+    private boolean recordIsInUse( long inUseByte )
     {
-        cursor.setOffset( offsetForId( id ) );
+        return (inUseByte & 0x1) == Record.IN_USE.intValue();
+    }
 
-        // [    ,   x] in use bit
-        // [    ,xxx ] higher bits for rel id
-        // [xxxx,    ] higher bits for prop id
-        long inUseByte = cursor.getByte();
-
-        boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
-        if ( !inUse )
-        {
-            switch ( load )
-            {
-            case NORMAL:
-                throw new InvalidRecordException( "NodeRecord[" + id + "] not in use" );
-            case CHECK:
-                return null;
-            case FORCE:
-                break;
-            }
-        }
-
+    private void readIntoRecord( PageCursor cursor, NodeRecord record, long inUseByte, boolean inUse )
+    {
         long nextRel = cursor.getUnsignedInt();
         long nextProp = cursor.getUnsignedInt();
 
@@ -347,14 +366,11 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         byte extra = cursor.getByte();
         boolean dense = (extra & 0x1) > 0;
 
-        record.setId( id );
         record.setDense( dense );
         record.setNextRel( longFromIntAndMod( nextRel, relModifier ) );
         record.setNextProp( longFromIntAndMod( nextProp, propModifier ) );
         record.setInUse( inUse );
         record.setLabelField( labels, Collections.<DynamicRecord>emptyList() );
-
-        return record;
     }
 
     public DynamicArrayStore getDynamicLabelStore()

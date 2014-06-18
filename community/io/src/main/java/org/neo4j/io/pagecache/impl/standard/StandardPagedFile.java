@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheMonitor;
@@ -39,13 +40,12 @@ public class StandardPagedFile implements PagedFile
     private final PageTable table;
     private final int filePageSize;
     private final PageCacheMonitor monitor;
-    private final StandardPageSwapper swapper;
-
-    private final AtomicInteger references = new AtomicInteger( 1 );
-    private final CursorFreelist cursorFreelist = new CursorFreelist();
-
     /** Currently active pages in the file this object manages. */
-    private ConcurrentMap<Long, Object> filePages = new ConcurrentHashMap<>();
+    private final  ConcurrentMap<Long, Object> filePages;
+    private final StandardPageSwapper swapper;
+    private final AtomicInteger references;
+    private final AtomicLong lastPageId;
+    private final CursorFreelist cursorFreelist;
 
     /**
      * @param table
@@ -62,12 +62,16 @@ public class StandardPagedFile implements PagedFile
             File file,
             StoreChannel channel,
             int filePageSize,
-            PageCacheMonitor monitor )
+            PageCacheMonitor monitor ) throws IOException
     {
         this.table = table;
         this.filePageSize = filePageSize;
         this.monitor = monitor;
+        this.filePages = new ConcurrentHashMap<>();
         this.swapper = new StandardPageSwapper( file, channel, filePageSize, new RemoveEvictedPage( filePages ) );
+        this.references = new AtomicInteger( 1 );
+        this.lastPageId = new AtomicLong( swapper.getLastPageId() );
+        this.cursorFreelist = new CursorFreelist();
     }
 
     @Override
@@ -214,6 +218,23 @@ public class StandardPagedFile implements PagedFile
 
     public long getLastPageId() throws IOException
     {
-        return swapper.getLastPageId();
+        return lastPageId.get();
+    }
+
+    /**
+     * Make sure that the lastPageId is at least the given pageId.
+     * @param newLastPageId
+     * Make sure that the lastPageId is equal to or greater than this number.
+     */
+    public long increaseLastPageIdTo( long newLastPageId )
+    {
+       long current;
+       do
+       {
+           current = lastPageId.get();
+       }
+       while ( current < newLastPageId
+               && !lastPageId.compareAndSet( current, newLastPageId ) );
+        return lastPageId.get();
     }
 }

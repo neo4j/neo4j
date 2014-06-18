@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCursor;
 
 public class StandardPageSwapper implements PageSwapper
 {
@@ -126,6 +127,13 @@ public class StandardPageSwapper implements PageSwapper
 
     public long getLastPageId() throws IOException
     {
-        return channel.size() / filePageSize;
+        long channelSize = channel.size();
+        if ( channelSize == 0 )
+        {
+            return PageCursor.UNBOUND_PAGE_ID;
+        }
+        long div = channelSize / filePageSize;
+        long mod = channelSize % filePageSize;
+        return mod > 0? div + 1 : div;
     }
 }
