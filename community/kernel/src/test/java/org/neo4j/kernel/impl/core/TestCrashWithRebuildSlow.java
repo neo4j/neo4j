@@ -31,10 +31,12 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -73,40 +75,45 @@ public class TestCrashWithRebuildSlow
                 .newGraphDatabase();
         assertNumberOfFreeIdsEquals( storeDir, snapshot, 4 );
 
-        Transaction transaction = newDb.beginTx();
-        try
+        try ( Transaction tx = newDb.beginTx() )
         {
             int nameCount = 0;
             int relCount = 0;
             for ( Node node : GlobalGraphOperations.at( newDb ).getAllNodes() )
             {
                 nameCount++;
-                assertThat( node, inTx( newDb, hasProperty( "name" )  ) );
+                assertThat( node, inTx( newDb, hasProperty( "name" ), true ) );
                 relCount += count( node.getRelationships( Direction.OUTGOING ) );
             }
 
             assertEquals( 16, nameCount );
             assertEquals( 12, relCount );
+            tx.success();
         }
         finally
         {
-            transaction.finish();
             newDb.shutdown();
         }
     }
 
-    private void assertNumberOfFreeIdsEquals( String storeDir, EphemeralFileSystemAbstraction snapshot, int numberOfFreeIds )
+    private void assertNumberOfFreeIdsEquals( String storeDir, FileSystemAbstraction fs, int numberOfFreeIds )
     {
         assertEquals( 9/*header*/ + 8*numberOfFreeIds,
-                snapshot.getFileSize( new File( storeDir, "neostore.propertystore.db.strings.id" ) ) );
+                fs.getFileSize( new File( storeDir, "neostore.propertystore.db.strings.id" ) ) );
     }
 
-    private void produceNonCleanDefraggedStringStore( GraphDatabaseService db )
+    public static void main( String[] args )
+    {
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( args[0] );
+        produceNonCleanDefraggedStringStore( db );
+        System.exit( 1 );
+    }
+
+    private static void produceNonCleanDefraggedStringStore( GraphDatabaseService db )
     {
         // Create some strings
-        List<Node> nodes = new ArrayList<Node>();
-        Transaction tx = db.beginTx();
-        try
+        List<Node> nodes = new ArrayList<>();
+        try ( Transaction tx = db.beginTx() )
         {
             Node previous = null;
             for ( int i = 0; i < 20; i++ )
@@ -122,24 +129,15 @@ public class TestCrashWithRebuildSlow
             }
             tx.success();
         }
-        finally
-        {
-            tx.finish();
-        }
 
         // Delete some of them, but leave some in between deletions
-        tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             delete( nodes.get( 5 ) );
             delete( nodes.get( 7 ) );
             delete( nodes.get( 8 ) );
             delete( nodes.get( 10 ) );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

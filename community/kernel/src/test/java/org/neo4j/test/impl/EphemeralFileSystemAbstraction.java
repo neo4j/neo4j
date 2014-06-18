@@ -88,7 +88,9 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     public synchronized void shutdown()
     {
         for ( EphemeralFileData file : files.values() )
+        {
             free( file );
+        }
         files.clear();
 
         for ( ThirdPartyFileSystem thirdPartyFileSystem : thirdPartyFileSystems.values() )
@@ -192,7 +194,10 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
 
     private void free(EphemeralFileData file)
     {
-        if (file != null) file.fileAsBuffer.free();
+        if (file != null)
+        {
+            file.fileAsBuffer.free();
+        }
     }
 
     @Override
@@ -321,15 +326,23 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             File fileName = file.getKey();
             List<String> fileNamePathItems = splitPath( fileName );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
+            {
                 deleteFile( fileName );
+            }
         }
     }
 
     @Override
     public boolean renameFile(File from, File to) throws IOException
     {
-        if (!files.containsKey( from )) throw new IOException("'" + from + "' doesn't exist");
-        if (files.containsKey(to)) throw new IOException("'" + to + "' already exists");
+        if (!files.containsKey( from ))
+        {
+            throw new IOException("'" + from + "' doesn't exist");
+        }
+        if (files.containsKey(to))
+        {
+            throw new IOException("'" + to + "' already exists");
+        }
         files.put(to, files.remove(from));
         return true;
     }
@@ -338,8 +351,10 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     public File[] listFiles( File directory )
     {
         if ( files.containsKey( directory ) )
+        {
             // This means that you're trying to list files on a file, not a directory.
             return null;
+        }
 
         List<String> directoryPathItems = splitPath( directory );
         List<File> found = new ArrayList<>();
@@ -348,7 +363,9 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             File fileName = file.getKey();
             List<String> fileNamePathItems = splitPath( fileName );
             if ( directoryMatches( directoryPathItems, fileNamePathItems ) )
+            {
                 found.add( constructPath( fileNamePathItems, directoryPathItems.size()+1 ) );
+            }
         }
         return found.toArray( new File[found.size()] );
     }
@@ -357,7 +374,9 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     {
         File file = null;
         for ( String pathItem : pathItems.subList( 0, count ) )
+        {
             file = file == null ? new File( pathItem ) : new File( file, pathItem );
+        }
         return file;
     }
 
@@ -377,7 +396,9 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     {
         EphemeralFileData fileToMove = files.remove( file );
         if ( fileToMove == null )
+        {
             throw new FileNotFoundException( file.getPath() );
+        }
         files.put( new File( toDirectory, file.getName() ), fileToMove );
     }
 
@@ -386,7 +407,9 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
     {
         EphemeralFileData data = files.get( from );
         if ( data == null )
+        {
             throw new FileNotFoundException( "File " + from + " not found" );
+        }
         copyFile( from, this, to, newCopyBuffer() );
     }
 
@@ -521,7 +544,9 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
                     intermediary.limit( (int) min( intermediary.capacity(), count-transferred ) );
                     int read = src.read( intermediary );
                     if ( read == -1 )
+                    {
                         break;
+                    }
                     transferred += read;
                     intermediary.flip();
                 }
@@ -623,9 +648,12 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
 
         int read( Positionable fc, ByteBuffer dst )
         {
-            int wanted = dst.limit();
+            int wanted = dst.limit()-dst.position();
             int available = min(wanted, (int) (size() - fc.pos()));
-            if ( available == 0 ) return -1; // EOF
+            if ( available == 0 )
+             {
+                return -1; // EOF
+            }
             int pending = available;
             // Read up until our internal size
             byte[] scratchPad = SCRATCH_PAD.get();
@@ -715,7 +743,10 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
                     while ( refs.hasNext() )
                     {
                         EphemeralFileChannel channel = refs.next().get();
-                        if ( channel != null ) return channel;
+                        if ( channel != null )
+                        {
+                            return channel;
+                        }
                         refs.remove();
                     }
                     return null;
@@ -821,7 +852,9 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
 
             POOLS = new AtomicReferenceArray<>( SIZES.length );
             for ( int sizeIndex = 0; sizeIndex < SIZES.length; sizeIndex++ )
+            {
                 POOLS.set( sizeIndex, new ConcurrentLinkedQueue<Reference<ByteBuffer>>() );
+            }
         }
 
         private ByteBuffer buf;
@@ -871,9 +904,15 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
                         for (;;)
                         {
                             Reference<ByteBuffer> ref = queue.poll();
-                            if ( ref == null ) break;
+                            if ( ref == null )
+                            {
+                                break;
+                            }
                             ByteBuffer buffer = ref.get();
-                            if ( buffer != null ) return buffer;
+                            if ( buffer != null )
+                            {
+                                return buffer;
+                            }
                         }
                     }
                 }
@@ -888,9 +927,15 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             {
                 clear();
                 int sizeIndex = buf.capacity() / SIZES[SIZES.length - 1];
-                if (sizeIndex == 0) for ( ; sizeIndex < SIZES.length; sizeIndex++ )
+                if (sizeIndex == 0)
                 {
-                    if (buf.capacity() == SIZES[sizeIndex]) break;
+                    for ( ; sizeIndex < SIZES.length; sizeIndex++ )
+                    {
+                        if (buf.capacity() == SIZES[sizeIndex])
+                        {
+                            break;
+                        }
+                    }
                 }
                 else
                 {
@@ -917,12 +962,18 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
             {
                 int newSize = pools.length();
                 while ( sizeIndex >= newSize )
+                {
                     newSize <<= 1;
+                }
                 AtomicReferenceArray<Queue<Reference<ByteBuffer>>> newPool = new AtomicReferenceArray<>( newSize );
                 for ( int i = 0; i < pools.length(); i++ )
+                {
                     newPool.set( i, pools.get( i ) );
+                }
                 for ( int i = pools.length(); i < newPool.length(); i++ )
+                {
                     newPool.set( i, new ConcurrentLinkedQueue<Reference<ByteBuffer>>() );
+                }
                 POOLS = pools = newPool;
             }
             return pools.get( sizeIndex );
@@ -990,10 +1041,15 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         {
             // Double size each time, but after 1M only increase by 1M at a time, until required amount is reached.
             int sizeIndex = capacity / SIZES[SIZES.length - 1];
-            if (sizeIndex == 0) for ( ; sizeIndex < SIZES.length; sizeIndex++ )
+            if (sizeIndex == 0)
             {
-                if ( capacity == SIZES[sizeIndex] )
-                    break;
+                for ( ; sizeIndex < SIZES.length; sizeIndex++ )
+                {
+                    if ( capacity == SIZES[sizeIndex] )
+                    {
+                        break;
+                    }
+                }
             }
             else
             {
@@ -1048,9 +1104,13 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         {
             File toFile = new File( to, fromFile.getName() );
             if ( fromFs.isDirectory( fromFile ) )
+            {
                 copyRecursivelyFromOtherFs( fromFile, fromFs, toFile );
+            }
             else
+            {
                 copyFile( fromFile, fromFs, toFile, buffer );
+            }
         }
     }
 
@@ -1072,9 +1132,13 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         finally
         {
             if ( source != null )
+            {
                 source.close();
+            }
             if ( sink != null )
+            {
                 sink.close();
+            }
         }
     }
 
