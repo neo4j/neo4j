@@ -30,29 +30,29 @@ import org.neo4j.graphdb.Transaction;
 public class PlaceboTransaction implements Transaction
 {
     private final TopLevelTransaction parentTransaction;
+    private boolean success;
 
     public PlaceboTransaction( TopLevelTransaction parentTransaction )
     {
         this.parentTransaction = parentTransaction;
     }
 
+    @Override
     public void failure()
     {
     	parentTransaction.failure();
     }
     
+    @Override
     public void success()
     {
-    	if ( !parentTransaction.getTransactionOutcome().failureCalled() )
-    	{
-    		parentTransaction.success();
-    	}
+        success = true;
     }
     
     @Override
     public void close()
     {
-    	if ( !parentTransaction.getTransactionOutcome().successCalled() && !parentTransaction.getTransactionOutcome().failureCalled() )
+    	if ( !success && !parentTransaction.getTransactionOutcome().failureCalled() )
         {
             parentTransaction.failure();
         }

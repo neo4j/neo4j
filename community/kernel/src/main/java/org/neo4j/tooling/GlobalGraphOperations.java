@@ -101,6 +101,8 @@ public class GlobalGraphOperations
                     @Override
                     protected Node fetchNextOrNull()
                     {
+                        assert ids != null : "ids null";
+                        assert nodeManager != null : "nodeManager null";
                         return ids.hasNext() ? nodeManager.newNodeProxyById( ids.next() ) : null;
                     }
                 };

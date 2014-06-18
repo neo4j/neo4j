@@ -28,6 +28,7 @@ import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.heuristics.StatisticsData;
 import org.neo4j.kernel.impl.api.statistics.StatisticsService;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -89,21 +90,25 @@ public class Kernel extends LifecycleAdapter implements KernelAPI
     private final Factory<KernelTransaction> transactionFactory;
     private final TransactionHooks hooks;
     private final KernelHealth health;
+    private final TransactionMonitor transactionMonitor;
 
     public Kernel( StatisticsService statisticsService, Factory<KernelTransaction> transactionFactory,
-            TransactionHooks hooks, KernelHealth health )
+            TransactionHooks hooks, KernelHealth health, TransactionMonitor transactionMonitor )
     {
         this.transactionFactory = transactionFactory;
         this.statisticsService = statisticsService;
         this.hooks = hooks;
         this.health = health;
+        this.transactionMonitor = transactionMonitor;
     }
 
     @Override
     public KernelTransaction newTransaction() throws TransactionFailureException
     {
         health.assertHealthy( TransactionFailureException.class );
-        return transactionFactory.newInstance();
+        KernelTransaction transaction = transactionFactory.newInstance();
+        transactionMonitor.transactionStarted();
+        return transaction;
     }
 
     @Override

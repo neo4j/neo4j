@@ -68,7 +68,7 @@ class MergeRelationshipAcceptanceTest
     val result = execute("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) RETURN r").columnAs[Relationship]("r").toList
 
     // then
-    assert(List(r1, r2) === result)
+    assert(List(r2, r1) === result)
   }
 
   @Test

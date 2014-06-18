@@ -518,7 +518,7 @@ order by a.COL1""")
 
     val result = execute("cypher 1.9 start n = node(0) return n-->()").columnAs[List[Path]]("n-->()").toList.flatMap(p => p.map(_.endNode()))
 
-    assert(result === List(b, c, d))
+    assert(result === List(d, c, b))
   }
 
   @Test

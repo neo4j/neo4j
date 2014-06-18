@@ -32,6 +32,7 @@ import org.neo4j.kernel.GraphDatabaseAPI
 import org.neo4j.kernel.api.{Statement, ReadOperations}
 import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, NodeManager}
 import org.neo4j.tooling.GlobalGraphOperations
+import org.neo4j.collection.primitive.PrimitiveLongCollections
 import java.util.{Iterator => JIterator}
 import java.lang.{Iterable => JIterable}
 import org.junit.Assert._
@@ -200,6 +201,8 @@ class LazyTest extends ExecutionEngineFunSuite {
     when(dependencies.resolveDependency(classOf[NodeManager])).thenReturn(nodeManager)
     when(dependencies.resolveDependency(classOf[org.neo4j.kernel.monitoring.Monitors])).thenReturn(monitors)
     when(fakeGraph.beginTx()).thenReturn(tx)
+    val nodesIterator = PrimitiveLongCollections.iterator( 0L, 1L, 2L, 3L, 4L )
+    when(fakeReadStatement.nodesGetAll()).thenReturn(nodesIterator)
 
     val cache = new LRUCache[String, (ExecutionPlan, Map[String, Any])](1)
     when(fakeReadStatement.schemaStateGetOrCreate(any(), any())).then(

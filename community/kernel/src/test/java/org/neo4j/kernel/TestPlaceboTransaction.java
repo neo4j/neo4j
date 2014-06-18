@@ -19,22 +19,23 @@
  */
 package org.neo4j.kernel;
 
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.doAnswer;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.TopLevelTransaction.TransactionOutcome;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+
+import static org.mockito.Mockito.doAnswer;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
 
 public class TestPlaceboTransaction
 {
@@ -52,6 +53,7 @@ public class TestPlaceboTransaction
         when( mockTopLevelTx.getTransactionOutcome()).thenReturn(outcome);
         doAnswer(new Answer<Void>()
         {
+            @Override
             public Void answer(InvocationOnMock invocation) {
                 outcome.failed();
                 return null;
@@ -69,7 +71,7 @@ public class TestPlaceboTransaction
     {
         // When
         placeboTx.close();
-
+        
         // Then
         verify( mockTopLevelTx ).failure();
     }
@@ -93,7 +95,7 @@ public class TestPlaceboTransaction
         placeboTx.close();
 
         // Then
-        verify( mockTopLevelTx ).success();
+        verify( mockTopLevelTx, times( 0 ) ).failure();
     }
 
     @Test

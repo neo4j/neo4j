@@ -475,7 +475,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 }
             };
 
-            kernel = new Kernel( statisticsService, transactionFactory, hooks, kernelHealth );
+            kernel = new Kernel( statisticsService, transactionFactory, hooks, kernelHealth, transactionMonitor );
             legacyIndexStore = new LegacyIndexStore( config, indexConfigStore, kernel, legacyIndexProviderLookup );
 
             this.statementOperations = buildStatementOperations( storeLayer, legacyPropertyTrackers,
