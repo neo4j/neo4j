@@ -248,7 +248,7 @@ class ClusterContextImpl
                     return;
                 }
             }
-            else if ( version < electorVersion && electorId.equals( lastElector ) )
+            else if ( electorId.equals( lastElector ) && (version < electorVersion && version > 0)  )
             {
                 getLogger( getClass() ).warn( "Election result for role " + roleName +
                         " received from elector instance " + electorId + " with version " + version +
