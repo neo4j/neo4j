@@ -23,7 +23,8 @@ import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.cypher.ExecutionResult
 
 abstract class ExecutionPlan {
-  def execute(queryContext: QueryContext, params: Map[String, Any]):ExecutionResult
-  def profile(queryContext: QueryContext, params: Map[String, Any]):ExecutionResult
+  def execute(queryContext: QueryContext, params: Map[String, Any]): ExecutionResult
+  def profile(queryContext: QueryContext, params: Map[String, Any]): ExecutionResult
+  def isPeriodicCommit: Boolean
 }
 
