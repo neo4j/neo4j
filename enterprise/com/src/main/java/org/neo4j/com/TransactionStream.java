@@ -19,42 +19,57 @@
  */
 package org.neo4j.com;
 
-import java.util.Iterator;
+import java.io.IOException;
 
-import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.PrefetchingIterator;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.jboss.netty.buffer.ChannelBuffer;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 
 /**
  * Represents a stream of the data of one or more consecutive transactions.
  */
-public abstract class TransactionStream extends
-        PrefetchingIterator<Pair<Long/*txid*/, TransactionRepresentation>>
+public class TransactionStream implements Visitor<ChannelBuffer, IOException>
 {
     public static final TransactionStream EMPTY = new TransactionStream()
     {
         @Override
-        protected Pair<Long, TransactionRepresentation> fetchNextOrNull()
+        public boolean visit( ChannelBuffer element ) throws IOException
         {
-            return null;
+            return false;
         }
     };
 
-    public static TransactionStream create( Iterable<Pair<Long, TransactionRepresentation>> streamSource )
+    private final IOCursor transactionCursor;
+    private ChannelBuffer toStreamTo;
+
+    private TransactionStream()
     {
-        final Iterator<Pair<Long, TransactionRepresentation>> stream = streamSource.iterator();
-        return new TransactionStream()
-        {
-            @Override
-            protected Pair<Long, TransactionRepresentation> fetchNextOrNull()
-            {
-                if ( stream.hasNext() ) return stream.next();
-                return null;
-            }
-        };
+        this.transactionCursor = null;
     }
 
-    public void close()
+    public TransactionStream( LogicalTransactionStore txStore, long transactionIdToStreamFrom ) throws IOException
     {
+        this.transactionCursor = txStore.getCursor( transactionIdToStreamFrom, new TransactionThing() );
     }
+
+    @Override
+    public boolean visit( ChannelBuffer element ) throws IOException
+    {
+        toStreamTo = element;
+        while( transactionCursor.next() );
+        return true;
+    }
+
+    private class TransactionThing implements Visitor<CommittedTransactionRepresentation, IOException>
+    {
+        @Override
+        public boolean visit( CommittedTransactionRepresentation element ) throws IOException
+        {
+            new Protocol.CommittedTransactionRepresentationSerializer( element ).write( toStreamTo );
+            return true;
+        }
+    }
+
 }

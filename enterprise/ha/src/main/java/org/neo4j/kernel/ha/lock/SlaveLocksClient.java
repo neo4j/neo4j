@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import static org.neo4j.kernel.impl.transaction.LockType.READ;
+import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
@@ -27,18 +30,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.neo4j.com.Response;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-
-import static org.neo4j.kernel.impl.transaction.LockType.READ;
-import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
 
 class SlaveLocksClient implements Locks.Client
 {
@@ -46,9 +43,6 @@ class SlaveLocksClient implements Locks.Client
     private final Locks.Client client;
     private final Locks localLockManager;
     private final RequestContextFactory requestContextFactory;
-    private final HaXaDataSourceManager xaDsm;
-    private final AbstractTransactionManager txManager;
-    private final RemoteTxHook txHook;
     private final AvailabilityGuard availabilityGuard;
     private final SlaveLockManager.Configuration config;
 
@@ -61,9 +55,6 @@ class SlaveLocksClient implements Locks.Client
             Locks.Client local,
             Locks localLockManager,
             RequestContextFactory requestContextFactory,
-            HaXaDataSourceManager xaDsm,
-            AbstractTransactionManager txManager,
-            RemoteTxHook txHook,
             AvailabilityGuard availabilityGuard,
             SlaveLockManager.Configuration config )
     {
@@ -71,9 +62,6 @@ class SlaveLocksClient implements Locks.Client
         this.client = local;
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
-        this.xaDsm = xaDsm;
-        this.txManager = txManager;
-        this.txHook = txHook;
         this.availabilityGuard = availabilityGuard;
         this.config = config;
         sharedLocks = new HashMap<>();
@@ -272,7 +260,9 @@ class SlaveLocksClient implements Locks.Client
 
     private boolean receiveLockResponse( Response<LockResult> response )
     {
-        LockResult result = xaDsm.applyTransactions( response );
+        // TODO 2.2-future must apply transactions received
+//        LockResult result = xaDsm.applyTransactions( response );
+        LockResult result = null;
         switch ( result.getStatus() )
         {
             case DEAD_LOCKED:
@@ -288,7 +278,6 @@ class SlaveLocksClient implements Locks.Client
         return true;
     }
 
-
     private void makeSureTxHasBeenInitialized()
     {
         if ( !availabilityGuard.isAvailable( config.getAvailabilityTimeout() ) )
@@ -298,7 +287,8 @@ class SlaveLocksClient implements Locks.Client
                     + availabilityGuard.describeWhoIsBlocking() );
         }
 
-        txHook.remotelyInitializeTransaction( txManager.getTransactionState() );
+        // TODO 2.2-future must ensure transaction is initialized
+//        txHook.remotelyInitializeTransaction( txManager.getTransactionState() );
     }
 
     private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()

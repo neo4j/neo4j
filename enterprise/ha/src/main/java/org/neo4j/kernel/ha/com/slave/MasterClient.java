@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.com.Protocol.writeString;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -29,13 +32,10 @@ import org.neo4j.com.ObjectSerializer;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.ha.lock.LockStatus;
-
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
 public interface MasterClient extends Master
 {
@@ -64,8 +64,7 @@ public interface MasterClient extends Master
 
     public Response<Void> initializeTx( RequestContext context );
 
-    public Response<Long> commitSingleResourceTransaction( RequestContext context, final String resource,
-            final TxExtractor txGetter );
+    public Response<Void> commitSingleResourceTransaction( RequestContext context, final TransactionRepresentation channel );
 
     public Response<Void> finishTransaction( RequestContext context, final boolean success );
 

@@ -19,22 +19,22 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
+import static org.neo4j.com.Protocol.writeString;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.neo4j.com.BlockLogBuffer;
 import org.neo4j.com.Client;
 import org.neo4j.com.Deserializer;
 import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
-import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.Serializer;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.com.TransactionStream;
-import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -45,14 +45,11 @@ import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.com.Protocol.EMPTY_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_DESERIALIZER;
-import static org.neo4j.com.Protocol.writeString;
 
 /**
  * The {@link org.neo4j.kernel.ha.com.master.Master} a slave should use to communicate with its master. It
@@ -212,63 +209,24 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Long> commitSingleResourceTransaction( RequestContext context,
-                                                           final String resource, final TxExtractor txGetter )
+    public Response<Void> commitSingleResourceTransaction( RequestContext context, TransactionRepresentation tx )
     {
-        return sendRequest( HaRequestType210.COMMIT, context, new Serializer()
-                {
-                    @Override
-                    public void write( ChannelBuffer buffer ) throws IOException
-                    {
-                        writeString( buffer, resource );
-                        BlockLogBuffer blockLogBuffer = new BlockLogBuffer( buffer, monitor );
-                        txGetter.extract( blockLogBuffer );
-                        blockLogBuffer.done();
-                    }
-                }, new Deserializer<Long>()
-                {
-                    @Override
-                    @SuppressWarnings("boxing")
-                    public Long read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
-                    {
-                        return buffer.readLong();
-                    }
-                }
+        return sendRequest( HaRequestType210.COMMIT, context, new Protocol.TransactionSerializer( tx ),
+               VOID_DESERIALIZER
         );
     }
 
     @Override
     public Response<Void> finishTransaction( RequestContext context, final boolean success )
     {
-        try
+        return sendRequest( HaRequestType210.FINISH, context, new Serializer()
         {
-            return sendRequest( HaRequestType210.FINISH, context, new Serializer()
+            @Override
+            public void write( ChannelBuffer buffer ) throws IOException
             {
-                @Override
-                public void write( ChannelBuffer buffer ) throws IOException
-                {
-                    buffer.writeByte( success ? 1 : 0 );
-                }
-            }, VOID_DESERIALIZER );
-        }
-        catch ( TransactionAlreadyActiveException e )
-        {
-            if ( !success )
-            {
-                /* Here we are in a state where the client failed while the request
-                 * was processing on the server and the tx.finish() in the usual
-                 * try-finally transaction block gets called, only to find that
-                 * the transaction is already active... which is totally expected.
-                 * The fact that the transaction is already active here shouldn't
-                 * hide the original exception on the client, the exception which
-                 * cause the client to fail while the request was processing on the master.
-                 * This is effectively the use case of awaiting a lock that isn't granted
-                 * within the lock read timeout period.
-                 */
-                return new Response<>( null, getStoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+                buffer.writeByte( success ? 1 : 0 );
             }
-            throw e;
-        }
+        }, VOID_DESERIALIZER );
     }
 
     @Override
@@ -316,7 +274,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     private RequestContext stripFromTransactions( RequestContext context )
     {
         return new RequestContext( context.getEpoch(), context.machineId(), context.getEventIdentifier(),
-                new RequestContext.Tx[0], context.getMasterId(), context.getChecksum() );
+                0, context.getMasterId(), context.getChecksum() );
     }
 
     @Override
@@ -338,7 +296,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Void> pushTransaction( RequestContext context, final String resourceName, final long tx )
+    public Response<Void> pushTransaction( RequestContext context, final long tx )
     {
         context = stripFromTransactions( context );
         return sendRequest( HaRequestType210.PUSH_TRANSACTION, context, new Serializer()
@@ -346,7 +304,7 @@ public class MasterClient210 extends Client<Master> implements MasterClient
             @Override
             public void write( ChannelBuffer buffer ) throws IOException
             {
-                writeString( buffer, resourceName );
+                writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
                 buffer.writeLong( tx );
             }
         }, VOID_DESERIALIZER );

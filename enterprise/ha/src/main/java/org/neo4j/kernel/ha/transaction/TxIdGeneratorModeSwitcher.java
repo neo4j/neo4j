@@ -22,61 +22,58 @@ package org.neo4j.kernel.ha.transaction;
 import java.net.URI;
 
 import org.neo4j.cluster.ClusterSettings;
+import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.Slaves;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 public class TxIdGeneratorModeSwitcher extends AbstractModeSwitcher<TxIdGenerator>
 {
-    private final HaXaDataSourceManager xaDsm;
     private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
     private final StringLogger msgLog;
     private final Config config;
     private final Slaves slaves;
-    private final AbstractTransactionManager tm;
     private final JobScheduler scheduler;
+    private Provider<TransactionIdStore> transactionIdStore;
 
     public TxIdGeneratorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
-                                      DelegateInvocationHandler<TxIdGenerator> delegate, HaXaDataSourceManager xaDsm,
+                                      DelegateInvocationHandler<TxIdGenerator> delegate,
                                       DelegateInvocationHandler<Master> master,
                                       RequestContextFactory requestContextFactory,
-                                      StringLogger msgLog, Config config, Slaves slaves, AbstractTransactionManager tm,
+                                      StringLogger msgLog, Config config, Slaves slaves,
                                       JobScheduler scheduler
     )
     {
         super( stateMachine, delegate );
-        this.xaDsm = xaDsm;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.msgLog = msgLog;
         this.config = config;
         this.slaves = slaves;
-        this.tm = tm;
         this.scheduler = scheduler;
     }
 
     @Override
     protected TxIdGenerator getMasterImpl()
     {
-        return new MasterTxIdGenerator( MasterTxIdGenerator.from( config ), msgLog, slaves, new CommitPusher( scheduler ) );
+        return new DefaultTxIdGenerator( transactionIdStore );
     }
 
     @Override
     protected TxIdGenerator getSlaveImpl( URI serverHaUri )
     {
         return new SlaveTxIdGenerator( config.get( ClusterSettings.server_id ).toIntegerIndex(), master.cement(),
-                HighAvailabilityModeSwitcher.getServerId( serverHaUri ).toIntegerIndex(), requestContextFactory, xaDsm,
-                tm );
+                HighAvailabilityModeSwitcher.getServerId( serverHaUri ).toIntegerIndex(), requestContextFactory );
     }
 }

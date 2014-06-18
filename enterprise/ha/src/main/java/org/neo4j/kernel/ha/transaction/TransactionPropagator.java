@@ -31,8 +31,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import javax.transaction.xa.XAException;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
@@ -45,13 +43,12 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
+public class TransactionPropagator implements Lifecycle
 {
     public interface Configuration
     {
@@ -139,7 +136,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         }
     };
 
-    public MasterTxIdGenerator( Configuration config, StringLogger log, Slaves slaves, CommitPusher pusher )
+    public TransactionPropagator( Configuration config, StringLogger log, Slaves slaves, CommitPusher pusher )
     {
         this.config = config;
         this.log = log;
@@ -171,17 +168,11 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
     {
     }
 
-    @Override
-    public long generate( final XaDataSource dataSource, final int identifier ) throws XAException
-    {
-        return TxIdGenerator.DEFAULT.generate( dataSource, identifier );
-    }
-
-    @Override
-    public void committed( XaDataSource dataSource, int identifier, long txId, Integer externalAuthorServerId )
+    public void committed( long txId, TransactionRepresentation tx )
     {
         int replicationFactor = desiredReplicationFactor;
-        if ( externalAuthorServerId != null )
+        // If the author is not this instance, then we need to push to one less - the committer already has it
+        if ( config.getServerId().toIntegerIndex() != tx.getAuthorId() )
         {
             replicationFactor--;
         }
@@ -197,14 +188,13 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
             // Commit at the configured amount of slaves in parallel.
             int successfulReplications = 0;
             Iterator<Slave> slaveList = filter( replicationStrategy.prioritize( slaves.getSlaves() ).iterator(),
-                    externalAuthorServerId );
+                    tx.getAuthorId() );
             CompletionNotifier notifier = new CompletionNotifier();
 
             // Start as many initial committers as needed
             for ( int i = 0; i < replicationFactor && slaveList.hasNext(); i++ )
             {
-                committers.add( slaveCommitters.submit( slaveCommitter( dataSource, slaveList.next(),
-                        txId, notifier ) ) );
+                committers.add( slaveCommitters.submit( slaveCommitter( slaveList.next(), txId, notifier ) ) );
             }
 
             // Wait for them and perhaps spawn new ones for failing committers until we're done
@@ -230,8 +220,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
                     else if ( slaveList.hasNext() )
                     // This committer failed, spawn another one
                     {
-                        toAdd.add( slaveCommitters.submit( slaveCommitter( dataSource, slaveList.next(),
-                                txId, notifier ) ) );
+                        toAdd.add( slaveCommitters.submit( slaveCommitter( slaveList.next(), txId, notifier ) ) );
                     }
                     toRemove.add( committer );
                 }
@@ -258,9 +247,8 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
             // We did the best we could, have we committed successfully on enough slaves?
             if ( !(successfulReplications >= replicationFactor) )
             {
-                log.logMessage( "Transaction " + txId + " for " + dataSource.getName()
-                        + " couldn't commit on enough slaves, desired " + replicationFactor
-                        + ", but could only commit at " + successfulReplications );
+                log.logMessage( "Transaction " + txId + " couldn't commit on enough slaves, desired "
+                        + replicationFactor + ", but could only commit at " + successfulReplications );
             }
         }
         catch ( Throwable t )
@@ -357,8 +345,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
         }
     }
 
-    private Callable<Void> slaveCommitter( final XaDataSource dataSource,
-                                           final Slave slave, final long txId, final CompletionNotifier notifier )
+    private Callable<Void> slaveCommitter( final Slave slave, final long txId, final CompletionNotifier notifier )
     {
         return new Callable<Void>()
         {
@@ -367,7 +354,7 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
             {
                 try
                 {
-                    pusher.queuePush( dataSource, slave, txId );
+                    pusher.queuePush( slave, txId );
                     return null;
                 }
                 finally
@@ -376,16 +363,5 @@ public class MasterTxIdGenerator implements TxIdGenerator, Lifecycle
                 }
             }
         };
-    }
-
-    public int getCurrentMasterId()
-    {
-        return config.getServerId().toIntegerIndex();
-    }
-
-    @Override
-    public int getMyId()
-    {
-        return config.getServerId().toIntegerIndex();
     }
 }

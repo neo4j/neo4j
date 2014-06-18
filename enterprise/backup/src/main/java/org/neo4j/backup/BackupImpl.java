@@ -19,8 +19,6 @@
  */
 package org.neo4j.backup;
 
-import java.util.concurrent.CountDownLatch;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
@@ -29,7 +27,6 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -46,17 +43,12 @@ class BackupImpl implements TheBackupInterface
 
     private final StringLogger logger;
     private final SPI spi;
-    private final XaDataSourceManager xaDataSourceManager;
     private final KernelPanicEventGenerator kpeg;
-    private CountDownLatch countDownLatch;
 
-    public BackupImpl( StringLogger logger, SPI spi, XaDataSourceManager xaDataSourceManager,
-                       KernelPanicEventGenerator kpeg,
-                       Monitors monitors )
+    public BackupImpl( StringLogger logger, SPI spi, KernelPanicEventGenerator kpeg, Monitors monitors )
     {
         this.logger = logger;
         this.spi = spi;
-        this.xaDataSourceManager = xaDataSourceManager;
         this.kpeg = kpeg;
         this.backupMonitor = monitors.newMonitor( BackupMonitor.class, getClass() );
     }
@@ -66,7 +58,6 @@ class BackupImpl implements TheBackupInterface
     {
         backupMonitor.startCopyingFiles();
         RequestContext context = ServerUtil.rotateLogsAndStreamStoreFiles( spi.getStoreDir(),
-                xaDataSourceManager,
                 kpeg, logger, false, writer, new DefaultFileSystemAbstraction(), backupMonitor );
         writer.done();
         backupMonitor.finishedCopyingStoreFiles();
@@ -89,8 +80,8 @@ class BackupImpl implements TheBackupInterface
         // in Windows to avoid running into that problem.
         if ( Settings.osIsWindows() )
         {
-            ServerUtil.rotateLogs( xaDataSourceManager, kpeg, logger );
+            ServerUtil.rotateLogs( kpeg, logger );
         }
-        return ServerUtil.packResponse( spi.getStoreId(), xaDataSourceManager, context, null, ServerUtil.ALL );
+        return ServerUtil.packResponse( spi.getStoreId(), context, null, ServerUtil.ALL );
     }
 }

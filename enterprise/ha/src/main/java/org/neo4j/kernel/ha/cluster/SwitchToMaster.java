@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.cluster;
 
 import java.net.URI;
-import javax.transaction.TransactionManager;
 
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.member.ClusterMemberAvailability;
@@ -33,7 +32,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.BranchDetectingTxVerifier;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.HaSettings;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
@@ -74,22 +72,20 @@ public class SwitchToMaster
     {
         msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) + ", moving to master" );
 
-        HaXaDataSourceManager xaDataSourceManager = resolver.resolveDependency( HaXaDataSourceManager.class );
         /*
          * Synchronizing on the xaDataSourceManager makes sense if you also look at HaKernelPanicHandler. In
          * particular, it is possible to get a masterIsElected while recovering the database. That is generally
          * going to break things. Synchronizing on the xaDSM as HaKPH does solves this.
          */
         //noinspection SynchronizationOnLocalVariableOrMethodParameter
-        synchronized ( xaDataSourceManager )
+//        synchronized ( xaDataSourceManager )
         {
-            final TransactionManager txManager = resolver.resolveDependency( TransactionManager.class );
 
             idGeneratorFactory.switchToMaster();
 
             Monitors monitors = resolver.resolveDependency( Monitors.class );
 
-            MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, txManager, monitors );
+            MasterImpl.SPI spi = new DefaultMasterImplSPI( graphDb, logging, monitors );
 
             MasterImpl masterImpl = new MasterImpl( spi, monitors.newMonitor( MasterImpl.Monitor.class ),
                     logging, config );

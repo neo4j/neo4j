@@ -25,9 +25,6 @@ import java.util.Map;
 import org.neo4j.consistency.checking.incremental.DiffCheck;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptor;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 abstract class CheckingTransactionInterceptorProvider extends TransactionInterceptorProvider

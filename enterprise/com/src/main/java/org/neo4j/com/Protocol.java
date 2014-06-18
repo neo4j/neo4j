@@ -21,7 +21,8 @@ package org.neo4j.com;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
@@ -30,10 +31,19 @@ import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -77,8 +87,7 @@ public class Protocol
 
         PAYLOAD response = payloadDeserializer.read( dechunkingBuffer, input );
         StoreId storeId = readStoreId( dechunkingBuffer, input );
-        TransactionStream txStreams = readTransactionStreams( dechunkingBuffer );
-        return new Response<PAYLOAD>( response, storeId, txStreams, channelReleaser );
+        return new Response<PAYLOAD>( response, storeId, readTransactionStreams( dechunkingBuffer ), channelReleaser );
     }
 
     private void writeContext( RequestContext context, ChannelBuffer targetBuffer )
@@ -86,7 +95,7 @@ public class Protocol
         targetBuffer.writeLong( context.getEpoch() );
         targetBuffer.writeInt( context.machineId() );
         targetBuffer.writeInt( context.getEventIdentifier() );
-        RequestContext.Tx tx = context.lastAppliedTransactions();
+        long tx = context.lastAppliedTransaction();
         // TODO 2.2-future this used to hold the length of the transaction array. Now it is always 1
         targetBuffer.writeByte( 1 );
         // TODO 2.2-future this used to iterate over all ds txs. No longer necessary
@@ -95,38 +104,15 @@ public class Protocol
 
 //            writeString( targetBuffer, tx.getDataSourceName() );
         writeString( targetBuffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
-        targetBuffer.writeLong( tx.getTxId() );
+        targetBuffer.writeLong( tx );
 //        }
         targetBuffer.writeInt( context.getMasterId() );
         targetBuffer.writeLong( context.getChecksum() );
     }
 
-    private TransactionStream readTransactionStreams( final ChannelBuffer buffer )
+    private Iterable<CommittedTransactionRepresentation> readTransactionStreams( final ChannelBuffer buffer ) throws IOException
     {
-        final String[] datasources = readTransactionStreamHeader( buffer );
-
-        if ( datasources.length == 1 )
-        {
-            return TransactionStream.EMPTY;
-        }
-
-        return new TransactionStream()
-        {
-            @Override
-            protected Pair<Long, TransactionRepresentation> fetchNextOrNull()
-            {
-                makeSureNextTransactionIsFullyFetched( buffer );
-                String datasource = datasources[buffer.readUnsignedByte()];
-                if ( datasource == null )
-                {
-                    return null;
-                }
-                long txId = buffer.readLong();
-                // TODO 2.2-future this should be a transaction representation extracted from the store
-                TransactionRepresentation txRepr = null;
-                return Pair.of( txId, txRepr );
-            }
-        };
+        return new CommittedTransactionRepresentationDeserializer().read( buffer, null );
     }
 
     private String[] readTransactionStreamHeader( ChannelBuffer buffer )
@@ -241,6 +227,102 @@ public class Protocol
             return null;
         }
     };
+
+
+    public static class TransactionSerializer implements Serializer
+    {
+        private final TransactionRepresentation tx;
+
+        public TransactionSerializer( TransactionRepresentation tx )
+        {
+            this.tx = tx;
+        }
+
+        @Override
+        public void write( ChannelBuffer buffer ) throws IOException
+        {
+            NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
+
+            channel.putInt( tx.getAuthorId() );
+            channel.putInt( tx.getMasterId() );
+            channel.putLong( tx.getLatestCommittedTxWhenStarted() );
+            channel.putLong( tx.getTimeWritten() );
+            channel.putInt( tx.additionalHeader().length );
+            channel.put( tx.additionalHeader(), tx.additionalHeader().length );
+            new LogEntryWriterv1( channel, new CommandWriter( channel ) ).serialize( tx );
+        }
+    }
+
+    public static class TransactionRepresentationDeserializer implements Deserializer<TransactionRepresentation>
+    {
+        @Override
+        public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
+                IOException
+        {
+            LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+            NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
+
+            int authorId = channel.getInt();
+            int masterId = channel.getInt();
+            long latestCommittedTxWhenStarted = channel.getLong();
+            long timeWritten = channel.getLong();
+
+            int headerLength = channel.getInt();
+            byte[] header = new byte[headerLength];
+
+            channel.get( header, headerLength );
+
+            LogEntry.Command entryRead;
+            List<Command> commands = new LinkedList<>();
+            while (  (entryRead = (LogEntry.Command) reader.readLogEntry( channel )) != null )
+            {
+                commands.add( entryRead.getXaCommand() );
+            }
+
+            PhysicalTransactionRepresentation toReturn = new PhysicalTransactionRepresentation( commands );
+            toReturn.setHeader( header, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
+            return toReturn;
+        }
+    }
+
+    public static class CommittedTransactionRepresentationDeserializer implements Deserializer<Iterable<CommittedTransactionRepresentation>>
+    {
+        @Override
+        public Iterable<CommittedTransactionRepresentation> read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
+                IOException
+        {
+            LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+            NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
+            AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>();
+            NetworkTransactionCursor cursor = new NetworkTransactionCursor( channel, reader, accumulator );
+            while( cursor.next() );
+            return accumulator.getAccumulator();
+        }
+    }
+
+    public static class CommittedTransactionRepresentationSerializer implements Serializer
+    {
+        private final CommittedTransactionRepresentation tx;
+
+        public CommittedTransactionRepresentationSerializer( CommittedTransactionRepresentation tx )
+        {
+            this.tx = tx;
+        }
+
+        @Override
+        public void write( ChannelBuffer buffer ) throws IOException
+        {
+            NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
+            LogEntryWriterv1 writer = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
+            LogEntry.Start startEntry = tx.getStartEntry();
+            writer.writeStartEntry( startEntry.getMasterId(), startEntry.getLocalId(),
+                    startEntry.getTimeWritten(), startEntry.getLastCommittedTxWhenTransactionStarted(),
+                    startEntry.getAdditionalHeader() );
+            writer.serialize( tx.getTransactionRepresentation() );
+            LogEntry.Commit commitEntry = tx.getCommitEntry();
+            writer.writeCommitEntry( commitEntry.getTxId(), commitEntry.getTimeWritten() );
+        }
+    }
     
     public static void addLengthFieldPipes( ChannelPipeline pipeline, int frameLength )
     {

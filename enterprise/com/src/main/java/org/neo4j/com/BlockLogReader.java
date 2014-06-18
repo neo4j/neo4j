@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
 /**
  * The counterpart of {@link BlockLogBuffer}, sits on the receiving end and

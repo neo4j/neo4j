@@ -21,44 +21,46 @@ package org.neo4j.kernel.ha;
 
 import java.net.URI;
 
+import org.neo4j.helpers.Provider;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.ha.cluster.AbstractModeSwitcher;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultLabelIdCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.logging.Logging;
 
 public class LabelTokenCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {
-    private final HaXaDataSourceManager xaDsm;
     private final DelegateInvocationHandler<Master> master;
     private final RequestContextFactory requestContextFactory;
-    private final Logging logging;
+    private final Provider<KernelAPI> kernelProvider;
+    private final IdGeneratorFactory idGeneratorFactory;
 
     public LabelTokenCreatorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                           DelegateInvocationHandler<TokenCreator> delegate,
-                                          HaXaDataSourceManager xaDsm,
                                           DelegateInvocationHandler<Master> master,
-                                          RequestContextFactory requestContextFactory, Logging logging
+                                          RequestContextFactory requestContextFactory,
+                                          Provider<KernelAPI> kernelProvider, IdGeneratorFactory idGeneratorFactory
     )
     {
         super( stateMachine, delegate );
-        this.xaDsm = xaDsm;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.logging = logging;
+        this.kernelProvider = kernelProvider;
+        this.idGeneratorFactory = idGeneratorFactory;
     }
 
     @Override
     protected TokenCreator getMasterImpl()
     {
-        return new DefaultLabelIdCreator( logging );
+        return new DefaultLabelIdCreator( kernelProvider, idGeneratorFactory  );
     }
 
     @Override
     protected TokenCreator getSlaveImpl( URI serverHaUri )
     {
-        return new SlaveLabelTokenCreator( master.cement(), requestContextFactory, xaDsm );
+        return new SlaveLabelTokenCreator( master.cement(), requestContextFactory );
     }
 }

@@ -19,35 +19,35 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
+import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
-import org.neo4j.com.ServerUtil;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
+import org.neo4j.com.TransactionStream;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 
 public class SlaveImpl implements Slave
 {
     private final Master master;
     private final RequestContextFactory requestContextFactory;
     private final StoreId storeId;
-    private final HaXaDataSourceManager xaDsm;
 
-    public SlaveImpl( StoreId storeId, Master master, RequestContextFactory requestContextFactory,
-                      HaXaDataSourceManager xaDsm )
+    public SlaveImpl( StoreId storeId, Master master, RequestContextFactory requestContextFactory )
     {
         this.storeId = storeId;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.xaDsm = xaDsm;
     }
 
     @Override
-    public Response<Void> pullUpdates( String resource, long upToAndIncludingTxId )
+    public Response<Void> pullUpdates( long upToAndIncludingTxId )
     {
-        xaDsm.applyTransactions( master.pullUpdates( requestContextFactory.newRequestContext( 0 ) ), ServerUtil.NO_ACTION );
-        return ServerUtil.packResponseWithoutTransactionStream( storeId, null );
+        // TODO 2.2-future figure out a way to apply transactions
+//        xaDsm.applyTransactions( master.pullUpdates( requestContextFactory.newRequestContext( 0 ) ), ServerUtil.NO_ACTION );
+        return new Response( null, storeId, Iterables.<CommittedTransactionRepresentation>empty(), ResourceReleaser.NO_OP );
     }
 
     @Override

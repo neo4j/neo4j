@@ -22,7 +22,6 @@ package org.neo4j.com;
 import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
 import static org.neo4j.com.Protocol.writeString;
 import static org.neo4j.com.RequestContext.EMPTY;
-import static org.neo4j.com.RequestContext.lastAppliedTx;
 
 import java.io.IOException;
 import java.net.InetAddress;
@@ -85,7 +84,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
 
     private RequestContext getRequestContext()
     {
-        return new RequestContext( EMPTY.getEpoch(), EMPTY.machineId(), EMPTY.getEventIdentifier(), lastAppliedTx( 1 ),
+        return new RequestContext( EMPTY.getEpoch(), EMPTY.machineId(), EMPTY.getEventIdentifier(), 1,
                 EMPTY.getMasterId(), EMPTY.getChecksum() );
     }
 

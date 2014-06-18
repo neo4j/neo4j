@@ -38,7 +38,6 @@ import org.junit.Test;
 import org.neo4j.com.ComException;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
-import org.neo4j.com.TransactionStream;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
@@ -341,7 +340,7 @@ public class TestMasterCommittingAtSlave
         }
 
         @Override
-        public Response<Void> pullUpdates( String resource, long txId )
+        public Response<Void> pullUpdates( long txId )
         {
             if ( failing )
             {
@@ -349,7 +348,7 @@ public class TestMasterCommittingAtSlave
             }
 
             calledWithTxId.add( txId );
-            return new Response<Void>( null, new StoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+            return new Response<Void>( null, new StoreId(), cursor, ResourceReleaser.NO_OP );
         }
 
         Long popCalledTx()

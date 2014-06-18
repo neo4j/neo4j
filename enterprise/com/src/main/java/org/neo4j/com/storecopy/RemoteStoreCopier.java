@@ -29,7 +29,6 @@ import java.nio.channels.ReadableByteChannel;
 import java.util.Map;
 
 import org.neo4j.com.Response;
-import org.neo4j.com.TransactionStream;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
@@ -39,6 +38,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -98,7 +98,7 @@ public class RemoteStoreCopier
             }
 
             // Write pending transactions down to the currently active logical log
-            writeTransactionsToActiveLogFile( tempConfig, response.getTxStream() );
+            writeTransactionsToActiveLogFile( tempConfig, response.getTxs() );
         }
         finally
         {
@@ -133,7 +133,7 @@ public class RemoteStoreCopier
         return new Config( params );
     }
 
-    private void writeTransactionsToActiveLogFile( Config tempConfig, TransactionStream transactions ) throws IOException
+    private void writeTransactionsToActiveLogFile( Config tempConfig, Iterable<CommittedTransactionRepresentation> txs ) throws IOException
     {
 //        Map</*dsName*/String, LogBufferFactory> logWriters = createLogWriters( tempConfig );
 //        Map</*dsName*/String, LogBuffer> logFiles = new HashMap<>();

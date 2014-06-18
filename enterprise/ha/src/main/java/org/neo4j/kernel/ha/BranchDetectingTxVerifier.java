@@ -19,22 +19,18 @@
  */
 package org.neo4j.kernel.ha;
 
-import java.io.IOException;
-
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
 public class BranchDetectingTxVerifier implements TxChecksumVerifier
 {
     private final StringLogger logger;
-    private XaDataSource dataSource;
     private DependencyResolver resolver;
+    private LogicalTransactionStore txStore;
 
     public BranchDetectingTxVerifier( DependencyResolver resolver /* I'd like to get in StringLogger, XaDataSource instead */ )
     {
@@ -48,32 +44,16 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
     @Override
     public void assertMatch( long txId, int masterId, long checksum )
     {
-        try
+        TransactionMetadataCache.TransactionMetadata metadata = txStore.getMetadataFor( txId );
+        int readMaster = metadata.getMasterId();
+        long readChecksum = metadata.getChecksum();
+        boolean match = masterId == readMaster && checksum == readChecksum;
+
+        if ( !match )
         {
-            Pair<Integer, Long> readChecksum = dataSource().getMasterForCommittedTx( txId );
-            boolean match = masterId == readChecksum.first() && checksum == readChecksum.other();
-            
-            if ( !match )
-            {
-                throw new BranchedDataException( stringify( txId, masterId, checksum ) +
-                        " doesn't match " + readChecksum );
-            }
+            throw new BranchedDataException( stringify( txId, masterId, checksum ) +
+                    " doesn't match " + readChecksum );
         }
-        catch ( IOException e )
-        {
-            logger.logMessage( "Couldn't verify checksum for " + stringify( txId, masterId, checksum ), e );
-            throw new BranchedDataException( e );
-        }
-    }
-    
-    private XaDataSource dataSource()
-    {
-        if ( dataSource == null )
-        {
-            dataSource = resolver.resolveDependency( XaDataSourceManager.class )
-                    .getXaDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
-        }
-        return dataSource;
     }
 
     private String stringify( long txId, int masterId, long checksum )

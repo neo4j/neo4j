@@ -56,17 +56,15 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
-import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
@@ -414,16 +412,8 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         catch ( Throwable failure ) // Unknown error trying to finish off the tx
         {
             submitSilent( unfinishedTransactionExecutor, newTransactionFinisher( slave ) );
-            if ( shouldLogFailureToFinishOffChannel( failure ) )
-            {
-                msgLog.logMessage( "Could not finish off dead channel", failure );
-            }
+            msgLog.logMessage( "Could not finish off dead channel", failure );
         }
-    }
-
-    protected boolean shouldLogFailureToFinishOffChannel( Throwable failure )
-    {
-        return true;
     }
 
     private void submitSilent( ExecutorService service, Runnable job )
@@ -577,7 +567,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                     response = type.getTargetCaller().call( requestTarget, context, bufferToReadFrom, targetBuffer );
                     type.getObjectSerializer().write( response.response(), targetBuffer );
                     writeStoreId( response.getStoreId(), targetBuffer );
-                    writeTransactionStreams( response.getTxStream(), targetBuffer, byteCounterMonitor );
+                    writeTransactionStreams( response.getTxs(), targetBuffer, byteCounterMonitor );
                     targetBuffer.done();
                     responseWritten( type, channel, context );
                 }
@@ -627,32 +617,22 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         targetBuffer.writeBytes( storeId.serialize() );
     }
 
-    private static void writeTransactionStreams( TransactionStream txStream, ChannelBuffer buffer, ByteCounterMonitor bufferMonitor )
+    private static void writeTransactionStreams( Iterable<CommittedTransactionRepresentation> txs, ChannelBuffer buffer,
+                                                 ByteCounterMonitor bufferMonitor )
     {
-        if ( !txStream.hasNext() )
-        {
-            buffer.writeByte( 0 );
-            return;
-        }
-
         // TODO 2.2-future this used to write the number of datasources - it is now always 1
         buffer.writeByte( 1 );
-        Map<String, Integer> datasourceId = new HashMap<String, Integer>();
-//        for ( int i = 0; i < datasources.length; i++ )
-//        {
-//            String datasource = datasources[i];
-        // TODO 2.2-future this used to write the name of the datasources - no such thing anymore
-            writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
-//            datasourceId.put( datasource, i + 1/*0 means "no more transactions"*/ );
-//        }
-        for ( Pair<Long, TransactionRepresentation> tx : IteratorUtil.asIterable( txStream ) )
+        writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+        try
         {
-            buffer.writeByte( datasourceId.get( tx.first() ) );
-            buffer.writeLong( tx.first() );
-            BlockLogBuffer blockBuffer = new BlockLogBuffer( buffer, bufferMonitor );
-            // TODO 2.2-future this should extract the tx stream from the TransactionStore
-//            tx.third().extract( blockBuffer );
-            blockBuffer.done();
+            for ( CommittedTransactionRepresentation tx : txs )
+            {
+                new Protocol.CommittedTransactionRepresentationSerializer( tx ).write( buffer );
+            }
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
         buffer.writeByte( 0/*no more transactions*/ );
     }
@@ -666,17 +646,14 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         assert txsSize == 1;
         String ds = readString( buffer ); // TODO 2.2-future this will always be the same - NeoStoreXaDS
         assert ds.equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
-        Tx neoTx = RequestContext.lastAppliedTx( buffer.readLong() );
+        long neoTx = buffer.readLong();
 
         int masterId = buffer.readInt();
         long checksum = buffer.readLong();
 
         // Only perform checksum checks on the neo data source. If there's none in the request
         // then don't perform any such check.
-        if ( neoTx != null )
-        {
-            txVerifier.assertMatch( neoTx.getTxId(), masterId, checksum );
-        }
+        txVerifier.assertMatch( neoTx, masterId, checksum );
         return new RequestContext( sessionId, machineId, eventIdentifier, neoTx, masterId, checksum );
     }
 

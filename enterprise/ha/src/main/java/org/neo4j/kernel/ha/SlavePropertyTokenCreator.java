@@ -23,30 +23,24 @@ import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 
 public class SlavePropertyTokenCreator implements TokenCreator
 {
     private final Master master;
     private final RequestContextFactory requestContextFactory;
-    private final HaXaDataSourceManager xaDsm;
 
-    public SlavePropertyTokenCreator( Master master, RequestContextFactory requestContextFactory,
-                                      HaXaDataSourceManager xaDsm )
+    public SlavePropertyTokenCreator( Master master, RequestContextFactory requestContextFactory )
     {
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.xaDsm = xaDsm;
     }
 
     @Override
-    public int getOrCreate( AbstractTransactionManager txManager, EntityIdGenerator idGenerator,
-            PersistenceManager persistence, String name )
+    public int getOrCreate( String name )
     {
         Response<Integer> response = master.createPropertyKey( requestContextFactory.newRequestContext(), name );
-        xaDsm.applyTransactions( response );
+        // TODO 2.2-future should apply the response somehow
+//        xaDsm.applyTransactions( response );
         return response.response().intValue();
     }
 }

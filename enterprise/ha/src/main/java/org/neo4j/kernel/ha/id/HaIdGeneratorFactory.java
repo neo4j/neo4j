@@ -230,6 +230,12 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
         }
 
         @Override
+        public long getHighestPossibleIdInUse()
+        {
+            return delegate.getHighestPossibleIdInUse();
+        }
+
+        @Override
         public void freeId( long id )
         {
             delegate.freeId( id );
@@ -292,6 +298,12 @@ public class HaIdGeneratorFactory implements IdGeneratorFactory
 
         @Override
         public long getHighId()
+        {
+            return highestIdInUse;
+        }
+
+        @Override
+        public long getHighestPossibleIdInUse()
         {
             return highestIdInUse;
         }

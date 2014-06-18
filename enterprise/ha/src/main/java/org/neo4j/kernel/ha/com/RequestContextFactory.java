@@ -19,116 +19,50 @@
  */
 package org.neo4j.kernel.ha.com;
 
-import java.io.IOException;
-import java.util.Collection;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 
 public class RequestContextFactory
 {
     private long epoch;
     private final int serverId;
-    private final XaDataSourceManager xaDsm;
     private final DependencyResolver resolver;
-    private AbstractTransactionManager txManager;
+    private final LogicalTransactionStore txStore;
+    private final TransactionIdStore txIdStore;
 
-    public RequestContextFactory( int serverId, XaDataSourceManager xaDsm, DependencyResolver resolver )
+    public RequestContextFactory( int serverId, DependencyResolver resolver, LogicalTransactionStore txStore,
+                                  TransactionIdStore txIdStore)
     {
         this.resolver = resolver;
         this.epoch = -1;
         this.serverId = serverId;
-        this.xaDsm = xaDsm;
+        this.txStore = txStore;
+        this.txIdStore = txIdStore;
     }
-    
+
     public void setEpoch( long epoch )
     {
         this.epoch = epoch;
-        this.txManager = resolver.resolveDependency( AbstractTransactionManager.class );
-    }
-
-    public RequestContext newRequestContext( int eventIdentifier )
-    {
-        // Constructs a slave context from scratch.
-        try
-        {
-            Collection<XaDataSource> dataSources = xaDsm.getAllRegisteredDataSources();
-            RequestContext.Tx[] txs = new RequestContext.Tx[dataSources.size()];
-            int i = 0;
-            Pair<Integer,Long> master = null;
-            for ( XaDataSource dataSource : dataSources )
-            {
-                long txId = dataSource.getLastCommittedTxId();
-                if( dataSource.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
-                {
-                    master = dataSource.getMasterForCommittedTx( txId );
-                }
-                txs[i++] = RequestContext.lastAppliedTx( dataSource.getName(), txId );
-            }
-            assert master != null : "master should not be null, since we should have found " + NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
-            return new RequestContext( epoch, serverId, eventIdentifier, txs, master.first(), master.other() );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
     }
 
     public RequestContext newRequestContext( long sessionId, int machineId, int eventIdentifier )
     {
-        try
-        {
-            Collection<XaDataSource> dataSources = xaDsm.getAllRegisteredDataSources();
-            RequestContext.Tx[] txs = new RequestContext.Tx[dataSources.size()];
-            int i = 0;
-            Pair<Integer,Long> master = null;
-            for ( XaDataSource dataSource : dataSources )
-            {
-                long txId = dataSource.getLastCommittedTxId();
-                if( dataSource.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) )
-                {
-                    master = dataSource.getMasterForCommittedTx( txId );
-                }
-                txs[i++] = RequestContext.lastAppliedTx( dataSource.getName(), txId );
-            }
-            assert master != null : "master should not be null, since we should have found " + NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
-            return new RequestContext( sessionId, machineId, eventIdentifier, txs, master.first(), master.other() );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        long latestTxId = txIdStore.getLastCommittingTransactionId();
+        TransactionMetadataCache.TransactionMetadata txMetadata = txStore.getMetadataFor( latestTxId );
+        return new RequestContext(
+                sessionId, machineId, eventIdentifier, latestTxId, txMetadata.getMasterId(), txMetadata.getAuthorId() );
     }
 
-    public RequestContext newRequestContext( XaDataSource dataSource, long sessionId, int machineId, int eventIdentifier )
+    public RequestContext newRequestContext( int eventIdentifier )
     {
-        try
-        {
-            long txId = dataSource.getLastCommittedTxId();
-            RequestContext.Tx[] txs = new RequestContext.Tx[] { RequestContext.lastAppliedTx( dataSource.getName(), txId ) };
-            Pair<Integer,Long> master = dataSource.getName().equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME ) ?
-                    dataSource.getMasterForCommittedTx( txId ) : Pair.of( XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER, 0L );
-            return new RequestContext( sessionId, machineId, eventIdentifier, txs, master.first(), master.other() );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
-
-    public RequestContext newRequestContext( XaDataSource dataSource )
-    {
-        return newRequestContext( dataSource, epoch, serverId, txManager.getEventIdentifier() );
+        return newRequestContext( epoch, serverId, eventIdentifier );
     }
 
     public RequestContext newRequestContext()
     {
-        return newRequestContext( epoch, serverId, txManager.getEventIdentifier() );
+        return newRequestContext( -1 );
     }
 }

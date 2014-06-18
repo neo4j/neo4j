@@ -17,15 +17,26 @@
  * You should have received a copy of the GNU Affero General Public License
  * along with this program. If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.ha.transaction;
+package org.neo4j.com;
 
-import org.neo4j.kernel.DefaultTxHook;
+import java.io.IOException;
+import java.util.LinkedList;
+import java.util.List;
 
-public class MasterTxHook extends DefaultTxHook
+import org.neo4j.helpers.collection.Visitor;
+
+public class AccumulatorVisitor<T> implements Visitor<T, IOException>
 {
+    private final List<T> accumulator = new LinkedList<>();
+
     @Override
-    public boolean freeIdsDuringRollback()
+    public boolean visit( T element ) throws IOException
     {
-        return false;
+        return accumulator.add( element );
+    }
+
+    public List<T> getAccumulator()
+    {
+        return accumulator;
     }
 }

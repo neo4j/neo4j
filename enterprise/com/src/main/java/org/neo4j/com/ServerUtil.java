@@ -30,16 +30,16 @@ import org.neo4j.helpers.Predicate;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPositionCache;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionStore;
 
 public class ServerUtil
 {
-    private TransactionStore txs;
+    private LogicalTransactionStore txs;
     private NeoStoreXaDataSource ds;
     private TransactionIdStore txIdStore;
-    private LogPositionCache logPositionCache;
+    private TransactionMetadataCache logPositionCache;
     private TransactionRepresentationCommitProcess commitProcess;
 
     public static final Predicate<Long> ALL = new Predicate<Long>()

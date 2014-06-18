@@ -29,35 +29,8 @@ import java.util.Arrays;
  */
 public final class RequestContext
 {
-    public static class Tx
-    {
-        private final long txId;
-
-        public Tx( long txId )
-        {
-            this.txId = txId;
-        }
-
-        public long getTxId()
-        {
-            return txId;
-        }
-
-        @Override
-        public String toString()
-        {
-            return "txId: " + txId;
-        }
-
-    }
-
-    public static Tx lastAppliedTx( long txId )
-    {
-        return new Tx( txId );
-    }
-
     private final int machineId;
-    private final Tx lastAppliedTransactions;
+    private final long lastAppliedTransaction;
     private final int eventIdentifier;
     private final int hashCode;
     private final long epoch;
@@ -65,12 +38,12 @@ public final class RequestContext
     private final long checksum;
 
     public RequestContext( long epoch, int machineId, int eventIdentifier,
-            Tx lastAppliedTransactions, int masterId, long checksum )
+            long lastAppliedTransaction, int masterId, long checksum )
     {
         this.epoch = epoch;
         this.machineId = machineId;
         this.eventIdentifier = eventIdentifier;
-        this.lastAppliedTransactions = lastAppliedTransactions;
+        this.lastAppliedTransaction = lastAppliedTransaction;
         this.masterId = masterId;
         this.checksum = checksum;
 
@@ -85,9 +58,9 @@ public final class RequestContext
         return machineId;
     }
 
-    public Tx lastAppliedTransactions()
+    public long lastAppliedTransaction()
     {
-        return lastAppliedTransactions;
+        return lastAppliedTransaction;
     }
 
     public int getEventIdentifier()
@@ -114,7 +87,7 @@ public final class RequestContext
     public String toString()
     {
         return "RequestContext[session: " + epoch + ", ID:" + machineId + ", eventIdentifier:" + eventIdentifier
-               + ", " + Arrays.asList( lastAppliedTransactions ) + "]";
+               + ", " + Arrays.asList( lastAppliedTransaction ) + "]";
     }
 
     @Override
@@ -134,11 +107,11 @@ public final class RequestContext
         return this.hashCode;
     }
 
-    public static final RequestContext EMPTY = new RequestContext( -1, -1, -1, null, -1, -1 );
+    public static final RequestContext EMPTY = new RequestContext( -1, -1, -1, -1, -1, -1 );
 
-    public static RequestContext anonymous( Tx lastAppliedTransactions )
+    public static RequestContext anonymous( long lastAppliedTransaction )
     {
         return new RequestContext( EMPTY.epoch, EMPTY.machineId, EMPTY.eventIdentifier,
-                lastAppliedTransactions, EMPTY.masterId, EMPTY.checksum );
+                lastAppliedTransaction, EMPTY.masterId, EMPTY.checksum );
     }
 }

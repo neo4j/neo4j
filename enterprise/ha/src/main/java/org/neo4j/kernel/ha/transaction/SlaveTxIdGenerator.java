@@ -19,23 +19,12 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
-
-import javax.transaction.xa.XAException;
-
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
-import org.neo4j.com.TxExtractor;
-import org.neo4j.helpers.Exceptions;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.core.TransactionState;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 
 public class SlaveTxIdGenerator implements TxIdGenerator
 {
@@ -43,22 +32,17 @@ public class SlaveTxIdGenerator implements TxIdGenerator
     private final Master master;
     private final int masterId;
     private final RequestContextFactory requestContextFactory;
-    private final HaXaDataSourceManager xaDsm;
-    private final AbstractTransactionManager txManager;
 
-    public SlaveTxIdGenerator( int serverId, Master master, int masterId, RequestContextFactory requestContextFactory,
-                               HaXaDataSourceManager xaDsm, AbstractTransactionManager txManager )
+    public SlaveTxIdGenerator( int serverId, Master master, int masterId, RequestContextFactory requestContextFactory )
     {
         this.serverId = serverId;
         this.masterId = masterId;
         this.requestContextFactory = requestContextFactory;
         this.master = master;
-        this.xaDsm = xaDsm;
-        this.txManager = txManager;
     }
 
     @Override
-    public long generate( XaDataSource dataSource, int identifier ) throws XAException
+    public long generate( TransactionRepresentation transactionRepresentation )
     {
         try
         {
@@ -66,79 +50,18 @@ public class SlaveTxIdGenerator implements TxIdGenerator
             // optimal to do here, since we are under a synchronized block, but writing to master from slaves
             // is discouraged in any case. For details of the background for this call, see TransactionState
             // and its isRemoteInitialized method.
-            TransactionState txState = txManager.getTransactionState();
-            txState.getTxHook().remotelyInitializeTransaction( txManager.getEventIdentifier(), txState );
 
-            Response<Long> response = master.commitSingleResourceTransaction(
-                    requestContextFactory.newRequestContext( dataSource ), dataSource.getName(),
-                    myPreparedTransactionToCommit( dataSource, identifier ) );
-            xaDsm.applyTransactions( response );
+            // TODO 2.2-future We need to decide on how the hell we will transfer transactions over
+//            Response<Long> response = master.commitSingleResourceTransaction(
+//                    requestContextFactory.newRequestContext(), transactionRepresentation );
+            // TODO 2.2-future find a way to apply transactions
+//            xaDsm.applyTransactions( response );
+            Response<Long> response = null;
             return response.response().longValue();
         }
         catch ( ComException e )
         {
-            throw Exceptions.withCause( new XAException( XAException.XA_HEURCOM ), e );
+            throw new RuntimeException( e );
         }
-        catch (RuntimeException e)
-        {
-            // If the original issue was caused by an XAException, wrap the whole thing in an XA exception with
-            // the same error code and message.
-            Throwable currentException = e.getCause();
-            while(currentException != null)
-            {
-                if( currentException instanceof XAException )
-                {
-                    throw Exceptions.withCause( new XAException( ((XAException) currentException).errorCode ), e );
-                }
-                currentException = currentException.getCause();
-            }
-
-            // If no XAException involved, just throw the runtime exception.
-            throw e;
-        }
-    }
-
-    @Override
-    public void committed( XaDataSource dataSource, int identifier, long txId, Integer externalAuthorServerId )
-    {
-        master.pushTransaction(
-                requestContextFactory.newRequestContext( identifier ), dataSource.getName(), txId ).close();
-    }
-
-    @Override
-    public int getCurrentMasterId()
-    {
-        return masterId;
-    }
-
-    @Override
-    public int getMyId()
-    {
-        return serverId;
-    }
-
-    private TxExtractor myPreparedTransactionToCommit( final XaDataSource dataSource, final int identifier )
-    {
-        return new TxExtractor()
-        {
-            @Override
-            public ReadableByteChannel extract()
-            {
-                throw new UnsupportedOperationException();
-            }
-            
-            @Override
-            public void extract( LogBuffer buffer )
-            {
-                try
-                {
-                    dataSource.getPreparedTransaction( identifier, buffer );
-                }
-                catch ( IOException e )
-                {
-                    throw new RuntimeException( e );
-                }
-            }
-        };
     }
 }

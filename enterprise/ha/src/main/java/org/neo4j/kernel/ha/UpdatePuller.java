@@ -28,7 +28,6 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -36,10 +35,8 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 
 public class UpdatePuller implements Lifecycle
 {
-    private final HaXaDataSourceManager xaDataSourceManager;
     private final Master master;
     private final RequestContextFactory requestContextFactory;
-    private final AbstractTransactionManager txManager;
     private final AvailabilityGuard availabilityGuard;
     private final LastUpdateTime lastUpdateTime;
     private final Config config;
@@ -49,15 +46,13 @@ public class UpdatePuller implements Lifecycle
     private boolean pullUpdates = false;
     private ScheduledThreadPoolExecutor updatePuller;
 
-    public UpdatePuller( HaXaDataSourceManager xaDataSourceManager, Master master,
-                         RequestContextFactory requestContextFactory, AbstractTransactionManager txManager,
-                         AvailabilityGuard availabilityGuard, LastUpdateTime lastUpdateTime, Config config,
-                         JobScheduler scheduler, final StringLogger logger )
+    public UpdatePuller( Master master,
+                         RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
+                         LastUpdateTime lastUpdateTime, Config config, JobScheduler scheduler,
+                         final StringLogger logger )
     {
-        this.xaDataSourceManager = xaDataSourceManager;
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.txManager = txManager;
         this.availabilityGuard = availabilityGuard;
         this.lastUpdateTime = lastUpdateTime;
         this.config = config;
@@ -78,8 +73,9 @@ public class UpdatePuller implements Lifecycle
     {
         if ( availabilityGuard.isAvailable( 5000 ) )
         {
-            xaDataSourceManager.applyTransactions(
-                    master.pullUpdates( requestContextFactory.newRequestContext( txManager.getEventIdentifier() ) ) );
+            // TODO 2.2-future
+//            xaDataSourceManager.applyTransactions(
+//                    master.pullUpdates( requestContextFactory.newRequestContext( /*event identifier???*/) ) );
         }
         lastUpdateTime.setLastUpdateTime( System.currentTimeMillis() );
     }

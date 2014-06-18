@@ -189,7 +189,7 @@ public class LogicalLogSeeder
     private RequestContext addDiffToSlaveContext( RequestContext original,
                                                   Map<String, Long> diffPerDataSource )
     {
-        RequestContext.Tx[] oldTxs = original.lastAppliedTransactions();
+        RequestContext.Tx[] oldTxs = original.lastAppliedTransaction();
         RequestContext.Tx[] newTxs = new RequestContext.Tx[oldTxs.length];
         for ( int i = 0; i < oldTxs.length; i++ )
         {

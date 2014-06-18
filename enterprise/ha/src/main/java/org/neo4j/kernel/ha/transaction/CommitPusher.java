@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
+import static org.neo4j.kernel.impl.util.JobScheduler.Group.masterTransactionPushing;
+
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
@@ -31,11 +33,8 @@ import java.util.concurrent.FutureTask;
 
 import org.neo4j.com.Response;
 import org.neo4j.kernel.ha.com.master.Slave;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.kernel.impl.util.JobScheduler.Group.masterTransactionPushing;
 
 public class CommitPusher extends LifecycleAdapter
 {
@@ -91,14 +90,14 @@ public class CommitPusher extends LifecycleAdapter
         this.scheduler = scheduler;
     }
 
-    public void queuePush( final XaDataSource dataSource, Slave slave, final long txId )
+    public void queuePush( Slave slave, final long txId )
     {
         PullUpdateFuture pullRequest = new PullUpdateFuture(slave, txId);
 
         BlockingQueue<PullUpdateFuture> queue = pullUpdateQueues.get( slave.getServerId() );
 
         // Create a new queue if needed
-        queue = queue == null ? createNewQueue( dataSource, slave ) : queue;
+        queue = queue == null ? createNewQueue( slave ) : queue;
 
         // Add our request to the queue
         while( !queue.offer( pullRequest ) )
@@ -125,7 +124,7 @@ public class CommitPusher extends LifecycleAdapter
         }
     }
 
-    private synchronized BlockingQueue<PullUpdateFuture> createNewQueue( final XaDataSource dataSource, Slave slave )
+    private synchronized BlockingQueue<PullUpdateFuture> createNewQueue( Slave slave )
     {
         BlockingQueue<PullUpdateFuture> queue = pullUpdateQueues.get( slave.getServerId() );
         if (queue == null)
@@ -155,7 +154,7 @@ public class CommitPusher extends LifecycleAdapter
                             try
                             {
                                 PullUpdateFuture pullUpdateFuture = currentPulls.get( 0 );
-                                Response<Void> response = pullUpdateFuture.getSlave().pullUpdates( dataSource.getName(), pullUpdateFuture.getTxId() );
+                                Response<Void> response = pullUpdateFuture.getSlave().pullUpdates( pullUpdateFuture.getTxId() );
                                 response.close();
 
                                 // Notify the futures

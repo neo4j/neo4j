@@ -54,7 +54,7 @@ public class HighAvailabilitySlaves implements Lifecycle, Slaves
     private SlaveFactory slaveFactory;
     private HighAvailabilitySlaves.HASClusterListener clusterListener;
 
-    public HighAvailabilitySlaves( ClusterMembers clusterMembers, Cluster cluster, SlaveFactory slaveFactory)
+    public HighAvailabilitySlaves( ClusterMembers clusterMembers, Cluster cluster, SlaveFactory slaveFactory )
     {
         this.clusterMembers = clusterMembers;
         this.cluster = cluster;

@@ -32,8 +32,10 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 
 public class TestCommunication
@@ -135,7 +137,7 @@ public class TestCommunication
             {
                 writer.write( new FailingByteChannel( dataSize, failureMessage ) );
                 return new Response<Void>( null, storeIdToUse,
-                        TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+                        Iterables.<CommittedTransactionRepresentation>empty(), ResourceReleaser.NO_OP );
             }
         };
         MadeUpServer server = builder.server( serverImplementation );

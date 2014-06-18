@@ -20,31 +20,27 @@
 package org.neo4j.com;
 
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 
 public class Response<T> implements AutoCloseable
 {
     private final T response;
     private final StoreId storeId;
     private final ResourceReleaser releaser;
-    private final TransactionStream txStream;
+    private final Iterable<CommittedTransactionRepresentation> txs;
 
     public Response( T response, StoreId storeId,
-                     TransactionStream txStream, ResourceReleaser releaser )
+                     Iterable<CommittedTransactionRepresentation> txs, ResourceReleaser releaser )
     {
         this.storeId = storeId;
         this.response = response;
-        this.txStream = txStream;
+        this.txs = txs;
         this.releaser = releaser;
     }
 
     public T response() throws ServerFailureException
     {
         return response;
-    }
-
-    public TransactionStream getTxStream()
-    {
-        return txStream;
     }
 
     public StoreId getStoreId()
@@ -55,18 +51,16 @@ public class Response<T> implements AutoCloseable
     @Override
     public void close()
     {
-        try
-        {
-            txStream.close();
-        }
-        finally
-        {
-            releaser.release();
-        }
+        releaser.release();
     }
 
     public static <T> Response<T> empty()
     {
         return new Response<T>( null, new StoreId( -1, -1 ), null, ResourceReleaser.NO_OP );
+    }
+
+    public Iterable<CommittedTransactionRepresentation> getTxs()
+    {
+        return txs;
     }
 }

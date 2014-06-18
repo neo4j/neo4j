@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha.com.master;
 import static java.lang.String.format;
 
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -34,27 +33,21 @@ import java.util.concurrent.ScheduledExecutorService;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
 
-import javax.transaction.NotSupportedException;
-import javax.transaction.SystemException;
-import javax.transaction.Transaction;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
-import org.neo4j.com.TransactionStream;
-import org.neo4j.com.TxExtractor;
+import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.id.IdAllocation;
@@ -63,10 +56,12 @@ import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
-import org.neo4j.kernel.impl.transaction.TransactionAlreadyActiveException;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+import org.omg.CORBA.SystemException;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -90,21 +85,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         boolean isAccessible();
 
-        void acquireLock( LockGrabber grabber, Locks.ResourceType type, long[] resourceIds  );
-
-        Transaction beginTx() throws SystemException, NotSupportedException;
-
-        void finishTransaction( boolean success );
-
-        void suspendTransaction() throws SystemException;
-
-        void resumeTransaction( Transaction transaction );
-
         IdAllocation allocateIds( IdType idType );
 
         StoreId storeId();
 
-        long applyPreparedTransaction( String resource, ReadableByteChannel extract ) throws IOException;
+        void applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException;
 
         Integer createRelationshipType( String name );
 
@@ -116,11 +101,13 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter );
 
-        void pushTransaction( String resourceName, int eventIdentifier, long tx, int machineId );
+        void pushTransaction( int eventIdentifier, long tx, int machineId );
 
         int getOrCreateLabel( String name );
 
         int getOrCreateProperty( String name );
+
+        Locks.Client acquireClient();
     }
 
     public static final int UNFINISHED_TRANSACTION_CLEANUP_DELAY = 1;
@@ -131,8 +118,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
     private final Monitor monitor;
     private final long epoch;
 
-    private Map<RequestContext, MasterTransaction> transactions = new ConcurrentHashMap<>();
-    private ScheduledExecutorService unfinishedTransactionsExecutor;
+    private Map<RequestContext, TimestampedLockClient> slaveLockState = new ConcurrentHashMap<>();
+    private ScheduledExecutorService staleSlaveReaper;
     private long unfinishedTransactionThresholdMillis;
 
     public MasterImpl( SPI spi, Monitor monitor, Logging logging, Config config )
@@ -153,17 +140,17 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public void start() throws Throwable
     {
         this.unfinishedTransactionThresholdMillis = config.get( HaSettings.lock_read_timeout ) + TX_TIMEOUT_ADDITION;
-        this.unfinishedTransactionsExecutor =
+        this.staleSlaveReaper =
                 Executors.newSingleThreadScheduledExecutor( new NamedThreadFactory( "Unfinished transaction reaper" ) );
-        this.unfinishedTransactionsExecutor.scheduleWithFixedDelay( new UnfinishedTransactionReaper(),
+        this.staleSlaveReaper.scheduleWithFixedDelay( new UnfinishedTransactionReaper(),
                 UNFINISHED_TRANSACTION_CLEANUP_DELAY, UNFINISHED_TRANSACTION_CLEANUP_DELAY, TimeUnit.SECONDS );
     }
 
     @Override
     public void stop()
     {
-        unfinishedTransactionsExecutor.shutdown();
-        transactions = null;
+        staleSlaveReaper.shutdown();
+        slaveLockState = null;
     }
 
     @Override
@@ -177,25 +164,15 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         assertCorrectEpoch( context );
 
-        boolean beganTx = false;
         try
         {
-            Transaction tx = spi.beginTx();
-            transactions.put( context, new MasterTransaction( tx ) );
-            beganTx = true;
-
+            TimestampedLockClient locks = new TimestampedLockClient( spi.acquireClient() );
+            slaveLockState.put( context, locks );
             return packResponse( context, null );
         }
-        catch ( NotSupportedException | SystemException e )
+        catch ( SystemException e )
         {
             throw Exceptions.launderedException( e );
-        }
-        finally
-        {
-            if(beganTx)
-            {
-                suspendTransaction( context );
-            }
         }
     }
 
@@ -219,31 +196,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
     }
 
-    private Response<LockResult> acquireLock( RequestContext context,
-                                              LockGrabber lockGrabber,
-                                              Locks.ResourceType type,
-                                              long ... resourceIds )
-    {
-        assertCorrectEpoch( context );
-        resumeTransaction( context );
-        try
-        {
-            spi.acquireLock( lockGrabber, type, resourceIds );
-            return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
-        }
-        catch ( DeadlockDetectedException e )
-        {
-            return packResponse( context, new LockResult( e.getMessage() ) );
-        }
-        catch ( IllegalResourceException e )
-        {
-            return packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
-        }
-        finally
-        {
-            suspendTransaction( context );
-        }
-    }
 
     private <T> Response<T> packResponse( RequestContext context, T response )
     {
@@ -255,9 +207,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
         return spi.packResponse( context, response, filter );
     }
 
-    private Transaction getTx( RequestContext txId )
+    private Locks.Client getTx( RequestContext txId )
     {
-        MasterTransaction result = transactions.get( txId );
+        TimestampedLockClient result = slaveLockState.get( txId );
         if ( result == null )
         {
             throw new TransactionNotPresentOnMasterException( txId );
@@ -267,48 +219,14 @@ public class MasterImpl extends LifecycleAdapter implements Master
         // if getting old. This is because if the tx is active and old then
         // it means it's waiting for a lock and we cannot do anything about it.
         result.resetTime();
-        return result.transaction;
+        return result.getLockClient();
     }
 
-    private void resumeTransaction( RequestContext txId )
-    {
-        spi.resumeTransaction( getTx( txId ) );
-    }
-
-    private void suspendTransaction( RequestContext context )
+    private void finishTransaction0( RequestContext txId )
     {
         try
         {
-            MasterTransaction tx = transactions.get( context );
-            if ( tx.finishAsap() )
-            {   // If we've tried to finish this tx off earlier then do it now when we have the chance.
-                finishTransaction( context, false );
-                return;
-            }
-
-            // update time stamp to current time so that we know that this tx just completed
-            // a request and can now again start to be monitored, so that it can be
-            // rolled back if it's getting old.
-            tx.updateTime();
-        }
-        finally
-        {
-            try
-            {
-                spi.suspendTransaction();
-            }
-            catch ( SystemException e )
-            {
-                throw Exceptions.launderedException( e );
-            }
-        }
-    }
-
-    private void finishTransaction0( RequestContext txId, boolean success )
-    {
-        try
-        {
-            spi.finishTransaction( success );
+            getTx( txId ).close();
         }
         catch ( Exception e )
         {
@@ -316,7 +234,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         finally
         {
-            transactions.remove( txId );
+            slaveLockState.remove( txId );
         }
     }
 
@@ -325,35 +243,22 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         assertCorrectEpoch( context );
         IdAllocation result = spi.allocateIds( idType );
-        return ServerUtil.packResponseWithoutTransactionStream( spi.storeId(), result );
+        return new Response<>( result, spi.storeId(), Iterables.<CommittedTransactionRepresentation>empty(), ResourceReleaser.NO_OP );
     }
 
     @Override
-    public Response<Long> commitSingleResourceTransaction( RequestContext context, String resource,
-                                                           TxExtractor txGetter )
+    public Response<Void> commitSingleResourceTransaction( RequestContext context,
+                                                           TransactionRepresentation preparedTransaction )
     {
         assertCorrectEpoch( context );
-        resumeTransaction( context );
         try
         {
-            final long txId = spi.applyPreparedTransaction( resource, txGetter.extract() );
-            Predicate<Long> upUntilThisTx = new Predicate<Long>()
-            {
-                @Override
-                public boolean accept( Long item )
-                {
-                    return item < txId;
-                }
-            };
-            return packResponse( context, txId, upUntilThisTx );
+            spi.applyPreparedTransaction( preparedTransaction );
+            return packResponse( context, null );
         }
         catch ( IOException e )
         {
             throw new RuntimeException( e );
-        }
-        finally
-        {
-            suspendTransaction( context );
         }
     }
 
@@ -361,26 +266,27 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public Response<Void> finishTransaction( RequestContext context, boolean success )
     {
         assertCorrectEpoch( context );
-        try
-        {
-            resumeTransaction( context );
-        }
-        catch ( TransactionNotPresentOnMasterException e )
-        {   // Let these ones through straight away
-            throw e;
-        }
-        catch ( RuntimeException e )
-        {
-            MasterTransaction masterTransaction = transactions.get( context );
-            // It is possible that the transaction is not there anymore, or never was. No need for an NPE to be thrown.
-            if ( masterTransaction != null )
-            {
-                masterTransaction.markAsFinishAsap();
-            }
-            throw e;
-        }
+        // TODO 2.2-future verify the same thing
+//        try
+//        {
+//            resumeTransaction( context );
+//        }
+//        catch ( TransactionNotPresentOnMasterException e )
+//        {   // Let these ones through straight away
+//            throw e;
+//        }
+//        catch ( RuntimeException e )
+//        {
+//            MasterTransaction masterTransaction = transactions.get( context );
+//            It is possible that the transaction is not there anymore, or never was. No need for an NPE to be thrown.
+//            if ( masterTransaction != null )
+//            {
+//                masterTransaction.markAsFinishAsap();
+//            }
+//            throw e;
+//        }
 
-        finishTransaction0( context, success );
+        finishTransaction0( context );
 
         return packResponse( context, null );
     }
@@ -418,8 +324,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
         try
         {
             Pair<Integer, Long> masterId = spi.getMasterIdForCommittedTx( txId );
-            return ServerUtil.packResponseWithoutTransactionStream( spi.storeId(),
-                    new HandshakeResult( masterId.first(), masterId.other(), epoch ) );
+            return new Response<>(
+                    new HandshakeResult( masterId.first(), masterId.other(), epoch ), spi.storeId(),
+                    Iterables.<CommittedTransactionRepresentation>empty(), ResourceReleaser.NO_OP );
         }
         catch ( IOException e )
         {
@@ -442,49 +349,53 @@ public class MasterImpl extends LifecycleAdapter implements Master
         return spi.copyTransactions( dsName, startTxId, endTxId );
     }
 
-    public static interface LockGrabber
-    {
-        void grab( Statement statement, Locks.ResourceType type, long resourceId );
-    }
-
-    private static LockGrabber SHARED_LOCK_GRABBER = new LockGrabber()
-    {
-        @Override
-        public void grab( Statement statement, Locks.ResourceType type, long resourceId )
-        {
-            statement.readOperations().acquireShared( type, resourceId );
-        }
-    };
-
-    private static LockGrabber EXCLUSIVE_LOCK_GRABBER = new LockGrabber()
-    {
-        @Override
-        public void grab( Statement statement, Locks.ResourceType type, long resourceId )
-        {
-            statement.readOperations().acquireExclusive( type, resourceId );
-        }
-    };
-
     @Override
     public Response<LockResult> acquireExclusiveLock( RequestContext context, Locks.ResourceType type, long...
             resourceIds )
     {
-        return acquireLock( context, EXCLUSIVE_LOCK_GRABBER, type, resourceIds );
+        assertCorrectEpoch( context );
+        try
+        {
+            Locks.Client locks = slaveLockState.get( context ).getLockClient();
+            locks.acquireExclusive( type, resourceIds );
+            return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
+        }
+        catch ( DeadlockDetectedException e )
+        {
+            return packResponse( context, new LockResult( e.getMessage() ) );
+        }
+        catch ( IllegalResourceException e )
+        {
+            return packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
+        }
     }
 
     @Override
     public Response<LockResult> acquireSharedLock( RequestContext context, Locks.ResourceType type, long...
             resourceIds )
     {
-        return acquireLock( context, SHARED_LOCK_GRABBER, type, resourceIds );
+        assertCorrectEpoch( context );
+        try
+        {
+            Locks.Client locks = slaveLockState.get( context ).getLockClient();
+            locks.acquireShared( type, resourceIds );
+            return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );
+        }
+        catch ( DeadlockDetectedException e )
+        {
+            return packResponse( context, new LockResult( e.getMessage() ) );
+        }
+        catch ( IllegalResourceException e )
+        {
+            return packResponse( context, new LockResult( LockStatus.NOT_LOCKED ) );
+        }
     }
 
     @Override
-    public Response<Void> pushTransaction( RequestContext context, String resourceName, long tx )
+    public Response<Void> pushTransaction( RequestContext context, long tx )
     {
-        assertCorrectEpoch( context );
-        spi.pushTransaction( resourceName, context.getEventIdentifier(), tx, context.machineId() );
-        return new Response<>( null, spi.storeId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
+        // 2.2-future no longer required
+        return null;
     }
 
     // =====================================================================
@@ -495,7 +406,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     public Map<Integer, Collection<RequestContext>> getOngoingTransactions()
     {
         Map<Integer, Collection<RequestContext>> result = new HashMap<>();
-        Set<RequestContext> contexts = transactions.keySet();
+        Set<RequestContext> contexts = slaveLockState.keySet();
         for ( RequestContext context : contexts.toArray( new RequestContext[contexts.size()] ) )
         {
             Collection<RequestContext> txs = result.get( context.machineId() );
@@ -509,15 +420,15 @@ public class MasterImpl extends LifecycleAdapter implements Master
         return result;
     }
 
-    private static class MasterTransaction
+    private static class TimestampedLockClient
     {
-        private final Transaction transaction;
+        private final Locks.Client lockClient;
         private final AtomicLong timeLastSuspended = new AtomicLong();
         private volatile boolean finishAsap;
 
-        MasterTransaction( Transaction transaction )
+        TimestampedLockClient( Locks.Client locksClient )
         {
-            this.transaction = transaction;
+            this.lockClient = locksClient;
         }
 
         void updateTime()
@@ -535,10 +446,15 @@ public class MasterImpl extends LifecycleAdapter implements Master
             this.finishAsap = true;
         }
 
+        public Locks.Client getLockClient()
+        {
+            return lockClient;
+        }
+
         @Override
         public String toString()
         {
-            return transaction + "[lastSuspended=" + timeLastSuspended + ", finishAsap=" + finishAsap + "]";
+            return lockClient + "[lastSuspended=" + timeLastSuspended + ", finishAsap=" + finishAsap + "]";
         }
 
         boolean finishAsap()
@@ -554,13 +470,13 @@ public class MasterImpl extends LifecycleAdapter implements Master
         {
             try
             {
-                Map<RequestContext, MasterTransaction> safeTransactions;
-                synchronized ( transactions )
+                Map<RequestContext, TimestampedLockClient> safeTransactions;
+                synchronized ( slaveLockState )
                 {
-                    safeTransactions = new HashMap<>( transactions );
+                    safeTransactions = new HashMap<>( slaveLockState );
                 }
 
-                for ( Map.Entry<RequestContext, MasterTransaction> entry : safeTransactions.entrySet() )
+                for ( Map.Entry<RequestContext, TimestampedLockClient> entry : safeTransactions.entrySet() )
                 {
                     long time = entry.getValue().timeLastSuspended.get();
                     if ( (time != 0 && System.currentTimeMillis() - time >= unfinishedTransactionThresholdMillis)
@@ -568,16 +484,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
                     {
                         long displayableTime = (time == 0 ? 0 : (System.currentTimeMillis() - time));
                         String oldTxDescription = format( "old tx %s: %s at age %s ms",
-                                entry.getKey(), entry.getValue().transaction, displayableTime );
+                                entry.getKey(), entry.getValue().getLockClient(), displayableTime );
                         try
                         {
-                            resumeTransaction( entry.getKey() );
-                            finishTransaction0( entry.getKey(), false );
+                            finishTransaction0( entry.getKey() );
                             msgLog.info( "Rolled back " + oldTxDescription );
-                        }
-                        catch ( TransactionAlreadyActiveException e )
-                        {
-                            // Expected for transactions awaiting locks, just leave them be
                         }
                         catch ( Throwable t )
                         {
