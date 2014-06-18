@@ -51,7 +51,7 @@ public class PhysicalTransactionAppenderTest
 
         // WHEN
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(
-                singleCreateNodeCommand(), false );
+                singleCreateNodeCommand() );
         final byte[] additionalHeader = new byte[] {1, 2, 5};
         final int masterId = 2, authorId = 1;
         final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;

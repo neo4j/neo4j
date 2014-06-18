@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 public class PhysicalTransactionRepresentation implements TransactionRepresentation
 {
     private final Collection<Command> commands;
-    private final boolean recovered;
     private byte[] additionalHeader;
     private int masterId;
     private int authorId;
@@ -36,10 +35,9 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
     private long latestCommittedTxWhenStarted;
 
     // TODO 2.2-future recovered could be an aspect instead
-    public PhysicalTransactionRepresentation( Collection<Command> commands, boolean recovered )
+    public PhysicalTransactionRepresentation( Collection<Command> commands )
     {
         this.commands = commands;
-        this.recovered = recovered;
     }
 
     public void setHeader( byte[] additionalHeader, int masterId, int authorId, long timeWritten,
@@ -50,12 +48,6 @@ public class PhysicalTransactionRepresentation implements TransactionRepresentat
         this.authorId = authorId;
         this.timeWritten = timeWritten;
         this.latestCommittedTxWhenStarted = latestCommittedTxWhenStarted;
-    }
-
-    @Override
-    public boolean isRecovered()
-    {
-        return recovered;
     }
 
     @Override

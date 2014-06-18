@@ -173,7 +173,7 @@ public class PhysicalLogicalTransactionStoreTest
         try ( TransactionAppender appender = new PhysicalTransactionAppender( logFile, txIdGenerator, positionCache ) )
         {
             PhysicalTransactionRepresentation transaction =
-                    new PhysicalTransactionRepresentation( singleCreateNodeCommand(), false );
+                    new PhysicalTransactionRepresentation( singleCreateNodeCommand() );
             transaction.setHeader( additionalHeader, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
             appender.append( transaction );
         }

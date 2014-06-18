@@ -71,7 +71,7 @@ public class PhysicalTransactionCursor implements IOCursor
 
         assert startEntry != null;
         assert commitEntry != null;
-        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries, true );
+        PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );
         transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
                 startEntry.getLocalId(), startEntry.getTimeWritten(),
                 startEntry.getLastCommittedTxWhenTransactionStarted() );

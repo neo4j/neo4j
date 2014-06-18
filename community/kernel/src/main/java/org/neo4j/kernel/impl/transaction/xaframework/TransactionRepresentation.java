@@ -29,8 +29,6 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
  */
 public interface TransactionRepresentation
 {
-    boolean isRecovered();
-
     void accept( Visitor<Command, IOException> visitor ) throws IOException;
 
     byte[] additionalHeader();

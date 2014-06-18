@@ -179,7 +179,7 @@ public class NeoStoreTransactionTest
     {
         List<Command> commands = new ArrayList<>();
         writeTransaction.extractCommands( commands );
-        return new PhysicalTransactionRepresentation( commands, false );
+        return new PhysicalTransactionRepresentation( commands );
     }
 
     @Test
@@ -1512,7 +1512,7 @@ public class NeoStoreTransactionTest
 
 		public TransactionRepresentation getAsRecovered()
 		{
-			return new PhysicalTransactionRepresentation(commands, true);
+			return new PhysicalTransactionRepresentation( commands );
 		}
     }
 }
