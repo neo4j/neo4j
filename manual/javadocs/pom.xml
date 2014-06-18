@@ -138,6 +138,9 @@ the relevant Commercial Agreement.
           <execution>
             <id>create-javadocs</id>
             <phase>${attach-javadoc-phase}</phase>
+            <goals>
+              <goal>javadoc</goal>
+            </goals>
             <configuration>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <header>Neo4j</header>
