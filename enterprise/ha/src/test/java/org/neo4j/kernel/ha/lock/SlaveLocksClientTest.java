@@ -19,28 +19,27 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+
 import org.junit.Before;
 import org.junit.Test;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.impl.transaction.TxManager;
-
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Mockito.*;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 public class SlaveLocksClientTest
 {
     private SlaveLocksClient client;
     private Master master;
     private AvailabilityGuard availabilityGuard;
-    private HaXaDataSourceManager xaDsm;
     private Locks.Client local;
 
     @Before
@@ -57,19 +56,20 @@ public class SlaveLocksClientTest
         when(localLockManager.newClient()).thenReturn( local );
 
         RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
-        xaDsm = mock( HaXaDataSourceManager.class );
-        when( xaDsm.applyTransactions(
-                (org.neo4j.com.Response<LockResult>) anyObject() )).thenReturn(
-                new LockResult( LockStatus.OK_LOCKED ) );
-        AbstractTransactionManager txManager = mock( TxManager.class );
+
+        // TODO 2.2-future
+//        xaDsm = mock( HaXaDataSourceManager.class );
+//        when( xaDsm.applyTransactions(
+//                (org.neo4j.com.Response<LockResult>) anyObject() )).thenReturn(
+//                new LockResult( LockStatus.OK_LOCKED ) );
+//        AbstractTransactionManager txManager = mock( TxManager.class );
         RemoteTxHook txHook = mock( RemoteTxHook.class );
         AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
         when( availabilityGuard.isAvailable( anyLong() )).thenReturn( true );
         SlaveLockManager.Configuration config = mock( SlaveLockManager.Configuration.class );
 
         client = new SlaveLocksClient(
-                master, local, localLockManager, requestContextFactory, xaDsm,
-                txManager, txHook, availabilityGuard, config );
+                master, local, localLockManager, requestContextFactory, availabilityGuard, config );
     }
 
     @Test

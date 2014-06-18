@@ -19,16 +19,15 @@
  */
 package org.neo4j.kernel.impl.cache;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 @Ignore( "Impermanent graph database doesn't use High-Performance Cache" )
 public class TestCacheObjectReuse
@@ -38,14 +37,14 @@ public class TestCacheObjectReuse
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.cache_type, HighPerformanceCacheProvider.NAME ).newGraphDatabase();
-        Cache<?> firstCache = first( nodeManager( db ).caches() );
+        Cache<?> firstCache = firstCache( db );
         db.shutdown();
         
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.cache_type, HighPerformanceCacheProvider.NAME ).newGraphDatabase();
         try
         {
-            Cache<?> secondCache = first( nodeManager( db ).caches() );
+            Cache<?> secondCache = firstCache( db );
             assertEquals( firstCache, secondCache );
         }
         finally
@@ -54,9 +53,9 @@ public class TestCacheObjectReuse
         }
     }
 
-    private NodeManager nodeManager( GraphDatabaseAPI db )
+    private Cache<?> firstCache( GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( NodeManager.class );
+        return db.getDependencyResolver().resolveDependency( Caches.class ).node();
     }
 
     @Test
@@ -64,7 +63,7 @@ public class TestCacheObjectReuse
     {
         GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
                 .setConfig( GraphDatabaseSettings.cache_type, HighPerformanceCacheProvider.NAME ).newGraphDatabase();
-        Cache<?> firstCache = first( nodeManager( db ).caches() );
+        Cache<?> firstCache = firstCache( db );
         db.shutdown();
         
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder()
@@ -73,7 +72,7 @@ public class TestCacheObjectReuse
                 .newGraphDatabase();
         try
         {
-            Cache<?> secondCache = first( nodeManager( db ).caches() );
+            Cache<?> secondCache = firstCache( db );
             assertFalse( firstCache.equals( secondCache ) );
         }
         finally

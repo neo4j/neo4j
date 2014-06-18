@@ -32,11 +32,12 @@ import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.EideticTransactionMonitor;
-import org.neo4j.kernel.impl.transaction.xaframework.XaResourceManager;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 
+
+// TODO 2.2-future need to add the monitor somewhere
 public class TransactionMonitoringIT
 {
     @Test
@@ -60,15 +61,15 @@ public class TransactionMonitoringIT
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
             master.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    masterMonitor, XaResourceManager.class.getName(), NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+                    masterMonitor, "Some proper monitoring point", NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
 
             HighlyAvailableGraphDatabase firstSlave = clusterManager.getDefaultCluster().getAnySlave();
             firstSlave.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    firstSlaveMonitor, XaResourceManager.class.getName(), NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+                    firstSlaveMonitor, "Some proper monitoring point", NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
 
             HighlyAvailableGraphDatabase secondSlave = clusterManager.getDefaultCluster().getAnySlave( firstSlave );
             secondSlave.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    secondSlaveMonitor, XaResourceManager.class.getName(), NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+                    secondSlaveMonitor, "Some proper monitoring point", NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
 
             // WHEN
             Transaction tx = master.beginTx();
@@ -92,17 +93,11 @@ public class TransactionMonitoringIT
         }
 
         // THEN
-        assertEquals( 3, masterMonitor.getCommitCount() );
-        assertEquals( 0, masterMonitor.getInjectOnePhaseCommitCount() );
-        assertEquals( 0, masterMonitor.getInjectTwoPhaseCommitCount() );
+        assertEquals( 3, masterMonitor.getNumberOfCommittedTransactions() );
 
-        assertEquals( 1, firstSlaveMonitor.getCommitCount() );
-        assertEquals( 2, firstSlaveMonitor.getInjectOnePhaseCommitCount() );
-        assertEquals( 0, firstSlaveMonitor.getInjectTwoPhaseCommitCount() );
+        assertEquals( 1, firstSlaveMonitor.getNumberOfCommittedTransactions() );
 
-        assertEquals( 1, secondSlaveMonitor.getCommitCount() );
-        assertEquals( 2, secondSlaveMonitor.getInjectOnePhaseCommitCount() );
-        assertEquals( 0, secondSlaveMonitor.getInjectTwoPhaseCommitCount() );
+        assertEquals( 1, secondSlaveMonitor.getNumberOfCommittedTransactions() );
     }
 
     @Test
@@ -125,11 +120,11 @@ public class TransactionMonitoringIT
 
             GraphDatabaseAPI master = clusterManager.getDefaultCluster().getMaster();
             master.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    masterMonitor, XaResourceManager.class.getName(), NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+                    masterMonitor, "Some proper monitoring point", NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
 
             HighlyAvailableGraphDatabase firstSlave = clusterManager.getDefaultCluster().getAnySlave();
             firstSlave.getDependencyResolver().resolveDependency( Monitors.class ).addMonitorListener(
-                    firstSlaveMonitor, XaResourceManager.class.getName(), NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+                    firstSlaveMonitor, "Some proper monitoring point", NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
 
             // WHEN
             for ( int i = 0; i < 10; i++ )
@@ -149,8 +144,6 @@ public class TransactionMonitoringIT
         }
 
         // THEN
-        assertEquals( 0, firstSlaveMonitor.getCommitCount() );
-        assertEquals( 10, firstSlaveMonitor.getInjectOnePhaseCommitCount() );
-        assertEquals( 0, firstSlaveMonitor.getInjectTwoPhaseCommitCount() );
+        assertEquals( 10, firstSlaveMonitor.getNumberOfCommittedTransactions() );
     }
 }
