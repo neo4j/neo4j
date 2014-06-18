@@ -471,11 +471,14 @@ public final class Settings
             @Override
             public List<T> apply( String value )
             {
-                String[] parts = value.split( separator );
                 List<T> list = new ArrayList<T>();
-                for ( String part : parts )
+                if ( value.length() > 0 )
                 {
-                    list.add( itemParser.apply( part ) );
+                    String[] parts = value.split( separator );
+                    for ( String part : parts )
+                    {
+                        list.add( itemParser.apply( part ) );
+                    }
                 }
                 return list;
             }
