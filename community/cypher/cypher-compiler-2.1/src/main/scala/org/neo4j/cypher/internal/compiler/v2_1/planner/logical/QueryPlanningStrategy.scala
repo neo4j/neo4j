@@ -75,13 +75,12 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
 
   private def planEventHorizon(query: PlannerQuery, plan: QueryPlan)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]) = {
     val selectedPlan = config.applySelections(plan, query.graph)
-    val queryHorizon = query.horizon
-    val projectedPlan = queryHorizon.projection match {
+    val projectedPlan = query.horizon match {
       case aggregatingProjection: AggregatingQueryProjection =>
         val aggregationPlan = aggregation(selectedPlan, aggregatingProjection)
         sortSkipAndLimit(aggregationPlan, query)
 
-      case queryProjection =>
+      case queryProjection: RegularQueryProjection =>
         val sortedAndLimited = sortSkipAndLimit(selectedPlan, query)
         projection(sortedAndLimited, queryProjection.projections)
     }

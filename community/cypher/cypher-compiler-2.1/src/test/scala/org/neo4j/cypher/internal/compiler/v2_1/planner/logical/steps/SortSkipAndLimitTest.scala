@@ -50,7 +50,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     // then
     result.plan should equal(Skip(startPlan.plan, x))
-    result.solved.horizon.projection.shuffle.skip should equal(Some(x))
+    result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(skip = Some(x))))
   }
 
   test("should add limit if query graph contains limit") {
@@ -64,7 +64,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     // then
     result.plan should equal(Limit(startPlan.plan, x))
-    result.solved.horizon.projection.shuffle.limit should equal(Some(x))
+    result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x))))
   }
 
   test("should add skip first and then limit if the query graph contains both") {
@@ -79,8 +79,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     // then
     result.plan should equal(Limit(Skip(startPlan.plan, y), x))
-    result.solved.horizon.projection.shuffle.limit should equal(Some(x))
-    result.solved.horizon.projection.shuffle.skip should equal(Some(y))
+    result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(limit = Some(x), skip = Some(y))))
   }
 
   test("should add sort if query graph contains sort items") {
@@ -94,7 +93,8 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
 
     // then
     result.plan should equal(Sort(startPlan.plan, Seq(sortDescription)))
-    result.solved.horizon.projection.shuffle.sortItems should equal(Seq(identifierSortItem))
+
+    result.solved.horizon should equal(RegularQueryProjection(Map.empty, QueryShuffle(sortItems = Seq(identifierSortItem))))
   }
 
   test("should add projection before sort if query graph contains sort items that are not identifiers") {
@@ -110,8 +110,6 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result.solved.horizon.projection.shuffle.sortItems should equal(Seq(expressionSortItem))
-
     result.plan should equal(
       Sort(
         left = Projection(
@@ -136,8 +134,6 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     val result = sortSkipAndLimit(startPlan, query)
 
     // then
-    result.solved.horizon.projection.shuffle.sortItems should equal(Seq(expressionSortItem, identifierSortItem))
-
     result.plan should equal(
       Sort(
         left = Projection(
@@ -165,8 +161,10 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
       planSortedLimit(startPlan, x, sortItems)
     )
 
-    result.solved.horizon.projection.shuffle.limit should equal(Some(x))
-    result.solved.horizon.projection.shuffle.sortItems should equal(sortItems)
+    result.solved.horizon should equal(
+      RegularQueryProjection(
+        Map.empty,
+        QueryShuffle(sortItems = sortItems, limit = Some(x))))
   }
 
   test("should add SortedLimit when query uses both ORDER BY and LIMIT, and add the SKIP value to the SortedLimit") {
@@ -189,10 +187,10 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
         Seq(identifierSortItem)
       )
     )
-
-    result.solved.horizon.projection.shuffle.limit should equal(Some(x))
-    result.solved.horizon.projection.shuffle.skip should equal(Some(y))
-    result.solved.horizon.projection.shuffle.sortItems should equal(Seq(identifierSortItem))
+    result.solved.horizon should equal(
+      RegularQueryProjection(
+        Map.empty,
+        QueryShuffle(sortItems = Seq(identifierSortItem), limit = Some(x), skip = Some(y))))
   }
 
   private def queryGraphWith(skip: Option[ast.Expression] = None,
@@ -205,7 +203,7 @@ class SortSkipAndLimitTest extends CypherFunSuite with LogicalPlanningTestSuppor
     )
 
     val qg = QueryGraph(patternNodes = Set(IdName("n")))
-    val query = PlannerQuery(qg, QueryHorizon(projection = projection))
+    val query = PlannerQuery(qg, projection)
 
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext

@@ -20,12 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryProjection, LogicalPlanningTestSupport, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{UnsignedIntegerLiteral, AscSortItem}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{Ascending, SortDescription}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{SortDescription, Ascending}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.AscSortItem
 
 class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
@@ -45,7 +47,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result.plan should equal(Projection(startPlan.plan, projections))
-    result.solved.horizon.projection.projections should equal(projections)
+    result.solved.horizon should equal(RegularQueryProjection(projections))
   }
 
   test("does not add projection when not needed") {
@@ -58,7 +60,7 @@ class ProjectionTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     // then
     result.plan should equal(startPlan.plan)
-    result.solved.horizon.projection.projections should equal(projections)
+    result.solved.horizon should equal(RegularQueryProjection(projections))
   }
 
   private def queryGraphWith(skip: Option[ast.Expression] = None,

@@ -218,7 +218,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
         val sortItems = produceSortItems(optOrderBy)
         val shuffle = QueryShuffle(sortItems, skip.map(_.expression), limit.map(_.expression))
         val projection = produceProjectionsMaps(items, distinct).withShuffle(shuffle)
-        val newQG = input.q.withHorizon(QueryHorizon(projection = projection))
+        val newQG = input.q.withHorizon(projection)
         val nextStep = input.copy(
           q = newQG,
           patternExprTable = newPatternInExpressionTable
@@ -296,7 +296,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
         val newQuery =
           input.q
-            .withHorizon(QueryHorizon(projection = projection))
+            .withHorizon(projection)
             .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
 
         input.copy(q = newQuery, tailPlannedOutput.patternExprTable)
@@ -317,7 +317,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
 
         val newQuery =
           input.q
-            .withHorizon(QueryHorizon(projection = projection))
+            .withHorizon(projection)
             .withTail(tail.q.updateGraph(_.withArgumentIds(argumentIds)))
 
         input.copy(q = newQuery, patternExprTable = tail.patternExprTable)

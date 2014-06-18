@@ -40,7 +40,6 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       )
     )
 
-    val query = PlannerQuery(horizon = QueryHorizon(projection = projection))
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
@@ -60,14 +59,13 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
       aggregationExpressions = aggregatingMap
     )
 
-    val query = PlannerQuery(horizon = QueryHorizon(projection = projection))
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
     val startPlan = newMockedQueryPlan()
 
-    val solvedQuery = PlannerQuery(horizon = QueryHorizon(projection = RegularQueryProjection(groupingMap)))
+    val solvedQuery = PlannerQuery(horizon = RegularQueryProjection(groupingMap))
 
     val projectionPlan = QueryPlan(
       plan = Projection(startPlan.plan, groupingMap),
