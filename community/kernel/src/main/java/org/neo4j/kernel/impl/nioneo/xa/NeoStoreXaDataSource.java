@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -113,6 +115,7 @@ import org.neo4j.kernel.impl.nioneo.store.TokenStore;
 import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
@@ -127,7 +130,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogicalTransactionS
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.JobScheduler;
@@ -139,8 +141,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
@@ -415,14 +415,14 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             // CHANGE STARTS HERE
             final VersionAwareLogEntryReader logEntryReader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
             // Recovery process ties log and commit process together
-            final Visitor<TransactionRepresentation, IOException> visitor = new Visitor<TransactionRepresentation, IOException>()
+            final Visitor<CommittedTransactionRepresentation, IOException> visitor = new Visitor<CommittedTransactionRepresentation, IOException>()
             {
                 @Override
-                public boolean visit( TransactionRepresentation transaction ) throws IOException
+                public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
                 {
                     try
                     {
-                        commitProcess.commit( transaction );
+                        commitProcess.commit( transaction.getTransactionRepresentation() );
                         recoveredCount.incrementAndGet();
                         return true;
                     }

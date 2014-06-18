@@ -29,7 +29,7 @@ public interface LogicalTransactionStore extends Closeable, Lifecycle
 {
     TransactionAppender getAppender();
 
-    IOCursor getCursor( long transactionIdToStartFrom, Visitor<TransactionRepresentation, IOException> visitor )
+    IOCursor getCursor( long transactionIdToStartFrom, Visitor<CommittedTransactionRepresentation, IOException> visitor )
             throws NoSuchTransactionException, IOException;
 
     TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId );

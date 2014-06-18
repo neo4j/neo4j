@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -38,15 +45,6 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
-import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 
 public class PhysicalLogicalTransactionStoreTest
 {
@@ -132,11 +130,12 @@ public class PhysicalLogicalTransactionStoreTest
         final AtomicInteger recoveredTransactions = new AtomicInteger();
         logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                         transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
-                        positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ), new Visitor<TransactionRepresentation, IOException>()
+                        positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ), new Visitor<CommittedTransactionRepresentation, IOException>()
         {
             @Override
-            public boolean visit( TransactionRepresentation transaction ) throws IOException
+            public boolean visit( CommittedTransactionRepresentation committedTx ) throws IOException
             {
+                TransactionRepresentation transaction = committedTx.getTransactionRepresentation();
                 assertArrayEquals( additionalHeader, transaction.additionalHeader() );
                 assertEquals( masterId, transaction.getMasterId() );
                 assertEquals( authorId, transaction.getAuthorId() );

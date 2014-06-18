@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
@@ -31,9 +32,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 public class LogFileRecoverer implements Visitor<ReadableLogChannel, IOException>
 {
     private final VersionAwareLogEntryReader logEntryReader;
-    private final Visitor<TransactionRepresentation, IOException> visitor;
+    private final Visitor<CommittedTransactionRepresentation, IOException> visitor;
 
-    public LogFileRecoverer( VersionAwareLogEntryReader logEntryReader, Visitor<TransactionRepresentation,
+    public LogFileRecoverer( VersionAwareLogEntryReader logEntryReader, Visitor<CommittedTransactionRepresentation,
             IOException> visitor )
     {
         this.logEntryReader = logEntryReader;

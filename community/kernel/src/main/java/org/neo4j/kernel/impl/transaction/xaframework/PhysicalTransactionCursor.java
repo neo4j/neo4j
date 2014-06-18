@@ -30,11 +30,11 @@ public class PhysicalTransactionCursor implements IOCursor
 {
     private final ReadableLogChannel channel;
     private final LogEntryReader<ReadableLogChannel> entryReader;
-    private Visitor<TransactionRepresentation, IOException> visitor;
+    private Visitor<CommittedTransactionRepresentation, IOException> visitor;
     private final List<Command> entries = new ArrayList<>();
 
     public PhysicalTransactionCursor( ReadableLogChannel channel, LogEntryReader<ReadableLogChannel> entryReader,
-                                      Visitor<TransactionRepresentation, IOException> visitor )
+                                      Visitor<CommittedTransactionRepresentation, IOException> visitor )
     {
         this.channel = channel;
         this.entryReader = entryReader;
@@ -52,6 +52,7 @@ public class PhysicalTransactionCursor implements IOCursor
         }
         assert entry instanceof LogEntry.Start;
         LogEntry.Start startEntry = (LogEntry.Start) entry;
+        LogEntry.Commit commitEntry;
         while ( true )
         {
             entry = entryReader.readLogEntry( channel );
@@ -61,6 +62,7 @@ public class PhysicalTransactionCursor implements IOCursor
             }
             if ( entry instanceof LogEntry.Commit )
             {
+                commitEntry = (LogEntry.Commit) entry;
                 break;
             }
 
@@ -71,7 +73,8 @@ public class PhysicalTransactionCursor implements IOCursor
         transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
                 startEntry.getLocalId(), startEntry.getTimeWritten(),
                 startEntry.getLastCommittedTxWhenTransactionStarted() );
-        return visitor.visit( transaction );
+        CommittedTransactionRepresentation tx = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
+        return visitor.visit( tx );
     }
 
     @Override
