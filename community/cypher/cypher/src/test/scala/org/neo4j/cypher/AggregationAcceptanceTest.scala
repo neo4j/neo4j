@@ -120,7 +120,7 @@ class AggregationAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerT
     createNode("color" -> Array("blue"))
     createNode("color" -> Array("red"))
 
-    val result = execute("match a return distinct a.color, count(*)").toList
+    val result = executeWithNewPlanner("match a return distinct a.color, count(*)").toList
     result.foreach { x =>
       val c = x("a.color").asInstanceOf[Array[_]]
 

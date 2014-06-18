@@ -21,19 +21,24 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Union, LogicalPlan, QueryPlan}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Aggregation, Union, LogicalPlan, QueryPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, AliasedReturnItem, PatternExpression}
 
 class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStrategyConfiguration.default) extends PlanningStrategy {
 
   import QueryPlanProducer._
 
   def plan(unionQuery: UnionQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): LogicalPlan = unionQuery match {
-    case UnionQuery(queries, false) =>
+    case UnionQuery(queries, distinct) =>
       val logicalPlans: Seq[LogicalPlan] = queries.map(p => planSingleQuery(p).plan)
-      logicalPlans.reduce[LogicalPlan] {
+      val unionPlan = logicalPlans.reduce[LogicalPlan] {
         case (p1, p2) => Union(p1, p2)
       }
+
+      if (distinct)
+        distinctiy(unionPlan)
+      else
+        unionPlan
 
     case _ => throw new CantHandleQueryException
   }
@@ -43,6 +48,14 @@ class QueryPlanningStrategy(config: PlanningStrategyConfiguration = PlanningStra
     val projectedFirstPart = planEventHorizon(query, firstPart)
     val finalPlan = planWithTail(projectedFirstPart, query.tail)
     verifyBestPlan(finalPlan, query)
+  }
+
+  private def distinctiy(p: LogicalPlan): LogicalPlan = {
+    val returnAll = QueryProjection.forIds(p.availableSymbols) map {
+      case AliasedReturnItem(e, Identifier(key)) => key -> e // This smells awful.
+    }
+
+    Aggregation(p, returnAll.toMap, Map.empty)
   }
 
   private def planWithTail(pred: QueryPlan, remaining: Option[PlannerQuery])(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = remaining match {

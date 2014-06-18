@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Identifier, SortItem, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 
-final case class QueryHorizon(
-  unwinds: Map[String, Expression] = Map.empty,
-  projection: QueryProjection = QueryProjection.empty
-) extends internalDocBuilder.AsPrettyToString {
+final case class QueryHorizon(unwinds: Map[String, Expression] = Map.empty,
+                              projection: QueryProjection = QueryProjection.empty)
+  extends internalDocBuilder.AsPrettyToString {
 
   def ++(other: QueryHorizon) =
     QueryHorizon(
@@ -38,6 +38,7 @@ final case class QueryHorizon(
   def updateProjection(f: QueryProjection => QueryProjection) = withProjection(f(projection))
 
   def withUnwinds(unwinds: Map[String, Expression]) = copy(unwinds = unwinds)
+
   def withProjection(projection: QueryProjection) = copy(projection = projection)
 }
 
@@ -47,6 +48,7 @@ object QueryHorizon {
 
 sealed abstract class QueryProjection extends internalDocBuilder.AsPrettyToString {
   def projections: Map[String, Expression]
+
   def shuffle: QueryShuffle
 
   def keySet: Set[String]
@@ -54,16 +56,16 @@ sealed abstract class QueryProjection extends internalDocBuilder.AsPrettyToStrin
   def updateShuffle(f: QueryShuffle => QueryShuffle) = withShuffle(f(shuffle))
 
   def withProjections(projections: Map[String, Expression]): QueryProjection
+
   def withShuffle(shuffle: QueryShuffle): QueryProjection
 }
 
 object QueryProjection {
   val empty = RegularQueryProjection()
 
-  def forIds(coveredIds: Set[IdName]): RegularQueryProjection =
-    RegularQueryProjection(
-      projections = coveredIds.toSeq.map( idName => idName.name -> Identifier(idName.name)(null)).toMap
-    )
+  def forIds(coveredIds: Set[IdName]): Seq[ReturnItem] =
+    coveredIds.toSeq.map(idName =>
+      AliasedReturnItem(Identifier(idName.name)(null), Identifier(idName.name)(null))(null))
 
   def combine(lhs: QueryProjection, rhs: QueryProjection): QueryProjection = (lhs, rhs) match {
     case (left: RegularQueryProjection, right: RegularQueryProjection) =>
@@ -74,11 +76,9 @@ object QueryProjection {
   }
 }
 
-final case class QueryShuffle(
-  sortItems: Seq[SortItem] = Seq.empty,
-  skip: Option[Expression] = None,
-  limit: Option[Expression] = None
-) extends internalDocBuilder.AsPrettyToString {
+final case class QueryShuffle(sortItems: Seq[SortItem] = Seq.empty,
+                              skip: Option[Expression] = None,
+                              limit: Option[Expression] = None) extends internalDocBuilder.AsPrettyToString {
 
   def withSortItems(sortItems: Seq[SortItem]) = copy(sortItems = sortItems)
   def withSkip(skip: Option[Expression]) = copy(skip = skip)
@@ -102,11 +102,8 @@ object QueryShuffle {
   val empty = QueryShuffle()
 }
 
-final case class RegularQueryProjection(
-  projections: Map[String, Expression] = Map.empty,
-  shuffle: QueryShuffle = QueryShuffle.empty
-) extends QueryProjection {
-
+final case class RegularQueryProjection(projections: Map[String, Expression] = Map.empty,
+                                        shuffle: QueryShuffle = QueryShuffle.empty) extends QueryProjection {
   def keySet: Set[String] = projections.keySet
 
   def ++(other: RegularQueryProjection) =
@@ -122,11 +119,9 @@ final case class RegularQueryProjection(
     copy(shuffle = shuffle)
 }
 
-final case class AggregatingQueryProjection(
-   groupingKeys: Map[String, Expression] = Map.empty,
-   aggregationExpressions: Map[String, Expression] = Map.empty,
-   shuffle: QueryShuffle = QueryShuffle.empty
-) extends QueryProjection {
+final case class AggregatingQueryProjection(groupingKeys: Map[String, Expression] = Map.empty,
+                                            aggregationExpressions: Map[String, Expression] = Map.empty,
+                                            shuffle: QueryShuffle = QueryShuffle.empty) extends QueryProjection {
 
   assert(
     !(groupingKeys.isEmpty && aggregationExpressions.isEmpty),
