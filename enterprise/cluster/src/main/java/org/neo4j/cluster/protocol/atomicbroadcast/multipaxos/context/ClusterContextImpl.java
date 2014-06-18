@@ -355,7 +355,7 @@ class ClusterContextImpl
     @Override
     public void setBoundAt( URI boundAt )
     {
-        commonState.setBoundAt( boundAt );
+        commonState.setBoundAt( me, boundAt );
     }
 
     @Override
