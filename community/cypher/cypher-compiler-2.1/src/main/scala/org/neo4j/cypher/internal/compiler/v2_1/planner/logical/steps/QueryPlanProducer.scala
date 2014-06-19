@@ -220,13 +220,13 @@ object QueryPlanProducer {
   def planAntiSemiApply(left: QueryPlan, right: QueryPlan, predicate: PatternExpression, solved: Expression) =
     QueryPlan(
       AntiSemiApply(left.plan, right.plan),
-      left.solved.updateGraph(_.addPredicates(solved))
+      left.solved.updateTailOrSelf(_.updateGraph(_.addPredicates(solved)))
     )
 
   def planSemiApply(left: QueryPlan, right: QueryPlan, predicate: Expression) =
     QueryPlan(
       SemiApply(left.plan, right.plan),
-      left.solved.updateGraph(_.addPredicates(predicate))
+      left.solved.updateTailOrSelf(_.updateGraph(_.addPredicates(predicate)))
     )
 
   //TODO: Clean up
