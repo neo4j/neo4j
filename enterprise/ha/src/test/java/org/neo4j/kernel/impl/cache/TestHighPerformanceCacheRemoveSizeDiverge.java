@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.impl.cache;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.TargetDirectory.forTest;
+
 import java.util.concurrent.CountDownLatch;
 
 import org.junit.AfterClass;
@@ -31,7 +37,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
 import org.neo4j.test.subprocess.BreakpointTrigger;
@@ -40,12 +46,6 @@ import org.neo4j.test.subprocess.DebuggedThread;
 import org.neo4j.test.subprocess.EnabledBreakpoints;
 import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 @ForeignBreakpoints( {
     @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.core.NodeImpl", method = "updateSize" )
@@ -149,7 +149,7 @@ public class TestHighPerformanceCacheRemoveSizeDiverge
          */
 
         final Node node = createNodeWithSomeRelationships();
-        graphdb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        graphdb.getDependencyResolver().resolveDependency( Caches.class ).clear();
         enableBreakpoints();
         Transaction transaction = graphdb.beginTx();
         try
@@ -160,7 +160,7 @@ public class TestHighPerformanceCacheRemoveSizeDiverge
         {
             transaction.finish();
         }
-        final Cache<?> nodeCache = graphdb.getDependencyResolver().resolveDependency( NodeManager.class ).caches().iterator().next();
+        final Cache<?> nodeCache = graphdb.getDependencyResolver().resolveDependency( Caches.class ).node();
         assertTrue( "We didn't get a hold of the right cache object", nodeCache.getName().toLowerCase().contains( "node" ) );
 
         Thread t1 = new Thread( "T1: Relationship loader" )

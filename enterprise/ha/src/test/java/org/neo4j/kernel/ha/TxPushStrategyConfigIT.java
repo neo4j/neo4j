@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha;
 
 import static org.junit.Assert.assertTrue;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME;
 import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 import static org.neo4j.test.ha.ClusterManager.masterAvailable;
@@ -42,7 +41,7 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
@@ -216,8 +215,8 @@ public class TxPushStrategyConfigIT
 
     private long getLastTx( GraphDatabaseAPI db )
     {
-        return db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                .getXaDataSource( DEFAULT_DATA_SOURCE_NAME ).getLastCommittedTxId();
+        return db.getDependencyResolver().resolveDependency( TransactionIdStore.class )
+                .getLastCommittingTransactionId();
     }
 
     private LastTxMapping lastTx( int serverIndex, long txId )

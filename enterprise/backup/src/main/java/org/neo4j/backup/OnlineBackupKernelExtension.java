@@ -60,8 +60,9 @@ public class OnlineBackupKernelExtension implements Lifecycle
     private final BackupProvider backupProvider;
     private volatile URI me;
 
-    public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI, final XaDataSourceManager
-            xaDataSourceManager, final KernelPanicEventGenerator kpeg, final Logging logging, final Monitors monitors )
+    public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI,
+                                        final KernelPanicEventGenerator kpeg, final Logging logging,
+                                        final Monitors monitors )
     {
         this(config, graphDatabaseAPI, new BackupProvider()
         {

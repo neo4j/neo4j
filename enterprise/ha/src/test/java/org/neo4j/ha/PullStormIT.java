@@ -32,8 +32,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
@@ -155,8 +154,7 @@ public class PullStormIT
 
     private long lastCommittedTxId( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase )
     {
-        return ((NeoStoreXaDataSource)highlyAvailableGraphDatabase.getDependencyResolver()
-                .resolveDependency( XaDataSourceManager.class )
-                .getXaDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME )).getNeoStore().getLastCommittedTx();
+        return highlyAvailableGraphDatabase.getDependencyResolver()
+                .resolveDependency( TransactionIdStore.class ).getLastCommittingTransactionId();
     }
 }

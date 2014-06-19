@@ -389,10 +389,6 @@ class BackupService
         }
     }
 
-    private XaDataSourceManager dsManager( GraphDatabaseAPI targetDb )
-    {
-        return targetDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
-    }
 
     private Map<String, Long> unpackResponse( Response<Void> response, XaDataSourceManager xaDsm, TxHandler txHandler )
     {

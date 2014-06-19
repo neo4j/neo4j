@@ -23,7 +23,6 @@ import java.io.Serializable;
 import java.util.LinkedList;
 import java.util.List;
 
-import org.neo4j.backup.OnlineBackupKernelExtension;
 import org.neo4j.cluster.member.paxos.MemberIsAvailable;
 import org.neo4j.helpers.Function2;
 import org.neo4j.helpers.collection.Iterables;
@@ -49,8 +48,10 @@ public class HANewSnapshotFunction
             {
                 if ( ( existing.getInstanceId().equals( newMessage.getInstanceId() )  &&
                     existing.getRole().equals( HighAvailabilityModeSwitcher.SLAVE ) ) ||
-                        existing.getRole().equals( HighAvailabilityModeSwitcher.MASTER ) ||
-                        existing.getRole().equals( OnlineBackupKernelExtension.BACKUP ) )
+                        existing.getRole().equals( HighAvailabilityModeSwitcher.MASTER )
+                        // TODO 2.2-future is this necessary?
+//                         || existing.getRole().equals( OnlineBackupKernelExtension.BACKUP )
+                        )
                 {
                     continue;
                 }

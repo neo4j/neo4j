@@ -19,6 +19,13 @@
  */
 package org.neo4j.test.ha;
 
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
+import static org.junit.Assert.fail;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
+
 import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Field;
@@ -38,13 +45,11 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.xml.parsers.DocumentBuilder;
 import javax.xml.parsers.DocumentBuilderFactory;
 
 import ch.qos.logback.classic.LoggerContext;
-import org.w3c.dom.Document;
-
-import org.neo4j.backup.OnlineBackupSettings;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.ExecutorLifecycleAdapter;
 import org.neo4j.cluster.InstanceId;
@@ -64,7 +69,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
-import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.configuration.Config;
@@ -80,15 +84,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
-
-import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
+import org.w3c.dom.Document;
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -541,7 +537,8 @@ public class ClusterManager
                                 setConfig( ClusterSettings.server_id, serverId + "" ).
                                 setConfig( ClusterSettings.cluster_server, "0.0.0.0:"+clusterPort).
                                 setConfig( HaSettings.ha_server, ":" + haPort ).
-                                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
+                        // TODO 2.2-future waiting for backup to work
+//                                setConfig( OnlineBackupSettings.online_backup_enabled, Settings.FALSE ).
                                 setConfig( commonConfig );
                 if ( instanceConfig.containsKey( serverId.toIntegerIndex() ) )
                 {

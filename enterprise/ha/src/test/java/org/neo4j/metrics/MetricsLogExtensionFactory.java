@@ -22,7 +22,6 @@ package org.neo4j.metrics;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.TxManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -34,7 +33,6 @@ public class MetricsLogExtensionFactory
         Monitors monitors();
         Config config();
         FileSystemAbstraction fileSystem();
-        TxManager txManager();
     }
 
     public MetricsLogExtensionFactory( )
@@ -45,6 +43,6 @@ public class MetricsLogExtensionFactory
     @Override
     public Lifecycle newKernelExtension( Dependencies dependencies ) throws Throwable
     {
-        return new MetricsLogExtension(dependencies.monitors(), dependencies.config(), dependencies.fileSystem(), dependencies.txManager());
+        return new MetricsLogExtension( dependencies.monitors(), dependencies.config(), dependencies.fileSystem() );
     }
 }

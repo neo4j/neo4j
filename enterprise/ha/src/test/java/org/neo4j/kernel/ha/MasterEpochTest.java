@@ -19,11 +19,17 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
+import org.junit.Test;
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
-import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -35,15 +41,6 @@ import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.TestLogging;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class MasterEpochTest
 {
@@ -82,6 +79,6 @@ public class MasterEpochTest
 
     private RequestContext context( long epoch )
     {
-        return new RequestContext( epoch, 0, 0, new Tx[0], 0, 0 );
+        return new RequestContext( epoch, 0, 0, 0, 0, 0 );
     }
 }
