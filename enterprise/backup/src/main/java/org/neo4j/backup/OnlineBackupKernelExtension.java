@@ -35,7 +35,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -82,7 +81,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                     {
                         return graphDatabaseAPI.storeId();
                     }
-                }, xaDataSourceManager, kpeg, monitors );
+                }, kpeg, monitors );
             }
         }, monitors, logging);
     }
