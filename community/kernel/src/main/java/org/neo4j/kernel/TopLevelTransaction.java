@@ -102,13 +102,16 @@ public class TopLevelTransaction implements Transaction
         try
         {
             if (transaction.isOpen())
+            {
                 transaction.close();
+            }
         }
         catch ( Exception e )
         {
             if ( transactionOutcome.successCalled() )
             {
-                throw new TransactionFailureException( "Unable to commit transaction", e );
+                throw new TransactionFailureException( "Transaction was marked as successful, " +
+                        "but unable to commit transaction so rolled back.", e );
             }
             else
             {

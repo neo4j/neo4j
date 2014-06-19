@@ -19,8 +19,6 @@
  */
 package org.neo4j.shell.kernel;
 
-import static org.neo4j.shell.Variables.PROMPT_KEY;
-
 import java.io.Serializable;
 import java.rmi.RemoteException;
 import java.util.Map;
@@ -42,6 +40,8 @@ import org.neo4j.shell.Welcome;
 import org.neo4j.shell.impl.AbstractAppServer;
 import org.neo4j.shell.impl.BashVariableInterpreter.Replacer;
 import org.neo4j.shell.kernel.apps.TransactionProvidingApp;
+
+import static org.neo4j.shell.Variables.PROMPT_KEY;
 
 /**
  * A {@link ShellServer} which contains common methods to use with a
@@ -104,7 +104,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
             ThreadToStatementContextBridge threadToStatementContextBridge = getDb().getDependencyResolver()
                     .resolveDependency(
                             ThreadToStatementContextBridge.class );
-            TopLevelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( true );
+            TopLevelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
             threadToStatementContextBridge.unbindTransactionFromCurrentThread();
             if ( tx == null )
             {

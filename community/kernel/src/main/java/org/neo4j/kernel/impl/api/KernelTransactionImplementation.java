@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.api;
 
-import static java.lang.System.currentTimeMillis;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -58,6 +56,8 @@ import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+
+import static java.lang.System.currentTimeMillis;
 
 /**
  * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon as
@@ -268,7 +268,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         return hasTxState() && txState.hasChanges();
     }
 
-    private void closeTransactionStuffage()
+    private void closeTransaction()
     {
         assertTransactionOpen();
         closed = true;
@@ -516,7 +516,8 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                     // transaction passed through a happy path, but the transaction was still marked as
                     // failed for one or more reasons. Tell the user that although it looked happy it
                     // wasn't committed, but was instead rolled back.
-                    throw new TransactionFailureException( Status.Transaction.MarkedAsFailed, "" );
+                    throw new TransactionFailureException( Status.Transaction.MarkedAsFailed,
+                            "Transaction rolled back even if marked as successful" );
                 }
             }
             else
@@ -610,7 +611,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try
         {
             release();
-            closeTransactionStuffage();
+            closeTransaction();
             hooks.afterCommit( txState, this, hooksState );
         }
         finally
@@ -624,7 +625,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
         try
         {
             release();
-            closeTransactionStuffage();
+            closeTransaction();
             hooks.afterRollback( txState, this, hooksState );
         }
         finally

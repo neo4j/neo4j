@@ -22,8 +22,7 @@ package org.neo4j.shell.kernel.apps;
 import java.rmi.RemoteException;
 
 import org.neo4j.helpers.Service;
-import org.neo4j.kernel.api.KernelTransaction;
-import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
+import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.shell.App;
 import org.neo4j.shell.AppCommandParser;
 import org.neo4j.shell.Continuation;
@@ -35,17 +34,10 @@ import org.neo4j.shell.Variables;
 @Service.Implementation(App.class)
 public class Commit extends NonTransactionProvidingApp
 {
-
     @Override
     public String getDescription()
     {
         return "Commits a transaction";
-    }
-
-    private KernelTransaction getCurrectTransaction() throws ShellException
-    {
-        return getServer().getDb().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class )
-                .getKernelTransactionBoundToThisThread( false );
     }
 
     @Override
@@ -60,7 +52,7 @@ public class Commit extends NonTransactionProvidingApp
 
         Integer txCount = session.getCommitCount();
 
-        KernelTransaction tx = getCurrectTransaction();
+        TopLevelTransaction tx = Begin.currentTransaction( getServer() );
         if ( txCount == null || txCount.equals( 0 ) )
         {
             if ( tx != null )
