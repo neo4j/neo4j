@@ -1,3 +1,10 @@
+2.1.2
+-----
+o Allow Cypher to use indexes to solve IN queries
+o Fix problems where indexes where not picked up if multiple labels
+  where used on a pattern node
+o Fix problem where indexes where not picked up when a query uses UNWIND
+
 2.1.0-M02
 ---------
 o Add a new cost based planner
@@ -27,6 +34,7 @@ o Add USING PERIODIC COMMIT
 2.0.5
 -----
 o Fixes problem where predicates are evaluated wrongly in NOT
+o Fixes problem when WITH introduces a symbol that shadows an existing identifier
 
 2.0.4
 -----

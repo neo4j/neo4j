@@ -20,7 +20,6 @@
     <bundle.namespace>org.neo4j.examples.server</bundle.namespace>
     <license-text.header>ApacheLicense-2.0-header.txt</license-text.header>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/server-java-rest-client-example.html</docs.url>
   </properties>
 
   <scm>
@@ -64,6 +63,13 @@
     <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

@@ -25,9 +25,13 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Candidates, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, Candidates, PlanTable}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
+  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
+
   test("should introduce apply for unsolved optional match when all arguments are covered") {
     // MATCH (a) OPTIONAL MATCH (a)-[r]->(b)
 
@@ -40,13 +44,12 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: SingleRow => 1.0
-      case _            => 1000.0
+      case _: SingleRow => Cardinality(1.0)
+      case _            => Cardinality(1000.0)
     })
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
@@ -54,7 +57,7 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val planTable = PlanTable(Map(Set(IdName("a")) -> inputPlan))
     val innerPlan = Expand(SingleRow(Set("a"))(), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength)
 
-    val candidates = applyOptional(planTable)
+    val candidates = applyOptional(planTable, qg)
 
     // Then
     candidates.plans should have size 1
@@ -67,11 +70,10 @@ class ApplyOptionalTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val optionalMatch = QueryGraph(patternNodes = Set("a"))
     val qg = QueryGraph.empty.withAddedOptionalMatch(optionalMatch)
 
-    implicit val context = newMockedQueryGraphSolvingContext(
-      planContext = newMockedPlanContext,
-      query = qg
+    implicit val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext
     )
 
-    applyOptional(PlanTable()) should equal(Candidates())
+    applyOptional(PlanTable(), qg) should equal(Candidates())
   }
 }

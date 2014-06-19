@@ -21,17 +21,40 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
-trait LogicalPlanningFunction[-A, +B] {
-  def apply(input: A)(implicit context: QueryGraphSolvingContext): B
+trait LogicalPlanningFunction1[-A, +B] {
+  def apply(input: A)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): B
 
-  def asFunctionInContext(implicit context: QueryGraphSolvingContext): A => B = apply
+  def asFunctionInContext(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): A => B = apply
 }
 
-trait CandidateGenerator[-T] extends LogicalPlanningFunction[T, CandidateList]
+trait LogicalPlanningFunction2[-A1, -A2, +B] {
+  def apply(input1: A1, input2: A2)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): B
 
-trait CandidateSelector extends LogicalPlanningFunction[CandidateList, Option[QueryPlan]]
+  def asFunctionInContext(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): (A1, A2) => B = apply
+}
 
-trait PlanTransformer extends LogicalPlanningFunction[QueryPlan, QueryPlan]
+trait CandidateGenerator[T] extends LogicalPlanningFunction2[T, QueryGraph, CandidateList]
 
-trait LeafPlanner extends CandidateGenerator[QueryGraph]
+object CandidateGenerator {
+  implicit final class RichCandidateGenerator[T](self: CandidateGenerator[T]) {
+    def orElse(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
+      def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
+        val ownCandidates = self(input1, input2)
+        if (ownCandidates.isEmpty) other(input1, input2) else ownCandidates
+      }
+    }
+
+    def +||+(other: CandidateGenerator[T]): CandidateGenerator[T] = new CandidateGenerator[T] {
+      override def apply(input1: T, input2: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList =
+        self(input1, input2) ++ other(input1, input2)
+    }
+  }
+}
+
+trait PlanTransformer[-T] extends LogicalPlanningFunction2[QueryPlan, T, QueryPlan]
+
+trait CandidateSelector extends LogicalPlanningFunction1[CandidateList, Option[QueryPlan]]
+
+trait LeafPlanner  extends LogicalPlanningFunction1[QueryGraph, CandidateList]

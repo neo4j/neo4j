@@ -22,14 +22,16 @@ package org.neo4j.kernel.impl.nioneo.store;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGroupRecord> implements Store
 {
@@ -44,25 +46,39 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
 
     private int denseNodeThreshold;
 
-    public RelationshipGroupStore( File fileName, Config config, IdGeneratorFactory idGeneratorFactory,
-            WindowPoolFactory windowPoolFactory, FileSystemAbstraction fileSystemAbstraction,
-            StringLogger stringLogger, StoreVersionMismatchHandler versionMismatchHandler )
+    public RelationshipGroupStore(
+            File fileName,
+            Config config,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler );
+        super( fileName, config, IdType.RELATIONSHIP_GROUP, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     @Override
     public RelationshipGroupRecord getRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            return getRecord( id, window, RecordLoad.NORMAL );
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            return getRecord( id, cursor, RecordLoad.NORMAL );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
@@ -88,14 +104,14 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         }
     }
 
-    private RelationshipGroupRecord getRecord( long id, PersistenceWindow window, RecordLoad load )
+    private RelationshipGroupRecord getRecord( long id, PageCursor cursor, RecordLoad load )
     {
-        Buffer buffer = window.getOffsettedBuffer( id );
+        cursor.setOffset( offsetForId( id ) );
 
         // [    ,   x] in use
         // [    ,xxx ] high next id bits
         // [ xxx,    ] high firstOut bits
-        long inUseByte = buffer.get();
+        long inUseByte = cursor.getByte();
         boolean inUse = (inUseByte&0x1) > 0;
         if ( !inUse )
         {
@@ -108,14 +124,14 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
 
         // [    ,xxx ] high firstIn bits
         // [ xxx,    ] high firstLoop bits
-        long highByte = buffer.get();
+        long highByte = cursor.getByte();
 
-        int type = buffer.getShort();
-        long nextLowBits = buffer.getUnsignedInt();
-        long nextOutLowBits = buffer.getUnsignedInt();
-        long nextInLowBits = buffer.getUnsignedInt();
-        long nextLoopLowBits = buffer.getUnsignedInt();
-        long owningNode = buffer.getUnsignedInt() | (((long)buffer.get()) << 32);
+        int type = cursor.getShort();
+        long nextLowBits = cursor.getUnsignedInt();
+        long nextOutLowBits = cursor.getUnsignedInt();
+        long nextInLowBits = cursor.getUnsignedInt();
+        long nextLoopLowBits = cursor.getUnsignedInt();
+        long owningNode = cursor.getUnsignedInt() | (((long)cursor.getByte()) << 32);
 
         long nextMod = (inUseByte & 0xE) << 31;
         long nextOutMod = (inUseByte & 0x70) << 28;
@@ -135,15 +151,22 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public void updateRecord( RelationshipGroupRecord record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
-                OperationType.WRITE );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            updateRecord( record, window, false );
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            updateRecord( record, cursor, false );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
@@ -162,11 +185,11 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
         }
     }
 
-    private void updateRecord( RelationshipGroupRecord record, PersistenceWindow window, boolean force )
+    private void updateRecord( RelationshipGroupRecord record, PageCursor cursor, boolean force )
     {
         long id = record.getId();
         registerIdFromUpdateRecord( id );
-        Buffer buffer = window.getOffsettedBuffer( id );
+        cursor.setOffset( offsetForId( id ) );
         if ( record.inUse() || force )
         {
             long nextMod = record.getNext() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getNext() & 0x700000000L) >> 31;
@@ -174,26 +197,26 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
             long nextInMod = record.getFirstIn() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstIn() & 0x700000000L) >> 31;
             long nextLoopMod = record.getFirstLoop() == Record.NO_NEXT_RELATIONSHIP.intValue() ? 0 : (record.getFirstLoop() & 0x700000000L) >> 28;
 
-            buffer
-                // [    ,   x] in use
-                // [    ,xxx ] high next id bits
-                // [ xxx,    ] high firstOut bits
-                .put( (byte) (nextOutMod | nextMod | 1) )
+            // [    ,   x] in use
+            // [    ,xxx ] high next id bits
+            // [ xxx,    ] high firstOut bits
+            cursor.putByte( (byte) (nextOutMod | nextMod | 1) );
 
-                // [    ,xxx ] high firstIn bits
-                // [ xxx,    ] high firstLoop bits
-                .put( (byte) (nextLoopMod | nextInMod) )
+            // [    ,xxx ] high firstIn bits
+            // [ xxx,    ] high firstLoop bits
+            cursor.putByte( (byte) (nextLoopMod | nextInMod) );
 
-                .putShort( (short) record.getType() )
-                .putInt( (int) record.getNext() )
-                .putInt( (int) record.getFirstOut() )
-                .putInt( (int) record.getFirstIn() )
-                .putInt( (int) record.getFirstLoop() )
-                .putInt( (int) record.getOwningNode() ).put( (byte) (record.getOwningNode() >> 32) );
+            cursor.putShort( (short) record.getType() );
+            cursor.putInt( (int) record.getNext() );
+            cursor.putInt( (int) record.getFirstOut() );
+            cursor.putInt( (int) record.getFirstIn() );
+            cursor.putInt( (int) record.getFirstLoop() );
+            cursor.putInt( (int) record.getOwningNode() );
+            cursor.putByte( (byte) (record.getOwningNode() >> 32) );
         }
         else
         {
-            buffer.put( Record.NOT_IN_USE.byteValue() );
+            cursor.putByte( Record.NOT_IN_USE.byteValue() );
             if ( !isInRecoveryMode() )
             {
                 freeId( id );
@@ -204,23 +227,22 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public RelationshipGroupRecord forceGetRecord( long id )
     {
-        PersistenceWindow window = null;
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            window = acquireWindow( id, OperationType.READ );
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
         }
-        catch ( InvalidRecordException e )
+        catch ( IOException e )
         {
             return new RelationshipGroupRecord( id, -1 );
         }
-
         try
         {
-            return getRecord( id, window, RecordLoad.FORCE );
+            return getRecord( id, cursor, RecordLoad.FORCE );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
@@ -233,15 +255,23 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public void forceUpdateRecord( RelationshipGroupRecord record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
-                OperationType.WRITE );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            updateRecord( record, window, true );
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+
+        try
+        {
+            updateRecord( record, cursor, true );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
@@ -268,14 +298,6 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     public int getRecordSize()
     {
         return RECORD_SIZE;
-    }
-
-    @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
-    {
-        List<WindowPoolStats> list = new ArrayList<>();
-        list.add( getWindowPoolStats() );
-        return list;
     }
 
     @Override

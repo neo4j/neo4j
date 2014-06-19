@@ -142,7 +142,6 @@ the relevant Commercial Agreement.
               <goal>javadoc</goal>
             </goals>
             <configuration>
-              <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <header>Neo4j</header>
               <doctitle>Neo4j ${project.version} API</doctitle>
@@ -211,24 +210,6 @@ the relevant Commercial Agreement.
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>package-javadocs</id>
-            <phase>${attach-javadoc-phase}</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <attach>true</attach>
-              <descriptors>
-                <descriptor>src/main/assembly/assembly.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
   
@@ -246,13 +227,4 @@ the relevant Commercial Agreement.
       </properties>
     </profile>
   </profiles>
-
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
-
 </project>
-

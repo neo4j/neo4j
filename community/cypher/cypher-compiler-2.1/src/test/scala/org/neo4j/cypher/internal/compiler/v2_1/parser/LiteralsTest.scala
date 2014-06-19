@@ -58,20 +58,24 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
   def testCanParseNumbers() {
     implicit val parserToTest = NumberLiteral
 
-    parsing("123") shouldGive ast.SignedIntegerLiteral("123")(t)
-    parsing("-23") shouldGive ast.SignedIntegerLiteral("-23")(t)
-    parsing("-0") shouldGive ast.SignedIntegerLiteral("-0")(t)
+    parsing("123") shouldGive ast.SignedDecimalIntegerLiteral("123")(t)
+    parsing("-23") shouldGive ast.SignedDecimalIntegerLiteral("-23")(t)
+    parsing("-0") shouldGive ast.SignedDecimalIntegerLiteral("-0")(t)
 
-    parsing("1.23") shouldGive ast.DoubleLiteral("1.23")(t)
-    parsing("13434.23399") shouldGive ast.DoubleLiteral("13434.23399")(t)
-    parsing(".3454") shouldGive ast.DoubleLiteral(".3454")(t)
-    parsing("-0.0") shouldGive ast.DoubleLiteral("-0.0")(t)
-    parsing("-54366.4") shouldGive ast.DoubleLiteral("-54366.4")(t)
-    parsing("-0.3454") shouldGive ast.DoubleLiteral("-0.3454")(t)
+    parsing("0x1") shouldGive ast.SignedHexIntegerLiteral("0x1")(t)
+    parsing("0xffff") shouldGive ast.SignedHexIntegerLiteral("0xffff")(t)
+    parsing("-0x45FG") shouldGive ast.SignedHexIntegerLiteral("-0x45FG")(t)
 
-    parsing("1E23") shouldGive ast.DoubleLiteral("1E23")(t)
-    parsing("1.34E99") shouldGive ast.DoubleLiteral("1.34E99")(t)
-    parsing("9E-443") shouldGive ast.DoubleLiteral("9E-443")(t)
+    parsing("1.23") shouldGive ast.DecimalDoubleLiteral("1.23")(t)
+    parsing("13434.23399") shouldGive ast.DecimalDoubleLiteral("13434.23399")(t)
+    parsing(".3454") shouldGive ast.DecimalDoubleLiteral(".3454")(t)
+    parsing("-0.0") shouldGive ast.DecimalDoubleLiteral("-0.0")(t)
+    parsing("-54366.4") shouldGive ast.DecimalDoubleLiteral("-54366.4")(t)
+    parsing("-0.3454") shouldGive ast.DecimalDoubleLiteral("-0.3454")(t)
+
+    parsing("1E23") shouldGive ast.DecimalDoubleLiteral("1E23")(t)
+    parsing("1.34E99") shouldGive ast.DecimalDoubleLiteral("1.34E99")(t)
+    parsing("9E-443") shouldGive ast.DecimalDoubleLiteral("9E-443")(t)
   }
 
   def convert(result: Any): Any = result

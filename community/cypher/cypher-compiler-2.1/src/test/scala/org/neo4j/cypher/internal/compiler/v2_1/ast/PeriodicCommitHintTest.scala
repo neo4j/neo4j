@@ -30,7 +30,7 @@ class PeriodicCommitHintTest extends FunSuite with Positional {
     // Given
     val sizePosition: InputPosition = pos
     val input = "-1"
-    val value: SignedIntegerLiteral = SignedIntegerLiteral(input)(sizePosition)
+    val value: SignedIntegerLiteral = SignedDecimalIntegerLiteral(input)(sizePosition)
     val hint = PeriodicCommitHint(Some(value))(pos)
 
     // When
@@ -57,7 +57,7 @@ class PeriodicCommitHintTest extends FunSuite with Positional {
     // Given
     val sizePosition: InputPosition = pos
     val input = "1"
-    val value: SignedIntegerLiteral = SignedIntegerLiteral(input)(sizePosition)
+    val value: SignedIntegerLiteral = SignedDecimalIntegerLiteral(input)(sizePosition)
     val hint = PeriodicCommitHint(Some(value))(pos)
 
     // When
@@ -70,7 +70,7 @@ class PeriodicCommitHintTest extends FunSuite with Positional {
   test("queries with periodic commit and no updates are not OK") {
     // Given USING PERIODIC COMMIT RETURN "Hello World!"
 
-    val value: SignedIntegerLiteral = SignedIntegerLiteral("1")(pos)
+    val value: SignedIntegerLiteral = SignedDecimalIntegerLiteral("1")(pos)
     val periodicCommitPos: InputPosition = pos
     val hint = PeriodicCommitHint(Some(value))(periodicCommitPos)
     val literal: StringLiteral = StringLiteral("Hello world!")(pos)
@@ -93,7 +93,7 @@ class PeriodicCommitHintTest extends FunSuite with Positional {
 
     // Given USING PERIODIC COMMIT CREATE ()
 
-    val value: SignedIntegerLiteral = SignedIntegerLiteral("1")(pos)
+    val value: SignedIntegerLiteral = SignedDecimalIntegerLiteral("1")(pos)
     val hint = PeriodicCommitHint(Some(value))(pos)
     val nodePattern = NodePattern(None,Seq.empty,None,false)(pos)
     val pattern = Pattern(Seq(EveryPath(nodePattern)))(pos)

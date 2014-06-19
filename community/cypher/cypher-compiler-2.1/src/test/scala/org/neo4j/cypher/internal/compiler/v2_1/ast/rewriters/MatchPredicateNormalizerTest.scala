@@ -29,8 +29,8 @@ class MatchPredicateNormalizerTest extends CypherFunSuite with RewriteTest {
   object LabelPredicateNormalization extends MatchPredicateNormalization(LabelPredicateNormalizer)
 
   def rewriterUnderTest: Rewriter = inSequence(
-    topDown(PropertyPredicateNormalization),
-    topDown(LabelPredicateNormalization)
+    PropertyPredicateNormalization,
+    LabelPredicateNormalization
   )
 
   test("move single predicate from node to WHERE") {

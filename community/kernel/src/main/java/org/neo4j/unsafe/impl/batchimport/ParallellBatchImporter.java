@@ -23,14 +23,15 @@ import java.io.IOException;
 import java.util.Iterator;
 
 import org.neo4j.helpers.Exceptions;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.cache.LongArrayFactory;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeIdMapper;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeIdMapping;
@@ -63,6 +64,7 @@ public class ParallellBatchImporter implements BatchImporter
     private final Logging logging;
     private final ConsoleLogger logger;
     private final LifeSupport life = new LifeSupport();
+    private final Monitors monitors;
 
     public ParallellBatchImporter( String storeDir, FileSystemAbstraction fileSystem, Configuration config,
             Iterable<KernelExtensionFactory<?>> kernelExtensions, ExecutionMonitor executionMonitor )
@@ -73,6 +75,7 @@ public class ParallellBatchImporter implements BatchImporter
         this.logging = life.add( createDefaultLogging( stringMap( store_dir.name(), storeDir ) ) );
         this.logger = logging.getConsoleLog( getClass() );
         this.executionMonitor = executionMonitor;
+        this.monitors = new Monitors();
         this.writeMonitor = new IoMonitor();
 
         life.start();
@@ -82,10 +85,10 @@ public class ParallellBatchImporter implements BatchImporter
     public void doImport( Iterable<InputNode> nodes, Iterable<InputRelationship> relationships,
             NodeIdMapping nodeIdMapping ) throws IOException
     {
-        logger.log( "Starting CSV import [TODO source info]" );
+        // TODO log about import starting
 
         try ( BatchFriendlyNeoStore neoStore = new BatchFriendlyNeoStore( fileSystem, storeDir, config,
-                writeMonitor, logging ) )
+                logging, monitors ) )
         {
             NodeIdMapper nodeIdMapper = nodeIdMapping.mapper( neoStore.getNodeStore() );
 

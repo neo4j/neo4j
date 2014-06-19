@@ -27,7 +27,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
 class CartesianProductPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans for simple cartesian product") {
-    planFor("MATCH n, m RETURN n, m").plan should equal(
+    planFor("MATCH n, m RETURN n, m").plan.plan should equal(
       CartesianProduct(
         AllNodesScan(IdName("m")),
         AllNodesScan(IdName("n")))
@@ -37,14 +37,14 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should build plans so the cheaper plan is on the left") {
     (new given {
       cost = {
-        case _: Selection => 1000
-        case _: NodeByLabelScan => 20
+        case _: Selection => Cost(1000)
+        case _: NodeByLabelScan => Cost(20)
       }
-      cardinality = {
+      cardinality = mapCardinality {
         case _: Selection => 10
         case _: NodeByLabelScan => 10
       }
-    } planFor "MATCH n, m WHERE n.prop = 12 AND m:Label RETURN n, m").plan should beLike {
+    } planFor "MATCH n, m WHERE n.prop = 12 AND m:Label RETURN n, m").plan.plan should beLike {
       case CartesianProduct(_: Selection, _: NodeByLabelScan) => ()
     }
   }
@@ -52,18 +52,18 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should combine three plans so the cost is minimized") {
     implicit val plan = new given {
       labelCardinality = Map(
-        "A" -> 30,
-        "B" -> 20,
-        "C" -> 10
+        "A" -> Cardinality(30),
+        "B" -> Cardinality(20),
+        "C" -> Cardinality(10)
       )
     } planFor "MATCH a, b, c WHERE a:A AND b:B AND c:C RETURN a, b, c"
 
-    plan.plan should equal(
+    plan.plan.plan should equal(
       CartesianProduct(
-        NodeByLabelScan("a", labelId("A")),
+        NodeByLabelScan("a", Right(labelId("A"))),
         CartesianProduct(
-          NodeByLabelScan("c", labelId("C")),
-          NodeByLabelScan("b", labelId("B"))
+          NodeByLabelScan("c", Right(labelId("C"))),
+          NodeByLabelScan("b", Right(labelId("B")))
         )
       )
     )
@@ -72,18 +72,18 @@ class CartesianProductPlanningIntegrationTest extends CypherFunSuite with Logica
   test("should combine two plans so the cost is minimized") {
     implicit val plan = new given {
       labelCardinality = Map(
-        "A" -> 30,
-        "B" -> 20
+        "A" -> Cardinality(30),
+        "B" -> Cardinality(20)
       )
     } planFor "MATCH a, b WHERE a:A AND b:B RETURN a, b"
 
     // A x B = 30 * 2 + 30 * (20 * 2) => 1260
     // B x A = 20 * 2 + 20 * (30 * 2) => 1240
 
-    plan.plan should equal(
+    plan.plan.plan should equal(
       CartesianProduct(
-        NodeByLabelScan("b", labelId("B")),
-        NodeByLabelScan("a", labelId("A"))
+        NodeByLabelScan("b", Right(labelId("B"))),
+        NodeByLabelScan("a", Right(labelId("A")))
       )
     )
   }

@@ -25,7 +25,7 @@ import java.util.TimeZone;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 
 public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog

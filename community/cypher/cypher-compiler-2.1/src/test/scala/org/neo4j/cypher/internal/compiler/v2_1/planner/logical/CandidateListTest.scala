@@ -21,64 +21,79 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, LogicalPlanningTestSupport}
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, LogicalPlan, IdName}
-import org.mockito.Matchers._
-import org.mockito.Mockito._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, LogicalPlanningTestSupport2}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{LabelName, UsingIndexHint}
 
-class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  implicit val semanticTable = newMockedSemanticTable
-  implicit val planContext = newMockedPlanContext
-  implicit val context = newMockedQueryGraphSolvingContext(planContext)
+class CandidateListTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-  val x = newMockedQueryPlan("x")
-  val y = newMockedQueryPlan("y")
-  val xAndY = newMockedQueryPlan("x", "y")
+  val GIVEN_FIXED_COST = new given {
+    cost = {
+      case _ => Cost(100)
+    }
+  }
+
+  val hint1: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
+  val hint2: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("age"))_
+  val hint3: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Person")_, ident("income"))_
 
   test("picks the right plan by cost, no matter the cardinality") {
-    val a = newMockedQueryPlanWithProjections("a")
-    val b = newMockedQueryPlanWithProjections("b")
+    val a = fakeQueryPlanFor("a")
+    val b = fakeQueryPlanFor("b")
 
-    val factory = newMockedMetricsFactory
-    when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
-      case p if p eq a.plan => 100
-      case p if p eq b.plan => 50
-      case _                => Double.MaxValue
+    assertTopPlan(winner = b, a, b)(new given {
+      cost = {
+        case p if p == a.plan => Cost(100)
+        case p if p == b.plan => Cost(50)
+      }
     })
-
-    assertTopPlan(winner = b, a, b)(factory)
   }
 
   test("picks the right plan by cost, no matter the size of the covered ids") {
-    val ab = QueryPlan( newMockedLogicalPlan(Set(IdName("a"), IdName("b"))), PlannerQuery.empty )
-    val b = newMockedQueryPlanWithProjections("b")
+    val ab = fakeQueryPlanFor("a", "b")
+    val b = fakeQueryPlanFor("b")
 
-    val factory = newMockedMetricsFactory
-    when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
-      case p if p eq ab.plan => 100
-      case p if p eq b.plan  => 50
-      case _                 => Double.MaxValue
-    })
+    val GIVEN = new given {
+      cost = {
+        case p if p == ab.plan => Cost(100)
+        case p if p == b.plan => Cost(50)
+      }
+    }
 
-    assertTopPlan(winner = b, ab, b)(factory)
+    assertTopPlan(winner = b, ab, b)(GIVEN)
   }
 
   test("picks the right plan by cost and secondly by the covered ids") {
-    val ab = newMockedQueryPlan("a", "b")
-    val c = newMockedQueryPlanWithProjections("c")
+    val ab = fakeQueryPlanFor("a", "b")
+    val c = fakeQueryPlanFor("c")
 
-    val factory = newMockedMetricsFactory
-    when(factory.newCostModel(any())).thenReturn((plan: LogicalPlan) => plan match {
-      case p if p eq ab.plan => 50
-      case p if p eq c.plan  => 50
-      case _                 => Double.MaxValue
-    })
-
-    assertTopPlan(winner = ab, ab, c)(factory)
+    assertTopPlan(winner = ab, ab, c)(GIVEN_FIXED_COST)
   }
 
-  private def assertTopPlan(winner: QueryPlan, candidates: QueryPlan*)(metrics: MetricsFactory) {
-    val costs = metrics.newMetrics(context.statistics, semanticTable).cost
+  test("Prefers plans that solves a hint over plan that solves no hint") {
+    val a = fakeQueryPlanFor("a").updateSolved(_.updateGraph(_.addHints(Some(hint1))))
+    val b = fakeQueryPlanFor("a")
+
+    assertTopPlan(winner = a, a, b)(GIVEN_FIXED_COST)
+  }
+
+  test("Prefers plans that solve more hints") {
+    val a = fakeQueryPlanFor("a").updateSolved(_.updateGraph(_.addHints(Some(hint1))))
+    val b = fakeQueryPlanFor("a").updateSolved(_.updateGraph(_.addHints(Seq(hint1, hint2))))
+
+    assertTopPlan(winner = b, a, b)(GIVEN_FIXED_COST)
+  }
+
+  test("Prefers plans that solve more hints in tails") {
+    val a = fakeQueryPlanFor("a").updateSolved(_.updateGraph(_.addHints(Some(hint1))))
+    val b = fakeQueryPlanFor("a").updateSolved(_.withTail(PlannerQuery.empty.updateGraph(_.addHints(Seq(hint1, hint2)))))
+
+    assertTopPlan(winner = b, a, b)(GIVEN_FIXED_COST)
+  }
+
+  private def assertTopPlan(winner: QueryPlan, candidates: QueryPlan*)(GIVEN: given) {
+    val environment = LogicalPlanningEnvironment(GIVEN)
+    val costs = environment.metricsFactory.newMetrics(GIVEN.graphStatistics, environment.semanticTable).cost
     CandidateList(candidates).bestPlan(costs) should equal(Some(winner))
     CandidateList(candidates.reverse).bestPlan(costs) should equal(Some(winner))
   }

@@ -207,10 +207,7 @@ angular.module('neo4jApp')
             return q.promise
 
           if (verb is 'post' or verb is 'put')
-            if not data
-              q.reject(error("Method needs data"))
-              return q.promise
-            else
+            if data
               # insist that data is parseable JSON
               try
                 JSON.parse(data.replace(/\n/g, ""))

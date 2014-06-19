@@ -21,11 +21,14 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{Add, RelTypeName, PatternExpression, Expression, SortItem}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{AggregationProjection, PlannerQuery, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{Limit => LimitPlan, Skip => SkipPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.SortDescription
-import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
+import org.neo4j.cypher.internal.compiler.v2_1.commands.QueryExpression
+import org.neo4j.cypher.internal.compiler.v2_1.ast
+import org.neo4j.cypher.internal.compiler.v2_1.planner.AggregationProjection
 import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 
 object QueryPlanProducer {
@@ -80,7 +83,7 @@ object QueryPlanProducer {
   def planExpand(left: QueryPlan,
                  from: IdName,
                  dir: Direction,
-                 types: Seq[RelTypeName],
+                 types: Seq[ast.RelTypeName],
                  to: IdName,
                  relName: IdName,
                  length: PatternLength,
@@ -103,21 +106,27 @@ object QueryPlanProducer {
       )
     )
 
-  def planNodeByLabelScan(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression]) =
+  def planNodeByLabelScan(idName: IdName, label: Either[String, LabelId], solvedPredicates: Seq[Expression], solvedHint: Option[UsingScanHint] = None) =
     QueryPlan(
       NodeByLabelScan(idName, label),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
+        .addHints(solvedHint)
       )
     )
 
-  def planNodeIndexSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression, solvedPredicates: Seq[Expression] = Seq.empty) =
+  def planNodeIndexSeek(idName: IdName,
+                        label: ast.LabelToken,
+                        propertyKey: ast.PropertyKeyToken,
+                        valueExpr: QueryExpression[Expression], solvedPredicates: Seq[Expression] = Seq.empty,
+                        solvedHint: Option[UsingIndexHint] = None) =
     QueryPlan(
-      NodeIndexSeek(idName, label, propertyKeyId, valueExpr),
+      NodeIndexSeek(idName, label, propertyKey, valueExpr),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
+        .addHints(solvedHint)
       )
     )
 
@@ -127,19 +136,25 @@ object QueryPlanProducer {
       left.solved ++ right.solved
     )
 
-  def planNodeIndexUniqueSeek(idName: IdName, label: LabelId, propertyKeyId: PropertyKeyId, valueExpr: Expression, solvedPredicates: Seq[Expression] = Seq.empty) =
+  def planNodeIndexUniqueSeek(idName: IdName,
+                              label: ast.LabelToken,
+                              propertyKey: ast.PropertyKeyToken,
+                              valueExpr: QueryExpression[Expression],
+                              solvedPredicates: Seq[Expression] = Seq.empty,
+                              solvedHint: Option[UsingIndexHint] = None) =
     QueryPlan(
-      NodeIndexUniqueSeek(idName, label, propertyKeyId, valueExpr),
+      NodeIndexUniqueSeek(idName, label, propertyKey, valueExpr),
       PlannerQuery(graph = QueryGraph.empty
         .addPatternNodes(idName)
         .addPredicates(solvedPredicates: _*)
+        .addHints(solvedHint)
       )
     )
 
   def planOptionalExpand(left: QueryPlan,
                          from: IdName,
                          dir: Direction,
-                         types: Seq[RelTypeName],
+                         types: Seq[ast.RelTypeName],
                          to: IdName,
                          relName: IdName,
                          length: PatternLength,
@@ -229,7 +244,6 @@ object QueryPlanProducer {
       )
     )
 
-
   def planQueryArgumentRow(queryGraph: QueryGraph): QueryPlan = {
     val patternNodes = queryGraph.argumentIds intersect queryGraph.patternNodes
     val patternRels = queryGraph.patternRelationships.filter( rel => queryGraph.argumentIds.contains(rel.name))
@@ -274,32 +288,32 @@ object QueryPlanProducer {
 
   def planLimit(inner: QueryPlan, count: Expression) =
     QueryPlan(
-      Limit(inner.plan, count),
+      LimitPlan(inner.plan, count),
       inner.solved.updateTailOrSelf(_.updateProjections(_.withLimit(Some(count))))
     )
 
   def planSkip(inner: QueryPlan, count: Expression) =
     QueryPlan(
-      Skip(inner.plan, count),
+      SkipPlan(inner.plan, count),
       inner.solved.updateTailOrSelf(_.updateProjections(_.withSkip(Some(count))))
     )
 
-  def planSort(inner: QueryPlan, descriptions: Seq[SortDescription], items: Seq[SortItem]) =
+  def planSort(inner: QueryPlan, descriptions: Seq[SortDescription], items: Seq[ast.SortItem]) =
     QueryPlan(
       Sort(inner.plan, descriptions),
       inner.solved.updateTailOrSelf(_.updateProjections(_.withSortItems(items)))
     )
 
-  def planSortedLimit(inner: QueryPlan, limit: Expression, items: Seq[SortItem]) =
+  def planSortedLimit(inner: QueryPlan, limit: Expression, items: Seq[ast.SortItem]) =
     QueryPlan(
       SortedLimit(inner.plan, limit, items),
       inner.solved.updateTailOrSelf(_.updateProjections(_.withSortItems(items).withLimit(Some(limit))))
     )
 
-  def planSortedSkipAndLimit(inner: QueryPlan, skip: Expression, limit: Expression, items: Seq[SortItem]) =
+  def planSortedSkipAndLimit(inner: QueryPlan, skip: Expression, limit: Expression, items: Seq[ast.SortItem]) =
     planSkip(
       QueryPlan(
-        SortedLimit(inner.plan, Add(limit, skip)(limit.position), items),
+        SortedLimit(inner.plan, ast.Add(limit, skip)(limit.position), items),
         inner.solved.updateTailOrSelf(
           _.updateProjections(
             _.withSortItems(items)
@@ -307,5 +321,11 @@ object QueryPlanProducer {
           ))
       ),
       skip
+    )
+
+  def planShortestPaths(inner: QueryPlan, shortestPaths: ShortestPathPattern) =
+    QueryPlan(
+      FindShortestPaths(inner.plan, shortestPaths),
+      inner.solved.updateGraph(_.addShortestPath(shortestPaths))
     )
 }

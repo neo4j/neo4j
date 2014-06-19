@@ -19,161 +19,157 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.junit.Assert._
-import org.junit.Test
-import org.scalatest.Assertions
-import org.hamcrest.CoreMatchers.equalTo
-import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport, CypherException}
+import org.neo4j.cypher.{ExecutionEngineFunSuite, CypherException}
 
-class SyntaxExceptionTest extends ExecutionEngineJUnitSuite {
-  @Test def shouldRaiseErrorWhenMissingIndexValue() {
+class SyntaxExceptionTest extends ExecutionEngineFunSuite {
+  test("shouldRaiseErrorWhenMissingIndexValue") {
     test(
       "start s = node:index(key=) return s",
       "Invalid input ')': expected whitespace, \"...string...\" or a parameter (line 1, column 26)"
     )
   }
 
-  @Test def shouldGiveNiceErrorWhenMissingEqualsSign() {
+  test("shouldGiveNiceErrorWhenMissingEqualsSign") {
     test(
       "start n=node:customer(id : {id}) return n",
       "Invalid input ':': expected whitespace, comment or '=' (line 1, column 26)"
     )
   }
 
-  @Test def shouldRaiseErrorWhenMissingIndexKey() {
+  test("shouldRaiseErrorWhenMissingIndexKey") {
     test(
       "start s = node:index(=\"value\") return s",
       "Invalid input '=': expected whitespace, an identifier, \"...string...\" or a parameter (line 1, column 22)"
     )
   }
 
-  @Test def startWithoutNodeOrRel() {
+  test("startWithoutNodeOrRel") {
     test(
       "start s return s",
       "Invalid input 'r': expected whitespace, comment or '=' (line 1, column 9)"
     )
   }
 
-  @Test def shouldRaiseErrorWhenMissingReturnColumns() {
+  test("shouldRaiseErrorWhenMissingReturnColumns") {
     test(
       "start s = node(0) return",
       "Unexpected end of input: expected whitespace, DISTINCT, '*' or an expression (line 1, column 25)"
     )
   }
 
-  @Test def shouldRaiseErrorWhenMissingReturn() {
+  test("shouldRaiseErrorWhenMissingReturn") {
     test(
       "start s = node(0)",
       "Query cannot conclude with START (must be RETURN or an update clause) (line 1, column 1)"
     )
   }
 
-  @Test def shouldComplainAboutWholeNumbers() {
+  test("shouldComplainAboutWholeNumbers") {
     test(
       "start s=node(0) return s limit -1",
       "Invalid input '-': expected whitespace, comment, an unsigned integer or a parameter (line 1, column 32)"
     )
   }
 
-  @Test def matchWithoutIdentifierHasToHaveParenthesis() {
+  test("matchWithoutIdentifierHasToHaveParenthesis") {
     test(
       "start a = node(0) match a--b, --> a return a",
       "Invalid input '-': expected whitespace, comment or a pattern (line 1, column 31)"
     )
   }
 
-  @Test def matchWithoutIdentifierHasToHaveParenthesis2() {
+  test("matchWithoutIdentifierHasToHaveParenthesis2") {
     test(
       "start a = node(0) match (a) -->, a-->b return a",
       "Invalid input ',': expected whitespace or a node pattern (line 1, column 32)"
     )
   }
 
-  @Test def shouldComplainAboutAStringBeingExpected() {
+  test("shouldComplainAboutAStringBeingExpected") {
     test(
       "start s=node:index(key = value) return s",
       "Invalid input 'v': expected whitespace, comment, \"...string...\" or a parameter (line 1, column 26)"
     )
   }
 
-  @Test def shortestPathCanNotHaveMinimumDepth() {
+  test("shortestPathCanNotHaveMinimumDepth") {
     test(
       "start a=node(0), b=node(1) match p=shortestPath(a-[*2..3]->b) return p",
       "shortestPath(...) does not support a minimal length (line 1, column 36)"
     )
   }
 
-  @Test def shortestPathCanNotHaveMultipleLinksInIt() {
+  test("shortestPathCanNotHaveMultipleLinksInIt") {
     test(
       "start a=node(0), b=node(1) match p=shortestPath(a-->()-->b) return p",
       "shortestPath(...) requires a pattern containing a single relationship (line 1, column 36)"
     )
   }
 
-  @Test def oldNodeSyntaxGivesHelpfulError() {
+  test("oldNodeSyntaxGivesHelpfulError") {
     test(
       "start a=(0) return a",
       "Invalid input '(': expected whitespace, NODE or RELATIONSHIP (line 1, column 9)"
     )
   }
 
-  @Test def weirdSpelling() {
+  test("weirdSpelling") {
     test(
       "start a=ndoe(0) return a",
       "Invalid input 'd': expected 'o/O' (line 1, column 10)"
     )
   }
 
-  @Test def unclosedParenthesis() {
+  test("unclosedParenthesis") {
     test(
       "start a=node(0 return a",
       "Invalid input 'r': expected whitespace, comment, ',' or ')' (line 1, column 16)"
     )
   }
 
-  @Test def trailingComa() {
+  test("trailingComa") {
     test(
       "start a=node(0,1,) return a",
       "Invalid input ')': expected whitespace or an unsigned integer (line 1, column 18)"
     )
   }
 
-  @Test def unclosedCurly() {
+  test("unclosedCurly") {
     test(
       "start a=node({0) return a",
       "Invalid input ')': expected whitespace or '}' (line 1, column 16)"
     )
   }
 
-  @Test def twoEqualSigns() {
+  test("twoEqualSigns") {
     test(
       "start a==node(0) return a",
       "Invalid input '=' (line 1, column 9)"
     )
   }
 
-  @Test def forgetByInOrderBy() {
+  test("forgetByInOrderBy") {
     test(
       "start a=node(0) return a order a.name",
       "Invalid input 'a': expected whitespace, comment or BY (line 1, column 32)"
     )
   }
 
-  @Test def unknownFunction() {
+  test("unknownFunction") {
     test(
       "start a=node(0) return foo(a)",
       "Unknown function 'foo' (line 1, column 24)"
     )
   }
 
-  @Test def usingRandomFunctionInAggregate() {
+  test("usingRandomFunctionInAggregate") {
     test(
       "start a=node(0) return count(rand())",
       "Can't use non-deterministic (random) functions inside of aggregate functions."
     )
   }
 
-  @Test def handlesMultiLineQueries() {
+  test("handlesMultiLineQueries") {
     test(
       """start
          a=node(0),
@@ -188,7 +184,7 @@ class SyntaxExceptionTest extends ExecutionEngineJUnitSuite {
     )
   }
 
-  @Test def createNodeWithout() {
+  test("createNodeWithout") {
     test(
       """start
          a=node(0),
@@ -206,11 +202,11 @@ class SyntaxExceptionTest extends ExecutionEngineJUnitSuite {
   def test(query: String, message: String) {
     try {
       execute(query)
-      fail(s"Did not get the expected syntax error, expected: ${message}")
+      fail(s"Did not get the expected syntax error, expected: $message")
     } catch {
       case x: CypherException => {
         val actual = x.getMessage.lines.next.trim
-        assertThat(actual, equalTo(message))
+        actual should equal(message)
       }
     }
   }

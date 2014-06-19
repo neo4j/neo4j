@@ -99,7 +99,7 @@ public class HostnamePort
         return host;
     }
 
-    public String getHost( String defaultHost )
+    public static String getHostAddress( String host, String defaultHost )
     {
         if (host == null)
             return defaultHost;
@@ -116,6 +116,11 @@ public class HostnamePort
         {
             return host;
         }
+    }
+    
+    public String getHost( String defaultHost )
+    {
+    	return getHostAddress( host, defaultHost );
     }
 
     /**
@@ -193,8 +198,10 @@ public class HostnamePort
             return false;
         }
 
-        // URI always contains IP, so make sure we convert ours too
-
-        return result && getHost(null).equalsIgnoreCase( toMatch.getHost() );
+        // URI may contain IP, so make sure we check it too by converting ours, if necessary
+        String toMatchHost = toMatch.getHost();
+        
+        // this tries to match hostnames as they are at first, then tries to extract and match ip addresses of both
+        return result && ( host.equalsIgnoreCase( toMatchHost ) || getHost(null).equalsIgnoreCase( getHostAddress( toMatchHost, toMatchHost ) ) );
     }
 }

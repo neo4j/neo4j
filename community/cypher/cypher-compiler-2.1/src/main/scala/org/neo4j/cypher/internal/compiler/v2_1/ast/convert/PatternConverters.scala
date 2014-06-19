@@ -25,7 +25,7 @@ import commands.{expressions => commandexpressions, values => commandvalues}
 import commands.expressions.{Expression => CommandExpression}
 import org.neo4j.helpers.ThisShouldNotHappenError
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.{SyntaxException, PatternException}
+import org.neo4j.cypher.SyntaxException
 
 object PatternConverters {
 
@@ -123,11 +123,12 @@ object PatternConverters {
           throw new ThisShouldNotHappenError("Chris", "This should be caught during semantic checking")
       }
       val reltypes = rel.types.map(_.name)
+      val relIteratorName = rel.identifier.map(_.name)
       val maxDepth = rel.length match {
         case Some(Some(ast.Range(None, Some(i)))) => Some(i.value.toInt)
         case _                                => None
       }
-      Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, maxDepth, part.single, None))
+      Seq(commands.ShortestPath(pathName, leftName, rightName, reltypes, rel.direction, maxDepth, part.single, relIteratorName))
     }
 
     def asLegacyNamedPath(pathName: String) = None

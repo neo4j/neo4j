@@ -31,6 +31,7 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
 {
 
     private static final String KEEP_LOGICAL_LOGS = "keep_logical_logs";
+    private static final String ALL_STORES_MAPPED_MEM = "all_stores_total_mapped_memory_size";
 
     {
         add( new SpecificPropertyMigration( "enable_online_backup",
@@ -157,6 +158,57 @@ public class GraphDatabaseConfigurationMigrator extends BaseConfigurationMigrato
 
         add( new ConfigValueChanged( "cache_type", "gcr", "hpc",
                 "'gcr' cache type has been renamed to 'hpc', High Performance Cache." ));
+
+        add( new SpecificPropertyMigration("neostore.nodestore.db.mapped_memory",
+                "The neostore.*.db.mapped_memory settings have been replaced by the single '" +
+                 ALL_STORES_MAPPED_MEM + "'. The sum of the old configuration will be used as the" +
+                " value for the new setting.")
+        {
+            private final String[] oldKeys = new String[]{
+                    "neostore.nodestore.db.mapped_memory",
+                    "neostore.propertystore.db.mapped_memory",
+                    "neostore.propertystore.db.index.mapped_memory",
+                    "neostore.propertystore.db.index.keys.mapped_memory",
+                    "neostore.propertystore.db.strings.mapped_memory",
+                    "neostore.propertystore.db.arrays.mapped_memory",
+                    "neostore.relationshipstore.db.mapped_memory" };
+
+            @Override
+            public boolean appliesTo( Map<String, String> rawConfiguration )
+            {
+                if(rawConfiguration.containsKey( ALL_STORES_MAPPED_MEM ))
+                {
+                    return false;
+                }
+
+                for ( String oldKey : oldKeys )
+                {
+                    if(rawConfiguration.containsKey( oldKey ))
+                    {
+                        return true;
+                    }
+                }
+                return false;
+            }
+
+            @Override
+            public void setValueWithOldSetting( String value, Map<String, String> rawConfiguration )
+            {
+                long total = 0;
+                for ( String oldKey : oldKeys )
+                {
+                    if(rawConfiguration.containsKey( oldKey ))
+                    {
+                        total += Settings.BYTES.apply( rawConfiguration.get( oldKey ) );
+                    }
+                }
+
+                if(total > 0)
+                {
+                    rawConfiguration.put( ALL_STORES_MAPPED_MEM, Long.toString( total ) );
+                }
+            }
+        });
     }
 
     @Deprecated

@@ -19,20 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{CandidateList, QueryGraphSolvingContext, LeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanningContext, CandidateList, LeafPlanner}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{PatternExpression, UsingScanHint, Identifier}
 
 object labelScanLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: QueryGraphSolvingContext) = {
+  def apply(qg: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]) = {
     implicit val semanticTable = context.semanticTable
     val labelPredicateMap = qg.selections.labelPredicates
 
     CandidateList(
       for (idName <- qg.patternNodes.toSeq;
            labelPredicate <- labelPredicateMap.getOrElse(idName, Set.empty);
-           labelName <- labelPredicate.labels) yield
-        planNodeByLabelScan(idName, labelName.either, Seq(labelPredicate))
+           labelName <- labelPredicate.labels) yield {
+        val identName = idName.name
+        val hint = qg.hints.collectFirst {
+          case hint@UsingScanHint(Identifier(`identName`), `labelName`) => hint
+        }
+
+        planNodeByLabelScan(idName, labelName.either, Seq(labelPredicate), hint)
+      }
     )
   }
 }

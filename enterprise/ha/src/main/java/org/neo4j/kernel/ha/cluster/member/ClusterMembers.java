@@ -64,7 +64,7 @@ public class ClusterMembers
         };
     }
 
-    private final Map<InstanceId, ClusterMember> members = new CopyOnWriteHashMap<InstanceId, ClusterMember>();
+    private final Map<InstanceId, ClusterMember> members = new CopyOnWriteHashMap<>();
 
     public ClusterMembers( Cluster cluster, Heartbeat heartbeat, ClusterMemberEvents clusterMemberEvents,
                            InstanceId me )
@@ -125,9 +125,9 @@ public class ClusterMembers
         }
 
         @Override
-        public void leftCluster( InstanceId member )
+        public void leftCluster( InstanceId instanceId, URI member )
         {
-            members.remove( member );
+            members.remove( instanceId );
         }
     }
 

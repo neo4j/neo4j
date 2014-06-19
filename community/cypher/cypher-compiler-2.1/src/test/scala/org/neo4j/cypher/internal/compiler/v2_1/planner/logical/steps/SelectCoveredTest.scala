@@ -20,25 +20,26 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{SignedIntegerLiteral, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{SignedDecimalIntegerLiteral, PatternExpression, Expression}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{QueryPlan, IdName}
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
-  implicit val planContext = newMockedPlanContext
-
+  private implicit val planContext = newMockedPlanContext
+  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
+  private implicit val context = newMockedLogicalPlanningContext(planContext)
 
   test("when a predicate that isn't already solved is solvable it should be applied") {
     // Given
     val predicate = mock[Expression]
     val queryPlan = newMockedQueryPlan("x")
     val selections = Selections(Set(Predicate(queryPlan.availableSymbols, predicate)))
-    implicit val context = newMockedQueryGraphSolvingContext(planContext,
-      query = QueryGraph(selections = selections))
+
+    val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(queryPlan)
+    val result = selectCovered(queryPlan, qg)
 
     // Then
     result should equal(planSelection(Seq(predicate), queryPlan))
@@ -48,13 +49,12 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // Given
     val predicate = mock[Expression]
     val selections = Selections(Set(Predicate(Set(IdName("x")), predicate)))
-    implicit val context = newMockedQueryGraphSolvingContext(planContext,
-      query = QueryGraph(selections = selections))
     val queryPlan = newMockedQueryPlanWithProjections("x")
 
+    val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(queryPlan)
+    val result = selectCovered(queryPlan, qg)
 
     // Then
     result should equal(planSelection(Seq(predicate), queryPlan))
@@ -67,12 +67,12 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     val selections = Selections(Set(
       Predicate(Set(IdName("x")), predicate1),
       Predicate(Set(IdName("x")), predicate2)))
-    implicit val context = newMockedQueryGraphSolvingContext(planContext,
-      query = QueryGraph(selections = selections))
     val queryPlan: QueryPlan = newMockedQueryPlanWithProjections("x")
 
+    val qg = QueryGraph(selections = selections)
+
     // When
-    val result = selectCovered(queryPlan)
+    val result = selectCovered(queryPlan, qg)
 
     // Then
     result should equal(planSelection(Seq(predicate1, predicate2), queryPlan))
@@ -80,15 +80,12 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("when a predicate is already solved, it should not be applied again") {
     // Given
-    implicit val context = newMockedQueryGraphSolvingContext(planContext)
-
     val coveredIds = Set(IdName("x"))
-    val selectionsQG = QueryGraph(selections = Selections(Set(Predicate(coveredIds, SignedIntegerLiteral("1")_))))
-
-    val queryPlan = newMockedQueryPlanWithProjections("x").copy(solved = PlannerQuery(selectionsQG))
+    val qg = QueryGraph(selections = Selections(Set(Predicate(coveredIds, SignedDecimalIntegerLiteral("1")_))))
+    val queryPlan = newMockedQueryPlanWithProjections("x").copy(solved = PlannerQuery(qg))
 
     // When
-    val result = selectCovered(queryPlan)(context.copy(queryGraph = selectionsQG))
+    val result = selectCovered(queryPlan, qg)
 
     // Then
     result should equal(queryPlan)
@@ -98,11 +95,11 @@ class SelectCoveredTest extends CypherFunSuite with LogicalPlanningTestSupport {
     // Given
     val predicate = mock[Expression]
     val selections = Selections(Set(Predicate(Set(IdName("x"), IdName("y")), predicate)))
-    implicit val context = newMockedQueryGraphSolvingContext(planContext, query = QueryGraph(selections = selections))
     val queryPlan = newMockedQueryPlanWithProjections("x")
+    val qg = QueryGraph(selections = selections)
 
     // When
-    val result = selectCovered(queryPlan)
+    val result = selectCovered(queryPlan, qg)
 
     // Then
     result should equal(queryPlan)

@@ -20,12 +20,11 @@
     <neo4j.version>2.2-SNAPSHOT</neo4j.version>
     <bundle.namespace>org.neo4j.consistency</bundle.namespace>
     <short-name>consistency-check</short-name>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/enterprise/consistency-check</url>
+    <url>https://github.com/neo4j/neo4j/tree/master/enterprise/consistency-check</url>
   </scm>
 
   <licenses>
@@ -75,6 +74,14 @@ terms of the relevant Commercial Agreement.
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.mockito</groupId>
       <artifactId>mockito-core</artifactId>
@@ -86,36 +93,4 @@ terms of the relevant Commercial Agreement.
       <scope>test</scope>
     </dependency>
   </dependencies>
-
-  <build>
-    <plugins>
-      <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <configuration>
-          <reportPlugins combine.children="append">
-            <plugin>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <configuration>
-                <detectJavaApiLink>true</detectJavaApiLink>
-                <detectLinks>true</detectLinks>
-                <quiet>true</quiet>
-                <excludePackageNames>*.impl.*</excludePackageNames>
-              </configuration>
-              <reports>
-                <report>javadoc</report>
-              </reports>
-            </plugin>
-          </reportPlugins>
-        </configuration>
-        <executions>
-          <execution>
-            <id>attach-descriptor</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
-
 </project>
-

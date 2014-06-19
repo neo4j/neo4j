@@ -505,7 +505,7 @@ public class IndexingServiceTest
         when( indexProvider.storeMigrationParticipant() ).thenReturn( StoreMigrationParticipant.NOT_PARTICIPATING );
 
         return life.add( new IndexingService(
-                life.add( new Neo4jJobScheduler( logger ) ), new DefaultSchemaIndexProviderMap( indexProvider ),
+                life.add( new Neo4jJobScheduler() ), new DefaultSchemaIndexProviderMap( indexProvider ),
                 storeView, mock( TokenNameLookup.class ), schemaState, mockLogging( logger ), IndexingService.NO_MONITOR ) );
     }
 

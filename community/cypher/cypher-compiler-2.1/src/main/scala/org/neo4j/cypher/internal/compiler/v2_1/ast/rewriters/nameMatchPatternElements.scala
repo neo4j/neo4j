@@ -24,7 +24,7 @@ import ast._
 import org.neo4j.cypher.internal.compiler.v2_1.helpers.UnNamedNameGenerator
 
 object nameMatchPatternElements extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = findingRewriter.apply(that)
+  def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
 
   private val namingRewriter: Rewriter = Rewriter.lift {
     case pattern: NodePattern if !pattern.identifier.isDefined =>
@@ -39,14 +39,14 @@ object nameMatchPatternElements extends Rewriter {
 
   private val findingRewriter: Rewriter = Rewriter.lift {
     case m: Match =>
-      val rewrittenPattern = m.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[Pattern]
+      val rewrittenPattern = m.pattern.endoRewrite(bottomUp(namingRewriter))
       m.copy(pattern = rewrittenPattern)(m.position)
   }
 }
 
 // TODO: When Ronja is the only planner left, move these to nameMatchPatternElements
 object nameVarLengthRelationships extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = findingRewriter.apply(that)
+  def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
 
   private val namingRewriter: Rewriter = Rewriter.lift {
     case pattern: RelationshipPattern if !pattern.identifier.isDefined && pattern.length.isDefined =>
@@ -56,14 +56,14 @@ object nameVarLengthRelationships extends Rewriter {
 
   private val findingRewriter: Rewriter = Rewriter.lift {
     case m: Match =>
-      val rewrittenPattern = m.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[Pattern]
+      val rewrittenPattern = m.pattern.endoRewrite(bottomUp(namingRewriter))
       m.copy(pattern = rewrittenPattern)(m.position)
   }
 }
 
 // TODO: When Ronja is the only planner left, move these to nameMatchPatternElements
 object namePatternPredicates extends Rewriter {
-  def apply(that: AnyRef): Option[AnyRef] = findingRewriter.apply(that)
+  def apply(that: AnyRef): Option[AnyRef] = bottomUp(findingRewriter).apply(that)
 
   private val namingRewriter: Rewriter = Rewriter.lift {
     case pattern: NodePattern if !pattern.identifier.isDefined =>
@@ -77,7 +77,7 @@ object namePatternPredicates extends Rewriter {
 
   private val findingRewriter: Rewriter = Rewriter.lift {
     case exp: PatternExpression =>
-      val rewrittenPattern = exp.pattern.rewrite(bottomUp(namingRewriter)).asInstanceOf[RelationshipsPattern]
+      val rewrittenPattern = exp.pattern.endoRewrite(bottomUp(namingRewriter))
       exp.copy(pattern = rewrittenPattern)
   }
 }

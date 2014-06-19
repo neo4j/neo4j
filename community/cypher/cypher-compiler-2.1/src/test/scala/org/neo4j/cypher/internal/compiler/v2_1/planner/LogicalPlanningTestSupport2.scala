@@ -50,7 +50,7 @@ trait BeLikeMatcher {
 
 object BeLikeMatcher extends BeLikeMatcher
 
-case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
+case class SemanticPlan(plan: QueryPlan, semanticTable: SemanticTable)
 
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
 
@@ -70,19 +70,27 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
   val realConfig = new RealLogicalPlanningConfiguration
 
   trait LogicalPlanningConfiguration {
-    def selectivityModel(statistics: GraphStatistics, semanticTable: SemanticTable): PartialFunction[Expression, Double]
-    def cardinalityModel(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): PartialFunction[LogicalPlan, Double]
-    def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Double]
+    def selectivityModel(statistics: GraphStatistics, semanticTable: SemanticTable): PartialFunction[Expression, Multiplier]
+    def cardinalityModel(statistics: GraphStatistics, selectivity: SelectivityModel, semanticTable: SemanticTable): PartialFunction[LogicalPlan, Cardinality]
+    def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost]
     def graphStatistics: GraphStatistics
     def indexes: Set[(String, String)]
     def uniqueIndexes: Set[(String, String)]
-    def labelCardinality: Map[String, Double]
+    def labelCardinality: Map[String, Cardinality]
+    def knownLabels: Set[String]
+    def qg: QueryGraph
 
     class given extends StubbedLogicalPlanningConfiguration(this)
 
     def planFor(queryString: String): SemanticPlan = {
       LogicalPlanningEnvironment(this).planFor(queryString)
     }
+
+    def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {
+      LogicalPlanningEnvironment(this).withLogicalPlanningContext(f)
+    }
+
+    protected def mapCardinality(pf:PartialFunction[LogicalPlan, Double]): PartialFunction[LogicalPlan, Cardinality] = pf.andThen(Cardinality.apply)
   }
 
   case class RealLogicalPlanningConfiguration() extends LogicalPlanningConfiguration {
@@ -98,7 +106,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         case (expr: Expression) => model(expr)
       })
     }
-    def costModel(cardinality: CardinalityModel) = {
+    def costModel(cardinality: CardinalityModel): PartialFunction[LogicalPlan, Cost] = {
       val model = new SimpleCostModel(cardinality)
       ({
         case (plan: LogicalPlan) => model(plan)
@@ -109,14 +117,18 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def indexes = Set.empty
     def uniqueIndexes = Set.empty
     def labelCardinality = Map.empty
+    def knownLabels = Set.empty
+    def qg: QueryGraph = ???
   }
 
   class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
-    var cardinality: PartialFunction[LogicalPlan, Double] = PartialFunction.empty
-    var cost: PartialFunction[LogicalPlan, Double] = PartialFunction.empty
-    var selectivity: PartialFunction[Expression, Double] = PartialFunction.empty
-    var labelCardinality: Map[String, Double] = Map.empty
+    var knownLabels: Set[String] = Set.empty
+    var cardinality: PartialFunction[LogicalPlan, Cardinality] = PartialFunction.empty
+    var cost: PartialFunction[LogicalPlan, Cost] = PartialFunction.empty
+    var selectivity: PartialFunction[Expression, Multiplier] = PartialFunction.empty
+    var labelCardinality: Map[String, Cardinality] = Map.empty
     var statistics = null
+    var qg: QueryGraph = null
 
     var indexes: Set[(String, String)] = Set.empty
     var uniqueIndexes: Set[(String, String)] = Set.empty
@@ -129,12 +141,13 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     def costModel(cardinality: Metrics.CardinalityModel) =
       cost.orElse(parent.costModel(cardinality))
+
     def cardinalityModel(statistics: GraphStatistics, selectivity: Metrics.SelectivityModel, semanticTable: SemanticTable) = {
-      val labelIdCardinality = labelCardinality.map {
-        case (name: String, cardinality: Double) =>
+      val labelIdCardinality: Map[LabelId, Cardinality] = labelCardinality.map {
+        case (name: String, cardinality: Cardinality) =>
           semanticTable.resolvedLabelIds(name) -> cardinality
       }
-      val labelScanCardinality: PartialFunction[LogicalPlan, Double] = {
+      val labelScanCardinality: PartialFunction[LogicalPlan, Cardinality] = {
         case NodeByLabelScan(_, Right(labelId)) if labelIdCardinality.contains(labelId) =>
           labelIdCardinality(labelId)
       }
@@ -164,17 +177,20 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
 
     lazy val semanticTable: SemanticTable = {
       val table = SemanticTable()
+      def addLabelIfUnknown(labelName: String) =
+        if (!table.resolvedLabelIds.contains(labelName))
+          table.resolvedLabelIds.put(labelName, LabelId(table.resolvedLabelIds.size))
+
       config.indexes.foreach { case (label, property) =>
-        table.resolvedLabelIds.put(label, LabelId(table.resolvedLabelIds.size))
+        addLabelIfUnknown(label)
         table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
       }
       config.uniqueIndexes.foreach { case (label, property) =>
-        table.resolvedLabelIds.put(label, LabelId(table.resolvedLabelIds.size))
+        addLabelIfUnknown(label)
         table.resolvedPropertyKeyNames.put(property, PropertyKeyId(table.resolvedPropertyKeyNames.size))
       }
-      config.labelCardinality.keys.foreach {label =>
-        table.resolvedLabelIds.put(label, LabelId(table.resolvedLabelIds.size))
-      }
+      config.labelCardinality.keys.foreach(addLabelIfUnknown)
+      config.knownLabels.foreach(addLabelIfUnknown)
       table
     }
 
@@ -186,6 +202,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       def newCardinalityEstimator(statistics: GraphStatistics, selectivity: Metrics.SelectivityModel, semanticTable: SemanticTable) =
         config.cardinalityModel(statistics, selectivity, semanticTable)
     }
+
+    def table = Map.empty[PatternExpression, QueryGraph]
 
     def planContext = new PlanContext {
       def statistics: GraphStatistics =
@@ -233,19 +251,34 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       semanticChecker.check(queryString, parsedStatement)
       val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement)
       val semanticTable = semanticChecker.check(queryString, rewrittenStatement)
-      SemanticPlan(planner.rewriteStatement(rewrittenStatement) match {
+      SemanticPlan(Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          planner.produceQueryPlan(ast, semanticTable)(planContext).plan
+          val (queryPlan, _) = planner.produceQueryPlan(ast, semanticTable)(planContext)
+          queryPlan
       }, semanticTable)
     }
+
+    def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {
+      val ctx = LogicalPlanningContext(
+        planContext = planContext,
+        metrics = metricsFactory.newMetrics(config.graphStatistics, semanticTable),
+        semanticTable = semanticTable,
+        strategy = queryGraphSolver
+      )
+      f(ctx, table)
+    }
   }
+
+  def fakeQueryPlanFor(id: String*): QueryPlan = QueryPlan(FakePlan(id.map(IdName).toSet), PlannerQuery.empty)
 
   def planFor(queryString: String): SemanticPlan = new given().planFor(queryString)
 
   class given extends StubbedLogicalPlanningConfiguration(realConfig)
 
   implicit def idName(name: String): IdName = IdName(name)
-  implicit def labelId(label: String)(implicit plan: SemanticPlan): Either[String, LabelId] =
-    Right(plan.semanticTable.resolvedLabelIds(label))
+  implicit def labelId(label: String)(implicit plan: SemanticPlan): LabelId =
+    plan.semanticTable.resolvedLabelIds(label)
+  implicit def propertyKeyId(label: String)(implicit plan: SemanticPlan): PropertyKeyId =
+    plan.semanticTable.resolvedPropertyKeyNames(label)
 }

@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.ExecutorService;
-import java.util.concurrent.ScheduledFuture;
+import java.util.concurrent.Future;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 
@@ -33,71 +31,49 @@ import static java.util.concurrent.Executors.newCachedThreadPool;
 
 public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
 {
-    private final StringLogger log;
     private final String id;
 
     private ExecutorService executor;
     private ScheduledThreadPoolExecutor scheduledExecutor;
-    private final ConcurrentMap<Runnable, ScheduledFuture<?>> recurringJobs = new ConcurrentHashMap<>();
 
-    public Neo4jJobScheduler( StringLogger log )
+    public Neo4jJobScheduler()
     {
-        this.log = log;
         this.id = getClass().getSimpleName();
     }
 
-    public Neo4jJobScheduler( String id, StringLogger log )
+    public Neo4jJobScheduler( String id )
     {
-        this.log = log;
         this.id = id;
     }
 
     @Override
-    public void start()
+    public void init()
     {
-        this.executor = newCachedThreadPool(new DaemonThreadFactory("Neo4j " + id));
+        this.executor = newCachedThreadPool( new DaemonThreadFactory( "Neo4j " + id ) );
         this.scheduledExecutor = new ScheduledThreadPoolExecutor( 2 );
-
-        //scheduledExecutor.setContinueExistingPeriodicTasksAfterShutdownPolicy( false );
-        //scheduledExecutor.setExecuteExistingDelayedTasksAfterShutdownPolicy( false );
     }
 
     @Override
-    public void schedule( Group group, Runnable job )
+    public JobHandle schedule( Group group, Runnable job )
     {
-        this.executor.submit( job );
+        return new Handle( this.executor.submit( job ) );
     }
 
     @Override
-    public void scheduleRecurring( Group group, final Runnable runnable, long period, TimeUnit timeUnit )
+    public JobHandle scheduleRecurring( Group group, final Runnable runnable, long period, TimeUnit timeUnit )
     {
-        scheduleRecurring( group, runnable, 0, period, timeUnit );
+        return scheduleRecurring( group, runnable, 0, period, timeUnit );
     }
 
     @Override
-    public void scheduleRecurring( Group group, final Runnable runnable, long initialDelay, long period, TimeUnit timeUnit )
+    public JobHandle scheduleRecurring( Group group, final Runnable runnable, long initialDelay, long period,
+                                        TimeUnit timeUnit )
     {
-        ScheduledFuture<?> scheduled = scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit );
-        if(recurringJobs.putIfAbsent( runnable, scheduled ) != null)
-        {
-            scheduled.cancel( true );
-            throw new IllegalArgumentException( runnable + " is already scheduled. Please implement a unique " +
-                    ".equals() method for each runnable you would like to execute." );
-        }
+        return new Handle( scheduledExecutor.scheduleAtFixedRate( runnable, initialDelay, period, timeUnit ) );
     }
 
     @Override
-    public void cancelRecurring( Group group, Runnable runnable )
-    {
-        ScheduledFuture<?> toCancel = recurringJobs.remove( runnable );
-        if(toCancel != null)
-        {
-            toCancel.cancel( false );
-        }
-    }
-
-    @Override
-    public void stop()
+    public void shutdown()
     {
         RuntimeException exception = null;
         try
@@ -137,6 +113,22 @@ public class Neo4jJobScheduler extends LifecycleAdapter implements JobScheduler
         if(exception != null)
         {
             throw new RuntimeException( "Unable to shut down job scheduler properly.", exception);
+        }
+    }
+
+    private class Handle implements JobHandle
+    {
+        private final Future<?> job;
+
+        public Handle( Future<?> job )
+        {
+            this.job = job;
+        }
+
+        @Override
+        public void cancel( boolean mayInterruptIfRunning )
+        {
+            job.cancel( mayInterruptIfRunning );
         }
     }
 }

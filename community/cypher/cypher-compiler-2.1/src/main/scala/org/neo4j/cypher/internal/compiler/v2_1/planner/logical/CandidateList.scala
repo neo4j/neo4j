@@ -29,11 +29,13 @@ case class CandidateList(plans: Seq[QueryPlan] = Seq.empty) {
   def +(plan: QueryPlan) = copy(plans :+ plan)
 
   def bestPlan(costs: CostModel): Option[QueryPlan] = {
-    val sortedPlans = plans.sortBy[(Double, Int)](c => (costs(c.plan), -c.availableSymbols.size))
+    val sortedPlans = plans.sortBy[(Int, Cost, Int)](c => (-c.solved.numHints, costs(c.plan), -c.availableSymbols.size))
     sortedPlans.headOption
   }
 
   def map(f: QueryPlan => QueryPlan): CandidateList = copy(plans = plans.map(f))
+
+  def isEmpty = plans.isEmpty
 }
 
 object Candidates {

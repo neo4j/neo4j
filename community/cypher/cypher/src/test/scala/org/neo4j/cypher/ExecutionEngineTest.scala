@@ -19,79 +19,80 @@
  */
 package org.neo4j.cypher
 
-import org.hamcrest.CoreMatchers._
 import org.neo4j.graphdb._
 import org.neo4j.kernel.TopLevelTransaction
 import org.neo4j.test.ImpermanentGraphDatabase
-import org.junit.Assert._
 import scala.collection.JavaConverters._
-import org.junit.{Ignore, Test}
 import java.util.concurrent.TimeUnit
 import org.neo4j.cypher.internal.PathImpl
 import org.neo4j.graphdb.factory.{GraphDatabaseSettings, GraphDatabaseFactory}
-import org.neo4j.kernel.impl.util.FileUtils
 import java.io.{PrintWriter, File}
 import org.neo4j.cypher.internal.commons.CreateTempFileTestSupport
+import org.neo4j.io.fs.FileUtils
 
-class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
-  @Test def shouldGetRelationshipById() {
+class ExecutionEngineTest extends ExecutionEngineFunSuite with QueryStatisticsTestSupport with CreateTempFileTestSupport {
+  test("shouldGetRelationshipById") {
     val n = createNode()
     val r = relate(n, createNode(), "KNOWS")
 
     val result = execute("start r=rel(0) return r")
-    assertEquals(List(r), result.columnAs[Relationship]("r").toList)
+
+    result.columnAs[Relationship]("r").toList should equal(List(r))
   }
 
-  @Test def shouldFilterOnGreaterThan() {
+  test("shouldFilterOnGreaterThan") {
     val n = createNode()
     val result = execute("start node=node(0) where 0<1 return node")
 
-    assertEquals(List(n), result.columnAs[Node]("node").toList)
+    result.columnAs[Node]("node").toList should equal(List(n))
   }
 
-  @Test def shouldFilterOnRegexp() {
+  test("shouldFilterOnRegexp") {
     val n1 = createNode(Map("name" -> "Andres"))
     val n2 = createNode(Map("name" -> "Jim"))
 
     val result = execute(
       s"start node=node(${n1.getId}, ${n2.getId}) where node.name =~ 'And.*' return node"
     )
-    assertEquals(List(n1), result.columnAs[Node]("node").toList)
+    result.columnAs[Node]("node").toList should equal(List(n1))
   }
 
-  @Test def shouldGetOtherNode() {
+  test("shouldGetOtherNode") {
     val node: Node = createNode()
 
     val result = execute(s"start node=node(${node.getId}) return node")
-    assertEquals(List(node), result.columnAs[Node]("node").toList)
+
+    result.columnAs[Node]("node").toList should equal(List(node))
   }
 
-  @Test def shouldGetRelationship() {
+  test("shouldGetRelationship") {
     val node: Node = createNode()
     val rel: Relationship = relate(createNode(), node, "yo")
 
     val result = execute(s"start rel=rel(${rel.getId}) return rel")
-    assertEquals(List(rel), result.columnAs[Relationship]("rel").toList)
+
+    result.columnAs[Relationship]("rel").toList should equal(List(rel))
   }
 
-  @Test def shouldGetTwoNodes() {
+  test("shouldGetTwoNodes") {
     val node1: Node = createNode()
     val node2: Node = createNode()
 
     val result = execute(s"start node=node(${node1.getId}, ${node2.getId}) return node")
-    assertEquals(List(node1, node2), result.columnAs[Node]("node").toList)
+
+    result.columnAs[Node]("node").toList should equal(List(node1, node2))
   }
 
-  @Test def shouldGetNodeProperty() {
+  test("shouldGetNodeProperty") {
     val name = "Andres"
     val node: Node = createNode(Map("name" -> name))
 
     val result = execute(s"start node=node(${node.getId}) return node.name")
-    val list = result.columnAs[String]("node.name").toList
-    assertEquals(List(name), list)
+
+    result.columnAs[String]("node.name").toList should equal(List(name))
   }
 
-  @Test def shouldOutputTheCartesianProductOfTwoNodes() {
+  test("shouldOutputTheCartesianProductOfTwoNodes") {
     val n1: Node = createNode()
     val n2: Node = createNode()
 
@@ -99,10 +100,10 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
       s"start n1=node(${n1.getId}), n2=node(${n2.getId}) return n1, n2"
     )
 
-    assertEquals(List(Map("n1" -> n1, "n2" -> n2)), result.toList)
+    result.toList should equal(List(Map("n1" -> n1, "n2" -> n2)))
   }
 
-  @Test def executionResultTextualOutput() {
+  test("executionResultTextualOutput") {
     val n1: Node = createNode()
     val n2: Node = createNode()
     val n3: Node = createNode()
@@ -115,7 +116,7 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
     result.dumpToString()
   }
 
-  @Test def shouldFindNodesByExactIndexLookup() {
+  test("shouldFindNodesByExactIndexLookup") {
     val n = createNode()
     val idxName = "idxName"
     val key = "key"
@@ -124,10 +125,12 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
 
     val query = s"start n=node:$idxName($key = '$value') return n"
 
-    assertInTx(List(Map("n" -> n)) === execute(query).toList)
+    graph.inTx {
+      execute(query).toList should equal(List(Map("n" -> n)))
+    }
   }
 
-  @Test def shouldFindNodesByIndexQuery() {
+  test("shouldFindNodesByIndexQuery") {
     val n = createNode()
     val idxName = "idxName"
     val key = "key"
@@ -136,10 +139,12 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
 
     val query = s"start n=node:$idxName('$key: $value') return n"
 
-    assertInTx(List(Map("n" -> n)) === execute(query).toList)
+    graph.inTx {
+      execute(query).toList should equal(List(Map("n" -> n)))
+    }
   }
 
-  @Test def shouldFindNodesByIndexParameters() {
+  test("shouldFindNodesByIndexParameters") {
     val n = createNode()
     val idxName = "idxName"
     val key = "key"
@@ -147,10 +152,12 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
 
     val query = s"start n=node:$idxName(key = {value}) return n"
 
-    assertInTx(List(Map("n" -> n)) === execute(query, "value" -> "Andres").toList)
+    graph.inTx {
+      execute(query, "value" -> "Andres").toList should equal(List(Map("n" -> n)))
+    }
   }
 
-  @Test def shouldFindNodesByIndexWildcardQuery() {
+  test("shouldFindNodesByIndexWildcardQuery") {
     val n = createNode()
     val idxName = "idxName"
     val key = "key"
@@ -159,10 +166,12 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
 
     val query = s"start n=node:$idxName('$key:andr*') return n"
 
-    assertInTx(List(Map("n" -> n)) === execute(query).toList)
+    graph.inTx {
+      execute(query).toList should equal(List(Map("n" -> n)))
+    }
   }
 
-  @Test def shouldHandleOrFilters() {
+  test("shouldHandleOrFilters") {
     val n1 = createNode(Map("name" -> "boy"))
     val n2 = createNode(Map("name" -> "girl"))
 
@@ -170,10 +179,10 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
       s"start n=node(${n1.getId}, ${n2.getId}) where n.name = 'boy' OR n.name = 'girl' return n"
     )
 
-    assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
+    result.columnAs[Node]("n").toList should equal(List(n1, n2))
   }
 
-  @Test def shouldHandleXorFilters() {
+  test("shouldHandleXorFilters") {
     val n1 = createNode(Map("name" -> "boy"))
     val n2 = createNode(Map("name" -> "girl"))
 
@@ -181,10 +190,10 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
       s"start n=node(${n1.getId}, ${n2.getId}) where n.name = 'boy' XOR n.name = 'girl' return n"
     )
 
-    assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
+    result.columnAs[Node]("n").toList should equal(List(n1, n2))
   }
 
-  @Test def shouldHandleNestedAndOrFilters() {
+  test("shouldHandleNestedAndOrFilters") {
     val n1 = createNode(Map("animal" -> "monkey", "food" -> "banana"))
     val n2 = createNode(Map("animal" -> "cow", "food" -> "grass"))
     val n3 = createNode(Map("animal" -> "cow", "food" -> "banana"))
@@ -198,35 +207,35 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
         """
     )
 
-    assertEquals(List(n1, n2), result.columnAs[Node]("n").toList)
+    result.columnAs[Node]("n").toList should equal(List(n1, n2))
   }
 
-  @Test def shouldBeAbleToOutputNullForMissingProperties() {
+  test("shouldBeAbleToOutputNullForMissingProperties") {
     createNode()
     val result = execute("start n=node(0) return n.name")
-    assertEquals(List(Map("n.name" -> null)), result.toList)
+    result.toList should equal(List(Map("n.name" -> null)))
   }
 
-  @Test def magicRelTypeOutput() {
+  test("magicRelTypeOutput") {
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
     relate("A" -> "HATES" -> "C")
 
     val result = execute("start n = node(0) match n-[r]->x return type(r)")
 
-    assertEquals(List("KNOWS", "HATES"), result.columnAs[String]("type(r)").toList)
+    result.columnAs[String]("type(r)").toList should equal(List("KNOWS", "HATES"))
   }
 
-  @Test def shouldReturnPathLength() {
+  test("shouldReturnPathLength") {
     createNodes("A", "B")
     relate("A" -> "KNOWS" -> "B")
 
     val result = execute("start n = node(0) match p = n-->x return length(p)")
 
-    assertEquals(List(1), result.columnAs[Int]("length(p)").toList)
+    result.columnAs[Int]("length(p)").toList should equal(List(1))
   }
 
-  @Test def testZeroLengthVarLenPathInTheMiddle() {
+  test("testZeroLengthVarLenPathInTheMiddle") {
     createNodes("A", "B", "C", "D", "E")
     relate("A" -> "CONTAINS" -> "B")
     relate("B" -> "FRIEND" -> "C")
@@ -234,15 +243,16 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
 
     val result = execute("start a=node(0) match a-[:CONTAINS*0..1]->b-[:FRIEND*0..1]->c return a,b,c")
 
-    assertEquals(
+    result.toSet should equal(
       Set(
         Map("a" -> node("A"), "b" -> node("A"), "c" -> node("A")),
         Map("a" -> node("A"), "b" -> node("B"), "c" -> node("B")),
-        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))),
-      result.toSet)
+        Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))
+      )
+    )
   }
 
-  @Test def shouldBeAbleToTakeParamsInDifferentTypes() {
+  test("shouldBeAbleToTakeParamsInDifferentTypes") {
     createNodes("A", "B", "C", "D", "E")
 
     val query =
@@ -259,49 +269,54 @@ class ExecutionEngineTest extends ExecutionEngineJUnitSuite with QueryStatistics
       "1" -> List(4)
     )
 
-    assertEquals(1, result.toList.size)
+    result.toList should have size 1
   }
 
-  @Test(expected = classOf[CypherTypeException]) def parameterTypeErrorShouldBeNicelyExplained() {
+  test("parameterTypeErrorShouldBeNicelyExplained") {
     createNodes("A")
 
     val query = "start pA=node({a}) return pA"
-    execute(query, "a" -> "Andres").toList
+
+    intercept[CypherTypeException] {
+      execute(query, "a" -> "Andres").toList
+    }
   }
 
-  @Test def shouldBeAbleToTakeParamsFromParsedStuff() {
+  test("shouldBeAbleToTakeParamsFromParsedStuff") {
     createNodes("A")
 
     val query = "start pA = node({a}) return pA"
     val result = execute(query, "a" -> Seq[Long](0))
 
-    assertEquals(List(Map("pA" -> node("A"))), result.toList)
+    result.toList should equal(List(Map("pA" -> node("A"))))
   }
 
-  @Test def shouldBeAbleToTakeParamsForEqualityComparisons() {
+  test("shouldBeAbleToTakeParamsForEqualityComparisons") {
     createNode(Map("name" -> "Andres"))
 
     val query = "start a=node(0) where a.name = {name} return a"
 
-    assert(0 === execute(query, "name" -> "Tobias").toList.size)
-    assert(1 === execute(query, "name" -> "Andres").toList.size)
+    execute(query, "name" -> "Tobias").toList shouldBe empty
+    execute(query, "name" -> "Andres").toList should have size 1
   }
 
-  @Test def shouldHandlePatternMatchingWithParameters() {
+  test("shouldHandlePatternMatchingWithParameters") {
     val a = createNode()
     val b = createNode(Map("name" -> "you"))
     relate(a, b, "KNOW")
 
     val result = execute("start x  = node({startId}) match x-[r]-friend where friend.name = {name} return TYPE(r)", "startId" -> a, "name" -> "you")
 
-    assert(List(Map("TYPE(r)" -> "KNOW")) === result.toList)
+    result.toList should equal(List(Map("TYPE(r)" -> "KNOW")))
   }
 
-  @Test(expected = classOf[ParameterNotFoundException]) def shouldComplainWhenMissingParams() {
-    execute("start pA=node({a}) return pA").toList
+  test("shouldComplainWhenMissingParams") {
+    intercept[ParameterNotFoundException] {
+      execute("start pA=node({a}) return pA").toList
+    }
   }
 
-  @Test def shouldSupportMultipleRegexes() {
+  test("shouldSupportMultipleRegexes") {
     val a = createNode(Map("name" -> "Andreas"))
 
     val result = execute( """
@@ -309,10 +324,10 @@ start a  = node(0)
 where a.name =~ 'And.*' AND a.name =~ 'And.*'
 return a""")
 
-    assert(List(a) === result.columnAs[Node]("a").toList)
+    result.columnAs[Node]("a").toList should equal(List(a))
   }
 
-  @Test def shouldReturnAnInterableWithAllRelationshipsFromAVarLength() {
+  test("shouldReturnAnInterableWithAllRelationshipsFromAVarLength") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -324,17 +339,17 @@ start a  = node(0)
 match a-[r*2]->c
 return r""")
 
-    assert(List(Map("r" -> List(r1, r2))) === result.toList)
+    result.toList should equal(List(Map("r" -> List(r1, r2))))
   }
 
-  @Test def shouldHandleCheckingThatANodeDoesNotHaveAProp() {
+  test("shouldHandleCheckingThatANodeDoesNotHaveAProp") {
     val a = createNode()
 
     val result = execute("start a=node(0) where not has(a.propertyDoesntExist) return a")
-    assert(List(Map("a" -> a)) === result.toList)
+    result.toList should equal(List(Map("a" -> a)))
   }
 
-  @Test def shouldHandleAggregationAndSortingOnSomeOverlappingColumns() {
+  test("shouldHandleAggregationAndSortingOnSomeOverlappingColumns") {
     createNode("COL1" -> "A", "COL2" -> "A", "num" -> 1)
     createNode("COL1" -> "B", "COL2" -> "B", "num" -> 2)
 
@@ -343,56 +358,54 @@ start a  = node(0,1)
 return a.COL1, a.COL2, avg(a.num)
 order by a.COL1""")
 
-    assert(List(
+    result.toList should equal(List(
       Map("a.COL1" -> "A", "a.COL2" -> "A", "avg(a.num)" -> 1),
       Map("a.COL1" -> "B", "a.COL2" -> "B", "avg(a.num)" -> 2)
-    ) === result.toList)
+    ))
   }
 
-  @Test def shouldAllowAllPredicateOnArrayProperty() {
+  test("shouldAllowAllPredicateOnArrayProperty") {
     val a = createNode("array" -> Array(1, 2, 3, 4))
 
     val result = execute("start a = node(0) where any(x in a.array where x = 2) return a")
 
-    assert(List(Map("a" -> a)) === result.toList)
+    result.toList should equal(List(Map("a" -> a)))
   }
 
-  @Test def shouldAllowStringComparisonsInArray() {
+  test("shouldAllowStringComparisonsInArray") {
     val a = createNode("array" -> Array("Cypher duck", "Gremlin orange", "I like the snow"))
 
     val result = execute("start a = node(0) where single(x in a.array where x =~ '.*the.*') return a")
 
-    assert(List(Map("a" -> a)) === result.toList)
+    result.toList should equal(List(Map("a" -> a)))
   }
 
-  @Test def shouldBeAbleToCompareWithTrue() {
+  test("shouldBeAbleToCompareWithTrue") {
     val a = createNode("first" -> true)
 
     val result = execute("start a = node(0) where a.first = true return a")
 
-    assert(List(Map("a" -> a)) === result.toList)
+    result.toList should equal(List(Map("a" -> a)))
   }
 
-  @Test def shouldToStringArraysPrettily() {
+  test("shouldToStringArraysPrettily") {
     createNode("foo" -> Array("one", "two"))
 
     val string = execute( """start n = node(0) return n.foo""").dumpToString()
 
-    assertThat(string, containsString( """["one","two"]"""))
+    string should include("""["one","two"]""")
   }
 
-
-
-  @Test def shouldIgnoreNodesInParameters() {
+  test("shouldIgnoreNodesInParameters") {
     val x = createNode()
     val a = createNode()
     relate(x, a, "X")
 
     val result = execute("start c = node(0) match (n)--(c) return n")
-    assert(1 === result.size)
+    result should have size 1
   }
 
-  @Test def shouldReturnDifferentResultsWithDifferentParams() {
+  test("shouldReturnDifferentResultsWithDifferentParams") {
     val refNode = createNode()
     val a = createNode()
 
@@ -401,68 +414,68 @@ order by a.COL1""")
 
     relate(refNode, a, "X")
 
-    assert(1 === execute("start a = node({a}) match a-->b return b", "a" -> a).size)
-    assert(0 === execute("start a = node({a}) match a-->b return b", "a" -> b).size)
+    execute("start a = node({a}) match a-->b return b", "a" -> a) should have size 1
+    execute("start a = node({a}) match a-->b return b", "a" -> b) shouldBe empty
   }
 
-  @Test def shouldHandleParametersNamedAsIdentifiers() {
+  test("shouldHandleParametersNamedAsIdentifiers") {
     createNode("bar" -> "Andres")
 
     val result = execute("start foo=node(0) where foo.bar = {foo} return foo.bar", "foo" -> "Andres")
-    assert(List(Map("foo.bar" -> "Andres")) === result.toList)
+    result.toList should equal(List(Map("foo.bar" -> "Andres")))
   }
 
-  @Test def shouldHandleRelationshipIndexQuery() {
+  test("shouldHandleRelationshipIndexQuery") {
     val a = createNode()
     val b = createNode()
     val r = relate(a, b)
     indexRel(r, "relIdx", "key", "value")
 
-    assertInTx(List(Map("r" -> r)) === execute("start r=relationship:relIdx(key='value') return r").toList)
+    execute("start r=relationship:relIdx(key='value') return r").toList should equal(List(Map("r" -> r)))
   }
 
-  @Test def shouldHandleComparisonsWithDifferentTypes() {
+  test("shouldHandleComparisonsWithDifferentTypes") {
     createNode("belt" -> 13)
 
     val result = execute("start n = node(0) where n.belt = 'white' OR n.belt = false return n")
-    assert(List() === result.toList)
+    result.toList shouldBe empty
   }
 
-  @Test def start_with_node_and_relationship() {
+  test("start_with_node_and_relationship") {
     val a = createNode()
     val b = createNode()
     val r = relate(a, b)
-    val result = execute("start a=node(0), r=relationship(0) return a,r").toList
+    val result = execute("start a=node(0), r=relationship(0) return a,r")
 
-    assert(List(Map("a" -> a, "r" -> r)) === result)
+    result.toList should equal(List(Map("a" -> a, "r" -> r)))
   }
 
-  @Test def first_piped_query_woot() {
+  test("first_piped_query_woot") {
     val a = createNode("foo" -> 42)
     createNode("foo" -> 49)
 
     val q = "start x=node(0, 1) with x WHERE x.foo = 42 return x"
     val result = execute(q)
 
-    assert(List(Map("x" -> a)) === result.toList)
+    result.toList should equal(List(Map("x" -> a)))
   }
 
-  @Test def second_piped_query_woot() {
+  test("second_piped_query_woot") {
     createNode()
     val q = "start x=node(0) with count(*) as apa WHERE apa = 1 RETURN apa"
     val result = execute(q)
 
-    assert(List(Map("apa" -> 1)) === result.toList)
+    result.toList should equal(List(Map("apa" -> 1)))
   }
 
-  @Test def shouldReturnASimplePath() {
+  test("shouldReturnASimplePath") {
     intercept[MissingIndexException](execute("start a=node:missingIndex(key='value') return a").toList)
     intercept[MissingIndexException](execute("start a=node:missingIndex('value') return a").toList)
     intercept[MissingIndexException](execute("start a=relationship:missingIndex(key='value') return a").toList)
     intercept[MissingIndexException](execute("start a=relationship:missingIndex('value') return a").toList)
   }
 
-  @Test def createEngineWithSpecifiedParserVersion() {
+  test("createEngineWithSpecifiedParserVersion") {
     val db = new ImpermanentGraphDatabase(Map[String, String]("cypher_parser_version" -> "1.9").asJava)
     val engine = new ExecutionEngine(db)
 
@@ -478,7 +491,7 @@ order by a.COL1""")
   }
 
 
-  @Test def issue_446() {
+  test("issue_446") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -489,25 +502,25 @@ order by a.COL1""")
 
     val q = "start n = node(0) match n-[f]->() with n, max(f.age) as age match n-[f]->m where f.age = age return m"
 
-    assert(execute(q).toList === List(Map("m" -> c)))
+    execute(q).toList should equal(List(Map("m" -> c)))
   }
 
-  @Test def issue_432() {
+  test("issue_432") {
     val a = createNode()
     val b = createNode()
     relate(a, b)
 
     val q = "start n = node(0) match p = n-[*1..]->m return p, last(nodes(p)) order by length(nodes(p)) asc"
 
-    assert(execute(q).size === 1)
+    execute(q).toList should have size 1
   }
 
-  @Test def zero_matching_subgraphs_yield_correct_count_star() {
-    val result = execute("start n=node(*) where 1 = 0 return count(*)").toList
-    assert(List(Map("count(*)" -> 0)) === result)
+  test("zero_matching_subgraphs_yield_correct_count_star") {
+    val result = execute("start n=node(*) where 1 = 0 return count(*)")
+    result.toList should equal(List(Map("count(*)" -> 0)))
   }
 
-  @Test def should_return_paths_in_1_9() {
+  test("should_return_paths_in_1_9") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -516,13 +529,13 @@ order by a.COL1""")
     relate(a, c, "X")
     relate(a, d, "X")
 
-    val result = execute("cypher 1.9 start n = node(0) return n-->()").columnAs[List[Path]]("n-->()").toList.flatMap(p => p.map(_.endNode()))
+    val result = execute("cypher 1.9 start n = node(0) return n-->()")
+      .columnAs[List[Path]]("n-->()").toList.flatMap(p => p.map(_.endNode()))
 
-    assert(result === List(b, c, d))
+    result should equal(List(b, c, d))
   }
 
-  @Test
-  def var_length_expression_on_1_9() {
+  test("var_length_expression_on_1_9") {
     val a = createNode()
     val b = createNode()
     val r = relate(a, b)
@@ -530,26 +543,23 @@ order by a.COL1""")
     val resultPath = execute("CYPHER 1.9 START a=node(0), b=node(1) RETURN a-[*]->b as path")
       .toList.head("path").asInstanceOf[List[Path]].head
 
-    assert(resultPath.startNode() === a)
-    assert(resultPath.endNode() === b)
-    assert(resultPath.lastRelationship() === r)
+    resultPath.startNode() should equal(a)
+    resultPath.endNode() should equal(b)
+    resultPath.lastRelationship() should equal(r)
   }
 
-
-  @Test
-  def optional_expression_used_to_be_supported() {
+  test("optional_expression_used_to_be_supported") {
     graph.inTx {
       val a = createNode()
       val b = createNode()
       val r = relate(a, b)
 
-      val result = execute("CYPHER 1.9 start a=node(0) match a-->b RETURN a-[?]->b").toList
-      assert(result === List(Map("a-[?]->b" -> List(PathImpl(a, r, b)))))
+      val result = execute("CYPHER 1.9 start a=node(0) match a-->b RETURN a-[?]->b")
+      result.toList should equal(List(Map("a-[?]->b" -> List(PathImpl(a, r, b)))))
     }
   }
 
-  @Test
-  def pattern_expression_deep_in_function_call_in_1_9() {
+  test("pattern_expression_deep_in_function_call_in_1_9") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -557,66 +567,63 @@ order by a.COL1""")
     relate(a,c)
 
     graph.inTx {
-      execute("CYPHER 1.9 start a=node(0) foreach(n in extract(p in a-->() | last(p)) | set n.touched = true) return a-->()").size
+      execute("CYPHER 1.9 start a=node(0) foreach(n in extract(p in a-->() | last(p)) | set n.touched = true) return a-->()").toList
     }
   }
 
-  @Test
-  def with_should_not_forget_original_type() {
+  test("with_should_not_forget_original_type") {
     val result = execute("create (a{x:8}) with a.x as foo return sum(foo)")
 
-    assert(result.toList === List(Map("sum(foo)" -> 8)))
+    result.toList should equal(List(Map("sum(foo)" -> 8)))
   }
 
-  @Test
-  def with_should_not_forget_parameters() {
+  test("with_should_not_forget_parameters") {
     graph.inTx(graph.index().forNodes("test"))
     val id = "bar"
     val result = execute("start n=node:test(name={id}) with count(*) as c where c=0 create (x{name:{id}}) return c, x", "id" -> id).toList
 
-    assert(result.size === 1)
-    assert(result(0)("c").asInstanceOf[Long] === 0)
-    assertInTx(result(0)("x").asInstanceOf[Node].getProperty("name") === id)
+    result should have size 1
+    result(0)("c").asInstanceOf[Long] should equal(0)
+    graph.inTx {
+      result(0)("x").asInstanceOf[Node].getProperty("name") should equal(id)
+    }
   }
 
-  @Test
-  def with_should_not_forget_parameters2() {
+  test("with_should_not_forget_parameters2") {
     val a = createNode()
     val id = a.getId
     val result = execute("start n=node({id}) with n set n.foo={id} return n", "id" -> id).toList
 
-    assert(result.size === 1)
-    assertInTx(result(0)("n").asInstanceOf[Node].getProperty("foo") === id)
+    result should have size 1
+    graph.inTx {
+      result(0)("n").asInstanceOf[Node].getProperty("foo") should equal(id)
+    }
   }
 
-  @Test
-  def shouldAllowArrayComparison() {
+  test("shouldAllowArrayComparison") {
     val node = createNode("lotteryNumbers" -> Array(42, 87))
 
     val result = execute("start n = node(0) where n.lotteryNumbers = [42, 87] return n")
 
-    assert(result.toList === List(Map("n" -> node)))
+    result.toList should equal(List(Map("n" -> node)))
   }
 
-  @Test
-  def shouldSupportArrayOfArrayOfPrimitivesAsParameterForInKeyword() {
+  test("shouldSupportArrayOfArrayOfPrimitivesAsParameterForInKeyword") {
     val node = createNode("lotteryNumbers" -> Array(42, 87))
 
     val result = execute("start n = node(0) where n.lotteryNumbers in [[42, 87], [13], [42]] return n")
 
-    assert(result.toList === List(Map("n" -> node)))
+    result.toList should equal(List(Map("n" -> node)))
   }
 
-  @Test
-  def params_should_survive_with() {
+  test("params_should_survive_with") {
     val n = createNode()
     val result = execute("START n=node(0) WITH collect(n) as coll where length(coll)={id} RETURN coll", "id"->1)
 
-    assert(result.toList === List(Map("coll" -> List(n))))
+    result.toList should equal(List(Map("coll" -> List(n))))
   }
 
-  @Test
-  def nodes_named_r_should_not_pose_a_problem() {
+  test("nodes_named_r_should_not_pose_a_problem") {
     val a = createNode()
     val r = createNode("foo"->"bar")
     val b = createNode()
@@ -626,45 +633,40 @@ order by a.COL1""")
 
     val result = execute("START a=node(0) MATCH a-->r-->b WHERE r.foo = 'bar' RETURN b")
 
-    assert(result.toList === List(Map("b" -> b)))
+    result.toList should equal(List(Map("b" -> b)))
   }
 
-  @Test
-  def can_use_identifiers_created_inside_the_foreach() {
+  test("can_use_identifiers_created_inside_the_foreach") {
     createNode()
     val result = execute("start n=node(0) foreach (x in [1,2,3] | create (a { name: 'foo'})  set a.id = x)")
 
-    assert(result.toList === List())
+    result.toList shouldBe empty
   }
 
-  @Test
-  def can_alias_and_aggregate() {
+  test("can_alias_and_aggregate") {
     val a = createNode()
     val result = execute("start n = node(0) return sum(ID(n)), n as m")
 
-    assert(result.toList === List(Map("sum(ID(n))"->0, "m"->a)))
+    result.toList should equal(List(Map("sum(ID(n))"->0, "m"->a)))
   }
 
-  @Test
-  def extract_string_from_node_collection() {
+  test("extract_string_from_node_collection") {
     createNode("name"->"a")
 
     val result = execute("""START n = node(0) with collect(n) as nodes return head(extract(x in nodes | x.name)) + "test" as test """)
 
-    assert(result.toList === List(Map("test" -> "atest")))
+    result.toList should equal(List(Map("test" -> "atest")))
   }
 
-  @Test
-  def filtering_in_match_should_not_fail() {
+  test("filtering_in_match_should_not_fail") {
     val n = createNode()
     relate(n, createNode("name" -> "Neo"))
     val result = execute("START n = node(0) MATCH n-->me WHERE me.name IN ['Neo'] RETURN me.name")
 
-    assert(result.toList === List(Map("me.name"->"Neo")))
+    result.toList should equal(List(Map("me.name"->"Neo")))
   }
 
-  @Test
-  def unexpected_traversal_state_should_never_be_hit() {
+  test("unexpected_traversal_state_should_never_be_hit") {
     val a = createNode()
     val b = createNode()
     val c = createNode()
@@ -674,10 +676,10 @@ order by a.COL1""")
 
     val result = execute("START n=node({a}), m=node({b}) MATCH n-[r]->m RETURN *", "a"->a, "b"->c)
 
-    assert(result.toList === List())
+    result.toList shouldBe empty
   }
 
-  @Test def syntax_errors_should_not_leave_dangling_transactions() {
+  test("syntax_errors_should_not_leave_dangling_transactions") {
 
     val engine = new ExecutionEngine(graph)
 
@@ -689,38 +691,38 @@ order by a.COL1""")
     val isTopLevelTx = tx.getClass === classOf[TopLevelTransaction]
     tx.close()
 
-    assert(isTopLevelTx)
+    isTopLevelTx should be(true)
   }
 
-  @Test def should_add_label_to_node() {
+  test("should_add_label_to_node") {
     val a = createNode()
     val result = execute("""START a=node(0) SET a :foo RETURN a""")
 
-    assert(result.toList === List(Map("a" -> a)))
+    result.toList should equal(List(Map("a" -> a)))
   }
 
-  @Test def should_add_multiple_labels_to_node() {
+  test("should_add_multiple_labels_to_node") {
     val a = createNode()
     val result = execute("""START a=node(0) SET a :foo:bar RETURN a""")
 
-    assert(result.toList === List(Map("a" -> a)))
+    result.toList should equal(List(Map("a" -> a)))
   }
 
-  @Test def should_set_label_on_node() {
+  test("should_set_label_on_node") {
     val a = createNode()
     val result = execute("""START a=node(0) SET a:foo RETURN a""")
 
-    assert(result.toList === List(Map("a" -> a)))
+    result.toList should equal(List(Map("a" -> a)))
   }
 
-  @Test def should_set_multiple_labels_on_node() {
+  test("should_set_multiple_labels_on_node") {
     val a = createNode()
     val result = execute("""START a=node(0) SET a:foo:bar RETURN a""")
 
-    assert(result.toList === List(Map("a" -> a)))
+    result.toList should equal(List(Map("a" -> a)))
   }
 
-  @Test def should_filter_nodes_by_single_label() {
+  test("should_filter_nodes_by_single_label") {
     // GIVEN
     val a = createLabeledNode("foo")
     val b = createLabeledNode("foo", "bar")
@@ -730,10 +732,10 @@ order by a.COL1""")
     val result = execute("""START n=node(0, 1, 2) WHERE n:foo RETURN n""")
 
     // THEN
-    assert(result.toList === List(Map("n" -> a), Map("n" -> b)))
+    result.toList should equal(List(Map("n" -> a), Map("n" -> b)))
   }
 
-  @Test def should_filter_nodes_by_single_negated_label() {
+  test("should_filter_nodes_by_single_negated_label") {
     // GIVEN
     createLabeledNode("foo")
     createLabeledNode("foo", "bar")
@@ -743,10 +745,10 @@ order by a.COL1""")
     val result = execute("""START n=node(0, 1, 2) WHERE not(n:foo) RETURN n""")
 
     // THEN
-    assert(result.toList === List(Map("n" -> c)))
+    result.toList should equal(List(Map("n" -> c)))
   }
 
-  @Test def should_filter_nodes_by_multiple_labels() {
+  test("should_filter_nodes_by_multiple_labels") {
     // GIVEN
     createLabeledNode("foo")
     val b = createLabeledNode("foo", "bar")
@@ -756,10 +758,10 @@ order by a.COL1""")
     val result = execute("""START n=node(0, 1, 2) WHERE n:foo:bar RETURN n""")
 
     // THEN
-    assert(result.toList === List(Map("n" -> b)))
+    result.toList should equal(List(Map("n" -> b)))
   }
 
-  @Test def should_create_index() {
+  test("should_create_index") {
     // GIVEN
     val labelName = "Person"
     val propertyKeys = Seq("name")
@@ -770,36 +772,34 @@ order by a.COL1""")
     // THEN
     graph.inTx {
       val indexDefinitions = graph.schema().getIndexes(DynamicLabel.label(labelName)).asScala.toSet
-      assert(1 === indexDefinitions.size)
+      indexDefinitions should have size 1
 
       val actual = indexDefinitions.head.getPropertyKeys.asScala.toSeq
-      assert(propertyKeys == actual)
+      propertyKeys should equal(actual)
     }
   }
 
-  @Test def union_ftw() {
+  test("union_ftw") {
     createNode()
 
     // WHEN
     val result = execute("START n=node(0) RETURN 1 as x UNION ALL START n=node(0) RETURN 2 as x")
 
     // THEN
-    assert(result.toList === List(Map("x" -> 1), Map("x" -> 2)))
+    result.toList should equal(List(Map("x" -> 1), Map("x" -> 2)))
   }
 
-  @Test def union_distinct() {
+  test("union_distinct") {
     createNode()
 
     // WHEN
     val result = execute("START n=node(0) RETURN 1 as x UNION START n=node(0) RETURN 1 as x")
 
     // THEN
-    assert(result.toList === List(Map("x" -> 1)))
+    result.toList should equal(List(Map("x" -> 1)))
   }
 
-
-  @Test
-  def read_only_database_can_process_has_label_predicates() {
+  test("read_only_database_can_process_has_label_predicates") {
     //GIVEN
     val engine = createReadOnlyEngine()
 
@@ -807,21 +807,11 @@ order by a.COL1""")
     val result = engine.execute("MATCH (n) WHERE n:NonExistingLabel RETURN n")
 
     //THEN
-    assert(result.toList === List())
+    result.toList shouldBe empty
   }
 
-  private def createReadOnlyEngine(): ExecutionEngine = {
-    FileUtils.deleteRecursively(new File("target/readonly"))
-    val old = new GraphDatabaseFactory().newEmbeddedDatabase("target/readonly")
-    old.shutdown()
-    val db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder("target/readonly")
-      .setConfig( GraphDatabaseSettings.read_only, "true" )
-      .newGraphDatabase()
-    new ExecutionEngine(db)
-  }
-
-  @Test @Ignore("2014-02-18 AT This method had a missing @Test, if @Test is added this test fails miserably")
-  def should_use_predicates_in_the_correct_place() {
+  // 2014-02-18 AT This method had a missing @Test, if @Test is added this test fails miserably
+  ignore("should_use_predicates_in_the_correct_place") {
     //GIVEN
     val m = execute( """create
                         advertiser = {name:"advertiser1"},
@@ -847,11 +837,10 @@ order by a.COL1""")
        RETURN out.name""", "1" -> advertiser, "2" -> thing)
 
     //THEN
-    assert(result.toList === List(Map("out.name" -> "product1")))
+    result.toList should equal(List(Map("out.name" -> "product1")))
   }
 
-  @Test
-  def should_not_create_when_match_exists() {
+  test("should_not_create_when_match_exists") {
     //GIVEN
     val a = createNode()
     val b = createNode()
@@ -865,12 +854,11 @@ order by a.COL1""")
          RETURN new""")
 
     //THEN
-    assert(result.size === 0)
-    assert(result.queryStatistics().relationshipsCreated === 0)
+    result shouldBe empty
+    result.queryStatistics().relationshipsCreated should equal(0)
   }
 
-  @Test
-  def test550() {
+  test("test550") {
     createNode()
 
     //WHEN
@@ -882,21 +870,19 @@ order by a.COL1""")
         RETURN *""")
 
     //THEN DOESN'T THROW EXCEPTION
-    assert(result.toList === List())
+    result.toList shouldBe empty
   }
 
-  @Test
-  def should_be_able_to_coalesce_nodes() {
+  test("should_be_able_to_coalesce_nodes") {
     val n = createNode("n")
     val m = createNode("m")
     relate(n,m,"link")
     val result = execute("start n = node(0) with coalesce(n,n) as n match n--() return n")
 
-    assert(result.toList === List(Map("n" -> n)))
+    result.toList should equal(List(Map("n" -> n)))
   }
 
-  @Test
-  def multiple_start_points_should_still_honor_predicates() {
+  test("multiple_start_points_should_still_honor_predicates") {
     val e = createNode()
     val p1 = createNode("value"->567)
     val p2 = createNode("value"->0)
@@ -907,18 +893,16 @@ order by a.COL1""")
     indexNode(p2, "stuff", "key", "value")
 
     val result = execute("start p1=node:stuff('key:*'), p2=node:stuff('key:*') match (p1)--(e), (p2)--(e) where p1.value = 0 and p2.value = 0 AND p1 <> p2 return p1,p2,e")
-    assert(result.toList === List())
+    result.toList shouldBe empty
   }
 
-  @Test
-  def should_be_able_to_prettify_queries() {
+  test("should_be_able_to_prettify_queries") {
     val query = "match (n)-->(x) return n"
 
-    assert(engine.prettify(query) === String.format("MATCH (n)-->(x)%nRETURN n"))
+    engine.prettify(query) should equal(String.format("MATCH (n)-->(x)%nRETURN n"))
   }
 
-  @Test
-  def doctest_gone_wild() {
+  test("doctest_gone_wild") {
     // given
     execute("CREATE (n:Actor {name:'Tom Hanks'})")
 
@@ -932,8 +916,7 @@ order by a.COL1""")
     assertStats(result, nodesCreated = 1, propertiesSet = 1, labelsAdded = 1, relationshipsCreated = 1)
   }
 
-  @Test
-  def should_iterate_all_node_id_sets_from_start_during_matching() {
+  test("should_iterate_all_node_id_sets_from_start_during_matching") {
     // given
     val nodes: List[Node] =
       execute("CREATE (a)-[:EDGE]->(b), (b)<-[:EDGE]-(c), (a)-[:EDGE]->(c) RETURN [a, b, c] AS nodes")
@@ -947,24 +930,22 @@ order by a.COL1""")
     // then
     val relationships: List[Relationship] = result.columnAs[Relationship]("r").toList
 
-    assert( 6 === relationships.size )
+    relationships should have size 6
   }
 
-  @Test
-  def merge_should_support_single_parameter() {
+  test("merge_should_support_single_parameter") {
     //WHEN
     val result = execute("MERGE (n:User {foo: {single_param}})", ("single_param", 42))
 
     //THEN DOESN'T THROW EXCEPTION
-    assert(result.toList === List())
+    result.toList shouldBe empty
   }
 
-  @Test
-  def merge_should_not_support_map_parameters_for_defining_properties() {
+  test("merge_should_not_support_map_parameters_for_defining_properties") {
     intercept[SyntaxException](execute("MERGE (n:User {merge_map})", ("merge_map", Map("email" -> "test"))))
   }
 
-  def should_not_hang() {
+  test("should_not_hang") {
     // given
     createNode()
     createNode()
@@ -979,42 +960,37 @@ order by a.COL1""")
     // then
   }
 
-  @Test
-  def should_return_null_on_all_comparisons_against_null() {
+  test("should_return_null_on_all_comparisons_against_null") {
     // given
 
     // when
     val result = execute("return 1 > null as A, 1 < null as B, 1 <= null as C, 1 >= null as D, null <= null as E, null >= null as F")
 
     // then
-    assert(result.toList === List(Map("A" -> null, "B" -> null, "C" -> null, "D" -> null, "E" -> null, "F" -> null)))
+    result.toList should equal(List(Map("A" -> null, "B" -> null, "C" -> null, "D" -> null, "E" -> null, "F" -> null)))
   }
 
-  @Test
-  def should_be_able_to_coerce_collections_to_predicates() {
+  test("should_be_able_to_coerce_collections_to_predicates") {
     val n = createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> true), "LABEL")
 
     val foundNode = execute("match (n:LABEL) where n.coll and n.bool return n").columnAs[Node]("n").next()
 
-    assert(foundNode === n)
+    foundNode should equal(n)
   }
 
-  @Test
-  def should_be_able_to_coerce_literal_collections_to_predicates() {
+  test("should_be_able_to_coerce_literal_collections_to_predicates") {
     val n = createLabeledNode(Map("coll" -> Array(1, 2, 3), "bool" -> true), "LABEL")
 
     val foundNode = execute("match (n:LABEL) where [1,2,3] and n.bool return n").columnAs[Node]("n").next()
 
-    assert(foundNode === n)
+    foundNode should equal(n)
   }
 
-  @Test
-  def query_should_work() {
+  test("query_should_work") {
     assert(executeScalar[Int]("WITH 1 AS x RETURN 1 + x") === 2)
   }
 
-  @Test
-  def should_be_able_to_mix_key_expressions_with_aggregate_expressions() {
+  test("should_be_able_to_mix_key_expressions_with_aggregate_expressions") {
     // Given
     createNode("Foo")
 
@@ -1022,24 +998,31 @@ order by a.COL1""")
     val result = executeScalar[Map[String, Any]]("match (n) return { name: n.name, count: count(*) }")
 
     // then
-    assert(result("name") === "Foo")
-    assert(result("count") === 1)
+    result("name") should equal("Foo")
+    result("count") should equal(1)
   }
 
-  @Test
-  def should_not_mind_rewriting_NOT_queries() {
+  test("should_not_mind_rewriting_NOT_queries") {
     val result = execute(" create (a {x: 1}) return a.x is not null as A, a.y is null as B, a.x is not null as C, a.y is not null as D")
-    assert(result.toList === List(Map("A" -> true, "B" -> true, "C" -> true, "D" -> false)))
+    result.toList should equal(List(Map("A" -> true, "B" -> true, "C" -> true, "D" -> false)))
   }
 
-  @Test
-  def should_handle_cypher_version_and_periodic_commit() {
+  test("should_handle_cypher_version_and_periodic_commit") {
     val url = createTempFileURL("foo", ".csv") { writer: PrintWriter =>
       writer.println("1,2,3")
       writer.println("4,5,6")
     }
     val result = execute(s"cypher 2.1 using periodic commit load csv from '$url' as line create x return x")
-    assert(result.size === 2)
+    result should have size 2
   }
 
+  private def createReadOnlyEngine(): ExecutionEngine = {
+    FileUtils.deleteRecursively(new File("target/readonly"))
+    val old = new GraphDatabaseFactory().newEmbeddedDatabase("target/readonly")
+    old.shutdown()
+    val db = new GraphDatabaseFactory().newEmbeddedDatabaseBuilder("target/readonly")
+      .setConfig( GraphDatabaseSettings.read_only, "true" )
+      .newGraphDatabase()
+    new ExecutionEngine(db)
+  }
 }

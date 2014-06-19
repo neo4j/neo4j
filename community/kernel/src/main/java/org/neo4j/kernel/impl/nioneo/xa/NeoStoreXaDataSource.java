@@ -73,7 +73,7 @@ import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
@@ -83,7 +83,6 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.Store;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoXaCommandWriter;
 import org.neo4j.kernel.impl.persistence.IdGenerationFailedException;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
@@ -208,7 +207,8 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
             @Override
             void dump( NeoStoreXaDataSource source, StringLogger.LineLogger log )
             {
-                source.neoStore.logAllWindowPoolStats( log );
+                // TODO
+//                source.neoStore.logAllWindowPoolStats( log );
             }
 
             @Override
@@ -280,8 +280,9 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
                                  RelationshipTypeTokenHolder relationshipTypeTokens,
                                  PersistenceManager persistenceManager, Locks lockManager,
                                  SchemaWriteGuard schemaWriteGuard, TransactionEventHandlers transactionEventHandlers,
-                                 IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs, Function
-            <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory, StoreUpgrader storeMigrationProcess )
+                                 IndexingService.Monitor indexingServiceMonitor, FileSystemAbstraction fs,
+                                 Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory,
+                                 StoreUpgrader storeMigrationProcess )
     {
         super( BRANCH_ID, DEFAULT_DATA_SOURCE_NAME );
         this.config = config;
@@ -520,7 +521,7 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
 
     private void forceEverything()
     {
-        neoStore.flushAll();
+        neoStore.flush();
         indexingService.flushAll();
         labelScanStore.force();
     }
@@ -578,7 +579,9 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
         @Override
         public long getAndSetNewVersion()
         {
-            return neoStore.incrementVersion();
+            long incrementedVersion = neoStore.incrementVersion();
+            neoStore.flushNeoStoreOnly();
+            return incrementedVersion;
         }
 
         @Override
@@ -694,11 +697,6 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
     public boolean isReadOnly()
     {
         return readOnly;
-    }
-
-    public List<WindowPoolStats> getWindowPoolStats()
-    {
-        return neoStore.getAllWindowPoolStats();
     }
 
     @Override

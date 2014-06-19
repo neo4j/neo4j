@@ -19,18 +19,6 @@
  */
 package org.neo4j.kernel;
 
-import static java.lang.String.format;
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.Functions.identity;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Executors;
+
 import javax.transaction.NotSupportedException;
 import javax.transaction.SystemException;
 import javax.transaction.TransactionManager;
@@ -76,6 +65,8 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.ResourceClosingIterator;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.api.KernelAPI;
 import org.neo4j.kernel.api.ReadOperations;
 import org.neo4j.kernel.api.Statement;
@@ -134,14 +125,13 @@ import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.locking.community.CommunityLockManger;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.NioNeoDbPersistenceSource;
+import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.persistence.PersistenceManager;
 import org.neo4j.kernel.impl.storemigration.ConfigMapUpgradeConfiguration;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
@@ -183,6 +173,19 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.lang.String.format;
+
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.Functions.identity;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.MASTER_ID_REPRESENTING_NO_MASTER;
+
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
  * and lifecycle management of these.
@@ -193,6 +196,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 public abstract class InternalAbstractGraphDatabase
         extends AbstractGraphDatabase implements GraphDatabaseService, GraphDatabaseAPI, SchemaWriteGuard
 {
+
     public interface Dependencies
     {
         /**
@@ -266,6 +270,7 @@ public abstract class InternalAbstractGraphDatabase
     protected IndexStore indexStore;
     protected AbstractTransactionManager txManager;
     protected TxIdGenerator txIdGenerator;
+    protected PageCache pageCache;
     protected StoreFactory storeFactory;
     protected XaFactory xaFactory;
     protected DiagnosticsManager diagnosticsManager;
@@ -483,7 +488,10 @@ public abstract class InternalAbstractGraphDatabase
         }
 
         jobScheduler =
-            life.add( new Neo4jJobScheduler( this.toString(), logging.getMessagesLog( Neo4jJobScheduler.class ) ));
+            life.add( new Neo4jJobScheduler( this.toString() ));
+
+        pageCache = createPageCache();
+        life.add( pageCache );
 
         kernelEventHandlers = new KernelEventHandlers(logging.getMessagesLog( KernelEventHandlers.class ));
 
@@ -816,13 +824,13 @@ public abstract class InternalAbstractGraphDatabase
 
     protected StoreFactory createStoreFactory()
     {
-        return new StoreFactory( config, idGeneratorFactory, createWindowPoolFactory(), fileSystem,
-                logging.getMessagesLog( StoreFactory.class ), txHook );
+        return new StoreFactory( config, idGeneratorFactory, pageCache, fileSystem,
+                logging.getMessagesLog( StoreFactory.class ), txHook, monitors );
     }
 
-    protected DefaultWindowPoolFactory createWindowPoolFactory()
+    protected PageCache createPageCache()
     {
-        return new DefaultWindowPoolFactory();
+        return new LifecycledPageCache( fileSystem, jobScheduler, config );
     }
 
     protected RecoveryVerifier createRecoveryVerifier()
@@ -968,7 +976,6 @@ public abstract class InternalAbstractGraphDatabase
     protected void createNeoDataSource()
     {
         // Create DataSource
-
         neoDataSource = new NeoStoreXaDataSource( config,
                 storeFactory, logging.getMessagesLog( NeoStoreXaDataSource.class ),
                 xaFactory, stateFactory, transactionInterceptorProviders, jobScheduler, logging,
@@ -1355,6 +1362,10 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( fileSystem );
             }
+            else if ( PageCache.class.isAssignableFrom( type ) && type.isInstance( pageCache ) )
+            {
+                return type.cast( pageCache );
+            }
             else if ( Guard.class.isAssignableFrom( type ) && type.isInstance( guard ) )
             {
                 return type.cast( guard );
@@ -1486,10 +1497,6 @@ public abstract class InternalAbstractGraphDatabase
             else if ( StoreUpgrader.class.isAssignableFrom( type ) )
             {
                 return type.cast( storeMigrationProcess );
-            }
-            else if ( AvailabilityGuard.class.isAssignableFrom( type ) )
-            {
-                return (T) availabilityGuard;
             }
             else if ( AvailabilityGuard.class.isAssignableFrom( type ) )
             {

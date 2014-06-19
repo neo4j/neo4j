@@ -93,7 +93,7 @@ class LiteralReplacementTest extends CypherFunSuite  {
 
     val (rewriter, replacedLiterals) = literalReplacement(original)
 
-    val result = original.rewrite(bottomUp(rewriter))
+    val result = original.rewrite(rewriter)
     assert(result === expected)
     assert(replacements === replacedLiterals)
   }

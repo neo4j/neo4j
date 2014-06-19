@@ -47,7 +47,7 @@ import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
 import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 public class UniqueConstraintHaIT
 {

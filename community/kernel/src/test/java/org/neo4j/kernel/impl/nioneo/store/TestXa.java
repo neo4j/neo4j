@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,13 +31,14 @@ import java.util.Map;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.logging.Level;
 import java.util.logging.Logger;
-
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.DependencyResolver.Adapter;
 import org.neo4j.graphdb.Node;
@@ -57,6 +49,8 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionEventHandlers;
@@ -71,7 +65,6 @@ import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStore;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
-import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
@@ -98,10 +91,24 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
+import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
 public class TestXa
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+
     private final EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
     private NeoStoreXaDataSource ds;
     private File logBaseFileName;
@@ -136,9 +143,16 @@ public class TestXa
         log.setLevel( Level.OFF );
         propertyKeyTokens = new HashMap<>();
 
-        StoreFactory sf = new StoreFactory( new Config( Collections.<String, String>emptyMap(),
-                GraphDatabaseSettings.class ), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL, null );
+        Monitors monitors = new Monitors();
+        Config config = new Config( Collections.<String, String>emptyMap(), GraphDatabaseSettings.class );
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fileSystem, config ),
+                fileSystem,
+                StringLogger.DEV_NULL,
+                null,
+                monitors );
         sf.createNeoStore( file( "neo" ) ).close();
 
         ds = newNeoStore();
@@ -356,8 +370,15 @@ public class TestXa
                         InternalAbstractGraphDatabase.Configuration.logical_log.name(),
                         file( LOGICAL_LOG_DEFAULT_NAME ).getPath() ), GraphDatabaseSettings.class );
 
-        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fileSystem, StringLogger.DEV_NULL, null );
+        Monitors monitors = new Monitors();
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fileSystem, config ),
+                fileSystem,
+                StringLogger.DEV_NULL,
+                null,
+                monitors );
 
         PlaceboTm txManager = new PlaceboTm( null, TxIdGenerator.DEFAULT );
 
@@ -374,15 +395,15 @@ public class TestXa
         NodeManager nodeManager = mock(NodeManager.class);
         @SuppressWarnings( "rawtypes" )
         List caches = Arrays.asList(
-                (Cache) mock( AutoLoadingCache.class ),
-                (Cache) mock( AutoLoadingCache.class ) );
+                mock( AutoLoadingCache.class ),
+                mock( AutoLoadingCache.class ) );
         when( nodeManager.caches() ).thenReturn( caches );
 
         KernelHealth kernelHealth = mock( KernelHealth.class );
         NeoStoreXaDataSource neoStoreXaDataSource = new NeoStoreXaDataSource( config, sf,
                                                                               StringLogger.DEV_NULL,
                 new XaFactory( config, TxIdGenerator.DEFAULT, txManager,
-                        fileSystem, new Monitors(), new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
+                        fileSystem, monitors, new DevNullLoggingService(), RecoveryVerifier.ALWAYS_VALID,
                         LogPruneStrategies.NO_PRUNING, kernelHealth ), TransactionStateFactory.noStateFactory( new DevNullLoggingService() ),
                         new TransactionInterceptorProviders(
                                 Collections.<TransactionInterceptorProvider>emptyList(), dependencyResolverForConfig( config ) ), null,

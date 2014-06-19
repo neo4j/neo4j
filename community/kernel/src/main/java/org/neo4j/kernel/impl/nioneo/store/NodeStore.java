@@ -20,21 +20,25 @@
 package org.neo4j.kernel.impl.nioneo.store;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.List;
 
 import org.neo4j.helpers.Pair;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.labels.LabelIdArray;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
@@ -44,6 +48,7 @@ import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLab
  */
 public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 {
+
     public static Long readOwnerFromDynamicLabelsRecord( DynamicRecord record )
     {
         byte[] data = record.getData();
@@ -71,13 +76,19 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     private DynamicArrayStore dynamicLabelStore;
 
-    public NodeStore( File fileName, Config config,
-                     IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-                     FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                     DynamicArrayStore dynamicLabelStore, StoreVersionMismatchHandler versionMismatchHandler )
+    public NodeStore(
+            File fileName,
+            Config config,
+            IdGeneratorFactory idGeneratorFactory,
+            PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction,
+            StringLogger stringLogger,
+            DynamicArrayStore dynamicLabelStore,
+            StoreVersionMismatchHandler versionMismatchHandler,
+            Monitors monitors )
     {
-        super( fileName, config, IdType.NODE, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
-                stringLogger, versionMismatchHandler );
+        super( fileName, config, IdType.NODE, idGeneratorFactory, pageCache, fileSystemAbstraction,
+                stringLogger, versionMismatchHandler, monitors );
         this.dynamicLabelStore = dynamicLabelStore;
     }
 
@@ -129,24 +140,15 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     public NodeRecord getRecord( long id, NodeRecord record )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
-        try
-        {
-            return getRecord( id, window, RecordLoad.NORMAL, record );
-        }
-        finally
-        {
-            releaseWindow( window );
-        }
+        return getRecord( id, record, RecordLoad.NORMAL);
     }
 
     @Override
     public NodeRecord forceGetRecord( long id )
     {
-        PersistenceWindow window;
         try
         {
-            window = acquireWindow( id, OperationType.READ );
+            assertIdExists( id );
         }
         catch ( InvalidRecordException e )
         {
@@ -154,14 +156,7 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
                     Record.NO_NEXT_RELATIONSHIP.intValue(), Record.NO_NEXT_PROPERTY.intValue() ); // inUse=false by default
         }
 
-        try
-        {
-            return getRecord( id, window, RecordLoad.FORCE, new NodeRecord( id ) );
-        }
-        finally
-        {
-            releaseWindow( window );
-        }
+        return getRecord( id, new NodeRecord( id ), RecordLoad.FORCE);
     }
 
     @Override
@@ -179,88 +174,117 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     @Override
     public void forceUpdateRecord( NodeRecord record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
-                OperationType.WRITE );
-            try
-            {
-                updateRecord( record, window, true );
-            }
-            finally
-            {
-                releaseWindow( window );
-            }
+        PageCursor cursor = pageCache.newCursor();
+        try
+        {
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+
+        try
+        {
+            updateRecord( record, cursor, true );
+        }
+        finally
+        {
+            storeFile.unpin( cursor );
+        }
     }
 
     @Override
     public void updateRecord( NodeRecord record )
     {
-        PersistenceWindow window = acquireWindow( record.getId(),
-            OperationType.WRITE );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            updateRecord( record, window, false );
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+
+        try
+        {
+            updateRecord( record, cursor, false );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
     public NodeRecord loadLightNode( long id )
     {
-        PersistenceWindow window;
         try
         {
-            window = acquireWindow( id, OperationType.READ );
+            assertIdExists( id );
         }
         catch ( InvalidRecordException e )
         {
-            // OK, id too high
             return null;
+        }
+
+        return getRecord( id, new NodeRecord( id ), RecordLoad.CHECK );
+    }
+
+    private NodeRecord getRecord( long id, NodeRecord record, RecordLoad load )
+    {
+        PageCursor cursor = pageCache.newCursor();
+        try
+        {
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
         }
 
         try
         {
-            return getRecord( id, window, RecordLoad.CHECK, new NodeRecord( id ) );
+            return getRecord( id, cursor, load, record );
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
     public boolean inUse( long id )
     {
-        PersistenceWindow window;
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            window = acquireWindow( id, OperationType.READ );
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
         }
-        catch ( InvalidRecordException e )
+        catch ( IOException e )
         {
-            return false;
+            throw new UnderlyingStorageException( e );
         }
 
         try
         {
-            Buffer buffer = window.getOffsettedBuffer( id );
-            return ((long) buffer.get() & 0x1) == Record.IN_USE.intValue();
+            cursor.setOffset( offsetForId( id ) );
+            return ((long) cursor.getByte() & 0x1) == Record.IN_USE.intValue();
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
-    private NodeRecord getRecord( long id, PersistenceWindow window,
+    private NodeRecord getRecord( long id, PageCursor cursor,
         RecordLoad load, NodeRecord record )
     {
-        Buffer buffer = window.getOffsettedBuffer( id );
+        cursor.setOffset( offsetForId( id ) );
 
         // [    ,   x] in use bit
         // [    ,xxx ] higher bits for rel id
         // [xxxx,    ] higher bits for prop id
-        long inUseByte = buffer.get();
+        long inUseByte = cursor.getByte();
 
         boolean inUse = (inUseByte & 0x1) == Record.IN_USE.intValue();
         if ( !inUse )
@@ -276,16 +300,16 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
             }
         }
 
-        long nextRel = buffer.getUnsignedInt();
-        long nextProp = buffer.getUnsignedInt();
+        long nextRel = cursor.getUnsignedInt();
+        long nextProp = cursor.getUnsignedInt();
 
         long relModifier = (inUseByte & 0xEL) << 31;
         long propModifier = (inUseByte & 0xF0L) << 28;
 
-        long lsbLabels = buffer.getUnsignedInt();
-        long hsbLabels = buffer.get() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
+        long lsbLabels = cursor.getUnsignedInt();
+        long hsbLabels = cursor.getByte() & 0xFF; // so that a negative byte won't fill the "extended" bits with ones.
         long labels = lsbLabels | (hsbLabels << 32);
-        byte extra = buffer.get();
+        byte extra = cursor.getByte();
         boolean dense = (extra & 0x1) > 0;
 
         record.setId( id );
@@ -298,11 +322,11 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         return record;
     }
 
-    private void updateRecord( NodeRecord record, PersistenceWindow window, boolean force )
+    private void updateRecord( NodeRecord record, PageCursor cursor, boolean force )
     {
         long id = record.getId();
+        cursor.setOffset( offsetForId( id ) );
         registerIdFromUpdateRecord( id );
-        Buffer buffer = window.getOffsettedBuffer( id );
         if ( record.inUse() || force )
         {
             long nextRel = record.getNextRel();
@@ -317,33 +341,27 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
             short inUseUnsignedByte = ( record.inUse() ? Record.IN_USE : Record.NOT_IN_USE ).byteValue();
             inUseUnsignedByte = (short) ( inUseUnsignedByte | relModifier | propModifier );
 
-            buffer.put( (byte) inUseUnsignedByte ).putInt( (int) nextRel ).putInt( (int) nextProp );
+            cursor.putByte( (byte) inUseUnsignedByte );
+            cursor.putInt( (int) nextRel );
+            cursor.putInt( (int) nextProp );
 
             // lsb of labels
             long labelField = record.getLabelField();
-            buffer.putInt( (int) labelField );
+            cursor.putInt( (int) labelField );
             // msb of labels
-            buffer.put( (byte) ((labelField&0xFF00000000L) >> 32) );
+            cursor.putByte( (byte) ((labelField & 0xFF00000000L) >> 32) );
 
             byte extra = record.isDense() ? (byte)1 : (byte)0;
-            buffer.put( extra );
+            cursor.putByte( extra );
         }
         else
         {
-            buffer.put( Record.NOT_IN_USE.byteValue() );
+            cursor.putByte( Record.NOT_IN_USE.byteValue() );
             if ( !isInRecoveryMode() )
             {
                 freeId( id );
             }
         }
-    }
-
-    @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
-    {
-        List<WindowPoolStats> list = new ArrayList<>();
-        list.add( getWindowPoolStats() );
-        return list;
     }
 
     public DynamicArrayStore getDynamicLabelStore()
@@ -440,10 +458,14 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         super.updateHighId();
     }
 
-    @Override
     public void flushAll()
     {
-        dynamicLabelStore.flushAll();
-        super.flushAll();
+        try
+        {
+            storeFile.flush();
+        } catch(IOException e)
+        {
+            throw new UnderlyingStorageException( e );
+        }
     }
 }

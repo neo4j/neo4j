@@ -75,7 +75,7 @@ import static org.neo4j.helpers.collection.IteratorUtil.iterator;
 import static org.neo4j.helpers.collection.IteratorUtil.single;
 import static org.neo4j.kernel.api.impl.index.IndexWriterFactories.standard;
 import static org.neo4j.kernel.api.labelscan.NodeLabelUpdate.labelChanges;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 @RunWith(Parameterized.class)
 public class LuceneLabelScanStoreTest

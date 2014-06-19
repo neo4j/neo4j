@@ -30,6 +30,7 @@ import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -38,7 +39,6 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -47,7 +47,9 @@ import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
@@ -444,15 +446,24 @@ public class NodeLabelsFieldTest
         return header|bits.getLongs()[0];
     }
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NodeStore nodeStore;
 
     @Before
     public void startUp()
     {
-        StoreFactory storeFactory = new StoreFactory( new Config(), new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                new DefaultTxHook() );
+        Monitors monitors = new Monitors();
+        Config config = new Config();
+        StoreFactory storeFactory = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fs.get(), config ),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                new DefaultTxHook(),
+                monitors );
         File storeFile = new File( "store" );
         storeFactory.createNodeStore( storeFile );
         nodeStore = storeFactory.newNodeStore( storeFile );

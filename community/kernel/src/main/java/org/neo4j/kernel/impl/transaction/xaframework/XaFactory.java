@@ -26,7 +26,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.TransactionInterceptorProviders;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
@@ -72,8 +72,8 @@ public class XaFactory
                                        XaCommandWriterFactory commandWriterFactory,
                                        InjectedTransactionValidator injectedTxValidator,
                                        XaTransactionFactory tf, TransactionStateFactory stateFactory,
-                                       TransactionInterceptorProviders providers, boolean readOnly, Function<List
-            <LogEntry>, List<LogEntry>> transactionTranslator )
+                                       TransactionInterceptorProviders providers, boolean readOnly,
+                                       Function<List<LogEntry>, List<LogEntry>> transactionTranslator )
     {
         if ( logicalLog == null || commandReaderFactory == null || commandWriterFactory == null || tf == null )
         {

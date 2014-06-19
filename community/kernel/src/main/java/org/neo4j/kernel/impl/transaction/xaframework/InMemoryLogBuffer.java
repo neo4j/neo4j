@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.StoreChannel;
 
 public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
 {
@@ -154,7 +154,7 @@ public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
 
     public ByteBuffer asByteBuffer()
     {
-        return ByteBuffer.wrap( bytes );
+        return ByteBuffer.wrap( bytes, readIndex, writeIndex );
     }
 
     public int read( ByteBuffer dst ) throws IOException

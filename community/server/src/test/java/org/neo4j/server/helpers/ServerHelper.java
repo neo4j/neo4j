@@ -55,8 +55,8 @@ public class ServerHelper
 
     public static void cleanTheDatabase( GraphDatabaseAPI db )
     {
-        new Transactor( db, new DeleteAllData( db ) ).execute();
-        new Transactor( db, new DeleteAllSchema( db ) ).execute();
+        new Transactor( db, new DeleteAllData( db ), 5 ).execute();
+        new Transactor( db, new DeleteAllSchema( db ), 5 ).execute();
     }
 
     private static void removeLogs( NeoServer server )

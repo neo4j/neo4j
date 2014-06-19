@@ -33,7 +33,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   test("select(label scan) < select(all nodes scan)") {
     val semanticTable = newMockedSemanticTable
     val statistics = newMockedStatistics
-    when(statistics.nodesCardinality).thenReturn(1000)
+    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
     val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
 
     val cost1 = cost(
@@ -59,7 +59,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   test("label scan < select(all nodes scan)") {
     val semanticTable = newMockedSemanticTable
     val statistics = newMockedStatistics
-    when(statistics.nodesCardinality).thenReturn(1000)
+    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
     val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
 
     val cost1 = cost(
@@ -70,7 +70,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
       Selection(
         Seq(
           Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
-          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedIntegerLiteral("12")_)_
+          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
         ),
         AllNodesScan("b")
       )
@@ -82,7 +82,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   test("all node scan < select(all nodes scan)") {
     val semanticTable = newMockedSemanticTable
     val statistics = newMockedStatistics
-    when(statistics.nodesCardinality).thenReturn(1000)
+    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
     val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
 
     val cost1 = cost(
@@ -93,7 +93,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
       Selection(
         Seq(
           Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
-          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedIntegerLiteral("12")_)_
+          Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
         ),
         AllNodesScan("b")
       )
@@ -106,7 +106,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
   test("expand(select(all nodes scan)) < expand(all node scan)") {
     val semanticTable = newMockedSemanticTable
     val statistics = newMockedStatistics
-    when(statistics.nodesCardinality).thenReturn(1000.0)
+    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
     val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
 
     val cost1 = cost(
@@ -114,7 +114,7 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
         Selection(
           Seq(
             Equals(Property(Identifier("b")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_,
-            Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedIntegerLiteral("12")_)_
+            Equals(Property(Identifier("b")_, PropertyKeyName("age")_)_, SignedDecimalIntegerLiteral("12")_)_
           ),
           AllNodesScan("b")
         ),
@@ -137,8 +137,8 @@ class CostModelExpectationTest extends CypherFunSuite with LogicalPlanningTestSu
     when(semanticTable.resolvedRelTypeNames).thenReturn(mutable.Map("x" -> RelTypeId(12)))
 
     val statistics = newMockedStatistics
-    when(statistics.nodesCardinality).thenReturn(1000)
-    when(statistics.degreeByRelationshipTypeAndDirection(RelTypeId(12), Direction.BOTH)).thenReturn(2.1)
+    when(statistics.nodesCardinality).thenReturn(Cardinality(1000))
+    when(statistics.degreeByRelationshipTypeAndDirection(RelTypeId(12), Direction.BOTH)).thenReturn(Multiplier(2.1))
     val cost = newMetricsFactory.newMetrics(statistics, semanticTable).cost
 
     val relTypeX: Seq[RelTypeName] = Seq(RelTypeName("x")_)

@@ -20,13 +20,10 @@
   <properties>
     <bundle.namespace>org.neo4j.cypher</bundle.namespace>
     <scala.version>2.10.4</scala.version>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/cypher-query-lang.html</docs.url>
     <short-name>community-cypher-build</short-name>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs-plugin.skip>true</docs-plugin.skip>
-    <maven.site.skip>true</maven.site.skip>
-    <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
 
   <scm>
@@ -93,39 +90,6 @@
       </plugin>
 
       <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <configuration>
-          <reportPlugins combine.children="append">
-            <plugin>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <configuration>
-                <detectJavaApiLink>true</detectJavaApiLink>
-                <detectLinks>true</detectLinks>
-                <quiet>true</quiet>
-                <excludePackageNames>*.impl.*</excludePackageNames>
-              </configuration>
-              <reports>
-                <report>javadoc</report>
-              </reports>
-            </plugin>
-            <!-- Scala API Documentation if we want it -->
-            <!--
-            <plugin>
-              <groupId>org.scala-tools</groupId>
-              <artifactId>maven-scala-plugin</artifactId>
-            </plugin>
-            -->
-          </reportPlugins>
-        </configuration>
-        <executions>
-          <execution>
-            <id>attach-descriptor</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-
-      <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-pmd-plugin</artifactId>
         <version>2.7.1</version>
@@ -141,6 +105,45 @@
         </configuration>
       </plugin>
 
+      <plugin>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>default</id>
+            <phase>${clirr-check-phase}</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
+          </execution>
+        </executions>
+        <configuration>
+          <failOnError>true</failOnError>
+          <logResults>true</logResults>
+          <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
+           need to fix that.
+           OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4
+            -->
+          <comparisonVersion>1.9.M05</comparisonVersion>
+          <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
+          <includes>
+            <include>org/neo4j/cypher</include>
+          </includes>
+
+          <!-- Allowed breaking changes in Neo4j 2.0 -->
+          <!-- These rules should be looked over and modified appropriately in 2.1 -->
+          <excludeMessageCodes>
+            <param>6006</param><!-- Field was made final. -->
+            <param>7012</param><!-- Method added to interface -->
+          </excludeMessageCodes>
+          <excludes>
+            <!-- Ignore known breaking changes introduced in 2.0 and 2.1 -->
+
+            <!-- Ignore all Cypher internals -->
+            <exclude>org/neo4j/cypher/internal/*</exclude>
+          </excludes>
+        </configuration>
+      </plugin>
     </plugins>
 
     <pluginManagement>
@@ -302,6 +305,13 @@
       </dependency>
       <dependency>
         <groupId>org.neo4j</groupId>
+        <artifactId>neo4j-io</artifactId>
+        <version>${project.version}</version>
+        <type>test-jar</type>
+        <scope>test</scope>
+      </dependency>
+      <dependency>
+        <groupId>org.neo4j</groupId>
         <artifactId>neo4j-graphviz</artifactId>
         <version>${project.version}</version>
         <scope>test</scope>
@@ -349,12 +359,4 @@
 
     </dependencies>
   </dependencyManagement>
-
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
-
 </project>

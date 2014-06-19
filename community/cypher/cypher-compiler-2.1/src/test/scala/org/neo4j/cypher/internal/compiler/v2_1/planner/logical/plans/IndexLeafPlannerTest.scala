@@ -20,105 +20,155 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.kernel.api.index.IndexDescriptor
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{indexSeekLeafPlanner, uniqueIndexSeekLeafPlanner}
-import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.{uniqueIndexSeekLeafPlanner, indexSeekLeafPlanner}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.LogicalPlanningContext
+import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.ManyQueryExpression
 
-import org.mockito.Mockito._
-import org.mockito.Matchers._
-import scala.collection.mutable
+class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
-class IndexLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
+  val idName = IdName("n")
+  val hasLabels = HasLabels(ident("n"), Seq(LabelName("Awesome") _)) _
+  val property = Property(ident("n"), PropertyKeyName("prop") _)_
+  val lit42 = SignedDecimalIntegerLiteral("42") _
+  val lit6 = SignedDecimalIntegerLiteral("6") _
 
-  val statistics = hardcodedStatistics
+  val inCollectionValue = In(property, Collection(Seq(lit42))_)_
+
+  test("does not plan index seek when no index exist") {
+    new given {
+      qg = queryGraph(inCollectionValue, hasLabels)
+
+      withLogicalPlanningContext { (ctx: LogicalPlanningContext, table: Map[PatternExpression, QueryGraph]) =>
+        // when
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
+
+        // then
+        resultPlans.plans shouldBe empty
+      }
+    }
+  }
+  test("does not plan index seek when no unique index exist") {
+    new given {
+      qg = queryGraph(inCollectionValue, hasLabels)
+
+      withLogicalPlanningContext { (ctx, table) =>
+        // when
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx, table)
+
+        // then
+        resultPlans.plans shouldBe empty
+      }
+    }
+  }
 
   test("index scan when there is an index on the property") {
-    // given
-    val identifier = Identifier("n")_
-    val labelId = LabelId(12)
-    val propertyKeyId = PropertyKeyId(15)
-    val idName = IdName("n")
-    val hasLabels = HasLabels(identifier, Seq(LabelName("Awesome")_))_
-    val equals = Equals(
-      Property(identifier, PropertyKeyName("prop")_)_,
-      SignedIntegerLiteral("42")_
-    )_
-    val qg = QueryGraph(
-      selections = Selections(Set(Predicate(Set(idName), equals), Predicate(Set(idName), hasLabels))),
-      patternNodes = Set(idName))
+    new given {
+      qg = queryGraph(inCollectionValue, hasLabels)
 
-    val semanticTable = newMockedSemanticTable
-    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> labelId))
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map("prop" -> propertyKeyId))
-    when(semanticTable.isNode(identifier)).thenReturn(true)
+      indexOn("Awesome", "prop")
 
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan    => 1000
-      case _: NodeByLabelScan => 100
-      case _                  => Double.MaxValue
-    })
-    implicit val context = newMockedQueryGraphSolvingContext(
-      semanticTable = semanticTable,
-      planContext = newMockedPlanContext,
-      query = qg,
-      metrics = factory.newMetrics(statistics, semanticTable))
+      withLogicalPlanningContext { (ctx, table) =>
+        // when
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
 
-    when(context.planContext.getIndexRule("Awesome", "prop")).thenReturn(Some(new IndexDescriptor(12, 15)))
-    when(context.planContext.getUniqueIndexRule("Awesome", "prop")).thenReturn(None)
-
-    // when
-    val resultPlans = indexSeekLeafPlanner(qg)
-
-    // then
-    resultPlans should equal(Candidates(planNodeIndexSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
+        // then
+        resultPlans.plans.map(_.plan) should beLike {
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
+        }
+      }
+    }
   }
 
-  test("index seek when there is an index on the property") {
-    // given
-    val identifier = Identifier("n")_
-    val labelId = LabelId(12)
-    val propertyKeyId = PropertyKeyId(15)
-    val idName = IdName("n")
-    val hasLabels = HasLabels(identifier, Seq(LabelName("Awesome")_))_
-    val equals = Equals(
-      Property(identifier, PropertyKeyName("prop")_)_,
-      SignedIntegerLiteral("42")_
-    )_
-    val qg = QueryGraph(
-      selections = Selections(Set(
-        Predicate(Set(idName), equals),
-        Predicate(Set(idName), hasLabels))),
-      patternNodes = Set(idName))
+  test("index scan when there is an index on the property for IN queries") {
+    new given {
+      qg = queryGraph(In(property, Collection(Seq(lit42))_)_, hasLabels)
 
-    val semanticTable = newMockedSemanticTable
-    when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> labelId))
-    when(semanticTable.resolvedPropertyKeyNames).thenReturn(mutable.Map("prop" -> propertyKeyId))
-    when(semanticTable.isNode(identifier)).thenReturn(true)
+      indexOn("Awesome", "prop")
 
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan    => 1000
-      case _: NodeByLabelScan => 100
-      case _                  => Double.MaxValue
-    })
-    implicit val context = newMockedQueryGraphSolvingContext(
-      semanticTable = semanticTable,
-      planContext = newMockedPlanContext,
-      query = qg,
-      metrics = factory.newMetrics(statistics, semanticTable))
-    when(context.planContext.getIndexRule("Awesome", "prop")).thenReturn(None)
-    when(context.planContext.getUniqueIndexRule("Awesome", "prop")).thenReturn(Some(new IndexDescriptor(12, 15)))
+      withLogicalPlanningContext { (ctx, table) =>
+        // when
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
 
-    // when
-    val resultPlans = uniqueIndexSeekLeafPlanner(qg)
-
-    // then
-    resultPlans should equal(Candidates(planNodeIndexUniqueSeek(idName, labelId, propertyKeyId, SignedIntegerLiteral("42")_, Seq(equals, hasLabels))))
+        // then
+        resultPlans.plans.map(_.plan) should beLike {
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
+        }
+      }
+    }
   }
+
+  test("unique index scan when there is an unique index on the property") {
+    new given {
+      qg = queryGraph(inCollectionValue, hasLabels)
+
+      uniqueIndexOn("Awesome", "prop")
+
+      withLogicalPlanningContext { (ctx, table) =>
+        // when
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx, table)
+
+        // then
+        resultPlans.plans.map(_.plan) should beLike {
+          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
+        }
+      }
+    }
+  }
+
+  test("plans index scans such that it solves hints") {
+    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_
+
+    new given {
+      qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))
+
+      indexOn("Awesome", "prop")
+
+      withLogicalPlanningContext { (ctx, table) =>
+        // when
+        val resultPlans = indexSeekLeafPlanner(qg)(ctx, table)
+
+        // then
+        resultPlans.plans.map(_.plan) should beLike {
+          case Seq(NodeIndexSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
+        }
+
+        resultPlans.plans.map(_.solved.graph) should beLike {
+          case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
+        }
+      }
+    }
+  }
+
+  test("plans unique index scans such that it solves hints") {
+    val hint: UsingIndexHint = UsingIndexHint(ident("n"), LabelName("Awesome")_, ident("prop"))_
+
+    new given {
+      qg = queryGraph(inCollectionValue, hasLabels).addHints(Some(hint))
+
+      uniqueIndexOn("Awesome", "prop")
+
+      withLogicalPlanningContext { (ctx, table) =>
+        // when
+        val resultPlans = uniqueIndexSeekLeafPlanner(qg)(ctx, table)
+
+        // then
+        resultPlans.plans.map(_.plan) should beLike {
+          case Seq(NodeIndexUniqueSeek(`idName`, _, _, ManyQueryExpression(Collection(Seq(lit42))))) => ()
+        }
+
+        resultPlans.plans.map(_.solved.graph) should beLike {
+          case (Seq(plannedQG: QueryGraph)) if plannedQG.hints == Set(hint) => ()
+        }
+      }
+    }
+  }
+
+  private def queryGraph(predicates: Expression*) =
+    QueryGraph(
+      selections = Selections(predicates.map(Predicate(Set(idName), _)).toSet),
+      patternNodes = Set(idName)
+    )
 }

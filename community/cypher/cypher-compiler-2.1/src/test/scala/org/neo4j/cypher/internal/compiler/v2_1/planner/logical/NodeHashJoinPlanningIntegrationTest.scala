@@ -21,37 +21,38 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.NotEquals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.mockito.Mockito._
-import org.mockito.Matchers._
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer
 
-class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class NodeHashJoinPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
+
+  import QueryPlanProducer._
 
   test("should build plans containing joins") {
-    implicit val planContext = newMockedPlanContext
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan                      => 200
-      case Expand(_, IdName("b"), _, _, _, _,_) => 10000
-      case _: Expand                            => 10
-      case _: NodeHashJoin                      => 20
-      case _                                    => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
+    val r1 = PatternRelationship("r1", ("a", "b"), Direction.INCOMING, Seq(), SimplePatternLength)
+    val r2 = PatternRelationship("r2", ("b", "c"), Direction.OUTGOING, Seq(), SimplePatternLength)
 
-    produceLogicalPlan("MATCH (a)<-[r1]-(b)-[r2]->(c) RETURN b") should equal(
-      Projection(
-        Selection(
-          Seq(NotEquals(Identifier("r1")_,Identifier("r2")_)_),
-          NodeHashJoin("b",
-            Expand(AllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength),
-            Expand(AllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength)
+    (new given {
+      cardinality = mapCardinality {
+        case _: AllNodesScan => 200
+        case Expand(_, IdName("b"), _, _, _, _, _) => 10000
+        case _: Expand => 10
+        case _: NodeHashJoin => 20
+        case _ => Double.MaxValue
+      }
+    } planFor "MATCH (a)<-[r1]-(b)-[r2]->(c) RETURN b").plan should equal(
+      planRegularProjection(
+        planSelection(
+          Seq(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
+          planNodeHashJoin("b",
+            planExpand(planAllNodesScan("a"), "a", Direction.INCOMING, Seq(), "b", "r1", SimplePatternLength, r1),
+            planExpand(planAllNodesScan("c"), "c", Direction.INCOMING, Seq(), "b", "r2", SimplePatternLength, r2)
           )
         ),
-        expressions = Map("b" -> Identifier("b")_)
+        expressions = Map("b" -> Identifier("b") _)
       )
     )
   }

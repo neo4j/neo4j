@@ -21,8 +21,6 @@ package org.neo4j.kernel.impl.util;
 
 import java.util.Arrays;
 
-import org.neo4j.kernel.impl.nioneo.store.Buffer;
-
 /**
  * Got bits to store, shift and retrieve and they are more than what fits in a long?
  * Use {@link Bits} then.
@@ -151,49 +149,6 @@ public final class Bits implements Cloneable
         {
             readPosition = readPositionBefore;
         }
-    }
-    
-    /**
-     * Writes all bits to {@code buffer}.
-     * @param buffer the {@link Buffer} to write to.
-     * @return this instance.
-     */
-    public Bits apply( Buffer buffer )
-    {
-        int readPositionBefore = readPosition;
-        readPosition = 0;
-        try
-        {
-            // TODO byte for byte?
-            int rest = numberOfBytes;
-            while ( rest-- > 0 )
-            {
-                buffer.put( getByte() );
-            }
-            return this;
-        }
-        finally
-        {
-            readPosition = readPositionBefore;
-        }
-    }
-    
-    /**
-     * Reads from {@code buffer} and fills up all the bits.
-     * @param buffer the {@link Buffer} to read from.
-     * @return this instance.
-     */
-    public Bits read( Buffer buffer )
-    {
-        // TODO byte for byte?
-        int rest = numberOfBytes;
-        while ( rest > 0 )
-        {
-            byte value = buffer.get();
-            put( value );
-            rest--;
-        }
-        return this;
     }
 
     /**

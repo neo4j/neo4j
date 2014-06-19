@@ -24,10 +24,10 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{QueryGraphSolvingContext, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{LogicalPlanningContext, Cardinality, PlanTransformer}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val dir = Direction.OUTGOING
@@ -45,11 +45,11 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
 
   val factory = newMockedMetricsFactory
   when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-    case _ => 1000.0
+    case _ => Cardinality(1000)
   })
 
-  val passThrough = new PlanTransformer {
-    def apply(input: QueryPlan)(implicit context: QueryGraphSolvingContext) = input
+  val passThrough = new PlanTransformer[QueryGraph] {
+    def apply(input: QueryPlan, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): QueryPlan = input
   }
 
   test("should introduce semi apply for unsolved exclusive pattern predicate") {
@@ -67,10 +67,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
+
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
-      subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
@@ -78,7 +78,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan, qg)
 
     // Then
     result should equal(planSemiApply(aPlan, inner, patternExp))
@@ -100,10 +100,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
+
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
-      subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
@@ -111,7 +111,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan, qg)
 
     // Then
     result should equal(planAntiSemiApply(aPlan, inner, patternExp, notExpr))
@@ -133,16 +133,16 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
+
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
-      subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
     val bPlan = newMockedQueryPlan("b")
     // When
-    val result = selectPatternPredicates(passThrough)(bPlan)
+    val result = selectPatternPredicates(passThrough)(bPlan, qg)
 
     // Then
     result should equal(bPlan)
@@ -168,10 +168,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
+
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
-      subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
@@ -180,7 +180,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = planExpand(singleRow, IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan, qg)
 
     // Then
     result should equal(solvePredicate(planSelectOrSemiApply(aPlan, inner, equals), orsExp))
@@ -206,10 +206,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val subQueryLookupTable = Map(patternExp -> patternQG)
+
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
-      subQueryLookupTable = Map(patternExp -> patternQG),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
@@ -217,7 +217,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName(nodeName), IdName(relName), SimplePatternLength, patternRel)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan, qg)
 
     // Then
     result should equal(solvePredicate(planSelectOrAntiSemiApply(aPlan, inner, equals), orsExp))
@@ -253,10 +253,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
+
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
-      subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
@@ -265,7 +265,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName("  UNNAMED4"), IdName("  UNNAMED3"), SimplePatternLength, patternRel2)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan, qg)
 
     // Then
     result should equal(solvePredicate(planSelectOrSemiApply(planLetSemiApply(aPlan, inner, IdName("  FRESHID0")), inner2, ident("  FRESHID0")), orsExp))
@@ -300,10 +300,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
+
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
-      subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
@@ -312,7 +312,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName("  UNNAMED4"), IdName("  UNNAMED3"), SimplePatternLength, patternRel2)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan, qg)
 
     // Then
     result should equal(solvePredicate(planSelectOrAntiSemiApply(planLetSemiApply(aPlan, inner, IdName("  FRESHID0")), inner2, ident("  FRESHID0")), orsExp))
@@ -347,10 +347,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
+
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
-      subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
@@ -359,7 +359,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName("  UNNAMED4"), IdName("  UNNAMED3"), SimplePatternLength, patternRel2)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan, qg)
 
     // Then
     result should equal(solvePredicate(planSelectOrSemiApply(planLetAntiSemiApply(aPlan, inner, IdName("  FRESHID0")), inner2, ident("  FRESHID0")), orsExp))
@@ -399,10 +399,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
+
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
-      subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
@@ -411,7 +411,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName("  UNNAMED4"), IdName("  UNNAMED3"), SimplePatternLength, patternRel2)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan, qg)
 
     // Then
     result should equal(solvePredicate(planSelectOrAntiSemiApply(planLetSelectOrSemiApply(aPlan, inner, IdName("  FRESHID0"), equals), inner2, ident("  FRESHID0")), orsExp))
@@ -451,10 +451,10 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
       selections = selections
     )
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2)
+
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = qg,
-      subQueryLookupTable = Map(patternExp -> patternQG, patternExp2 -> patternQG2),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
 
@@ -463,7 +463,7 @@ class SelectPatternPredicatesTest extends CypherFunSuite with LogicalPlanningTes
     val inner2 = planExpand(planArgumentRow(Set(IdName("a"))), IdName("a"), dir, types, IdName("  UNNAMED4"), IdName("  UNNAMED3"), SimplePatternLength, patternRel2)
 
     // When
-    val result = selectPatternPredicates(passThrough)(aPlan)
+    val result = selectPatternPredicates(passThrough)(aPlan, qg)
 
     // Then
     result should equal(solvePredicate(planSelectOrSemiApply(planLetSelectOrAntiSemiApply(aPlan, inner, IdName("  FRESHID0"), equals), inner2, ident("  FRESHID0")), orsExp))

@@ -32,8 +32,8 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 

@@ -36,7 +36,7 @@ import java.util.Properties;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import static org.neo4j.kernel.impl.util.Charsets.UTF_8;
-import static org.neo4j.kernel.impl.util.FileUtils.newBufferedFileReader;
+import static org.neo4j.io.fs.FileUtils.newBufferedFileReader;
 
 /**
  * Can start clients, either remotely to another JVM running a server

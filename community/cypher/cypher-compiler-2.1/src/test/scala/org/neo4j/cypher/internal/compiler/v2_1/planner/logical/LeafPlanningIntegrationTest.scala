@@ -20,174 +20,227 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
-import org.mockito.Mockito._
-import org.neo4j.kernel.api.index.IndexDescriptor
-import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
-import org.neo4j.cypher.internal.compiler.v2_1.PropertyKeyId
-import org.neo4j.cypher.internal.compiler.v2_1.LabelId
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
 
-class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
+class LeafPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans for all nodes scans") {
-    implicit val planContext = newMockedPlanContext
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan => 1
-      case _               => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-
-    produceLogicalPlan("MATCH (n) RETURN n") should equal(
+    (new given {
+      cardinality = mapCardinality {
+        case _: AllNodesScan => 1
+        case _               => Double.MaxValue
+      }
+    } planFor "MATCH (n) RETURN n").plan.plan should equal(
       AllNodesScan("n")
     )
   }
 
   test("should build plans for label scans without compile-time label id") {
-    implicit val planContext = newMockedPlanContext
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan    => 1000
-      case _: NodeByIdSeek    => 2
-      case _: NodeByLabelScan => 1
-      case _                  => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-
-    when(planContext.getOptLabelId("Awesome")).thenReturn(None)
-
-    produceLogicalPlan("MATCH (n:Awesome) RETURN n") should equal(
+    (new given {
+      cardinality = mapCardinality {
+        case _: AllNodesScan => 1000
+        case _: NodeByIdSeek => 2
+        case _: NodeByLabelScan => 1
+        case _ => Double.MaxValue
+      }
+    } planFor "MATCH (n:Awesome) RETURN n").plan.plan should equal(
       NodeByLabelScan("n", Left("Awesome"))
     )
   }
 
   test("should build plans for label scans with compile-time label id") {
-    implicit val planContext = newMockedPlanContext
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan    => 1000
-      case _: NodeByIdSeek    => 2
-      case _: NodeByLabelScan => 1
-      case _                  => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-    when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
+    implicit val plan = new given {
+      cardinality = mapCardinality {
+        case _: AllNodesScan => 1000
+        case _: NodeByIdSeek => 2
+        case _: NodeByLabelScan => 1
+        case _ => Double.MaxValue
+      }
+      knownLabels = Set("Awesome")
+    } planFor "MATCH (n:Awesome) RETURN n"
 
-    produceLogicalPlan("MATCH (n:Awesome) RETURN n") should equal(
-      NodeByLabelScan("n", Right(LabelId(12)))
-    )
-  }
-
-  test("should build plans for index scan when there is an index on the property") {
-    implicit val planContext = newMockedPlanContext
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan        => 1000
-      case _: NodeIndexSeek       => 1
-      case _: NodeIndexUniqueSeek => 2
-      case _: NodeByLabelScan     => 100
-      case _                      => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-
-    when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
-    when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(15))
-    when(planContext.getIndexRule("Awesome", "prop")).thenReturn(Some(new IndexDescriptor(12, 15)))
-    when(planContext.getUniqueIndexRule("Awesome", "prop")).thenReturn(None)
-
-    produceLogicalPlan("MATCH (n:Awesome) WHERE n.prop = 42 RETURN n") should equal(
-      NodeIndexSeek("n", LabelId(12), PropertyKeyId(15), SignedIntegerLiteral("42")_)
+    plan.plan.plan should equal(
+      NodeByLabelScan("n", Right(labelId("Awesome")))
     )
   }
 
   test("should build plans for index seek when there is an index on the property") {
-    implicit val planContext = newMockedPlanContext
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan        => 1000
-      case _: NodeIndexSeek       => 2
-      case _: NodeIndexUniqueSeek => 1
-      case _: NodeByLabelScan     => 100
-      case _                      => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
+    implicit val plan = new given {
+      indexOn("Awesome", "prop")
+    } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
 
-    when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
-    when(planContext.getOptPropertyKeyId("prop")).thenReturn(Some(15))
-    when(planContext.getIndexRule("Awesome", "prop")).thenReturn(None)
-    when(planContext.getUniqueIndexRule("Awesome", "prop")).thenReturn(Some(new IndexDescriptor(12, 15)))
+    plan.plan.plan should equal(
+      NodeIndexSeek(
+        "n",
+        LabelToken("Awesome", LabelId(0)),
+        PropertyKeyToken(PropertyKeyName("prop")_, PropertyKeyId(0)),
+        ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)
+      )
+    )
+  }
 
-    produceLogicalPlan("MATCH (n:Awesome) WHERE n.prop = 42 RETURN n") should equal(
-      NodeIndexUniqueSeek("n", LabelId(12), PropertyKeyId(15), SignedIntegerLiteral("42")_)
+  test("should build plans for unique index seek when there is an unique index on the property") {
+    implicit val plan = new given {
+      uniqueIndexOn("Awesome", "prop")
+    } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
+
+    plan.plan.plan should equal(
+      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_))
+    )
+  }
+
+  test("should build plans for unique index seek when there is both unique and non-unique indexes to pick") {
+    implicit val plan = new given {
+      indexOn("Awesome", "prop")
+      uniqueIndexOn("Awesome", "prop")
+    } planFor "MATCH (n:Awesome) WHERE n.prop = 42 RETURN n"
+
+    plan.plan.plan should equal(
+      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(1)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_))
     )
   }
 
   test("should build plans for node by ID mixed with label scan when node by ID is cheaper") {
-    implicit val planContext = newMockedPlanContext
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan    => 1000
-      case _: NodeByIdSeek    => 1
-      case _: NodeByLabelScan => 100
-      case _                  => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-
-    when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
-
-    produceLogicalPlan("MATCH (n:Awesome) WHERE id(n) = 42 RETURN n") should equal(
+    (new given {
+      knownLabels = Set("Awesome")
+    } planFor "MATCH (n:Awesome) WHERE id(n) = 42 RETURN n").plan.plan should equal (
       Selection(
         List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
-        NodeByIdSeek("n", Seq(SignedIntegerLiteral("42")_))
+        NodeByIdSeek("n", Seq(SignedDecimalIntegerLiteral("42")_))
       )
     )
   }
 
-  test("should build plans for node by ID mixed with label scan when label scan is cheaper") {
-    implicit val planContext = newMockedPlanContext
-    val factory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan    => 1000
-      case _: NodeByIdSeek    => 10
-      case _: NodeByLabelScan => 1
-      case _                  => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-
-    when(planContext.getOptLabelId("Awesome")).thenReturn(Some(12))
-
-    produceLogicalPlan("MATCH (n:Awesome) WHERE id(n) = 42 RETURN n") should equal(
+  test("should build plans for node by ID when the predicate is IN") {
+    (new given {
+      knownLabels = Set("Awesome")
+    } planFor "MATCH (n:Awesome) WHERE id(n) IN [42, 64] RETURN n").plan.plan should equal (
       Selection(
-        List(Equals(
-          FunctionInvocation(FunctionName("id")_, Identifier("n")_)_,
-          SignedIntegerLiteral("42")_
-        )_),
-        NodeByLabelScan("n", Right(LabelId(12)))
+        List(HasLabels(Identifier("n")_, Seq(LabelName("Awesome")_))_),
+        NodeByIdSeek("n", Seq(SignedDecimalIntegerLiteral("42")_, SignedDecimalIntegerLiteral("64")_))
       )
     )
   }
 
-  test("should use node by id when possible") {
-    val factory: SpyableMetricsFactory = newMockedMetricsFactory
-    when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: AllNodesScan => 1000
-      case _: NodeByLabelScan => 100
-      case _: NodeIndexSeek => 10
-      case _: NodeByIdSeek => 1
-      case _: Expand => 100.0
-      case _ => Double.MaxValue
-    })
-    implicit val planner = newPlanner(factory)
-    implicit val planContext = newMockedPlanContext
+  test("should build plans for index seek when there is an index on the property and an IN predicate") {
+    (new given {
+      indexOn("Awesome", "prop")
+    } planFor "MATCH (n:Awesome) WHERE n.prop IN [42] RETURN n").plan.plan should beLike {
+      case NodeIndexSeek(
+              IdName("n"),
+              LabelToken("Awesome", _),
+              PropertyKeyToken("prop", _),
+              ManyQueryExpression(Collection(_))) => ()
+    }
+  }
 
-    produceLogicalPlan("MATCH n WHERE ID(n) = 0 RETURN n") should equal(
-      NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("0") _))
+  test("should not use indexes for large collections") {
+    // Index selectivity is 0.08, and label selectivity is 0.2.
+    // So if we have 3 elements in the collection, we should not use the index.
+
+    (new given {
+      indexOn("Awesome", "prop")
+    } planFor "MATCH (n:Awesome) WHERE n.prop IN [1,2,3,4,5,6,7,8,9,10] RETURN n").plan.plan should beLike {
+      case _: Selection => ()
+    }
+  }
+
+  test("should use indexes for large collections if it is a unique index") {
+    // Index selectivity is 0.08, and label selectivity is 0.2.
+    // So if we have 3 elements in the collection, we should not use the index.
+
+    (new given {
+      uniqueIndexOn("Awesome", "prop")
+    } planFor "MATCH (n:Awesome) WHERE n.prop IN [1,2,3,4,5,6,7,8,9,10] RETURN n").plan.plan should beLike {
+      case _: NodeIndexUniqueSeek => ()
+    }
+  }
+
+  test("should build plans for label scans when a hint is given") {
+    implicit val plan = new given planFor "MATCH (n:Foo:Bar:Baz) USING SCAN n:Bar RETURN n"
+
+    plan.plan.plan should equal(
+      Selection(
+        Seq(HasLabels(ident("n"), Seq(LabelName("Foo")_))_, HasLabels(ident("n"), Seq(LabelName("Baz")_))_),
+        NodeByLabelScan("n", Left("Bar"))
+      )
     )
+  }
 
-    produceLogicalPlan("MATCH n WHERE id(n) = 0 RETURN n") should equal(
-      NodeByIdSeek(IdName("n"), Seq(SignedIntegerLiteral("0") _))
+  test("should build plans for index seek when there is an index on the property and a hint is given") {
+    implicit val plan = new given {
+      indexOn("Awesome", "prop")
+    } planFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
+
+    plan.plan.plan should equal(
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_))
+    )
+  }
+
+  test("should build plans for index seek when there is an index on the property and a hint is given when returning *") {
+    implicit val plan = new given {
+      indexOn("Awesome", "prop")
+    } planFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN *"
+
+    plan.plan.plan should equal(
+      NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_))
+    )
+  }
+
+  test("should build plans for index seek when there are multiple indices on properties and a hint is given") {
+    implicit val plan = new given {
+      indexOn("Awesome", "prop1")
+      indexOn("Awesome", "prop2")
+    } planFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 = 3 RETURN n "
+
+    plan.plan.plan should equal(
+      Selection(
+        List(In(Property(ident("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
+        NodeIndexSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("3")_))_))
+      )
+    )
+  }
+
+  test("should build plans for unique index seek when there is an unique index on the property and a hint is given") {
+    implicit val plan = new given {
+      uniqueIndexOn("Awesome", "prop")
+    } planFor "MATCH (n) USING INDEX n:Awesome(prop) WHERE n:Awesome AND n.prop = 42 RETURN n"
+
+    plan.plan.plan should equal(
+      NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("42")_))_))
+    )
+  }
+
+  test("should build plans for unique index seek when there are multiple unique indices on properties and a hint is given") {
+    implicit val plan = new given {
+      uniqueIndexOn("Awesome", "prop1")
+      uniqueIndexOn("Awesome", "prop2")
+    } planFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 = 3 RETURN n"
+
+    plan.plan.plan should equal(
+      Selection(
+        List(In(Property(ident("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
+        NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("3")_))_))
+      )
+    )
+  }
+
+  test("should build plans for unique index seek using IN when there are multiple unique indices on properties and a hint is given") {
+    implicit val plan = new given {
+      uniqueIndexOn("Awesome", "prop1")
+      uniqueIndexOn("Awesome", "prop2")
+    } planFor "MATCH (n) USING INDEX n:Awesome(prop2) WHERE n:Awesome AND n.prop1 = 42 and n.prop2 IN [3] RETURN n"
+
+    plan.plan.plan should equal(
+      Selection(
+        List(In(Property(ident("n"), PropertyKeyName("prop1")_)_, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
+        NodeIndexUniqueSeek("n", LabelToken("Awesome", LabelId(0)), PropertyKeyToken("prop2", PropertyKeyId(1)), ManyQueryExpression(Collection(Seq(SignedDecimalIntegerLiteral("3")_))_))
+      )
     )
   }
 }

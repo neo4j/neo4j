@@ -361,17 +361,6 @@ return coalesce(a.title, a.name)""")
     result should include ("[1,2,3]")
   }
 
-  test("var length predicate") {
-    val a = createLabeledNode("Start")
-    val b = createLabeledNode("End")
-    relate(a, b)
-
-    val resultPath = execute("match (a:Start), (b:End) RETURN a-[*]->b as path")
-      .toList.head("path").asInstanceOf[Seq[_]]
-
-    resultPath should have size 1
-  }
-
   test("should be able to return predicate result") {
     createNode()
     val result = executeWithNewPlanner("match a return id(a) = 0, a is null").toList
@@ -413,26 +402,6 @@ return coalesce(a.title, a.name)""")
     val result = executeWithNewPlanner("return substring('0123456789', 1) as s")
 
     result.toList should equal(List(Map("s" -> "123456789")))
-  }
-
-  test("should handle path predicates with labels") {
-    // GIVEN
-    val a = createLabeledNode("Start")
-
-    val b1 = createLabeledNode("A")
-    val b2 = createLabeledNode("B")
-    val b3 = createLabeledNode("C")
-
-    relate(a, b1)
-    relate(a, b2)
-    relate(a, b3)
-
-    // WHEN
-    val result = execute("MATCH (n:Start) RETURN n-->(:A)")
-
-    val x = result.toList.head("n-->(:A)").asInstanceOf[Seq[_]]
-
-    x should have size 1
   }
 
   test("sort columns do not leak") {
@@ -498,4 +467,17 @@ return coalesce(a.title, a.name)""")
     val result = executeWithNewPlanner("MATCH n RETURN n, count(n) + 3")
     result.toList should equal(List(Map("n" -> n, "count(n) + 3" -> 4)))
   }
+
+  test("renaming in multiple steps should still work") {
+    val result = execute(
+      """CREATE (m)
+        |WITH {FIRST: id(m)} AS m
+        |WITH {SECOND: m.FIRST} AS m
+        |RETURN m.SECOND""".stripMargin)
+      .columnAs[Any]("m.SECOND")
+      .toList
+
+    result shouldNot contain(null)
+  }
+
 }

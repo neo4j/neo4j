@@ -28,13 +28,14 @@ import java.io.OutputStreamWriter;
 import java.io.Reader;
 import java.io.Writer;
 
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.impl.nioneo.store.FileLock;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.function.Function;
+import org.neo4j.io.fs.FileLock;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.impl.ChannelInputStream;
 import org.neo4j.test.impl.ChannelOutputStream;
 
+// TODO: Move this to org.neo4j.io
 /**
  * This is a FileSystemAbstraction that can break in interesting ways during various operations. It is provided
  * with a FileSystemGuard which accepts a callback on each operation and depending on the state it can trigger

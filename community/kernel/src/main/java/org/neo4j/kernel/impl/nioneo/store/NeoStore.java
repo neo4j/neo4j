@@ -19,24 +19,27 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.String.format;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.PageCursor;
+import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.String.format;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -94,19 +97,22 @@ public class NeoStore extends AbstractStore
     private final AtomicLong lastCommittedTx = new AtomicLong( -1 );
     private final AtomicLong latestConstraintIntroducingTx = new AtomicLong( -1 );
 
-    private final int REL_GRAB_SIZE;
+    private final int relGrabSize;
 
-    public NeoStore( File fileName, Config conf,
-                     IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+    public NeoStore( File fileName,
+                     Config conf,
+                     IdGeneratorFactory idGeneratorFactory,
+                     PageCache pageCache,
                      FileSystemAbstraction fileSystemAbstraction,
                      StringLogger stringLogger, RemoteTxHook txHook,
                      RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore,
                      PropertyStore propStore, RelationshipStore relStore,
                      NodeStore nodeStore, SchemaStore schemaStore, RelationshipGroupStore relGroupStore,
-                     StoreVersionMismatchHandler versionMismatchHandler )
+                     StoreVersionMismatchHandler versionMismatchHandler,
+                     Monitors monitors )
     {
-        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler );
+        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
         this.relTypeStore = relTypeStore;
         this.labelTokenStore = labelTokenStore;
         this.propStore = propStore;
@@ -114,7 +120,7 @@ public class NeoStore extends AbstractStore
         this.nodeStore = nodeStore;
         this.schemaStore = schemaStore;
         this.relGroupStore = relGroupStore;
-        REL_GRAB_SIZE = conf.get( Configuration.relationship_grab_size );
+        relGrabSize = conf.get( Configuration.relationship_grab_size );
         this.txHook = txHook;
 
         /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
@@ -194,7 +200,7 @@ public class NeoStore extends AbstractStore
          * A little silent upgrade for the "next prop" record. It adds one record last to the neostore file.
          * It's backwards compatible, that's why it can be a silent and automatic upgrade.
          */
-        if ( getFileChannel().size() == RECORD_SIZE*5 )
+        if ( getFileChannel().size() == RECORD_SIZE * 5 )
         {
             insertRecord( NEXT_GRAPH_PROP_POSITION, -1 );
             registerIdFromUpdateRecord( NEXT_GRAPH_PROP_POSITION );
@@ -202,20 +208,24 @@ public class NeoStore extends AbstractStore
 
         /* Silent upgrade for latest constraint introducing tx
          */
-        if ( getFileChannel().size() == RECORD_SIZE*6 )
+        if ( getFileChannel().size() == RECORD_SIZE * 6 )
         {
             insertRecord( LATEST_CONSTRAINT_TX_POSITION, 0 );
             registerIdFromUpdateRecord( LATEST_CONSTRAINT_TX_POSITION );
         }
     }
 
+    /**
+     * This runs as part of verifyFileSizeAndTruncate, which runs before the store file has been
+     * mapped in the page cache. It is therefore okay for it to access the file channel directly.
+     */
     private void insertRecord( int recordPosition, long value ) throws IOException
     {
         try
         {
             StoreChannel channel = getFileChannel();
             long previousPosition = channel.position();
-            channel.position( RECORD_SIZE*recordPosition );
+            channel.position( RECORD_SIZE * recordPosition );
             int trail = (int) (channel.size()-channel.position());
             ByteBuffer trailBuffer = null;
             if ( trail > 0 )
@@ -228,7 +238,7 @@ public class NeoStore extends AbstractStore
             buffer.put( Record.IN_USE.byteValue() );
             buffer.putLong( value );
             buffer.flip();
-            channel.position( RECORD_SIZE*recordPosition );
+            channel.position( RECORD_SIZE * recordPosition );
             channel.write( buffer );
             if ( trail > 0 )
             {
@@ -285,22 +295,16 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    @Override
-    public void flushAll()
+    public void flushNeoStoreOnly()
     {
-        if ( relTypeStore == null || labelTokenStore == null || propStore == null || relStore == null ||
-                nodeStore == null || schemaStore == null || relGroupStore == null )
+        try
         {
-            return;
+            storeFile.flush();
         }
-        super.flushAll();
-        relTypeStore.flushAll();
-        labelTokenStore.flushAll();
-        propStore.flushAll();
-        relStore.flushAll();
-        nodeStore.flushAll();
-        schemaStore.flushAll();
-        relGroupStore.flushAll();
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Failed to flush and force the NeoStore", e );
+        }
     }
 
     @Override
@@ -346,12 +350,12 @@ public class NeoStore extends AbstractStore
     {
         try ( StoreChannel channel = fileSystem.open( neoStore, "rw" ) )
         {
-            channel.position( RECORD_SIZE*position+1/*inUse*/ );
+            channel.position( RECORD_SIZE * position + 1/*inUse*/ );
             ByteBuffer buffer = ByteBuffer.allocate( 8 );
             channel.read( buffer );
             buffer.flip();
             long previous = buffer.getLong();
-            channel.position( RECORD_SIZE*position+1/*inUse*/ );
+            channel.position( RECORD_SIZE * position + 1/*inUse*/ );
             buffer.clear();
             buffer.putLong( value ).flip();
             channel.write( buffer );
@@ -363,14 +367,20 @@ public class NeoStore extends AbstractStore
         }
     }
 
+    /**
+     * Warning: This method only works for stores where there is no database running!
+     */
     public static long getStoreVersion( FileSystemAbstraction fs, File neoStore )
     {
-        return getRecord( fs, neoStore, 4 );
+        return getRecord( fs, neoStore, STORE_VERSION_POSITION );
     }
 
+    /**
+     * Warning: This method only works for stores where there is no database running!
+     */
     public static long getTxId( FileSystemAbstraction fs, File neoStore )
     {
-        return getRecord( fs, neoStore, 3 );
+        return getRecord( fs, neoStore, LATEST_TX_POSITION );
     }
 
     private static long getRecord( FileSystemAbstraction fs, File neoStore, int recordPosition )
@@ -405,22 +415,22 @@ public class NeoStore extends AbstractStore
 
     public long getCreationTime()
     {
-        return getRecord( 0 );
+        return getRecord( TIME_POSITION );
     }
 
     public void setCreationTime( long time )
     {
-        setRecord( 0, time );
+        setRecord( TIME_POSITION, time );
     }
 
     public long getRandomNumber()
     {
-        return getRecord( 1 );
+        return getRecord( RANDOM_POSITION );
     }
 
     public void setRandomNumber( long nr )
     {
-        setRecord( 1, nr );
+        setRecord( RANDOM_POSITION, nr );
     }
 
     public void setRecoveredStatus( boolean status )
@@ -451,12 +461,12 @@ public class NeoStore extends AbstractStore
 
     public long getVersion()
     {
-        return getRecord( 2 );
+        return getRecord( VERSION_POSITION );
     }
 
     public void setVersion( long version )
     {
-        setRecord( 2, version );
+        setRecord( VERSION_POSITION, version );
     }
 
     public synchronized void setLastCommittedTx( long txId )
@@ -467,7 +477,7 @@ public class NeoStore extends AbstractStore
             throw new InvalidRecordException( "Could not set tx commit id[" +
                 txId + "] since the current one is[" + current + "]" );
         }
-        setRecord( 3, txId );
+        setRecord( LATEST_TX_POSITION, txId );
         lastCommittedTx.set( txId );
     }
 
@@ -478,7 +488,7 @@ public class NeoStore extends AbstractStore
         {
             synchronized ( this )
             {
-                txId = getRecord( 3 );
+                txId = getRecord( LATEST_TX_POSITION );
                 lastCommittedTx.compareAndSet( -1, txId ); // CAS since multiple threads may pass the if check above
             }
         }
@@ -514,52 +524,68 @@ public class NeoStore extends AbstractStore
 
     private long getRecord( long id )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.READ );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            Buffer buffer = window.getOffsettedBuffer( id );
-            buffer.get();
-            return buffer.getLong();
+            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            cursor.setOffset( offsetForId( id ) );
+            cursor.getByte();
+            return cursor.getLong();
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
     private void setRecord( long id, long value )
     {
-        PersistenceWindow window = acquireWindow( id, OperationType.WRITE );
+        PageCursor cursor = pageCache.newCursor();
         try
         {
-            Buffer buffer = window.getOffsettedBuffer( id );
-            buffer.put( Record.IN_USE.byteValue() ).putLong( value );
-            registerIdFromUpdateRecord( id );
+            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( id ) );
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+        try
+        {
+            cursor.setOffset( offsetForId( id ) );
+            cursor.putByte(Record.IN_USE.byteValue());
+            cursor.putLong(value);
         }
         finally
         {
-            releaseWindow( window );
+            storeFile.unpin( cursor );
         }
     }
 
     public long getStoreVersion()
     {
-        return getRecord( 4 );
+        return getRecord( STORE_VERSION_POSITION );
     }
 
     public void setStoreVersion( long version )
     {
-        setRecord( 4, version );
+        setRecord( STORE_VERSION_POSITION, version );
     }
 
     public long getGraphNextProp()
     {
-        return getRecord( 5 );
+        return getRecord( NEXT_GRAPH_PROP_POSITION );
     }
 
     public void setGraphNextProp( long propId )
     {
-        setRecord( 5, propId );
+        setRecord( NEXT_GRAPH_PROP_POSITION, propId );
     }
 
     /**
@@ -676,35 +702,7 @@ public class NeoStore extends AbstractStore
 
     public int getRelationshipGrabSize()
     {
-        return REL_GRAB_SIZE;
-    }
-
-    @Override
-    public List<WindowPoolStats> getAllWindowPoolStats()
-    {
-        // Reverse order from everything else
-        List<WindowPoolStats> list = new ArrayList<WindowPoolStats>();
-        // TODO no stats for schema store?
-        list.addAll( nodeStore.getAllWindowPoolStats() );
-        list.addAll( propStore.getAllWindowPoolStats() );
-        list.addAll( relStore.getAllWindowPoolStats() );
-        list.addAll( relTypeStore.getAllWindowPoolStats() );
-        list.addAll( labelTokenStore.getAllWindowPoolStats() );
-        list.addAll( relGroupStore.getAllWindowPoolStats() );
-        return list;
-    }
-
-    @Override
-    public void logAllWindowPoolStats( StringLogger.LineLogger logger )
-    {
-        super.logAllWindowPoolStats( logger );
-        // TODO no stats for schema store?
-        nodeStore.logAllWindowPoolStats( logger );
-        relStore.logAllWindowPoolStats( logger );
-        relTypeStore.logAllWindowPoolStats( logger );
-        labelTokenStore.logAllWindowPoolStats( logger );
-        propStore.logAllWindowPoolStats( logger );
-        relGroupStore.logAllWindowPoolStats( logger );
+        return relGrabSize;
     }
 
     public boolean isStoreOk()
@@ -749,7 +747,7 @@ public class NeoStore extends AbstractStore
     public NeoStoreRecord asRecord()
     {
         NeoStoreRecord result = new NeoStoreRecord();
-        result.setNextProp( getRecord( 5 ) );
+        result.setNextProp( getGraphNextProp() );
         return result;
     }
 
@@ -801,7 +799,7 @@ public class NeoStore extends AbstractStore
         {
             return CommonAbstractStore.UNKNOWN_VERSION;
         }
-        Bits bits = Bits.bitsFromLongs(new long[]{storeVersion});
+        Bits bits = Bits.bitsFromLongs( new long[]{storeVersion} );
         int length = bits.getShort( 8 );
         if ( length == 0 || length > 7 )
         {

@@ -23,6 +23,9 @@ import java.io.Externalizable;
 import java.io.IOException;
 import java.io.ObjectInput;
 import java.io.ObjectOutput;
+import java.net.URI;
+
+import static org.neo4j.helpers.Uris.parameter;
 
 public class InstanceId implements Externalizable, Comparable<InstanceId>
 {
@@ -92,5 +95,11 @@ public class InstanceId implements Externalizable, Comparable<InstanceId>
     public int toIntegerIndex()
     {
         return serverId;
+    }
+
+    public String instanceNameFromURI( URI member )
+    {
+        String name = member == null ? null : parameter( "memberName" ).apply( member );
+        return name == null? toString() : name;
     }
 }

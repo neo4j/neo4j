@@ -24,7 +24,7 @@ import java.io.IOException;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.test.TargetDirectory;
 
 import static java.lang.String.format;

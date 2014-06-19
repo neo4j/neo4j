@@ -23,53 +23,70 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.NodeIndexSeek
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.AllNodesScan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Collection
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
 import Metrics._
 
 class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
 
-  val HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW = 0.001
-  val HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW = 0.0005
-  val EXPRESSION_PROJECTION_OVERHEAD_PER_ROW = 0.01
-  val EXPRESSION_SELECTION_OVERHEAD_PER_ROW = EXPRESSION_PROJECTION_OVERHEAD_PER_ROW
-  val INDEX_OVERHEAD_COST_PER_ROW = 3.0
-  val LABEL_INDEX_OVERHEAD_COST_PER_ROW = 2.0
-  val SORT_COST_PER_ROW = 0.01
+  val HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW = CostPerRow(0.001)
+  val HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW       = CostPerRow(0.0005)
+  val EXPRESSION_PROJECTION_OVERHEAD_PER_ROW   = CostPerRow(0.01)
+  val EXPRESSION_SELECTION_OVERHEAD_PER_ROW    = EXPRESSION_PROJECTION_OVERHEAD_PER_ROW
+  val INDEX_OVERHEAD_COST_PER_ROW              = CostPerRow(3.0)
+  val LABEL_INDEX_OVERHEAD_COST_PER_ROW        = CostPerRow(2.0)
+  val SORT_COST_PER_ROW                        = CostPerRow(0.01)
+  val STORE_ACCESS_COST_PER_ROW                = CostPerRow(1)
+  val DIJKSTRA_OVERHEAD                        = CostPerRow(0.05)
 
-  def apply(plan: LogicalPlan): Double = plan match {
+  def apply(plan: LogicalPlan): Cost = plan match {
     case _: SingleRow =>
-      0
+      Cost(0)
 
     case _: AllNodesScan =>
-      cardinality(plan)
+      cardinality(plan) * STORE_ACCESS_COST_PER_ROW
 
-    case _: NodeIndexSeek =>
+    case NodeIndexSeek(_, _, _, SingleQueryExpression(_)) =>
       cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW
 
-    case _: NodeIndexUniqueSeek =>
+    case NodeIndexSeek(_, _, _, ManyQueryExpression(Collection(elements))) =>
+      cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW * elements.size
+
+    case NodeIndexSeek(_, _, _, ManyQueryExpression(_)) =>
+      cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW * 10 // This is a wild guess.
+
+    case NodeIndexUniqueSeek(_, _, _, SingleQueryExpression(_)) =>
       cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW
+
+    case NodeIndexUniqueSeek(_, _, _, ManyQueryExpression(Collection(elements))) =>
+      cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW * elements.size
+
+    case NodeIndexUniqueSeek(_, _, _, ManyQueryExpression(_)) =>
+      cardinality(plan) * INDEX_OVERHEAD_COST_PER_ROW * 10 // This is a wild guess.
 
     case _: NodeByLabelScan =>
       cardinality(plan) * LABEL_INDEX_OVERHEAD_COST_PER_ROW
 
     case _: NodeByIdSeek =>
-      cardinality(plan)
+      cardinality(plan) * STORE_ACCESS_COST_PER_ROW
 
     case _: DirectedRelationshipByIdSeek =>
-      cardinality(plan)
+      cardinality(plan) * STORE_ACCESS_COST_PER_ROW
 
     case _: UndirectedRelationshipByIdSeek =>
-      cardinality(plan)
+      cardinality(plan) * STORE_ACCESS_COST_PER_ROW
 
     case projection: Projection =>
       cost(projection.left) +
-        cardinality(projection.left) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * projection.numExpressions
+      cardinality(projection.left) * EXPRESSION_PROJECTION_OVERHEAD_PER_ROW * projection.numExpressions
 
     case selection: Selection =>
       cost(selection.left) +
-        cardinality(selection.left) * EXPRESSION_SELECTION_OVERHEAD_PER_ROW * selection.numPredicates
+      cardinality(selection.left) * EXPRESSION_SELECTION_OVERHEAD_PER_ROW * selection.numPredicates
 
     case cartesian: CartesianProduct =>
-      cost(cartesian.left) + cardinality(cartesian.left) * cost(cartesian.right)
+      cost(cartesian.left) +
+      cardinality(cartesian.left) * cost(cartesian.right)
 
     case applyOp: Apply =>
       applyCost(outer = applyOp.left, inner = applyOp.right)
@@ -99,45 +116,57 @@ class SimpleCostModel(cardinality: CardinalityModel) extends CostModel {
       selectOrSemiApplyCost(outer = applyOp.left, inner = applyOp.right)
 
     case expand: Expand =>
-      cost(expand.left) + cardinality(expand)
+      cost(expand.left) +
+      cardinality(expand) * STORE_ACCESS_COST_PER_ROW
 
     case expand: OptionalExpand =>
-      cost(expand.left) + cardinality(expand) * expand.predicates.length * EXPRESSION_SELECTION_OVERHEAD_PER_ROW
+      cost(expand.left) +
+      cardinality(expand) * EXPRESSION_SELECTION_OVERHEAD_PER_ROW * expand.predicates.length
 
     case optional: Optional =>
       cost(optional.inputPlan)
 
     case join: NodeHashJoin =>
       cost(join.left) +
-        cost(join.right) +
-        cardinality(join.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
-        cardinality(join.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
+      cost(join.right) +
+      cardinality(join.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
+      cardinality(join.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
 
     case outerJoin: OuterHashJoin =>
       cost(outerJoin.left) +
-        cost(outerJoin.right) +
-        cardinality(outerJoin.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
-        cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
+      cost(outerJoin.right) +
+      cardinality(outerJoin.left) * HASH_TABLE_CONSTRUCTION_OVERHEAD_PER_ROW +
+      cardinality(outerJoin.right) * HASH_TABLE_LOOKUP_OVERHEAD_PER_ROW
 
-    case s @ Sort(input, _) =>
-      cost(input) + cardinality(s) * SORT_COST_PER_ROW
+    case shortestPath: FindShortestPaths =>
+      // TODO: shortest path should take two childs
+      val sqNodes = cardinality(shortestPath.left)
+      val nodes = sqNodes.map(Math.sqrt)
+      val edges = sqNodes * GuessingEstimation.DEFAULT_CONNECTIVITY_CHANCE
+      val storeCost = (sqNodes + edges) * STORE_ACCESS_COST_PER_ROW
+      val dijkstraCost = sqNodes * edges.map(Math.log) * DIJKSTRA_OVERHEAD
+      cost(shortestPath.left) + dijkstraCost + storeCost
 
-    case s @ Skip(input, _) =>
-      cost(input) + cardinality(s)
+    case s@Sort(input, _) =>
+      cost(input) +
+      cardinality(s) * SORT_COST_PER_ROW
 
-    case l @ Limit(input, _) =>
-      cost(input) + cardinality(l)
+    case s@Skip(input, _) =>
+      cost(input)
 
-    case s @ SortedLimit(input, _, _) =>
-      cost(input) + cardinality(s) * SORT_COST_PER_ROW
+    case l@Limit(input, _) =>
+      cost(input) // TODO: This is probably not correct. I think LIMIT should make a plan cheaper
 
+    case s@SortedLimit(input, _, _) =>
+      cost(input) +
+      cardinality(s) * SORT_COST_PER_ROW
   }
 
-  private def selectOrSemiApplyCost(outer: LogicalPlan, inner: LogicalPlan) =
+  private def selectOrSemiApplyCost(outer: LogicalPlan, inner: LogicalPlan): Cost =
     cost(outer) + cardinality(outer) * (cost(inner) + EXPRESSION_SELECTION_OVERHEAD_PER_ROW)
 
-  private def applyCost(outer: LogicalPlan, inner: LogicalPlan) =
+  private def applyCost(outer: LogicalPlan, inner: LogicalPlan): Cost =
     cost(outer) + cardinality(outer) * cost(inner)
 
-  private def cost(plan: LogicalPlan) = apply(plan)
+  private def cost(plan: LogicalPlan): Cost = apply(plan)
 }

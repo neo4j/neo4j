@@ -439,7 +439,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("A" -> "KNOWS" -> "B")
 
     // when
-    val result = execute("MATCH (a{name:'A'}), (b{name:'B'}) MATCH p=allShortestPaths((a)-[:KNOWS|KNOWS*]->(b)) RETURN p").
+    val result = executeWithNewPlanner("MATCH (a{name:'A'}), (b{name:'B'}) MATCH p=allShortestPaths((a)-[:KNOWS|KNOWS*]->(b)) RETURN p").
       toList
 
     // then
@@ -970,7 +970,7 @@ RETURN a.name""")
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = execute("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
+    val result = executeWithNewPlanner("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))
@@ -1169,7 +1169,7 @@ RETURN a.name""")
     // Given empty db
 
     // when
-    val result = execute("optional match (a) with a match (a)-->(b) return b")
+    val result = executeWithNewPlanner("optional match (a) with a match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
     result.toList should be(empty)
@@ -1182,7 +1182,7 @@ RETURN a.name""")
     relate(a, b)
 
     // when
-    val result = execute("optional match (a:Person) with a match (a)-->(b) return b").columnAs[Node]("b")
+    val result = executeWithNewPlanner("optional match (a:Person) with a match (a)-->(b) return b").columnAs[Node]("b")
 
     // should give us a number in the middle, not all or nothing
     result.toList should be(empty)
@@ -1192,7 +1192,7 @@ RETURN a.name""")
     // Given empty db
 
     // when
-    val result = execute("optional match (a) with a optional match (a)-->(b) return b")
+    val result = executeWithNewPlanner("optional match (a) with a optional match (a)-->(b) return b")
 
     // should give us a number in the middle, not all or nothing
     result.toList should equal (List(Map("b"->null)))

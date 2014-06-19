@@ -36,7 +36,7 @@ import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.storemigration.LogFiles;
 import org.neo4j.kernel.impl.storemigration.StoreFile;
@@ -50,7 +50,6 @@ import org.neo4j.kernel.logging.SystemOutLogging;
 import ch.qos.logback.classic.LoggerContext;
 
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import static org.slf4j.impl.StaticLoggerBinder.getSingleton;
 
 public class BackupTool
@@ -98,6 +97,10 @@ public class BackupTool
         String to = arguments.get( TO, null );
         boolean verify = arguments.getBoolean( VERIFY, true, true );
         Config tuningConfiguration = readTuningConfiguration( TO, arguments );
+
+        if (!from.contains( ":" ))
+            from = "single://"+from;
+
         URI backupURI = null;
         try
         {
@@ -158,7 +161,10 @@ public class BackupTool
 
         try
         {
-            systemOut.println("Performing backup from '" + backupURI.toASCIIString() + "'");
+            String str = backupURI.toASCIIString();
+            if (str.contains( "://" ))
+                str = str.split( "://" )[1];
+            systemOut.println("Performing backup from '" + str + "'");
             doBackup( backupURI, to, verify, tuningConfiguration );
         }
         catch ( TransactionFailureException e )
@@ -193,10 +199,9 @@ public class BackupTool
         if ( arguments.get( FROM, null ) == null )
         {
             throw new ToolFailureException( "Please specify " + dash( FROM ) + ", examples:\n" +
-                    "  " + dash( FROM ) + " single://192.168.1.34\n" +
-                    "  " + dash( FROM ) + " single://192.168.1.34:1234\n" +
-                    "  " + dash( FROM ) + " ha://192.168.1.15:2181\n" +
-                    "  " + dash( FROM ) + " ha://192.168.1.15:2181,192.168.1.16:2181" );
+                    "  " + dash( FROM ) + " 192.168.1.34\n" +
+                    "  " + dash( FROM ) + " 192.168.1.34:1234\n" +
+                    "  " + dash( FROM ) + " 192.168.1.15:2181,192.168.1.16:2181" );
         }
 
         if ( arguments.get( TO, null ) == null )

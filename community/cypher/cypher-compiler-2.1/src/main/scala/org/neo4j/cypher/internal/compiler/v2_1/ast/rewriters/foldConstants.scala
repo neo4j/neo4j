@@ -26,37 +26,37 @@ import org.neo4j.cypher
 object foldConstants extends Rewriter {
   def apply(that: AnyRef): Option[AnyRef] =
   try {
-    instance.apply(that)
+    bottomUp(instance).apply(that)
   } catch {
     case e:ArithmeticException => throw new cypher.ArithmeticException(e.getMessage, e)
   }
   private val instance: Rewriter = Rewriter.lift {
     case e@Add(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
-      SignedIntegerLiteral((lhs.value + rhs.value).toString)(e.position)
-    case e@Add(lhs: DoubleLiteral, rhs: SignedIntegerLiteral) =>
-      DoubleLiteral((lhs.value + rhs.value).toString)(e.position)
-    case e@Add(lhs: SignedIntegerLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral((lhs.value + rhs.value).toString)(e.position)
-    case e@Add(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral((lhs.value + rhs.value).toString)(e.position)
+      SignedDecimalIntegerLiteral((lhs.value + rhs.value).toString)(e.position)
+    case e@Add(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
+      DecimalDoubleLiteral((lhs.value + rhs.value).toString)(e.position)
+    case e@Add(lhs: SignedIntegerLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral((lhs.value + rhs.value).toString)(e.position)
+    case e@Add(lhs: DecimalDoubleLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral((lhs.value + rhs.value).toString)(e.position)
 
     case e@Subtract(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
-      SignedIntegerLiteral((lhs.value - rhs.value).toString)(e.position)
-    case e@Subtract(lhs: DoubleLiteral, rhs: SignedIntegerLiteral) =>
-      DoubleLiteral((lhs.value - rhs.value).toString)(e.position)
-    case e@Subtract(lhs: SignedIntegerLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral((lhs.value - rhs.value).toString)(e.position)
-    case e@Subtract(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral((lhs.value - rhs.value).toString)(e.position)
+      SignedDecimalIntegerLiteral((lhs.value - rhs.value).toString)(e.position)
+    case e@Subtract(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
+      DecimalDoubleLiteral((lhs.value - rhs.value).toString)(e.position)
+    case e@Subtract(lhs: SignedIntegerLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral((lhs.value - rhs.value).toString)(e.position)
+    case e@Subtract(lhs: DecimalDoubleLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral((lhs.value - rhs.value).toString)(e.position)
 
     case e@Multiply(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
-      SignedIntegerLiteral((lhs.value * rhs.value).toString)(e.position)
-    case e@Multiply(lhs: DoubleLiteral, rhs: SignedIntegerLiteral) =>
-      DoubleLiteral((lhs.value * rhs.value).toString)(e.position)
-    case e@Multiply(lhs: SignedIntegerLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral((lhs.value * rhs.value).toString)(e.position)
-    case e@Multiply(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral((lhs.value * rhs.value).toString)(e.position)
+      SignedDecimalIntegerLiteral((lhs.value * rhs.value).toString)(e.position)
+    case e@Multiply(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
+      DecimalDoubleLiteral((lhs.value * rhs.value).toString)(e.position)
+    case e@Multiply(lhs: SignedIntegerLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral((lhs.value * rhs.value).toString)(e.position)
+    case e@Multiply(lhs: DecimalDoubleLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral((lhs.value * rhs.value).toString)(e.position)
 
     case e@Multiply(lhs: NumberLiteral, rhs: NumberLiteral) =>
       e
@@ -68,38 +68,38 @@ object foldConstants extends Rewriter {
       Multiply(Multiply(innerLhs, rhs)(lhs.position), innerRhs)(e.position).rewrite(bottomUp(this))
 
     case e@Divide(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
-      SignedIntegerLiteral((lhs.value / rhs.value).toString)(e.position)
-    case e@Divide(lhs: DoubleLiteral, rhs: SignedIntegerLiteral) =>
-      DoubleLiteral((lhs.value / rhs.value).toString)(e.position)
-    case e@Divide(lhs: SignedIntegerLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral((lhs.value / rhs.value).toString)(e.position)
-    case e@Divide(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral((lhs.value / rhs.value).toString)(e.position)
+      SignedDecimalIntegerLiteral((lhs.value / rhs.value).toString)(e.position)
+    case e@Divide(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
+      DecimalDoubleLiteral((lhs.value / rhs.value).toString)(e.position)
+    case e@Divide(lhs: SignedIntegerLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral((lhs.value / rhs.value).toString)(e.position)
+    case e@Divide(lhs: DecimalDoubleLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral((lhs.value / rhs.value).toString)(e.position)
 
     case e@Modulo(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
-      SignedIntegerLiteral((lhs.value % rhs.value).toString)(e.position)
-    case e@Modulo(lhs: DoubleLiteral, rhs: SignedIntegerLiteral) =>
-      DoubleLiteral((lhs.value % rhs.value).toString)(e.position)
-    case e@Modulo(lhs: SignedIntegerLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral((lhs.value % rhs.value).toString)(e.position)
-    case e@Modulo(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral((lhs.value % rhs.value).toString)(e.position)
+      SignedDecimalIntegerLiteral((lhs.value % rhs.value).toString)(e.position)
+    case e@Modulo(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
+      DecimalDoubleLiteral((lhs.value % rhs.value).toString)(e.position)
+    case e@Modulo(lhs: SignedIntegerLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral((lhs.value % rhs.value).toString)(e.position)
+    case e@Modulo(lhs: DecimalDoubleLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral((lhs.value % rhs.value).toString)(e.position)
 
     case e@Pow(lhs: SignedIntegerLiteral, rhs: SignedIntegerLiteral) =>
-      DoubleLiteral(Math.pow(lhs.value.toDouble, rhs.value.toDouble).toString)(e.position)
-    case e@Pow(lhs: DoubleLiteral, rhs: SignedIntegerLiteral) =>
-      DoubleLiteral(Math.pow(lhs.value, rhs.value.toDouble).toString)(e.position)
-    case e@Pow(lhs: SignedIntegerLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral(Math.pow(lhs.value.toDouble, rhs.value).toString)(e.position)
-    case e@Pow(lhs: DoubleLiteral, rhs: DoubleLiteral) =>
-      DoubleLiteral(Math.pow(lhs.value, rhs.value).toString)(e.position)
+      DecimalDoubleLiteral(Math.pow(lhs.value.toDouble, rhs.value.toDouble).toString)(e.position)
+    case e@Pow(lhs: DecimalDoubleLiteral, rhs: SignedIntegerLiteral) =>
+      DecimalDoubleLiteral(Math.pow(lhs.value, rhs.value.toDouble).toString)(e.position)
+    case e@Pow(lhs: SignedIntegerLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral(Math.pow(lhs.value.toDouble, rhs.value).toString)(e.position)
+    case e@Pow(lhs: DecimalDoubleLiteral, rhs: DecimalDoubleLiteral) =>
+      DecimalDoubleLiteral(Math.pow(lhs.value, rhs.value).toString)(e.position)
 
     case e: UnaryAdd =>
       e.rhs
 
     case e@UnarySubtract(rhs: SignedIntegerLiteral) =>
-      SignedIntegerLiteral((-rhs.value).toString)(e.position)
+      SignedDecimalIntegerLiteral((-rhs.value).toString)(e.position)
     case e: UnarySubtract =>
-      Subtract(SignedIntegerLiteral("0")(e.position), e.rhs)(e.position)
+      Subtract(SignedDecimalIntegerLiteral("0")(e.position), e.rhs)(e.position)
   }
 }

@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.LabelId
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.labelScanLeafPlanner
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Candidates
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, Candidates}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 import org.mockito.Mockito._
 import org.mockito.Matchers._
@@ -33,6 +33,8 @@ import collection.mutable
 class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   val statistics = hardcodedStatistics
+
+  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   test("simple label scan without compile-time label id") {
     // given
@@ -44,17 +46,16 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: NodeByLabelScan => 1
-      case _                  => Double.MaxValue
+      case _: NodeByLabelScan => Cardinality(1)
+      case _                  => Cardinality(Double.MaxValue)
     })
 
     val semanticTable = newMockedSemanticTable
     when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map.empty[String, LabelId])
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      query = qg,
       metrics = factory.newMetrics(statistics, newMockedSemanticTable)
     )
 
@@ -76,17 +77,16 @@ class LabelScanLeafPlannerTest extends CypherFunSuite with LogicalPlanningTestSu
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case _: NodeByLabelScan => 100
-      case _                  => Double.MaxValue
+      case _: NodeByLabelScan => Cardinality(100)
+      case _                  => Cardinality(Double.MaxValue)
     })
 
     val semanticTable = newMockedSemanticTable
     when(semanticTable.resolvedLabelIds).thenReturn(mutable.Map("Awesome" -> labelId))
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       semanticTable = semanticTable,
       planContext = newMockedPlanContext,
-      query = qg,
       metrics = factory.newMetrics(statistics, semanticTable)
     )
 

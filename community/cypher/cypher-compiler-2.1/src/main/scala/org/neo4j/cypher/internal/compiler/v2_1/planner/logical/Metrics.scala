@@ -29,18 +29,45 @@ object Metrics {
   // This metric calculates how expensive executing a logical plan is.
   // (e.g. by looking at cardinality, expression selectivity and taking into account the effort
   // required to execute a step)
-  type CostModel = LogicalPlan => Double
+  type CostModel = LogicalPlan => Cost
 
   // This metric estimates how many rows of data a logical plan produces
   // (e.g. by asking the database for statistics)
-  type CardinalityModel = LogicalPlan => Double
+  type CardinalityModel = LogicalPlan => Cardinality
 
   // This metric estimates the selectivity of an expression
   // (e.g. by algebraic analysis or using statistics)
-  type SelectivityModel = Expression => Double
+  type SelectivityModel = Expression => Multiplier
 }
 
 case class Metrics(cost: CostModel, cardinality: CardinalityModel, selectivity: SelectivityModel)
+
+case class Cost(gummyBears: Double) extends Ordered[Cost] {
+  def +(other: Cost): Cost = Cost(other.gummyBears + gummyBears)
+  def *(other: Double): Cost = Cost(other * gummyBears)
+  def +(other: CostPerRow): CostPerRow = CostPerRow(other.cost * gummyBears)
+  def compare(that: Cost): Int = gummyBears.compare(that.gummyBears)
+}
+
+case class Cardinality(amount: Double) extends Ordered[Cardinality] {
+  def compare(that: Cardinality) = amount.compare(that.amount)
+  def *(that: Multiplier) = Cardinality(amount * that.coefficient)
+  def +(that: Cardinality) = Cardinality(amount + that.amount)
+  def *(that: Cardinality) = Cardinality(amount * that.amount)
+  def *(that: CostPerRow) = Cost(amount * that.cost)
+  def *(that: Cost) = Cost(amount * that.gummyBears)
+  def map(f: Double => Double) = Cardinality(f(amount))
+}
+
+case class CostPerRow(cost: Double) {
+  def +(other: CostPerRow) = CostPerRow(cost + other.cost)
+}
+
+case class Multiplier(coefficient: Double) {
+  def +(other: Multiplier): Multiplier = Multiplier(other.coefficient + coefficient)
+  def -(other: Multiplier): Multiplier = Multiplier(other.coefficient - coefficient)
+  def *(other: Multiplier): Multiplier = Multiplier(other.coefficient * coefficient)
+}
 
 trait MetricsFactory {
   def newSelectivityEstimator(statistics: GraphStatistics, semanticTable: SemanticTable): SelectivityModel

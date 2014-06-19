@@ -24,7 +24,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSuppor
 
 class PlanTableTest extends CypherFunSuite with LogicalPlanningTestSupport {
   implicit val planContext = newMockedPlanContext
-  implicit val context = newMockedQueryGraphSolvingContext(planContext)
+  implicit val context = newMockedLogicalPlanningContext(planContext)
 
   val x = newMockedQueryPlan("x")
   val x2 = newMockedQueryPlan("x")

@@ -25,13 +25,16 @@ import java.util.Collection;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static java.nio.ByteBuffer.wrap;
 
@@ -136,9 +139,11 @@ public class SchemaStoreTest
         return first( records ).getId();
     }
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
+    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private Config config;
     private SchemaStore store;
-    @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private StoreFactory storeFactory;
 
     @Before
@@ -146,9 +151,15 @@ public class SchemaStoreTest
     {
         config = new Config( stringMap() );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-        DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
-        storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory, fs.get(), DEV_NULL,
-                new DefaultTxHook() );
+        Monitors monitors = new Monitors();
+        storeFactory = new StoreFactory(
+                config,
+                idGeneratorFactory,
+                pageCacheRule.getPageCache( fs.get(), config ),
+                fs.get(),
+                DEV_NULL,
+                new DefaultTxHook(),
+                monitors );
         File file = new File( "schema-store" );
         storeFactory.createSchemaStore( file );
         store = storeFactory.newSchemaStore( file );

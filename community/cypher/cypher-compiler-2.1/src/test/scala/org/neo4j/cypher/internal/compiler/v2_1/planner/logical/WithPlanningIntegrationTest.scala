@@ -21,51 +21,37 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport
+import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.PatternRelationship
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.UnsignedIntegerLiteral
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
-import org.mockito.Mockito
+import QueryPlanProducer._
 
-class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport {
-
-  import QueryPlanProducer._
-
+class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans for simple WITH that adds a constant to the rows") {
-    implicit val statistics = hardcodedStatistics
-    implicit val planContext = newMockedPlanContext
-    implicit val planner = newPlanner(newMetricsFactory)
-
-    val result = produceQueryPlan("MATCH (a) WITH a LIMIT 1 RETURN 1 as `b`")
+    val result = planFor("MATCH (a) WITH a LIMIT 1 RETURN 1 as `b`").plan
     val expected =
       planRegularProjection(
         planTailApply(
           left = planStarProjection(
             planLimit(
               planAllNodesScan("a"),
-              UnsignedIntegerLiteral("1") _
+              UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"))
           ),
           right = planSingleRow()
         ),
-        Map[String, Expression]("b" -> SignedIntegerLiteral("1") _)
+        Map[String, Expression]("b" -> SignedDecimalIntegerLiteral("1") _)
       )
 
     result should equal(expected)
   }
 
   test("should build plans that contain multiple WITH") {
-    implicit val statistics = hardcodedStatistics
-    implicit val planContext = newMockedPlanContext
-    implicit val planner = newPlanner(newMetricsFactory)
     val rel = PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
 
-    val result = produceQueryPlan("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b LIMIT 1 RETURN b as `b`")
+    val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WITH a, b LIMIT 1 RETURN b as `b`").plan
     val expected =
       planRegularProjection(
         planTailApply(
@@ -75,13 +61,13 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
                 planStarProjection(
                   planLimit(
                     planAllNodesScan("a"),
-                    UnsignedIntegerLiteral("1") _
+                    UnsignedDecimalIntegerLiteral("1") _
                   ),
                   Map[String, Expression]("a" -> ident("a"))
                 ),
                 planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
               ),
-              UnsignedIntegerLiteral("1")_
+              UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"), "b" -> ident("b"), "r1" -> ident("r1"))
           ),
@@ -94,25 +80,20 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans with WITH and selections") {
-    implicit val statistics = hardcodedStatistics
-    implicit val planContext = newMockedPlanContext
-    Mockito.when(planContext.getOptPropertyKeyId("prop")).thenReturn(None)
-    implicit val planner = newPlanner(newMetricsFactory)
     val rel = PatternRelationship("r1", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
-
-    val result = produceQueryPlan("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1")
+    val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r1]->(b) WHERE r1.prop = 42 RETURN r1").plan
     val expected =
       planRegularProjection(
         planTailApply(
           planStarProjection(
             planLimit(
               planAllNodesScan("a"),
-              UnsignedIntegerLiteral("1") _
+              UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"))
           ),
           planSelection(
-            Seq(Equals(Property(Identifier("r1")_, PropertyKeyName("prop")_)_, SignedIntegerLiteral("42")_)_),
+            Seq(In(Property(Identifier("r1") _, PropertyKeyName("prop") _) _, Collection(Seq(SignedDecimalIntegerLiteral("42")_))_)_),
             planExpand(planArgumentRow(Set("a")), "a", Direction.OUTGOING, Seq(), "b", "r1", SimplePatternLength, rel)
           )
         ),
@@ -123,20 +104,16 @@ class WithPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTes
   }
 
   test("should build plans for two matches separated by WITH") {
-    implicit val statistics = hardcodedStatistics
-    implicit val planContext = newMockedPlanContext
-    implicit val planner = newPlanner(newMetricsFactory)
-
     val rel = PatternRelationship("r", ("a", "b"), Direction.OUTGOING, Seq(), SimplePatternLength)
 
-    val result = produceQueryPlan("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b")
+    val result = planFor("MATCH (a) WITH a LIMIT 1 MATCH (a)-[r]->(b) RETURN b").plan
     val expected =
       planRegularProjection(
         planTailApply(
           planStarProjection(
             planLimit(
               planAllNodesScan("a"),
-              UnsignedIntegerLiteral("1") _
+              UnsignedDecimalIntegerLiteral("1") _
             ),
             Map[String, Expression]("a" -> ident("a"))
           ),

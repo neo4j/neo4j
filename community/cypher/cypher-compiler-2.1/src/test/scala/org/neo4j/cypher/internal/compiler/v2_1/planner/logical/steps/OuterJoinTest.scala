@@ -22,14 +22,16 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.graphdb.Direction
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.CandidateList
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.{Cardinality, CandidateList, PlanTable}
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.PlanTable
 import org.mockito.Mockito._
 import org.mockito.Matchers._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
+
+  private implicit val subQueryLookupTable = Map.empty[PatternExpression, QueryGraph]
 
   val aNode = IdName("a")
   val bNode = IdName("b")
@@ -44,18 +46,18 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
   test("does not try to join anything if optional pattern is not present") {
     // MATCH (a)-->(b)
-    implicit val context = newMockedQueryGraphSolvingContext(
-      planContext = newMockedPlanContext,
-      query =
-        QueryGraph(
-          patternNodes = Set(aNode, bNode),
-          patternRelationships = Set(r1Rel)
-        )
+    implicit val context = newMockedLogicalPlanningContext(
+      planContext = newMockedPlanContext
     )
     val left = newMockedQueryPlan(Set(aNode, bNode))
     val planTable = PlanTable(Map(Set(aNode, bNode) -> left))
 
-    outerJoin(planTable) should equal(CandidateList(Seq.empty))
+    val qg = QueryGraph(
+        patternNodes = Set(aNode, bNode),
+        patternRelationships = Set(r1Rel)
+      )
+
+    outerJoin(planTable, qg) should equal(CandidateList(Seq.empty))
   }
 
   test("solve optional match with outer join") {
@@ -66,17 +68,16 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val factory = newMockedMetricsFactory
     when(factory.newCardinalityEstimator(any(), any(), any())).thenReturn((plan: LogicalPlan) => plan match {
-      case AllNodesScan(IdName("b")) => 1 // Make sure we start the inner plan using b
-      case _                         => 1000.0
+      case AllNodesScan(IdName("b")) => Cardinality(1) // Make sure we start the inner plan using b
+      case _                         => Cardinality(1000)
     })
 
     val innerPlan = newMockedQueryPlan("b")
 
-    val query = QueryGraph(patternNodes = Set(aNode)).withAddedOptionalMatch(optionalQg)
+    val qg = QueryGraph(patternNodes = Set(aNode)).withAddedOptionalMatch(optionalQg)
 
-    implicit val context = newMockedQueryGraphSolvingContext(
+    implicit val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext,
-      query = query,
       strategy = newMockedStrategy(innerPlan),
       metrics = factory.newMetrics(hardcodedStatistics, newMockedSemanticTable)
     )
@@ -85,6 +86,6 @@ class OuterJoinTest extends CypherFunSuite with LogicalPlanningTestSupport {
 
     val expectedPlan = planOuterHashJoin(aNode, left, innerPlan)
 
-    outerJoin(planTable).plans.head should equal(expectedPlan)
+    outerJoin(planTable, qg).plans.head should equal(expectedPlan)
   }
 }

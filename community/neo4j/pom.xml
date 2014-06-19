@@ -23,7 +23,6 @@
     <bundle.namespace>org.neo4j</bundle.namespace>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <javadoc.skip>false</javadoc.skip>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
@@ -76,6 +75,14 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
@@ -185,9 +192,6 @@ the relevant Commercial Agreement.
           <execution>
             <id>create-javadocs</id>
             <phase>${attach-javadoc-phase}</phase>
-            <goals>
-              <goal>javadoc</goal>
-            </goals>
             <configuration>
               <additionnalDependencies>
                 <additionnalDependency>
@@ -206,7 +210,6 @@ the relevant Commercial Agreement.
                   <version>1.6.4</version>
                 </additionnalDependency>
               </additionnalDependencies>
-              <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <header>${project.name}</header>
               <doctitle>${project.name} ${project.version} API</doctitle>
@@ -254,42 +257,7 @@ the relevant Commercial Agreement.
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>package-javadocs</id>
-            <phase>${attach-javadoc-phase}</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <attach>true</attach>
-              <descriptors>
-                <descriptor>src/main/assembly/assembly.xml</descriptor>
-              </descriptors>
-              <skipAssembly>${javadoc.skip}</skipAssembly>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>attach-descriptor</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
-
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
 
 </project>

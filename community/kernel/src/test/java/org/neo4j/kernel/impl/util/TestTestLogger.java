@@ -19,15 +19,14 @@
  */
 package org.neo4j.kernel.impl.util;
 
+import org.junit.Test;
+
 import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
+import static org.junit.Assert.*;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.debug;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.error;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.info;
 import static org.neo4j.kernel.impl.util.TestLogger.LogCall.warn;
-
-import org.junit.Test;
 
 /**
  * This is so meta.
@@ -141,7 +140,8 @@ public class TestTestLogger
         } catch(AssertionError e)
         {
             assertThat( e.getMessage(), equalTo( "These log calls were expected, but never occurred: \n" +
-                    "LogCall{ DEBUG, message='Debug 2', cause=null}\n" ) );
+                    "LogCall{ DEBUG, message='Debug 2', cause=null}\n\nActual log calls were:\nLogCall{ DEBUG, " +
+                    "message='Debug 1', cause=null}\nLogCall{ DEBUG, message='Debug 3', cause=null}\n" ) );
         }
     }
 

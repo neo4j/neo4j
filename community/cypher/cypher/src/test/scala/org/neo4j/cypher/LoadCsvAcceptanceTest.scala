@@ -38,7 +38,7 @@ class LoadCsvAcceptanceTest
         writer.println("'Foo'")
     }).cypherEscape
 
-    val result = execute(s"LOAD CSV FROM '${url}' AS line CREATE (a {name: line[0]}) RETURN a.name")
+    val result = execute(s"LOAD CSV FROM '$url' AS line CREATE (a {name: line[0]}) RETURN a.name")
     assertStats(result, nodesCreated = 3, propertiesSet = 3)
   }
 

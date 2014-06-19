@@ -22,7 +22,7 @@ package org.neo4j.tooling;
 import java.io.File;
 
 import org.neo4j.kernel.configuration.ConfigAsciiDocGenerator;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 
 /**
  * Generates Asciidoc for the GraphDatabaseSettings class.
