@@ -1316,7 +1316,7 @@ public class NeoStoreTransactionTest
     	return commitProcess( mockIndexing );
     }
 
-    private long nextTxId = 0;
+    private long nextTxId = 1;
 
     private TransactionRepresentationCommitProcess commitProcess( IndexingService indexing ) throws InterruptedException, ExecutionException, IOException
     {
@@ -1330,6 +1330,11 @@ public class NeoStoreTransactionTest
         when (labelScanStore.newWriter()).thenReturn( mock(LabelScanWriter.class) );
         TransactionRepresentationStoreApplier applier = new TransactionRepresentationStoreApplier(
                 indexing, labelScanStore, neoStore, cacheAccessBackDoor, locks, null, null );
+
+        // Call this just to make sure the counters have been initialized.
+        // This is only a problem in a mocked environment like this.
+        neoStore.nextCommittingTransactionId();
+
         return new TransactionRepresentationCommitProcess( txStoreMock, mock( KernelHealth.class ),
                 neoStore, applier, false );
     }

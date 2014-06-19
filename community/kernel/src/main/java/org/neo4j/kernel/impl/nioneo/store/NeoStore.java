@@ -91,9 +91,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private SchemaStore schemaStore;
     private RelationshipGroupStore relGroupStore;
     private final AtomicLong lastCommittingTx = new AtomicLong( -1 );
-    private final AtomicLong lastAppliedTx = new AtomicLong( -1 );
+    private OutOfOrderSequence lastClosedTx;
     private final AtomicLong latestConstraintIntroducingTx = new AtomicLong( -1 );
-
     private final int REL_GRAB_SIZE;
 
     public NeoStore( File fileName, Config conf,
@@ -839,7 +838,10 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             {
                 txId = getRecord( LATEST_TX_POSITION );
                 lastCommittingTx.compareAndSet( -1, txId ); // CAS since multiple threads may pass the if check above
-                lastAppliedTx.compareAndSet( -1, txId ); // also initialize "last applied"
+                if ( lastClosedTx == null )
+                {
+                    lastClosedTx = new ArrayQueueOutOfOrderSequence( txId, 200 );
+                }
             }
         }
     }
@@ -854,15 +856,12 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public void transactionClosed( long transactionId )
     {
-        // For now just assert that transactions are applied in order
-        boolean set = lastAppliedTx.compareAndSet( transactionId-1, transactionId );
-        assert set : "Got notified about transaction " + transactionId + " was applied and expected " + (transactionId-1) +
-                " to be the previous one, but it was " + lastAppliedTx.get();
+        lastClosedTx.offer( transactionId );
     }
 
     @Override
     public boolean closedTransactionIdIsOnParWithCommittingTransactionId()
     {
-        return lastAppliedTx.get() == lastCommittingTx.get();
+        return lastClosedTx.get() == lastCommittingTx.get();
     }
 }
