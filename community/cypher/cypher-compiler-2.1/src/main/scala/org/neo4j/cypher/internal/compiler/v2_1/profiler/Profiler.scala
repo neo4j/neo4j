@@ -19,24 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.profiler
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.{NullPipe, QueryState, Pipe, PipeDecorator}
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{DelegatingOperations, Operations, QueryContext, DelegatingQueryContext}
 import org.neo4j.cypher.ProfilerStatisticsNotReadyException
-import org.neo4j.graphdb.{PropertyContainer, Direction, Relationship, Node}
-import collection.mutable
 import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{NullPipe, Pipe, PipeDecorator, QueryState}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{DelegatingOperations, DelegatingQueryContext, Operations, QueryContext}
+import org.neo4j.graphdb.{Node, PropertyContainer, Relationship}
+
+import scala.collection.mutable
 
 class Profiler extends PipeDecorator {
 
-  val contextStats: mutable.Map[Pipe, ProfilingQueryContext] = mutable.Map.empty
-  val iterStats: mutable.Map[Pipe, ProfilingIterator] = mutable.Map.empty
+  val dbHitsStats: mutable.Map[Pipe, ProfilingQueryContext] = mutable.Map.empty
+  val rowStats: mutable.Map[Pipe, ProfilingIterator] = mutable.Map.empty
 
 
   def decorate(pipe: Pipe, iter: Iterator[ExecutionContext]): Iterator[ExecutionContext] = decoratePipe(pipe, iter) {
     val resultIter = new ProfilingIterator(iter)
 
-    iterStats(pipe) = resultIter
+    rowStats(pipe) = resultIter
     resultIter
   }
 
@@ -46,7 +47,7 @@ class Profiler extends PipeDecorator {
       case _                        => new ProfilingQueryContext(state.query, pipe)
     }
 
-    contextStats(pipe) = decoratedContext
+    dbHitsStats(pipe) = decoratedContext
     state.copy(query = decoratedContext)
   }
 
@@ -56,19 +57,18 @@ class Profiler extends PipeDecorator {
   }
 
   def decorate(plan: PlanDescription, isProfileReady: => Boolean): PlanDescription = {
+    if (!isProfileReady)
+      throw new ProfilerStatisticsNotReadyException()
+
     plan map {
-      p: PlanDescription =>
-        val iteratorStats: ProfilingIterator = iterStats(p.pipe)
+      input: PlanDescription =>
+        val pipe = input.pipe
+        val rows = rowStats.get(pipe).map(_.count).getOrElse(0L)
+        val dbhits = dbHitsStats.get(pipe).map(_.count).getOrElse(0L)
 
-        if (!isProfileReady)
-          throw new ProfilerStatisticsNotReadyException()
-
-        val planWithRows = p.addArgument(Arguments.Rows(iteratorStats.count))
-
-        contextStats.get(p.pipe) match {
-          case Some(stats) => planWithRows.addArgument(Arguments.DbHits(stats.count))
-          case None        => planWithRows
-        }
+        input
+          .addArgument(Arguments.Rows(rows))
+          .addArgument(Arguments.DbHits(dbhits))
     }
   }
 }

@@ -208,6 +208,15 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     result.queryStatistics().nodesCreated should equal(100)
   }
 
+  test("should not have a problem profiling empty results") {
+    val result = super.profile("CYPHER 2.1.experimental MATCH n WHERE (n)-->() RETURN n")
+
+    result shouldBe empty
+    println(result.executionPlanDescription())
+
+    result.executionPlanDescription().toString should include("AllNodes")
+  }
+
   private def assertRows(expectedRows: Int)(result: ExecutionResult)(names: String*) {
     getPlanDescriptions(result, names).foreach {
       plan => assert(expectedRows === getArgument[Rows](plan).value, s" wrong row count for plan: ${plan.name}")
