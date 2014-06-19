@@ -58,4 +58,6 @@ public interface IndexImplementation extends Lifecycle
     Map<String, String> fillInDefaults( Map<String, String> config );
 
     boolean configMatches( Map<String, String> storedConfig, Map<String, String> config );
+
+    void force();
 }

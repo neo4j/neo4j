@@ -26,6 +26,8 @@ import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
 
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
@@ -59,8 +61,9 @@ public class PerformRecoveryIfNecessary implements PreflightTask
             if ( dbLocation.exists() )
             {
                 StoreRecoverer recoverer = new StoreRecoverer();
-                // TODO 2.2-future create a file listing based LogVersionRepository
-                if ( recoverer.recoveryNeededAt( dbLocation, null, dbConfig ) )
+                long logVersion = new File( dbLocation, NeoStore.DEFAULT_NAME ).exists() ?
+                        new NeoStoreUtil( dbLocation ).getLogVersion() : 0;
+                if ( recoverer.recoveryNeededAt( dbLocation, logVersion, dbConfig ) )
                 {
                     out.println( "Detected incorrectly shut down database, performing recovery.." );
                     recoverer.recover( dbLocation, dbConfig, logging );

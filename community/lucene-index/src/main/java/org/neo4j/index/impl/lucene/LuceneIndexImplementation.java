@@ -156,4 +156,10 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     {
         dataSource.shutdown();
     }
+
+    @Override
+    public void force()
+    {
+        dataSource.force();
+    }
 }

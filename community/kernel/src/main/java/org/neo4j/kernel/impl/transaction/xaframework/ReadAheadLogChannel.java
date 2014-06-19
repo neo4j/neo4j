@@ -137,8 +137,8 @@ public class ReadAheadLogChannel implements ReadableLogChannel
         while ( charsGotten < length )
         {   // get max 1024 bytes at the time, so that ensureDataExists functions as it should
             int chunkSize = min( readAheadSize >> 3, (length-charsGotten) );
-            ensureDataExists( chunkSize );
-            aheadBuffer.asCharBuffer().get( chars, charsGotten, (length - charsGotten) );
+            ensureDataExists( chunkSize*2 /*since char*2bytes*/ );
+            aheadBuffer.asCharBuffer().get( chars, charsGotten, chunkSize );
             charsGotten += chunkSize;
         }
     }

@@ -54,7 +54,6 @@ import org.apache.lucene.store.FSDirectory;
 import org.apache.lucene.store.RAMDirectory;
 import org.apache.lucene.util.Version;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.ResourceIterator;
@@ -157,7 +156,6 @@ public class LuceneDataSource implements Lifecycle
         this.indexStore = indexStore;
         this.typeCache = new IndexTypeCache( indexStore );
         this.fileSystemAbstraction = fileSystemAbstraction;
-        start();
     }
 
     @Override
@@ -180,35 +178,9 @@ public class LuceneDataSource implements Lifecycle
         this.providerStore = newIndexStore( baseStorePath, fileSystemAbstraction, allowUpgrade );
         this.typeCache = new IndexTypeCache( indexStore );
         boolean isReadOnly = config.get( Configuration.read_only );
-        //        XaCommandReaderFactory commandReaderFactory = new LuceneCommandReaderFactory( nodeEntityType,
-        //                relationshipEntityType );
-        //        LuceneCommandWriterFactory commandWriterFactory = new LuceneCommandWriterFactory();
-        //        LuceneTransactionFactory tf = new LuceneTransactionFactory();
-        DependencyResolver dummy = new DependencyResolver.Adapter()
-        {
-            @Override
-            public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
-            {
-                return (T) LuceneDataSource.this.config;
-            }
-        };
-        //        xaContainer = xaFactory.newXaContainer( this, logBaseName(baseStorePath), commandReaderFactory,
-        //                commandWriterFactory, InjectedTransactionValidator.ALLOW_ALL, tf, TransactionStateFactory.noStateFactory( null ),
-        //                new TransactionInterceptorProviders( new HashSet<TransactionInterceptorProvider>(), dummy ), false,
-        //                new LuceneLogTranslator() );
         closed = false;
         if ( !isReadOnly )
-        {
-            //            try
-            //            {
-            //                xaContainer.openLogicalLog();
-            //            }
-            //            catch ( IOException e )
-            //            {
-            //                throw new RuntimeException( "Unable to open lucene log in " + this.baseStorePath, e );
-            //            }
-            //
-            //            setLogicalLogAtCreationTime( xaContainer.getLogicalLog() );
+        {   // TODO do something special if so?
         }
     }
 
@@ -251,10 +223,6 @@ public class LuceneDataSource implements Lifecycle
             }
             indexSearchers.clear();
         }
-        //        if ( xaContainer != null )
-        //        {
-        //            xaContainer.close();
-        //        }
         providerStore.close();
     }
 
@@ -263,109 +231,26 @@ public class LuceneDataSource implements Lifecycle
     {
     }
 
-    //    public static class LuceneCommandReaderFactory implements XaCommandReaderFactory
-    //    {
-    //        private final EntityType nodeEntityType;
-    //        private final EntityType relationshipEntityType;
-    //
-    //        public LuceneCommandReaderFactory( EntityType nodeEntityType, EntityType relationshipEntityType )
-    //        {
-    //            this.nodeEntityType = nodeEntityType;
-    //            this.relationshipEntityType = relationshipEntityType;
-    //        }
-    //
-    //        @Override
-    //        public XaCommandReader newInstance( byte logEntryVersion, final ByteBuffer scratch )
-    //        {
-    //            return new XaCommandReader()
-    //            {
-    //                @Override
-    //                public XaCommand read( ReadableByteChannel channel ) throws IOException
-    //                {
-    //                    return LuceneCommand.readCommand( channel, scratch, nodeEntityType, relationshipEntityType );
-    //                }
-    //            };
-    //        }
-    //    }
-    //    private static class LuceneCommandWriterFactory implements XaCommandWriterFactory
-    //    {
-    //        @Override
-    //        public XaCommandWriter newInstance()
-    //        {
-    //            return new XaCommandWriter()
-    //            {
-    //                @Override
-    //                public void write( XaCommand command, LogBuffer buffer ) throws IOException
-    //                {
-    //                    ((LuceneCommand) command).writeToFile( buffer );
-    //                }
-    //            };
-    //        }
-    //    }
-    //    private class LuceneTransactionFactory extends XaTransactionFactory
-    //    {
-    //        @Override
-    //        public XaTransaction create( long lastCommittedTxWhenTransactionStarted, TransactionState state)
-    //        {
-    //            return createTransaction( this.getLogicalLog(), state );
-    //        }
-    //
-    //        @Override
-    //        public void flushAll()
-    //        {
-    //            for ( IndexReference index : getAllIndexes() )
-    //            {
-    //                try
-    //                {
-    //                    index.getWriter().commit();
-    //                }
-    //                catch ( IOException e )
-    //                {
-    //                    throw new RuntimeException( "unable to commit changes to " + index.getIdentifier(), e );
-    //                }
-    //            }
-    //            providerStore.flush();
-    //        }
-    //
-    //        @Override
-    //        public void recoveryComplete()
-    //        {
-    //            if ( !expectedFutureRecoveryDeletions.isEmpty() )
-    //            {
-    //                throw new TransactionFailureException( "Recovery discovered transactions which couldn't " +
-    //                        "be applied due to a future index deletion, however some expected deletions " +
-    //                        "weren't encountered: " + expectedFutureRecoveryDeletions );
-    //            }
-    //        }
-    //
-    //        @Override
-    //        public long getCurrentVersion()
-    //        {
-    //            return providerStore.getVersion();
-    //        }
-    //
-    //        @Override
-    //        public long getAndSetNewVersion()
-    //        {
-    //            return providerStore.incrementVersion();
-    //        }
-    //
-    //        @Override
-    //        public void setVersion( long version )
-    //        {
-    //            providerStore.setVersion( version );
-    //        }
-    //
-    //        @Override
-    //        public long getLastCommittedTx()
-    //        {
-    //            return providerStore.getLastCommittedTx();
-    //        }
-    //    }
     private synchronized IndexReference[] getAllIndexes()
     {
         Collection<IndexReference> indexReferences = indexSearchers.values();
         return indexReferences.toArray( new IndexReference[indexReferences.size()] );
+    }
+
+    void force()
+    {
+        for ( IndexReference index : getAllIndexes() )
+        {
+            try
+            {
+                index.getWriter().commit();
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( "unable to commit changes to " + index.getIdentifier(), e );
+            }
+        }
+        providerStore.flush();
     }
 
     void getReadLock()
@@ -530,10 +415,6 @@ public class LuceneDataSource implements Lifecycle
         return searcher;
     }
 
-    //    XaTransaction createTransaction( XaLogicalLog logicalLog, TransactionState state )
-    //    {
-    //        return new LuceneTransaction( logicalLog, state, this );
-    //    }
     void invalidateIndexSearcher( IndexIdentifier identifier )
     {
         IndexReference searcher = indexSearchers.get( identifier );
@@ -799,18 +680,6 @@ public class LuceneDataSource implements Lifecycle
     {
         return IteratorUtil.emptyIterator();
     }
-
-//    public LogBufferFactory createLogBufferFactory()
-//    {
-//        return xaContainer.getLogicalLog().createLogWriter( new Function<Config, File>()
-//        {
-//            @Override
-//            public File apply( Config config )
-//            {
-//                return logBaseName( baseDirectory( config.get( GraphDatabaseSettings.store_dir ) ) );
-//            }
-//        } );
-//    }
 
     private void makeSureAllIndexesAreInstantiated()
     {

@@ -49,9 +49,10 @@ public abstract class IoPrimitiveUtils
         chars = readCharArray( channel, buffer, chars );
         return chars == null ? null : new String( chars );
     }
-    
+
     public static String readString( ReadableLogChannel channel, int length ) throws IOException
     {
+        assert length >= 0 : "invalid array length " + length;
         char[] chars = new char[length];
         channel.get( chars, length );
         return new String( chars );
@@ -66,7 +67,7 @@ public abstract class IoPrimitiveUtils
         buffer.put( (byte)(chars.length >> 16) );
         buffer.put( chars );
     }
-    
+
     public static void write3bLengthAndString( WritableLogChannel channel, String string ) throws IOException
     {
         char[] chars = string.toCharArray();
@@ -116,7 +117,7 @@ public abstract class IoPrimitiveUtils
         Short length = readShort( channel, buffer );
         return length == null ? null : readString( channel, buffer, length );
     }
-    
+
     public static String read2bLengthAndString( ReadableLogChannel channel ) throws IOException
     {
         short length = channel.getShort();
@@ -250,7 +251,7 @@ public abstract class IoPrimitiveUtils
         }
         return map;
     }
-    
+
     public static Map<String, String> read2bMap( ReadableLogChannel channel ) throws IOException
     {
         short size = channel.getShort();
@@ -263,8 +264,8 @@ public abstract class IoPrimitiveUtils
         }
         return map;
     }
-    
-    
+
+
     public static void writeLengthAndString( StoreChannel channel, ByteBuffer buffer, String value )
             throws IOException
     {
@@ -273,7 +274,7 @@ public abstract class IoPrimitiveUtils
         writeInt( channel, buffer, length );
         writeChars( channel, buffer, chars );
     }
-    
+
     private static void writeChars( StoreChannel channel, ByteBuffer buffer, char[] chars )
             throws IOException
     {
@@ -299,7 +300,7 @@ public abstract class IoPrimitiveUtils
             }
         } while ( position < chars.length );
     }
-    
+
     public static void writeInt( StoreChannel channel, ByteBuffer buffer, int value )
             throws IOException
     {

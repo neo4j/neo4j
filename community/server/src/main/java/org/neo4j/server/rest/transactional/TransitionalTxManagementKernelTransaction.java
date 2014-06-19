@@ -61,6 +61,10 @@ class TransitionalTxManagementKernelTransaction
         {
             throw new RuntimeException( e );
         }
+        finally
+        {
+            bridge.unbindTransactionFromCurrentThread();
+        }
     }
 
     public void commit()
@@ -74,6 +78,10 @@ class TransitionalTxManagementKernelTransaction
         catch ( TransactionFailureException e )
         {
             throw new RuntimeException( e );
+        }
+        finally
+        {
+            bridge.unbindTransactionFromCurrentThread();
         }
     }
 }

@@ -646,6 +646,10 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         neoStore.flushAll();
         indexingService.flushAll();
         labelScanStore.force();
+        for ( IndexImplementation index : indexProviders.values() )
+        {
+            index.force();
+        }
     }
 
     @Override

@@ -222,4 +222,9 @@ public class DummyIndexExtensionFactory extends
     {
         return NO_APPLIER;
     }
+
+    @Override
+    public void force()
+    {
+    }
 }

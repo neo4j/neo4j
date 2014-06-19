@@ -28,7 +28,6 @@ import org.junit.Test;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
-import org.neo4j.kernel.impl.transaction.xaframework.DeadSimpleLogVersionRepository;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -71,7 +70,6 @@ public class TestStoreAccess
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws IOException
     {
         return new StoreRecoverer( fileSystem ).recoveryNeededAt( storeDir,
-                new DeadSimpleLogVersionRepository( new NeoStoreUtil( storeDir, fileSystem ).getLogVersion() ),
-                stringMap() );
+                new NeoStoreUtil( storeDir, fileSystem ).getLogVersion(), stringMap() );
     }
 }

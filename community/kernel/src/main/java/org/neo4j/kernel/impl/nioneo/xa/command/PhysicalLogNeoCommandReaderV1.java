@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa.command;
 
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -56,6 +51,11 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReader;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bLengthAndString;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read2bMap;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.read3bLengthAndString;
 
 public class PhysicalLogNeoCommandReaderV1 implements CommandReader
 {
@@ -697,7 +697,7 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
         private Map<String, Byte> readMap( ReadableLogChannel channel ) throws IOException
         {
             byte size = channel.get();
-            Map<String, Byte> result = new HashMap<String, Byte>();
+            Map<String, Byte> result = new HashMap<>();
             for ( int i = 0; i < size; i++ )
             {
                 String key = read2bLengthAndString( channel );

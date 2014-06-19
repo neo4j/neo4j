@@ -31,7 +31,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRecoveryCheck;
-import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.logging.Logging;
 
@@ -54,7 +53,7 @@ public class StoreRecoverer
         this.fs = fs;
     }
 
-    public boolean recoveryNeededAt( File dataDir, LogVersionRepository logVersionRepository, Map<String, String> params ) throws IOException
+    public boolean recoveryNeededAt( File dataDir, long currentLogVersion, Map<String, String> params ) throws IOException
     {
         // We need config to determine where the logical log files are
         params.put( GraphDatabaseSettings.store_dir.name(), dataDir.getPath() );
@@ -69,8 +68,14 @@ public class StoreRecoverer
 
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
 
-        File log = logFiles.getVersionFileName( logVersionRepository.getCurrentLogVersion() );
+        File log = logFiles.getVersionFileName( currentLogVersion );
 
+        if ( !fs.fileExists( log ) )
+        {
+            // This most likely means that the db has been cleanly shut down, i.e. force then inc log version,
+            // then NOT creating a new log file (will be done the next startup)
+            return false;
+        }
         try ( StoreChannel logChannel = fs.open( log, "r" ) )
         {
             return new LogRecoveryCheck( logChannel ).recoveryRequired();

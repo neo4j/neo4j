@@ -19,9 +19,6 @@
  */
 package org.neo4j.server.preflight;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileWriter;
@@ -34,7 +31,10 @@ import org.apache.commons.configuration.Configuration;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.TestLogging;
@@ -42,6 +42,11 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.test.TargetDirectory;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.kernel.impl.recovery.TestStoreRecoverer.createLogFileForNextVersionWithSomeDataInIt;
 
 public class TestPerformRecoveryIfNecessary {
 
@@ -97,11 +102,10 @@ public class TestPerformRecoveryIfNecessary {
         ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
         new GraphDatabaseFactory().newEmbeddedDatabase( storeDirectory ).shutdown();
         // Make this look incorrectly shut down
-        new File( storeDirectory, "nioneo_logical.log.active").delete();
+        createLogFileForNextVersionWithSomeDataInIt( new File( storeDirectory ), new DefaultFileSystemAbstraction() );
 
-        // TODO 2.2-future null will not do at all
-        assertThat("Store should not be recovered", recoverer.recoveryNeededAt(new File( storeDirectory ), null, new HashMap<String,String>()),
-				is(true));
+        assertThat("Store should need recovery", recoverer.recoveryNeededAt(new File( storeDirectory ),
+                new NeoStoreUtil( new File( storeDirectory ) ).getLogVersion(), new HashMap<String,String>()), is(true));
 
         // Run recovery
         PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream), logging );
@@ -109,10 +113,8 @@ public class TestPerformRecoveryIfNecessary {
 		assertThat("Database should exist.", new File( storeDirectory ).exists(), is(true));
 		assertThat("Recovery should print status message.", outputStream.toString(), is("Detected incorrectly shut down database, performing recovery.." + LINEBREAK));
         // TODO 2.2-future null will not do at all
-		assertThat("Store should be recovered", recoverer.recoveryNeededAt( new File( storeDirectory ), null, new HashMap<String,String>()),
-				is(false));
-
-//        logging.getMessagesLog( EmbeddedGraphDatabase.class ).assertAtLeastOnce( info( "Database is now ready" ) );
+		assertThat("Store should be recovered", recoverer.recoveryNeededAt( new File( storeDirectory ), new NeoStoreUtil( new File( storeDirectory ) ).getLogVersion(),
+		        new HashMap<String,String>()), is(false));
 	}
 
     @Test
@@ -124,7 +126,7 @@ public class TestPerformRecoveryIfNecessary {
 
         // When
         // TODO 2.2-future null will not do at all
-        boolean actual = new StoreRecoverer().recoveryNeededAt( new File( storeDirectory ), null, new HashMap<String,
+        boolean actual = new StoreRecoverer().recoveryNeededAt( new File( storeDirectory ), 0, new HashMap<String,
                 String>() );
 
         // Then
@@ -148,5 +150,4 @@ public class TestPerformRecoveryIfNecessary {
 
         return serverProperties;
     }
-
 }

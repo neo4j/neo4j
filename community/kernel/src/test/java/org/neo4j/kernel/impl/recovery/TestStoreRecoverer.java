@@ -19,17 +19,15 @@
  */
 package org.neo4j.kernel.impl.recovery;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.junit.Assert.assertThat;
-import static org.mockito.Mockito.mock;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashMap;
 
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
@@ -41,7 +39,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
-import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionAppender;
@@ -54,6 +51,10 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.mockito.Mockito.mock;
+
 public class TestStoreRecoverer
 {
     @Test
@@ -64,39 +65,39 @@ public class TestStoreRecoverer
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-        assertThat( recoverer.recoveryNeededAt( store, logRepository( store ), new HashMap<String, String>() ), is( false ) );
+        assertThat( recoverer.recoveryNeededAt( store, logVersion( store ), new HashMap<String, String>() ), is( false ) );
     }
 
-    private LogVersionRepository logRepository( File store )
+    private long logVersion( File store )
     {
-        return new DeadSimpleLogVersionRepository( new NeoStoreUtil( store, fileSystem ).getLogVersion() );
+        return new NeoStoreUtil( store, fileSystem ).getLogVersion();
     }
 
     @Test
     public void shouldWantToRecoverBrokenStore() throws Exception
     {
         File store = createIntactStore();
-        createLogFileForNextVersionWithSomeDataInIt( store );
+        createLogFileForNextVersionWithSomeDataInIt( store, fileSystem );
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-        assertThat( recoverer.recoveryNeededAt( store, logRepository( store ), new HashMap<String, String>() ), is( true ) );
+        assertThat( recoverer.recoveryNeededAt( store, logVersion( store ), new HashMap<String, String>() ), is( true ) );
     }
 
     @Test
     public void shouldBeAbleToRecoverBrokenStore() throws Exception
     {
         File store = createIntactStore();
-        createLogFileForNextVersionWithSomeDataInIt( store );
+        createLogFileForNextVersionWithSomeDataInIt( store, fileSystem );
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-        assertThat( recoverer.recoveryNeededAt( store, logRepository( store ), new HashMap<String, String>() ), is( true ) );
+        assertThat( recoverer.recoveryNeededAt( store, logVersion( store ), new HashMap<String, String>() ), is( true ) );
 
         // Don't call recoverer.recover, because currently it's hard coded to start an embedded db
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( store.getPath() ).shutdown();
 
-        assertThat( recoverer.recoveryNeededAt( store, logRepository( store ), new HashMap<String, String>() ), is( false ) );
+        assertThat( recoverer.recoveryNeededAt( store, logVersion( store ), new HashMap<String, String>() ), is( false ) );
     }
 
     private File createIntactStore()
@@ -107,7 +108,7 @@ public class TestStoreRecoverer
         return storeDir;
     }
 
-    private void createLogFileForNextVersionWithSomeDataInIt( File store ) throws IOException
+    public static void createLogFileForNextVersionWithSomeDataInIt( File store, FileSystemAbstraction fileSystem ) throws IOException
     {
         NeoStoreUtil util = new NeoStoreUtil( store, fileSystem );
 
@@ -133,14 +134,14 @@ public class TestStoreRecoverer
         }
     }
 
-    private TransactionRepresentation singleNodeTransaction()
+    private static TransactionRepresentation singleNodeTransaction()
     {
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( Arrays.asList( createNodeCommand() ) );
         transaction.setHeader( new byte[0], 0, 0, 0, 0 );
         return transaction;
     }
 
-    private Command createNodeCommand()
+    private static Command createNodeCommand()
     {
         NodeCommand nodeCommand = new NodeCommand();
         long id = 0;
