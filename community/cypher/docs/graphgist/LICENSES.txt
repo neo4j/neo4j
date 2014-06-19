@@ -6,7 +6,6 @@ Apache Software License, Version 2.0
   Commons IO
   Commons Lang
   ConcurrentLinkedHashMap
-  JTA 1.1
   Lucene Core
   opencsv
   parboiled-core
