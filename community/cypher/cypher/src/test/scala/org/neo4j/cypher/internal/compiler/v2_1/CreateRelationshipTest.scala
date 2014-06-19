@@ -19,18 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import commands.expressions.{ParameterExpression, Identifier}
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
-import org.junit.Test
 import java.util
+
 import collection.JavaConverters._
+import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, ParameterExpression}
 import org.neo4j.cypher.internal.compiler.v2_1.mutation.{CreateRelationship, RelationshipEndpoint}
 
-class CreateRelationshipTest extends GraphDatabaseJUnitSuite {
-  @Test
-  def shouldAcceptJavaArraysAsPropertiesForRelationships() {
-    //given
+class CreateRelationshipTest extends GraphDatabaseFunSuite {
 
+  test("should accept Java arrays as properties for relationships") {
+    //given
     val a = createNode()
     val b = createNode()
     val javaArray: util.List[Int] = util.Arrays.asList(1, 2, 3)
@@ -49,8 +48,8 @@ class CreateRelationshipTest extends GraphDatabaseJUnitSuite {
 
       //then
       val relationships = a.getRelationships.asScala.toList
-      assert(relationships.size === 1)
-      assert(relationships.head.getProperty("array") === Array(1, 2, 3))
+      relationships should have size 1
+      relationships.head.getProperty("array") should equal(Array(1, 2, 3))
       tx.success()
     } finally {
       tx.close()

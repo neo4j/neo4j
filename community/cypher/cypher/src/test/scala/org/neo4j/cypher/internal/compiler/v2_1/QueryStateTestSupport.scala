@@ -35,4 +35,14 @@ trait QueryStateTestSupport {
     }
   }
 
+  def withCountsQueryState[T](f: QueryState => T) = {
+    val tx = graph.beginTx()
+    try {
+      val queryState = QueryStateHelper.countStats(QueryStateHelper.queryStateFrom(graph, tx))
+      f(queryState)
+    } finally {
+      tx.close()
+    }
+  }
+
 }
