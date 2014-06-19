@@ -92,7 +92,7 @@ public class CommitPusher extends LifecycleAdapter
 
     public void queuePush( Slave slave, final long txId )
     {
-        PullUpdateFuture pullRequest = new PullUpdateFuture(slave, txId);
+        PullUpdateFuture pullRequest = new PullUpdateFuture( slave, txId );
 
         BlockingQueue<PullUpdateFuture> queue = pullUpdateQueues.get( slave.getServerId() );
 

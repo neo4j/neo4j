@@ -43,7 +43,6 @@ import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
@@ -168,11 +167,11 @@ public class TransactionPropagator implements Lifecycle
     {
     }
 
-    public void committed( long txId, TransactionRepresentation tx )
+    public void committed( long txId, int authorId )
     {
         int replicationFactor = desiredReplicationFactor;
         // If the author is not this instance, then we need to push to one less - the committer already has it
-        if ( config.getServerId().toIntegerIndex() != tx.getAuthorId() )
+        if ( config.getServerId().toIntegerIndex() != authorId )
         {
             replicationFactor--;
         }
@@ -188,7 +187,7 @@ public class TransactionPropagator implements Lifecycle
             // Commit at the configured amount of slaves in parallel.
             int successfulReplications = 0;
             Iterator<Slave> slaveList = filter( replicationStrategy.prioritize( slaves.getSlaves() ).iterator(),
-                    tx.getAuthorId() );
+                    authorId );
             CompletionNotifier notifier = new CompletionNotifier();
 
             // Start as many initial committers as needed

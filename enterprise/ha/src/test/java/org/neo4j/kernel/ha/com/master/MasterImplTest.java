@@ -97,7 +97,6 @@ public class MasterImplTest
         {
             fail( e.getMessage() );
         }
-
     }
 
     @Test
