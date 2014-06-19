@@ -19,9 +19,6 @@
  */
 package org.neo4j.com.storecopy;
 
-import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -51,6 +48,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
+
+import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME;
 
 public class RemoteStoreCopier
 {
@@ -210,10 +210,11 @@ public class RemoteStoreCopier
         return (GraphDatabaseAPI) new GraphDatabaseFactory()
                 .setKernelExtensions( kernelExtensions )
                 .newEmbeddedDatabaseBuilder( tempStore.getAbsolutePath() )
-                .setConfig(
-                        GraphDatabaseSettings.keep_logical_logs, Settings.TRUE ).setConfig(
-                        GraphDatabaseSettings.allow_store_upgrade,
-                        config.get( GraphDatabaseSettings.allow_store_upgrade ).toString() )
+                .setConfig( GraphDatabaseSettings.keep_logical_logs, Settings.TRUE )
+                .setConfig( InternalAbstractGraphDatabase.Configuration.log_configuration_file,
+                        "neo4j-backup-logback.xml" )
+                .setConfig( GraphDatabaseSettings.allow_store_upgrade, config.get( GraphDatabaseSettings
+                        .allow_store_upgrade ).toString() )
 
                 .newGraphDatabase();
     }

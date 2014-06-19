@@ -48,6 +48,7 @@ import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
@@ -277,6 +278,8 @@ class BackupService
     {
         Map<String, String> config = new HashMap<String, String>();
         config.put( OnlineBackupSettings.online_backup_enabled.name(), Settings.FALSE );
+        config.put( InternalAbstractGraphDatabase.Configuration.log_configuration_file.name(),
+                "neo4j-backup-logback.xml" );
         for ( ConfigParam param : params )
         {
             if ( param != null )
