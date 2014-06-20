@@ -28,7 +28,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheMonitor;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 
 /**
@@ -87,13 +86,6 @@ public class StandardPageCache implements PageCache, Runnable
             file.close();
             pagedFiles.remove( fileName );
         }
-    }
-
-    // TODO remove this
-    @Override
-    public PageCursor newPageCursor()
-    {
-        return new StandardPageCursor( null );
     }
 
     @Override

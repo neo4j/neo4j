@@ -473,11 +473,10 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
                     }
                 } while ( cursor.retry() );
             }
-            // TODO else throw?
-//            else
-//            {
-//                throw new InvalidRecordException( "DynamicRecord Not in use, blockId[" + id + "]" );
-//            }
+            else
+            {
+                throw new InvalidRecordException( "DynamicRecord Not in use, blockId[" + id + "]" );
+            }
             return record;
         }
         catch ( IOException e )

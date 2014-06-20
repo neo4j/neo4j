@@ -24,7 +24,6 @@ import java.io.IOException;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.configuration.Config;
@@ -44,21 +43,6 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     {
         this.scheduler = scheduler;
         this.pageCache = new StandardPageCache( fs, calculateMaxPages( config ), calculatePageSize( config ));
-//                new StandardPageCache.Monitor()
-//
-//        {
-//            @Override
-//            public void pageFault( long pageId, PageTable.PageIO io )
-//            {
-//                System.out.println("MISS [" + io.fileName() + "] " + pageId);
-//            }
-//
-//            @Override
-//            public void evict( long pageId, PageTable.PageIO io )
-//            {
-//                System.out.println("EVIC [" + io.fileName() + "] " + pageId);
-//            }
-//        } );
     }
 
     private static int calculateMaxPages( Config config )
@@ -91,12 +75,6 @@ public class LifecycledPageCache extends LifecycleAdapter implements PageCache
     public void close() throws IOException
     {
         pageCache.close();
-    }
-
-    @Override
-    public PageCursor newPageCursor()
-    {
-        return pageCache.newPageCursor();
     }
 
     @Override

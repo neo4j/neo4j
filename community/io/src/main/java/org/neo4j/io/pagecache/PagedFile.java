@@ -48,16 +48,7 @@ public interface PagedFile
     public static final int PF_NO_FAULT = 1 << 4; // TBD
 
 
-
-    // TODO remove pin
-    void pin( PageCursor cursor, PageLock lock, long pageId ) throws IOException;
-
-    // TODO remove unpin
-    void unpin( PageCursor cursor );
-
     PageCursor io( long pageId, int pf_flags ) throws IOException;
-
-
 
     int pageSize();
 

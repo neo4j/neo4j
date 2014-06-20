@@ -96,13 +96,6 @@ public class StandardPagedFile implements PagedFile
         return cursor;
     }
 
-    @Override
-    public void pin( PageCursor pinToCursor, PageLock lock, long pageId ) throws IOException
-    {
-        StandardPageCursor cursor = (StandardPageCursor) pinToCursor;
-        pin( cursor, lock, pageId );
-    }
-
     void pin( StandardPageCursor cursor, PageLock lock, long pageId ) throws IOException
     {
         cursor.assertNotInUse();
@@ -154,8 +147,7 @@ public class StandardPagedFile implements PagedFile
         }
     }
 
-    @Override
-    public void unpin( PageCursor cursor )
+    void unpin( PageCursor cursor )
     {
         StandardPageCursor standardCursor = (StandardPageCursor) cursor;
         PageLock lock = standardCursor.lockType();
@@ -243,6 +235,6 @@ public class StandardPagedFile implements PagedFile
        }
        while ( current < newLastPageId
                && !lastPageId.compareAndSet( current, newLastPageId ) );
-        return lastPageId.get();
+       return lastPageId.get();
     }
 }

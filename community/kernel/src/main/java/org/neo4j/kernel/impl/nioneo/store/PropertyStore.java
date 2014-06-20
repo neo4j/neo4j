@@ -33,7 +33,6 @@ import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.impl.common.ByteBufferPage;
 import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
 import org.neo4j.io.pagecache.impl.standard.StandardPageCursor;
@@ -47,6 +46,8 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore.getRightArray;
 
 /**
@@ -188,22 +189,26 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     @Override
     public void updateRecord( PropertyRecord record )
     {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
+        long pageId = pageIdForRecord( record.getId() );
+        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+            if ( cursor.next() ) // should always be true
+            {
+                do
+                {
+                    updateRecord( record, cursor );
+                } while ( cursor.retry() );
+            }
+            else
+            {
+                throw new UnderlyingStorageException(
+                        "Could not pin page[" + pageId +
+                        " exclusively for updateRecord: " + record );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-        try
-        {
-            updateRecord( record, cursor );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 
@@ -338,44 +343,50 @@ public class PropertyStore extends AbstractRecordStore<PropertyRecord> implement
     @Override
     public PropertyRecord getRecord( long id )
     {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+            if ( cursor.next() )
+            {
+                PropertyRecord record;
+                do
+                {
+                    record = getRecord( id, cursor, RecordLoad.NORMAL );
+                } while ( cursor.retry() );
+                return record;
+            }
+            else
+            {
+                throw new InvalidRecordException( "PropertyRecord[" + id + "] not in use" );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-        try
-        {
-            return getRecord( id, cursor, RecordLoad.NORMAL );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 
     @Override
     public PropertyRecord forceGetRecord( long id )
     {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+            if ( cursor.next() )
+            {
+                PropertyRecord record;
+                do
+                {
+                    record = getRecord( id, cursor, RecordLoad.FORCE );
+                } while ( cursor.retry() );
+                return record;
+            }
+            else
+            {
+                return new PropertyRecord( id );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-        try
-        {
-            return getRecord( id, cursor, RecordLoad.FORCE );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 

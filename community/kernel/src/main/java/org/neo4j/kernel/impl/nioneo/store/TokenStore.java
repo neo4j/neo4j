@@ -29,7 +29,6 @@ import java.util.LinkedList;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -37,6 +36,8 @@ import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 import static org.neo4j.kernel.impl.nioneo.store.PropertyStore.decodeString;
 
 public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordStore<T> implements Store
@@ -176,26 +177,27 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
 
     public T getRecord( int id )
     {
-        T record;
-        PageCursor cursor = pageCache.newPageCursor();
-        try
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+            if ( cursor.next() )
+            {
+                T record;
+                do
+                {
+                    record = getRecord( id, cursor, false );
+                } while ( cursor.retry() );
+                record.addNameRecords( nameStore.getLightRecords( record.getNameId() ) );
+                return record;
+            }
+            else
+            {
+                throw new InvalidRecordException( getClass().getSimpleName() + " Record[" + id + "] not in use" );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
         }
-        try
-        {
-            record = getRecord( id, cursor, false );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
-        }
-        record.addNameRecords( nameStore.getLightRecords( record.getNameId() ) );
-        return record;
     }
 
     @Override
@@ -207,23 +209,25 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     @Override
     public T forceGetRecord( long id )
     {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+            if ( cursor.next() )
+            {
+                T record;
+                do
+                {
+                    record = getRecord( (int) id, cursor, true );
+                } while ( cursor.retry() );
+                return record;
+            }
+            else
+            {
+                return newRecord( (int) id );
+            }
         }
         catch ( IOException e )
         {
             return newRecord( (int) id );
-        }
-
-        try
-        {
-            return getRecord( (int) id, cursor, true );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 
@@ -246,50 +250,10 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         return records;
     }
 
-    public T getLightRecord( int id )
-    {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
-        {
-            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-
-        try
-        {
-            T record = getRecord( id, cursor, false );
-            record.setIsLight( true );
-            return record;
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
-        }
-    }
-
     @Override
     public void updateRecord( T record )
     {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
-        {
-            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ));
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-        try
-        {
-            updateRecord( record, cursor );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
-        }
+        forceUpdateRecord( record );
         if ( !record.isLight() )
         {
             for ( DynamicRecord keyRecord : record.getNameRecords() )
@@ -302,22 +266,19 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
     @Override
     public void forceUpdateRecord( T record )
     {
-        PageCursor cursor = pageCache.newPageCursor();
-        try
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_EXCLUSIVE_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ));
+            if ( cursor.next() )
+            {
+                do
+                {
+                    updateRecord( record, cursor );
+                } while ( cursor.retry() );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-        try
-        {
-            updateRecord( record, cursor );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 

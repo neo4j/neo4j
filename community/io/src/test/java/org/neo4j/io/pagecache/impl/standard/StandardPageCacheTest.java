@@ -97,5 +97,4 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
         Thread.sleep( 50 );
         assertThat( pagedFile.numberOfCachedPages(), equalTo( pagesKeptInUse ) );
     }
-
 }

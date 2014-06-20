@@ -135,8 +135,7 @@ public class StandardPinnablePage extends ByteBufferPage implements PinnablePage
         {
             try
             {
-//                buffer = ByteBuffer.allocateDirect( pageSize );
-                buffer = ByteBuffer.allocate( pageSize );
+                buffer = ByteBuffer.allocateDirect( pageSize );
             }
             catch( OutOfMemoryError e )
             {

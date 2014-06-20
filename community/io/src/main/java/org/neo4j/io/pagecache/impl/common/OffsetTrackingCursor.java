@@ -24,7 +24,6 @@ import java.nio.BufferUnderflowException;
 
 import org.neo4j.io.pagecache.PageCursor;
 
-// TODO remove this class
 public abstract class OffsetTrackingCursor implements PageCursor
 {
     protected Page page;

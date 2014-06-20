@@ -40,7 +40,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 import static java.lang.String.format;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 /**
@@ -66,10 +65,6 @@ public class NeoStore extends AbstractStore
     public static final int RECORD_SIZE = 9;
 
     public static final String DEFAULT_NAME = "neostore";
-
-    // io_flags
-    private static final long IO_READ_ALL_FIELDS = 1;
-    private static final long IO_INCREMENT_VERSION_FIELD = 2;
 
     // Positions of meta-data records
     private static final int TIME_POSITION = 0;
@@ -613,7 +608,7 @@ public class NeoStore extends AbstractStore
 
     private void refreshFields()
     {
-        scanAllFields( PF_SHARED_LOCK | PF_READ_AHEAD );
+        scanAllFields( PF_SHARED_LOCK );
     }
 
     private void initialiseFields()
