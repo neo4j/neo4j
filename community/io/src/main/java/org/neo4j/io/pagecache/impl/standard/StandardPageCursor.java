@@ -27,7 +27,6 @@ import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SINGLE_PAGE;
 
 public class StandardPageCursor extends OffsetTrackingCursor
 {
@@ -38,6 +37,7 @@ public class StandardPageCursor extends OffsetTrackingCursor
     private StandardPagedFile pagedFile;
     private long pageId;
     private long nextPageId;
+    private long currentPageId;
     private long lastPageId;
     private int pf_flags;
 
@@ -72,19 +72,6 @@ public class StandardPageCursor extends OffsetTrackingCursor
         }
     }
 
-    @Override
-    public long getCurrentPageId()
-    {
-        return nextPageId == pageId? UNBOUND_PAGE_ID : nextPageId - 1;
-    }
-
-    @Override
-    public void rewind() throws IOException
-    {
-        nextPageId = pageId;
-        lastPageId = pagedFile.getLastPageId();
-    }
-
     private static PageLock getLockType( int pf_flags ) throws IOException
     {
         // TODO this is an annoying conversion... we should use ints all the way down
@@ -102,30 +89,44 @@ public class StandardPageCursor extends OffsetTrackingCursor
     @Override
     public boolean next() throws IOException
     {
+        unpinCurrentPage();
+
+        if ( checkNoGrow() )
+        {
+            pinNextPage();
+
+            nextPageId++;
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean next( long pageId ) throws IOException
+    {
+        unpinCurrentPage();
+        nextPageId = pageId;
+
+        if ( checkNoGrow() )
+        {
+            pinNextPage();
+            return true;
+        }
+
+        return false;
+    }
+
+    private void unpinCurrentPage()
+    {
         if ( page != null )
         {
             pagedFile.unpin( this );
         }
+    }
 
-        if ( (pf_flags & PF_SINGLE_PAGE) != 0 && nextPageId > pageId )
-        {
-            return false;
-        }
-
-        try
-        {
-            pagedFile.pin( this, getLockType( pf_flags ), nextPageId );
-        }
-        catch ( IOException e )
-        {
-            if ( page != null )
-            {
-                pagedFile.unpin( this );
-            }
-            throw e;
-        }
-        nextPageId++;
-
+    private boolean checkNoGrow()
+    {
         if ( nextPageId > lastPageId )
         {
             if ( (pf_flags & PF_NO_GROW) != 0 )
@@ -140,13 +141,44 @@ public class StandardPageCursor extends OffsetTrackingCursor
         return true;
     }
 
+    private void pinNextPage() throws IOException
+    {
+        currentPageId = nextPageId;
+        try
+        {
+            pagedFile.pin( this, getLockType( pf_flags ), currentPageId );
+        }
+        catch ( IOException e )
+        {
+            unpinCurrentPage();
+            throw e;
+        }
+    }
+
+    @Override
+    public long getCurrentPageId()
+    {
+        return currentPageId;
+    }
+
+    @Override
+    public void rewind() throws IOException
+    {
+        nextPageId = pageId;
+        currentPageId = UNBOUND_PAGE_ID;
+        lastPageId = pagedFile.getLastPageId();
+    }
+
+    @Override
+    public boolean retry()
+    {
+        return false;
+    }
+
     @Override
     public void close()
     {
-        if ( page != null )
-        {
-            pagedFile.unpin( this );
-        }
+        unpinCurrentPage();
         pagedFile = null;
         cursorFreelist.returnCursor( this );
     }

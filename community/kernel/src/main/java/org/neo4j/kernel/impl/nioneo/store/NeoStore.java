@@ -42,7 +42,6 @@ import static java.lang.String.format;
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_READ_AHEAD;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SINGLE_PAGE;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -578,13 +577,16 @@ public class NeoStore extends AbstractStore
     private void readAllFields( PageCursor cursor ) throws IOException
     {
         // We're assuming all our records/fields fit in a single page.
-        creationTimeField = getRecordValue( cursor, TIME_POSITION );
-        randomNumberField = getRecordValue( cursor, RANDOM_POSITION );
-        versionField = getRecordValue( cursor, VERSION_POSITION );
-        lastCommittedTxField = getRecordValue( cursor, LATEST_TX_POSITION );
-        storeVersionField = getRecordValue( cursor, STORE_VERSION_POSITION );
-        graphNextPropField = getRecordValue( cursor, NEXT_GRAPH_PROP_POSITION );
-        latestConstraintIntroducingTxField = getRecordValue( cursor, LATEST_CONSTRAINT_TX_POSITION );
+        do
+        {
+            creationTimeField = getRecordValue( cursor, TIME_POSITION );
+            randomNumberField = getRecordValue( cursor, RANDOM_POSITION );
+            versionField = getRecordValue( cursor, VERSION_POSITION );
+            lastCommittedTxField = getRecordValue( cursor, LATEST_TX_POSITION );
+            storeVersionField = getRecordValue( cursor, STORE_VERSION_POSITION );
+            graphNextPropField = getRecordValue( cursor, NEXT_GRAPH_PROP_POSITION );
+            latestConstraintIntroducingTxField = getRecordValue( cursor, LATEST_CONSTRAINT_TX_POSITION );
+        } while ( cursor.retry() );
     }
 
     private long getRecordValue( PageCursor cursor, int position )
@@ -598,10 +600,14 @@ public class NeoStore extends AbstractStore
     private void incrementVersion( PageCursor cursor )
     {
         int offset = VERSION_POSITION * getEffectiveRecordSize();
-        cursor.setOffset( offset + 1 ); // +1 to skip the inUse byte
-        long value = cursor.getLong() + 1; // +1 for the increment.
-        cursor.setOffset( offset + 1 ); // +1 to skip the inUse byte
-        cursor.putLong( value );
+        long value;
+        do
+        {
+            cursor.setOffset( offset + 1 ); // +1 to skip the inUse byte
+            value = cursor.getLong() + 1;
+            cursor.setOffset( offset + 1 ); // +1 to skip the inUse byte
+            cursor.putLong( value );
+        } while ( cursor.retry() );
         versionField = value;
     }
 
@@ -612,14 +618,14 @@ public class NeoStore extends AbstractStore
 
     private void initialiseFields()
     {
-        scanAllFields( PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE );
+        scanAllFields( PF_EXCLUSIVE_LOCK );
     }
 
     private void scanAllFields( int pf_flags )
     {
         try ( PageCursor cursor = storeFile.io( 0, pf_flags ) )
         {
-            while ( cursor.next() )
+            if ( cursor.next() )
             {
                 readAllFields( cursor );
             }
@@ -633,14 +639,17 @@ public class NeoStore extends AbstractStore
     private void setRecord( long id, long value )
     {
         long pageId = pageIdForRecord( id );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
         {
-            while ( cursor.next() )
+            if ( cursor.next() )
             {
                 int offset = offsetForId( id );
-                cursor.setOffset( offset );
-                cursor.putByte( Record.IN_USE.byteValue() );
-                cursor.putLong( value );
+                do
+                {
+                    cursor.setOffset( offset );
+                    cursor.putByte( Record.IN_USE.byteValue() );
+                    cursor.putLong( value );
+                } while ( cursor.retry() );
             }
         }
         catch ( IOException e )
@@ -655,9 +664,9 @@ public class NeoStore extends AbstractStore
         // and be effectively single-threaded.
         // The call to getVersion() will most likely optimise to a volatile-read.
         long pageId = pageIdForRecord( VERSION_POSITION );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
         {
-            while ( cursor.next() )
+            if ( cursor.next() )
             {
                 incrementVersion( cursor );
             }

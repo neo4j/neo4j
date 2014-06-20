@@ -44,7 +44,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SINGLE_PAGE;
 
 /**
  * An abstract representation of a dynamic store. The difference between a
@@ -206,11 +205,14 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         long blockId = record.getId();
         long pageId = pageIdForRecord( blockId );
         registerIdFromUpdateRecord( blockId );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
         {
-            while ( cursor.next() )
+            if ( cursor.next() )
             {
-                writeRecord( cursor, record );
+                do
+                {
+                    writeRecord( cursor, record );
+                } while ( cursor.retry() );
             }
         }
         catch ( IOException e )
@@ -321,38 +323,38 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         // TODO we should instead be passed in a consumer of records, so we don't have to spend memory building up this list
         List<DynamicRecord> recordList = new LinkedList<>();
         long blockId = startBlockId;
-        while ( blockId != Record.NO_NEXT_BLOCK.intValue() )
+        int noNextBlock = Record.NO_NEXT_BLOCK.intValue();
+
+        try ( PageCursor cursor = storeFile.io( 0, PF_SHARED_LOCK ) )
         {
-            DynamicRecord record = new DynamicRecord( blockId );
-            long pageId = pageIdForRecord( blockId );
-            try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
+            while ( blockId != noNextBlock && cursor.next( pageIdForRecord( blockId ) ) )
             {
-                while ( cursor.next() )
+                DynamicRecord record = new DynamicRecord( blockId );
+                do
                 {
-                    int offset = offsetForId( record.getId() );
-                    cursor.setOffset( offset );
+                    cursor.setOffset( offsetForId( blockId ) );
                     if ( readRecordHeader( cursor, record, false ) && readBothHeaderAndData )
                     {
                         readRecordData( cursor, record );
                     }
+                } while ( cursor.retry() );
+                if ( !record.inUse() )
+                {
+                    // If the record was not in use, then it was loaded using force.
+                    // We then have to return the recordList, because the nextBlock
+                    // pointers are all going to be zero from here.
+                    // This is used by the consistency checker.
+                    return recordList;
                 }
+                recordList.add( record );
+                blockId = record.getNextBlock();
             }
-            catch ( IOException e )
-            {
-                throw new UnderlyingStorageException( e );
-            }
-            if ( !record.inUse() )
-            {
-                // If the record was not in use, then it was loaded using force.
-                // We then have to return the recordList, because the nextBlock
-                // pointers are all going to be zero from here.
-                // This is used by the consistency checker.
-                return recordList;
-            }
-            recordList.add( record );
-            blockId = record.getNextBlock();
+            return recordList;
         }
-        return recordList;
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
     }
 
     private boolean readRecordHeader( PageCursor cursor, DynamicRecord record, boolean force )
@@ -428,14 +430,17 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
 
         long pageId = pageIdForRecord( record.getId() );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
         {
-            while ( cursor.next() )
+            if ( cursor.next() )
             {
                 int offset = offsetForId( record.getId() );
-                // Add the BLOCK_HEADER_SIZE to the offset, since we don't read it
-                cursor.setOffset( offset + BLOCK_HEADER_SIZE );
-                readRecordData( cursor, record );
+                do
+                {
+                    // Add the BLOCK_HEADER_SIZE to the offset, since we don't read it
+                    cursor.setOffset( offset + BLOCK_HEADER_SIZE );
+                    readRecordData( cursor, record );
+                } while ( cursor.retry() );
             }
         }
         catch ( IOException e )
@@ -454,17 +459,25 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         DynamicRecord record = new DynamicRecord( id );
         long pageId = pageIdForRecord( id );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
         {
-            while ( cursor.next() )
+            if ( cursor.next() )
             {
                 int offset = offsetForId( record.getId() );
-                cursor.setOffset( offset );
-                if ( readRecordHeader( cursor, record, false ) )
+                do
                 {
-                    readRecordData( cursor, record );
-                }
+                    cursor.setOffset( offset );
+                    if ( readRecordHeader( cursor, record, false ) )
+                    {
+                        readRecordData( cursor, record );
+                    }
+                } while ( cursor.retry() );
             }
+            // TODO else throw?
+//            else
+//            {
+//                throw new InvalidRecordException( "DynamicRecord Not in use, blockId[" + id + "]" );
+//            }
             return record;
         }
         catch ( IOException e )
@@ -478,16 +491,19 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
     {
         DynamicRecord record = new DynamicRecord( id );
         long pageId = pageIdForRecord( id );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
          {
-             while ( cursor.next() )
+             if ( cursor.next() )
              {
                  int offset = offsetForId( record.getId() );
-                 cursor.setOffset( offset );
-                 if ( readRecordHeader( cursor, record, true ) )
+                 do
                  {
-                     readRecordData( cursor, record );
-                 }
+                     cursor.setOffset( offset );
+                     if ( readRecordHeader( cursor, record, true ) )
+                     {
+                         readRecordData( cursor, record );
+                     }
+                 } while ( cursor.retry() );
              }
             return record;
         }

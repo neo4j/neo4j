@@ -134,6 +134,6 @@ public class StandardPageSwapper implements PageSwapper
         }
         long div = channelSize / filePageSize;
         long mod = channelSize % filePageSize;
-        return mod > 0? div + 1 : div;
+        return mod == 0? div - 1 : div;
     }
 }

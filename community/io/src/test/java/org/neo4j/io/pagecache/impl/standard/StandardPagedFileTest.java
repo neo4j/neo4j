@@ -53,8 +53,9 @@ public class StandardPagedFileTest
         when( table.load( swapper, 12, PageLock.SHARED ) ).thenReturn( page );
         when( page.pin( swapper, 12, PageLock.SHARED ) ).thenReturn( true );
         when( page.pageId() ).thenReturn( 12L );
+        when( channel.size() ).thenReturn( 2048L );
 
-        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
+        StandardPagedFile file = new StandardPagedFile( table, null, channel, 28, PageCacheMonitor.NULL );
 
         // When
         try ( PageCursor cursor = file.io( 12, PF_SHARED_LOCK ) )
@@ -72,23 +73,24 @@ public class StandardPagedFileTest
     public void shouldUnpinWithCorrectLockType() throws Exception
     {
         // Given
-        when( table.load( swapper, 12, PageLock.SHARED ) ).thenReturn( page );
-        when( page.pin( swapper, 12, PageLock.SHARED ) ).thenReturn( true );
+        when( table.load( swapper, 12, PageLock.EXCLUSIVE ) ).thenReturn( page );
+        when( page.pin( swapper, 12, PageLock.EXCLUSIVE ) ).thenReturn( true );
         when( page.pageId() ).thenReturn( 12L );
         when( swapper.getLastPageId() ).thenReturn( 512L );
 
         StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
 
         // When
-        try ( PageCursor cursor = file.io( 12, PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = file.io( 12, PF_EXCLUSIVE_LOCK ) )
         {
             // Then
             assertTrue( cursor.next() );
             assertThat( cursor.getCurrentPageId(), is( 12L ) );
         }
+        verify( page ).unpin( PageLock.EXCLUSIVE );
     }
 
-    @Test( expected = IOException.class )
+    @Test( expected = IllegalArgumentException.class )
     public void shouldThrowIfNoLockSpecified() throws Exception
     {
         // Given
@@ -106,7 +108,7 @@ public class StandardPagedFileTest
         }
     }
 
-    @Test( expected = IOException.class )
+    @Test( expected = IllegalArgumentException.class )
     public void shouldThrowIfSpecifyingBothSharedAndExclusiveLock() throws IOException
     {
         // Given

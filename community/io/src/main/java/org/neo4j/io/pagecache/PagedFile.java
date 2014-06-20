@@ -46,12 +46,6 @@ public interface PagedFile
      * locking when you want to overwrite the whole page anyway.
      */
     public static final int PF_NO_FAULT = 1 << 4; // TBD
-    /**
-     * Specify that we only want to read a single page. The call to
-     * {@link PageCursor#next()} will then return false as soon as the page has been
-     * properly processed.
-     */
-    public static final int PF_SINGLE_PAGE = 1 << 5;
 
 
 

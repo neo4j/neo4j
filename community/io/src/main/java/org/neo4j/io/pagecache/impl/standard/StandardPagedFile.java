@@ -77,15 +77,16 @@ public class StandardPagedFile implements PagedFile
     @Override
     public PageCursor io( long pageId, int pf_flags ) throws IOException
     {
-        if ( (pf_flags & (PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK)) == 0 )
+        int lockMask = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
+        if ( (pf_flags & lockMask) == 0 )
         {
             throw new IllegalArgumentException(
                     "Must specify either PF_EXCLUSIVE_LOCK or PF_SHARED_LOCK" );
         }
-        if ( (pf_flags & PF_READ_AHEAD) != 0 && (pf_flags & PF_SINGLE_PAGE) != 0 )
+        if ( (pf_flags & lockMask) == lockMask )
         {
             throw new IllegalArgumentException(
-                    "Cannot specify both PF_READ_AHEAD and PF_SINGLE_PAGE" );
+                    "Cannot specify both PF_EXCLUSIVE_LOCK and PF_SHARED_LOCK" );
         }
         // Taking shared locks implies an inability to grow the file
         pf_flags |= (pf_flags & PF_SHARED_LOCK) != 0? PF_NO_GROW : 0;

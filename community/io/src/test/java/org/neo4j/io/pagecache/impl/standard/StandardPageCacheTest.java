@@ -85,7 +85,7 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
         PagedFile pagedFile = cache.map( file, filePageSize );
 
         // When I pin and unpin a series of pages
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_SHARED_LOCK ) )
+        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
         {
             for ( int i = 0; i < 128; i++ )
             {

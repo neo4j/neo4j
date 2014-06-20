@@ -41,7 +41,6 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SINGLE_PAGE;
 import static org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore.readFullByteArrayFromHeavyRecords;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 
@@ -137,43 +136,32 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     @Override
     public NodeRecord getRecord( long id )
     {
-        return getRecord( id, new NodeRecord( id ) );
+        return getRecord( id, null );
     }
 
     public NodeRecord getRecord( long id, NodeRecord record )
     {
-        long pageId = pageIdForRecord( id );
-        int offset = offsetForId( id );
-        NodeRecord result = null;
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
-        {
-            while ( cursor.next() )
-            {
-                cursor.setOffset( offset );
-
-                // [    ,   x] in use bit
-                // [    ,xxx ] higher bits for rel id
-                // [xxxx,    ] higher bits for prop id
-                long inUseByte = cursor.getByte();
-                if ( !recordIsInUse( inUseByte ) )
-                {
-                    result = null;
-                    continue;
-                }
-                readIntoRecord( cursor, record, inUseByte, true );
-                result = record;
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        NodeRecord result = loadRecord( id, record );
 
         if ( result == null )
         {
             throw new InvalidRecordException( "NodeRecord[" + id + "] not in use" );
         }
-        return record;
+        return result;
+    }
+
+    public NodeRecord loadLightNode( long id )
+    {
+        try
+        {
+            assertIdExists( id );
+        }
+        catch ( InvalidRecordException e )
+        {
+            return null;
+        }
+
+        return loadRecord( id, null );
     }
 
     @Override
@@ -191,6 +179,43 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         return record;
     }
 
+    private NodeRecord loadRecord( long id, NodeRecord record )
+    {
+        long pageId = pageIdForRecord( id );
+        int offset = offsetForId( id );
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
+        {
+            boolean isInUse = false;
+            if ( cursor.next() )
+            {
+                do
+                {
+                    cursor.setOffset( offset );
+
+                    // [    ,   x] in use bit
+                    // [    ,xxx ] higher bits for rel id
+                    // [xxxx,    ] higher bits for prop id
+                    long inUseByte = cursor.getByte();
+                    isInUse = recordIsInUse( inUseByte );
+                    if ( isInUse )
+                    {
+                        if ( record == null )
+                        {
+                            record = new NodeRecord( id );
+                        }
+                        record.setId( id );
+                        readIntoRecord( cursor, record, inUseByte, true );
+                    }
+                } while ( cursor.retry() );
+            }
+            return isInUse? record : null;
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+    }
+
     @Override
     public NodeRecord forceGetRaw( NodeRecord record )
     {
@@ -206,42 +231,37 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
     @Override
     public void forceUpdateRecord( NodeRecord record )
     {
-        registerIdFromUpdateRecord( record.getId() );
-        long recordId = record.getId();
-        long pageId = pageIdForRecord( recordId );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
-        {
-            while ( cursor.next() )
-            {
-                writeRecord( cursor, record, true );
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
+        writeRecord( record, true );
     }
 
     @Override
     public void updateRecord( NodeRecord record )
     {
+        writeRecord( record, false );
+        if ( !record.inUse() && !isInRecoveryMode() )
+        {
+            freeId( record.getId() );
+        }
+    }
+
+    private void writeRecord( NodeRecord record, boolean force )
+    {
         registerIdFromUpdateRecord( record.getId() );
         long recordId = record.getId();
         long pageId = pageIdForRecord( recordId );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK | PF_SINGLE_PAGE ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
         {
-            while ( cursor.next() )
+            if ( cursor.next() )
             {
-                writeRecord( cursor, record, false );
+                do
+                {
+                    writeRecord( cursor, record, force );
+                } while ( cursor.retry() );
             }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-        if ( !record.inUse() && !isInRecoveryMode() )
-        {
-            freeId( record.getId() );
         }
     }
 
@@ -282,61 +302,21 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
         }
     }
 
-    public NodeRecord loadLightNode( long id )
-    {
-        try
-        {
-            assertIdExists( id );
-        }
-        catch ( InvalidRecordException e )
-        {
-            return null;
-        }
-
-        long pageId = pageIdForRecord( id );
-        int offset = offsetForId( id );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
-        {
-            NodeRecord record = null;
-            boolean isInUse = false;
-            while ( cursor.next() )
-            {
-                cursor.setOffset( offset );
-
-                // [    ,   x] in use bit
-                // [    ,xxx ] higher bits for rel id
-                // [xxxx,    ] higher bits for prop id
-                long inUseByte = cursor.getByte();
-                isInUse = recordIsInUse( inUseByte );
-                if ( isInUse )
-                {
-                    if ( record == null )
-                    {
-                        record = new NodeRecord( id );
-                    }
-                    readIntoRecord( cursor, record, inUseByte, true );
-                }
-            }
-            return isInUse? record : null;
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
     public boolean inUse( long id )
     {
         long pageId = pageIdForRecord( id );
         int offset = offsetForId( id );
 
-        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK | PF_SINGLE_PAGE ) )
+        try ( PageCursor cursor = storeFile.io( pageId, PF_SHARED_LOCK ) )
         {
             boolean recordIsInUse = false;
-            while ( cursor.next() )
+            if ( cursor.next() )
             {
-                cursor.setOffset( offset );
-                recordIsInUse = recordIsInUse( (long) cursor.getByte() );
+                do
+                {
+                    cursor.setOffset( offset );
+                    recordIsInUse = recordIsInUse( (long) cursor.getByte() );
+                } while ( cursor.retry() );
             }
             return recordIsInUse;
         }
