@@ -22,7 +22,13 @@ package org.neo4j.io.pagecache;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.concurrent.ThreadLocalRandom;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.hamcrest.Description;
@@ -1002,11 +1008,138 @@ public abstract class PageCacheTest<T extends PageCache>
         }
     }
 
-    // TODO inconsistent reads must be retried -- have a bunch of pages, have a thread that continuously comes up with a random number, and then fills up a middle page with that random number in a random order, then have another thread that scans through all the pages - that thread must see a consistent middle page where all the numbers are the same.
-    // TODO inconsistent writes must be retried
+    @Test
+    public void readsAndWritesMustBeMutuallyConsistent() throws Exception
+    {
+        // The idea is this: have a range of pages and we set off a bunch of threads to
+        // do writes within a small region of the page set. The writes they'll perform
+        // is to fill a random page within the region, with the same random byte value.
+        // We then have our main thread scan through all the pages over and over, and
+        // check that all pages can be read consistently, such that all the bytes in a
+        // given page have the same value. We do this check many times, because the
+        // test is inherently about catching data races in the act.
+
+        final int pageCount = 100;
+        int writerThreads = 8;
+        ExecutorService executor = Executors.newFixedThreadPool( writerThreads );
+        final CountDownLatch startLatch = new CountDownLatch( writerThreads );
+        List<Future<?>> writers = new ArrayList<>();
+
+        final PageCache cache = getPageCache( fs, maxPages, pageCachePageSize, PageCacheMonitor.NULL );
+
+        PagedFile pagedFile = cache.map( file, filePageSize );
+        // zero-fill the file
+        try ( PageCursor cursor = pagedFile.io( 0, PF_EXCLUSIVE_LOCK ) )
+        {
+            for ( int i = 0; i < pageCount; i++ )
+            {
+                assertTrue( cursor.next() );
+            }
+        }
+
+        Runnable writer = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    PagedFile pagedFile = cache.map( file, filePageSize );
+                    int pageRangeMin = pageCount / 2;
+                    int pageRangeMax = pageRangeMin + 5;
+                    ThreadLocalRandom rng = ThreadLocalRandom.current();
+                    int[] offsets = new int[filePageSize];
+                    for ( int i = 0; i < offsets.length; i++ )
+                    {
+                        offsets[i] = i;
+                    }
+
+                    startLatch.countDown();
+
+                    while ( !Thread.interrupted() )
+                    {
+                        byte value = (byte) rng.nextInt();
+                        int pageId = rng.nextInt( pageRangeMin, pageRangeMax );
+                        // shuffle offsets
+                        for ( int i = 0; i < offsets.length; i++ )
+                        {
+                            int j = rng.nextInt( i, offsets.length );
+                            int s = offsets[i];
+                            offsets[i] = offsets[j];
+                            offsets[j] = s;
+                        }
+                        // fill page
+                        try ( PageCursor cursor = pagedFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
+                        {
+                            if ( cursor.next() )
+                            {
+                                do
+                                {
+                                    for ( int i = 0; i < offsets.length; i++ )
+                                    {
+                                        cursor.setOffset( offsets[i] );
+                                        cursor.putByte( value );
+                                    }
+                                } while ( cursor.retry() );
+                            }
+                        }
+                    }
+
+                    cache.unmap( file );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( e );
+                }
+            }
+        };
+
+        for ( int i = 0; i < writerThreads; i++ )
+        {
+            writers.add( executor.submit( writer ) );
+        }
+
+        startLatch.await();
+
+        for ( int i = 0; i < 2000; i++ )
+        {
+            int countedConsistentPageReads = 0;
+            try ( PageCursor cursor = pagedFile.io( 0, PF_SHARED_LOCK ) )
+            {
+                while ( cursor.next() )
+                {
+                    boolean consistent = true;
+                    do
+                    {
+                        byte first = cursor.getByte();
+                        for ( int j = 1; j < filePageSize; j++ )
+                        {
+                            consistent = consistent && cursor.getByte() == first;
+                        }
+                    } while ( cursor.retry() );
+                    assertTrue( consistent );
+                    countedConsistentPageReads++;
+                }
+            }
+            assertThat( countedConsistentPageReads, is( pageCount ) );
+        }
+
+        executor.shutdown();
+        for ( Future<?> future : writers )
+        {
+            if ( future.isDone() )
+            {
+                future.get();
+            }
+            else
+            {
+                future.cancel( true );
+            }
+        }
+    }
+
 
     // TODO must collect all exceptions from closing file channels when the cache is closed
-    // TODO scanning with concurrent writes
     // TODO figure out what should happen when the last reference to a file is unmapped, while pages are still pinned
     // TODO figure out how closing the cache should work when there are still mapped files
 
