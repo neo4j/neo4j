@@ -212,8 +212,6 @@ class ProfilerAcceptanceTest extends ExecutionEngineFunSuite with CreateTempFile
     val result = super.profile("CYPHER 2.1.experimental MATCH n WHERE (n)-->() RETURN n")
 
     result shouldBe empty
-    println(result.executionPlanDescription())
-
     result.executionPlanDescription().toString should include("AllNodes")
   }
 
