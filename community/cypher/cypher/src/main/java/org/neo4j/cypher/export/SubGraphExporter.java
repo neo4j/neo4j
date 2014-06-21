@@ -50,8 +50,18 @@ public class SubGraphExporter
 
     public void export( PrintWriter out )
     {
+        exportSchema( out );
+        exportData( out );
+    }
+
+    public void exportSchema( PrintWriter out )
+    {
         appendIndexes( out );
         appendConstraints( out );
+    }
+
+    public void exportData( PrintWriter out )
+    {
         appendNodes( out );
         appendRelationships( out );
     }
@@ -76,7 +86,7 @@ public class SubGraphExporter
                 }
 
                 String label = quote( index.getLabel().name() );
-                result.add( "create index on :" + label + "(" + key + ")" );
+                result.add( "create index on :" + label + "(" + key + ");" );
             }
         }
         Collections.sort( result );
@@ -106,7 +116,7 @@ public class SubGraphExporter
             }
 
             String label = quote( constraint.getLabel().name() );
-            result.add( "create constraint on (n:" + label + ") assert n." + key + " is unique" );
+            result.add( "create constraint on (n:" + label + ") assert n." + key + " is unique;" );
         }
         Collections.sort( result );
         return result;

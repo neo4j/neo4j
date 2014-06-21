@@ -185,7 +185,9 @@ public class ShellDocTest
         doc.add( "create index on :Person(name);", "", "create an index" );
         doc.add( "create (m:Person:Hacker {name:'Mattias'}), (m)-[:KNOWS]->(m);", "", "create one labeled node and a relationship" );
         doc.add( "dump", "begin" +
-                NL +"create index on :`Person`(`name`)" +
+                NL +"create index on :`Person`(`name`);" +
+                NL +"commit" +
+                NL +"begin" +
                 NL +"create (_0:`Person`:`Hacker` {`name`:\"Mattias\"})" +
                 NL +"create _0-[:`KNOWS`]->_0" +
                 NL +";" +

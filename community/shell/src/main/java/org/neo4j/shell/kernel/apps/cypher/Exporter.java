@@ -32,7 +32,7 @@ public class Exporter
 {
     private final SubGraphExporter exporter;
 
-    Exporter(SubGraph graph)
+    Exporter( SubGraph graph )
     {
         exporter = new SubGraphExporter( graph );
     }
@@ -40,12 +40,17 @@ public class Exporter
     public void export( Output out ) throws RemoteException, ShellException
     {
         begin( out );
-        exporter.export(asWriter(out));
-        out.println(";");
-        commit(out);
+        exporter.exportSchema( asWriter( out ) );
+        commit( out );
+
+        begin( out );
+        exporter.exportData( asWriter( out ) );
+        out.println( ";" );
+        commit( out );
     }
 
-    private PrintWriter asWriter(Output out) {
+    private PrintWriter asWriter( Output out )
+    {
         return new PrintWriter( new OutputAsWriter( out ) );
     }
 
