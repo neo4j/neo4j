@@ -54,7 +54,6 @@ Apache Software License, Version 2.0
   Jetty :: Utilities
   Jetty :: Webapp Application Support
   Jetty :: XML utilities
-  JTA 1.1
   Lucene Core
   opencsv
   parboiled-core
