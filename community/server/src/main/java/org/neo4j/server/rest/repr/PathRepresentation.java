@@ -24,6 +24,9 @@ import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.helpers.collection.IterableWrapper;
 
+import java.util.ArrayList;
+import java.util.Iterator;
+
 public class PathRepresentation<P extends Path> extends ObjectRepresentation // implements
                                                                              // ExtensibleRepresentation
 {
@@ -98,6 +101,40 @@ public class PathRepresentation<P extends Path> extends ObjectRepresentation // 
                     protected Representation underlyingObjectToObject( Relationship node )
                     {
                         return ValueRepresentation.uri( RelationshipRepresentation.path( node ) );
+                    }
+                } );
+    }
+
+    @Mapping( "directions" )
+    public ListRepresentation directions()
+    {
+        ArrayList<String> directionStrings = new ArrayList<>();
+
+        Iterator<Node> nodeIterator = path.nodes().iterator();
+        Iterator<Relationship> relationshipIterator = path.relationships().iterator();
+
+        Relationship rel;
+        Node startNode;
+        Node endNode = nodeIterator.next();
+
+        while ( relationshipIterator.hasNext() ) {
+            rel = relationshipIterator.next();
+            startNode = endNode;
+            endNode = nodeIterator.next();
+            if ( rel.getStartNode().equals(startNode) && rel.getEndNode().equals(endNode) ) {
+                directionStrings.add( "->" );
+            } else {
+                directionStrings.add( "<-" );
+            }
+        }
+
+        return new ListRepresentation( RepresentationType.STRING,
+                new IterableWrapper<Representation, String>( directionStrings )
+                {
+                    @Override
+                    protected Representation underlyingObjectToObject( String directionString )
+                    {
+                        return ValueRepresentation.string(directionString);
                     }
                 } );
     }
