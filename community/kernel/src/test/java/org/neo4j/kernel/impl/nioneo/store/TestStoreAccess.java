@@ -69,7 +69,6 @@ public class TestStoreAccess
 
     private boolean isUnclean( FileSystemAbstraction fileSystem ) throws IOException
     {
-        return new StoreRecoverer( fileSystem ).recoveryNeededAt( storeDir,
-                new NeoStoreUtil( storeDir, fileSystem ).getLogVersion(), stringMap() );
+        return new StoreRecoverer( fileSystem ).recoveryNeededAt( storeDir );
     }
 }

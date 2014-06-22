@@ -19,8 +19,6 @@
  */
 package org.neo4j.consistency;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.PrintStream;
@@ -33,11 +31,11 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
+import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class ConsistencyCheckTool
 {
@@ -98,31 +96,21 @@ public class ConsistencyCheckTool
         }
         else
         {
-            PhysicalLogFiles logFiles = new PhysicalLogFiles(
-                    new File( storeDir, NeoStoreXaDataSource.LOGICAL_LOG_DEFAULT_NAME ),
-                    new DefaultFileSystemAbstraction() );
+            StoreRecoverer recoveryChecker = new StoreRecoverer();
             try
             {
-                switch ( logFiles.determineState() )
+                if ( recoveryChecker.recoveryNeededAt( new File( storeDir ) ) )
                 {
-                    case LEGACY_WITHOUT_LOG_ROTATION:
-                        systemError.println( "WARNING: store contains log file from too old version." );
-                        break;
-                    case NO_ACTIVE_FILE:
-                    case CLEAN:
-                        break;
-                    default:
-                        systemError.print( lines(
-                                "Active logical log detected, this might be a source of inconsistencies.",
-                                "Consider allowing the database to recover before running the consistency check.",
-                                "Consistency checking will continue, abort if you wish to perform recovery first.",
-                                "To perform recovery before checking consistency, use the '--recovery' flag." )
-                        );
+                    systemError.print( lines(
+                            "Active logical log detected, this might be a source of inconsistencies.",
+                            "Consider allowing the database to recover before running the consistency check.",
+                            "Consistency checking will continue, abort if you wish to perform recovery first.",
+                            "To perform recovery before checking consistency, use the '--recovery' flag." ) );
                 }
             }
             catch ( IOException e )
             {
-                systemError.printf( "Failure when checking for active logs: '%s', continuing as normal.%n", e );
+                systemError.printf( "Failure when checking for recovery state: '%s', continuing as normal.%n", e );
             }
         }
     }

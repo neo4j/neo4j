@@ -23,12 +23,12 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRecoveryCheck;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
@@ -40,7 +40,6 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class StoreRecoverer
 {
-
     private final FileSystemAbstraction fs;
 
     public StoreRecoverer()
@@ -53,21 +52,25 @@ public class StoreRecoverer
         this.fs = fs;
     }
 
-    public boolean recoveryNeededAt( File dataDir, long currentLogVersion, Map<String, String> params ) throws IOException
+    public boolean recoveryNeededAt( File dataDir ) throws IOException
+    {
+        long logVersion = fs.fileExists( new File( dataDir, NeoStore.DEFAULT_NAME ) ) ?
+                new NeoStoreUtil( dataDir, fs ).getLogVersion() : 0;
+        return recoveryNeededAt( dataDir, logVersion );
+    }
+
+    public boolean recoveryNeededAt( File dataDir, long currentLogVersion )
+            throws IOException
     {
         // We need config to determine where the logical log files are
-        params.put( GraphDatabaseSettings.store_dir.name(), dataDir.getPath() );
-        Config config = new Config( params, GraphDatabaseSettings.class );
-
-        File neoStorePath = config.get( GraphDatabaseSettings.neo_store );
-        if(!fs.fileExists( neoStorePath ))
+        File neoStorePath = new File( dataDir, NeoStore.DEFAULT_NAME );
+        if ( !fs.fileExists( neoStorePath ) )
         {
             // No database in the specified directory.
             return false;
         }
 
         PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
-
         File log = logFiles.getVersionFileName( currentLogVersion );
 
         if ( !fs.fileExists( log ) )

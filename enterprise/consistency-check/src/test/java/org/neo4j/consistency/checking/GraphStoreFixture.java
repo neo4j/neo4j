@@ -19,12 +19,8 @@
  */
 package org.neo4j.consistency.checking;
 
-import static java.util.Collections.singletonMap;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-
 import java.io.File;
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
@@ -32,7 +28,7 @@ import java.util.Map;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
-import org.neo4j.graphdb.DependencyResolver;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -40,10 +36,12 @@ import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
@@ -51,19 +49,19 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.XidImpl;
-import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
+
+import static java.util.Collections.singletonMap;
 
 public abstract class GraphStoreFixture implements TestRule
 {
     private DirectStoreAccess directStoreAccess;
 
-    public void apply( Transaction transaction ) throws IOException
+    public void apply( Transaction transaction ) throws TransactionFailureException
     {
         applyTransaction( transaction );
     }
@@ -73,16 +71,11 @@ public abstract class GraphStoreFixture implements TestRule
         if ( directStoreAccess == null )
         {
             StoreAccess nativeStores = new StoreAccess( directory );
-            directStoreAccess = new DirectStoreAccess(
-                    nativeStores,
-                    new LuceneLabelScanStoreBuilder(
-                            directory().getAbsolutePath(),
-                            nativeStores.getRawNeoStore(),
-                            new DefaultFileSystemAbstraction(),
-                            StringLogger.SYSTEM
-                    ).build(),
-                    createIndexes()
-            );
+            directStoreAccess = new DirectStoreAccess( nativeStores, new LuceneLabelScanStoreBuilder(
+                    directory().getAbsolutePath(),
+                    nativeStores.getRawNeoStore(),
+                    new DefaultFileSystemAbstraction(),
+                    StringLogger.SYSTEM ).build(), createIndexes() );
         }
         return directStoreAccess;
     }
@@ -102,21 +95,15 @@ public abstract class GraphStoreFixture implements TestRule
     public static abstract class Transaction
     {
         public final long startTimestamp = System.currentTimeMillis();
-        public final byte[] globalId = XidImpl.getNewGlobalId( DEFAULT_SEED, -1 );
 
         protected abstract void transactionData( TransactionDataBuilder tx, IdGenerator next );
 
-        private ReadableByteChannel write( IdGenerator idGenerator, int identifier, int masterId, int myId, long txId )
-                throws IOException
+        public TransactionRepresentation representation( IdGenerator idGenerator, int masterId, int authorId,
+                long lastCommittedTx )
         {
-            InMemoryLogBuffer buffer = new InMemoryLogBuffer();
-            TransactionWriter writer = new TransactionWriter( buffer, identifier, myId );
-            writer.start( globalId, masterId, myId, startTimestamp, txId );
-
+            TransactionWriter writer = new TransactionWriter();
             transactionData( new TransactionDataBuilder( writer ), idGenerator );
-
-            writer.prepare();
-            return buffer;
+            return writer.representation( new byte[0], masterId, authorId, startTimestamp, lastCommittedTx );
         }
     }
 
@@ -206,194 +193,82 @@ public abstract class GraphStoreFixture implements TestRule
 
         public void propertyKey( int id, String key )
         {
-            try
-            {
-                writer.propertyKey( id, key, id );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.propertyKey( id, key, id );
         }
 
         public void nodeLabel( int id, String name )
         {
-            try
-            {
-                writer.label( id, name, id );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.label( id, name, id );
         }
 
         public void relationshipType( int id, String relationshipType )
         {
-            try
-            {
-                writer.relationshipType( id, relationshipType, id );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.relationshipType( id, relationshipType, id );
         }
 
         public void create( NodeRecord node )
         {
-            try
-            {
-                writer.create( node );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.create( node );
         }
 
         public void update( NeoStoreRecord record )
         {
-            try
-            {
-                writer.update( record );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.update( record );
         }
 
         public void update( NodeRecord before, NodeRecord after )
         {
-            try
-            {
-                writer.update( before, after );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.update( before, after );
         }
 
         public void delete( NodeRecord node )
         {
-            try
-            {
-                writer.delete( node );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.delete( node );
         }
 
         public void create( RelationshipRecord relationship )
         {
-            try
-            {
-                writer.create( relationship );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.create( relationship );
         }
 
         public void update( RelationshipRecord relationship )
         {
-            try
-            {
-                writer.update( relationship );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.update( relationship );
         }
 
         public void delete( RelationshipRecord relationship )
         {
-            try
-            {
-                writer.delete( relationship );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.delete( relationship );
         }
 
         public void create( RelationshipGroupRecord group )
         {
-            try
-            {
-                writer.create( group );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.create( group );
         }
 
         public void update(  RelationshipGroupRecord group )
         {
-            try
-            {
-                writer.update( group );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.update( group );
         }
 
         public void delete(  RelationshipGroupRecord group )
         {
-            try
-            {
-                writer.delete( group );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.delete( group );
         }
 
         public void create( PropertyRecord property )
         {
-            try
-            {
-                writer.create( property );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.create( property );
         }
 
         public void update( PropertyRecord before, PropertyRecord property )
         {
-            try
-            {
-                writer.update( before, property );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.update( before, property );
         }
 
         public void delete( PropertyRecord before, PropertyRecord property )
         {
-            try
-            {
-                writer.delete( before, property );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.delete( before, property );
         }
 
         private Error ioError( IOException e )
@@ -428,21 +303,23 @@ public abstract class GraphStoreFixture implements TestRule
         return -1;
     }
 
-    protected final ReadableByteChannel write( Transaction transaction, Long txId ) throws IOException
-    {
-        return transaction.write( idGenerator(), localIdGenerator++, masterId(), myId(), txId );
-    }
-
     @SuppressWarnings("deprecation")
-    protected void applyTransaction( Transaction transaction ) throws IOException
+    protected void applyTransaction( Transaction transaction ) throws TransactionFailureException
     {
-        GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory ).setConfig( configuration( false ) ).newGraphDatabase();
-        try ( org.neo4j.graphdb.Transaction tx = database.beginTx() )
+        // TODO you know... we could have just appended the transaction representation to the log
+        // and the next startup of the store would do recovery where the transaction would have been
+        // applied and all would have been well.
+
+        GraphDatabaseAPI database = (GraphDatabaseAPI) new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( directory ).setConfig( configuration( false ) ).newGraphDatabase();
+        try
         {
-            DependencyResolver resolver = database.getDependencyResolver();
-            XaDataSourceManager xaDataSourceManager = resolver.resolveDependency( XaDataSourceManager.class );
-            NeoStoreXaDataSource dataSource = xaDataSourceManager.getNeoStoreDataSource();
-            dataSource.applyPreparedTransaction( write( transaction, dataSource.getLastCommittedTxId() ) );
+            TransactionRepresentationCommitProcess commitProcess = database.getDependencyResolver().resolveDependency(
+                    TransactionRepresentationCommitProcess.class );
+            TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
+                    TransactionIdStore.class );
+            commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),
+                    transactionIdStore.getLastCommittingTransactionId() ) );
         }
         finally
         {
@@ -456,7 +333,6 @@ public abstract class GraphStoreFixture implements TestRule
     }
 
     private String directory;
-    private int localIdGenerator = 0;
     private long schemaId;
     private long nodeId;
     private int labelId;
@@ -471,7 +347,9 @@ public abstract class GraphStoreFixture implements TestRule
 
     private void generateInitialData()
     {
-        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabaseBuilder( directory ).setConfig( configuration( true ) ).newGraphDatabase();
+        GraphDatabaseAPI graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory()
+                .newEmbeddedDatabaseBuilder( directory ).setConfig( configuration( true ) )
+                .newGraphDatabase();
         try
         {
             generateInitialData( graphDb );

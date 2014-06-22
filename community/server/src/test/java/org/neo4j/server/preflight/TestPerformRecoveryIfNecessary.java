@@ -34,7 +34,6 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.TestLogging;
@@ -104,8 +103,7 @@ public class TestPerformRecoveryIfNecessary {
         // Make this look incorrectly shut down
         createLogFileForNextVersionWithSomeDataInIt( new File( storeDirectory ), new DefaultFileSystemAbstraction() );
 
-        assertThat("Store should need recovery", recoverer.recoveryNeededAt(new File( storeDirectory ),
-                new NeoStoreUtil( new File( storeDirectory ) ).getLogVersion(), new HashMap<String,String>()), is(true));
+        assertThat("Store should need recovery", recoverer.recoveryNeededAt(new File( storeDirectory )), is(true));
 
         // Run recovery
         PerformRecoveryIfNecessary task = new PerformRecoveryIfNecessary(config, new HashMap<String,String>(), new PrintStream(outputStream), logging );
@@ -113,8 +111,7 @@ public class TestPerformRecoveryIfNecessary {
 		assertThat("Database should exist.", new File( storeDirectory ).exists(), is(true));
 		assertThat("Recovery should print status message.", outputStream.toString(), is("Detected incorrectly shut down database, performing recovery.." + LINEBREAK));
         // TODO 2.2-future null will not do at all
-		assertThat("Store should be recovered", recoverer.recoveryNeededAt( new File( storeDirectory ), new NeoStoreUtil( new File( storeDirectory ) ).getLogVersion(),
-		        new HashMap<String,String>()), is(false));
+		assertThat("Store should be recovered", recoverer.recoveryNeededAt( new File( storeDirectory )), is(false));
 	}
 
     @Test
@@ -126,8 +123,7 @@ public class TestPerformRecoveryIfNecessary {
 
         // When
         // TODO 2.2-future null will not do at all
-        boolean actual = new StoreRecoverer().recoveryNeededAt( new File( storeDirectory ), 0, new HashMap<String,
-                String>() );
+        boolean actual = new StoreRecoverer().recoveryNeededAt( new File( storeDirectory ), 0 );
 
         // Then
         assertThat("Recovery should not be needed", actual,

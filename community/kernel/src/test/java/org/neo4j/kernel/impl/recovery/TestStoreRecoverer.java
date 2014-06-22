@@ -22,7 +22,6 @@ package org.neo4j.kernel.impl.recovery;
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.HashMap;
 
 import org.junit.Test;
 
@@ -65,12 +64,7 @@ public class TestStoreRecoverer
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-        assertThat( recoverer.recoveryNeededAt( store, logVersion( store ), new HashMap<String, String>() ), is( false ) );
-    }
-
-    private long logVersion( File store )
-    {
-        return new NeoStoreUtil( store, fileSystem ).getLogVersion();
+        assertThat( recoverer.recoveryNeededAt( store ), is( false ) );
     }
 
     @Test
@@ -81,7 +75,7 @@ public class TestStoreRecoverer
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-        assertThat( recoverer.recoveryNeededAt( store, logVersion( store ), new HashMap<String, String>() ), is( true ) );
+        assertThat( recoverer.recoveryNeededAt( store ), is( true ) );
     }
 
     @Test
@@ -92,12 +86,12 @@ public class TestStoreRecoverer
 
         StoreRecoverer recoverer = new StoreRecoverer( fileSystem );
 
-        assertThat( recoverer.recoveryNeededAt( store, logVersion( store ), new HashMap<String, String>() ), is( true ) );
+        assertThat( recoverer.recoveryNeededAt( store ), is( true ) );
 
         // Don't call recoverer.recover, because currently it's hard coded to start an embedded db
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( store.getPath() ).shutdown();
 
-        assertThat( recoverer.recoveryNeededAt( store, logVersion( store ), new HashMap<String, String>() ), is( false ) );
+        assertThat( recoverer.recoveryNeededAt( store ), is( false ) );
     }
 
     private File createIntactStore()

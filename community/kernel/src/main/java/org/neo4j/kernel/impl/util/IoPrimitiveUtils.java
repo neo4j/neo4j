@@ -29,7 +29,6 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 
@@ -56,16 +55,6 @@ public abstract class IoPrimitiveUtils
         char[] chars = new char[length];
         channel.get( chars, length );
         return new String( chars );
-    }
-
-    public static void write3bLengthAndString( LogBuffer buffer, String string ) throws IOException
-    {
-        char[] chars = string.toCharArray();
-        // 3 bytes to represent the length (4 is a bit overkill)... maybe
-        // this space optimization is a bit overkill also :)
-        buffer.putShort( (short)chars.length );
-        buffer.put( (byte)(chars.length >> 16) );
-        buffer.put( chars );
     }
 
     public static void write3bLengthAndString( WritableLogChannel channel, String string ) throws IOException
@@ -96,13 +85,6 @@ public abstract class IoPrimitiveUtils
         byte lengthByte = channel.get();
         int length = (lengthByte << 16) | lengthShort;
         return readString( channel, length );
-    }
-
-    public static void write2bLengthAndString( LogBuffer buffer, String string ) throws IOException
-    {
-        char[] chars = string.toCharArray();
-        buffer.putShort( (short)chars.length );
-        buffer.put( chars );
     }
 
     public static void write2bLengthAndString( WritableLogChannel channel, String string ) throws IOException
