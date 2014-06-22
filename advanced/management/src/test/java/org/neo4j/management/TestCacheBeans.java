@@ -19,10 +19,6 @@
  */
 package org.neo4j.management;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.fail;
-
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Iterator;
@@ -31,11 +27,16 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.ImpermanentDatabaseRule;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.fail;
 
 public class TestCacheBeans
 {
@@ -73,14 +74,19 @@ public class TestCacheBeans
     @Test
     public void canMeasureSizeOfCache() throws Exception
     {
-        long [] before = get( CacheBean.NUMBER_OF_CACHED_ELEMENTS );
-        try(Transaction tx = graphDb.beginTx())
+        long[] before = get( CacheBean.CACHE_SIZE );
+        long nodeId;
+        try ( Transaction tx = graphDb.beginTx() )
         {
-            graphDb.createNode();
+            nodeId = graphDb.createNode().getId();
             tx.success();
         }
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            graphDb.getNodeById( nodeId );
+        }
 
-        assertChanged( "cache size not updated", before, get( CacheBean.NUMBER_OF_CACHED_ELEMENTS ) );
+        assertChanged( "cache size not updated", before, get( CacheBean.CACHE_SIZE ) );
     }
 
     @Test
@@ -95,15 +101,11 @@ public class TestCacheBeans
         graphDb.getDependencyResolver().resolveDependency( Caches.class ).clear();
 
         long[] hits = get( CacheBean.HIT_COUNT ), miss = get( CacheBean.MISS_COUNT );
-        Transaction transaction = graphDb.beginTx();
-        try
+        try ( Transaction transaction = graphDb.beginTx() )
         {
             graphDb.getNodeById(0);
             graphDb.getNodeById(0);
-        }
-        finally
-        {
-            transaction.finish();
+            transaction.success();
         }
         assertChanged( "hit count not updated", hits, get( CacheBean.HIT_COUNT ) );
         assertChanged( "miss count not updated", miss, get( CacheBean.MISS_COUNT ) );
@@ -119,30 +121,30 @@ public class TestCacheBeans
 
     private enum CacheBean
     {
-        NUMBER_OF_CACHED_ELEMENTS
-                {
-                    @Override
-                    long get( Cache bean )
-                    {
-                        return bean.getCacheSize();
-                    }
-                },
+        CACHE_SIZE
+        {
+            @Override
+            long get( Cache bean )
+            {
+                return bean.getCacheSize();
+            }
+        },
         HIT_COUNT
-                {
-                    @Override
-                    long get( Cache bean )
-                    {
-                        return bean.getHitCount();
-                    }
-                },
+        {
+            @Override
+            long get( Cache bean )
+            {
+                return bean.getHitCount();
+            }
+        },
         MISS_COUNT
-                {
-                    @Override
-                    long get( Cache bean )
-                    {
-                        return bean.getMissCount();
-                    }
-                };
+        {
+            @Override
+            long get( Cache bean )
+            {
+                return bean.getMissCount();
+            }
+        };
 
         abstract long get( Cache bean );
     }
