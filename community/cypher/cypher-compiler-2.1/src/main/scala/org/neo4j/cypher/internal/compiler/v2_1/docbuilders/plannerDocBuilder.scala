@@ -87,10 +87,11 @@ case object plannerDocBuilder extends DocBuilderChain[Any] {
       forNestedShortestPathPattern,
       forNestedPredicate,
       forNestedSelections,
-      queryProjectionDocBuilder("WITH"),
-      queryGraphDocBuilder,
       queryGraphDocBuilder,
       logicalPlanDocBuilder,
+      queryHorizonDocBuilder,
+      queryProjectionDocBuilder("WITH"),
+      queryShuffleDocBuilder,
       plannerQueryDocBuilder
     )
 }
