@@ -17,17 +17,25 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{astDocBuilder, astExpressionDocBuilder}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{ASTNode, LabelName, AstConstructionTestSupport, UsingIndexHint}
+import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{toStringDocBuilder, DocBuilderTestSuite}
 
-class AstDocBuilderTest extends DocBuilderTestSuite[Any] with AstConstructionTestSupport {
+class ToStringDocBuilderTest extends DocBuilderTestSuite[Any] {
 
-  val docBuilder = astDocBuilder orElse astExpressionDocBuilder orElse simpleDocBuilder
+  val docBuilder = toStringDocBuilder
 
-  test("USING INDEX n:Person(name)") {
-    val astNode: ASTNode = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
-    format(astNode) should equal("USING INDEX n:Person(name)")
+  test("handles nulls") {
+    format(null) should equal("null")
+  }
+
+  test("handles values") {
+    format(1) should equal("1")
+  }
+
+  test("handles object instances") {
+    object Test { override def toString = "surprise" }
+
+    format(Test) should equal("surprise")
   }
 }

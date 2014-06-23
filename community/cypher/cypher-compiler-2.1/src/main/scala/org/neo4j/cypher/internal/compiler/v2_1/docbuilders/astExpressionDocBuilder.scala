@@ -21,12 +21,6 @@ package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.perty._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
 import org.neo4j.cypher.internal.compiler.v2_1.perty.impl.quoteString
 
 case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
@@ -93,5 +87,14 @@ case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
 
     case FunctionInvocation(FunctionName(name), true, args) => (inner) =>
       "DISTINCT" :/: block(name)(sepList(args.map(inner)))
+
+    case AscSortItem(expr)  => (inner) =>
+      inner(expr)
+
+    case DescSortItem(expr) => (inner) =>
+      inner(expr) :/: "DESC"
+
+    case CountStar() => (inner) =>
+      "count(*)"
   }
 }
