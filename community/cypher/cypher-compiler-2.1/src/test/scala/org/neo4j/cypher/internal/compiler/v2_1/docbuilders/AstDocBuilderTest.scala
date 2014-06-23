@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.perty._
-import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{catchErrors, simpleDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.ast.{ASTNode, LabelName, AstConstructionTestSupport, UsingIndexHint}
+import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{simpleDocBuilder, DocBuilderTestSuite}
 
-case object internalDocBuilder extends DocBuilderChain[Any] with TopLevelDocBuilder[Any] {
+class AstDocBuilderTest extends DocBuilderTestSuite[Any] with AstConstructionTestSupport {
 
-  val builders = Seq(
-    astExpressionDocBuilder,
-    astDocBuilder,
-    plannerDocBuilder,
-    simpleDocBuilder
-  )
+  val docBuilder = astDocBuilder orElse astExpressionDocBuilder orElse simpleDocBuilder
 
-  override protected def newNestedDocGenerator = catchErrors(super.newNestedDocGenerator)
+  test("USING INDEX n:Person(name)") {
+    val astNode: ASTNode = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
+    format(astNode) should equal("USING INDEX n:Person(name)")
+  }
 }

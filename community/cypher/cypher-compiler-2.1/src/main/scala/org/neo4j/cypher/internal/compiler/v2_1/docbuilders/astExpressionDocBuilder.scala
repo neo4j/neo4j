@@ -21,13 +21,27 @@ package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.perty._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
+import org.neo4j.cypher.internal.compiler.v2_1.perty.impl.quoteString
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Or
+import org.neo4j.cypher.internal.compiler.v2_1.ast.False
+import org.neo4j.cypher.internal.compiler.v2_1.ast.And
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Xor
+import org.neo4j.cypher.internal.compiler.v2_1.ast.FunctionName
+import org.neo4j.cypher.internal.compiler.v2_1.ast.StringLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Null
+import org.neo4j.cypher.internal.compiler.v2_1.ast.LessThanOrEqual
+import org.neo4j.cypher.internal.compiler.v2_1.ast.NotEquals
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Not
+import org.neo4j.cypher.internal.compiler.v2_1.ast.GreaterThan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.DescSortItem
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.ast.GreaterThanOrEqual
 import org.neo4j.cypher.internal.compiler.v2_1.ast.HasLabels
+import org.neo4j.cypher.internal.compiler.v2_1.ast.LessThan
+import org.neo4j.cypher.internal.compiler.v2_1.ast.AscSortItem
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
-import org.neo4j.cypher.internal.compiler.v2_1.perty.impl.quoteString
+import org.neo4j.cypher.internal.compiler.v2_1.ast.True
 
 case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
 
@@ -93,5 +107,14 @@ case object astExpressionDocBuilder extends CachingDocBuilder[Any] {
 
     case FunctionInvocation(FunctionName(name), true, args) => (inner) =>
       "DISTINCT" :/: block(name)(sepList(args.map(inner)))
+
+    case AscSortItem(expr)  => (inner) =>
+      inner(expr)
+
+    case DescSortItem(expr) => (inner) =>
+      inner(expr) :/: "DESC"
+
+    case CountStar() => (inner) =>
+      "count(*)"
   }
 }
