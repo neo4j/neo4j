@@ -325,15 +325,8 @@ return distinct center""")
   test("failed_query_should_not_leave_dangling_transactions") {
     intercept[EntityNotFoundException](execute("START left=node(1), right=node(3,4) CREATE UNIQUE left-[r:KNOWS]->right RETURN r"))
 
-<<<<<<< HEAD
-
-    // TODO 2.2-future
     val contextBridge : ThreadToStatementContextBridge = graph.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
-    assertNull("Did not expect to be in a transaction now", contextBridge.getTopLevelTransactionBoundToThisThread( false ))
-=======
-    val txManager: TransactionManager = graph.getDependencyResolver.resolveDependency(classOf[TransactionManager])
-    txManager.getTransaction should be(null)
->>>>>>> master
+    contextBridge.getTopLevelTransactionBoundToThisThread( false ) should be(null)
   }
 
   test("create_unique_twice_with_param_map") {

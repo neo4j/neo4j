@@ -63,11 +63,7 @@ class MergeRelationshipAcceptanceTest extends ExecutionEngineFunSuite with Query
     val result = execute("MATCH (a {name:'A'}), (b {name:'B'}) MERGE (a)-[r:TYPE]->(b) RETURN r").columnAs[Relationship]("r").toList
 
     // then
-<<<<<<< HEAD
-    assert(List(r2, r1) === result)
-=======
-    result should equal(List(r1, r2))
->>>>>>> master
+    result should equal(List(r2, r1))
   }
 
   test("should_be_able_to_find_two_relationships") {
