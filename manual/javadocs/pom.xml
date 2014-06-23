@@ -30,7 +30,6 @@
     <url>https://github.com/neo4j/neo4j/tree/master/manual/javadocs</url>
   </scm>
 
-
   <dependencies>
     <dependency>
       <groupId>org.neo4j</groupId>
@@ -138,8 +137,13 @@ the relevant Commercial Agreement.
         <artifactId>maven-javadoc-plugin</artifactId>
         <executions>
           <execution>
+            <id>attach-javadoc</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
             <id>create-javadocs</id>
             <phase>${attach-javadoc-phase}</phase>
+            <goals><goal>javadoc</goal></goals>
             <configuration>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <header>Neo4j</header>
