@@ -17,30 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.util;
+package org.neo4j.io.pagecache.impl.muninn;
 
-import java.lang.reflect.Field;
+import java.io.IOException;
 
-import sun.misc.Unsafe;
-
-public class UnsafeUtil
+class MuninnReadPageCursor extends MuninnPageCursor
 {
-    private final static Unsafe unsafe;
-    static {
-        try
-        {
-            Field unsafeField = Unsafe.class.getDeclaredField( "theUnsafe" );
-            unsafeField.setAccessible( true );
-            unsafe = (Unsafe) unsafeField.get(null);
-        }
-        catch ( NoSuchFieldException | IllegalAccessException e )
-        {
-            throw new RuntimeException( e );
-        }
+    public MuninnReadPageCursor( MuninnCursorFreelist freelist )
+    {
+        super( freelist );
     }
 
-    public static Unsafe getUnsafe()
+    @Override
+    public boolean next() throws IOException
     {
-        return unsafe;
+        return false;
+    }
+
+    @Override
+    public boolean next( long pageId ) throws IOException
+    {
+        return false;
+    }
+
+    @Override
+    public boolean retry()
+    {
+        return false;
     }
 }

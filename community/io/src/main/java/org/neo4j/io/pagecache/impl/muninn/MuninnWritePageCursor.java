@@ -17,23 +17,32 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.common;
+package org.neo4j.io.pagecache.impl.muninn;
 
-public interface Page
+import java.io.IOException;
+
+class MuninnWritePageCursor extends MuninnPageCursor
 {
-    byte getByte( int offset );
+    public MuninnWritePageCursor( MuninnCursorFreelist freelist )
+    {
+        super( freelist );
+    }
 
-    long getLong( int offset );
-    void putLong( long value, int offset );
+    @Override
+    public boolean next() throws IOException
+    {
+        return false;
+    }
 
-    int getInt( int offset );
-    void putInt( int value, int offset );
+    @Override
+    public boolean next( long pageId ) throws IOException
+    {
+        return false;
+    }
 
-    void getBytes( byte[] data, int offset );
-    void putBytes( byte[] data, int offset );
-
-    void putByte( byte value, int offset );
-
-    short getShort( int offset );
-    void putShort( short value, int offset );
+    @Override
+    public boolean retry()
+    {
+        return false;
+    }
 }

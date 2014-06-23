@@ -17,46 +17,37 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.standard;
+package org.neo4j.io.pagecache.impl.muninn;
 
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Future;
 
-import org.junit.Test;
-
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageCacheTest;
-import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PagedFile;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.lessThanOrEqualTo;
-import static org.junit.Assert.assertThat;
-
-public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
+public class MuninnPageCacheTest extends PageCacheTest<MuninnPageCache>
 {
     private static final ConcurrentMap<PageCache, Future<?>> futures = new ConcurrentHashMap<>();
 
     @Override
-    protected StandardPageCache createPageCache(
+    protected MuninnPageCache createPageCache(
             FileSystemAbstraction fs,
             int maxPages,
             int pageSize,
             PageCacheMonitor monitor )
     {
-        StandardPageCache pageCache = new StandardPageCache( fs, maxPages, pageSize );
+        MuninnPageCache pageCache = new MuninnPageCache( fs, maxPages, pageSize );
         Future<?> future = executor.submit( pageCache );
         futures.put( pageCache, future );
         return pageCache;
     }
 
     @Override
-    protected void tearDownPageCache( StandardPageCache pageCache ) throws IOException
+    protected void tearDownPageCache( MuninnPageCache pageCache ) throws IOException
     {
         pageCache.close();
         Future<?> future = futures.remove( pageCache );
@@ -64,30 +55,5 @@ public class StandardPageCacheTest extends PageCacheTest<StandardPageCache>
         {
             future.cancel( true );
         }
-    }
-
-    @Test
-    public void shouldRemoveEvictedPages() throws Exception
-    {
-        // Given
-        int pagesInCache = 64;
-        int pagesKeptInUse = (int) (pagesInCache * ClockSweepPageTable.PAGE_UTILISATION_RATIO);
-
-        StandardPageCache cache = getPageCache( fs, pagesInCache, filePageSize, PageCacheMonitor.NULL );
-        PagedFile pagedFile = cache.map( file, filePageSize );
-
-        // When I pin and unpin a series of pages
-        try ( PageCursor cursor = pagedFile.io( 0, PagedFile.PF_EXCLUSIVE_LOCK ) )
-        {
-            for ( int i = 0; i < 128; i++ )
-            {
-                cursor.next();
-            }
-        }
-
-        // Then
-        Thread.sleep( 50 );
-        assertThat( pagedFile.numberOfCachedPages(),
-                allOf( greaterThanOrEqualTo( pagesKeptInUse ), lessThanOrEqualTo( pagesInCache ) ) );
     }
 }

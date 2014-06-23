@@ -56,12 +56,6 @@ public class ByteBufferPage implements Page
     }
 
     @Override
-    public long getUnsignedInt( int offset )
-    {
-        return getInt( offset ) & 0xFFFFFFFFL;
-    }
-
-    @Override
     public void putInt( int value, int offset )
     {
         buffer.putInt( offset, value );

@@ -17,23 +17,19 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.io.pagecache.impl.common;
+package org.neo4j.io.pagecache.impl.muninn;
 
-public interface Page
+import java.io.File;
+
+class FileMapping
 {
-    byte getByte( int offset );
+    public volatile FileMapping next;
+    public final File file;
+    public final MuninnPagedFile pagedFile;
 
-    long getLong( int offset );
-    void putLong( long value, int offset );
-
-    int getInt( int offset );
-    void putInt( int value, int offset );
-
-    void getBytes( byte[] data, int offset );
-    void putBytes( byte[] data, int offset );
-
-    void putByte( byte value, int offset );
-
-    short getShort( int offset );
-    void putShort( short value, int offset );
+    public FileMapping( File file, MuninnPagedFile pagedFile )
+    {
+        this.file = file;
+        this.pagedFile = pagedFile;
+    }
 }

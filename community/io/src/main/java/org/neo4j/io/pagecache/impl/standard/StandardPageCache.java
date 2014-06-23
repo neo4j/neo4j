@@ -93,9 +93,12 @@ public class StandardPageCache implements PageCache, Runnable
     {
         assertNotClosed();
         table.flush();
-        for ( StandardPagedFile file : pagedFiles.values() )
+        synchronized ( this )
         {
-            file.force();
+            for ( StandardPagedFile file : pagedFiles.values() )
+            {
+                file.force();
+            }
         }
     }
 

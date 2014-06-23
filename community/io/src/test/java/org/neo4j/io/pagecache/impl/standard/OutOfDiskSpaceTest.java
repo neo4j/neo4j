@@ -83,5 +83,4 @@ public class OutOfDiskSpaceTest
         // 2: The background eviction thread should give up and shut down
         sweeperThread.join();
     }
-
 }

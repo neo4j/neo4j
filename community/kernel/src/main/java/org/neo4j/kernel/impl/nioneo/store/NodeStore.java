@@ -152,22 +152,13 @@ public class NodeStore extends AbstractRecordStore<NodeRecord> implements Store
 
     public NodeRecord loadLightNode( long id )
     {
-        try
-        {
-            assertIdExists( id );
-        }
-        catch ( InvalidRecordException e )
-        {
-            return null;
-        }
-
         return loadRecord( id, null );
     }
 
     @Override
     public NodeRecord forceGetRecord( long id )
     {
-        NodeRecord record = loadLightNode( id );
+        NodeRecord record = loadRecord( id, null );
         if ( record == null )
         {
             return new NodeRecord(

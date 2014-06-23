@@ -57,7 +57,7 @@ public class StandardPagedFile implements PagedFile
      *                     left unused.
      * @param monitor
      */
-    public StandardPagedFile(
+    StandardPagedFile(
             PageTable table,
             File file,
             StoreChannel channel,

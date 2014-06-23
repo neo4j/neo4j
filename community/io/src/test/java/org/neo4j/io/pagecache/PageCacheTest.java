@@ -35,6 +35,7 @@ import org.hamcrest.Description;
 import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeDiagnosingMatcher;
 import org.junit.After;
+import org.junit.AfterClass;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
@@ -60,6 +61,8 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 public abstract class PageCacheTest<T extends PageCache>
 {
+    protected static final ExecutorService executor = Executors.newCachedThreadPool();
+
     protected final File file = new File( "a" );
 
     protected int recordSize = 9;
@@ -72,6 +75,12 @@ public abstract class PageCacheTest<T extends PageCache>
     protected ByteBuffer bufB = ByteBuffer.allocate( recordSize );
 
     protected EphemeralFileSystemAbstraction fs;
+
+    @AfterClass
+    public static void stopExecutor()
+    {
+        executor.shutdown();
+    }
 
     protected abstract T createPageCache(
             FileSystemAbstraction fs,
@@ -490,8 +499,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 }
             }
         };
-        Thread thread = new Thread( runnable );
-        thread.start();
+        executor.submit( runnable );
 
         startLatch.await();
         try ( PageCursor cursorB = pagedFile.io( 1, PF_EXCLUSIVE_LOCK ) )
@@ -903,8 +911,7 @@ public abstract class PageCacheTest<T extends PageCache>
                 }
             }
         };
-        Thread writerThread = new Thread( writer );
-        writerThread.start();
+        Future<?> writerFuture = executor.submit( writer );
 
         startLatch.await();
 
@@ -920,8 +927,7 @@ public abstract class PageCacheTest<T extends PageCache>
             }
         }
 
-        writerThread.interrupt();
-        writerThread.join();
+        writerFuture.cancel( true );
     }
 
     @Test
@@ -1021,7 +1027,6 @@ public abstract class PageCacheTest<T extends PageCache>
 
         final int pageCount = 100;
         int writerThreads = 8;
-        ExecutorService executor = Executors.newFixedThreadPool( writerThreads );
         final CountDownLatch startLatch = new CountDownLatch( writerThreads );
         List<Future<?>> writers = new ArrayList<>();
 
@@ -1124,7 +1129,6 @@ public abstract class PageCacheTest<T extends PageCache>
             assertThat( countedConsistentPageReads, is( pageCount ) );
         }
 
-        executor.shutdown();
         for ( Future<?> future : writers )
         {
             if ( future.isDone() )
@@ -1142,6 +1146,7 @@ public abstract class PageCacheTest<T extends PageCache>
     // TODO must collect all exceptions from closing file channels when the cache is closed
     // TODO figure out what should happen when the last reference to a file is unmapped, while pages are still pinned
     // TODO figure out how closing the cache should work when there are still mapped files
+    // TODO mapping a file twice with different page size must throw
 
 
 
