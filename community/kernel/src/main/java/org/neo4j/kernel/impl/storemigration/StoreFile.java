@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.setStoreVersion;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -47,6 +41,12 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
+
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.setStoreVersion;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionStringToLong;
 
 public enum StoreFile
 {
@@ -186,12 +186,18 @@ public enum StoreFile
     public static void ensureStoreVersion( FileSystemAbstraction fs,
             File storeDir, Iterable<StoreFile> files ) throws IOException
     {
+        ensureStoreVersion( fs, storeDir, files, ALL_STORES_VERSION );
+    }
+
+    public static void ensureStoreVersion( FileSystemAbstraction fs,
+            File storeDir, Iterable<StoreFile> files, String version ) throws IOException
+    {
         for ( StoreFile file : files )
         {
             setStoreVersionTrailer( fs, new File( storeDir, file.storeFileName() ),
-                    buildTypeDescriptorAndVersion( file.typeDescriptor() ) );
+                    buildTypeDescriptorAndVersion( file.typeDescriptor(), version ) );
         }
-        setStoreVersion( fs, new File( storeDir, DEFAULT_NAME ), versionStringToLong( ALL_STORES_VERSION ) );
+        setStoreVersion( fs, new File( storeDir, DEFAULT_NAME ), versionStringToLong( version ) );
     }
 
     private static void setStoreVersionTrailer( FileSystemAbstraction fs,

@@ -19,11 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.nio.ByteBuffer.wrap;
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.UTF8.encode;
-import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -41,6 +36,12 @@ import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPool;
 import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.FileUtils.FileOperation;
 import org.neo4j.kernel.impl.util.StringLogger;
+
+import static java.nio.ByteBuffer.wrap;
+
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
 
 /**
  * Contains common implementation for {@link AbstractStore} and
@@ -130,7 +131,12 @@ public abstract class CommonAbstractStore implements IdSequence
 
     public static String buildTypeDescriptorAndVersion( String typeDescriptor )
     {
-        return typeDescriptor + " " + ALL_STORES_VERSION;
+        return buildTypeDescriptorAndVersion( typeDescriptor, ALL_STORES_VERSION );
+    }
+
+    public static String buildTypeDescriptorAndVersion( String typeDescriptor, String version )
+    {
+        return typeDescriptor + " " + version;
     }
 
     protected long longFromIntAndMod( long base, long modifier )
