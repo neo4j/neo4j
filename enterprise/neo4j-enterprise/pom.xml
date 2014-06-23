@@ -158,11 +158,13 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <executions>
           <execution>
+            <id>attach-javadoc</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
             <id>create-javadocs</id>
             <phase>${attach-javadoc-phase}</phase>
-            <goals>
-              <goal>javadoc</goal>
-            </goals>
+            <goals><goal>jar</goal></goals>
             <configuration>
               <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
