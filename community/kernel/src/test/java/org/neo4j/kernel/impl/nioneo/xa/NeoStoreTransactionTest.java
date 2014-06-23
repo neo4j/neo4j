@@ -36,6 +36,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 import org.mockito.Matchers;
@@ -47,6 +48,7 @@ import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
@@ -67,7 +69,6 @@ import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.locking.Lock;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -95,7 +96,9 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresen
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.unsafe.batchinsert.LabelScanWriter;
 
 import static java.lang.Integer.parseInt;
@@ -133,6 +136,7 @@ import static org.neo4j.kernel.api.index.NodePropertyUpdate.remove;
 import static org.neo4j.kernel.api.index.SchemaIndexProvider.NO_INDEX_PROVIDER;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.nioneo.store.IndexRule.indexRule;
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
 import static org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule.uniquenessConstraintRule;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
@@ -1244,11 +1248,12 @@ public class NeoStoreTransactionTest
         return result.toString();
     }
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private Config config;
     @SuppressWarnings("deprecation")
     private final DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
-    private final DefaultWindowPoolFactory windowPoolFactory = new DefaultWindowPoolFactory();
     private NeoStore neoStore;
     private LockService locks;
     private CacheAccessBackDoor cacheAccessBackDoor;
@@ -1272,14 +1277,18 @@ public class NeoStoreTransactionTest
 
         config = new Config( stringMap(
                 GraphDatabaseSettings.dense_node_threshold.name(), "" + denseNodeThreshold ) );
-        File storeDir = new File( "dir" );
-        config = StoreFactory.configForStoreDir( config, storeDir );
 
-        @SuppressWarnings("deprecation")
-        StoreFactory storeFactory = new StoreFactory( config, idGeneratorFactory, windowPoolFactory,
-                fs.get(), DEV_NULL );
+        File storeDir = new File( "dir" );
+        config = configForStoreDir( config, storeDir );
+        PageCache pageCache = pageCacheRule.getPageCache( fs.get(), config );
+        StoreFactory storeFactory = new StoreFactory(
+                config,
+                idGeneratorFactory,
+                pageCache,
+                fs.get(),
+                DEV_NULL,
+                new Monitors() );
         neoStore = storeFactory.createNeoStore();
-        propertyLoader = new PropertyLoader( neoStore );
         lockMocks.clear();
         locks = mock( LockService.class, new Answer()
         {

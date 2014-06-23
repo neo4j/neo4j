@@ -30,6 +30,7 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
@@ -164,6 +165,7 @@ public class Protocol
 
     public static final ObjectSerializer<Integer> INTEGER_SERIALIZER = new ObjectSerializer<Integer>()
     {
+        @Override
         @SuppressWarnings( "boxing" )
         public void write( Integer responseObject, ChannelBuffer result ) throws IOException
         {
@@ -172,6 +174,7 @@ public class Protocol
     };
     public static final ObjectSerializer<Long> LONG_SERIALIZER = new ObjectSerializer<Long>()
     {
+        @Override
         @SuppressWarnings( "boxing" )
         public void write( Long responseObject, ChannelBuffer result ) throws IOException
         {
@@ -180,12 +183,14 @@ public class Protocol
     };
     public static final ObjectSerializer<Void> VOID_SERIALIZER = new ObjectSerializer<Void>()
     {
+        @Override
         public void write( Void responseObject, ChannelBuffer result ) throws IOException
         {
         }
     };
     public static final Deserializer<Integer> INTEGER_DESERIALIZER = new Deserializer<Integer>()
     {
+        @Override
         public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             return buffer.readInt();
@@ -193,6 +198,7 @@ public class Protocol
     };
     public static final Deserializer<Void> VOID_DESERIALIZER = new Deserializer<Void>()
     {
+        @Override
         public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             return null;
@@ -200,6 +206,7 @@ public class Protocol
     };
     public static final Serializer EMPTY_SERIALIZER = new Serializer()
     {
+        @Override
         public void write( ChannelBuffer buffer ) throws IOException
         {
         }
@@ -212,8 +219,9 @@ public class Protocol
         {
             this.writer = writer;
         }
-        
+
         // NOTICE: this assumes a "smart" ChannelBuffer that continues to next chunk
+        @Override
         public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             int pathLength;
@@ -295,7 +303,10 @@ public class Protocol
             NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
             AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>();
             NetworkTransactionCursor cursor = new NetworkTransactionCursor( channel, reader, accumulator );
-            while( cursor.next() );
+            while( cursor.next() )
+            {
+                ;
+            }
             return accumulator.getAccumulator();
         }
     }
@@ -323,7 +334,7 @@ public class Protocol
             writer.writeCommitEntry( commitEntry.getTxId(), commitEntry.getTimeWritten() );
         }
     }
-    
+
     public static void addLengthFieldPipes( ChannelPipeline pipeline, int frameLength )
     {
         pipeline.addLast( "frameDecoder",
@@ -362,7 +373,7 @@ public class Protocol
         default: throw new ComException( "Invalid boolean value " + value );
         }
     }
-    
+
     public static String readString( ChannelBuffer buffer, int length )
     {
         char[] chars = new char[length];
@@ -376,7 +387,9 @@ public class Protocol
     public static void assertChunkSizeIsWithinFrameSize( int chunkSize, int frameLength )
     {
         if ( chunkSize > frameLength )
+        {
             throw new IllegalArgumentException( "Chunk size " + chunkSize +
                     " needs to be equal or less than frame length " + frameLength );
+        }
     }
 }

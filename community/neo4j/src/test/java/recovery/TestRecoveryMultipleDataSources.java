@@ -19,16 +19,10 @@
  */
 package recovery;
 
-import static java.lang.Runtime.getRuntime;
-import static java.lang.System.exit;
-import static java.lang.System.getProperty;
-import static org.junit.Assert.assertEquals;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
-import static org.neo4j.test.TargetDirectory.forTest;
-
 import java.io.File;
 
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
@@ -36,10 +30,19 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.tooling.GlobalGraphOperations;
 
+import static java.lang.Runtime.getRuntime;
+import static java.lang.System.exit;
+import static java.lang.System.getProperty;
+
+import static org.junit.Assert.assertEquals;
+
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
+import static org.neo4j.test.TargetDirectory.forTest;
+
 public class TestRecoveryMultipleDataSources
 {
     private static final String dir = forTest( TestRecoveryMultipleDataSources.class ).makeGraphDbDir().getAbsolutePath();
-    
+
     /**
      * Tests an issue where loading all relationship types and property indexes after
      * the neostore data source had been started internally. The db would be in a
@@ -56,7 +59,7 @@ public class TestRecoveryMultipleDataSources
         deleteRecursively( new File( dir ) );
         assertEquals( 0, getRuntime().exec( new String[] { "java", "-cp", getProperty( "java.class.path" ),
                 getClass().getName() } ).waitFor() );
-        
+
         // When
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( dir );
 

@@ -41,7 +41,10 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
 
@@ -55,10 +58,18 @@ public class ConsistencyCheckService
                                            StringLogger logger ) throws ConsistencyCheckIncompleteException
     {
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+        Monitors monitors = new Monitors();
         tuningConfiguration = configForStoreDir( tuningConfiguration, new File( storeDir ) );
-        StoreFactory factory = new StoreFactory( tuningConfiguration, new DefaultIdGeneratorFactory(),
-                tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
-                        .windowPoolFactory( tuningConfiguration, logger ), fileSystem, logger );
+        Neo4jJobScheduler jobScheduler = new Neo4jJobScheduler();
+        LifecycledPageCache pageCache = new LifecycledPageCache( fileSystem, jobScheduler, tuningConfiguration );
+        StoreFactory factory = new StoreFactory(
+                tuningConfiguration,
+                new DefaultIdGeneratorFactory(),
+                pageCache, fileSystem, logger,
+                monitors
+        );
+        jobScheduler.init();
+        pageCache.start();
 
         ConsistencySummaryStatistics summary;
         File reportFile = chooseReportPath( tuningConfiguration );
@@ -98,6 +109,8 @@ public class ConsistencyCheckService
         {
             report.close();
             neoStore.close();
+            pageCache.stop();
+            jobScheduler.shutdown();
         }
 
         if ( !summary.isConsistent() )

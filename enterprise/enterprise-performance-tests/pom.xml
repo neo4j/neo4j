@@ -17,12 +17,10 @@
   <properties>
     <version-package>perftest.enterprise.impl</version-package>
     <bundle.namespace>org.neo4j.perftest.enterprise</bundle.namespace>
-    <maven.site.skip>true</maven.site.skip>
-    <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/enterprise/enterprise-performance-tests</url>
+    <url>https://github.com/neo4j/neo4j/tree/master/enterprise/enterprise-performance-tests</url>
   </scm>
 
   <licenses>
@@ -67,6 +65,14 @@
       <type>test-jar</type>
       <scope>test</scope>
     </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
     <dependency>
       <groupId>org.codehaus.jackson</groupId>
       <artifactId>jackson-core-lgpl</artifactId>
@@ -107,4 +113,3 @@
 
 
 </project>
-

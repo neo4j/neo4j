@@ -36,6 +36,11 @@ public interface TransactionIdStore
     long getLastCommittingTransactionId();
 
     /**
+     * Used by recovery. Perhaps this shouldn't be exposed like this?
+     */
+    void setLastCommittingAndClosedTransactionId( long transactionId );
+
+    /**
      * Signals that a transaction with a given transaction id has been applied. Calls to this method
      * may come in out-of-transaction-id order.
      * @param transactionId the applied transaction id.
@@ -54,5 +59,5 @@ public interface TransactionIdStore
     /**
      * Forces the transaction id to persistent storage.
      */
-    void flushAll();
+    void flush();
 }

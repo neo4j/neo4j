@@ -24,7 +24,7 @@ import java.io.IOException;
 import java.util.Map;
 
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.server.configuration.ConfigDatabase;

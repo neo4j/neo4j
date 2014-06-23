@@ -25,11 +25,13 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSuppor
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.BeLikeMatcher._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.{PropertyKeyId, LabelId}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ManyQueryExpression, SingleQueryExpression}
 
 class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("Should build plans containing expand for single relationship pattern") {
-    planFor("MATCH (a)-[r]->(b) RETURN r").plan should equal(
+    planFor("MATCH (a)-[r]->(b) RETURN r").plan.plan should equal(
       Projection(
         Expand(
           AllNodesScan("a"),
@@ -51,7 +53,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         case _: Expand => 100.0
         case _ => Double.MaxValue
       }
-    } planFor "MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2").plan should beLike {
+    } planFor "MATCH (a)-[r1]->(b), (c)-[r2]->(d) RETURN r1, r2").plan.plan should beLike {
       case Projection(
             Selection(_,
               CartesianProduct(
@@ -65,7 +67,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("Should build plans containing expand for self-referencing relationship patterns") {
-    planFor("MATCH (a)-[r]->(a) RETURN r").plan should equal(
+    planFor("MATCH (a)-[r]->(a) RETURN r").plan.plan should equal(
       Projection(
         Selection(
           predicates = Seq(Equals(Identifier("a") _, Identifier("a$$$") _) _),
@@ -79,7 +81,7 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
   }
 
   test("Should build plans containing expand for looping relationship patterns") {
-    planFor("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan should equal(
+    planFor("MATCH (a)-[r1]->(b)<-[r2]-(a) RETURN r1, r2").plan.plan should equal(
       Projection(
         Selection(
           predicates = Seq(NotEquals(Identifier("r1") _, Identifier("r2") _) _),
@@ -105,16 +107,62 @@ class ExpandPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningT
         case _: AllNodesScan  => 100.04
         case _                => Double.MaxValue
       }
-    } planFor "MATCH (start)-[rel:x]-(a) WHERE a.name = 'Andres' return a").plan should equal(
+    } planFor "MATCH (start)-[rel:x]-(a) WHERE a.name = 'Andres' return a").plan.plan should equal(
       Projection(
         Expand(
           Selection(
-            Seq(Equals(Property(Identifier("a")_, PropertyKeyName("name")_)_, StringLiteral("Andres")_)_),
+            Seq(In(Property(Identifier("a")_, PropertyKeyName("name")_)_, Collection(Seq(StringLiteral("Andres")_))_)_),
             AllNodesScan("a")
           ),
           "a", Direction.BOTH, Seq(RelTypeName("x")_), "start", "rel", SimplePatternLength
         ),
         Map("a" -> Identifier("a") _)
+      )
+    )
+  }
+
+  test("Should build plans expanding from the more expensive side if that is requested by using a hint") {
+    (new given {
+      cardinality = mapCardinality {
+        case _: NodeIndexSeek => 1000.0
+        case _                => 10.0
+      }
+
+      indexOn("Person", "name")
+    } planFor "MATCH (a)-[r]->(b) USING INDEX b:Person(name) WHERE b:Person AND b.name = 'Andres' return r").plan.plan should equal(
+      Projection(
+        Expand(
+          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres")_))_)),
+          "b", Direction.INCOMING, Seq.empty, "a", "r", SimplePatternLength
+        ),
+        Map("r" -> ident("r"))
+      )
+    )
+  }
+
+  test("Should build plans with leaves for both sides if that is requested by using hints") {
+    (new given {
+      cardinality = mapCardinality {
+        case _: NodeIndexSeek                   => 1000.0
+        case x: Expand if x.from == IdName("a") => 100.0
+        case x: Expand if x.from == IdName("b") => 200.0
+        case _                                  => 10.0
+      }
+      indexOn("Person", "name")
+    } planFor "MATCH (a)-[r]->(b) USING INDEX a:Person(name) USING INDEX b:Person(name) WHERE a:Person AND b:Person AND a.name = 'Jakub' AND b.name = 'Andres' return r").plan.plan should equal(
+      Projection(
+        NodeHashJoin(
+          "b",
+          Selection(
+            Seq(In(Property(ident("b"), PropertyKeyName("name")_)_, Collection(Seq(StringLiteral("Andres")_))_)_, HasLabels(ident("b"), Seq(LabelName("Person")_))_),
+            Expand(
+              NodeIndexSeek("a", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Jakub")_))_)),
+              "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength
+            )
+          ),
+          NodeIndexSeek("b", LabelToken("Person", LabelId(0)), PropertyKeyToken("name", PropertyKeyId(0)), ManyQueryExpression(Collection(Seq(StringLiteral("Andres")_))_))
+        ),
+        Map("r" -> ident("r"))
       )
     )
   }

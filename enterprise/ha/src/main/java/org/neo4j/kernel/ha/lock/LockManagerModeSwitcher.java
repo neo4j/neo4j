@@ -31,7 +31,6 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 
 public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
 {

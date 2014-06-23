@@ -24,9 +24,9 @@ import java.io.IOException;
 public class NullLogBuffer implements LogBuffer
 {
     public static final LogBuffer INSTANCE = new NullLogBuffer();
-    
+
     private NullLogBuffer() {}
-    
+
     @Override public LogBuffer put( byte b ) throws IOException { return this; }
     @Override public LogBuffer putShort( short b ) throws IOException { return this; }
     @Override public LogBuffer putInt( int i ) throws IOException { return this; }

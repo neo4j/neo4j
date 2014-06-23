@@ -46,8 +46,8 @@ public class NodeFirstRelationshipStep extends LonelyProcessingStep implements G
     private long nextGroupId = -1;
 
     public NodeFirstRelationshipStep( StageControl control, int batchSize,
-            NodeStore nodeStore, RelationshipGroupStore relGroupStore,
-            NodeRelationshipLink nodeRelationshipLink )
+                                      NodeStore nodeStore, RelationshipGroupStore relGroupStore,
+                                      NodeRelationshipLink nodeRelationshipLink )
     {
         super( control, "LINKER", batchSize );
         this.nodeStore = nodeStore;
@@ -77,7 +77,7 @@ public class NodeFirstRelationshipStep extends LonelyProcessingStep implements G
             nodeStore.updateRecord( record );
             itemProcessed();
         }
-        nodeStore.flushAll();
+        nodeStore.flush();
     }
 
     @Override

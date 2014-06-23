@@ -23,16 +23,12 @@ import java.io.File;
 import java.util.List;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
+import static org.junit.Assert.*;
 import static org.neo4j.helpers.Functions.map;
 import static org.neo4j.helpers.Settings.DURATION;
 import static org.neo4j.helpers.Settings.INTEGER;
@@ -80,6 +76,9 @@ public class SettingsTest
 
         Setting<List<Integer>> setting2 = setting( "foo", list( ",", INTEGER ), "1,2,3,4," );
         assertThat( setting2.apply( map( stringMap() ) ).toString(), equalTo( "[1, 2, 3, 4]" ) );
+
+        Setting<List<Integer>> setting3 = setting( "foo", list( ",", INTEGER ), "" );
+        assertThat( setting3.apply( map( stringMap() ) ).toString(), equalTo( "[]" ) );
     }
 
     @Test
@@ -286,5 +285,47 @@ public class SettingsTest
         assertEquals( 10 * 1024, kiloValue );
         assertEquals( 10 * 1024 * 1024, megaValue );
         assertEquals( 10L * 1024 * 1024 * 1024, gigaValue );
+    }
+
+    @Test
+    public void testMemoryUse() throws Exception
+    {
+        // Given
+        Setting<Long> memUse = setting("mySetting", new Settings.DirectMemoryUsage( 1024, 100 ), "5%");
+
+        // When && Then
+        assertThat(memUse.apply( Functions.<String, String>constant( null )),  equalTo(51l));
+        assertThat(memUse.apply( Functions.<String, String>constant( "35M" )), equalTo(95l));
+        assertThat(memUse.apply( Functions.<String, String>constant( "85%" )), equalTo(95l));
+
+        try
+        {
+            memUse.apply( Functions.<String, String>constant( "bala%" ) );
+            fail("Should've thrown.");
+        }
+        catch(IllegalArgumentException e)
+        {
+            assertThat(e.getMessage(), equalTo("Bad value 'bala%' for setting 'mySetting': Invalid memory fraction, expected a value between 0.0% and 100.0%." ));
+        }
+
+        try
+        {
+            memUse.apply( Functions.<String, String>constant( "110.14%" ) );
+            fail("Should've thrown.");
+        }
+        catch(IllegalArgumentException e)
+        {
+            assertThat(e.getMessage(), equalTo("Bad value '110.14%' for setting 'mySetting': Invalid memory fraction, expected a value between 0.0% and 100.0%." ));
+        }
+    }
+
+    @Test
+    public void testMemoryUsageConfigFromSystemMemory() throws Exception
+    {
+        // Given
+        Setting<Long> memUse = setting("mySetting", Settings.DirectMemoryUsage.directMemoryUsage(), "100%");
+
+        // When && then
+        assertThat(memUse.apply( Functions.<String,String>constant( null ) ), greaterThan( 0l ));
     }
 }

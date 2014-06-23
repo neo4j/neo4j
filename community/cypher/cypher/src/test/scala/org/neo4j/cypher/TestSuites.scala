@@ -27,9 +27,6 @@ import collection.JavaConverters._
 abstract class GraphDatabaseJUnitSuite
   extends CypherJUnitSuite with GraphDatabaseTestSupport
 
-abstract class ExecutionEngineJUnitSuite
-  extends CypherJUnitSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport
-
 abstract class ExecutionEngineFunSuite
   extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport {
 
@@ -42,8 +39,8 @@ abstract class ExecutionEngineFunSuite
 
       MatchResult(
         result,
-        s"Didn't have expected property `${propName}`",
-        s"Has property ${propName}, expected it not to"
+        s"Didn't have expected property `$propName`",
+        s"Has property $propName, expected it not to"
       )
     }
 
@@ -53,8 +50,8 @@ abstract class ExecutionEngineFunSuite
         val result = propValue == value
         MatchResult(
           result,
-          s"Property `${propName}` didn't have expected value. Expected: ${value}\nbut was: ${propValue}",
-          s"Expected `${propName}` not to have value `${value}`, but it does."
+          s"Property `$propName` didn't have expected value. Expected: $value\nbut was: $propValue",
+          s"Expected `$propName` not to have value `$value`, but it does."
         )
       }
     }
@@ -71,8 +68,8 @@ abstract class ExecutionEngineFunSuite
 
       MatchResult(
         result,
-        s"Expected node to have labels ${expectedLabels}, but it was ${labels.mkString}",
-        s"Expected node to not have labels ${expectedLabels}, but it did."
+        s"Expected node to have labels $expectedLabels, but it was ${labels.mkString}",
+        s"Expected node to not have labels $expectedLabels, but it did."
       )
     }
   }

@@ -25,9 +25,11 @@ import java.nio.ByteBuffer;
 import java.util.LinkedList;
 import java.util.concurrent.atomic.AtomicLong;
 
-import static java.lang.Math.max;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 
-import static org.neo4j.kernel.impl.util.FileUtils.truncateFile;
+import static java.lang.Math.max;
+import static org.neo4j.io.fs.FileUtils.truncateFile;
 
 /**
  * This class generates unique ids for a resource type. For example, nodes in a

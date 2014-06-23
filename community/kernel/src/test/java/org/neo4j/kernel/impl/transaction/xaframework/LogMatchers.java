@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
 import javax.transaction.xa.Xid;
 
 import org.hamcrest.Description;
@@ -32,16 +33,17 @@ import org.hamcrest.Matcher;
 import org.hamcrest.TypeSafeMatcher;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.util.Cursor;
 
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
  * Please expand as necessary.
- * 
+ *
  * Please note: Matching specific commands is done by matchers found in
  * {@link org.neo4j.kernel.impl.nioneo.xa.CommandMatchers}.
  */
@@ -61,7 +63,6 @@ public class LogMatchers
             final List<LogEntry> entries = new ArrayList<>();
             LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
 
-
             Visitor<LogEntry, IOException> consumer = new Visitor<LogEntry, IOException>()
             {
                 @Override
@@ -72,11 +73,13 @@ public class LogMatchers
                 }
             };
 
-            ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel), LogVersionBridge.NO_MORE_CHANNELS, 4096);
-
-            try( Cursor<IOException> cursor = deserializer.cursor( logChannel, consumer ) )
+            ReadableLogChannel logChannel = new ReadAheadLogChannel(
+                    new PhysicalLogVersionedStoreChannel( fileChannel ), LogVersionBridge.NO_MORE_CHANNELS, 4096 );
+            try ( Cursor<IOException> cursor = deserializer.cursor( logChannel, consumer ) )
             {
-                while ( cursor.next( ) );
+                while ( cursor.next( ) )
+                {   // Just loop through it
+                }
             }
 
             return entries;
@@ -139,12 +142,10 @@ public class LogMatchers
         };
     }
 
-    public static Matcher<? extends LogEntry> startEntry( final Integer identifier, final int masterId,
-            final int localId )
+    public static Matcher<? extends LogEntry> startEntry( final int masterId, final int localId )
     {
         return new TypeSafeMatcher<LogEntry.Start>()
         {
-
             @Override
             public boolean matchesSafely( LogEntry.Start entry )
             {
@@ -155,17 +156,16 @@ public class LogMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "Start[" + identifier + ",xid=<Any Xid>,master=" + masterId + ",me=" + localId
+                description.appendText( "Start[" + "xid=<Any Xid>,master=" + masterId + ",me=" + localId
                         + ",time=<Any Date>]" );
             }
         };
     }
 
-    public static Matcher<? extends LogEntry> onePhaseCommitEntry( final int identifier, final int txId )
+    public static Matcher<? extends LogEntry> commitEntry( final long txId )
     {
         return new TypeSafeMatcher<LogEntry.OnePhaseCommit>()
         {
-
             @Override
             public boolean matchesSafely( LogEntry.OnePhaseCommit onePC )
             {
@@ -175,8 +175,33 @@ public class LogMatchers
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( String.format( "1PC[%d, txId=%d, <Any Date>],", identifier, txId ) );
+                description.appendText( String.format( "Commit[txId=%d, <Any Date>]", txId ) );
+            }
+        };
+    }
 
+    public static Matcher<? extends LogEntry> commandEntry( final long key,
+            final Class<? extends Command> commandClass )
+    {
+        return new TypeSafeMatcher<LogEntry.Command>()
+        {
+            @Override
+            public boolean matchesSafely( LogEntry.Command commandEntry )
+            {
+                if ( commandEntry == null )
+                {
+                    return false;
+                }
+
+                Command command = commandEntry.getXaCommand();
+                return command.getKey() == key &&
+                       command.getClass().equals( commandClass );
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( String.format( "Command[key=%d, cls=%s]", key, commandClass.getSimpleName() ) );
             }
         };
     }

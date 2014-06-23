@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import org.neo4j.graphdb.Direction;
@@ -36,7 +37,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;
@@ -50,6 +51,8 @@ import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 import static org.neo4j.kernel.impl.core.BigStoreIT.assertProperties;
 
+@Ignore( "Ignored because the new page cache cannot turn off 'memory mapping', and that makes it run afoul of the " +
+        "hack in JumpingFileSystemAbstraction$JumpingFileChannel.assertWithinDiff() for the PropertyStore alignment." )
 public class BigJumpingStoreIT
 {
     private static class TestDatabase extends InternalAbstractGraphDatabase

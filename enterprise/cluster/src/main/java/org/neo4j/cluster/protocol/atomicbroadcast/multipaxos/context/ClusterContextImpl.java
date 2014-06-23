@@ -19,11 +19,6 @@
  */
 package org.neo4j.cluster.protocol.atomicbroadcast.multipaxos.context;
 
-import static org.neo4j.helpers.Predicates.in;
-import static org.neo4j.helpers.Predicates.not;
-import static org.neo4j.helpers.Uris.parameter;
-import static org.neo4j.helpers.collection.Iterables.toList;
-
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -45,6 +40,11 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.Listeners;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.Predicates.in;
+import static org.neo4j.helpers.Predicates.not;
+import static org.neo4j.helpers.Uris.parameter;
+import static org.neo4j.helpers.collection.Iterables.toList;
 
 class ClusterContextImpl
         extends AbstractContextImpl
@@ -217,13 +217,14 @@ class ClusterContextImpl
     @Override
     public void left( final InstanceId node )
     {
+        final URI member = commonState.configuration().getUriForId( node );
         commonState.configuration().left( node );
         Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
         {
             @Override
             public void notify( ClusterListener listener )
             {
-                listener.leftCluster( node );
+                listener.leftCluster( node, member );
             }
         } );
     }
@@ -248,7 +249,7 @@ class ClusterContextImpl
                     return;
                 }
             }
-            else if ( version < electorVersion && electorId.equals( lastElector ) )
+            else if ( electorId.equals( lastElector ) && (version < electorVersion && version > 0)  )
             {
                 getLogger( getClass() ).warn( "Election result for role " + roleName +
                         " received from elector instance " + electorId + " with version " + version +
@@ -346,7 +347,7 @@ class ClusterContextImpl
     @Override
     public void setBoundAt( URI boundAt )
     {
-        commonState.setBoundAt( boundAt );
+        commonState.setBoundAt( me, boundAt );
     }
 
     @Override

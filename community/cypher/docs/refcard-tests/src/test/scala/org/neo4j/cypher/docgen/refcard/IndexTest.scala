@@ -78,6 +78,16 @@ Note that for example `lower(n.name) = {value}` will not use an index.
 ###assertion=match parameters=aname
 //
 
+MATCH (n:Person) WHERE n.name IN [{value}]
+
+RETURN n
+###
+
+An index can be automatically used for the IN collection checks.
+
+###assertion=match parameters=aname
+//
+
 MATCH (n:Person)
 USING INDEX n:Person(name)
 WHERE n.name = {value}

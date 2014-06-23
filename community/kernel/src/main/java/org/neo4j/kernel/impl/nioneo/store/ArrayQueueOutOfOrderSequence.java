@@ -54,6 +54,13 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
         return highestGapFreeNumber;
     }
 
+    @Override
+    public void set( long number )
+    {
+        highestGapFreeNumber = number;
+        outOfOrderQueue.clear();
+    }
+
     private class SortedArray
     {
         private static final long UNSET = -1L;
@@ -64,6 +71,12 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
         public SortedArray( int initialArraySize )
         {
             this.array = new long[initialArraySize];
+        }
+
+        public void clear()
+        {
+            cursor = 0;
+            length = 0;
         }
 
         void offer( long baseNumber, long number )

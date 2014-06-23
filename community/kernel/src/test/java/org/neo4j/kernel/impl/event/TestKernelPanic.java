@@ -19,25 +19,26 @@
  */
 package org.neo4j.kernel.impl.event;
 
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.util.concurrent.Callable;
 
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.test.EphemeralFileSystemRule;
 
-// TODO 2.2-future 
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+//TODO 2.2-future
 @Ignore("Fix for 2.2")
 public class TestKernelPanic
 {
     private static final int COUNT = 100000;
-	
+
     @Test( timeout = 10000 )
     public void panicTest() throws Exception
     {
@@ -137,8 +138,6 @@ public class TestKernelPanic
         }
         return false;
     }
-
-
 
     private Callable<Void> beginTransaction( final GraphDatabaseService db )
     {

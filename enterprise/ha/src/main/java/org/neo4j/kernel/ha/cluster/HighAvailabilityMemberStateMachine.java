@@ -133,6 +133,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                 // Check if same coordinator was elected
 //                if ( !coordinatorId.equals( previousElected ) )
                 {
+                    context.setAvailableHaMasterId( null );
                     state = state.masterIsElected( context, coordinatorId );
 
 
@@ -149,7 +150,6 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                                     listener.masterIsElected( event );
                                 }
                             } );
-                    context.setAvailableHaMasterId( null );
 
                     if ( oldState.isAccessAllowed() && oldState != state )
                     {

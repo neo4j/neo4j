@@ -123,6 +123,8 @@ public class DiskLayerTest
 
         // WHEN THEN
         assertThat( getPropertyKeys( db, node ), containsOnly( "name" ) );
+
+        db.shutdown();
     }
 
     @Test

@@ -49,7 +49,7 @@ public class RecoveryLogDeserializer implements LogReader<ReadableLogChannel>
     private class RecoveryCursor implements Cursor<IOException>
     {
         private final ReadableLogChannel channel;
-        private Visitor<LogEntry, IOException> visitor;
+        private final Visitor<LogEntry, IOException> visitor;
 
         private RecoveryCursor( ReadableLogChannel channel, Visitor<LogEntry, IOException> visitor )
         {

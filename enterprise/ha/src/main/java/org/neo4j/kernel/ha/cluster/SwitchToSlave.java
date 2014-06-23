@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -40,6 +37,7 @@ import org.neo4j.com.storecopy.RemoteStoreCopier;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.StoreLockerLifecycleAdapter;
 import org.neo4j.kernel.configuration.Config;
@@ -62,7 +60,6 @@ import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
@@ -70,6 +67,7 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
+import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -77,6 +75,9 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
 
 public class SwitchToSlave
 {
@@ -102,7 +103,7 @@ public class SwitchToSlave
     private final Monitors monitors;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
 
-    private MasterClientResolver masterClientResolver;
+    private final MasterClientResolver masterClientResolver;
     private TransactionIdStore transactionIdStore;
     private LogicalTransactionStore txStore;
     private LogVersionRepository logVersionRepository;
@@ -186,6 +187,21 @@ public class SwitchToSlave
             // TODO 2.2-future
 //            xaDataSourceManager.applyTransactions( checkConsistencyMaster.pullUpdates( context ) );
             console.log( "Now consistent with master" );
+        }
+        catch ( NoSuchLogVersionException e )
+        {
+            msgLog.logMessage( "Cannot catch up to master by pulling updates, because I cannot find the archived " +
+                    "logical log file that has the transaction I would start from. I'm going to copy the whole " +
+                    "store from the master instead." );
+            try
+            {
+                stopServicesAndHandleBranchedStore( config.get( HaSettings.branched_data_policy ) );
+            }
+            catch ( Throwable throwable )
+            {
+                msgLog.warn( "Failed preparing for copying the store from the master instance", throwable );
+            }
+            throw e;
         }
         catch ( StoreUnableToParticipateInClusterException upe )
         {
@@ -362,6 +378,7 @@ public class SwitchToSlave
     }
 
     private void checkDataConsistencyWithMaster( URI availableMasterId, Master master, NeoStoreXaDataSource nioneoDataSource )
+            throws NoSuchLogVersionException
     {
         long myLastCommittedTx = transactionIdStore.getLastCommittingTransactionId();
         TransactionMetadataCache.TransactionMetadata metadata = txStore.getMetadataFor( myLastCommittedTx );
@@ -419,7 +436,17 @@ public class SwitchToSlave
         {
             // TODO here we used to instantiate the transaction translator. No longer necessary
 
-            // TODO 2.2-future properly start the datasource
+//            Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> transactionTranslatorFactory =
+//                    new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
+//            {
+//                @Override
+//                public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
+//                {
+//                    return new DenseNodeTransactionTranslator( neoStore );
+//                }
+//            };
+//
+//            // TODO 2.2-future properly start the datasource
 //            nioneoDataSource = new NeoStoreXaDataSource( config,
 //                    resolver.resolveDependency( StoreFactory.class ),
 //                    resolver.resolveDependency( StringLogger.class ),
@@ -438,7 +465,7 @@ public class SwitchToSlave
 //                    resolver.resolveDependency( TransactionEventHandlers.class ),
 //                    monitors.newMonitor( IndexingService.Monitor.class ),
 //                    resolver.resolveDependency( FileSystemAbstraction.class ),
-//                    thing,
+//                    transactionTranslatorFactory,
 //                    resolver.resolveDependency( StoreUpgrader.class ));
 
             // TODO 2.2-future i don't think the next action is necessary anymore
@@ -451,6 +478,7 @@ public class SwitchToSlave
 //                 * and propindex information. Normally, we would have shutdown everything before getting here.
 //                 */
 //            resolver.resolveDependency( NodeManager.class ).start();
+
         }
         return nioneoDataSource;
     }

@@ -29,14 +29,15 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.TimeZone;
 import java.util.TreeSet;
+
 import javax.transaction.xa.Xid;
 
 import org.neo4j.helpers.Args;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
@@ -94,7 +95,10 @@ public class DumpLogicalLog
 
             try( Cursor<IOException> cursor = deserializer.cursor( logChannel, consumer ) )
             {
-                while( cursor.next( ) );
+                while( cursor.next( ) )
+                {
+                    ;
+                }
             }
         }
         return logsFound;

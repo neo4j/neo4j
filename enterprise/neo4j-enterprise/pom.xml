@@ -23,7 +23,6 @@
     <short-name>neo4j-enterprise</short-name>
     <version-package>enterprise.impl</version-package>
     <bundle.namespace>org.neo4j</bundle.namespace>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/deployment-installation.html#editions</docs.url>
     <docs-plugin.skip>true</docs-plugin.skip>
   </properties>
 
@@ -160,11 +159,7 @@
           <execution>
             <id>create-javadocs</id>
             <phase>${attach-javadoc-phase}</phase>
-            <goals>
-              <goal>javadoc</goal>
-            </goals>
             <configuration>
-              <outputDirectory>${project.build.directory}/site/apidocs</outputDirectory>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <header>${project.name}</header>
               <doctitle>${project.name} ${project.version} API</doctitle>
@@ -217,26 +212,6 @@
           </execution>
         </executions>
       </plugin>
-      <plugin>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>package-javadocs</id>
-            <phase>${attach-javadoc-phase}</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <attach>true</attach>
-              <descriptors>
-                <descriptor>src/main/assembly/assembly.xml</descriptor>
-              </descriptors>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
-
 </project>
-

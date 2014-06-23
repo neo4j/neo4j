@@ -19,22 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-import static org.neo4j.helpers.collection.IteratorUtil.cloned;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.IteratorUtil.single;
-import static org.neo4j.kernel.impl.util.Bits.bits;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -46,13 +30,14 @@ import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -61,7 +46,26 @@ import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabels;
 import org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
+import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
+import static org.neo4j.helpers.collection.IteratorUtil.cloned;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.helpers.collection.IteratorUtil.first;
+import static org.neo4j.helpers.collection.IteratorUtil.single;
+import static org.neo4j.kernel.impl.util.Bits.bits;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeLabelsFieldTest
 {
@@ -441,6 +445,8 @@ public class NodeLabelsFieldTest
         return header|bits.getLongs()[0];
     }
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private NodeStore nodeStore;
 
@@ -449,9 +455,15 @@ public class NodeLabelsFieldTest
     {
         File storeDir = new File( "dir" );
         fs.get().mkdirs( storeDir );
-        StoreFactory storeFactory = new StoreFactory( StoreFactory.configForStoreDir( new Config(), storeDir ),
+        Monitors monitors = new Monitors();
+        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
+        StoreFactory storeFactory = new StoreFactory(
+                config,
                 new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL );
+                pageCacheRule.getPageCache( fs.get(), config ),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                monitors );
         storeFactory.createNodeStore();
         nodeStore = storeFactory.newNodeStore();
     }

@@ -22,11 +22,8 @@
     <short-name>neo4j-examples</short-name>
     <version-package>examples</version-package>
     <bundle.namespace>org.neo4j.examples</bundle.namespace>
-    <apidocs-unpack>${project.build.directory}/neo4j-apidocs</apidocs-unpack>
-    <apidocs-target>${project.build.directory}/site/apidocs</apidocs-target>
     <license-text.header>ApacheLicense-2.0-header.txt</license-text.header>
     <docs-plugin.filter>true</docs-plugin.filter>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/tutorials-java-embedded.html</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
@@ -57,6 +54,13 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>
@@ -112,15 +116,6 @@
         <artifactId>maven-failsafe-plugin</artifactId>
       </plugin>
       <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>create-site</id>
-            <phase>none</phase>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
@@ -131,13 +126,6 @@
       </plugin>
     </plugins>
   </build>
-
-  <distributionManagement>
-    <site>
-      <id>neo4j-site</id>
-      <url>scpexe://docs.neo4j.org/data/www/doc/components.neo4j.org/${project.artifactId}/${project.version}</url>
-    </site>
-  </distributionManagement>
 
   <repositories>
     <repository>

@@ -29,7 +29,6 @@ ASM License
   ASM Core
 
 Apache Software License, Version 2.0
-  Apache Log4j
   Commons BeanUtils
   Commons BeanUtils Core
   Commons Collections

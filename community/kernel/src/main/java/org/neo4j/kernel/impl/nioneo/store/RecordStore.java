@@ -34,8 +34,6 @@ public interface RecordStore<R extends AbstractBaseRecord> extends IdSequence
 {
     File getStorageFileName();
 
-    WindowPoolStats getWindowPoolStats();
-
     long getHighId();
 
     long getHighestPossibleIdInUse();

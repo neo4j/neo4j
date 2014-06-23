@@ -35,7 +35,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;

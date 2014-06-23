@@ -22,6 +22,7 @@ package org.neo4j.graphdb.factory;
 import java.util.ArrayList;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.Cache;
@@ -65,8 +66,15 @@ public class SetCacheProvidersTest
         cacheList.add( capturingProvider );
         gdbf.setCacheProviders( cacheList );
         GraphDatabaseAPI db = (GraphDatabaseAPI) gdbf.newImpermanentDatabase();
-        assertTrue( capturingProvider.nodeCacheCalled );
-        assertTrue( capturingProvider.relCacheCalled );
+        try
+        {
+            assertTrue( capturingProvider.nodeCacheCalled );
+            assertTrue( capturingProvider.relCacheCalled );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     public class CapturingCacheProvider extends CacheProvider

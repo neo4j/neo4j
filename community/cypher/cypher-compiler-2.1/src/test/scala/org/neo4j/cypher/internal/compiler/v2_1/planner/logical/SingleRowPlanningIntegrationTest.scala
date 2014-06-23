@@ -21,15 +21,15 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
 import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.planner.LogicalPlanningTestSupport2
-import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedIntegerLiteral
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.SingleRow
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.Projection
 
 class SingleRowPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
   test("should build plans containing single row") {
-    planFor("RETURN 42").plan should equal(
+    planFor("RETURN 42").plan.plan should equal(
       Projection(
-        SingleRow(Set.empty)(), expressions = Map("42" -> SignedIntegerLiteral("42")_)
+        SingleRow(Set.empty)(), expressions = Map("42" -> SignedDecimalIntegerLiteral("42")_)
       )
     )
   }

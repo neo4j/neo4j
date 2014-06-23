@@ -31,7 +31,7 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.ha.DelegateInvocationHandler;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.util.StringLogger;

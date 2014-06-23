@@ -28,7 +28,7 @@ import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with LogicalPlanningTestSupport2 {
 
   test("should build plans containing outgoing path projections") {
-    planFor("MATCH p = (a:X)-[r]->(b) RETURN p").plan should equal(
+    planFor("MATCH p = (a:X)-[r]->(b) RETURN p").plan.plan should equal(
       Projection(
         Expand( NodeByLabelScan("a",  Left("X")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength ),
         expressions = Map(
@@ -41,12 +41,12 @@ class NamedPathProjectionPlanningIntegrationTest extends CypherFunSuite with Log
   test("should build plans containing path projections and path selections") {
     val pathExpr = PathExpression(NodePathStep(Identifier("a")_,SingleRelationshipPathStep(Identifier("r")_, Direction.OUTGOING, NilPathStep)))_
 
-    planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b").plan should equal(
+    planFor("MATCH p = (a:X)-[r]->(b) WHERE head(nodes(p)) = a RETURN b").plan.plan should equal(
       Projection(
         Selection(
           Seq(Equals(
-            Identifier("a")_,
-            FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, pathExpr)_)_
+            FunctionInvocation(FunctionName("head")_, FunctionInvocation(FunctionName("nodes")_, pathExpr)_)_,
+            Identifier("a")_
           )_),
           Expand( NodeByLabelScan("a",  Left("X")), "a", Direction.OUTGOING, Seq.empty, "b", "r", SimplePatternLength )
         ),

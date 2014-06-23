@@ -100,6 +100,6 @@ public class RelationshipLinkbackStep extends LonelyProcessingStep
             itemProcessed();
             relStore.updateRecord( record );
         }
-        relStore.flushAll();
+        relStore.flush();
     }
 }

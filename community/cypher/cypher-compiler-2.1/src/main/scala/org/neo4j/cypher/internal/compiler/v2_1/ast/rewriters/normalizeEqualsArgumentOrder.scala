@@ -19,23 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters
 
-import org.neo4j.cypher.internal.compiler.v2_1.Rewriter
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{FunctionName, FunctionInvocation, Identifier, Equals}
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 
 object normalizeEqualsArgumentOrder extends Rewriter {
-  override def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  override def apply(that: AnyRef): Option[AnyRef] = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
-    // moved identifiers on equals to the left
-    case predicate @ Equals(Identifier(_), _) =>
+    // move n.prop on equals to the left
+    case predicate @ Equals(Property(_, _), _) =>
       predicate
-    case predicate @ Equals(lhs, rhs @ Identifier(_)) =>
+    case predicate @ Equals(lhs, rhs @ Property(_, _)) =>
       predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
 
     // move id(n) on equals to the left
-    case predicate @ Equals(FunctionInvocation(FunctionName("id"), _, _), _) =>
+    case predicate @ Equals(func@FunctionInvocation(_, _, _), _) if func.function == Some(functions.Id) =>
       predicate
-    case predicate @ Equals(lhs, rhs @ FunctionInvocation(FunctionName("id"), _, _)) =>
+    case predicate @ Equals(lhs, rhs @ FunctionInvocation(_, _, _)) if rhs.function == Some(functions.Id) =>
       predicate.copy(lhs = rhs, rhs = lhs)(predicate.position)
   }
 }

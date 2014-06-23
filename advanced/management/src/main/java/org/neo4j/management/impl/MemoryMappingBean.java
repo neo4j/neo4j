@@ -19,16 +19,12 @@
  */
 package org.neo4j.management.impl;
 
-import java.util.Collection;
-import java.util.Iterator;
-
 import javax.management.NotCompliantMBeanException;
 
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
-import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.management.MemoryMapping;
@@ -83,21 +79,7 @@ public final class MemoryMappingBean extends ManagementBeanProvider
 
         public static WindowPoolInfo[] getMemoryPoolsImpl( NeoStoreXaDataSource datasource )
         {
-            Collection<WindowPoolStats> stats = datasource.getWindowPoolStats();
-            WindowPoolInfo[] pools = new WindowPoolInfo[stats.size()];
-            Iterator<WindowPoolStats> iter = stats.iterator();
-            for ( int index = 0; iter.hasNext(); index++ )
-            {
-                pools[index] = createWindowPoolInfo( iter.next() );
-            }
-            return pools;
-        }
-
-        private static WindowPoolInfo createWindowPoolInfo( WindowPoolStats stats )
-        {
-            return new WindowPoolInfo( stats.getName(), stats.getMemAvail(), stats.getMemUsed(),
-                    stats.getWindowCount(), stats.getWindowSize(), stats.getHitCount(),
-                    stats.getMissCount(), stats.getOomCount() );
+            return new WindowPoolInfo[0];
         }
     }
 }

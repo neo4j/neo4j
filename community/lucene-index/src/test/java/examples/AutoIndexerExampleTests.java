@@ -37,7 +37,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.ReadableIndex;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.GraphDescription;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.test.GraphHolder;

@@ -45,6 +45,13 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
+    public void setLastCommittingAndClosedTransactionId( long transactionId )
+    {
+        this.transactionId = transactionId;
+        this.appliedTransactionId = transactionId;
+    }
+
+    @Override
     public void transactionClosed( long transactionId )
     {
         appliedTransactionId = transactionId;
@@ -57,7 +64,7 @@ public class DeadSimpleTransactionIdStore implements TransactionIdStore
     }
 
     @Override
-    public void flushAll()
+    public void flush()
     {
     }
 }

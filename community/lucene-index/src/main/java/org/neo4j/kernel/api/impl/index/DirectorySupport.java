@@ -23,9 +23,9 @@ import java.io.IOException;
 
 import org.apache.lucene.store.Directory;
 
-import org.neo4j.kernel.impl.util.FileUtils.FileOperation;
+import org.neo4j.io.fs.FileUtils.FileOperation;
 
-import static org.neo4j.kernel.impl.util.FileUtils.windowsSafeIOOperation;
+import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
 
 public class DirectorySupport
 {

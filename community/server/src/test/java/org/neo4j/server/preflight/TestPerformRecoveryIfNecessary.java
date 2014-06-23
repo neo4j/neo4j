@@ -35,7 +35,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.impl.util.TestLogging;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.server.configuration.Configurator;

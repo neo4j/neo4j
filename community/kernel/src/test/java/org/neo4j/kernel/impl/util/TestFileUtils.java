@@ -28,6 +28,8 @@ import java.io.IOException;
 
 import org.junit.Before;
 import org.junit.Test;
+
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.TargetDirectory;
 
 public class TestFileUtils

@@ -19,9 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.Iterables.first;
-
 import java.net.InetSocketAddress;
 import java.net.URI;
 
@@ -33,6 +30,9 @@ import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.first;
 
 public class ServerUtil
 {

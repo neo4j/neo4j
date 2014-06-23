@@ -24,17 +24,20 @@ import java.io.IOException;
 import java.net.URL;
 import java.util.HashMap;
 
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.storemigration.StoreMigrator;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.junit.Assert.assertEquals;
@@ -47,11 +50,15 @@ import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
 public class StoreVersionTest
 {
     @Test
-    public void allStoresShouldHaveTheCurrentVersionIdentifier() throws IOException
+    public void allStoresShouldHaveTheCurrentVersionIdentifier()
     {
-        StoreFactory sf = new StoreFactory( config,
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                null );
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fs.get(), config ),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                monitors );
         NeoStore neoStore = sf.newNeoStore( true );
 
         CommonAbstractStore[] stores = {
@@ -81,9 +88,17 @@ public class StoreVersionTest
 
         try
         {
-            new NodeStore( workingFile, config, new DefaultIdGeneratorFactory(),
-                    new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL, null,
-                    StoreVersionMismatchHandler.THROW_EXCEPTION );
+            Monitors monitors = new Monitors();
+            new NodeStore(
+                    workingFile,
+                    config,
+                    new DefaultIdGeneratorFactory(),
+                    pageCacheRule.getPageCache( fs.get(), config ),
+                    fs.get(),
+                    StringLogger.DEV_NULL,
+                    null,
+                    StoreVersionMismatchHandler.THROW_EXCEPTION,
+                    monitors );
             fail( "Should have thrown exception" );
         }
         catch ( NotCurrentStoreVersionException e )
@@ -93,12 +108,17 @@ public class StoreVersionTest
     }
 
     @Test
-    public void neoStoreHasCorrectStoreVersionField() throws IOException
+    public void neoStoreHasCorrectStoreVersionField()
     {
-        StoreFactory sf = new StoreFactory( config,
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL,
-                null );
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fs.get(), config ),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                monitors );
         NeoStore neoStore = sf.newNeoStore( true );
+
         // The first checks the instance method, the other the public one
         assertEquals( CommonAbstractStore.ALL_STORES_VERSION,
                 NeoStore.versionLongToString( neoStore.getStoreVersion() ) );
@@ -124,4 +144,7 @@ public class StoreVersionTest
     private final File outputDir = new File( "target/var/" + StoreVersionTest.class.getSimpleName() ).getAbsoluteFile();
     private final Config config = configForStoreDir(
             new Config( stringMap(), GraphDatabaseSettings.class ), outputDir );
+    private final Monitors monitors = new Monitors();
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
 }

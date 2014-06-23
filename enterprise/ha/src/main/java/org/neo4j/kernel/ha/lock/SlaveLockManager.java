@@ -23,7 +23,6 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 public class SlaveLockManager extends LifecycleAdapter implements Locks

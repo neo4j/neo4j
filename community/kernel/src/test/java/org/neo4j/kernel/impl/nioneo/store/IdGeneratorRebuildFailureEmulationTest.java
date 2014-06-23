@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.JUnit4;
@@ -39,12 +40,15 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 import org.neo4j.test.subprocess.BreakPoint;
 import org.neo4j.test.subprocess.BreakpointHandler;
@@ -149,6 +153,9 @@ public class IdGeneratorRebuildFailureEmulationTest
     private StoreFactory factory;
     private final String storeDir = new File( "dir" ).getAbsolutePath();
 
+    @Rule
+    public PageCacheRule pageCacheRule = new PageCacheRule();
+
     @Before
     public void initialize()
     {
@@ -156,10 +163,17 @@ public class IdGeneratorRebuildFailureEmulationTest
         InternalAbstractGraphDatabase graphdb = new Database( storeDir );
         createInitialData( graphdb );
         graphdb.shutdown();
-        Map<String, String> config = new HashMap<>();
-        config.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
-        factory = new StoreFactory( configForStoreDir( new Config( config, GraphDatabaseSettings.class ), new File( storeDir ) ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL, null );
+        Map<String, String> params = new HashMap<>();
+        params.put( GraphDatabaseSettings.rebuild_idgenerators_fast.name(), Settings.FALSE );
+        Monitors monitors = new Monitors();
+        Config config = configForStoreDir( new Config( params, GraphDatabaseSettings.class ), new File( storeDir ) );
+        factory = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fs, config ),
+                fs,
+                StringLogger.DEV_NULL,
+                monitors );
     }
 
     @After

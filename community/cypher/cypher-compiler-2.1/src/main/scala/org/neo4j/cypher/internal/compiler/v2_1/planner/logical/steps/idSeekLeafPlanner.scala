@@ -29,16 +29,10 @@ import org.neo4j.cypher.internal.compiler.v2_1.InputPosition.NONE
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
 
 object idSeekLeafPlanner extends LeafPlanner {
-  def apply(qg: QueryGraph)(implicit context: QueryGraphSolvingContext) = {
-    val predicates: Seq[Expression] = qg.selections.flatPredicates
+  def apply(queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]) = {
+    val predicates: Seq[Expression] = queryGraph.selections.flatPredicates
 
     val candidatePlans = predicates.collect {
-      // MATCH (a)-[r]->b WHERE id(r) = value
-      // MATCH a WHERE id(a) = value
-      case predicate@Equals(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), ConstantExpression(idValueExpr))
-      if func.function == Some(functions.Id) =>
-        (predicate, idExpr, Seq(idValueExpr))
-
       // MATCH (a)-[r]->b WHERE id(r) IN value
       // MATCH a WHERE id(a) IN value
       case predicate@In(func@FunctionInvocation(_, _, IndexedSeq(idExpr)), idsExpr@Collection(idValueExprs))
@@ -47,7 +41,7 @@ object idSeekLeafPlanner extends LeafPlanner {
         (predicate, idExpr, idValueExprs)
     }.collect {
       case (predicate, Identifier(idName), idValues) =>
-        context.queryGraph.patternRelationships.find(_.name.name == idName) match {
+        queryGraph.patternRelationships.find(_.name.name == idName) match {
           case Some(relationship) =>
             createRelationshipByIdSeek(relationship, idValues, predicate)
           case None =>

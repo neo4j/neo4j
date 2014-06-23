@@ -30,8 +30,6 @@ import org.mockito.ArgumentCaptor;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
 import org.neo4j.consistency.checking.full.TaskExecutionOrder;
-import org.neo4j.consistency.store.windowpool.WindowPoolImplementation;
-import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.test.TargetDirectory;
 
@@ -57,7 +55,7 @@ public class BackupToolTest
     @Test
     public void shouldUseIncrementalOrFallbackToFull() throws Exception
     {
-        String[] args = new String[]{"-from", "single://localhost", "-to", "my_backup"};
+        String[] args = new String[]{"-from", "localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -67,14 +65,14 @@ public class BackupToolTest
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ),
                 eq( BackupServer.DEFAULT_PORT ), eq( "my_backup" ), eq( true ), any( Config.class ) );
-        verify( systemOut ).println( "Performing backup from 'single://localhost'" );
+        verify( systemOut ).println( "Performing backup from 'localhost'" );
         verify( systemOut ).println( "Done" );
     }
 
     @Test
     public void shouldIgnoreIncrementalFlag() throws Exception
     {
-        String[] args = new String[]{"-incremental", "-from", "single://localhost", "-to", "my_backup"};
+        String[] args = new String[]{"-incremental", "-from", "localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
 
@@ -84,14 +82,14 @@ public class BackupToolTest
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
                 eq( "my_backup" ), eq( true ), any( Config.class ) );
-        verify( systemOut ).println( "Performing backup from 'single://localhost'" );
+        verify( systemOut ).println( "Performing backup from 'localhost'" );
         verify( systemOut ).println( "Done" );
     }
 
     @Test
     public void shouldIgnoreFullFlag() throws Exception
     {
-        String[] args = new String[]{"-full", "-from", "single://localhost", "-to", "my_backup"};
+        String[] args = new String[]{"-full", "-from", "localhost", "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         when(service.directoryContainsDb( anyString() )).thenReturn( true );
         PrintStream systemOut = mock( PrintStream.class );
@@ -102,7 +100,7 @@ public class BackupToolTest
         // then
         verify( service ).doIncrementalBackupOrFallbackToFull( eq( "localhost" ), eq( BackupServer.DEFAULT_PORT ),
                 eq( "my_backup" ), eq( true ), any(Config.class) );
-        verify( systemOut ).println( "Performing backup from 'single://localhost'" );
+        verify( systemOut ).println( "Performing backup from 'localhost'" );
         verify( systemOut ).println( "Done" );
     }
 
@@ -110,7 +108,7 @@ public class BackupToolTest
     public void appliesDefaultTuningConfigurationForConsistencyChecker() throws Exception
     {
         // given
-        String[] args = new String[]{"-from", "single://localhost",
+        String[] args = new String[]{"-from", "localhost",
                 "-to", "my_backup"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
@@ -125,11 +123,6 @@ public class BackupToolTest
         assertFalse( config.getValue().get( ConsistencyCheckSettings.consistency_check_property_owners ) );
         assertEquals( TaskExecutionOrder.MULTI_PASS,
                 config.getValue().get( ConsistencyCheckSettings.consistency_check_execution_order ) );
-        WindowPoolImplementation expectedPoolImplementation = !Settings.osIsWindows() ?
-                WindowPoolImplementation.SCAN_RESISTANT :
-                WindowPoolImplementation.MOST_FREQUENTLY_USED;
-        assertEquals( expectedPoolImplementation,
-                config.getValue().get( ConsistencyCheckSettings.consistency_check_window_pool_implementation ) );
     }
 
     @Test
@@ -141,7 +134,7 @@ public class BackupToolTest
         properties.setProperty( ConsistencyCheckSettings.consistency_check_property_owners.name(), "true" );
         properties.store( new FileWriter( propertyFile ), null );
 
-        String[] args = new String[]{"-from", "single://localhost",
+        String[] args = new String[]{"-from", "localhost",
                 "-to", "my_backup", "-config", propertyFile.getPath()};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
@@ -161,7 +154,7 @@ public class BackupToolTest
     {
         // given
         File propertyFile = TargetDirectory.forTest( getClass() ).file( "nonexistent_file" );
-        String[] args = new String[]{"-from", "single://localhost",
+        String[] args = new String[]{"-from", "localhost",
                 "-to", "my_backup", "-config", propertyFile.getPath()};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
@@ -202,10 +195,9 @@ public class BackupToolTest
         {
             // then
             assertEquals( "Please specify -from, examples:\n" +
-                    "  -from single://192.168.1.34\n" +
-                    "  -from single://192.168.1.34:1234\n" +
-                    "  -from ha://192.168.1.15:2181\n" +
-                    "  -from ha://192.168.1.15:2181,192.168.1.16:2181",
+                    "  -from 192.168.1.34\n" +
+                    "  -from 192.168.1.34:1234\n" +
+                    "  -from 192.168.1.15:2181,192.168.1.16:2181",
                     e.getMessage() );
         }
 
@@ -242,7 +234,7 @@ public class BackupToolTest
     public void exitWithFailureIfNoDestinationSpecified() throws Exception
     {
         // given
-        String[] args = new String[]{"-from", "single://localhost"};
+        String[] args = new String[]{"-from", "localhost"};
         BackupService service = mock( BackupService.class );
         PrintStream systemOut = mock( PrintStream.class );
         BackupTool backupTool = new BackupTool( service, systemOut );

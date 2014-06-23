@@ -25,12 +25,15 @@ import java.util.Map;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Settings.osIsWindows;
 
@@ -97,27 +100,20 @@ public class StoreAccess
         this.relGroupStore = wrapStore( relGroupStore );
     }
 
-    public StoreAccess( String path )
+    public StoreAccess( PageCache pageCache, String path )
     {
-        this( path, defaultParams() );
+        this( new DefaultFileSystemAbstraction(), pageCache, path );
     }
 
-    public StoreAccess( FileSystemAbstraction fileSystem, String path )
+    public StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, String path )
     {
-        this( fileSystem, path, defaultParams() );
+        this( fileSystem, pageCache, path, new Config( requiredParams( defaultParams(), path )), new Monitors() );
     }
 
-    public StoreAccess( String path, Map<String, String> params )
+    private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, String path, Config config, Monitors monitors )
     {
-        this( new DefaultFileSystemAbstraction(), path, params );
-    }
-
-    public StoreAccess( FileSystemAbstraction fileSystem, String path, Map<String, String> params )
-    {
-        this( new StoreFactory( new Config( requiredParams( params, path ) ),
-                                new DefaultIdGeneratorFactory(),
-                                new DefaultWindowPoolFactory(),
-                                fileSystem, StringLogger.DEV_NULL ).newNeoStore( false ) );
+        this( new StoreFactory( config, new DefaultIdGeneratorFactory(), pageCache,
+                fileSystem, StringLogger.DEV_NULL, monitors ).newNeoStore( false ) );
         this.closeable = true;
     }
 

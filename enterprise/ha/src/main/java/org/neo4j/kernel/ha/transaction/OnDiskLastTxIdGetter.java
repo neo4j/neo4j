@@ -19,31 +19,38 @@
  */
 package org.neo4j.kernel.ha.transaction;
 
-import java.io.File;
-
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 
 public class OnDiskLastTxIdGetter implements LastTxIdGetter
 {
-    private final File storeDirectory;
+    private final InternalAbstractGraphDatabase graphdb;
 
-    public OnDiskLastTxIdGetter( File storeDirectory )
+    public OnDiskLastTxIdGetter( InternalAbstractGraphDatabase graphdb )
     {
-        this.storeDirectory = storeDirectory;
+        this.graphdb = graphdb;
     }
 
     @Override
     public long getLastTxId()
     {
-        if ( new File(storeDirectory, NeoStore.DEFAULT_NAME).exists() )
-        {
-            return new NeoStoreUtil( storeDirectory ).getLastCommittedTx();
-        }
-        else
-        {
-            return -1;
-        }
+        NeoStore neoStore = getNeoStore();
+        return neoStore.getLastCommittedTx();
+    }
+
+    private NeoStore getNeoStore()
+    {
+        // Note that it is important that we resolve the NeoStore dependency anew every
+        // time we want to read the last transaction id.
+        // The reason is that a mode switch can stop and restart the database innards,
+        // leaving us with a stale NeoStore, not connected to a working page cache,
+        // if we cache it.
+        // We avoid this problem by simply not caching it, and instead looking it up
+        // every time.
+        NeoStoreProvider neoStoreProvider =
+                graphdb.getDependencyResolver().resolveDependency( NeoStoreProvider.class );
+        return neoStoreProvider.evaluate();
     }
 }

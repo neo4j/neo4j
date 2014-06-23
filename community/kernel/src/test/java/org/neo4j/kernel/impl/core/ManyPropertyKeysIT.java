@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.io.File;
+import java.io.IOException;
 import java.util.Collection;
 
 import org.junit.Test;
@@ -28,6 +29,9 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -37,6 +41,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.OtherThreadExecutor.WorkerCommand;
 import org.neo4j.test.TargetDirectory;
@@ -99,9 +104,10 @@ public class ManyPropertyKeysIT
         return (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getAbsolutePath() );
     }
 
-    private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount )
+    private GraphDatabaseAPI databaseWithManyPropertyKeys( int propertyKeyCount ) throws IOException
     {
-        StoreFactory storeFactory = new StoreFactory( storeDir, StringLogger.DEV_NULL );
+        PageCache pageCache = new StandardPageCache( new DefaultFileSystemAbstraction(), 1000, 1024*4 );
+        StoreFactory storeFactory = new StoreFactory( storeDir, pageCache, StringLogger.DEV_NULL, new Monitors() );
         NeoStore neoStore = storeFactory.newNeoStore( true );
         PropertyKeyTokenStore store = neoStore.getPropertyKeyTokenStore();
         for ( int i = 0; i < propertyKeyCount; i++ )
@@ -114,6 +120,7 @@ public class ManyPropertyKeysIT
             store.updateRecord( record );
         }
         neoStore.close();
+        pageCache.close();
 
         return database();
     }

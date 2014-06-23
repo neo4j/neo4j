@@ -30,9 +30,9 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.util.FileUtils;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -40,20 +40,20 @@ import static org.junit.Assert.assertTrue;
 public class TestIndexDelectionFs
 {
     private static GraphDatabaseAPI db;
-    
+
     @BeforeClass
     public static void doBefore() throws IOException
     {
         FileUtils.deleteRecursively( new File( "target/test-data/deletion" ) );
         db = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( "target/test-data/deletion" );
     }
-    
+
     @AfterClass
     public static void doAfter()
     {
         db.shutdown();
     }
-    
+
     @Test
     public void indexDeleteShouldDeleteDirectory()
     {

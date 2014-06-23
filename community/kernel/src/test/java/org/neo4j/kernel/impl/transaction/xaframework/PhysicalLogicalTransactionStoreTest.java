@@ -29,7 +29,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;

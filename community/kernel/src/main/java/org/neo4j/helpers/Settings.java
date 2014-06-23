@@ -20,6 +20,8 @@
 package org.neo4j.helpers;
 
 import java.io.File;
+import java.lang.management.ManagementFactory;
+import java.lang.reflect.Method;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.util.ArrayList;
@@ -29,8 +31,8 @@ import java.util.regex.Pattern;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.util.FileUtils;
 
 /**
  * Create settings for configurations in Neo4j. See {@link org.neo4j.graphdb.factory.GraphDatabaseSettings} for example.
@@ -362,6 +364,104 @@ public final class Settings
         }
     };
 
+    /**
+     * Behaves the same as BYTES, but augments the available settings by also adding the ability to specify memory
+     * usage as a percentage of available RAM.
+     */
+    public static class DirectMemoryUsage implements Function<String, Long>
+    {
+        private final long availableRAM;
+        private final long freeRAM;
+
+        public static DirectMemoryUsage directMemoryUsage()
+        {
+            return new DirectMemoryUsage(Math.min( maxOffHeapMemory(), totalPhysicalMemory() ), totalFreeMemory() );
+        }
+
+        private static long totalPhysicalMemory()
+        {
+            return tryCalling( ManagementFactory.getOperatingSystemMXBean(),
+                    "com.sun.management.OperatingSystemMXBean",
+                    "getTotalPhysicalMemorySize",
+                    /*default=*/Runtime.getRuntime().maxMemory() * 2 );
+        }
+
+        private static long totalFreeMemory()
+        {
+            return tryCalling( ManagementFactory.getOperatingSystemMXBean(),
+                    "com.sun.management.OperatingSystemMXBean",
+                    "getFreePhysicalMemorySize",
+                    /*default=*/Runtime.getRuntime().maxMemory() );
+        }
+
+        private static long maxOffHeapMemory()
+        {
+            return tryCalling( null, "sun.misc.VM", "maxDirectMemory", /*default=*/64 * 1024 * 1024 );
+        }
+
+        private static long tryCalling( Object baseObject, String fullClassName, String methodName, long fallbackValue )
+        {
+            try
+            {
+                Class<?> beanClass = Thread.currentThread().getContextClassLoader().loadClass( fullClassName );
+                Method method = beanClass.getMethod( methodName );
+                return (Long) method.invoke( baseObject );
+            }
+            catch ( Exception | LinkageError e )
+            {
+                // ok we tried but probably 1.5 JVM or other class library implementation
+                return fallbackValue;
+            }
+        }
+
+        public DirectMemoryUsage( long totalRAM, long freeRAM )
+        {
+            this.availableRAM = totalRAM;
+            this.freeRAM = freeRAM;
+        }
+
+        @Override
+        public Long apply( String value )
+        {
+            long bytes;
+            if(value.contains( "%" ))
+            {
+                try
+                {
+                    String digitsOnly = value.replace( "%", "" ).trim();
+                    double percentage = Double.parseDouble( digitsOnly ) / 100;
+
+                    if ( percentage > 0 && percentage <= 1 )
+                    {
+                        bytes = (long) Math.min( percentage * availableRAM, freeRAM );
+                    }
+                    else
+                    {
+                        throw new IllegalArgumentException( "Invalid memory fraction, expected a value between 0.0% and 100.0%." );
+                    }
+                }
+                catch(NumberFormatException e)
+                {
+                    // Just drop to the line below where we throw.
+                    throw new IllegalArgumentException( "Invalid memory fraction, expected a value between 0.0% and 100.0%." );
+                }
+
+            }
+            else
+            {
+                bytes = BYTES.apply( value );
+            }
+
+            return Math.round(Math.min( bytes, freeRAM * 0.95 /* leave a wee bit for other allocations. */));
+        }
+
+        @Override
+        public String toString()
+        {
+            return "a byte size or a percentage of the max direct memory or total RAM (whichever is smallest), for instance '25%'";
+        }
+    };
+
     public static final Function<String, URI> URI =
             new Function<String, URI>()
             {
@@ -471,11 +571,14 @@ public final class Settings
             @Override
             public List<T> apply( String value )
             {
-                String[] parts = value.split( separator );
                 List<T> list = new ArrayList<T>();
-                for ( String part : parts )
+                if (value.length() > 0)
                 {
-                    list.add( itemParser.apply( part ) );
+                    String[] parts = value.split( separator );
+                    for ( String part : parts )
+                    {
+                        list.add( itemParser.apply( part ) );
+                    }
                 }
                 return list;
             }

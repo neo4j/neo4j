@@ -94,8 +94,18 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
     checkUsageBoundIds chain
     pattern.semanticCheck(Pattern.SemanticContext.Match) chain
     hints.semanticCheck chain
+    uniqueHints chain
     where.semanticCheck chain
     checkHints
+
+  def uniqueHints: SemanticCheck = {
+    val errors = hints.groupBy(_.identifier).collect {
+      case pair@(ident, identHints) if identHints.size > 1 =>
+        SemanticError("Multiple hints for same identifier are not supported", ident.position, identHints.map(_.position): _*)
+    }.toVector
+
+    (state: SemanticState) => SemanticCheckResult(state, errors)
+  }
 
   def checkHints: SemanticCheck = {
     val error: Option[SemanticCheck] = hints.collectFirst {
@@ -104,7 +114,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
           || !containsPropertyPredicate(identifier, property) =>
         SemanticError(
           """|Cannot use index hint in this context.
-             | Index hints require using a simple equality comparison in WHERE (either directly or as part of a
+             | Index hints require using a simple equality comparison or IN condition in WHERE (either directly or as part of a
              | top-level AND).
              | Note that the label and property comparison must be specified on a
              | non-optional node""".stripLinesAndMargins, hint.position)
@@ -155,7 +165,9 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
           (acc, _) => acc :+ name
         case Equals(_, Property(Identifier(id), PropertyKeyName(name))) if id == identifier =>
           (acc, _) => acc :+ name
-        case _: Where | _: And =>
+        case In(Property(Identifier(id), PropertyKeyName(name)),_) if id == identifier =>
+          (acc, _) => acc :+ name
+        case _: Where | _: And | _: Ands | _: Set[_] =>
           (acc, children) => children(acc)
         case _ =>
           (acc, _) => acc
@@ -179,7 +191,7 @@ case class Match(optional: Boolean, pattern: Pattern, hints: Seq[Hint], where: O
       case Some(where) => where.treeFold(labels) {
         case HasLabels(Identifier(id), labels) if id == identifier =>
           (acc, _) => acc ++ labels.map(_.name)
-        case _: Where | _: And =>
+        case _: Where | _: And | _: Ands | _: Set[_] =>
           (acc, children) => children(acc)
         case _ =>
           (acc, _) => acc
@@ -287,6 +299,18 @@ case class Return(
     skip: Option[Skip],
     limit: Option[Limit])(val position: InputPosition) extends ClosingClause {
   def name = "RETURN"
+
+  override def semanticCheck =
+    super.semanticCheck chain
+    checkIdentifiersInScope
+
+  private def checkIdentifiersInScope: SemanticState => Seq[SemanticError] = state =>
+    returnItems match {
+      case _: ReturnAll if state.scope.symbolTable.isEmpty =>
+        Seq(SemanticError("RETURN * is not allowed when there are no identifiers in scope", position))
+      case _            =>
+        Seq()
+    }
 }
 
 case class PeriodicCommitHint(size: Option[IntegerLiteral])(val position: InputPosition) extends ASTNode with SemanticCheckable {

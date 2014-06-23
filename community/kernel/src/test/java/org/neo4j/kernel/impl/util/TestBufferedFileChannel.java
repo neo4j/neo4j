@@ -30,8 +30,8 @@ import org.junit.Test;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
-import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.fs.StoreFileChannel;
 
 import static org.junit.Assert.assertEquals;
 

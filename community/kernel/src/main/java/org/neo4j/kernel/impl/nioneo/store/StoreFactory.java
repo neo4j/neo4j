@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,13 +26,18 @@ import java.nio.ByteBuffer;
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
 * Factory for Store implementations. Can also be used to create empty stores.
@@ -51,7 +54,6 @@ public class StoreFactory
 
     private final Config config;
     private final IdGeneratorFactory idGeneratorFactory;
-    private final WindowPoolFactory windowPoolFactory;
     private final FileSystemAbstraction fileSystemAbstraction;
     private final StringLogger stringLogger;
 
@@ -78,33 +80,36 @@ public class StoreFactory
     public static final String RELATIONSHIP_GROUP_STORE_NAME = ".relationshipgroupstore.db";
     private final StoreVersionMismatchHandler versionMismatchHandler;
     private final File neoStoreFileName;
+    private final Monitors monitors;
+    private final PageCache pageCache;
 
-    public StoreFactory( File storeDir, StringLogger logger )
+    public StoreFactory( File storeDir, PageCache pageCache, StringLogger logger, Monitors monitors )
     {
         this( configForStoreDir( new Config(), storeDir ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
-                logger, StoreVersionMismatchHandler.THROW_EXCEPTION );
+                new DefaultIdGeneratorFactory(), pageCache, new DefaultFileSystemAbstraction(),
+                logger, monitors, StoreVersionMismatchHandler.THROW_EXCEPTION );
     }
 
-    public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
-            FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger )
+    public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger, Monitors monitors )
     {
-        this( config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
-                StoreVersionMismatchHandler.THROW_EXCEPTION );
+        this( config, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
+                monitors, StoreVersionMismatchHandler.THROW_EXCEPTION );
     }
 
-    public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, WindowPoolFactory windowPoolFactory,
+    public StoreFactory( Config config, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
                          FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
-                         StoreVersionMismatchHandler versionMismatchHandler )
+                         Monitors monitors, StoreVersionMismatchHandler versionMismatchHandler )
     {
         this.config = config;
         this.idGeneratorFactory = idGeneratorFactory;
-        this.windowPoolFactory = windowPoolFactory;
         this.fileSystemAbstraction = fileSystemAbstraction;
         this.stringLogger = stringLogger;
         this.versionMismatchHandler = versionMismatchHandler;
         this.neoStoreFileName = config.get( GraphDatabaseSettings.neo_store );
         assert neoStoreFileName != null;
+        this.monitors = monitors;
+        this.pageCache = pageCache;
     }
 
     private File storeFileName( String toAppend )
@@ -120,7 +125,7 @@ public class StoreFactory
         }
 
         // The store exists already, start it
-        return new NeoStore( neoStoreFileName, config, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction,
+        return new NeoStore( neoStoreFileName, config, idGeneratorFactory, pageCache, fileSystemAbstraction,
                 stringLogger,
                 newRelationshipTypeTokenStore(),
                 newLabelTokenStore(),
@@ -130,7 +135,7 @@ public class StoreFactory
                 // We don't need any particular upgrade when we add the schema store
                 newSchemaStore(),
                 newRelationshipGroupStore(),
-                versionMismatchHandler);
+                versionMismatchHandler, monitors );
     }
 
     public boolean storeExists()
@@ -141,19 +146,19 @@ public class StoreFactory
     public RelationshipGroupStore newRelationshipGroupStore()
     {
         return new RelationshipGroupStore( storeFileName( RELATIONSHIP_GROUP_STORE_NAME ), config,
-                idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger, versionMismatchHandler );
+                idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     public SchemaStore newSchemaStore()
     {
         return new SchemaStore( storeFileName( SCHEMA_STORE_NAME ), config, IdType.SCHEMA,
-                idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger, versionMismatchHandler );
+                idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     private DynamicStringStore newDynamicStringStore( File fileName, IdType nameIdType )
     {
-        return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler);
+        return new DynamicStringStore( fileName, config, nameIdType, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     private RelationshipTypeTokenStore newRelationshipTypeTokenStore()
@@ -161,8 +166,8 @@ public class StoreFactory
         DynamicStringStore nameStore = newDynamicStringStore( storeFileName( RELATIONSHIP_TYPE_TOKEN_NAMES_STORE_NAME ),
                 IdType.RELATIONSHIP_TYPE_TOKEN_NAME );
         return new RelationshipTypeTokenStore( storeFileName( RELATIONSHIP_TYPE_TOKEN_STORE_NAME ), config,
-                idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger, nameStore,
-                versionMismatchHandler );
+                idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, nameStore,
+                versionMismatchHandler, monitors );
     }
 
     public PropertyStore newPropertyStore()
@@ -173,8 +178,8 @@ public class StoreFactory
         DynamicArrayStore arrayPropertyStore = newDynamicArrayStore(
                 storeFileName( PROPERTY_ARRAYS_STORE_NAME ), IdType.ARRAY_BLOCK );
         return new PropertyStore( storeFileName( PROPERTY_STORE_NAME ), config, idGeneratorFactory,
-                windowPoolFactory, fileSystemAbstraction, stringLogger, stringPropertyStore, propertyKeyTokenStore,
-                arrayPropertyStore, versionMismatchHandler );
+                pageCache, fileSystemAbstraction, stringLogger, stringPropertyStore, propertyKeyTokenStore,
+                arrayPropertyStore, versionMismatchHandler, monitors );
     }
 
     public PropertyKeyTokenStore newPropertyKeyTokenStore()
@@ -182,8 +187,8 @@ public class StoreFactory
         DynamicStringStore nameStore = newDynamicStringStore( storeFileName( PROPERTY_KEY_TOKEN_NAMES_STORE_NAME ),
                 IdType.PROPERTY_KEY_TOKEN_NAME );
         return new PropertyKeyTokenStore( storeFileName( PROPERTY_KEY_TOKEN_STORE_NAME ), config,
-                idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger, nameStore,
-                versionMismatchHandler );
+                idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, nameStore,
+                versionMismatchHandler, monitors );
     }
 
     private LabelTokenStore newLabelTokenStore()
@@ -191,28 +196,28 @@ public class StoreFactory
         DynamicStringStore nameStore = newDynamicStringStore( storeFileName( LABEL_TOKEN_NAMES_STORE_NAME ),
                 IdType.LABEL_TOKEN_NAME );
         return new LabelTokenStore( storeFileName( LABEL_TOKEN_STORE_NAME ), config, idGeneratorFactory,
-                windowPoolFactory, fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler );
+                pageCache, fileSystemAbstraction, stringLogger, nameStore, versionMismatchHandler, monitors );
     }
 
     public RelationshipStore newRelationshipStore()
     {
         return new RelationshipStore( storeFileName( RELATIONSHIP_STORE_NAME ), config,
-                idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger, versionMismatchHandler);
+                idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     public DynamicArrayStore newDynamicArrayStore( File fileName, IdType idType )
     {
-        return new DynamicArrayStore( fileName, config, idType, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler);
+        return new DynamicArrayStore( fileName, config, idType, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
     }
 
     public NodeStore newNodeStore()
     {
         DynamicArrayStore dynamicLabelStore = new DynamicArrayStore( storeFileName( NODE_LABELS_STORE_NAME ),
-                config, IdType.NODE_LABELS, idGeneratorFactory, windowPoolFactory, fileSystemAbstraction, stringLogger,
-                versionMismatchHandler);
-        return new NodeStore( storeFileName( NODE_STORE_NAME ), config, idGeneratorFactory, windowPoolFactory,
-                fileSystemAbstraction, stringLogger, dynamicLabelStore, versionMismatchHandler );
+                config, IdType.NODE_LABELS, idGeneratorFactory, pageCache, fileSystemAbstraction, stringLogger,
+                versionMismatchHandler, monitors );
+        return new NodeStore( storeFileName( NODE_STORE_NAME ), config, idGeneratorFactory, pageCache,
+                fileSystemAbstraction, stringLogger, dynamicLabelStore, versionMismatchHandler, monitors );
     }
 
     public NeoStore createNeoStore()
@@ -263,6 +268,16 @@ public class StoreFactory
         neoStore.setCurrentLogVersion( 0 );
         neoStore.setStoreVersion( NeoStore.versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
         neoStore.setGraphNextProp( -1 );
+
+        try
+        {
+            pageCache.flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
+
         return neoStore;
     }
 
@@ -460,7 +475,7 @@ public class StoreFactory
         createEmptyStore( fileName, typeAndVersionDescriptor, null, null );
     }
 
-    public void createEmptyStore( File fileName, String typeAndVersionDescriptor, ByteBuffer firstRecordData,
+    private void createEmptyStore( File fileName, String typeAndVersionDescriptor, ByteBuffer firstRecordData,
             IdType idType )
     {
         // sanity checks
@@ -521,17 +536,6 @@ public class StoreFactory
         return config.with( stringMap(
                 GraphDatabaseSettings.neo_store.name(), new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsolutePath(),
                 GraphDatabaseSettings.store_dir.name(), storeDir.getAbsolutePath() ) );
-    }
-
-    /**
-     * Fills in neo_store and store_dir based on neo store file (storeDir/neostore)
-     * @return a new modified config, leaves this config unchanged.
-     */
-    public static Config configForNeoStore( Config config, File neoStore )
-    {
-        return config.with( stringMap(
-                GraphDatabaseSettings.neo_store.name(), neoStore.getAbsolutePath(),
-                GraphDatabaseSettings.store_dir.name(), neoStore.getParentFile().getAbsolutePath() ) );
     }
 
     /**

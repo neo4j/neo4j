@@ -19,49 +19,63 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.junit.Ignore;
 import org.junit.Test;
 
-import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.assertEquals;
 
-@Ignore( "Needs to be updated for 2.2" )
 public class TransactionMonitorTest
 {
     @Test
     public void shouldCountCommittedTransactions() throws Exception
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Monitors monitors = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Monitors.class );
-        EideticTransactionMonitor monitor = new EideticTransactionMonitor();
-        // Here we install the monitor
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.success();
-        tx.finish();
-        assertEquals( 1, monitor.getNumberOfStartedTransactions() );
-        assertEquals( 1, monitor.getNumberOfCommittedTransactions() );
-        assertEquals( 0, monitor.getNumberOfRolledbackTransactions() );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        try
+        {
+            TransactionMonitor monitor = db.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            int startedBefore = monitor.getNumberOfStartedTransactions();
+            long committedBefore = monitor.getNumberOfCommittedTransactions();
+            long rolledBackBefore = monitor.getNumberOfRolledbackTransactions();
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode();
+                tx.success();
+            }
+            assertEquals( startedBefore+1, monitor.getNumberOfStartedTransactions() );
+            assertEquals( committedBefore+1, monitor.getNumberOfCommittedTransactions() );
+            assertEquals( rolledBackBefore, monitor.getNumberOfRolledbackTransactions() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     @Test
     public void shouldNotCountRolledBackTransactions() throws Exception
     {
-        GraphDatabaseService db = new TestGraphDatabaseFactory().newImpermanentDatabase();
-        Monitors monitors = ((GraphDatabaseAPI) db).getDependencyResolver().resolveDependency( Monitors.class );
-        EideticTransactionMonitor monitor = new EideticTransactionMonitor();
-        // Here we install the monitor
-        Transaction tx = db.beginTx();
-        db.createNode();
-        tx.failure();
-        tx.finish();
-        assertEquals( 1, monitor.getNumberOfStartedTransactions() );
-        assertEquals( 0, monitor.getNumberOfCommittedTransactions() );
-        assertEquals( 1, monitor.getNumberOfRolledbackTransactions() );
+        GraphDatabaseAPI db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
+        try
+        {
+            TransactionMonitor monitor = db.getDependencyResolver().resolveDependency( TransactionMonitor.class );
+            int startedBefore = monitor.getNumberOfStartedTransactions();
+            long committedBefore = monitor.getNumberOfCommittedTransactions();
+            long rolledBackBefore = monitor.getNumberOfRolledbackTransactions();
+            try ( Transaction tx = db.beginTx() )
+            {
+                db.createNode();
+                tx.failure();
+            }
+            assertEquals( startedBefore+1, monitor.getNumberOfStartedTransactions() );
+            assertEquals( committedBefore, monitor.getNumberOfCommittedTransactions() );
+            assertEquals( rolledBackBefore+1, monitor.getNumberOfRolledbackTransactions() );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 }

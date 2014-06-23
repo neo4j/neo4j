@@ -33,12 +33,13 @@ import java.util.Queue;
 import java.util.concurrent.ArrayBlockingQueue;
 
 import org.junit.Rule;
+
+import org.neo4j.function.Function;
 import org.neo4j.graphdb.ResourceIterator;
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.impl.nioneo.store.AbstractStoreChannel;
-import org.neo4j.kernel.impl.nioneo.store.FileLock;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.AbstractStoreChannel;
+import org.neo4j.io.fs.FileLock;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.test.TargetDirectory;
 
 public class ServerUtilTest
@@ -411,8 +412,8 @@ public class ServerUtilTest
         }
 
         @Override
-        public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem( Class<K> clazz, Function<Class<K>,
-                K> creator )
+        public <K extends ThirdPartyFileSystem> K getOrCreateThirdPartyFileSystem(
+                Class<K> clazz, Function<Class<K>,K> creator )
         {
             return null;
         }

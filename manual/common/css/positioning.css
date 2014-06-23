@@ -17,7 +17,7 @@ body.console-is-expanded #header {
 }
 
 #header h1 {
-  margin: 8px 200px 0 8px;
+  margin: 8px 20% 0 8px;
   position: fixed;
   top: 0;
   left: 0;
@@ -27,13 +27,13 @@ body.console-is-expanded #header {
   position: fixed;
   right: 0;
   top: 0;
-  padding: 6px 0 5px 10px;
+  padding: 6px 10px 5px 10px;
+  max-width: 20%;
 }
 
 #logo img {
   width: 130px;
-  height: 60px;
-  margin-right: 10px;
+  max-width: 100%;
 }
 
 #sidebar-wrapper {
@@ -380,5 +380,15 @@ div.note *,div.caution *,div.important *,div.tip *,div.warning * {
   }
   footer p a {
     padding-right: 1em;
+  }
+}
+
+@media screen and (max-width: 740px) {
+  #additional-versions, body #header h1 #book-title {
+    display: none;
+  }
+  
+  body #header h1 span {
+    font-size: 18px;
   }
 }

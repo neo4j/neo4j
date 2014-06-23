@@ -31,6 +31,7 @@ import java.util.Map;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -47,6 +48,9 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.CombiningIterable;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
@@ -93,6 +97,7 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
@@ -114,8 +119,11 @@ public class TestNeoStore
     private TargetDirectory targetDirectory;
     private File path;
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     @Rule public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( getClass() );
+    private PageCache pageCache;
 
     private File file( String name )
     {
@@ -127,10 +135,17 @@ public class TestNeoStore
     {
         targetDirectory = TargetDirectory.forTest( fs.get(), getClass() );
         path = targetDirectory.cleanDirectory( "dir" );
-        Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
-        StoreFactory sf = new StoreFactory( StoreFactory.configForStoreDir( config, path ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fs.get(), StringLogger.DEV_NULL, null );
+        Config config = StoreFactory.configForStoreDir(
+                new Config( new HashMap<String, String>(), GraphDatabaseSettings.class ), path );
+        Monitors monitors = new Monitors();
+        pageCache = pageCacheRule.getPageCache( fs.get(), config );
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCache,
+                fs.get(),
+                StringLogger.DEV_NULL,
+                monitors );
         sf.createNeoStore().close();
     }
 
@@ -179,8 +194,14 @@ public class TestNeoStore
                 InternalAbstractGraphDatabase.Configuration.neo_store.name(), "neo" ),
                 GraphDatabaseSettings.class );
         EphemeralFileSystemAbstraction fs = this.fs.get();
-        StoreFactory sf = new StoreFactory( config, new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(),
-                fs, StringLogger.DEV_NULL, null );
+        Monitors monitors = new Monitors();
+        StoreFactory sf = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCache,
+                fs,
+                StringLogger.DEV_NULL,
+                monitors );
         KernelHealth kernelHealth = mock( KernelHealth.class );
 
         Locks locks = mock( Locks.class );
@@ -1199,15 +1220,21 @@ public class TestNeoStore
     @Test
     public void setVersion() throws Exception
     {
-        EphemeralFileSystemAbstraction fileSystem = new EphemeralFileSystemAbstraction();
+        FileSystemAbstraction fileSystem = fs.get();
         File storeDir = new File("target/test-data/set-version");
         new TestGraphDatabaseFactory().setFileSystem( fileSystem ).newImpermanentDatabase( storeDir.getAbsolutePath() ).shutdown();
         assertEquals( 1, NeoStore.setVersion( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsoluteFile(), 10 ) );
         assertEquals( 10, NeoStore.setVersion( fileSystem, new File( storeDir, NeoStore.DEFAULT_NAME ).getAbsoluteFile(), 12 ) );
 
+        Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
-        StoreFactory sf = new StoreFactory( configForStoreDir( config, storeDir ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), fileSystem, StringLogger.DEV_NULL, null );
+        StoreFactory sf = new StoreFactory(
+                configForStoreDir( config, storeDir ),
+                new DefaultIdGeneratorFactory(),
+                pageCache,
+                fileSystem,
+                StringLogger.DEV_NULL,
+                monitors );
 
         NeoStore neoStore = sf.newNeoStore( false );
         assertEquals( 12, neoStore.getCurrentLogVersion() );
@@ -1219,10 +1246,16 @@ public class TestNeoStore
     {
         // given
         new GraphDatabaseFactory().newEmbeddedDatabase( testDir.absolutePath() ).shutdown();
+        Monitors monitors = new Monitors();
         Config config = new Config( new HashMap<String, String>(), GraphDatabaseSettings.class );
-        StoreFactory sf = new StoreFactory( configForStoreDir( config, testDir.directory() ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
-                StringLogger.DEV_NULL, null );
+        DefaultFileSystemAbstraction fileSystemAbstraction = new DefaultFileSystemAbstraction();
+        StoreFactory sf = new StoreFactory(
+                configForStoreDir( config, testDir.directory() ),
+                new DefaultIdGeneratorFactory(),
+                new StandardPageCache( fileSystemAbstraction, 1014, 4096 ),
+                fileSystemAbstraction,
+                StringLogger.DEV_NULL,
+                monitors );
 
         // when
         NeoStore neoStore = sf.newNeoStore( true );
@@ -1237,7 +1270,7 @@ public class TestNeoStore
         assertEquals( 10l, neoStore.getLatestConstraintIntroducingTx() );
 
         // when
-        neoStore.flushAll();
+        neoStore.flush();
         neoStore.close();
         neoStore = sf.newNeoStore( false );
 
@@ -1245,5 +1278,4 @@ public class TestNeoStore
         assertEquals( 10l, neoStore.getLatestConstraintIntroducingTx() );
         neoStore.close();
     }
-
 }

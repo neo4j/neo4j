@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.helpers.Predicates.equalTo;
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.helpers.collection.Iterables.filter;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -36,6 +27,14 @@ import java.util.Set;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.logging.LogMarker;
+
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.*;
+import static org.neo4j.helpers.Predicates.equalTo;
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 /**
  * A string logger implementation for testing that components log things correctly.
@@ -152,7 +151,7 @@ public class TestLogger extends StringLogger
             expected.remove( logCall );
         if(expected.size() > 0)
         {
-            fail( "These log calls were expected, but never occurred: \n" + serialize( expected.iterator() ) );
+            fail( "These log calls were expected, but never occurred: \n" + serialize( expected.iterator() ) + "\nActual log calls were:\n" + serialize( logCalls.iterator() ) );
         }
     }
 

@@ -30,7 +30,6 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultPropertyTokenCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import sun.util.logging.resources.logging;
 
 public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {

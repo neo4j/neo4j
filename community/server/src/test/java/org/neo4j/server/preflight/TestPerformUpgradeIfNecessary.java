@@ -33,7 +33,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader.Monitor;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.server.configuration.Configurator;
 import org.neo4j.server.configuration.MapBasedConfiguration;
 import org.neo4j.test.TargetDirectory;
@@ -47,8 +47,8 @@ import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
 
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
-import static org.neo4j.kernel.impl.util.FileUtils.deleteRecursively;
+import static org.neo4j.io.fs.FileUtils.copyRecursively;
+import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 import static org.neo4j.kernel.logging.DevNullLoggingService.DEV_NULL;
 
 public class TestPerformUpgradeIfNecessary

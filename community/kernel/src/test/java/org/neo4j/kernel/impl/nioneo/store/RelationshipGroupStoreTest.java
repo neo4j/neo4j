@@ -19,36 +19,47 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.Integer.parseInt;
-import static java.util.Arrays.asList;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-
 import java.io.File;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 
+import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.ImpermanentGraphDatabase;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
+
+import static java.lang.Integer.parseInt;
+import static java.util.Arrays.asList;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
 
 public class RelationshipGroupStoreTest
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     private File directory;
     private int defaultThreshold;
     private FileSystemAbstraction fs;
@@ -58,7 +69,21 @@ public class RelationshipGroupStoreTest
     public void before() throws Exception
     {
         directory = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
+//<<<<<<< HEAD:community/kernel/src/test/java/org/neo4j/kernel/impl/nioneo/store/RelationshipGroupStoreTest.java
+//=======
+//        neostoreFileName = new File( directory, "neostore" ).getAbsolutePath();
+        fs = new DefaultFileSystemAbstraction();
+//>>>>>>> master:community/kernel/src/test/java/org/neo4j/kernel/impl/nioneo/store/TestRelationshipGroupStore.java
         defaultThreshold = parseInt( GraphDatabaseSettings.dense_node_threshold.getDefaultValue() );
+    }
+
+    @After
+    public void after()
+    {
+        if(db != null)
+        {
+            db.shutdown();
+        }
     }
 
     @Test
@@ -147,9 +172,16 @@ public class RelationshipGroupStoreTest
         {
             customConfig.put( GraphDatabaseSettings.dense_node_threshold.name(), "" + customThreshold );
         }
-        return new StoreFactory( StoreFactory.configForStoreDir( config( customConfig ), directory ),
-                new DefaultIdGeneratorFactory(), new DefaultWindowPoolFactory(), new DefaultFileSystemAbstraction(),
-                StringLogger.DEV_NULL );
+        Monitors monitors = new Monitors();
+        Config config = configForStoreDir( config( customConfig ), directory );
+        return new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fs, config ),
+                fs,
+                StringLogger.DEV_NULL,
+                monitors );
+//>>>>>>> master:community/kernel/src/test/java/org/neo4j/kernel/impl/nioneo/store/TestRelationshipGroupStore.java
     }
 
     private Config config( Map<String, String> customConfig )

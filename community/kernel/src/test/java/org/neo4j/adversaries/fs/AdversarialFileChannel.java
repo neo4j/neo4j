@@ -26,7 +26,7 @@ import java.nio.channels.FileChannel;
 import java.nio.channels.FileLock;
 
 import org.neo4j.adversaries.Adversary;
-import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
+import org.neo4j.io.fs.StoreFileChannel;
 
 @SuppressWarnings( "unchecked" )
 public class AdversarialFileChannel extends StoreFileChannel

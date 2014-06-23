@@ -27,14 +27,15 @@ import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
+import org.neo4j.io.pagecache.impl.standard.StandardPageCache;
 import org.neo4j.kernel.impl.recovery.StoreRecoverer;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 public class TestStoreAccess
 {
@@ -49,8 +50,16 @@ public class TestStoreAccess
         File messages = new File( storeDir, "messages.log" );
         snapshot.deleteFile( messages );
 
-        new StoreAccess( snapshot, storeDir.getPath(), stringMap() ).close();
-        assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+        PageCache pageCache = new StandardPageCache( snapshot, 1000, 1024*4 );
+        try
+        {
+            new StoreAccess( snapshot, pageCache, storeDir.getPath() ).close();
+            assertTrue( "Store should be unclean", isUnclean( snapshot ) );
+        }
+        finally
+        {
+            pageCache.close();
+        }
     }
 
     private EphemeralFileSystemAbstraction produceUncleanStore()

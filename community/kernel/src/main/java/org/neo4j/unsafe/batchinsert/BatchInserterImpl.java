@@ -46,6 +46,8 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.IteratorWrapper;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
@@ -82,9 +84,7 @@ import org.neo4j.kernel.impl.coreapi.schema.PropertyUniqueConstraintDefinition;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -118,12 +118,14 @@ import org.neo4j.kernel.impl.nioneo.xa.RecordAccess.RecordProxy;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipCreator;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipGroupGetter;
 import org.neo4j.kernel.impl.nioneo.xa.RelationshipLocker;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
 import org.neo4j.kernel.impl.util.Listener;
+import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static java.lang.Boolean.parseBoolean;
 
@@ -211,27 +213,36 @@ public class BatchInserterImpl implements BatchInserter
     BatchInserterImpl( String storeDir, FileSystemAbstraction fileSystem,
                        Map<String, String> stringParams, Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
-        life = new LifeSupport();
-        this.fileSystem = fileSystem;
-        this.storeDir = new File( FileUtils.fixSeparatorsInPath( storeDir ) );
-
         rejectAutoUpgrade( stringParams );
-        msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
-        logging = new SingleLoggingService( msgLog );
         Map<String, String> params = getDefaultParams();
         params.put( GraphDatabaseSettings.use_memory_mapped_buffers.name(), Settings.FALSE );
         params.putAll( stringParams );
+        config = StoreFactory.configForStoreDir( new Config( params, GraphDatabaseSettings.class ),
+                new File( storeDir ) );
 
+        life = new LifeSupport();
+        this.fileSystem = fileSystem;
+        this.storeDir = new File( FileUtils.fixSeparatorsInPath( storeDir ) );
+        Neo4jJobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
+        LifecycledPageCache pageCache = life.add( new LifecycledPageCache( fileSystem, jobScheduler, config ) );
+
+
+        msgLog = StringLogger.loggerDirectory( fileSystem, this.storeDir );
+        logging = new SingleLoggingService( msgLog );
         storeLocker = new StoreLocker( fileSystem );
         storeLocker.checkLock( this.storeDir );
 
-        config = StoreFactory.configForStoreDir( new Config( params, GraphDatabaseSettings.class ),
-                new File( storeDir ) );
         boolean dump = config.get( GraphDatabaseSettings.dump_configuration );
         this.idGeneratorFactory = new DefaultIdGeneratorFactory();
 
-        StoreFactory sf = new StoreFactory( config, idGeneratorFactory, new DefaultWindowPoolFactory(), fileSystem,
-                                            msgLog, null );
+        Monitors monitors = new Monitors();
+        StoreFactory sf = new StoreFactory(
+                config,
+                idGeneratorFactory,
+                pageCache,
+                fileSystem,
+                msgLog,
+                monitors );
 
         if ( dump )
         {
@@ -277,13 +288,7 @@ public class BatchInserterImpl implements BatchInserter
     private Map<String, String> getDefaultParams()
     {
         Map<String, String> params = new HashMap<>();
-        params.put( "neostore.nodestore.db.mapped_memory", "20M" );
-        params.put( "neostore.propertystore.db.mapped_memory", "90M" );
-        params.put( "neostore.propertystore.db.index.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.index.keys.mapped_memory", "1M" );
-        params.put( "neostore.propertystore.db.strings.mapped_memory", "130M" );
-        params.put( "neostore.propertystore.db.arrays.mapped_memory", "130M" );
-        params.put( "neostore.relationshipstore.db.mapped_memory", "50M" );
+        params.put( GraphDatabaseSettings.all_stores_total_mapped_memory_size.name(), "1%" );
         return params;
     }
 

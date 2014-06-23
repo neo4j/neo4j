@@ -41,6 +41,7 @@ import org.neo4j.helpers.Factory;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Provider;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.TransactionEventHandlers;
 import org.neo4j.kernel.api.KernelAPI;
@@ -97,7 +98,6 @@ import org.neo4j.kernel.impl.index.LegacyIndexStore;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ReentrantLockService;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
@@ -110,7 +110,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.TokenStore;
-import org.neo4j.kernel.impl.nioneo.store.WindowPoolStats;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
@@ -233,7 +233,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             @Override
             void dump( NeoStoreXaDataSource source, StringLogger.LineLogger log )
             {
-                source.neoStore.logAllWindowPoolStats( log );
+                // TODO
+//                source.neoStore.logAllWindowPoolStats( log );
             }
 
             @Override
@@ -415,22 +416,12 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                     persistenceCache, indexingService, schemaCache );
 
             // CHANGE STARTS HERE
-            final VersionAwareLogEntryReader logEntryReader =
+            VersionAwareLogEntryReader logEntryReader =
                     new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
             // Recovery process ties log and commit process together
-            final Visitor<CommittedTransactionRepresentation, IOException> visitor =
-                    new Visitor<CommittedTransactionRepresentation, IOException>()
-            {
-                @Override
-                public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
-                {
-                    storeApplier.apply( transaction.getTransactionRepresentation(),
-                            transaction.getCommitEntry().getTxId(), true );
-                    recoveredCount.incrementAndGet();
-                    return true;
-                }
-            };
-            Visitor<ReadableLogChannel, IOException> logFileRecoverer = new LogFileRecoverer( logEntryReader, visitor );
+            RecoveryVisitor recoveryVisitor = new RecoveryVisitor();
+            Visitor<ReadableLogChannel, IOException> logFileRecoverer =
+                    new LogFileRecoverer( logEntryReader, recoveryVisitor );
 
             LegacyPropertyTrackers legacyPropertyTrackers = new LegacyPropertyTrackers( propertyKeyTokenHolder,
                     nodeManager.getNodePropertyTrackers(), nodeManager.getRelationshipPropertyTrackers(), nodeManager );
@@ -490,7 +481,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
             life.add( logFile );
             life.add( logicalTransactionStore );
-            life.add(new LifecycleAdapter()
+            life.add( new LifecycleAdapter()
             {
                 @Override
                 public void start() throws Throwable
@@ -504,7 +495,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                         schemaCache.addSchemaRule( schemaRule );
                     }
                 }
-            });
+            } );
             life.add( statisticsService );
             life.add( indexingService );
             life.add( labelScanStore );
@@ -520,6 +511,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 // start reads the log and performs recovery.
                 // Basically.
                 life.start();
+                recoveryVisitor.applyLastCommittedTransactionIdIfRecoveryTookPlace( neoStore );
             }
             finally
             {
@@ -545,6 +537,30 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 msgLog.logMessage( "Couldn't close neostore after startup failure" );
             }
             throw Exceptions.launderedException( e );
+        }
+    }
+
+    private class RecoveryVisitor implements Visitor<CommittedTransactionRepresentation, IOException>
+    {
+        private long lastTransactionIdApplied = -1;
+
+        public void applyLastCommittedTransactionIdIfRecoveryTookPlace(
+                TransactionIdStore transactionIdStore )
+        {
+            if ( lastTransactionIdApplied != -1 )
+            {
+                transactionIdStore.setLastCommittingAndClosedTransactionId( lastTransactionIdApplied );
+            }
+        }
+
+        @Override
+        public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
+        {
+            long txId = transaction.getCommitEntry().getTxId();
+            storeApplier.apply( transaction.getTransactionRepresentation(), txId, true );
+            recoveredCount.incrementAndGet();
+            lastTransactionIdApplied = txId;
+            return true;
         }
     }
 
@@ -650,7 +666,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     @Override
     public void forceEverything()
     {
-        neoStore.flushAll();
+        neoStore.flush();
         indexingService.flushAll();
         labelScanStore.force();
         for ( IndexImplementation index : indexProviders.values() )
@@ -694,11 +710,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     public boolean isReadOnly()
     {
         return readOnly;
-    }
-
-    public List<WindowPoolStats> getWindowPoolStats()
-    {
-        return neoStore.getAllWindowPoolStats();
     }
 
     public KernelAPI getKernel()

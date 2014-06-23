@@ -50,7 +50,7 @@ trait BeLikeMatcher {
 
 object BeLikeMatcher extends BeLikeMatcher
 
-case class SemanticPlan(plan: LogicalPlan, semanticTable: SemanticTable)
+case class SemanticPlan(plan: QueryPlan, semanticTable: SemanticTable)
 
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
 
@@ -78,11 +78,16 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def uniqueIndexes: Set[(String, String)]
     def labelCardinality: Map[String, Cardinality]
     def knownLabels: Set[String]
+    def qg: QueryGraph
 
     class given extends StubbedLogicalPlanningConfiguration(this)
 
     def planFor(queryString: String): SemanticPlan = {
       LogicalPlanningEnvironment(this).planFor(queryString)
+    }
+
+    def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {
+      LogicalPlanningEnvironment(this).withLogicalPlanningContext(f)
     }
 
     protected def mapCardinality(pf:PartialFunction[LogicalPlan, Double]): PartialFunction[LogicalPlan, Cardinality] = pf.andThen(Cardinality.apply)
@@ -113,6 +118,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     def uniqueIndexes = Set.empty
     def labelCardinality = Map.empty
     def knownLabels = Set.empty
+    def qg: QueryGraph = ???
   }
 
   class StubbedLogicalPlanningConfiguration(parent: LogicalPlanningConfiguration) extends LogicalPlanningConfiguration {
@@ -122,6 +128,7 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
     var selectivity: PartialFunction[Expression, Multiplier] = PartialFunction.empty
     var labelCardinality: Map[String, Cardinality] = Map.empty
     var statistics = null
+    var qg: QueryGraph = null
 
     var indexes: Set[(String, String)] = Set.empty
     var uniqueIndexes: Set[(String, String)] = Set.empty
@@ -196,6 +203,8 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
         config.cardinalityModel(statistics, selectivity, semanticTable)
     }
 
+    def table = Map.empty[PatternExpression, QueryGraph]
+
     def planContext = new PlanContext {
       def statistics: GraphStatistics =
         config.graphStatistics
@@ -242,11 +251,22 @@ trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstruction
       semanticChecker.check(queryString, parsedStatement)
       val (rewrittenStatement, _) = astRewriter.rewrite(queryString, parsedStatement)
       val semanticTable = semanticChecker.check(queryString, rewrittenStatement)
-      SemanticPlan(planner.rewriteStatement(rewrittenStatement) match {
+      SemanticPlan(Planner.rewriteStatement(rewrittenStatement) match {
         case ast: Query =>
           tokenResolver.resolve(ast)(semanticTable, planContext)
-          planner.produceQueryPlan(ast, semanticTable)(planContext).plan
+          val (queryPlan, _) = planner.produceQueryPlan(ast, semanticTable)(planContext)
+          queryPlan
       }, semanticTable)
+    }
+
+    def withLogicalPlanningContext[T](f: (LogicalPlanningContext, Map[PatternExpression, QueryGraph]) => T): T = {
+      val ctx = LogicalPlanningContext(
+        planContext = planContext,
+        metrics = metricsFactory.newMetrics(config.graphStatistics, semanticTable),
+        semanticTable = semanticTable,
+        strategy = queryGraphSolver
+      )
+      f(ctx, table)
     }
   }
 

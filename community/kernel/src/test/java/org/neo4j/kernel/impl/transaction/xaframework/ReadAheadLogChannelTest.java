@@ -19,20 +19,21 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
 
 public class ReadAheadLogChannelTest
 {

@@ -22,7 +22,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 
 public class PhysicalLogFileInformation implements LogFileInformation

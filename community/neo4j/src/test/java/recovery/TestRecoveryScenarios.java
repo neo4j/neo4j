@@ -19,13 +19,6 @@
  */
 package recovery;
 
-import static java.util.concurrent.TimeUnit.SECONDS;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.single;
-import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
-
 import java.util.Collections;
 
 import org.junit.After;
@@ -33,18 +26,28 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProvider;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.concurrent.TimeUnit.SECONDS;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.single;
+import static org.neo4j.test.EphemeralFileSystemRule.shutdownDb;
 
 /**
  * Arbitrary recovery scenarios boiled down to as small tests as possible
@@ -228,7 +231,7 @@ public class TestRecoveryScenarios
     private void flushAll()
     {
 //        db.getDependencyResolver().resolveDependency(
-//                XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flushAll();
+//                XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flush();
     }
 
     private void deleteNode( Node node )

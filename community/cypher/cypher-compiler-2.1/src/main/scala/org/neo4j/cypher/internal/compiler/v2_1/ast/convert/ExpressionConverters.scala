@@ -82,6 +82,7 @@ object ExpressionConverters {
       case e: ast.SingleIterablePredicate => e.asCommandSingleInCollection
       case e: ast.ReduceExpression => e.asCommandReduce
       case e: ast.PathExpression => e.asCommandProjectedPath
+      case e: ast.NestedPipeExpression => e.asPipeCommand
       case _ =>
         throw new ThisShouldNotHappenError("cleishm", s"Unknown expression type during transformation (${expression.getClass})")
     }
@@ -376,6 +377,10 @@ object ExpressionConverters {
 
   implicit class FunctionConverter(val e: ast.FunctionInvocation) extends AnyVal {
     def asCommandFunction: CommandExpression = e.function.get.asCommandExpression(e)
+  }
+
+  implicit class NestedExpressionPipeConverter(val e: ast.NestedPipeExpression) extends AnyVal {
+    def asPipeCommand: CommandExpression = commandexpressions.NestedPipe(e.pipe, e.path.asCommandProjectedPath)
   }
 
   implicit class PathConverter(val e: ast.PathExpression) extends AnyVal {

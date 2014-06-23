@@ -34,7 +34,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.mockfs.BreakableFileSystemAbstraction;
 import org.neo4j.graphdb.mockfs.FileSystemGuard;
-import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
+import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;

@@ -50,7 +50,9 @@ public class DefaultElectionCredentialsProvider
     {
         if ( masterInfo.getHighAvailabilityMemberState().isEligibleForElection() )
         {
-            return new DefaultElectionCredentials( serverId.toIntegerIndex(), lastTxIdGetter.getLastTxId(),
+            return new DefaultElectionCredentials(
+                    serverId.toIntegerIndex(),
+                    lastTxIdGetter.getLastTxId(),
                     isMasterOrToMaster() );
         }
         return new NotElectableElectionCredentials();

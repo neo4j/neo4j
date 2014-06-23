@@ -27,12 +27,12 @@ import java.util.List;
 
 import org.apache.commons.configuration.Configuration;
 
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.database.Database;

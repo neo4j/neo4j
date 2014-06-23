@@ -19,12 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.neo4j.helpers.collection.Iterables.iterable;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
-
-import java.io.File;
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;
@@ -32,6 +26,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -102,6 +97,11 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
 
+import static org.neo4j.helpers.collection.Iterables.iterable;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
+
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
     private static final Iterable<Class<?>> SETTINGS_CLASSES
@@ -155,8 +155,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( availabilityGuard, logging,
                 masterDelegateInvocationHandler ) );
-        life.add( updatePuller = new UpdatePuller( master, requestContextFactory, availabilityGuard, lastUpdateTime,
-                config, jobScheduler, msgLog ) );
+        life.add( updatePuller = new UpdatePuller( memberStateMachine, master, requestContextFactory,
+                availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
 
@@ -182,6 +182,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // Skip this, it's done manually in create() to ensure it is as late as possible
     }
 
+    @Override
     protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
     {
         return new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
@@ -261,7 +262,8 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         ElectionCredentialsProvider electionCredentialsProvider = config.get( HaSettings.slave_only ) ?
                 new NotElectableElectionCredentialsProvider() :
                 new DefaultElectionCredentialsProvider( config.get( ClusterSettings.server_id ),
-                        new OnDiskLastTxIdGetter( new File( getStoreDir() ) ), new HighAvailabilityMemberInfoProvider()
+                        new OnDiskLastTxIdGetter( this ),
+                        new HighAvailabilityMemberInfoProvider()
                 {
                     @Override
                     public HighAvailabilityMemberState getHighAvailabilityMemberState()
@@ -291,7 +293,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                         if ( HighAvailabilityModeSwitcher.getServerId( member.getRoleUri() ).equals(
                                 config.get( ClusterSettings.server_id ) ) )
                         {
-                            msgLog.error( String.format( "Instance %s has the same serverId as ours (%d) - will not " +
+                            msgLog.error( String.format( "Instance %s has the same serverId as ours (%s) - will not " +
                                             "join this cluster",
                                     member.getRoleUri(), config.get( ClusterSettings.server_id )
                             ) );
@@ -437,8 +439,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 return HighlyAvailableGraphDatabase.super.createLockManager();
             }
-        }
-        );
+        } );
         return lockManager;
     }
 
@@ -513,10 +514,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     protected KernelData createKernelData()
     {
         this.lastUpdateTime = new LastUpdateTime();
-        return new HighlyAvailableKernelData( this, members,
-                new ClusterDatabaseInfoProvider( members, new OnDiskLastTxIdGetter( new File( getStoreDir() ) ),
-                        lastUpdateTime )
-        );
+        OnDiskLastTxIdGetter txIdGetter = new OnDiskLastTxIdGetter( this );
+        ClusterDatabaseInfoProvider databaseInfo = new ClusterDatabaseInfoProvider(
+                members, txIdGetter, lastUpdateTime );
+        return new HighlyAvailableKernelData( this, members, databaseInfo );
     }
 
     @Override

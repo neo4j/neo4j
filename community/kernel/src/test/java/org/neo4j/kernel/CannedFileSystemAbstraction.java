@@ -28,11 +28,11 @@ import java.io.Writer;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.neo4j.helpers.Function;
-import org.neo4j.kernel.impl.nioneo.store.AbstractStoreChannel;
-import org.neo4j.kernel.impl.nioneo.store.FileLock;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.function.Function;
+import org.neo4j.io.fs.AbstractStoreChannel;
+import org.neo4j.io.fs.FileLock;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 
 public class CannedFileSystemAbstraction implements FileSystemAbstraction
 {

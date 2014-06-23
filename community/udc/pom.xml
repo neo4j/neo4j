@@ -20,7 +20,6 @@
     <short-name>udc</short-name>
     <version-package>udc.impl</version-package>
     <license-text.header>GPL-3-header.txt</license-text.header>
-    <docs.url>http://docs.neo4j.org/chunked/${project.version}/usage-data-collector.html</docs.url>
     <licensing.prepend.text>notice-gpl-prefix.txt</licensing.prepend.text>
   </properties>
 
@@ -117,30 +116,45 @@
           </execution>
         </executions>
       </plugin>
+
       <plugin>
-        <artifactId>maven-site-plugin</artifactId>
-        <configuration>
-          <reportPlugins combine.children="append">
-            <plugin>
-              <artifactId>maven-javadoc-plugin</artifactId>
-              <configuration>
-                <detectJavaApiLink>true</detectJavaApiLink>
-                <detectLinks>true</detectLinks>
-                <quiet>true</quiet>
-                <excludePackageNames>*.impl.*</excludePackageNames>
-              </configuration>
-              <reports>
-                <report>javadoc</report>
-              </reports>
-            </plugin>
-          </reportPlugins>
-        </configuration>
+        <groupId>org.neo4j.build.plugins</groupId>
+        <artifactId>clirr-maven-plugin</artifactId>
         <executions>
           <execution>
-            <id>attach-descriptor</id>
-            <phase>none</phase>
+            <id>default</id>
+            <phase>${clirr-check-phase}</phase>
+            <goals>
+              <goal>check</goal>
+            </goals>
           </execution>
         </executions>
+        <configuration>
+          <failOnError>true</failOnError>
+          <logResults>true</logResults>
+          <!-- This is temporarily hard-coded, because the versionsBack attribute seems to not work on OS X, we'll
+           need to fix that.
+           OBS: Set this to one version ahead, i.e. if you'd like it to compare against 1.9.3 then set it to 1.9.4
+            -->
+          <comparisonVersion>1.9.M05</comparisonVersion>
+          <ignoreMaintenenceVersions>false</ignoreMaintenenceVersions>
+          <includes>
+            <include>org/neo4j/ext/udc</include>
+          </includes>
+
+          <!-- Allowed breaking changes in Neo4j 2.0 -->
+          <!-- These rules should be looked over and modified appropriately in 2.1 -->
+          <excludeMessageCodes>
+            <param>6006</param><!-- Field was made final. -->
+            <param>7012</param><!-- Method added to interface -->
+          </excludeMessageCodes>
+          <excludes>
+            <!-- Ignore known breaking changes introduced in 2.0 and 2.1 -->
+
+            <!-- Some constants (not terribly public) were made irrelevant and removed in 2.1 -->
+            <exclude>org/neo4j/ext/udc/UdcConstants</exclude>
+          </excludes>
+        </configuration>
       </plugin>
     </plugins>
   </build>
@@ -187,6 +201,14 @@
     <dependency>
       <groupId>org.neo4j</groupId>
       <artifactId>neo4j-kernel</artifactId>
+      <version>${project.version}</version>
+      <type>test-jar</type>
+      <scope>test</scope>
+    </dependency>
+
+    <dependency>
+      <groupId>org.neo4j</groupId>
+      <artifactId>neo4j-io</artifactId>
       <version>${project.version}</version>
       <type>test-jar</type>
       <scope>test</scope>

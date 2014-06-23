@@ -31,7 +31,13 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.MasterServer;
+<<<<<<< HEAD
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+=======
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.TxManager;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
+>>>>>>> master
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.monitoring.Monitors;
 

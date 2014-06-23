@@ -29,19 +29,24 @@ import java.util.Map;
 import java.util.Random;
 import java.util.Set;
 
+import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.windowpool.WindowPoolFactory;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
@@ -51,11 +56,21 @@ import static org.neo4j.helpers.collection.IteratorUtil.first;
 
 public class TestDynamicStore
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     public static IdGeneratorFactory ID_GENERATOR_FACTORY =
             new DefaultIdGeneratorFactory();
-    public static WindowPoolFactory WINDOW_POOL_FACTORY =
-            new DefaultWindowPoolFactory();
+    private static final Monitors monitors = new Monitors();
+
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
+
+    private PageCache pageCache;
+
+    @Before
+    public void setUp()
+    {
+        pageCache = pageCacheRule.getPageCache( fs.get(), config() );
+    }
 
     private File path()
     {
@@ -119,14 +134,29 @@ public class TestDynamicStore
 
     private void createEmptyStore( File fileName, int blockSize )
     {
-        new StoreFactory( config(), ID_GENERATOR_FACTORY, new DefaultWindowPoolFactory(), fs.get(),
-                StringLogger.DEV_NULL, null ).createDynamicArrayStore( fileName, blockSize );
+        Config config = config();
+        new StoreFactory(
+                config,
+                ID_GENERATOR_FACTORY,
+                pageCache,
+                fs.get(),
+                StringLogger.DEV_NULL,
+                monitors ).createDynamicArrayStore( fileName, blockSize );
     }
 
     private DynamicArrayStore newStore()
     {
-        return new DynamicArrayStore( dynamicStoreFile(), config(), IdType.ARRAY_BLOCK, ID_GENERATOR_FACTORY,
-                WINDOW_POOL_FACTORY, fs.get(), StringLogger.DEV_NULL, StoreVersionMismatchHandler.THROW_EXCEPTION );
+        Config config = config();
+        return new DynamicArrayStore(
+                dynamicStoreFile(),
+                config,
+                IdType.ARRAY_BLOCK,
+                ID_GENERATOR_FACTORY,
+                pageCache,
+                fs.get(),
+                StringLogger.DEV_NULL,
+                StoreVersionMismatchHandler.THROW_EXCEPTION,
+                new Monitors() );
     }
 
     private void deleteBothFiles()

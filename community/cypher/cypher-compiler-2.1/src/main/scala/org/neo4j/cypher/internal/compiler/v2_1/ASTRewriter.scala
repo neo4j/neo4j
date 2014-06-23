@@ -27,29 +27,28 @@ class ASTRewriter(rewritingMonitor: AstRewritingMonitor, shouldExtractParameters
   def rewrite(queryText: String, statement: Statement): (Statement, Map[String, Any]) = {
     rewritingMonitor.startRewriting(queryText, statement)
 
-    val (extractParameters: Rewriter, extractedParameters: Map[String, Any]) = literalReplacement(statement)
+    val (extractParameters, extractedParameters) = if (shouldExtractParameters)
+      literalReplacement(statement)
+    else
+      (Rewriter.lift(PartialFunction.empty), Map.empty[String, Any])
 
-    val rewriters = Seq.newBuilder[Rewriter]
-    rewriters += foldConstants
+    val rewriters = Seq(
+      foldConstants,
+      extractParameters,
+      nameMatchPatternElements,
+      normalizeMatchPredicates,
+      normalizeNotEquals,
+      normalizeEqualsArgumentOrder,
+      reattachAliasedExpressions,
+      addUniquenessPredicates,
+      expandStar,
+      isolateAggregation,
+      aliasReturnItems)
 
-    if (shouldExtractParameters)
-      rewriters += extractParameters
-
-    rewriters += nameMatchPatternElements
-    rewriters += normalizeMatchPredicates
-    rewriters += normalizeNotEquals
-    rewriters += normalizeEqualsArgumentOrder
-    rewriters += reattachAliasedExpressions
-    rewriters += addUniquenessPredicates
-    rewriters += CNFNormalizer // <- do not add any new predicates after this rewriter!
-    rewriters += expandStar
-    rewriters += isolateAggregation
-    rewriters += aliasReturnItems
-
-    val rewriter = bottomUp(inSequence(rewriters.result(): _*))
+    val rewriter = inSequence(rewriters: _*)
     val rewrittenStatement = statement.rewrite(rewriter).asInstanceOf[ast.Statement]
 
     rewritingMonitor.finishRewriting(queryText, rewrittenStatement)
-    (rewrittenStatement, if (shouldExtractParameters) extractedParameters else Map.empty)
+    (rewrittenStatement, extractedParameters)
   }
 }

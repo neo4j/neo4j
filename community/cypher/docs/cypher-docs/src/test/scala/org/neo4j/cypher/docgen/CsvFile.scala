@@ -21,9 +21,21 @@ package org.neo4j.cypher.docgen
 
 import java.io.{PrintWriter, File}
 
+object CsvFile {
+  def urify(file: File): String =
+    file.toURI.toURL.toString.replace("\\", "\\\\")
+}
+
 class CsvFile(fileName: String, delimiter: Char = ',')(implicit csvFilesDir: File) {
 
+  import CsvFile._
+
   def withContents(lines: Seq[String]*): String = {
+    val csvFile = withContentsF(lines:_*)
+    urify(csvFile)
+  }
+
+  def withContentsF(lines: Seq[String]*): File = {
     val csvFile = new File(csvFilesDir, fileName)
     val writer = new PrintWriter(csvFile, "UTF-8")
     lines.foreach(line => {
@@ -31,6 +43,6 @@ class CsvFile(fileName: String, delimiter: Char = ',')(implicit csvFilesDir: Fil
     })
     writer.flush()
     writer.close()
-    csvFile.toURI.toURL.toString.replace("\\", "\\\\")
+    csvFile
   }
 }

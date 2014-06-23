@@ -246,7 +246,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingPropertyStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, null, null, null, null, null, null, null, null, null );
+            super( null, null, null, null, null, null, null, null, null, null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -274,7 +274,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingNodeStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, null, null, null, null, null, null, null );
+            super( null, null, null, null, null, null, null, null, null );
             this.currentRecording = currentRecording;
         }
 
@@ -309,7 +309,7 @@ public class WriteTransactionCommandOrderingTest
 
         public RecordingRelationshipStore( AtomicReference<List<String>> currentRecording )
         {
-            super( null, null, null, null, null, null, null );
+            super( null, null, null, null, null, null, null, null );
             this.currentRecording = currentRecording;
         }
 

@@ -20,27 +20,25 @@
 package org.neo4j.cypher
 
 import internal.helpers.CollectionSupport
-import org.junit.Test
 import org.scalatest.Assertions
-import org.neo4j.test.ImpermanentGraphDatabase
 import org.neo4j.graphdb.Node
 import org.scalautils.LegacyTripleEquals
 
-class LabelsAcceptanceTest extends ExecutionEngineJUnitSuite
+class LabelsAcceptanceTest extends ExecutionEngineFunSuite
   with QueryStatisticsTestSupport with Assertions with CollectionSupport with LegacyTripleEquals {
 
-  @Test def Adding_single_literal_label() {
+  test("Adding_single_literal_label") {
     assertThat("create (n {}) set n:FOO", List("FOO"))
     assertThat("create (n {}) set n :FOO", List("FOO"))
   }
 
-  @Test def Adding_multiple_literal_labels() {
+  test("Adding_multiple_literal_labels") {
     assertThat("create (n {}) set n:FOO:BAR", List("FOO", "BAR"))
     assertThat("create (n {}) set n :FOO :BAR", List("FOO", "BAR"))
     assertThat("create (n {}) set n :FOO:BAR", List("FOO", "BAR"))
   }
 
-  @Test def Creating_nodes_with_literal_labels() {
+  test("Creating_nodes_with_literal_labels") {
     assertDoesNotWork("CREATE node :FOO:BAR {name: 'Stefan'}")
     assertDoesNotWork("CREATE node :FOO:BAR")
     assertThat("CREATE node", List())
@@ -49,7 +47,7 @@ class LabelsAcceptanceTest extends ExecutionEngineJUnitSuite
     assertThat("CREATE (n:Person)-[:OWNS]->(x:Dog) RETURN n AS node", List("Person"))
   }
 
-  @Test def Recreating_and_labelling_the_same_node_twice_differently_is_forbidden() {
+  test("Recreating_and_labelling_the_same_node_twice_differently_is_forbidden") {
     assertDoesNotWork("CREATE (n: FOO)-[:test]->b, (n: BAR)-[:test2]->c")
     assertDoesNotWork("CREATE (c)<-[:test2]-(n: FOO), (n: BAR)<-[:test]-(b)")
     assertDoesNotWork("CREATE n :Foo CREATE (n :Bar)-[:OWNS]->(x:Dog)")
@@ -57,11 +55,11 @@ class LabelsAcceptanceTest extends ExecutionEngineJUnitSuite
     assertDoesNotWork("CREATE n :Foo CREATE (n {})-[:OWNS]->(x:Dog)")
   }
 
-  @Test def Add_labels_to_nodes_in_a_foreach() {
+  test("Add_labels_to_nodes_in_a_foreach") {
     assertThat("CREATE a,b,c WITH [a,b,c] as nodes FOREACH(n in nodes | SET n :FOO:BAR)", List("FOO", "BAR"))
   }
 
-  @Test def Using_labels_in_RETURN_clauses() {
+  test("Using_labels_in_RETURN_clauses") {
     createNode()
     assertThat("START n=node(0) RETURN labels(n)", List())
 
@@ -70,7 +68,7 @@ class LabelsAcceptanceTest extends ExecutionEngineJUnitSuite
   }
 
 
-  @Test def Removing_labels() {
+  test("Removing_labels") {
     usingLabels("FOO", "BAR").
       assertThat("START n=node({node}) REMOVE n:FOO RETURN n").
       returnsLabels("BAR")
@@ -85,6 +83,7 @@ class LabelsAcceptanceTest extends ExecutionEngineJUnitSuite
     def returnsLabels(expected:String*):AssertThat = {
       val node = createLabeledNode(labels:_*)
       val result = executeScalar[Node](query, "node"->node)
+
 
       assertInTx(result.labels === expected.toList)
       this

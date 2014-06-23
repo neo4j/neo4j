@@ -28,7 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.kernel.api.heuristics.StatisticsData;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
@@ -37,9 +37,13 @@ public class SamplingStatisticsService extends LifecycleAdapter implements Stati
 {
     private final JobScheduler scheduler;
     private final StatisticsCollector collector;
+    private volatile JobScheduler.JobHandle jobHandle;
 
-    public static SamplingStatisticsService load( FileSystemAbstraction fs, File path, StoreReadLayer store,
-                                                 JobScheduler scheduler )
+    public static SamplingStatisticsService load(
+            FileSystemAbstraction fs,
+            File path,
+            StoreReadLayer store,
+            JobScheduler scheduler )
     {
         if ( fs.fileExists( path ) )
         {
@@ -72,13 +76,17 @@ public class SamplingStatisticsService extends LifecycleAdapter implements Stati
     @Override
     public void start() throws Throwable
     {
-        scheduler.scheduleRecurring( JobScheduler.Group.heuristics, collector, 30, TimeUnit.SECONDS );
+        jobHandle = scheduler.scheduleRecurring( JobScheduler.Group.heuristics, collector, 30, TimeUnit.SECONDS );
     }
 
     @Override
     public void stop() throws Throwable
     {
-        scheduler.cancelRecurring( JobScheduler.Group.heuristics, collector );
+        JobScheduler.JobHandle handle = jobHandle;
+        if ( handle != null )
+        {
+            handle.cancel( false );
+        }
     }
 
     @Override

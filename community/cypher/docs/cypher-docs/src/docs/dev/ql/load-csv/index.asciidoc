@@ -3,6 +3,8 @@ Load CSV
 ========
 
 +LOAD CSV+ allows you to import data from CSV files.
+It is required to specify an identifier for the CSV data using +AS+.
+See the examples for further details.
 
 include::import-data-from-a-csv-file.asciidoc[]
 
@@ -11,3 +13,11 @@ include::import-data-from-a-csv-file-containing-headers.asciidoc[]
 include::import-data-from-a-csv-file-with-a-custom-field-delimiter.asciidoc[]
 
 include::importing-large-amounts-of-data.asciidoc[]
+
+include::import-data-containing-escape-characters.asciidoc[]
+
+:leveloffset: 3
+
+include::setting-the-rate-of-periodic-commits.asciidoc[]
+
+include::csv-file-format.asciidoc[]

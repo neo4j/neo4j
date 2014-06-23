@@ -30,7 +30,6 @@ import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.DefaultRelationshipTypeCreator;
 import org.neo4j.kernel.impl.core.TokenCreator;
-import org.neo4j.kernel.logging.Logging;
 
 public class RelationshipTypeCreatorModeSwitcher extends AbstractModeSwitcher<TokenCreator>
 {

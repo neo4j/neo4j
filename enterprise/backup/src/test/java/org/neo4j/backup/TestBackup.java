@@ -21,12 +21,14 @@ package org.neo4j.backup;
 
 import java.io.File;
 import java.io.FilenameFilter;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.apache.commons.io.FileUtils;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestName;
 
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -63,17 +65,29 @@ public class TestBackup
     private File serverPath;
     private File otherServerPath;
     private File backupPath;
+    private List<ServerInterface> servers;
 
     @Rule
-    public TestName testName = new TestName();
+    public TargetDirectory.TestDirectory testDir = TargetDirectory.testDirForTest( TestBackup.class );
 
     @Before
     public void before() throws Exception
     {
-        File base = TargetDirectory.forTest( getClass() ).cleanDirectory( testName.getMethodName() );
+        servers = new ArrayList<>();
+        File base = testDir.directory();
         serverPath = new File( base, "server" );
         otherServerPath = new File( base, "server2" );
         backupPath = new File( base, "backuedup-serverdb" );
+    }
+
+    @After
+    public void shutDownServers()
+    {
+        for ( ServerInterface server : servers )
+        {
+            server.shutdown();
+        }
+        servers.clear();
     }
 
     @Test
@@ -319,42 +333,36 @@ public class TestBackup
 
     private ServerInterface startServer( File path ) throws Exception
     {
-        /*
-        ServerProcess server = new ServerProcess();
-        try
-        {
-            server.startup( Pair.of( path, "true" ) );
-        }
-        catch ( Throwable e )
-        {
-            // TODO Auto-generated catch block
-            throw new RuntimeException( e );
-        }
-        */
         ServerInterface server = new EmbeddedServer( path.getPath(), "127.0.0.1:6362" );
         server.awaitStarted();
+        servers.add( server );
         return server;
     }
 
     private void shutdownServer( ServerInterface server ) throws Exception
     {
         server.shutdown();
-        Thread.sleep( 1000 );
+        servers.remove( server );
     }
 
     private DbRepresentation addMoreData( File path )
     {
         GraphDatabaseService db = startGraphDatabase( path, false );
-        Transaction tx = db.beginTx();
-        Node node = db.createNode();
-        node.setProperty( "backup", "Is great" );
-        db.createNode().createRelationshipTo( node,
-                DynamicRelationshipType.withName( "LOVES" ) );
-        tx.success();
-        tx.finish();
-        DbRepresentation result = DbRepresentation.of( db );
-        db.shutdown();
-        return result;
+        try
+        {
+            Transaction tx = db.beginTx();
+            Node node = db.createNode();
+            node.setProperty( "backup", "Is great" );
+            db.createNode().createRelationshipTo( node,
+                    DynamicRelationshipType.withName( "LOVES" ) );
+            tx.success();
+            tx.finish();
+            return DbRepresentation.of( db );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     private GraphDatabaseService startGraphDatabase( File path, boolean withOnlineBackup )
@@ -369,10 +377,15 @@ public class TestBackup
     private DbRepresentation createInitialDataSet( File path )
     {
         GraphDatabaseService db = startGraphDatabase( path, false );
-        createInitialDataset( db );
-        DbRepresentation result = DbRepresentation.of( db );
-        db.shutdown();
-        return result;
+        try
+        {
+            createInitialDataset( db );
+            return DbRepresentation.of( db );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     private void createInitialDataset( GraphDatabaseService db )
@@ -490,43 +503,49 @@ public class TestBackup
             setConfig( OnlineBackupSettings.online_backup_enabled, Settings.TRUE ).
             newGraphDatabase();
 
-        Transaction tx = db.beginTx();
-        Index<Node> index;
-        Node node;
         try
         {
-            index = db.index().forNodes( key );
-            node = db.createNode();
-            node.setProperty( key, value );
-            tx.success();
-        }
-        finally
-        {
-            tx.finish();
-        }
-        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
-        assertTrue( "Should be consistent", backup.isConsistent() );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
-        FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
-        backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
-        assertTrue( "Should be consistent", backup.isConsistent() );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+            Transaction tx = db.beginTx();
+            Index<Node> index;
+            Node node;
+            try
+            {
+                index = db.index().forNodes( key );
+                node = db.createNode();
+                node.setProperty( key, value );
+                tx.success();
+            }
+            finally
+            {
+                tx.finish();
+            }
+            OnlineBackup backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
+            assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
+            FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
+            backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
+            assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
 
-        tx = db.beginTx();
-        try
-        {
-            index.add( node, key, value );
-            tx.success();
+            tx = db.beginTx();
+            try
+            {
+                index.add( node, key, value );
+                tx.success();
+            }
+            finally
+            {
+                tx.finish();
+            }
+            FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
+            backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
+            assertTrue( "Should be consistent", backup.isConsistent() );
+            assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
         }
         finally
         {
-            tx.finish();
+            db.shutdown();
         }
-        FileUtils.deleteDirectory( new File( backupPath.getPath() ) );
-        backup = OnlineBackup.from( "127.0.0.1" ).full( backupPath.getPath() );
-        assertTrue( "Should be consistent", backup.isConsistent() );
-        assertEquals( DbRepresentation.of( db ), DbRepresentation.of( backupPath ) );
-        db.shutdown();
     }
 
     @Test
@@ -554,15 +573,21 @@ public class TestBackup
     public void shouldIncrementallyBackupDenseNodes() throws Exception
     {
         GraphDatabaseService db = startGraphDatabase( serverPath, true );
-        createInitialDataset( db );
+        try
+        {
+            createInitialDataset( db );
 
-        OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
-        backup.full( backupPath.getPath() );
+            OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
+            backup.full( backupPath.getPath() );
 
-        DbRepresentation representation = addLotsOfData( db );
-        backup.incremental( backupPath.getPath() );
-        assertEquals( representation, DbRepresentation.of( backupPath ) );
-        db.shutdown();
+            DbRepresentation representation = addLotsOfData( db );
+            backup.incremental( backupPath.getPath() );
+            assertEquals( representation, DbRepresentation.of( backupPath ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     private DbRepresentation addLotsOfData( GraphDatabaseService db )

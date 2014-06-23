@@ -45,7 +45,11 @@ import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, NodeManager}
 import org.neo4j.cypher.internal.ServerExecutionEngine
 import org.neo4j.cypher.internal.commons.CypherJUnitSuite
 import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+<<<<<<< HEAD
 import org.neo4j.kernel.impl.api.KernelStatement
+=======
+import java.util.concurrent.TimeUnit
+>>>>>>> master
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -90,11 +94,11 @@ trait DocumentationHelper extends GraphIcing {
   def dumpSetupConstraintsQueries(queries: List[String], dir: File) {
     dumpQueries(queries, dir, simpleName + "-setup-constraints");
   }
-  
+
   def dumpPreparationQueries(queries: List[String], dir: File, testid: String) {
     dumpQueries(queries, dir, simpleName + "-" + nicefy(testid) + ".preparation");
   }
-  
+
   private def dumpQueries(queries: List[String], dir: File, testid: String): String = {
     if (queries.isEmpty) {
       ""
@@ -104,7 +108,7 @@ trait DocumentationHelper extends GraphIcing {
       AsciiDocGenerator.dumpToSeparateFile(dir, testid, output);
     }
   }
-  
+
   val path: File = new File("target/docs/dev/ql/")
 
   val graphvizFileName = "cypher-" + simpleName + "-graph"
@@ -153,6 +157,80 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, Some(() => prepare), assertions: _*)
   }
 
+  def profileQuery(title: String, text: String, queryText: String, assertions: (ExecutionResult => Unit)*) {
+    internalProfileQuery(title, text, "cypher 2.1.experimental " + queryText, None, None, assertions: _*)
+  }
+
+  private def internalProfileQuery(title: String, text: String, queryText: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
+    parameters = null
+    preparationQueries = List()
+
+    dumpSetupConstraintsQueries(setupConstraintQueries, dir)
+    dumpSetupQueries(setupQueries, dir)
+
+    val consoleData: String = "none"
+
+    val keySet = nodeMap.keySet
+    val writer: PrintWriter = createWriter(title, dir)
+    prepare.foreach {
+      (prepareStep: () => Any) => prepareStep()
+    }
+
+    if (preparationQueries.size > 0) {
+      dumpPreparationQueries(preparationQueries, dir, title)
+    }
+
+    val query = db.inTx {
+      keySet.foldLeft(queryText)((acc, key) => acc.replace("%" + key + "%", node(key).getId.toString))
+    }
+
+    try {
+      val results = if (parameters == null) engine.profile(query) else engine.profile(query, parameters)
+      val result = RewindableExecutionResult(results)
+
+      if (expectedException.isDefined) {
+        fail(s"Expected the test to throw an exception: $expectedException")
+      }
+
+      val testId = nicefy(section + " " + title)
+      writer.println("[[" + testId + "]]")
+      if (!noTitle) writer.println("== " + title + " ==")
+      writer.println(text)
+      writer.println()
+
+      if (parameters != null) {
+        writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
+      }
+      val output = new StringBuilder(2048)
+      output.append(".Query\n")
+      output.append(createCypherSnippet(query))
+      writer.println(AsciiDocGenerator.dumpToSeparateFile(dir, testId + ".query", output.toString()))
+      writer.println()
+      writer.println()
+
+      writer.append(".Query Plan\n")
+      writer.append(AsciidocHelper.createOutputSnippet(result.executionPlanDescription().toString))
+
+      writer.flush()
+      writer.close()
+
+
+      db.inTx {
+        assertions.foreach(_.apply(result))
+      }
+
+    } catch {
+      case e: CypherException if expectedException.nonEmpty =>
+        val expectedExceptionType = expectedException.get
+        e match {
+          case expectedExceptionType(typedE) =>
+            dumpToFile(dir, writer, title, query, "", text, typedE, consoleData)
+          case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
+        }
+    }
+  }
+
+
   private def internalTestQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, expectedException: Option[ClassTag[_ <: CypherException]], prepare: Option[() => Any], assertions: (ExecutionResult => Unit)*) {
     parameters = null
     preparationQueries = List()
@@ -178,7 +256,6 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     }
 
     // val r = testWithoutDocs(queryText, prepare, assertions:_*)
-    var query = queryText
     val keySet = nodeMap.keySet
     val writer: PrintWriter = createWriter(title, dir)
     prepare.foreach {
@@ -188,18 +265,23 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
       dumpPreparationQueries(preparationQueries, dir, title)
       dumpPreparationGraphviz(dir, title, graphvizOptions)
     }
-    db.inTx {
-      keySet.foreach((key) => query = query.replace("%" + key + "%", node(key).getId.toString))
+
+    val query = db.inTx {
+      keySet.foldLeft(queryText)((acc, key) => acc.replace("%" + key + "%", node(key).getId.toString))
     }
 
+    assert(filePaths.size == urls.size)
+
+    val testQuery = filePaths.foldLeft(query)( (acc, entry) => acc.replace(entry._1, entry._2))
+    val docQuery = urls.foldLeft(query)( (acc, entry) => acc.replace(entry._1, entry._2))
 
     try {
-      val result = fetchQueryResults(prepare, query)
+      val result = fetchQueryResults(prepare, testQuery)
       if (expectedException.isDefined) {
         fail(s"Expected the test to throw an exception: $expectedException")
       }
 
-      dumpToFile(dir, writer, title, query, optionalResultExplanation, text, result, consoleData)
+      dumpToFile(dir, writer, title, docQuery, optionalResultExplanation, text, result, consoleData)
       if (graphvizExecutedAfter) {
         dumpGraphViz(dir, graphvizOptions.trim)
       }
@@ -213,7 +295,7 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
         val expectedExceptionType = expectedException.get
         e match {
           case expectedExceptionType(typedE) =>
-            dumpToFile(dir, writer, title, query, optionalResultExplanation, text, typedE, consoleData)
+            dumpToFile(dir, writer, title, docQuery, optionalResultExplanation, text, typedE, consoleData)
           case _ => fail(s"Expected an exception of type $expectedException but got ${e.getClass}", e)
         }
     }
@@ -237,6 +319,10 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
   val graphvizExecutedAfter: Boolean = false
   var parameters: Map[String, Any] = null
   var preparationQueries: List[String] = List()
+
+  protected val baseUrl = System.getProperty("remote-csv-upload")
+  var filePaths: Map[String, String] = Map.empty
+  var urls: Map[String, String] = Map.empty
 
   def section: String
   val dir: File = createDir(section)
@@ -262,7 +348,7 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     if (!noTitle) writer.println("== " + title + " ==")
     writer.println(text)
     writer.println()
-    runQuery(dir, writer, testId, query, returns, result, consoleData)
+    dumpQuery(dir, writer, testId, query, returns, result, consoleData)
     writer.flush()
     writer.close()
   }
@@ -329,6 +415,8 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     setupConstraintQueries.foreach(engine.execute)
 
     db.inTx {
+      db.schema().awaitIndexesOnline(1, TimeUnit.SECONDS)
+
       nodeIndex = db.index().forNodes("nodes")
       relIndex = db.index().forRelationships("rels")
       val g = new GraphImpl(graphDescription.toArray[String])
@@ -361,7 +449,7 @@ abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHe
     case v: Any => v
   }
 
-  private def runQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
+  private def dumpQuery(dir: File, writer: PrintWriter, testId: String, query: String, returns: String, result: Either[CypherException, ExecutionResult], consoleData: String) {
     if (parameters != null) {
       writer.append(JavaExecutionEngineDocTest.parametersToAsciidoc(mapMapValue(parameters)))
     }

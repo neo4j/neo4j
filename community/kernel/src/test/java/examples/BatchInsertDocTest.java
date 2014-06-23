@@ -51,7 +51,7 @@ import static org.junit.Assert.assertThat;
 public class BatchInsertDocTest
 {
     @Test
-    public void insert()
+    public void insert() throws InterruptedException
     {
         // START SNIPPET: insert
         BatchInserter inserter = BatchInserters.inserter( new File("target/batchinserter-example").getAbsolutePath(), fileSystem );

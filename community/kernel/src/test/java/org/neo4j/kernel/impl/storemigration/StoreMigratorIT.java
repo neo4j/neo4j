@@ -19,20 +19,6 @@
  */
 package org.neo4j.kernel.impl.storemigration;
 
-import static java.lang.Integer.MAX_VALUE;
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.findOldFormatStoreDirectory;
-import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -41,8 +27,10 @@ import java.util.List;
 import java.util.Set;
 
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -50,13 +38,12 @@ import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
@@ -64,10 +51,28 @@ import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.CleanupRule;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.Unzip;
 import org.neo4j.tooling.GlobalGraphOperations;
+
+import static java.lang.Integer.MAX_VALUE;
+
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_VERSION;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.versionLongToString;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.findOldFormatStoreDirectory;
+import static org.neo4j.kernel.impl.storemigration.UpgradeConfiguration.ALLOW_UPGRADE;
 
 public class StoreMigratorIT
 {
@@ -188,6 +193,8 @@ public class StoreMigratorIT
         throw new IllegalArgumentException( name + " not found" );
     }
 
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     private final FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
     private final File storeDir = TargetDirectory.forTest( getClass() ).makeGraphDbDir();
     private final ListAccumulatorMigrationProgressMonitor monitor = new ListAccumulatorMigrationProgressMonitor();
@@ -198,8 +205,14 @@ public class StoreMigratorIT
     public void setUp()
     {
         Config config = StoreFactory.configForStoreDir( MigrationTestUtils.defaultConfig(), storeDir );
-        storeFactory = new StoreFactory( config, idGeneratorFactory,
-                new DefaultWindowPoolFactory(), fs, StringLogger.DEV_NULL );
+        Monitors monitors = new Monitors();
+        storeFactory = new StoreFactory(
+                config,
+                idGeneratorFactory,
+                pageCacheRule.getPageCache( fs, config ),
+                fs,
+                StringLogger.DEV_NULL,
+                monitors );
     }
 
     private void verifyNeoStore( NeoStore neoStore )
@@ -208,7 +221,7 @@ public class StoreMigratorIT
         assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
         assertEquals( 3l, neoStore.getCurrentLogVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1007l, neoStore.getLastCommittingTransactionId() );
+        assertEquals( 1004l, neoStore.getLastCommittingTransactionId() );
     }
 
     private static class DatabaseContentVerifier

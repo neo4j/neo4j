@@ -33,7 +33,8 @@ import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.io.fs.DefaultFileSystemAbstraction;
+import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
@@ -57,11 +58,12 @@ import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TargetDirectory;
 
 import static java.util.Collections.singletonMap;
 
-public abstract class GraphStoreFixture implements TestRule
+public abstract class GraphStoreFixture extends PageCacheRule implements TestRule
 {
     private DirectStoreAccess directStoreAccess;
 
@@ -74,12 +76,19 @@ public abstract class GraphStoreFixture implements TestRule
     {
         if ( directStoreAccess == null )
         {
-            StoreAccess nativeStores = new StoreAccess( directory );
-            directStoreAccess = new DirectStoreAccess( nativeStores, new LuceneLabelScanStoreBuilder(
-                    directory().getAbsolutePath(),
-                    nativeStores.getRawNeoStore(),
-                    new DefaultFileSystemAbstraction(),
-                    StringLogger.SYSTEM ).build(), createIndexes() );
+            DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
+            PageCache pageCache = getPageCache( fileSystem, new Config() );
+            StoreAccess nativeStores = new StoreAccess( fileSystem, pageCache, directory );
+            directStoreAccess = new DirectStoreAccess(
+                    nativeStores,
+                    new LuceneLabelScanStoreBuilder(
+                            directory().getAbsolutePath(),
+                            nativeStores.getRawNeoStore(),
+                            fileSystem,
+                            StringLogger.SYSTEM
+                    ).build(),
+                    createIndexes()
+            );
         }
         return directStoreAccess;
     }
@@ -380,7 +389,7 @@ public abstract class GraphStoreFixture implements TestRule
     {
         final TargetDirectory.TestDirectory directory = TargetDirectory.forTest( description.getTestClass() )
                                                                        .testDirectory();
-        return directory.apply( new Statement()
+        return super.apply( directory.apply( new Statement()
         {
             @Override
             public void evaluate() throws Throwable
@@ -404,6 +413,6 @@ public abstract class GraphStoreFixture implements TestRule
                     GraphStoreFixture.this.directory = null;
                 }
             }
-        }, description );
+        }, description ), description );
     }
 }

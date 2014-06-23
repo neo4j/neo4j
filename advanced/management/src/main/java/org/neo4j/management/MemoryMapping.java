@@ -28,6 +28,7 @@ public interface MemoryMapping
 {
     final String NAME = "Memory Mapping";
 
+    @Deprecated
     @Description( "Get information about each pool of memory mapped regions from store files with "
                   + "memory mapping enabled" )
     WindowPoolInfo[] getMemoryPools();

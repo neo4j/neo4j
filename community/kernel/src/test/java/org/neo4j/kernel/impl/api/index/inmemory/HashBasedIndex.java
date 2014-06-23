@@ -126,4 +126,11 @@ class HashBasedIndex extends InMemoryIndexImplementation
         }
         return snapshot;
     }
+
+    @Override
+    public boolean hasIndexed( long nodeId, Object propertyValue )
+    {
+        Set<Long> canditates = data.get( propertyValue );
+        return canditates != null && canditates.contains( nodeId );
+    }
 }

@@ -38,6 +38,7 @@ import static org.neo4j.helpers.Settings.BOOLEAN;
 import static org.neo4j.helpers.Settings.BYTES;
 import static org.neo4j.helpers.Settings.FALSE;
 import static org.neo4j.helpers.Settings.INTEGER;
+import static org.neo4j.helpers.Settings.DirectMemoryUsage.directMemoryUsage;
 import static org.neo4j.helpers.Settings.NO_DEFAULT;
 import static org.neo4j.helpers.Settings.PATH;
 import static org.neo4j.helpers.Settings.STRING;
@@ -173,10 +174,10 @@ public abstract class GraphDatabaseSettings
     public static final Setting<Boolean> use_memory_mapped_buffers = setting( "use_memory_mapped_buffers", BOOLEAN, Boolean.toString(!Settings.osIsWindows()));
 
     @Description("Target size for pages of mapped memory.")
-    public static final Setting<Long> mapped_memory_page_size = setting("mapped_memory_page_size", BYTES, "1M" );
+    public static final Setting<Long> mapped_memory_page_size = setting("mapped_memory_page_size", BYTES, "8192" );
 
-    @Description("The size to allocate for a memory mapping pool to be shared between all stores.")
-    public static final Setting<Long> all_stores_total_mapped_memory_size = setting("all_stores_total_mapped_memory_size", BYTES, "500M" );
+    @Description("The size to allocate for the memory mapping pool used by the database. Defaults to a low value, you will want to change this to a higher value if your database is running on a dedicated machine.")
+    public static final Setting<Long> all_stores_total_mapped_memory_size = setting("all_stores_total_mapped_memory_size", directMemoryUsage(), "5%" );
 
     @Description("Tell Neo4j to regularly log memory mapping statistics.")
     public static final Setting<Boolean> log_mapped_memory_stats = setting("log_mapped_memory_stats", BOOLEAN, FALSE );
@@ -187,26 +188,33 @@ public abstract class GraphDatabaseSettings
     @Description("The number of records to be loaded between regular logging of memory mapping statistics.")
     public static final Setting<Integer> log_mapped_memory_stats_interval = setting("log_mapped_memory_stats_interval", INTEGER, "1000000");
 
+    @Deprecated
     @Description("The size to allocate for memory mapping the node store.")
-    public static final Setting<Long> nodestore_mapped_memory_size = setting("neostore.nodestore.db.mapped_memory", BYTES, "20M" );
+    public static final Setting<Long> nodestore_mapped_memory_size = setting("neostore.nodestore.db.mapped_memory", BYTES, NO_DEFAULT );
 
+    @Deprecated
     @Description("The size to allocate for memory mapping the property value store.")
-    public static final Setting<Long> nodestore_propertystore_mapped_memory_size = setting("neostore.propertystore.db.mapped_memory", BYTES, "90M" );
+    public static final Setting<Long> nodestore_propertystore_mapped_memory_size = setting("neostore.propertystore.db.mapped_memory", BYTES, NO_DEFAULT );
 
+    @Deprecated
     @Description("The size to allocate for memory mapping the store for property key indexes.")
-    public static final Setting<Long> nodestore_propertystore_index_mapped_memory_size = setting("neostore.propertystore.db.index.mapped_memory", BYTES, "1M" );
+    public static final Setting<Long> nodestore_propertystore_index_mapped_memory_size = setting("neostore.propertystore.db.index.mapped_memory", BYTES, NO_DEFAULT );
 
+    @Deprecated
     @Description("The size to allocate for memory mapping the store for property key strings.")
-    public static final Setting<Long> nodestore_propertystore_index_keys_mapped_memory_size = setting("neostore.propertystore.db.index.keys.mapped_memory", BYTES, "1M" );
+    public static final Setting<Long> nodestore_propertystore_index_keys_mapped_memory_size = setting("neostore.propertystore.db.index.keys.mapped_memory", BYTES, NO_DEFAULT );
 
+    @Deprecated
     @Description("The size to allocate for memory mapping the string property store.")
-    public static final Setting<Long> strings_mapped_memory_size = setting("neostore.propertystore.db.strings.mapped_memory", BYTES, "130M" );
+    public static final Setting<Long> strings_mapped_memory_size = setting("neostore.propertystore.db.strings.mapped_memory", BYTES, NO_DEFAULT );
 
+    @Deprecated
     @Description("The size to allocate for memory mapping the array property store.")
-    public static final Setting<Long> arrays_mapped_memory_size = setting("neostore.propertystore.db.arrays.mapped_memory", BYTES, "130M" );
+    public static final Setting<Long> arrays_mapped_memory_size = setting("neostore.propertystore.db.arrays.mapped_memory", BYTES, NO_DEFAULT );
 
+    @Deprecated
     @Description("The size to allocate for memory mapping the relationship store.")
-    public static final Setting<Long> relationshipstore_mapped_memory_size = setting("neostore.relationshipstore.db.mapped_memory", BYTES, "100M" );
+    public static final Setting<Long> relationshipstore_mapped_memory_size = setting("neostore.relationshipstore.db.mapped_memory", BYTES, NO_DEFAULT );
 
 
     @Description("How many relationships to read at a time during iteration")

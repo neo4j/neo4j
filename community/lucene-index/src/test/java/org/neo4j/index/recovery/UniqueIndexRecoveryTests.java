@@ -19,13 +19,6 @@
  */
 package org.neo4j.index.recovery;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.junit.Assert.assertFalse;
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.single;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -41,17 +34,27 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+
 import org.neo4j.graphdb.Label;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProviderFactory;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
-import org.neo4j.kernel.impl.util.FileUtils;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
+
+import static java.util.Arrays.asList;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+import static org.junit.Assert.assertFalse;
+
+import static org.neo4j.graphdb.DynamicLabel.label;
+import static org.neo4j.helpers.collection.Iterables.single;
 
 /**
  * Arbitrary recovery scenarios boiled down to as small tests as possible
@@ -249,7 +252,7 @@ public class UniqueIndexRecoveryTests
     private void flushAll()
     {
 //        db.getDependencyResolver().resolveDependency(
-//                XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flushAll();
+//                XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore().flush();
 //        db.getDependencyResolver().resolveDependency(
 //                IndexingService.class ).flushAll();
     }

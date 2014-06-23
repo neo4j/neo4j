@@ -21,8 +21,6 @@
     <short-name>community-build</short-name>
     <license-text.header>GPL-3-header.txt</license-text.header>
     <docs-plugin.skip>true</docs-plugin.skip>
-    <maven.site.skip>true</maven.site.skip>
-    <maven.site.deploy.skip>true</maven.site.deploy.skip>
   </properties>
 
   <scm>
@@ -33,6 +31,7 @@
 
   <modules>
     <module>primitive-collections</module>
+    <module>io</module>
     <module>kernel</module>
     <module>jmx</module>
     <module>udc</module>

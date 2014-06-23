@@ -153,6 +153,9 @@ public class IndexRecoveryIT
         when( mockedIndexProvider.getOnlineAccessor( anyLong(), any( IndexConfiguration.class ) ) )
                 .thenReturn( mockedAccessor );
         createIndexAndAwaitPopulation( myLabel );
+        // rotate logs
+        rotateLogs();
+        // make updates
         Set<NodePropertyUpdate> expectedUpdates = createSomeBananas( myLabel );
 
         // And Given
@@ -189,6 +192,7 @@ public class IndexRecoveryIT
                 .thenReturn( mock( IndexAccessor.class ) );
         startDb();
         createIndex( myLabel );
+        rotateLogs();
 
         // And Given
         killDb();

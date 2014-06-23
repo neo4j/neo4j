@@ -227,7 +227,7 @@ public abstract class LogEntry
 
         public OnePhaseCommit( byte version, long txId, long timeWritten )
         {
-            super( TX_1P_COMMIT, version, txId, timeWritten, "1PC" );
+            super( TX_1P_COMMIT, version, txId, timeWritten, "Commit" );
         }
 
         @Override

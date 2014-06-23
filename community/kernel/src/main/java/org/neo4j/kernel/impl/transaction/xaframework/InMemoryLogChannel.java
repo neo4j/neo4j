@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.StoreChannel;
 
 public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChannel
 {

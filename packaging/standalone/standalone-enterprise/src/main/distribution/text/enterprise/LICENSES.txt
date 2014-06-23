@@ -39,7 +39,6 @@ THE POSSIBILITY OF SUCH DAMAGE.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
-  Apache Log4j
   Apache ServiceMix Bundles: jline-0.9.94
   bootstrap
   Commons BeanUtils

@@ -19,21 +19,19 @@
  */
 package org.neo4j.kernel.impl.util;
 
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.junit.After;
-import org.junit.Test;
-
 import static java.lang.Thread.sleep;
 import static java.util.concurrent.TimeUnit.MILLISECONDS;
-
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.hamcrest.Matchers.lessThan;
-
 import static org.neo4j.helpers.Exceptions.launderedException;
 import static org.neo4j.kernel.impl.util.JobScheduler.Group.indexPopulation;
+
+import java.util.concurrent.atomic.AtomicInteger;
+
+import org.junit.After;
+import org.junit.Test;
 
 public class Neo4jJobSchedulerTest
 {
@@ -57,24 +55,24 @@ public class Neo4jJobSchedulerTest
     };
 
     @After
-    public void stopScheduler()
+    public void stopScheduler() throws Throwable
     {
-        scheduler.stop();
+        scheduler.shutdown();
     }
 
     @Test
-    public void shouldRunRecurringJob() throws Exception
+    public void shouldRunRecurringJob() throws Throwable
     {
         // Given
         long period = 10;
-        scheduler = new Neo4jJobScheduler( StringLogger.DEV_NULL );
+        scheduler = new Neo4jJobScheduler();
 
         // When
-        scheduler.start();
+        scheduler.init();
         scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
         awaitFirstInvocation();
         sleep( period*2 );
-        scheduler.stop();
+        scheduler.shutdown();
 
         // Then
         int actualInvocations = invocations.get();
@@ -90,14 +88,18 @@ public class Neo4jJobSchedulerTest
     {
         // Given
         long period = 2;
-        scheduler = new Neo4jJobScheduler( StringLogger.DEV_NULL );
+        scheduler = new Neo4jJobScheduler();
 
-        scheduler.start();
-        scheduler.scheduleRecurring( indexPopulation, countInvocationsJob, period, MILLISECONDS );
+        scheduler.init();
+        JobScheduler.JobHandle jobHandle = scheduler.scheduleRecurring(
+                indexPopulation,
+                countInvocationsJob,
+                period,
+                MILLISECONDS );
         awaitFirstInvocation();
 
         // When
-        scheduler.cancelRecurring( indexPopulation,  countInvocationsJob);
+        jobHandle.cancel( false );
 
         // Then
         int recorded = invocations.get();

@@ -25,7 +25,7 @@ import java.io.IOException;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.guard.Guard;
-import org.neo4j.kernel.impl.util.FileUtils;
+import org.neo4j.io.fs.FileUtils;
 
 import static java.lang.Integer.MAX_VALUE;
 import static java.lang.String.valueOf;

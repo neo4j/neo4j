@@ -24,7 +24,7 @@ import ast._
 
 class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends Rewriter {
 
-  def apply(that: AnyRef): Option[AnyRef] = instance.apply(that)
+  def apply(that: AnyRef): Option[AnyRef] = topDown(instance).apply(that)
 
   private val instance: Rewriter = Rewriter.lift {
 
@@ -52,7 +52,7 @@ class MatchPredicateNormalization(normalizer: MatchPredicateNormalizer) extends 
         }
 
         m.copy(
-          pattern = pattern.rewrite(topDown(Rewriter.lift(normalizer.replace))).asInstanceOf[Pattern],
+          pattern = pattern.endoRewrite(topDown(Rewriter.lift(normalizer.replace))),
           where = newWhere
         )(m.position)
       }

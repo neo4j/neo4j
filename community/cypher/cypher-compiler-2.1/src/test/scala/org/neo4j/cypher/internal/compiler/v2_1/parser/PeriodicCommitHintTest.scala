@@ -32,7 +32,7 @@ class PeriodicCommitHintTest extends ParserTest[ast.PeriodicCommitHint, Any] wit
 
   @Test def tests() {
     parsing("USING PERIODIC COMMIT") shouldGive ast.PeriodicCommitHint(None)(t)
-    parsing("USING PERIODIC COMMIT 300") shouldGive ast.PeriodicCommitHint(Some(ast.SignedIntegerLiteral("300")(t)))(t)
+    parsing("USING PERIODIC COMMIT 300") shouldGive ast.PeriodicCommitHint(Some(ast.SignedDecimalIntegerLiteral("300")(t)))(t)
   }
 
   override def convert(astNode: ast.PeriodicCommitHint): Any = astNode

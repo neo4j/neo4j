@@ -32,4 +32,9 @@ public interface OutOfOrderSequence
     void offer( long number );
 
     long get();
+
+    /**
+     * Used in recovery. I don't like the visibility of this method at all.
+     */
+    void set( long number );
 }

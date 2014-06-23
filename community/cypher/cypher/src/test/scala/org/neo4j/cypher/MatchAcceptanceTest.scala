@@ -439,7 +439,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate("A" -> "KNOWS" -> "B")
 
     // when
-    val result = execute("MATCH (a{name:'A'}), (b{name:'B'}) MATCH p=allShortestPaths((a)-[:KNOWS|KNOWS*]->(b)) RETURN p").
+    val result = executeWithNewPlanner("MATCH (a{name:'A'}), (b{name:'B'}) MATCH p=allShortestPaths((a)-[:KNOWS|KNOWS*]->(b)) RETURN p").
       toList
 
     // then
@@ -970,7 +970,7 @@ RETURN a.name""")
     graph.createIndex("Person", "name")
 
     //WHEN
-    val result = execute("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
+    val result = executeWithNewPlanner("MATCH (n:Person)-->() USING INDEX n:Person(name) WHERE n.name = 'Jacob' RETURN n")
 
     //THEN
     result.toList should equal (List(Map("n" -> jake)))

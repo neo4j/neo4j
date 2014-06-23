@@ -25,7 +25,7 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
@@ -87,42 +87,49 @@ public class BlockLogBuffer implements LogBuffer
         return this;
     }
 
+    @Override
     public LogBuffer put( byte b ) throws IOException
     {
         byteBuffer.put( b );
         return checkFlush();
     }
 
+    @Override
     public LogBuffer putShort( short s ) throws IOException
     {
         byteBuffer.putShort( s );
         return checkFlush();
     }
 
+    @Override
     public LogBuffer putInt( int i ) throws IOException
     {
         byteBuffer.putInt( i );
         return checkFlush();
     }
 
+    @Override
     public LogBuffer putLong( long l ) throws IOException
     {
         byteBuffer.putLong( l );
         return checkFlush();
     }
 
+    @Override
     public LogBuffer putFloat( float f ) throws IOException
     {
         byteBuffer.putFloat( f );
         return checkFlush();
     }
 
+    @Override
     public LogBuffer putDouble( double d ) throws IOException
     {
         byteBuffer.putDouble( d );
         return checkFlush();
     }
 
+    @Override
     public LogBuffer put( byte[] bytes ) throws IOException
     {
         for ( int pos = 0; pos < bytes.length; )
@@ -135,6 +142,7 @@ public class BlockLogBuffer implements LogBuffer
         return this;
     }
 
+    @Override
     public LogBuffer put( char[] chars ) throws IOException
     {
         for ( int bytePos = 0; bytePos < chars.length * 2; )
@@ -151,6 +159,7 @@ public class BlockLogBuffer implements LogBuffer
         return this;
     }
 
+    @Override
     public void force() throws IOException
     {
         // Do nothing

@@ -29,8 +29,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Function;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 
 public abstract class DatabaseRule extends ExternalResource
 {

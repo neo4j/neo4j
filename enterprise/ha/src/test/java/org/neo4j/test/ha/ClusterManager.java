@@ -78,13 +78,26 @@ import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.ha.com.master.Slaves;
+import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+<<<<<<< HEAD
 import org.w3c.dom.Document;
+=======
+
+import static java.lang.String.format;
+import static java.util.Arrays.asList;
+import static java.util.Collections.emptyMap;
+
+import static org.junit.Assert.fail;
+
+import static org.neo4j.helpers.collection.Iterables.count;
+import static org.neo4j.io.fs.FileUtils.copyRecursively;
+>>>>>>> master
 
 public class ClusterManager
         extends LifecycleAdapter
@@ -402,7 +415,7 @@ public class ClusterManager
         {
             for ( HighlyAvailableGraphDatabase graphDatabaseService : getAllMembers() )
             {
-                if ( graphDatabaseService.isMaster() )
+                if ( graphDatabaseService.isAvailable( 0 ) && graphDatabaseService.isMaster() )
                 {
                     return graphDatabaseService;
                 }
@@ -670,6 +683,16 @@ public class ClusterManager
                 }
             }
         }
+
+        public void info( String message )
+        {
+            for ( HighlyAvailableGraphDatabase db : getAllMembers() )
+            {
+                Logging logging = db.getDependencyResolver().resolveDependency( Logging.class );
+                StringLogger messagesLog = logging.getMessagesLog( HighlyAvailableGraphDatabase.class );
+                messagesLog.info( message );
+            }
+        }
     }
 
     private static final class HighlyAvailableGraphDatabaseProxy
@@ -877,7 +900,7 @@ public class ClusterManager
                 {
                     if ( !exceptSet.contains( graphDatabaseService ))
                     {
-                        if ( graphDatabaseService.isMaster() )
+                        if ( graphDatabaseService.isAvailable( 0 ) && graphDatabaseService.isMaster() )
                         {
                             return true;
                         }
@@ -1022,6 +1045,7 @@ public class ClusterManager
             for ( ClusterMember clusterMember : members.getMembers() )
             {
                 buf.append( clusterMember.getInstanceId() ).append( ":" ).append( clusterMember.getHARole() )
+                   .append(" (is alive = ").append( clusterMember.isAlive() ).append( ")" )
                    .append( "\n" );
             }
 

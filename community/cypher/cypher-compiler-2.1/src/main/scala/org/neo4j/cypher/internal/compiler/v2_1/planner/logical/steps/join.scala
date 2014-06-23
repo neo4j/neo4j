@@ -22,14 +22,17 @@ package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.steps.QueryPlanProducer._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryGraph
 
 object join extends CandidateGenerator[PlanTable] {
-  def apply(planTable: PlanTable)(implicit context: QueryGraphSolvingContext): CandidateList = {
+  def apply(planTable: PlanTable, queryGraph: QueryGraph)(implicit context: LogicalPlanningContext, subQueriesLookupTable: Map[PatternExpression, QueryGraph]): CandidateList = {
     val joinPlans: Seq[QueryPlan] = (for {
       left <- planTable.plans
       right <- planTable.plans if left != right
     } yield {
-      (left.availableSymbols & right.availableSymbols).toList match {
+      val shared = (left.availableSymbols & right.availableSymbols).toList
+      shared match {
         case id :: Nil => Some(planNodeHashJoin(id, left, right))
         case Nil => None
         case _ => None

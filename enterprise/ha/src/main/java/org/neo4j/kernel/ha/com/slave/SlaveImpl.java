@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha.com.slave;
 
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
-import org.neo4j.com.TransactionStream;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;

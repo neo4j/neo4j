@@ -19,14 +19,8 @@
  */
 package org.neo4j.ha;
 
-import static java.lang.System.currentTimeMillis;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterAvailable;
-import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
-
 import java.io.File;
+import java.net.URI;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
@@ -34,6 +28,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -54,6 +49,16 @@ import org.neo4j.shell.ShellLobby;
 import org.neo4j.shell.ShellSettings;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
+
+import static java.lang.System.currentTimeMillis;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+import static org.neo4j.test.ha.ClusterManager.masterAvailable;
+import static org.neo4j.test.ha.ClusterManager.masterSeesSlavesAsAvailable;
 
 public class TestPullUpdates
 {
@@ -76,26 +81,37 @@ public class TestPullUpdates
         File root = TargetDirectory.forTest( getClass() ).cleanDirectory(
                 "makeSureUpdatePullerGetsGoingAfterMasterSwitch" );
         ClusterManager clusterManager = new ClusterManager( clusterOfSize( 3 ), root, MapUtil.stringMap(
-                HaSettings.pull_interval.name(), PULL_INTERVAL+"ms") );
+                HaSettings.pull_interval.name(), PULL_INTERVAL+"ms",
+                ClusterSettings.heartbeat_interval.name(), "2s",
+                ClusterSettings.heartbeat_timeout.name(), "5s") );
         clusterManager.start();
         cluster = clusterManager.getDefaultCluster();
+        cluster.await( allSeesAllAsAvailable() );
 
+        cluster.info( "### Creating initial dataset" );
         long commonNodeId = createNodeOnMaster();
 
         HighlyAvailableGraphDatabase master = cluster.getMaster();
         setProperty( master, commonNodeId, 1 );
+        cluster.info( "### Initial dataset created" );
         awaitPropagation( 1, commonNodeId, cluster );
-        cluster.await( masterSeesSlavesAsAvailable( 2 ) );
+
+        cluster.info( "### Shutting down master" );
         ClusterManager.RepairKit masterShutdownRK = cluster.shutdown( master );
-        cluster.await( masterAvailable() );
+
+        cluster.info( "### Awaiting new master" );
+        cluster.await( masterAvailable( master ) );
         cluster.await( masterSeesSlavesAsAvailable( 1 ) );
+
+        cluster.info( "### Doing a write to master" );
         setProperty( cluster.getMaster(), commonNodeId, 2 );
 
+        cluster.info( "### Repairing cluster" );
         masterShutdownRK.repair();
         cluster.await( masterAvailable() );
-
         cluster.await( masterSeesSlavesAsAvailable( 2 ) );
 
+        cluster.info( "### Awaiting change propagation" );
         awaitPropagation( 2, commonNodeId, cluster );
     }
 
@@ -103,7 +119,7 @@ public class TestPullUpdates
     public void pullUpdatesShellAppPullsUpdates() throws Throwable
     {
         File root = TargetDirectory.forTest( getClass() ).cleanDirectory( "pullUpdatesShellAppPullsUpdates" );
-        Map<Integer, Map<String, String>> instanceConfig = new HashMap<Integer, Map<String, String>>();
+        Map<Integer, Map<String, String>> instanceConfig = new HashMap<>();
         for (int i = 1; i <= 2; i++)
         {
             Map<String, String> thisInstance =
@@ -178,7 +194,7 @@ public class TestPullUpdates
             masterClusterClient.addClusterListener( new ClusterListener.Adapter()
             {
                 @Override
-                public void leftCluster( InstanceId instanceId )
+                public void leftCluster( InstanceId instanceId, URI member )
                 {
                     slaveLeftLatch.countDown();
                     masterClusterClient.removeClusterListener( this );
@@ -244,7 +260,7 @@ public class TestPullUpdates
         Thread.sleep( 50 );
     }
 
-    private void awaitPropagation( int i, long nodeId, ClusterManager.ManagedCluster cluster ) throws Exception
+    private void awaitPropagation( int expectedPropertyValue, long nodeId, ClusterManager.ManagedCluster cluster ) throws Exception
     {
         long endTime = currentTimeMillis() + PULL_INTERVAL * 20;
         boolean ok = false;
@@ -257,7 +273,7 @@ public class TestPullUpdates
                 {
 
                     Number value = (Number)db.getNodeById(nodeId).getProperty( "i", null );
-                    if ( value == null || value.intValue() != i )
+                    if ( value == null || value.intValue() != expectedPropertyValue )
                     {
                         ok = false;
                     }

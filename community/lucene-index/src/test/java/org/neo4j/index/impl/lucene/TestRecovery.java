@@ -19,16 +19,12 @@
  */
 package org.neo4j.index.impl.lucene;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.neo4j.graphdb.DynamicRelationshipType.withName;
-
 import java.io.File;
 import java.util.Map;
 
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -37,10 +33,16 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.index.Neo4jTestCase;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.test.ProcessStreamHandler;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+
+import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 
 /**
  * Don't extend Neo4jTestCase since these tests restarts the db in the tests.

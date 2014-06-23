@@ -19,15 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.util.Arrays.asList;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
-import static org.neo4j.kernel.impl.nioneo.store.ShortArray.LONG;
-import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
-import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
-import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.HashSet;
@@ -36,11 +27,12 @@ import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.nioneo.store.DefaultWindowPoolFactory;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -51,10 +43,25 @@ import org.neo4j.kernel.impl.nioneo.xa.command.PhysicalLogNeoCommandReaderV1;
 import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogChannel;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
+import org.neo4j.test.PageCacheRule;
+
+import static java.util.Arrays.asList;
+
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.core.IsEqual.equalTo;
+
+import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
+import static org.neo4j.kernel.impl.nioneo.store.ShortArray.LONG;
+import static org.neo4j.kernel.impl.nioneo.store.labels.DynamicNodeLabels.dynamicPointer;
+import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
+import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
 public class NodeCommandTest
 {
+    @ClassRule
+    public static PageCacheRule pageCacheRule = new PageCacheRule();
     private NodeStore nodeStore;
     InMemoryLogChannel channel = new InMemoryLogChannel();
     private final CommandReader commandReader = new PhysicalLogNeoCommandReaderV1();
@@ -203,9 +210,15 @@ public class NodeCommandTest
         File dir = new File( "dir" );
         fs.get().mkdirs( dir );
         Config config = StoreFactory.configForStoreDir( new Config(), dir );
-        @SuppressWarnings( "deprecation" )
-        StoreFactory storeFactory = new StoreFactory( config, new DefaultIdGeneratorFactory(),
-                new DefaultWindowPoolFactory(), fs.get(), StringLogger.DEV_NULL );
+        Monitors monitors = new Monitors();
+        @SuppressWarnings("deprecation")
+        StoreFactory storeFactory = new StoreFactory(
+                config,
+                new DefaultIdGeneratorFactory(),
+                pageCacheRule.getPageCache( fs.get(), config ),
+                fs.get(),
+                StringLogger.DEV_NULL,
+                monitors );
         storeFactory.createNodeStore();
         nodeStore = storeFactory.newNodeStore();
     }

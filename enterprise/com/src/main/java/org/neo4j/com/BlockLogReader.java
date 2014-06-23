@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
 /**
  * The counterpart of {@link BlockLogBuffer}, sits on the receiving end and
@@ -65,11 +64,13 @@ public class BlockLogReader implements ReadableByteChannel
         byteBuffer.flip();
     }
 
+    @Override
     public boolean isOpen()
     {
         return true;
     }
 
+    @Override
     public void close() throws IOException
     {
         // This is to make sure that reader index in the ChannelBuffer is left
@@ -77,6 +78,7 @@ public class BlockLogReader implements ReadableByteChannel
         readToTheEnd();
     }
 
+    @Override
     public int read( ByteBuffer dst ) throws IOException
     {
         /*
