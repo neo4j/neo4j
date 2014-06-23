@@ -42,15 +42,19 @@ import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
 import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.StoreAccess;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.nioneo.xa.TransactionWriter;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
@@ -179,16 +183,10 @@ public abstract class GraphStoreFixture implements TestRule
             this.writer = writer;
         }
 
-        public void createSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords )
+        public void createSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords,
+                SchemaRule rule )
         {
-            try
-            {
-                writer.createSchema( beforeRecords, afterRecords );
-            }
-            catch ( IOException e )
-            {
-                throw ioError( e );
-            }
+            writer.createSchema( beforeRecords, afterRecords, rule );
         }
 
         public void propertyKey( int id, String key )
@@ -314,8 +312,13 @@ public abstract class GraphStoreFixture implements TestRule
                 .newEmbeddedDatabaseBuilder( directory ).setConfig( configuration( false ) ).newGraphDatabase();
         try
         {
-            TransactionRepresentationCommitProcess commitProcess = database.getDependencyResolver().resolveDependency(
-                    TransactionRepresentationCommitProcess.class );
+            TransactionRepresentationCommitProcess commitProcess =
+                    new TransactionRepresentationCommitProcess(
+                            database.getDependencyResolver().resolveDependency( LogicalTransactionStore.class ),
+                            database.getDependencyResolver().resolveDependency( KernelHealth.class ),
+                            database.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate(),
+                            database.getDependencyResolver().resolveDependency( TransactionRepresentationStoreApplier.class ),
+                            true /*recovery*/ );
             TransactionIdStore transactionIdStore = database.getDependencyResolver().resolveDependency(
                     TransactionIdStore.class );
             commitProcess.commit( transaction.representation( idGenerator(), masterId(), myId(),

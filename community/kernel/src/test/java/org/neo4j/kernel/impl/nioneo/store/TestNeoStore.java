@@ -219,7 +219,7 @@ public class TestNeoStore
 
         NeoStore neoStore = ds.evaluate();
         pStore = neoStore.getPropertyStore();
-        rtStore = neoStore.getRelationshipTypeStore();
+        rtStore = neoStore.getRelationshipTypeTokenStore();
         storeLayer = ds.getStoreLayer();
         relationshipLoader = new RelationshipChainLoader( neoStore );
         propertyLoader = new PropertyLoader( neoStore );
@@ -322,7 +322,7 @@ public class TestNeoStore
         }
         if ( clazz.equals( RelationshipType.class ) )
         {
-            return neoStore.getRelationshipTypeStore().nextId();
+            return neoStore.getRelationshipTypeTokenStore().nextId();
         }
         if ( clazz.equals( Node.class ) )
         {

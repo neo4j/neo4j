@@ -646,8 +646,8 @@ public class NeoStoreTransactionTest
         assertEquals( "NodeStore", nodeId+1, neoStore.getNodeStore().getHighId() );
         assertEquals( "DynamicNodeLabelStore", 2, neoStore.getNodeStore().getDynamicLabelStore().getHighId() );
         assertEquals( "RelationshipStore", relId+1, neoStore.getRelationshipStore().getHighId() );
-        assertEquals( "RelationshipTypeStore", relationshipType+1, neoStore.getRelationshipTypeStore().getHighId() );
-        assertEquals( "RelationshipType NameStore", 2, neoStore.getRelationshipTypeStore().getNameStore().getHighId() );
+        assertEquals( "RelationshipTypeStore", relationshipType+1, neoStore.getRelationshipTypeTokenStore().getHighId() );
+        assertEquals( "RelationshipType NameStore", 2, neoStore.getRelationshipTypeTokenStore().getNameStore().getHighId() );
         assertEquals( "PropertyStore", 2, neoStore.getPropertyStore().getHighId() );
         assertEquals( "PropertyStore DynamicStringStore", 2, neoStore.getPropertyStore().getStringStore().getHighId() );
         assertEquals( "PropertyStore DynamicArrayStore", 2, neoStore.getPropertyStore().getArrayStore().getHighId() );
@@ -1038,7 +1038,7 @@ public class NeoStoreTransactionTest
         TransactionRecordState writeTransaction = newWriteTransaction().first();
         writeTransaction.nodeCreate( nodeId );
 
-        int typeA = (int) neoStore.getRelationshipTypeStore().nextId();
+        int typeA = (int) neoStore.getRelationshipTypeTokenStore().nextId();
         writeTransaction.createRelationshipTypeToken( typeA, "A" );
         createRelationships( writeTransaction, nodeId, typeA, INCOMING, 20 );
 
@@ -1096,7 +1096,7 @@ public class NeoStoreTransactionTest
         int type5 = 5, type10 = 10, type15 = 15;
         {
             TransactionRecordState tx = newWriteTransaction().first();
-            neoStore.getRelationshipTypeStore().setHighId( 16 );
+            neoStore.getRelationshipTypeTokenStore().setHighId( 16 );
             tx.createRelationshipTypeToken( type5, "5" );
             tx.createRelationshipTypeToken( type10, "10" );
             tx.createRelationshipTypeToken( type15, "15" );

@@ -66,8 +66,8 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
     private void addRelationshipType( int id )
     {
         Token type = recovery ?
-                     neoStore.getRelationshipTypeStore().getToken( id ) :
-                     neoStore.getRelationshipTypeStore().getToken( id );
+                     neoStore.getRelationshipTypeTokenStore().getToken( id ) :
+                     neoStore.getRelationshipTypeTokenStore().getToken( id );
         cacheAccess.addRelationshipTypeToken( type );
     }
 

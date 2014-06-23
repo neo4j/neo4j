@@ -271,11 +271,6 @@ public abstract class TokenStore<T extends TokenRecord> extends AbstractRecordSt
         }
     }
 
-    public int nextNameId()
-    {
-        return (int) nameStore.nextId();
-    }
-
     protected abstract T newRecord( int id );
 
     protected T getRecord( int id, PersistenceWindow window, boolean force )

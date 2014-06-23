@@ -73,7 +73,7 @@ public class StoreAccess
     public StoreAccess( NeoStore store )
     {
         this( store.getSchemaStore(), store.getNodeStore(), store.getRelationshipStore(), store.getPropertyStore(),
-                store.getRelationshipTypeStore(), store.getLabelTokenStore(), store.getRelationshipGroupStore() );
+                store.getRelationshipTypeTokenStore(), store.getLabelTokenStore(), store.getRelationshipGroupStore() );
         this.neoStore = store;
     }
 

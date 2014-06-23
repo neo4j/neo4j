@@ -57,7 +57,7 @@ public class StoreVersionTest
         CommonAbstractStore[] stores = {
                 neoStore.getNodeStore(),
                 neoStore.getRelationshipStore(),
-                neoStore.getRelationshipTypeStore(),
+                neoStore.getRelationshipTypeTokenStore(),
                 neoStore.getPropertyStore(),
                 neoStore.getPropertyKeyTokenStore()
         };

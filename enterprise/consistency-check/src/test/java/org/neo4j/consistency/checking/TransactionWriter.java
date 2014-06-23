@@ -17,9 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.xa;
+package org.neo4j.consistency.checking;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
@@ -37,6 +36,7 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenRecord;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.TokenRecord;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
@@ -160,22 +160,24 @@ public class TransactionWriter
         add( group );
     }
 
-    public void createSchema( Collection<DynamicRecord> beforeRecord, Collection<DynamicRecord> afterRecord ) throws IOException
+    public void createSchema( Collection<DynamicRecord> beforeRecord, Collection<DynamicRecord> afterRecord,
+            SchemaRule rule )
     {
         for ( DynamicRecord record : afterRecord )
         {
             record.setCreated();
         }
-        updateSchema( beforeRecord, afterRecord );
+        updateSchema( beforeRecord, afterRecord, rule );
     }
 
-    public void updateSchema(Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords) throws IOException
+    public void updateSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords,
+            SchemaRule rule )
     {
         for ( DynamicRecord record : afterRecords )
         {
             record.setInUse( true );
         }
-        addSchema( beforeRecords, afterRecords );
+        addSchema( beforeRecords, afterRecords, rule );
     }
 
     public void update( RelationshipRecord relationship )
@@ -225,10 +227,11 @@ public class TransactionWriter
 
     // Internals
 
-    private void addSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords )
+    private void addSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords,
+            SchemaRule rule )
     {
         Command.SchemaRuleCommand command = new Command.SchemaRuleCommand();
-        command.init( beforeRecords, afterRecords, null );
+        command.init( beforeRecords, afterRecords, rule );
         addCommand( command );
     }
 
@@ -365,7 +368,7 @@ public class TransactionWriter
         @Override
         public void visitRelationshipTypeToken( RelationshipTypeTokenRecord record )
         {
-            update( neoStore.getRelationshipTypeStore(), record );
+            update( neoStore.getRelationshipTypeTokenStore(), record );
         }
 
         @Override

@@ -765,7 +765,7 @@ public class FullCheckIntegrationTest
                         new SchemaIndexProvider.Descriptor( "lucene", "1.0" ) );
                 schema.setData( new RecordSerializer().append( rule ).serialize() );
 
-                tx.createSchema( asList( schemaBefore ), asList( schema ) );
+                tx.createSchema( asList( schemaBefore ), asList( schema ), rule );
             }
         } );
 
@@ -811,8 +811,8 @@ public class FullCheckIntegrationTest
                 tx.nodeLabel( labelId, "label" );
                 tx.propertyKey( propertyKeyId, "property" );
 
-                tx.createSchema( asList(record1Before), records1 );
-                tx.createSchema( asList(record2Before), records2 );
+                tx.createSchema( asList(record1Before), records1, rule1 );
+                tx.createSchema( asList(record2Before), records2, rule2 );
             }
         } );
 
@@ -858,8 +858,8 @@ public class FullCheckIntegrationTest
                 tx.nodeLabel( labelId, "label" );
                 tx.propertyKey( propertyKeyId, "property" );
 
-                tx.createSchema( asList(record1Before), records1 );
-                tx.createSchema( asList(record2Before), records2 );
+                tx.createSchema( asList(record1Before), records1, rule1 );
+                tx.createSchema( asList(record2Before), records2, rule2 );
             }
         } );
 

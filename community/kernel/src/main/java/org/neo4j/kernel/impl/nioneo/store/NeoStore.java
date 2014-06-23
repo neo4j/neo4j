@@ -46,11 +46,6 @@ import static java.lang.String.format;
  */
 public class NeoStore extends AbstractStore implements TransactionIdStore, LogVersionRepository
 {
-    public RelationshipTypeTokenStore getRelationshipTypeTokenStore()
-    {
-        return relTypeStore;
-    }
-
     public static abstract class Configuration
         extends AbstractStore.Configuration
     {
@@ -595,7 +590,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
      *
      * @return The relationship type store
      */
-    public RelationshipTypeTokenStore getRelationshipTypeStore()
+    public RelationshipTypeTokenStore getRelationshipTypeTokenStore()
     {
         return relTypeStore;
     }

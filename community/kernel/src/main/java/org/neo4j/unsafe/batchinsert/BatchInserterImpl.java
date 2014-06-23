@@ -919,7 +919,7 @@ public class BatchInserterImpl implements BatchInserter
 
     private RelationshipTypeTokenStore getRelationshipTypeStore()
     {
-        return neoStore.getRelationshipTypeStore();
+        return neoStore.getRelationshipTypeTokenStore();
     }
 
     private SchemaStore getSchemaStore()

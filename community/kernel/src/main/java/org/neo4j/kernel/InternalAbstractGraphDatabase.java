@@ -85,6 +85,7 @@ import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.api.index.RemoveOrphanConstraintIndexesOnStartup;
@@ -145,6 +146,7 @@ import org.neo4j.kernel.impl.storemigration.monitoring.VisibleMigrationProgressM
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorImpl;
@@ -1302,10 +1304,6 @@ public abstract class InternalAbstractGraphDatabase
             {
                 return type.cast( availabilityGuard );
             }
-            else if ( AvailabilityGuard.class.isAssignableFrom( type ) )
-            {
-                return type.cast( availabilityGuard );
-            }
             else if ( StartupStatistics.class.isAssignableFrom( type ) )
             {
                 return type.cast( startupStatistics );
@@ -1317,6 +1315,19 @@ public abstract class InternalAbstractGraphDatabase
             else if ( Caches.class.isAssignableFrom( type ) )
             {
                 return type.cast( caches );
+            }
+            // TODO NeoStoreXaDataSource shouldn't own the commit process, we should
+            else if ( LogicalTransactionStore.class.isAssignableFrom( type ) )
+            {
+                return type.cast( neoDataSource.getTransactionStore() );
+            }
+            else if ( TransactionRepresentationStoreApplier.class.isAssignableFrom( type ) )
+            {
+                return type.cast( neoDataSource.getStoreApplier() );
+            }
+            else if ( TransactionIdStore.class.isAssignableFrom( type ) )
+            {
+                return type.cast( neoDataSource.evaluate() );
             }
             return null;
         }

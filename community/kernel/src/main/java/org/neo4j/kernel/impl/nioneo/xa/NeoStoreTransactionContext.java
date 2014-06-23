@@ -127,7 +127,7 @@ public class NeoStoreTransactionContext
     public void createRelationshipTypeToken( String name, int id )
     {
         TokenCreator<RelationshipTypeTokenRecord> creator =
-                new TokenCreator<>( neoStore.getRelationshipTypeStore() );
+                new TokenCreator<>( neoStore.getRelationshipTypeTokenStore() );
         creator.createToken( name, id, getRelationshipTypeTokenRecords() );
     }
 

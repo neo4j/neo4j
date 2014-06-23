@@ -79,7 +79,7 @@ public class BatchFriendlyNeoStore implements AutoCloseable
         this.propertyKeyRepository = new BatchingPropertyKeyTokenRepository( neoStore.getPropertyKeyTokenStore() );
         this.labelRepository = new BatchingLabelTokenRepository( neoStore.getLabelTokenStore() );
         this.relationshipTypeRepository =
-                new BatchingRelationshipTypeTokenRepository( neoStore.getRelationshipTypeStore() );
+                new BatchingRelationshipTypeTokenRepository( neoStore.getRelationshipTypeTokenStore() );
         life.start();
     }
 

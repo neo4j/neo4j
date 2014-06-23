@@ -145,8 +145,6 @@ import static org.neo4j.helpers.collection.IteratorUtil.loop;
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
-    private LogFile logFile;
-    private LogicalTransactionStore logicalTransactionStore;
 
     @SuppressWarnings( "deprecation" )
     public static abstract class Configuration
@@ -197,6 +195,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private CacheLayer storeLayer;
     private final Caches cacheProvider;
     private final NodeManager nodeManager;
+    private LogFile logFile;
+    private LogicalTransactionStore logicalTransactionStore;
 
     private final AtomicInteger recoveredCount = new AtomicInteger();
     private StatementOperationParts statementOperations;
@@ -815,5 +815,19 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     {
         IndexImplementation removed = indexProviders.remove( name );
         return removed != null;
+    }
+
+    /**
+     * TODO The reason we expose these here is so that {@link InternalAbstractGraphDatabase#getDependencyResolver()}
+     * can see it. IAGD should instead provide this class with a commit process.
+     */
+    public LogicalTransactionStore getTransactionStore()
+    {
+        return logicalTransactionStore;
+    }
+
+    public TransactionRepresentationStoreApplier getStoreApplier()
+    {
+        return storeApplier;
     }
 }
