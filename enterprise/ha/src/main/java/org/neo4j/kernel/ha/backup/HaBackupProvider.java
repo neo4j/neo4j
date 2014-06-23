@@ -109,7 +109,7 @@ public final class HaBackupProvider extends BackupExtensionService
         final ClusterClient clusterClient = life.add( new ClusterClient( new Monitors(),
                 ClusterClient.adapt( config ), logging,
                 new NotElectableElectionCredentialsProvider(), objectStreamFactory, objectStreamFactory ) );
-        ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents( clusterClient, clusterClient,
+        ClusterMemberEvents events = life.add( new PaxosClusterMemberEvents(new Monitors(), clusterClient, clusterClient,
                 clusterClient, clusterClient, new SystemOutLogging(),
                 Predicates.<PaxosClusterMemberEvents.ClusterMembersSnapshot>TRUE(), new HANewSnapshotFunction(),
                 objectStreamFactory, objectStreamFactory ) );

@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.progress.Completion;
 
 public enum TaskExecutionOrder
@@ -34,7 +35,7 @@ public enum TaskExecutionOrder
         void execute( List<StoppableRunnable> tasks, Completion completion )
                 throws ConsistencyCheckIncompleteException
         {
-            ExecutorService executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors() );
+            ExecutorService executor = Executors.newFixedThreadPool( Runtime.getRuntime().availableProcessors(), new NamedThreadFactory("consistency-checker-task"));
             for ( StoppableRunnable task : tasks )
             {
                 executor.submit( task );

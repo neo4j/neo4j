@@ -49,11 +49,13 @@ import org.neo4j.cluster.protocol.snapshot.Snapshot;
 import org.neo4j.cluster.protocol.snapshot.SnapshotProvider;
 import org.neo4j.helpers.Function2;
 import org.neo4j.helpers.Listeners;
+import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
+import org.neo4j.kernel.monitoring.Monitors;
 
 import static org.neo4j.helpers.Predicates.in;
 import static org.neo4j.helpers.Predicates.not;
@@ -72,6 +74,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     protected Iterable<ClusterMemberListener> listeners = Listeners.newListeners();
     private ClusterMembersSnapshot clusterMembersSnapshot;
     private ClusterListener.Adapter clusterListener;
+    private final Monitors monitors;
     private Snapshot snapshot;
     private AtomicBroadcastListener atomicBroadcastListener;
     private ExecutorService executor;
@@ -81,14 +84,15 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
     private ObjectInputStreamFactory lenientObjectInputStream;
     private ObjectOutputStreamFactory lenientObjectOutputStream;
 
-    public PaxosClusterMemberEvents( final Snapshot snapshot, Cluster cluster, Heartbeat heartbeat,
-                                     AtomicBroadcast atomicBroadcast, Logging logging,
-                                     Predicate<ClusterMembersSnapshot> validator,
-                                     Function2<Iterable<MemberIsAvailable>, MemberIsAvailable,
-                                        Iterable<MemberIsAvailable>> snapshotFilter,
-                                     ObjectInputStreamFactory lenientObjectInputStream,
-                                     ObjectOutputStreamFactory lenientObjectOutputStream)
+    public PaxosClusterMemberEvents(Monitors monitors, final Snapshot snapshot, Cluster cluster, Heartbeat heartbeat,
+                                    AtomicBroadcast atomicBroadcast, Logging logging,
+                                    Predicate<ClusterMembersSnapshot> validator,
+                                    Function2<Iterable<MemberIsAvailable>, MemberIsAvailable,
+                                            Iterable<MemberIsAvailable>> snapshotFilter,
+                                    ObjectInputStreamFactory lenientObjectInputStream,
+                                    ObjectOutputStreamFactory lenientObjectOutputStream)
     {
+        this.monitors = monitors;
         this.snapshot = snapshot;
         this.cluster = cluster;
         this.heartbeat = heartbeat;
@@ -132,7 +136,7 @@ public class PaxosClusterMemberEvents implements ClusterMemberEvents, Lifecycle
 
         heartbeat.addHeartbeatListener( heartbeatListener = new HeartbeatListenerImpl() );
 
-        executor = Executors.newSingleThreadExecutor();
+        executor = Executors.newSingleThreadExecutor(new NamedThreadFactory("Paxos event notification", monitors.newMonitor(NamedThreadFactory.Monitor.class)));
     }
 
     @Override

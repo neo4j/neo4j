@@ -73,6 +73,7 @@ public class NetworkSender
         implements MessageSender, Lifecycle
 {
     public interface Monitor
+        extends NamedThreadFactory.Monitor
     {
         void queuedMessage( Message message );
 
@@ -153,8 +154,8 @@ public class NetworkSender
 
         // Start client bootstrap
         clientBootstrap = new ClientBootstrap( new NioClientSocketChannelFactory(
-                Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster client boss" ) ),
-                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster client worker" ) ), 2 ) );
+                Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster client boss", monitor ) ),
+                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster client worker", monitor ) ), 2 ) );
         clientBootstrap.setOption( "tcpNoDelay", true );
         clientBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
     }
@@ -233,7 +234,7 @@ public class NetworkSender
         if ( senderExecutor == null )
         {
             senderExecutor = Executors.newSingleThreadExecutor( new NamedThreadFactory( "Cluster Sender " + to
-                    .toASCIIString() ) );
+                    .toASCIIString(), monitor ) );
             senderExecutors.put( to, senderExecutor );
         }
 

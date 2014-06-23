@@ -65,6 +65,7 @@ public class NetworkReceiver
         implements MessageSource, Lifecycle
 {
     public interface Monitor
+        extends NamedThreadFactory.Monitor
     {
         void receivedMessage( Message message );
 
@@ -131,8 +132,8 @@ public class NetworkReceiver
 
         // Listen for incoming connections
         nioChannelFactory = new NioServerSocketChannelFactory(
-                Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster boss" ) ),
-                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster worker" ) ), 2 );
+                Executors.newCachedThreadPool( new NamedThreadFactory( "Cluster boss", monitor ) ),
+                Executors.newFixedThreadPool( 2, new NamedThreadFactory( "Cluster worker", monitor ) ), 2 );
         serverBootstrap = new ServerBootstrap( nioChannelFactory );
         serverBootstrap.setOption("child.tcpNoDelay", true);
         serverBootstrap.setPipelineFactory( new NetworkNodePipelineFactory() );
