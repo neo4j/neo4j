@@ -55,9 +55,8 @@ public class ConsistencyCheckService
                                            StringLogger logger ) throws ConsistencyCheckIncompleteException
     {
         DefaultFileSystemAbstraction fileSystem = new DefaultFileSystemAbstraction();
-        StoreFactory factory = new StoreFactory(
-                configForStoreDir( tuningConfiguration, new File( storeDir ) ),
-                new DefaultIdGeneratorFactory(),
+        tuningConfiguration = configForStoreDir( tuningConfiguration, new File( storeDir ) );
+        StoreFactory factory = new StoreFactory( tuningConfiguration, new DefaultIdGeneratorFactory(),
                 tuningConfiguration.get( ConsistencyCheckSettings.consistency_check_window_pool_implementation )
                         .windowPoolFactory( tuningConfiguration, logger ), fileSystem, logger );
 
@@ -97,7 +96,6 @@ public class ConsistencyCheckService
         }
         finally
         {
-
             report.close();
             neoStore.close();
         }
