@@ -846,9 +846,46 @@ class SimplePlannerQueryBuilderTest extends CypherFunSuite with LogicalPlanningT
       aggregationExpressions = Map.empty
     ))
 
-    query.tail should not be(empty)
+    query.tail should not be empty
   }
 
+  test("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN *") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable) = buildPlannerQuery("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN owner", normalize = true)
+
+    query.graph.patternNodes should equal(Set(IdName("owner")))
+    query.horizon.projection should equal(AggregatingQueryProjection(
+      groupingKeys = Map("owner" -> ident("owner")),
+      aggregationExpressions = Map("collected" -> CountStar()(pos))
+    ))
+
+    val tailQuery = query.tail.get
+
+    tailQuery.graph.patternNodes should be(empty)
+    tailQuery.horizon.projection should equal(RegularQueryProjection(Map("owner" -> ident("owner"))))
+  }
+
+  test("MATCH (owner) WITH owner, COUNT(*) AS xyz WITH owner, xyz > 0 as collection WHERE (owner)--() RETURN owner") {
+    val QueryPlanInput(UnionQuery(query :: Nil, _), lookupTable) = buildPlannerQuery(
+      """MATCH (owner)
+        |WITH owner, COUNT(*) AS xyz
+        |WITH owner, xyz > 0 as collection
+        |WHERE (owner)--()
+        |RETURN owner""".stripMargin, normalize = true)
+
+    query.horizon.projection should equal(AggregatingQueryProjection(
+      groupingKeys = Map("owner" -> ident("owner")),
+      aggregationExpressions = Map("xyz" -> CountStar()(pos))
+    ))
+
+    val tail1Query = query.tail.get
+
+    tail1Query.horizon.projection should equal(RegularQueryProjection(
+      Map(
+           // Removed by inliner since it never gets returned
+           // "collection" -> GreaterThan(ident("xyz"), SignedDecimalIntegerLiteral("0") _) _,
+          "owner" -> ident("owner"))
+    ))
+  }
 
   def relType(name: String): RelTypeName = RelTypeName(name)_
 }

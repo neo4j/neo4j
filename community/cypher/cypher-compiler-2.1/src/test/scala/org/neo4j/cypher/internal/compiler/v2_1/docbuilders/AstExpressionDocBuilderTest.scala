@@ -17,12 +17,10 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Property
-import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.astExpressionDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{simpleDocBuilder, DocBuilderTestSuite}
 
 class AstExpressionDocBuilderTest extends DocBuilderTestSuite[Any] {
 

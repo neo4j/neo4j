@@ -19,12 +19,33 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.perty._
-import org.neo4j.cypher.internal.compiler.v2_1.perty.Doc._
+import org.neo4j.cypher.internal.compiler.v2_1.perty.{NestedDocGenerator, Doc}
+import scala.reflect.ClassTag
+import scala.util.Try
 
-case object toStringDocBuilder extends CachingDocBuilder[Any] {
-  override protected def newNestedDocGenerator = {
-    case null    => inner => "null"
-    case v: Any  => inner => v.toString
-  }
+case class catchErrors[T: ClassTag](instance: NestedDocGenerator[T]) extends NestedDocGenerator[T] {
+
+  import Doc._
+
+  override def isDefinedAt(v: T) =
+    try {
+      instance.isDefinedAt(v)
+    }
+    catch {
+      case _: NotImplementedError => true
+      case _: MatchError          => true
+    }
+
+  override def apply(v: T) =
+    (inner) =>
+      try {
+        instance(v)(inner)
+      }
+      catch {
+        case _: NotImplementedError =>
+          "???"
+
+        case e: Exception  =>
+          group("!!!" :/: Try(text(e.getMessage)).getOrElse(e.getClass.toString :: ":" :/: "Failed to get the message"))
+      }
 }

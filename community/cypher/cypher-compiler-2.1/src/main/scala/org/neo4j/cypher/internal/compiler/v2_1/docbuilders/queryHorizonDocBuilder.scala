@@ -19,17 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.perty._
-import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{catchErrors, simpleDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.perty.{Doc, CachingDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryHorizon
 
-case object internalDocBuilder extends DocBuilderChain[Any] with TopLevelDocBuilder[Any] {
+object queryHorizonDocBuilder extends CachingDocBuilder[Any] {
 
-  val builders = Seq(
-    astExpressionDocBuilder,
-    astDocBuilder,
-    plannerDocBuilder,
-    simpleDocBuilder
-  )
+  import Doc._
 
-  override protected def newNestedDocGenerator = catchErrors(super.newNestedDocGenerator)
+  override protected def newNestedDocGenerator = {
+    case horizon: QueryHorizon => (inner) =>
+      val unwindsMapDoc = horizon.unwinds.collect {
+        case (k, v) => section("UNWIND", group(inner(v) :/: "AS " :: s"`$k`"))
+      }
+
+      val unwindsDoc = if (unwindsMapDoc.isEmpty) nil else group(breakList(unwindsMapDoc))
+      val projectionDoc = inner(horizon.projection)
+
+      unwindsDoc :+: projectionDoc
+  }
 }

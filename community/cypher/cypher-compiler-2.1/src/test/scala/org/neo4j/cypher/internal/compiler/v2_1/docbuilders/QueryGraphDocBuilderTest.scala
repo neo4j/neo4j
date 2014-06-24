@@ -17,14 +17,14 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.planner._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.perty.{DocFormatters, condense, PrintNewLine, PrintText}
-import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{astExpressionDocBuilder, plannerDocBuilder, astDocBuilder, queryGraphDocBuilder}
 import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{toStringDocBuilder, scalaDocBuilder, DocBuilderTestSuite}
 
 class QueryGraphDocBuilderTest extends DocBuilderTestSuite[Any] {
 

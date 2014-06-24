@@ -299,7 +299,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
             .withHorizon(QueryHorizon(projection = projection))
             .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
 
-        input.copy(q = newQuery, newPatternInExpressionTable)
+        input.copy(q = newQuery, tailPlannedOutput.patternExprTable)
 
       case With(distinct, ListedReturnItems(items), optOrderBy, skip, limit, optWhere) :: tl =>
         val orderBy = produceSortItems(optOrderBy)
@@ -320,7 +320,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
             .withHorizon(QueryHorizon(projection = projection))
             .withTail(tail.q.updateGraph(_.withArgumentIds(argumentIds)))
 
-        input.copy(q = newQuery, patternExprTable = newPatternInExpressionTable)
+        input.copy(q = newQuery, patternExprTable = tail.patternExprTable)
 
       case Seq() =>
           input

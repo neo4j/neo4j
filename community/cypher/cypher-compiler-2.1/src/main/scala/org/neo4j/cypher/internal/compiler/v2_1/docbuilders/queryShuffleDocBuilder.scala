@@ -17,18 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.perty.{NestedDocGenerator, Doc}
-import scala.reflect.ClassTag
+import org.neo4j.cypher.internal.compiler.v2_1.perty.CachingDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryShuffle
+import org.neo4j.cypher.internal.compiler.v2_1.perty.Doc._
 
-case class catchNotImplemented[T: ClassTag](instance: NestedDocGenerator[T]) extends NestedDocGenerator[T] {
+object queryShuffleDocBuilder extends CachingDocBuilder[Any] {
 
-  import Doc._
+  override protected def newNestedDocGenerator = {
+    case shuffle: QueryShuffle => (inner) =>
+      val sortItemDocs = shuffle.sortItems.map(inner)
+      val sortItems = if (sortItemDocs.isEmpty) nil else group("ORDER BY" :/: sepList(sortItemDocs))
 
-  override def isDefinedAt(v: T) =
-    try { instance.isDefinedAt(v) } catch { case _: NotImplementedError => true }
+      val skip = shuffle.skip.fold(nil)(skip => group("SKIP" :/: inner(skip)))
+      val limit = shuffle.limit.fold(nil)(limit => group("LIMIT" :/: inner(limit)))
 
-  override def apply(v: T) =
-    (inner) => try { instance(v)(inner) } catch { case _: NotImplementedError => text("???") }
+      sortItems :+: skip :+: limit
+  }
 }

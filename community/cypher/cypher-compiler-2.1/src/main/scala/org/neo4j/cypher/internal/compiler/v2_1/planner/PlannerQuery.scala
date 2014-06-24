@@ -57,7 +57,6 @@ case class PlannerQuery(graph: QueryGraph = QueryGraph.empty,
     case Some(tailQuery) => copy(tail = Some(f(tailQuery)))
   }
 
-
   def updateTailOrSelf(f: PlannerQuery => PlannerQuery): PlannerQuery = tail match {
     case None            => f(this)
     case Some(tailQuery) => this.updateTail(_.updateTailOrSelf(f))
