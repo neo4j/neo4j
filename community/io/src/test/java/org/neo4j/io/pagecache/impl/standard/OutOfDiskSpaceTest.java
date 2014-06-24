@@ -29,12 +29,13 @@ import org.junit.Test;
 import org.neo4j.graphdb.mockfs.LimitedFilesystemAbstraction;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.PagedFile;
 import org.neo4j.test.TargetDirectory;
 
 import static junit.framework.TestCase.fail;
 import static org.hamcrest.CoreMatchers.any;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
 
 public class OutOfDiskSpaceTest
 {
@@ -50,7 +51,6 @@ public class OutOfDiskSpaceTest
         StandardPageCache cache = new StandardPageCache( fs, 2, 512, monitor );
 
         PagedFile file = cache.map( new File( testDir.directory(), "storefile" ), 512 );
-        PageCursor cursor = cache.newCursor();
 
         // And given the eviction thread is running
         Thread sweeperThread = new Thread( cache );
@@ -58,10 +58,11 @@ public class OutOfDiskSpaceTest
 
         // And given we've "changed" some pages
         CountDownLatch evictionThreadLatch = monitor.trap( any( RecordingPageCacheMonitor.Evict.class ) );
-        file.pin( cursor, PageLock.EXCLUSIVE, 1 );
-        file.unpin( cursor );
-        file.pin( cursor, PageLock.EXCLUSIVE, 2 );
-        file.unpin( cursor );
+        try ( PageCursor cursor = file.io( 1, PF_EXCLUSIVE_LOCK ) )
+        {
+            cursor.next();
+            cursor.next();
+        }
 
         // When
         fs.runOutOfDiskSpace();

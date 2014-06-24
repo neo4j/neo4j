@@ -76,7 +76,7 @@ import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 public class XaLogicalLogTest
 {

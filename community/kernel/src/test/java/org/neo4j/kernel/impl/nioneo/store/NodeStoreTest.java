@@ -33,7 +33,7 @@ import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static java.util.Arrays.asList;
 

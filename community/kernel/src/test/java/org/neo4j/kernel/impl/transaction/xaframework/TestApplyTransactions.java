@@ -36,7 +36,7 @@ import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.LogTestUtils;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.hamcrest.Matchers.greaterThan;
 import static org.junit.Assert.assertEquals;

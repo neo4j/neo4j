@@ -22,80 +22,108 @@ package org.neo4j.io.pagecache.impl.standard;
 import java.io.IOException;
 
 import org.junit.Test;
+
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheMonitor;
+import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.io.pagecache.PageLock;
 
-import static junit.framework.TestCase.fail;
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.core.IsEqual.equalTo;
-import static org.mockito.Mockito.*;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 public class StandardPagedFileTest
 {
 
-    private final StandardPageCursor cursor = new StandardPageCursor();
-    private final PageTable table = mock(PageTable.class);
+    private final PageTable table = mock( PageTable.class );
     private final PinnablePage page = mock( PinnablePage.class );
     private final StoreChannel channel = mock( StoreChannel.class);
-    private final StandardPageIO io = new StandardPageIO( null, channel, 512, null );
+    private final StandardPageSwapper swapper = new StandardPageSwapper( null, channel, 512, null );
 
     @Test
     public void shouldLoadPage() throws Exception
     {
         // Given
-        when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
-        when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
+        when( table.load( swapper, 12, PageLock.SHARED ) ).thenReturn( page );
+        when( page.pin( swapper, 12, PageLock.SHARED ) ).thenReturn( true );
+        when( page.pageId() ).thenReturn( 12L );
+        when( channel.size() ).thenReturn( 2048L );
 
-        StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
+        StandardPagedFile file = new StandardPagedFile( table, null, channel, 28, PageCacheMonitor.NULL );
 
         // When
-        file.pin( cursor, PageLock.SHARED, 12 );
+        try ( PageCursor cursor = file.io( 12, PF_SHARED_LOCK ) )
+        {
+            // Then
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 12L ) );
+        }
 
-        // Then
-        verify(table).load( io, 12, PageLock.SHARED );
-        assertThat(cursor.page(), equalTo( page ));
+        // And then
+        verify( table ).load( swapper, 12, PageLock.SHARED );
     }
 
     @Test
     public void shouldUnpinWithCorrectLockType() throws Exception
     {
         // Given
-        when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
-        when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
+        when( table.load( swapper, 12, PageLock.EXCLUSIVE ) ).thenReturn( page );
+        when( page.pin( swapper, 12, PageLock.EXCLUSIVE ) ).thenReturn( true );
+        when( page.pageId() ).thenReturn( 12L );
+        when( swapper.getLastPageId() ).thenReturn( 512L );
 
         StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
 
         // When
-        file.pin( cursor, PageLock.SHARED, 12 );
-        file.unpin( cursor );
-
-        // Then
-        verify(page).unpin( PageLock.SHARED );
+        try ( PageCursor cursor = file.io( 12, PF_EXCLUSIVE_LOCK ) )
+        {
+            // Then
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 12L ) );
+        }
+        verify( page ).unpin( PageLock.EXCLUSIVE );
     }
 
-    @Test
-    public void shouldThrowIfCursorIsAlreadyUsed() throws Exception
+    @Test( expected = IllegalArgumentException.class )
+    public void shouldThrowIfNoLockSpecified() throws Exception
     {
         // Given
-        when( table.load( io, 12, PageLock.SHARED ) ).thenReturn( page );
-        when( page.pin( io, 12, PageLock.SHARED ) ).thenReturn( true );
+        when( table.load( swapper, 12, PageLock.SHARED ) ).thenReturn( page );
+        when( page.pin( swapper, 12, PageLock.SHARED ) ).thenReturn( true );
 
         StandardPagedFile file = new StandardPagedFile(table, null, channel, 512, PageCacheMonitor.NULL );
 
-        // And given I've pinned a page already
-        file.pin( cursor, PageLock.SHARED, 12 );
+        // When
+        try ( PageCursor cursor = file.io( 12, 0 ) )
+        {
+            // Then
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 12L ) );
+        }
+    }
+
+    @Test( expected = IllegalArgumentException.class )
+    public void shouldThrowIfSpecifyingBothSharedAndExclusiveLock() throws IOException
+    {
+        // Given
+        when( table.load( swapper, 12, PageLock.SHARED ) ).thenReturn( page );
+        when( page.pin( swapper, 12, PageLock.SHARED ) ).thenReturn( true );
+
+        StandardPagedFile file = new StandardPagedFile( table, null, channel, 512, PageCacheMonitor.NULL );
 
         // When
-        try
+        int pf_flags = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
+        try ( PageCursor cursor = file.io( 12, pf_flags ) )
         {
-            file.pin( cursor, PageLock.SHARED, 12 );
-            fail("Should have thrown when re-using an active cursor");
-
-        // Then
-        } catch(IOException e)
-        {
-            assertThat(e.getMessage(), equalTo("The cursor is already in use, you need to unpin the cursor before using it again."));
+            // Then
+            assertTrue( cursor.next() );
+            assertThat( cursor.getCurrentPageId(), is( 12L ) );
         }
     }
 }

@@ -92,7 +92,7 @@ import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.SingleLoggingService;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.PageCacheRule;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;

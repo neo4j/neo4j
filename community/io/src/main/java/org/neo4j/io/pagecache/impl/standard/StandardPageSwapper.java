@@ -25,15 +25,17 @@ import java.nio.ByteBuffer;
 
 import org.neo4j.function.primitive.FunctionFromPrimitiveLong;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.io.pagecache.PageCursor;
 
-public class StandardPageIO implements PageIO
+public class StandardPageSwapper implements PageSwapper
 {
     private final File file;
     private final StoreChannel channel;
     private final int filePageSize;
     private final FunctionFromPrimitiveLong onEviction;
 
-    public StandardPageIO( File file, StoreChannel channel, int filePageSize, FunctionFromPrimitiveLong onEviction )
+    public StandardPageSwapper( File file, StoreChannel channel, int filePageSize, FunctionFromPrimitiveLong
+            onEviction )
     {
         this.file = file;
         this.channel = channel;
@@ -67,7 +69,7 @@ public class StandardPageIO implements PageIO
     @Override
     public void write( long pageId, ByteBuffer from ) throws IOException
     {
-        from.position(0);
+        from.position( 0 );
         from.limit( filePageSize );
         channel.writeAll( from, pageIdToPosition( pageId ) );
     }
@@ -101,7 +103,7 @@ public class StandardPageIO implements PageIO
             return false;
         }
 
-        StandardPageIO that = (StandardPageIO) o;
+        StandardPageSwapper that = (StandardPageSwapper) o;
 
         return !(channel != null ? !channel.equals( that.channel ) : that.channel != null);
 
@@ -121,5 +123,17 @@ public class StandardPageIO implements PageIO
     public void force() throws IOException
     {
         channel.force( false );
+    }
+
+    public long getLastPageId() throws IOException
+    {
+        long channelSize = channel.size();
+        if ( channelSize == 0 )
+        {
+            return PageCursor.UNBOUND_PAGE_ID;
+        }
+        long div = channelSize / filePageSize;
+        long mod = channelSize % filePageSize;
+        return mod == 0? div - 1 : div;
     }
 }

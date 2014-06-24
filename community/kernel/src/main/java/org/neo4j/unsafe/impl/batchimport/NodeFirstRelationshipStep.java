@@ -27,7 +27,6 @@ import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink.GroupVisitor;
 import org.neo4j.unsafe.impl.batchimport.staging.LonelyProcessingStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-import org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyNeoStore;
 
 /**
  * Sets the {@link NodeRecord#setNextRel(long) relationship field} on all {@link NodeRecord nodes}.

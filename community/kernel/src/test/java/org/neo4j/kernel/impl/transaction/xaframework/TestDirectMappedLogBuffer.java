@@ -34,7 +34,7 @@ import org.neo4j.graphdb.mockfs.FileSystemGuard;
 import org.neo4j.io.fs.StoreFileChannel;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertEquals;

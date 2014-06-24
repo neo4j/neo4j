@@ -22,7 +22,7 @@ package org.neo4j.test;
 import org.junit.rules.ExternalResource;
 
 import org.neo4j.graphdb.GraphDatabaseService;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 public class EphemeralFileSystemRule extends ExternalResource
 {

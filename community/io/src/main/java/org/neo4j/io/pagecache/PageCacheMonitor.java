@@ -19,42 +19,42 @@
  */
 package org.neo4j.io.pagecache;
 
-import org.neo4j.io.pagecache.impl.standard.PageIO;
+import org.neo4j.io.pagecache.impl.standard.PageSwapper;
 
 public interface PageCacheMonitor
 {
     public static final PageCacheMonitor NULL = new PageCacheMonitor()
     {
         @Override
-        public void pageFault( long pageId, PageIO io )
+        public void pageFault( long pageId, PageSwapper io )
         {
         }
 
         @Override
-        public void evict( long pageId, PageIO io )
+        public void evict( long pageId, PageSwapper io )
         {
         }
 
         @Override
-        public void pin( PageLock lock, long pageId, PageIO io )
+        public void pin( PageLock lock, long pageId, PageSwapper io )
         {
         }
 
         @Override
-        public void unpin( PageLock lock, long pageId, PageIO io )
+        public void unpin( PageLock lock, long pageId, PageSwapper io )
         {
         }
     };
 
     /** A page not in the cache was loaded */
-    void pageFault( long pageId, PageIO io );
+    void pageFault( long pageId, PageSwapper io );
 
     /** A page was evicted. */
-    void evict( long pageId, PageIO io );
+    void evict( long pageId, PageSwapper io );
 
     /** A page is pinned */
-    void pin( PageLock lock, long pageId, PageIO io );
+    void pin( PageLock lock, long pageId, PageSwapper io );
 
     /** A page is unpinned */
-    void unpin( PageLock lock, long pageId, PageIO io );
+    void unpin( PageLock lock, long pageId, PageSwapper io );
 }

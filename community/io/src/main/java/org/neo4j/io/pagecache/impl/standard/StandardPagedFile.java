@@ -25,6 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCacheMonitor;
@@ -39,12 +40,12 @@ public class StandardPagedFile implements PagedFile
     private final PageTable table;
     private final int filePageSize;
     private final PageCacheMonitor monitor;
-    private final StandardPageIO pageIO;
-
-    private final AtomicInteger references = new AtomicInteger( 1 );
-
     /** Currently active pages in the file this object manages. */
-    private ConcurrentMap<Long, Object> filePages = new ConcurrentHashMap<>();
+    private final  ConcurrentMap<Long, Object> filePages;
+    private final StandardPageSwapper swapper;
+    private final AtomicInteger references;
+    private final AtomicLong lastPageId;
+    private final CursorFreelist cursorFreelist;
 
     /**
      * @param table
@@ -61,18 +62,42 @@ public class StandardPagedFile implements PagedFile
             File file,
             StoreChannel channel,
             int filePageSize,
-            PageCacheMonitor monitor )
+            PageCacheMonitor monitor ) throws IOException
     {
         this.table = table;
         this.filePageSize = filePageSize;
         this.monitor = monitor;
-        this.pageIO = new StandardPageIO( file, channel, filePageSize, new RemoveEvictedPage( filePages ) );
+        this.filePages = new ConcurrentHashMap<>();
+        this.swapper = new StandardPageSwapper( file, channel, filePageSize, new RemoveEvictedPage( filePages ) );
+        this.references = new AtomicInteger( 1 );
+        this.lastPageId = new AtomicLong( swapper.getLastPageId() );
+        this.cursorFreelist = new CursorFreelist();
     }
 
     @Override
-    public void pin( PageCursor pinToCursor, PageLock lock, long pageId ) throws IOException
+    public PageCursor io( long pageId, int pf_flags ) throws IOException
     {
-        StandardPageCursor cursor = (StandardPageCursor) pinToCursor;
+        int lockMask = PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK;
+        if ( (pf_flags & lockMask) == 0 )
+        {
+            throw new IllegalArgumentException(
+                    "Must specify either PF_EXCLUSIVE_LOCK or PF_SHARED_LOCK" );
+        }
+        if ( (pf_flags & lockMask) == lockMask )
+        {
+            throw new IllegalArgumentException(
+                    "Cannot specify both PF_EXCLUSIVE_LOCK and PF_SHARED_LOCK" );
+        }
+        // Taking shared locks implies an inability to grow the file
+        pf_flags |= (pf_flags & PF_SHARED_LOCK) != 0? PF_NO_GROW : 0;
+        StandardPageCursor cursor = cursorFreelist.takeCursor();
+        cursor.initialise( this, pageId, pf_flags );
+        cursor.rewind();
+        return cursor;
+    }
+
+    void pin( StandardPageCursor cursor, PageLock lock, long pageId ) throws IOException
+    {
         cursor.assertNotInUse();
         for (;;)
         {
@@ -86,12 +111,12 @@ public class StandardPagedFile implements PagedFile
                 CountDownLatch latch = new CountDownLatch( 1 );
                 if ( filePages.replace( pageId, pageRef, latch ) )
                 {
-                    PinnablePage page = table.load( pageIO, pageId, lock );
+                    PinnablePage page = table.load( swapper, pageId, lock );
+                    cursor.reset( page, lock );
                     filePages.put( pageId, page );
                     latch.countDown();
 
-                    cursor.reset( page, lock );
-                    monitor.pin( lock, pageId, pageIO );
+                    monitor.pin( lock, pageId, swapper );
                     return; // yay!
                 }
             }
@@ -111,10 +136,10 @@ public class StandardPagedFile implements PagedFile
             {
                 // happy case where we have a page id
                 PinnablePage page = (PinnablePage) pageRef;
-                if ( page.pin( pageIO, pageId, lock ) )
+                if ( page.pin( swapper, pageId, lock ) )
                 {
                     cursor.reset( page, lock );
-                    monitor.pin( lock, pageId, pageIO );
+                    monitor.pin( lock, pageId, swapper );
                     return; // yay!
                 }
                 filePages.replace( pageId, page, NULL );
@@ -122,15 +147,14 @@ public class StandardPagedFile implements PagedFile
         }
     }
 
-    @Override
-    public void unpin( PageCursor cursor )
+    void unpin( PageCursor cursor )
     {
         StandardPageCursor standardCursor = (StandardPageCursor) cursor;
         PageLock lock = standardCursor.lockType();
         PinnablePage page = standardCursor.page();
         long pageId = page.pageId();
         page.unpin( lock );
-        monitor.unpin( lock, pageId, pageIO );
+        monitor.unpin( lock, pageId, swapper );
         standardCursor.reset( null, null );
     }
 
@@ -171,23 +195,46 @@ public class StandardPagedFile implements PagedFile
         return references.decrementAndGet() == 0;
     }
 
+    // TODO why do we have both this close method, and unmap on the PageCache?
     @Override
     public void close() throws IOException
     {
         force();
-        pageIO.close();
+        swapper.close();
     }
 
     @Override
     public void flush() throws IOException
     {
-        table.flush( pageIO );
+        table.flush( swapper );
         force();
     }
 
     @Override
     public void force() throws IOException
     {
-        pageIO.force();
+        swapper.force();
+    }
+
+    public long getLastPageId() throws IOException
+    {
+        return lastPageId.get();
+    }
+
+    /**
+     * Make sure that the lastPageId is at least the given pageId.
+     * @param newLastPageId
+     * Make sure that the lastPageId is equal to or greater than this number.
+     */
+    public long increaseLastPageIdTo( long newLastPageId )
+    {
+       long current;
+       do
+       {
+           current = lastPageId.get();
+       }
+       while ( current < newLastPageId
+               && !lastPageId.compareAndSet( current, newLastPageId ) );
+       return lastPageId.get();
     }
 }

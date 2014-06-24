@@ -43,7 +43,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogEntry.Commit;
 import org.neo4j.kernel.impl.util.Consumer;
 import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 public class TestTxTimestamps
 {

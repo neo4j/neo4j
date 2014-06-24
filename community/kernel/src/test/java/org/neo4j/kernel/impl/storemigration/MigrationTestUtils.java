@@ -34,7 +34,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.Unzip;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.fail;

@@ -17,7 +17,7 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.test.impl;
+package org.neo4j.graphdb.mockfs;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -54,21 +54,18 @@ import java.util.zip.ZipEntry;
 import java.util.zip.ZipOutputStream;
 
 import org.neo4j.function.Function;
-import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.io.fs.FileLock;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.fs.StoreFileChannel;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+import org.neo4j.test.impl.ChannelInputStream;
+import org.neo4j.test.impl.ChannelOutputStream;
 
 import static java.lang.Math.max;
 import static java.lang.Math.min;
 import static java.util.Arrays.asList;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
-// TODO: Move this to org.neo4j.io
-public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements FileSystemAbstraction
+public class EphemeralFileSystemAbstraction implements FileSystemAbstraction
 {
     private final Set<File> directories = Collections.newSetFromMap( new ConcurrentHashMap<File, Boolean>() );
     private final Map<File, EphemeralFileData> files;
@@ -85,11 +82,13 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         this.files.putAll( files );
     }
 
-    @Override
     public synchronized void shutdown()
     {
         for ( EphemeralFileData file : files.values() )
+        {
             free( file );
+        }
+
         files.clear();
 
         for ( ThirdPartyFileSystem thirdPartyFileSystem : thirdPartyFileSystems.values() )
@@ -108,15 +107,27 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
 
     public void assertNoOpenFiles() throws Exception
     {
-        List<FileStillOpenException> open = new ArrayList<>();
+        FileStillOpenException exception = null;
         for ( EphemeralFileData file : files.values() )
         {
-            for ( EphemeralFileChannel channel : loop( file.getOpenChannels() ) )
+            Iterator<EphemeralFileChannel> channels = file.getOpenChannels();
+            while (  channels.hasNext() )
             {
-                open.add( channel.openedAt );
+                EphemeralFileChannel channel = channels.next();
+                if ( exception == null )
+                {
+                    exception = channel.openedAt;
+                }
+                else
+                {
+                    exception.addSuppressed( channel.openedAt );
+                }
             }
         }
-        MultipleExceptionsStrategy.assertEmptyExceptions( open );
+        if ( exception != null )
+        {
+            throw exception;
+        }
     }
 
     public void dumpZip( OutputStream output ) throws IOException
@@ -191,9 +202,12 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         }
     }
 
-    private void free(EphemeralFileData file)
+    private void free( EphemeralFileData file )
     {
-        if (file != null) file.fileAsBuffer.free();
+        if (file != null)
+        {
+            file.fileAsBuffer.free();
+        }
     }
 
     @Override
@@ -708,10 +722,11 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
         Iterator<EphemeralFileChannel> getOpenChannels()
         {
             final Iterator<WeakReference<EphemeralFileChannel>> refs = channels.iterator();
-            return new PrefetchingIterator<EphemeralFileChannel>()
+            return new Iterator<EphemeralFileChannel>()
             {
-                @Override
-                protected EphemeralFileChannel fetchNextOrNull()
+                private EphemeralFileChannel current = fetchNextOrNull();
+
+                private EphemeralFileChannel fetchNextOrNull()
                 {
                     while ( refs.hasNext() )
                     {
@@ -720,6 +735,20 @@ public class EphemeralFileSystemAbstraction extends LifecycleAdapter implements 
                         refs.remove();
                     }
                     return null;
+                }
+
+                @Override
+                public boolean hasNext()
+                {
+                    return current != null;
+                }
+
+                @Override
+                public EphemeralFileChannel next()
+                {
+                    EphemeralFileChannel value = current;
+                    current = fetchNextOrNull();
+                    return value;
                 }
 
                 @Override

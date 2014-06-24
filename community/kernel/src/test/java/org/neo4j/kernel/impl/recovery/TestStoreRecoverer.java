@@ -25,7 +25,7 @@ import java.util.HashMap;
 
 import org.junit.Test;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.hamcrest.CoreMatchers.is;
 import static org.junit.Assert.*;
