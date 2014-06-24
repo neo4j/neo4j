@@ -157,8 +157,13 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <executions>
           <execution>
+            <id>attach-javadoc</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
             <id>create-javadocs</id>
             <phase>${attach-javadoc-phase}</phase>
+            <goals><goal>jar</goal></goals>
             <configuration>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <header>${project.name}</header>
