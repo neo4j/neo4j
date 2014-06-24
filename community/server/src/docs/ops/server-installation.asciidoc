@@ -88,7 +88,7 @@ For Debian packages, see the instructions at  http://debian.neo4j.org.
 
 1. Download the latest release from http://www.neo4j.org/download.
    * Select the appropriate tar.gz distribution for your platform.
-2. Extract the contents of the archive, using: `tar -cf <filename>`
+2. Extract the contents of the archive, using: `tar -xf <filename>`
    * Refer to the top-level extracted directory as: +NEO4J_HOME+
 3. Change directory to: `$NEO4J_HOME`
    * Run: `./bin/neo4j console`
