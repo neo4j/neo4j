@@ -45,11 +45,7 @@ import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, NodeManager}
 import org.neo4j.cypher.internal.ServerExecutionEngine
 import org.neo4j.cypher.internal.commons.CypherJUnitSuite
 import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
-<<<<<<< HEAD
 import org.neo4j.kernel.impl.api.KernelStatement
-=======
-import java.util.concurrent.TimeUnit
->>>>>>> master
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
