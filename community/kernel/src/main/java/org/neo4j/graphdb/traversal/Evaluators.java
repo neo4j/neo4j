@@ -313,12 +313,13 @@ public abstract class Evaluators
     }
 
     /**
+     * Include paths with the specified end nodes.
+     * 
+     * Uses Evaluators#endNodeIs(Evaluation, Evaluation, Node...) with
+     * {@link Evaluation#INCLUDE_AND_CONTINUE} for {@code evaluationIfMatch} and
+     * {@link Evaluation#EXCLUDE_AND_CONTINUE} for {@code evaluationIfNoMatch}.
+     * 
      * @param nodes end nodes for paths to be included in the result.
-     * @see this#endNodeIs(Evaluation, Evaluation, Node...), uses
-     *      {@link Evaluation#INCLUDE_AND_CONTINUE} for
-     *      {@code evaluationIfMatch} and
-     *      {@link Evaluation#EXCLUDE_AND_CONTINUE} for
-     *      {@code evaluationIfNoMatch}.
      */
     @SuppressWarnings( "rawtypes" )
     public static PathEvaluator includeWhereEndNodeIs( Node... nodes )
