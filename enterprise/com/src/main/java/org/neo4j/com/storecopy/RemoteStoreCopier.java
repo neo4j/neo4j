@@ -19,6 +19,8 @@
  */
 package org.neo4j.com.storecopy;
 
+import static org.neo4j.helpers.Format.bytes;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -41,8 +43,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionReprese
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
-
-import static org.neo4j.helpers.Format.bytes;
 
 public class RemoteStoreCopier
 {

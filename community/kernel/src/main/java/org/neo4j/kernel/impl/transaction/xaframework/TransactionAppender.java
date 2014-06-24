@@ -36,4 +36,6 @@ public interface TransactionAppender extends Closeable
      * @throws IOException
      */
     Future<Long> append( TransactionRepresentation commands ) throws IOException;
+
+    Future<Long> append( CommittedTransactionRepresentation commands ) throws IOException;
 }

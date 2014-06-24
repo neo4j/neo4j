@@ -146,7 +146,7 @@ public abstract class LogEntry
         /**
          * @return combines necessary state to get a unique checksum to identify this transaction uniquely.
          */
-        public static long checksum( byte[] additionalHeader, int masterId, int authorId)
+        public static long checksum( byte[] additionalHeader, int masterId, int authorId )
         {
             // [4 bits combined masterId/myId][4 bits xid hashcode, which combines time/randomness]
             long lowBits = Arrays.hashCode( additionalHeader );

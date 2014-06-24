@@ -153,6 +153,9 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 
         super.create();
 
+        life.add( requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ).toIntegerIndex(),
+                getDependencyResolver() ) );
+
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( availabilityGuard, logging,
                 masterDelegateInvocationHandler ) );
         life.add( updatePuller = new UpdatePuller( memberStateMachine, master, requestContextFactory,

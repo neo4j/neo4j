@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.Functions.identity;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -171,16 +180,6 @@ import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static java.lang.String.format;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.Functions.identity;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
-
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
  * and lifecycle management of these.
@@ -311,8 +310,10 @@ public abstract class InternalAbstractGraphDatabase
 
     protected void run()
     {
+        // TODO 2.2-future for the love of some divine concept, make sure this shutdown on error works AND prints the
+        // TODO 2.2-future error in a useful manner. Can't be that hard, can it?
         create();
-
+        boolean failed = false;
         try
         {
             registerRecovery();
@@ -321,21 +322,16 @@ public abstract class InternalAbstractGraphDatabase
         }
         catch ( final Throwable throwable )
         {
-            StringBuilder msg = new StringBuilder();
-            msg.append( "Startup failed" );
-            Throwable temporaryThrowable = throwable;
-            while ( temporaryThrowable != null )
-            {
-                msg.append( ": " ).append( temporaryThrowable.getMessage() );
-                temporaryThrowable = temporaryThrowable.getCause();
-            }
-
-            msgLog.error( msg.toString() );
-
-            shutdown();
-
+            failed = true;
             throw new RuntimeException( "Error starting " + getClass().getName() + ", " + storeDir.getAbsolutePath(),
                     throwable );
+        }
+        finally
+        {
+            if ( failed )
+            {
+                shutdown();
+            }
         }
     }
 

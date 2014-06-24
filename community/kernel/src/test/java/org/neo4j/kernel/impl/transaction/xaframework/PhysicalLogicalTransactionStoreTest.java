@@ -19,6 +19,14 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.junit.Assert.assertArrayEquals;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.mock;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
+import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,9 +35,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Before;
 import org.junit.Test;
-
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
@@ -37,20 +44,12 @@ import org.neo4j.kernel.impl.nioneo.xa.LogFileRecoverer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
-
-import static org.junit.Assert.assertArrayEquals;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.mock;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
-import static org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.DEFAULT_NAME;
-import static org.neo4j.kernel.impl.util.Providers.singletonProvider;
 
 public class PhysicalLogicalTransactionStoreTest
 {
-    private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    // TODO 2.2-future this breaks the test in interesting ways
+//    private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
+    private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
     private final File dir = new File( "dir" );
 
@@ -83,7 +82,7 @@ public class PhysicalLogicalTransactionStoreTest
                                 }
                             } ));
         TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
-        LogicalTransactionStore store = life.add(new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache,
+        life.add(new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache,
                 new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ) ) );
 
         try
@@ -148,7 +147,7 @@ public class PhysicalLogicalTransactionStoreTest
             }
         } )));
 
-        life.add(new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, new VersionAwareLogEntryReader(
+        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache, new VersionAwareLogEntryReader(
                 CommandReaderFactory.DEFAULT ) ) );
 
         // WHEN
@@ -165,10 +164,73 @@ public class PhysicalLogicalTransactionStoreTest
         assertEquals( 1, recoveredTransactions.get() );
     }
 
+    @Test
+    public void shouldExtractMetadataFromExistingTransaction() throws Exception
+    {
+        // GIVEN
+        LogRotationControl logRotationControl = mock( LogRotationControl.class );
+        TransactionIdStore transactionIdStore = new DeadSimpleTransactionIdStore( 0l );
+        TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
+        TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
+        final byte[] additionalHeader = new byte[] {1, 2, 5};
+        final int masterId = 2, authorId = 1;
+        final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
+        LifeSupport life = new LifeSupport(  );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, DEFAULT_NAME, fs );
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
+                transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
+                positionCache, new Visitor<ReadableLogChannel, IOException>()
+        {
+            @Override
+            public boolean visit( ReadableLogChannel element ) throws IOException
+            {
+                return false;
+            }
+        } ));
+
+        life.start();
+
+        addATransactionAndRewind( logFile, txIdGenerator, positionCache,
+                additionalHeader, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
+
+        life.shutdown();
+
+        life = new LifeSupport();
+        final AtomicInteger recoveredTransactions = new AtomicInteger();
+        logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
+                transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
+                positionCache, new LogFileRecoverer( new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ), new Visitor<CommittedTransactionRepresentation, IOException>()
+        {
+            @Override
+            public boolean visit( CommittedTransactionRepresentation committedTx ) throws IOException
+            {
+                TransactionRepresentation transaction = committedTx.getTransactionRepresentation();
+                assertArrayEquals( additionalHeader, transaction.additionalHeader() );
+                assertEquals( masterId, transaction.getMasterId() );
+                assertEquals( authorId, transaction.getAuthorId() );
+                assertEquals( timeWritten, transaction.getTimeWritten() );
+                assertEquals( latestCommittedTxWhenStarted, transaction.getLatestCommittedTxWhenStarted() );
+                recoveredTransactions.incrementAndGet();
+                return true;
+            }
+        } )));
+
+        LogicalTransactionStore store = life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
+                positionCache, new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ) ) );
+
+        // WHEN
+        life.start();
+
+        positionCache.clear();
+
+        // TODO 2.2-future make this into a proper test
+        System.out.println( store.getMetadataFor( transactionIdStore.getLastCommittingTransactionId() ) );
+    }
+
     private void addATransactionAndRewind( LogFile logFile, TxIdGenerator txIdGenerator,
                                            TransactionMetadataCache positionCache, byte[] additionalHeader,
                                            int masterId, int authorId, long timeWritten,
-            long latestCommittedTxWhenStarted ) throws IOException
+                                           long latestCommittedTxWhenStarted ) throws IOException
     {
         try ( TransactionAppender appender = new PhysicalTransactionAppender( logFile, txIdGenerator, positionCache ) )
         {
@@ -194,5 +256,4 @@ public class PhysicalLogicalTransactionStoreTest
         return commands;
     }
 
-//    public final @Rule TestDirectory directory = TargetDirectory.testDirForTest( getClass() );
 }

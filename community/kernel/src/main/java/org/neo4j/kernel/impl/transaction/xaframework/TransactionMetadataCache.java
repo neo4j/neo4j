@@ -100,5 +100,16 @@ public class TransactionMetadataCache
         {
             return checksum;
         }
+
+        @Override
+        public String toString()
+        {
+            return "TransactionMetadata{" +
+                    "masterId=" + masterId +
+                    ", authorId=" + authorId +
+                    ", startPosition=" + startPosition +
+                    ", checksum=" + checksum +
+                    '}';
+        }
     }
 }

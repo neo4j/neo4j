@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
+
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -29,9 +32,6 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 
 /**
  * {@link LogFile} backup by one or more files in a {@link FileSystemAbstraction}.
@@ -335,8 +335,13 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     }
 
     @Override
-    public void accept( LogFileVisitor visitor )
+    public void accept( LogFileVisitor visitor ) throws IOException
     {
-        throw new UnsupportedOperationException( "Please implement" );
+        long currentLogVersion = logFiles.getHighestLogVersion();
+        LogPosition position = new LogPosition( currentLogVersion, 16 );
+        while( logFiles.versionExists( currentLogVersion ) && visitor.visit( position, getReader( position  ) ) )
+        {
+            currentLogVersion--;
+        }
     }
 }

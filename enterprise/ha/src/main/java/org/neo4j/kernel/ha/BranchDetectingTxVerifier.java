@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.io.IOException;
+
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
@@ -44,7 +46,15 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
     @Override
     public void assertMatch( long txId, int masterId, long checksum )
     {
-        TransactionMetadataCache.TransactionMetadata metadata = txStore.getMetadataFor( txId );
+        TransactionMetadataCache.TransactionMetadata metadata = null;
+        try
+        {
+            metadata = txStore.getMetadataFor( txId );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
         int readMaster = metadata.getMasterId();
         long readChecksum = metadata.getChecksum();
         boolean match = masterId == readMaster && checksum == readChecksum;

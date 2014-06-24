@@ -33,8 +33,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     private final LogEntryReader<ReadableLogChannel> logEntryReader;
 
     public PhysicalLogicalTransactionStore( LogFile logFile, TxIdGenerator txIdGenerator, TransactionMetadataCache
-            transactionMetadataCache,
-                                            LogEntryReader<ReadableLogChannel> logEntryReader )
+            transactionMetadataCache, LogEntryReader<ReadableLogChannel> logEntryReader )
     {
         this.logFile = logFile;
         this.txIdGenerator = txIdGenerator;
@@ -70,33 +69,44 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
             throws NoSuchTransactionException, IOException
     {
         // look up in position cache
-        LogPosition position = transactionMetadataCache.getTransactionMetadata( transactionIdToStartFrom ).getStartPosition();
-        if ( position != null )
+        TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache
+                .getTransactionMetadata( transactionIdToStartFrom );
+        if ( transactionMetadata != null )
         {
             // we're good
-            return new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader, visitor );
+            return new PhysicalTransactionCursor( logFile.getReader( transactionMetadata.getStartPosition() ), logEntryReader, visitor );
         }
 
         // ask LogFile
-        TransactionPositionLocator transactionPositionLocator = new TransactionPositionLocator( transactionIdToStartFrom );
+        TransactionPositionLocator transactionPositionLocator =
+                new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
         logFile.accept( transactionPositionLocator);
-        position = transactionPositionLocator.getPosition();
+        LogPosition position = transactionPositionLocator.getPosition();
+        if ( position == null )
+        {
+            return null;
+        }
         // TODO 2.2-future play forward and cache that position
         IOCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader, visitor );
         return cursor;
     }
 
     @Override
-    public TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId )
+    public TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId ) throws IOException
     {
         TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache
                 .getTransactionMetadata( transactionId );
         if ( transactionMetadata == null )
         {
-            logFile.accept( new TransactionMetadataFiller( transactionId ) );
+            IOCursor cursor = getCursor( transactionId, new TransactionMetadataFiller() );
+            if ( cursor == null )
+            {
+                return null;
+            }
+            while(cursor.next());
+
         }
-        transactionMetadata = transactionMetadataCache
-                .getTransactionMetadata( transactionId );
+        transactionMetadata = transactionMetadataCache.getTransactionMetadata( transactionId );
         return transactionMetadata;
     }
 
@@ -108,18 +118,37 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     private static class TransactionPositionLocator implements LogFile.LogFileVisitor
     {
         private final long startTransactionId;
+        private final LogEntryReader<ReadableLogChannel> logEntryReader;
         private LogPosition position;
 
-        TransactionPositionLocator( long startTransactionId )
+        TransactionPositionLocator( long startTransactionId, LogEntryReader<ReadableLogChannel> logEntryReader )
         {
             this.startTransactionId = startTransactionId;
+            this.logEntryReader = logEntryReader;
         }
 
         @Override
-        public boolean visit( LogPosition position, ReadableLogChannel channel )
+        public boolean visit( LogPosition position, ReadableLogChannel channel ) throws IOException
         {
-            // TODO Auto-generated method stub
-            return false;
+            LogEntry logEntry;
+            while ( (logEntry = logEntryReader.readLogEntry( channel ) ) != null )
+            {
+                switch ( logEntry.getType() )
+                {
+                    case LogEntry.TX_START:
+                        this.position = position;
+                        break;
+                    case LogEntry.TX_1P_COMMIT:
+                        LogEntry.Commit commit = (LogEntry.Commit) logEntry;
+                        if ( commit.getTxId() == startTransactionId )
+                        {
+                            return false;
+                        }
+                    default: // just skip commands
+                        break;
+                }
+            }
+            return true;
         }
 
         public LogPosition getPosition()
@@ -128,18 +157,15 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         }
     }
 
-    private class TransactionMetadataFiller implements LogFile.LogFileVisitor
+    private class TransactionMetadataFiller implements Visitor<CommittedTransactionRepresentation, IOException>
     {
-        // TODO 2.2-future this is supposed to fill the metadata cache with information about the passed tx
-        public TransactionMetadataFiller( long transactionId )
-        {
-        }
-
         @Override
-        public boolean visit( LogPosition position, ReadableLogChannel channel )
+        public boolean visit( CommittedTransactionRepresentation element ) throws IOException
         {
-            // TODO Auto-generated method stub
-            return false;
+            transactionMetadataCache.cacheTransactionMetadata( element.getCommitEntry().getTxId(),
+                    element.getStartEntry().getStartPosition(), element.getStartEntry().getMasterId(),
+                    element.getStartEntry().getLocalId(), LogEntry.Start.checksum( element.getStartEntry() ) );
+            return true;
         }
     }
 }

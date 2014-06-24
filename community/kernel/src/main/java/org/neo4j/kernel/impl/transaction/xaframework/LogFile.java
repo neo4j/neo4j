@@ -30,7 +30,7 @@ public interface LogFile extends Lifecycle
 {
     public interface LogFileVisitor
     {
-        boolean visit( LogPosition position, ReadableLogChannel channel );
+        boolean visit( LogPosition position, ReadableLogChannel channel ) throws IOException;
     }
 
     /**
@@ -45,7 +45,7 @@ public interface LogFile extends Lifecycle
      */
     ReadableLogChannel getReader( LogPosition position ) throws IOException;
 
-    void accept( LogFileVisitor visitor );
+    void accept( LogFileVisitor visitor ) throws IOException;
 
     void checkRotation() throws IOException;
 }

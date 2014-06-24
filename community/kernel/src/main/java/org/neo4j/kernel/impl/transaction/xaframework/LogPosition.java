@@ -52,4 +52,13 @@ public class LogPosition
     {
         return byteOffset;
     }
+
+    @Override
+    public String toString()
+    {
+        return "LogPosition{" +
+                "logVersion=" + logVersion +
+                ", byteOffset=" + byteOffset +
+                '}';
+    }
 }

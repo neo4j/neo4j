@@ -19,12 +19,12 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static java.lang.Math.max;
+
 import java.io.File;
 import java.util.regex.Pattern;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
-
-import static java.lang.Math.max;
 
 /**
  * Used to figure out what logical log file to open when the database
@@ -80,5 +80,10 @@ public class PhysicalLogFiles
             }
         }
         return highest;
+    }
+
+    public boolean versionExists( long version )
+    {
+        return fileSystem.fileExists( getVersionFileName( version ) );
     }
 }

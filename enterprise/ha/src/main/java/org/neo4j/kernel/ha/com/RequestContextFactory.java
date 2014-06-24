@@ -19,28 +19,36 @@
  */
 package org.neo4j.kernel.ha.com;
 
+import java.io.IOException;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
+import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class RequestContextFactory
+public class RequestContextFactory extends LifecycleAdapter
 {
     private long epoch;
     private final int serverId;
     private final DependencyResolver resolver;
-    private final LogicalTransactionStore txStore;
-    private final TransactionIdStore txIdStore;
+    private LogicalTransactionStore txStore;
+    private TransactionIdStore txIdStore;
 
-    public RequestContextFactory( int serverId, DependencyResolver resolver, LogicalTransactionStore txStore,
-                                  TransactionIdStore txIdStore)
+    public RequestContextFactory( int serverId, DependencyResolver resolver )
     {
         this.resolver = resolver;
         this.epoch = -1;
         this.serverId = serverId;
-        this.txStore = txStore;
-        this.txIdStore = txIdStore;
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        this.txStore = resolver.resolveDependency( NeoStoreXaDataSource.class ).getDependencyResolver().resolveDependency( LogicalTransactionStore.class );
+        this.txIdStore = resolver.resolveDependency( NeoStoreXaDataSource.class ).getDependencyResolver().resolveDependency( TransactionIdStore.class );
     }
 
     public void setEpoch( long epoch )
@@ -51,9 +59,26 @@ public class RequestContextFactory
     public RequestContext newRequestContext( long sessionId, int machineId, int eventIdentifier )
     {
         long latestTxId = txIdStore.getLastCommittingTransactionId();
-        TransactionMetadataCache.TransactionMetadata txMetadata = txStore.getMetadataFor( latestTxId );
-        return new RequestContext(
-                sessionId, machineId, eventIdentifier, latestTxId, txMetadata.getMasterId(), txMetadata.getAuthorId() );
+        TransactionMetadataCache.TransactionMetadata txMetadata = null;
+        try
+        {
+            txMetadata = txStore.getMetadataFor( latestTxId );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+        if ( txMetadata != null )
+        {
+            return new RequestContext(
+                    sessionId, machineId, eventIdentifier, latestTxId, txMetadata.getMasterId(), txMetadata.getAuthorId() );
+
+        }
+        else
+        {
+            return new RequestContext(
+                    sessionId, machineId, eventIdentifier, latestTxId, -1, -1 );
+        }
     }
 
     public RequestContext newRequestContext( int eventIdentifier )

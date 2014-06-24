@@ -103,9 +103,7 @@ public class SwitchToSlave
     private final Monitors monitors;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
 
-    private final MasterClientResolver masterClientResolver;
-    private TransactionIdStore transactionIdStore;
-    private LogicalTransactionStore txStore;
+    private MasterClientResolver masterClientResolver;
     private LogVersionRepository logVersionRepository;
 
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver, HaIdGeneratorFactory
@@ -167,13 +165,15 @@ public class SwitchToSlave
     {
         // Must be called under lock on XaDataSourceManager
         LifeSupport checkConsistencyLife = new LifeSupport();
+        TransactionIdStore txIdStore = null;
         try
         {
             MasterClient checkConsistencyMaster = newMasterClient( masterUri, nioneoDataSource.getStoreId(),
                     checkConsistencyLife );
             checkConsistencyLife.start();
             console.log( "Checking store consistency with master" );
-            checkDataConsistencyWithMaster( masterUri, checkConsistencyMaster, nioneoDataSource );
+            txIdStore = nioneoDataSource.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+            checkDataConsistencyWithMaster( masterUri, checkConsistencyMaster, nioneoDataSource, txIdStore );
             console.log( "Store is consistent" );
 
             /*
@@ -224,7 +224,7 @@ public class SwitchToSlave
         catch ( MismatchingStoreIdException e )
         {
             console.log( "The store does not represent the same database as master. Will remove and fetch a new one from master" );
-            if ( transactionIdStore.getLastCommittingTransactionId() == 1 )
+            if ( txIdStore.getLastCommittingTransactionId() == 1 )
             {
                 msgLog.warn( "Found and deleting empty store with mismatching store id " + e.getMessage() );
                 stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
@@ -247,7 +247,7 @@ public class SwitchToSlave
         MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), haCommunicationLife );
 
         Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
-                new RequestContextFactory( getServerId( masterUri ).toIntegerIndex(), resolver, txStore, transactionIdStore ) );
+                resolver.resolveDependency( RequestContextFactory.class ) );
 
         SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging,
                 resolver.resolveDependency( Monitors.class ) );
@@ -377,11 +377,18 @@ public class SwitchToSlave
         branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
 
-    private void checkDataConsistencyWithMaster( URI availableMasterId, Master master, NeoStoreXaDataSource nioneoDataSource )
-            throws NoSuchLogVersionException
+    private void checkDataConsistencyWithMaster( URI availableMasterId, Master master,
+                                                 NeoStoreXaDataSource nioneoDataSource,
+                                                 TransactionIdStore transactionIdStore )
+            throws IOException
     {
         long myLastCommittedTx = transactionIdStore.getLastCommittingTransactionId();
-        TransactionMetadataCache.TransactionMetadata metadata = txStore.getMetadataFor( myLastCommittedTx );
+        TransactionMetadataCache.TransactionMetadata metadata = nioneoDataSource.getDependencyResolver()
+                .resolveDependency( LogicalTransactionStore.class ).getMetadataFor( myLastCommittedTx );
+        if ( metadata == null )
+        {
+            return;
+        }
         int myMaster = metadata.getMasterId();
         long myChecksum = metadata.getChecksum();
 
@@ -431,7 +438,7 @@ public class SwitchToSlave
             throws IOException
     {
         // TODO 2.2-future properly start the datasource
-        NeoStoreXaDataSource nioneoDataSource = null;
+        NeoStoreXaDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreXaDataSource.class );
         if ( nioneoDataSource == null )
         {
             // TODO here we used to instantiate the transaction translator. No longer necessary

@@ -261,8 +261,7 @@ class SlaveLocksClient implements Locks.Client
     private boolean receiveLockResponse( Response<LockResult> response )
     {
         // TODO 2.2-future must apply transactions received
-//        LockResult result = xaDsm.applyTransactions( response );
-        LockResult result = null;
+        LockResult result = response.response();
         switch ( result.getStatus() )
         {
             case DEAD_LOCKED:

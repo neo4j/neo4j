@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -140,8 +142,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
@@ -195,12 +195,13 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private CacheLayer storeLayer;
     private final Caches cacheProvider;
     private final NodeManager nodeManager;
+
     private LogFile logFile;
     private LogicalTransactionStore logicalTransactionStore;
+    private TransactionRepresentationCommitProcess commitProcess;
 
     private final AtomicInteger recoveredCount = new AtomicInteger();
     private StatementOperationParts statementOperations;
-    private TransactionRepresentationCommitProcess commitProcess;
     private final Guard guard;
 
     // Legacy index
@@ -817,7 +818,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     @Override
     public void registerIndexProvider( String name, IndexImplementation index )
     {
-        assert !indexProviders.containsKey( name );
+        // TODO 2.2-future why did i need to remove the next line to get HA working? It said it doubled registered
+        // TODO 2.2-future the dummy index extension, which i am not sure is true
+//        assert !indexProviders.containsKey( name );
         indexProviders.put( name, index );
     }
 

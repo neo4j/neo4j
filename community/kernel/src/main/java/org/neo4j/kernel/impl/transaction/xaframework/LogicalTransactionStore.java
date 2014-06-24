@@ -33,5 +33,5 @@ public interface LogicalTransactionStore extends Closeable, Lifecycle
             Visitor<CommittedTransactionRepresentation, IOException> visitor )
             throws NoSuchTransactionException, IOException;
 
-    TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId );
+    TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId ) throws IOException;
 }
