@@ -253,31 +253,4 @@ public class ElectionStateTest
         ElectionMessage.VersionedVotedData payload = (ElectionMessage.VersionedVotedData) response.getPayload();
         assertEquals( version, payload.getVersion() );
     }
-
-    @Test
-    public void voteResponseShouldBeBackwardsCompatible() throws Throwable
-    {
-        final List<Message> messages = new ArrayList<Message>( 1 );
-        MessageHolder holder = new MessageHolder()
-        {
-            @Override
-            public void offer( Message<? extends MessageType> message )
-            {
-                messages.add( message );
-            }
-        };
-
-        ElectionContext context = mock( ElectionContext.class );
-
-        Message voteRequest = Message.to( ElectionMessage.vote, URI.create( "some://instance" ),
-                "coordinator" );
-        voteRequest.setHeader( Message.FROM, "some://other" );
-
-        election.handle( context, voteRequest, holder );
-
-        assertEquals( 1, messages.size() );
-        Message response = messages.get( 0 );
-        assertEquals( ElectionMessage.voted, response.getMessageType() );
-        assertEquals( ElectionMessage.VotedData.class, response.getPayload().getClass() );
-    }
 }
