@@ -19,20 +19,26 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import java.io.File;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
 
+import org.neo4j.com.AccumulatorVisitor;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
+import org.neo4j.com.ServerFailureException;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-import org.neo4j.com.AccumulatorVisitor;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
@@ -41,6 +47,9 @@ import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
@@ -48,14 +57,25 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+import static java.lang.Math.max;
+
+import static org.neo4j.com.RequestContext.anonymous;
+import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
+import static org.neo4j.io.fs.FileUtils.relativePath;
+import static org.neo4j.kernel.impl.util.Cursors.exhaust;
+
 class DefaultMasterImplSPI implements MasterImpl.SPI
 {
+    private static final int MIN_TRANSACTIONS_STORE_COPY = 10;
     private static final int ID_GRAB_SIZE = 1000;
     private final DependencyResolver dependencyResolver;
     private final GraphDatabaseAPI graphDb;
     private final Logging logging;
     private final Monitors monitors;
     private LogicalTransactionStore txStore;
+    private final TransactionIdStore transactionIdStore;
+    private final FileSystemAbstraction fileSystem;
+    private final File storeDir;
 
     public DefaultMasterImplSPI( GraphDatabaseAPI graphDb, Logging logging, Monitors monitors )
     {
@@ -63,6 +83,12 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         this.logging = logging;
         this.dependencyResolver = graphDb.getDependencyResolver();
         this.monitors = monitors;
+
+        // Hmm, fetching the dependencies here instead of handing them in the constructor directly feels bad,
+        // but it seems like there's some intricate usage and need for the db's dependency resolver.
+        this.transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
+        this.fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
+        this.storeDir = new File( graphDb.getStoreDir() );
     }
 
     @Override
@@ -137,10 +163,43 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
-    public RequestContext rotateLogsAndStreamStoreFiles( StoreWriter writer )
+    public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
-        // TODO 2.2-future
-        return null;
+        try
+        {
+            long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittingTransactionId();
+            NeoStoreXaDataSource dataSource = graphDb.getDependencyResolver().resolveDependency(
+                    DataSourceManager.class ).getDataSource();
+            dataSource.forceEverything();
+            File baseDir = getMostCanonicalFile( storeDir );
+            ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
+
+            // Copy the store files
+            try ( ResourceIterator<File> files = dataSource.listStoreFiles() )
+            {
+                while ( files.hasNext() )
+                {
+                    File file = files.next();
+                    try ( StoreChannel fileChannel = fileSystem.open( file, "r" ) )
+                    {
+                        writer.write( relativePath( baseDir, file ), fileChannel, temporaryBuffer, file.length() > 0 );
+                    }
+                }
+            }
+
+            return anonymous( figureOutTransactionIdToStartStreamFrom( transactionIdWhenStartingCopy ) );
+        }
+        catch ( IOException e )
+        {
+            throw new ServerFailureException( e );
+        }
+    }
+
+    private long figureOutTransactionIdToStartStreamFrom( long low )
+    {
+        long high = transactionIdStore.getLastCommittingTransactionId();
+        return high-low < MIN_TRANSACTIONS_STORE_COPY ?
+                max( 1, low-MIN_TRANSACTIONS_STORE_COPY ) : low;
     }
 
     @Override
@@ -155,8 +214,9 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     {
         try
         {
-            AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>();
-            txStore.getCursor( context.lastAppliedTransaction() + 1, accumulator );
+            AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>(
+                    wrapLongFilter( filter ) );
+            exhaust( txStore.getCursor( context.lastAppliedTransaction() + 1, accumulator ) );
             Iterable<CommittedTransactionRepresentation> txs = accumulator.getAccumulator();
 
             return new Response<>( response,
@@ -170,6 +230,20 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         }
     }
 
+    // TODO there should be no need to wrap this here, provide the proper predicate type from the outside
+    // directly instead
+    private Predicate<CommittedTransactionRepresentation> wrapLongFilter( final Predicate<Long> filter )
+    {
+        return new Predicate<CommittedTransactionRepresentation>()
+        {
+            @Override
+            public boolean accept( CommittedTransactionRepresentation transaction )
+            {
+                return filter.accept( transaction.getCommitEntry().getTxId() );
+            }
+        };
+    }
+
     @Override
     public void pushTransaction( int eventIdentifier, long tx, int machineId )
     {
@@ -180,5 +254,4 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     {
         return dependencyResolver.resolveDependency( dependencyType );
     }
-
 }

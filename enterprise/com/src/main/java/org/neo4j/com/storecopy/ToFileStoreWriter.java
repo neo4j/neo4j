@@ -78,7 +78,7 @@ public class ToFileStoreWriter implements StoreWriter
     }
 
     @Override
-    public void done()
+    public void close()
     {
         // Do nothing
     }

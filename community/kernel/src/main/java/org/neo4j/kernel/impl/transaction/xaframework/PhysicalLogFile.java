@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
-
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
@@ -32,6 +29,9 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 
 /**
  * {@link LogFile} backup by one or more files in a {@link FileSystemAbstraction}.
@@ -95,7 +95,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
          *  next startup. Not necessary, simply speeds up the startup
          *  process.
          */
-        logVersionRepository.incrementAndGetVersion();
+        logVersionRepository.incrementVersion();
     }
 
     private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
@@ -310,6 +310,19 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
 
         void failureToTruncate( File logFile, IOException e );
     }
+
+    public static final Monitor NO_MONITOR = new Monitor()
+    {
+        @Override
+        public void opened( File logFile, long logVersion, long lastTransactionId, boolean clean )
+        {
+        }
+
+        @Override
+        public void failureToTruncate( File logFile, IOException e )
+        {
+        }
+    };
 
     public static class LoggingMonitor implements Monitor
     {

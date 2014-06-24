@@ -17,24 +17,17 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.kernel.impl.util;
 
-public interface LogRotationControl
+public class Cursors
 {
-    void awaitAllTransactionsClosed();
-
-    void forceEverything();
-
-    public static final LogRotationControl NO_ROTATION_CONTROL = new LogRotationControl()
+    public static <E extends Exception> int exhaust( Cursor<E> cursor ) throws E
     {
-        @Override
-        public void forceEverything()
+        int count = 0;
+        while ( cursor.next() )
         {
+            count++;
         }
-
-        @Override
-        public void awaitAllTransactionsClosed()
-        {
-        }
-    };
+        return count;
+    }
 }

@@ -42,6 +42,8 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
     public interface ProviderLookup
     {
         IndexImplementation lookup( String name );
+
+        Iterable<IndexImplementation> providers();
     }
 
     private IndexDefineCommand defineCommand;

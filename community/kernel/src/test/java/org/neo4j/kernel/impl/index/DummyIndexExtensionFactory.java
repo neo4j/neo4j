@@ -19,13 +19,16 @@
  */
 package org.neo4j.kernel.impl.index;
 
+import java.io.File;
 import java.util.Map;
 
 import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexProviders;
 import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
+import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.api.LegacyIndex;
 import org.neo4j.kernel.api.LegacyIndexHits;
@@ -226,5 +229,11 @@ public class DummyIndexExtensionFactory extends
     @Override
     public void force()
     {
+    }
+
+    @Override
+    public ResourceIterator<File> listStoreFiles()
+    {
+        return IteratorUtil.emptyIterator();
     }
 }

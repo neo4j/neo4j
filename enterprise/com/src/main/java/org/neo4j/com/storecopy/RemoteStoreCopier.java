@@ -19,30 +19,44 @@
  */
 package org.neo4j.com.storecopy;
 
-import static org.neo4j.helpers.Format.bytes;
-
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
-import java.util.Map;
 
 import org.neo4j.com.Response;
+import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.ReadOnlyTransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
+import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionAppender;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadOnlyLogVersionRepository;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
+
+import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
 
 public class RemoteStoreCopier
 {
@@ -59,13 +73,13 @@ public class RemoteStoreCopier
      */
     public interface StoreCopyRequester
     {
-        Response<?> copyStore(StoreWriter writer);
+        Response<?> copyStore( StoreWriter writer ) throws IOException;
 
         void done();
     }
 
     public RemoteStoreCopier( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                              ConsoleLogger console, FileSystemAbstraction fs, LogVersionRepository logVersionRepository )
+            ConsoleLogger console, FileSystemAbstraction fs, LogVersionRepository logVersionRepository )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
@@ -79,16 +93,11 @@ public class RemoteStoreCopier
         // Clear up the current temp directory if there
         File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
         File tempStore = new File( storeDir, COPY_FROM_MASTER_TEMP );
-        Config tempConfig = configForTempStore( tempStore );
-
-        if ( !tempStore.mkdir() )
-        {
-            FileUtils.deleteRecursively( tempStore );
-            tempStore.mkdir();
-        }
+        cleanDirectory( tempStore );
 
         // Request store files and transactions that will need recovery
-        try ( Response response = requester.copyStore( decorateWithProgressIndicator( new ToFileStoreWriter( tempStore ) ) ) )
+        try ( Response response = requester.copyStore( decorateWithProgressIndicator(
+                new ToFileStoreWriter( tempStore ) ) ) )
         {
             // Update highest archived log id
             long highestLogVersion = logVersionRepository.getCurrentLogVersion();
@@ -97,111 +106,58 @@ public class RemoteStoreCopier
                 NeoStore.setVersion( fs, new File( tempStore, NeoStore.DEFAULT_NAME ), highestLogVersion + 1 );
             }
 
-            // Write pending transactions down to the currently active logical log
-            writeTransactionsToActiveLogFile( tempConfig, response.getTxs() );
+            // Write transactions that happened during the copy to the currently active logical log
+            writeTransactionsToActiveLogFile( tempStore, response.getTxs() );
         }
         finally
         {
             requester.done();
         }
 
-        // Run recovery
-        GraphDatabaseAPI copiedDb = newTempDatabase( tempStore );
-        copiedDb.shutdown();
+        // Run recovery, so that the transactions we just wrote into the active log will be applied.
+        newTempDatabase( tempStore ).shutdown();
 
-        // All is well, move to the real store directory
-        for ( File candidate : tempStore.listFiles( new FileFilter()
-        {
-            @Override
-            public boolean accept( File file )
-            {
-                // Skip log files and tx files from temporary database
-                return !file.getName().startsWith( "metrics" )
-                        && !file.getName().equals( StringLogger.DEFAULT_NAME )
-                        && !("active_tx_log tm_tx_log.1 tm_tx_log.2").contains( file.getName() );
-            }
-        } ) )
+        // All is well, move the streamed files to the real store directory
+        for ( File candidate : tempStore.listFiles( STORE_FILE_FILTER ) )
         {
             FileUtils.moveFileToDirectory( candidate, storeDir );
         }
     }
 
-    private Config configForTempStore( File tempStore )
+    private void writeTransactionsToActiveLogFile( File storeDir,
+            Iterable<CommittedTransactionRepresentation> txs ) throws IOException
     {
-        Map<String, String> params = config.getParams();
-        params.put( InternalAbstractGraphDatabase.Configuration.store_dir .name(), tempStore.getAbsolutePath() );
-        return new Config( params );
+        LifeSupport life = new LifeSupport();
+        try
+        {
+            // Start the log and appender
+            PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
+            TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
+            LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
+                    NO_PRUNING, new ReadOnlyTransactionIdStore( fs, storeDir ), new ReadOnlyLogVersionRepository( fs,
+                            storeDir ), PhysicalLogFile.NO_MONITOR, LogRotationControl.NO_ROTATION_CONTROL,
+                    transactionMetadataCache, new NoRecoveryAssertingVisitor() ) );
+            life.start();
+
+            // Create an appender and append all the transactions to the log
+            try ( TransactionAppender appender = new PhysicalTransactionAppender( logFile,
+                    new TxIdGeneratorPreventor(), transactionMetadataCache ) )
+            {
+                for ( CommittedTransactionRepresentation transaction : txs )
+                {
+                    appender.append( transaction );
+                }
+            }
+        }
+        finally
+        {
+            life.shutdown();
+        }
     }
 
-    private void writeTransactionsToActiveLogFile( Config tempConfig, Iterable<CommittedTransactionRepresentation> txs ) throws IOException
+    private GraphDatabaseService newTempDatabase( File tempStore )
     {
-//        Map</*dsName*/String, LogBufferFactory> logWriters = createLogWriters( tempConfig );
-//        Map</*dsName*/String, LogBuffer> logFiles = new HashMap<>();
-//        try
-//        {
-//            while(transactions.hasNext())
-//            {
-//                Pair<Long, TransactionRepresentation> next = transactions.next();
-//                LogBuffer log = getOrCreateLogBuffer( logFiles, logWriters, /*txId*/next.first(), tempConfig );
-////                next.other().extract( log );
-//            }
-//        }
-//        finally
-//        {
-//            for ( LogBuffer buf : logFiles.values() )
-//            {
-//                buf.force();
-//                buf.getFileChannel().close();
-//            }
-//        }
-    }
-
-//    private LogBuffer getOrCreateLogBuffer( Map<String, LogBuffer> buffers, Map<String, LogBufferFactory> logWriters, String dsName, Long txId, Config config )
-//            throws IOException
-//    {
-//        LogBuffer buffer = buffers.get(dsName);
-//        if(buffer == null)
-//        {
-//            if(logWriters.containsKey( dsName ))
-//            {
-//                buffer = logWriters.get( dsName ).createActiveLogFile( config, txId - 1 );
-//                buffers.put( dsName, buffer );
-//            }
-//            else
-//            {
-//                throw new IllegalStateException( "Got transaction for unknown data source, unable to safely copy " +
-//                        "files. Offending data source was '" + dsName + "', please make sure this data source is " +
-//                        "available on the classpath." );
-//            }
-//        }
-//        return buffer;
-//    }
-//
-//    private Map<String, LogBufferFactory> createLogWriters( Config config ) throws IOException
-//    {
-//        Map<String, LogBufferFactory> writers = new HashMap<>();
-//        File tempStore = new File( config.get( GraphDatabaseSettings.store_dir ).getAbsolutePath() + ".tmp" );
-//        GraphDatabaseAPI db = newTempDatabase( tempStore );
-//        try
-//        {
-//            XaDataSourceManager dsManager = db.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
-//            for ( XaDataSource xaDataSource : dsManager.getAllRegisteredDataSources() )
-//            {
-//                writers.put( xaDataSource.getName(), xaDataSource.createLogBufferFactory() );
-//            }
-//            return writers;
-//        }
-//        finally
-//        {
-//            db.shutdown();
-//            FileUtils.deleteRecursively( tempStore );
-//            tempStore.mkdirs();
-//        }
-//    }
-
-    private GraphDatabaseAPI newTempDatabase( File tempStore )
-    {
-        return (GraphDatabaseAPI) new GraphDatabaseFactory()
+        return new GraphDatabaseFactory()
                 .setKernelExtensions( kernelExtensions )
                 .newEmbeddedDatabaseBuilder( tempStore.getAbsolutePath() )
                 .setConfig(
@@ -230,11 +186,50 @@ public class RemoteStoreCopier
             }
 
             @Override
-            public void done()
+            public void close()
             {
-                actual.done();
+                actual.close();
                 console.log( "Done, copied " + totalFiles + " files");
             }
         };
+    }
+
+    private void cleanDirectory( File directory ) throws IOException
+    {
+        if ( !directory.mkdir() )
+        {
+            FileUtils.deleteRecursively( directory );
+            directory.mkdir();
+        }
+    }
+
+    private static final FileFilter STORE_FILE_FILTER = new FileFilter()
+    {
+        @Override
+        public boolean accept( File file )
+        {
+            // Skip log files and tx files from temporary database
+            return !file.getName().startsWith( "metrics" )
+                    && !file.getName().equals( StringLogger.DEFAULT_NAME )
+                    && !("active_tx_log tm_tx_log.1 tm_tx_log.2").contains( file.getName() );
+        }
+    };
+
+    public static class NoRecoveryAssertingVisitor implements Visitor<ReadableLogChannel, IOException>
+    {
+        @Override
+        public boolean visit( ReadableLogChannel element ) throws IOException
+        {
+            throw new UnsupportedOperationException( "There should not be any recovery needed here" );
+        }
+    }
+
+    public static class TxIdGeneratorPreventor implements TxIdGenerator
+    {
+        @Override
+        public long generate( TransactionRepresentation transaction )
+        {
+            throw new UnsupportedOperationException( "There should be no need generating transaction ids here" );
+        }
     }
 }

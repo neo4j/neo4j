@@ -42,11 +42,9 @@ public class PhysicalTransactionAppender implements TransactionAppender
         this.logEntryWriter = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
     }
 
-    @Override
-    public synchronized Future<Long> append( TransactionRepresentation transaction ) throws IOException
+    private Future<Long> append( TransactionRepresentation transaction,
+            long transactionId ) throws IOException
     {
-        logFile.checkRotation();
-
         // Write start record
         LogPosition logPosition = channel.getCurrentPosition();
         logEntryWriter.writeStartEntry( transaction.getMasterId(), transaction.getAuthorId(),
@@ -57,7 +55,6 @@ public class PhysicalTransactionAppender implements TransactionAppender
         logEntryWriter.serialize( transaction );
 
         // Write commit record
-        long transactionId = txIdGenerator.generate( transaction );
         logEntryWriter.writeCommitEntry( transactionId, transaction.getTimeWritten() );
         transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
                 transaction.getAuthorId(), LogEntry.Start.checksum( transaction.additionalHeader(),
@@ -67,6 +64,22 @@ public class PhysicalTransactionAppender implements TransactionAppender
         channel.force();
 
         return FutureAdapter.present( transactionId );
+    }
+
+    @Override
+    public synchronized Future<Long> append( TransactionRepresentation transaction ) throws IOException
+    {
+        // We put log rotation check outside the private append method since it must happen before
+        // we generate the next transaction id
+        logFile.checkRotation();
+        return append( transaction, txIdGenerator.generate( transaction ) );
+    }
+
+    @Override
+    public synchronized Future<Long> append( CommittedTransactionRepresentation transaction ) throws IOException
+    {
+        logFile.checkRotation();
+        return append( transaction.getTransactionRepresentation(), transaction.getCommitEntry().getTxId() );
     }
 
     @Override

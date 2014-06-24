@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import static java.lang.String.format;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -61,7 +59,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+
 import org.omg.CORBA.SystemException;
+
+import static java.lang.String.format;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -95,7 +96,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         Pair<Integer, Long> getMasterIdForCommittedTx( long txId ) throws IOException;
 
-        RequestContext rotateLogsAndStreamStoreFiles( StoreWriter writer );
+        RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer );
 
         Response<Void> copyTransactions( String dsName, long startTxId, long endTxId );
 
@@ -195,7 +196,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
             throw new InvalidEpochException( epoch, context.getEpoch() );
         }
     }
-
 
     private <T> Response<T> packResponse( RequestContext context, T response )
     {
@@ -335,10 +335,14 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     @Override
-    public Response<Void> copyStore( RequestContext context, StoreWriter writer )
+    public Response<Void> copyStore( RequestContext requestContext, StoreWriter writer )
     {
-        context = spi.rotateLogsAndStreamStoreFiles( writer );
-        writer.done();
+        RequestContext context;
+        try ( StoreWriter storeWriter = writer )
+        {
+            context = spi.flushStoresAndStreamStoreFiles( storeWriter );
+        }   // close the store writer
+
         return packResponse( context, null );
     }
 

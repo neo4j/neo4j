@@ -103,7 +103,7 @@ public class SwitchToSlave
     private final Monitors monitors;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
 
-    private MasterClientResolver masterClientResolver;
+    private final MasterClientResolver masterClientResolver;
     private LogVersionRepository logVersionRepository;
 
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver, HaIdGeneratorFactory
@@ -320,7 +320,6 @@ public class SwitchToSlave
             console.log( "Copying store from master" );
             new RemoteStoreCopier( config, kernelExtensions, console,
                     fs, logVersionRepository ).copyStore( new RemoteStoreCopier.StoreCopyRequester()
-
             {
                 @Override
                 public Response<?> copyStore( StoreWriter writer )
@@ -331,7 +330,7 @@ public class SwitchToSlave
 
                 @Override
                 public void done()
-                {
+                {   // Nothing to clean up here
                 }
             } );
 

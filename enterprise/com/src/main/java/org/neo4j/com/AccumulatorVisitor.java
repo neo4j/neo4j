@@ -23,15 +23,32 @@ import java.io.IOException;
 import java.util.LinkedList;
 import java.util.List;
 
+import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.Visitor;
 
 public class AccumulatorVisitor<T> implements Visitor<T, IOException>
 {
     private final List<T> accumulator = new LinkedList<>();
+    private final Predicate<T> include;
+
+    public AccumulatorVisitor()
+    {
+        this( Predicates.<T>TRUE() );
+    }
+
+    public AccumulatorVisitor( Predicate<T> include )
+    {
+        this.include = include;
+    }
 
     @Override
     public boolean visit( T element ) throws IOException
     {
+        if ( !include.accept( element ) )
+        {
+            return false;
+        }
         return accumulator.add( element );
     }
 

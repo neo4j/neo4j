@@ -24,6 +24,8 @@ import java.io.IOException;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.kernel.impl.util.Cursors.exhaust;
+
 public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
 {
     private final LogFile logFile;
@@ -50,6 +52,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     @Override
     public void shutdown() throws Throwable
     {
+        // TODO why is the null check needed here?
         if ( appender != null )
         {
             appender.close();
@@ -103,8 +106,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
             {
                 return null;
             }
-            while(cursor.next());
-
+            exhaust( cursor );
         }
         transactionMetadata = transactionMetadataCache.getTransactionMetadata( transactionId );
         return transactionMetadata;

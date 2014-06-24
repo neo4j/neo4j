@@ -56,4 +56,11 @@ public class CommittedTransactionRepresentation
     {
         return commitEntry;
     }
+
+    @Override
+    public String toString()
+    {
+        return getClass().getSimpleName() +
+                "[" + startEntry + ", " + transactionRepresentation + ", " + commitEntry + "]";
+    }
 }

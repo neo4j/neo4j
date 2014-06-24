@@ -61,7 +61,7 @@ public class ToNetworkStoreWriter implements StoreWriter
     }
 
     @Override
-    public void done()
+    public void close()
     {
         targetBuffer.writeShort( 0 );
     }

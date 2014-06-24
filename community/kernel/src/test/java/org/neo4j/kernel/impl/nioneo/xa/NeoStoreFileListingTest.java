@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -29,7 +30,9 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 
 import static org.hamcrest.MatcherAssert.assertThat;
@@ -48,6 +51,7 @@ public class NeoStoreFileListingTest
     private LabelScanStore labelScanStore;
     private IndexingService indexingService;
     private File storeDir;
+    private ProviderLookup legacyIndexes;
 
     private final static String[] STANDARD_STORE_DIR_FILES = new String[]{
            "active_tx_log",
@@ -96,6 +100,8 @@ public class NeoStoreFileListingTest
     {
         labelScanStore = mock( LabelScanStore.class );
         indexingService = mock( IndexingService.class );
+        legacyIndexes = mock( ProviderLookup.class );
+        when( legacyIndexes.providers() ).thenReturn( Arrays.<IndexImplementation>asList() );
         storeDir = mock( File.class );
 
         // Defaults, overridden in individual tests
@@ -260,7 +266,7 @@ public class NeoStoreFileListingTest
 
     private NeoStoreFileListing newFileListing()
     {
-        return new NeoStoreFileListing( storeDir, labelScanStore, indexingService );
+        return new NeoStoreFileListing( storeDir, labelScanStore, indexingService, legacyIndexes );
     }
 
     private Set<String> asSetOfPaths( ResourceIterator<File> result )
@@ -315,5 +321,4 @@ public class NeoStoreFileListingTest
             files.add( file );
         }
     }
-
 }

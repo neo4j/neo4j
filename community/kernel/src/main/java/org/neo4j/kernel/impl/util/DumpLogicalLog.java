@@ -50,6 +50,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import static java.util.TimeZone.getTimeZone;
 
 import static org.neo4j.helpers.Format.DEFAULT_TIME_ZONE;
+import static org.neo4j.kernel.impl.util.Cursors.exhaust;
 
 public class DumpLogicalLog
 {
@@ -93,12 +94,9 @@ public class DumpLogicalLog
 
             ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel, logVersion), LogVersionBridge.NO_MORE_CHANNELS, 4096);
 
-            try( Cursor<IOException> cursor = deserializer.cursor( logChannel, consumer ) )
+            try ( Cursor<IOException> cursor = deserializer.cursor( logChannel, consumer ) )
             {
-                while( cursor.next( ) )
-                {
-                    ;
-                }
+                exhaust( cursor );
             }
         }
         return logsFound;

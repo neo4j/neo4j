@@ -31,20 +31,24 @@ public class PhysicalTransactionCursor implements IOCursor
     private final ReadableLogChannel channel;
     private final LogEntryReader<ReadableLogChannel> entryReader;
     private final Visitor<CommittedTransactionRepresentation, IOException> visitor;
-    private final List<Command> entries = new ArrayList<>();
 
     public PhysicalTransactionCursor( ReadableLogChannel channel, LogEntryReader<ReadableLogChannel> entryReader,
-                                      Visitor<CommittedTransactionRepresentation, IOException> visitor )
+            Visitor<CommittedTransactionRepresentation, IOException> visitor )
     {
         this.channel = channel;
         this.entryReader = entryReader;
         this.visitor = visitor;
     }
 
+    protected List<Command> commandList()
+    {
+        return new ArrayList<>();
+    }
+
     @Override
     public boolean next() throws IOException
     {
-        entries.clear();
+        List<Command> entries = commandList();
         LogEntry entry = entryReader.readLogEntry( channel );
         if ( entry == null )
         {
@@ -69,14 +73,11 @@ public class PhysicalTransactionCursor implements IOCursor
             entries.add( ((LogEntry.Command) entry).getXaCommand() );
         }
 
-        assert startEntry != null;
-        assert commitEntry != null;
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation( entries );
         transaction.setHeader( startEntry.getAdditionalHeader(), startEntry.getMasterId(),
                 startEntry.getLocalId(), startEntry.getTimeWritten(),
                 startEntry.getLastCommittedTxWhenTransactionStarted() );
-        CommittedTransactionRepresentation tx = new CommittedTransactionRepresentation( startEntry, transaction, commitEntry );
-        return visitor.visit( tx );
+        return visitor.visit( new CommittedTransactionRepresentation( startEntry, transaction, commitEntry ) );
     }
 
     @Override

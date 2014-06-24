@@ -78,7 +78,7 @@ public class PhysicalTransactionAppenderTest
         };
         IOCursor reader = new PhysicalTransactionCursor( channel, new VersionAwareLogEntryReader(
                 CommandReaderFactory.DEFAULT), visitor  );
-        reader.next( );
+        reader.next();
         assertEquals( 1, visited.get() );
     }
 

@@ -19,8 +19,11 @@
  */
 package org.neo4j.graphdb.index;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Map;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -60,4 +63,13 @@ public interface IndexImplementation extends Lifecycle
     boolean configMatches( Map<String, String> storedConfig, Map<String, String> config );
 
     void force();
+
+    /**
+     * Lists store files that this index provider manages. After this call has been made and until
+     * the returned {@link ResourceIterator} has been {@link ResourceIterator#close() closed} this
+     * index provider must guarantee that the list of files stay intact. The files in the list can
+     * change, but no files may be deleted or added during this period.
+     * @throws IOException
+     */
+    ResourceIterator<File> listStoreFiles() throws IOException;
 }

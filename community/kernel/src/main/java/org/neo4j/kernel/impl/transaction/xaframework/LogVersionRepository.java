@@ -28,13 +28,18 @@ import java.io.IOException;
 public interface LogVersionRepository
 {
 	/**
-	 * Returns the current log version. It is non blocking. 
+	 * Returns the current log version. It is non blocking.
 	 */
     long getCurrentLogVersion();
-    
+
     /**
      * Increments and returns the latest log version for this repository. It does so
      * atomically and can potentially block.
      */
     long incrementAndGetVersion() throws IOException;
+
+    /**
+     * Increments the log version. Useful when just shutting down.
+     */
+    void incrementVersion();
 }

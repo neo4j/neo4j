@@ -33,7 +33,14 @@ public class DeadSimpleLogVersionRepository implements LogVersionRepository
     @Override
     public long incrementAndGetVersion() throws IOException
     {
-        return ++logVersion;
+        incrementVersion();
+        return logVersion;
+    }
+
+    @Override
+    public void incrementVersion()
+    {
+        logVersion++;
     }
 
     @Override

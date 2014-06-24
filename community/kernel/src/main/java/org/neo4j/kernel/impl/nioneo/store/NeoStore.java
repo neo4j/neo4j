@@ -456,11 +456,19 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public synchronized long incrementAndGetVersion()
     {
-    	long current = getCurrentLogVersion();
+        // Here we set the record...
+        incrementVersion();
+        super.flush();
+        // ...to then read it back. Unnecessary, but this happens once every log rotation, so it's OK
+        return getCurrentLogVersion();
+    }
+
+    @Override
+    public void incrementVersion()
+    {
+        long current = getCurrentLogVersion();
         long newLogVersion = current + 1;
         setCurrentLogVersion( newLogVersion );
-        super.flush();
-        return newLogVersion;
     }
 
     public long getLatestConstraintIntroducingTx()

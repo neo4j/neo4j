@@ -492,4 +492,45 @@ public class FileUtils
             super(e);
         }
     }
+
+    /**
+    * Given a directory and a path under it, return filename of the path
+    * relative to the directory.
+    *
+    * @param baseDir The base directory, containing the storeFile
+    * @param storeFile The store file path, must be contained under
+    * <code>baseDir</code>
+    * @return The relative path of <code>storeFile</code> to
+    * <code>baseDir</code>
+    * @throws IOException As per {@link File#getCanonicalPath()}
+    */
+    public static String relativePath( File baseDir, File storeFile )
+            throws IOException
+    {
+        String prefix = baseDir.getCanonicalPath();
+        String path = storeFile.getCanonicalPath();
+        if ( !path.startsWith( prefix ) )
+        {
+            throw new FileNotFoundException();
+        }
+        path = path.substring( prefix.length() );
+        if ( path.startsWith( File.separator ) )
+        {
+            return path.substring( 1 );
+        }
+        return path;
+    }
+
+    // TODO javadoc what this one does. It comes from Serverutil initially.
+    public static File getMostCanonicalFile( File file )
+    {
+        try
+        {
+            return file.getCanonicalFile().getAbsoluteFile();
+        }
+        catch ( IOException e )
+        {
+            return file.getAbsoluteFile();
+        }
+    }
 }

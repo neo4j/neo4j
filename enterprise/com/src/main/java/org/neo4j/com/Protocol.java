@@ -41,10 +41,13 @@ import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionReprese
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+
+import static org.neo4j.kernel.impl.util.Cursors.exhaust;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -231,11 +234,10 @@ public class Protocol
                 boolean hasData = buffer.readByte() == 1;
                 writer.write( path, hasData ? new BlockLogReader( buffer ) : null, temporaryBuffer, hasData );
             }
-            writer.done();
+            writer.close();
             return null;
         }
-    };
-
+    }
 
     public static class TransactionSerializer implements Serializer
     {
@@ -302,11 +304,7 @@ public class Protocol
             LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
             NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
             AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>();
-            NetworkTransactionCursor cursor = new NetworkTransactionCursor( channel, reader, accumulator );
-            while( cursor.next() )
-            {
-                ;
-            }
+            exhaust( new PhysicalTransactionCursor( channel, reader, accumulator ) );
             return accumulator.getAccumulator();
         }
     }

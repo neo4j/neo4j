@@ -22,10 +22,13 @@ package org.neo4j.com;
 import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.IOCursor;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+
+import static org.neo4j.kernel.impl.util.Cursors.exhaust;
 
 /**
  * Represents a stream of the data of one or more consecutive transactions.
@@ -58,7 +61,7 @@ public class TransactionStream implements Visitor<ChannelBuffer, IOException>
     public boolean visit( ChannelBuffer element ) throws IOException
     {
         toStreamTo = element;
-        while( transactionCursor.next() );
+        exhaust( transactionCursor );
         return true;
     }
 
@@ -71,5 +74,4 @@ public class TransactionStream implements Visitor<ChannelBuffer, IOException>
             return true;
         }
     }
-
 }

@@ -19,10 +19,13 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.index.IndexCommandFactory;
 import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.graphdb.index.IndexManager;
@@ -131,6 +134,12 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     public NeoCommandHandler newApplier( boolean recovery )
     {
         return new LuceneCommandApplier( dataSource, recovery );
+    }
+
+    @Override
+    public ResourceIterator<File> listStoreFiles() throws IOException
+    {
+        return dataSource.listStoreFiles();
     }
 
     @Override

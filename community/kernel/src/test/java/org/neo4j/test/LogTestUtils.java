@@ -135,9 +135,9 @@ public class LogTestUtils
 
             ReadableLogChannel logChannel = new ReadAheadLogChannel(new PhysicalLogVersionedStoreChannel(fileChannel), LogVersionBridge.NO_MORE_CHANNELS, 4096);
 
-            try( Cursor<IOException> cursor = deserializer.cursor( logChannel, visitor ) )
+            try ( Cursor<IOException> cursor = deserializer.cursor( logChannel, visitor ) )
             {
-                cursor.next( );
+                cursor.next();
             }
 
             // Assert entries are what we expected

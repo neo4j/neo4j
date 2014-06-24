@@ -17,34 +17,30 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.xa;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
-import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 
-import static org.neo4j.kernel.impl.util.Cursors.exhaust;
-
-public class LogFileRecoverer implements Visitor<ReadableLogChannel, IOException>
+public class EntryReusingPhysicalTransactionCursor extends PhysicalTransactionCursor
 {
-    private final VersionAwareLogEntryReader logEntryReader;
-    private final Visitor<CommittedTransactionRepresentation, IOException> visitor;
+    private final List<Command> entries = new ArrayList<>();
 
-    public LogFileRecoverer( VersionAwareLogEntryReader logEntryReader,
+    public EntryReusingPhysicalTransactionCursor( ReadableLogChannel channel,
+            LogEntryReader<ReadableLogChannel> entryReader,
             Visitor<CommittedTransactionRepresentation, IOException> visitor )
     {
-        this.logEntryReader = logEntryReader;
-        this.visitor = visitor;
+        super( channel, entryReader, visitor );
     }
 
     @Override
-    public boolean visit( ReadableLogChannel channel ) throws IOException
+    protected List<Command> commandList()
     {
-        exhaust( new PhysicalTransactionCursor( channel, logEntryReader, visitor ) );
-        return true;
+        entries.clear();
+        return entries;
     }
 }

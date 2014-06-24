@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -141,6 +139,8 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
@@ -354,6 +354,12 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 }
                 return provider;
             }
+
+            @Override
+            public Iterable<IndexImplementation> providers()
+            {
+                return indexProviders.values();
+            }
         };
     }
 
@@ -403,7 +409,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             integrityValidator = new IntegrityValidator( neoStore, indexingService );
             labelScanStore = dependencyResolver.resolveDependency( LabelScanStoreProvider.class,
                     LabelScanStoreProvider.HIGHEST_PRIORITIZED ).getLabelScanStore();
-            fileListing = new NeoStoreFileListing( storeDir, labelScanStore, indexingService );
+            fileListing = new NeoStoreFileListing( storeDir, labelScanStore, indexingService,
+                    legacyIndexProviderLookup );
             Provider<NeoStore> neoStoreProvider = new Provider<NeoStore>()
             {
                 @Override

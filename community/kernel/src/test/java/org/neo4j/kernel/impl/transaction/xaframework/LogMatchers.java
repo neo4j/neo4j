@@ -40,6 +40,8 @@ import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.util.Cursor;
 
+import static org.neo4j.kernel.impl.util.Cursors.exhaust;
+
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
  * Please expand as necessary.
@@ -77,9 +79,7 @@ public class LogMatchers
                     new PhysicalLogVersionedStoreChannel( fileChannel ), LogVersionBridge.NO_MORE_CHANNELS, 4096 );
             try ( Cursor<IOException> cursor = deserializer.cursor( logChannel, consumer ) )
             {
-                while ( cursor.next( ) )
-                {   // Just loop through it
-                }
+                exhaust( cursor );
             }
 
             return entries;
