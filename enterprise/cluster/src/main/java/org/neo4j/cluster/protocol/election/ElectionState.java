@@ -250,24 +250,11 @@ public enum ElectionState
                         case vote:
                         {
                             Object request = message.getPayload();
-                            if ( request instanceof ElectionContext.VoteRequest )
-                            {
-                                ElectionContext.VoteRequest voteRequest = (ElectionContext.VoteRequest) request;
-                                outgoing.offer( Message.respond( ElectionMessage.voted, message,
-                                        new ElectionMessage.VersionedVotedData( voteRequest.getRole(), context.getMyId(),
-                                                context.getCredentialsForRole( voteRequest.getRole() ), voteRequest.getVersion() ) ) );
-                            }
-                            else if ( request instanceof String )
-                            {
-                                String role = (String) request;
-                                outgoing.offer( Message.respond( ElectionMessage.voted, message,
-                                        new ElectionMessage.VotedData( role, context.getMyId(),
-                                                context.getCredentialsForRole( role ) ) ) );
-                            }
-                            else
-                            {
-                                context.getLogger( getClass() ).error( "Unknown vote request message " + request );
-                            }
+
+                            ElectionContext.VoteRequest voteRequest = (ElectionContext.VoteRequest) request;
+                            outgoing.offer( Message.respond( ElectionMessage.voted, message,
+                                    new ElectionMessage.VersionedVotedData( voteRequest.getRole(), context.getMyId(),
+                                            context.getCredentialsForRole( voteRequest.getRole() ), voteRequest.getVersion() ) ) );
                             break;
                         }
 
