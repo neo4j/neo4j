@@ -151,7 +151,15 @@ public class SchemaCache
                     indexRule.getPropertyKey(), indexRule.getId() ) );
         }
     }
-    
+
+    public void clear()
+    {
+        rulesByLabelMap.clear();
+        ruleByIdMap.clear();
+        constraints.clear();
+        indexDescriptors.clear();
+    }
+
     // We could have had this class extend IndexDescriptor instead. That way we could have gotten the id
     // from an IndexDescriptor instance directly. The problem is that it would only work for index descriptors
     // instantiated by a SchemaCache. Perhaps that is always the case. Anyways, doing it like that resulted
