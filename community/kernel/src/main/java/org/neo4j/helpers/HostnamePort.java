@@ -91,8 +91,6 @@ public class HostnamePort
 
     /**
      * The host part, or null if not given.
-     *
-     * @return
      */
     public String getHost()
     {
@@ -121,8 +119,6 @@ public class HostnamePort
     /**
      * The port range as two ints. If only one port given, then both ints have the same value.
      * If no port range is given, then the array has {0,0} as value.
-     *
-     * @return
      */
     public int[] getPorts()
     {
@@ -131,8 +127,6 @@ public class HostnamePort
 
     /**
      * The first port, or 0 if no port was given.
-     *
-     * @return
      */
     public int getPort()
     {

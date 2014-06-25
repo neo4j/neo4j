@@ -98,7 +98,7 @@ public interface TraversalBranch extends Path
      * specifying the expander in the {@link TraversalDescription}, not anywhere
      * else. So in the internals of the traversal the state type is unknown and ignored.
      * 
-     * @return the state assocuated with this branch.
+     * @return the state associated with this branch.
      */
     Object state();
 }
