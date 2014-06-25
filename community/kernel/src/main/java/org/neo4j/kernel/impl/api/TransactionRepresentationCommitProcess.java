@@ -49,7 +49,8 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         this.storeApplier = storeApplier;
     }
 
-    public void commit( TransactionRepresentation representation ) throws TransactionFailureException
+    @Override
+    public long commit( TransactionRepresentation representation ) throws TransactionFailureException
     {
         long transactionId = persistTransaction( representation );
         // apply changes to the store
@@ -68,6 +69,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         {
             neoStore.transactionClosed( transactionId );
         }
+        return transactionId;
     }
 
     protected long persistTransaction( TransactionRepresentation tx ) throws TransactionFailureException

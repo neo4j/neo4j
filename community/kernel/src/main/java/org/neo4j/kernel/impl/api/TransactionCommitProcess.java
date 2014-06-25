@@ -29,11 +29,8 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
  * commands of the representation to the store that generated them. Another could
  * instead of appending to a log, write the transaction over the network to another
  * machine.
- * Since part of committing the transaction is applying it, this also exposes a method
- * for registering store appliers, to be notified once the transaction has been written
- * to the log.
  */
 public interface TransactionCommitProcess
 {
-    void commit( TransactionRepresentation representation ) throws TransactionFailureException;
+    long commit( TransactionRepresentation representation ) throws TransactionFailureException;
 }

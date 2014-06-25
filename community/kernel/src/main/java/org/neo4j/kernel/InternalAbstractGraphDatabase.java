@@ -828,8 +828,13 @@ public abstract class InternalAbstractGraphDatabase
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
                 storeMigrationProcess, transactionMonitor, kernelHealth, txIdGenerator,
                 transactionHeaderInformation, startupStatistics, caches, nodeManager, guard, indexStore,
-                defaultCommitProcessFactory );
+                getCommitProcessFactory() );
         dataSourceManager.register( neoDataSource );
+    }
+
+    protected CommitProcessFactory getCommitProcessFactory()
+    {
+        return defaultCommitProcessFactory;
     }
 
     public static CommitProcessFactory defaultCommitProcessFactory = new CommitProcessFactory()

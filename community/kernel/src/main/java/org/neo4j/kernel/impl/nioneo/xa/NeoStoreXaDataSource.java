@@ -84,6 +84,7 @@ import org.neo4j.kernel.impl.api.store.SchemaCache;
 import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
 import org.neo4j.kernel.impl.cache.BridgingCacheAccess;
+import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.DenseNodeImpl;
@@ -181,6 +182,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private File storeDir;
     private boolean readOnly;
     private CacheAccessBackDoor cacheAccess;
+    private AutoLoadingCache<NodeImpl> nodeCache;
+    private AutoLoadingCache<RelationshipImpl> relationshipCache;
     private PersistenceCache persistenceCache;
     private SchemaCache schemaCache;
     private LabelScanStore labelScanStore;
@@ -394,9 +397,9 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
-        AutoLoadingCache<NodeImpl> nodeCache = new AutoLoadingCache<>(
+        nodeCache = new AutoLoadingCache<>(
                 cacheProvider.node(), nodeLoader( neoStore.getNodeStore() ) );
-        AutoLoadingCache<RelationshipImpl> relationshipCache = new AutoLoadingCache<>(
+        relationshipCache = new AutoLoadingCache<>(
                 cacheProvider.relationship(),
                 relationshipLoader( neoStore.getRelationshipStore() ) );
         RelationshipLoader relationshipLoader = new RelationshipLoader( relationshipCache, new RelationshipChainLoader(
@@ -458,8 +461,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
             storeApplier = new TransactionRepresentationStoreApplier( indexingService, labelScanStore, neoStore,
                     cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore );
-            commitProcess = commitProcessFactory.create( logicalTransactionStore, kernelHealth,
-                    neoStore, storeApplier, false );
+            commitProcess = dependencies.add( commitProcessFactory.create( logicalTransactionStore, kernelHealth,
+                    neoStore, storeApplier, false ) );
 
             Factory<KernelTransaction> transactionFactory = new Factory<KernelTransaction>()
             {
@@ -771,6 +774,16 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 break;
             }
         }
+    }
+
+    public Cache<NodeImpl> getNodeCache()
+    {
+        return nodeCache;
+    }
+
+    public Cache<RelationshipImpl> getRelationshipCache()
+    {
+        return relationshipCache;
     }
 
     public DependencyResolver getDependencyResolver()
