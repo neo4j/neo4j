@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -34,15 +35,14 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
     private DependencyResolver resolver;
     private LogicalTransactionStore txStore;
 
-    public BranchDetectingTxVerifier( DependencyResolver resolver /* I'd like to get in StringLogger, XaDataSource instead */ )
+    public BranchDetectingTxVerifier( DependencyResolver resolver )
     {
         this.resolver = resolver;
-        /* We cannot pass in XaResourceManager because it this time we don't have a
-         * proper db, merely the HA graph db which is a layer around a not-yet-started db
-         * Rickards restructuring will of course fix this */
         this.logger = resolver.resolveDependency( Logging.class ).getMessagesLog( getClass() );
+        this.txStore = resolver.resolveDependency( NeoStoreXaDataSource.class ).getDependencyResolver().
+                resolveDependency( LogicalTransactionStore.class );
     }
-    
+
     @Override
     public void assertMatch( long txId, int masterId, long checksum )
     {
@@ -54,6 +54,12 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
         catch ( IOException e )
         {
             throw new RuntimeException( e );
+        }
+        // TODO 2.2-future this is wrong and I (CG) should feel wrong
+        if ( metadata == null )
+        {
+            System.out.println("Could not find metadata for txid " + txId);
+            return;
         }
         int readMaster = metadata.getMasterId();
         long readChecksum = metadata.getChecksum();

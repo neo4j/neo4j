@@ -48,7 +48,7 @@ import org.neo4j.test.subprocess.ForeignBreakpoints;
 import org.neo4j.test.subprocess.SubProcessTestRunner;
 
 @ForeignBreakpoints( {
-    @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.core.NodeImpl", method = "updateSize" )
+    @ForeignBreakpoints.BreakpointDef( type = "org.neo4j.kernel.impl.cache.AutoLoadingCache", method = "updateSize" )
 } )
 @RunWith( SubProcessTestRunner.class )
 public class TestHighPerformanceCacheRemoveSizeDiverge

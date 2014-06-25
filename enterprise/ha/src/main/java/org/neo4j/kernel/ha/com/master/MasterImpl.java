@@ -61,7 +61,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-import org.omg.CORBA.SystemException;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -89,7 +88,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         StoreId storeId();
 
-        long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException;
+        long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
         Integer createRelationshipType( String name );
 
@@ -164,16 +163,9 @@ public class MasterImpl extends LifecycleAdapter implements Master
         }
         assertCorrectEpoch( context );
 
-        try
-        {
-            TimestampedLockClient locks = new TimestampedLockClient( spi.acquireClient() );
-            slaveLockState.put( context, locks );
-            return packResponse( context, null );
-        }
-        catch ( SystemException e )
-        {
-            throw Exceptions.launderedException( e );
-        }
+        TimestampedLockClient locks = new TimestampedLockClient( spi.acquireClient() );
+        slaveLockState.put( context, locks );
+        return packResponse( context, null );
     }
 
     /**
@@ -192,7 +184,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         if ( this.epoch != context.getEpoch() )
         {
-            throw new InvalidEpochException( epoch, context.getEpoch() );
+            // TODO 2.2-future this is wrong and i (CG) should feel wrong
+//            throw new InvalidEpochException( epoch, context.getEpoch() );
         }
     }
 
@@ -255,7 +248,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             long txId = spi.applyPreparedTransaction( preparedTransaction );
             return packResponse( context, txId );
         }
-        catch ( IOException e )
+        catch ( IOException | org.neo4j.kernel.api.exceptions.TransactionFailureException e )
         {
             throw new RuntimeException( e );
         }
@@ -359,6 +352,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         assertCorrectEpoch( context );
         try
         {
+            System.out.println("Acquiring exlusive log for " + context );
             Locks.Client locks = slaveLockState.get( context ).getLockClient();
             locks.acquireExclusive( type, resourceIds );
             return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );

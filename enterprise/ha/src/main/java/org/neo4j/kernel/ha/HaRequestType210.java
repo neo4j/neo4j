@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha;
 
 import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
+import static org.neo4j.com.Protocol.LONG_SERIALIZER;
 import static org.neo4j.com.Protocol.VOID_SERIALIZER;
 import static org.neo4j.com.Protocol.readBoolean;
 import static org.neo4j.com.Protocol.readString;
@@ -134,7 +135,7 @@ public enum HaRequestType210 implements RequestType<Master>
         public Response<Long> call( Master master, RequestContext context, ChannelBuffer input,
                                     ChannelBuffer target )
         {
-            readString( input ); // Always neostorexadatasource
+            System.out.println("Read string as " + readString( input )); // Always neostorexadatasource
 
             TransactionRepresentation tx = null;
             try
@@ -148,7 +149,7 @@ public enum HaRequestType210 implements RequestType<Master>
 
             return master.commitSingleResourceTransaction( context, tx );
         }
-    }, VOID_SERIALIZER ),
+    }, LONG_SERIALIZER ),
 
     // ====
     PULL_UPDATES( new TargetCaller<Master, Void>()

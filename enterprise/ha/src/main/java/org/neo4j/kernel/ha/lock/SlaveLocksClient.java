@@ -234,6 +234,12 @@ class SlaveLocksClient implements Locks.Client
         client.close();
     }
 
+    @Override
+    public long getIdentifier()
+    {
+        return client.getIdentifier();
+    }
+
     private boolean getReadLockOnMaster( Locks.ResourceType resourceType, long ... resourceId )
     {
         if ( resourceType == ResourceTypes.NODE
@@ -243,7 +249,7 @@ class SlaveLocksClient implements Locks.Client
         {
             makeSureTxHasBeenInitialized();
             return receiveLockResponse(
-                master.acquireSharedLock( requestContextFactory.newRequestContext(), resourceType, resourceId ));
+                master.acquireSharedLock( requestContextFactory.newRequestContext( (int) getIdentifier() ), resourceType, resourceId ));
         }
         else
         {
@@ -255,7 +261,7 @@ class SlaveLocksClient implements Locks.Client
     {
         makeSureTxHasBeenInitialized();
         return receiveLockResponse(
-                master.acquireExclusiveLock( requestContextFactory.newRequestContext(), resourceType, resourceId ));
+                master.acquireExclusiveLock( requestContextFactory.newRequestContext( (int) getIdentifier() ), resourceType, resourceId ));
     }
 
     private boolean receiveLockResponse( Response<LockResult> response )
@@ -286,8 +292,7 @@ class SlaveLocksClient implements Locks.Client
                     + availabilityGuard.describeWhoIsBlocking() );
         }
 
-        // TODO 2.2-future must ensure transaction is initialized
-//        txHook.remotelyInitializeTransaction( txManager.getTransactionState() );
+        master.initializeTx( requestContextFactory.newRequestContext( (int) client.getIdentifier() ) );
     }
 
     private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()

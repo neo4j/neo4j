@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.helpers.collection.Iterables.iterable;
+import static org.neo4j.helpers.collection.Iterables.option;
+import static org.neo4j.helpers.collection.Iterables.sort;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
+import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
+
 import java.lang.reflect.Proxy;
 import java.net.URI;
 import java.util.Arrays;
@@ -26,7 +32,6 @@ import java.util.List;
 import java.util.Map;
 
 import org.jboss.netty.logging.InternalLoggerFactory;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.InstanceId;
 import org.neo4j.cluster.client.ClusterClient;
@@ -72,9 +77,7 @@ import org.neo4j.kernel.ha.cluster.SimpleHighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.SwitchToMaster;
 import org.neo4j.kernel.ha.cluster.SwitchToSlave;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
-import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
@@ -83,24 +86,22 @@ import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
 import org.neo4j.kernel.ha.transaction.DenseNodeTransactionTranslator;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
-import org.neo4j.kernel.ha.transaction.TxIdGeneratorModeSwitcher;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.CommitProcessFactory;
+import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackWeakDependency;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.collection.Iterables.iterable;
-import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
-import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 
 public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
@@ -150,11 +151,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         masterDelegateInvocationHandler = new DelegateInvocationHandler( Master.class );
         master = (Master) Proxy.newProxyInstance( Master.class.getClassLoader(), new Class[]{Master.class},
                 masterDelegateInvocationHandler );
-
+        requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ).toIntegerIndex(),
+                getDependencyResolver() );
         super.create();
 
-        life.add( requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ).toIntegerIndex(),
-                getDependencyResolver() ) );
+        life.add( requestContextFactory );
 
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( availabilityGuard, logging,
                 masterDelegateInvocationHandler ) );
@@ -375,19 +376,29 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected TxIdGenerator createTxIdGenerator()
+    protected CommitProcessFactory getCommitProcessFactory()
     {
-        DelegateInvocationHandler<TxIdGenerator> txIdGeneratorDelegate =
-                new DelegateInvocationHandler<>( TxIdGenerator.class );
-        TxIdGenerator txIdGenerator =
-                (TxIdGenerator) Proxy.newProxyInstance( TxIdGenerator.class.getClassLoader(),
-                        new Class[]{TxIdGenerator.class}, txIdGeneratorDelegate );
-        slaves = life.add( new HighAvailabilitySlaves( members, clusterClient, new DefaultSlaveFactory( logging,
-                monitors, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
+        final DelegateInvocationHandler<TransactionCommitProcess> txCommitProcessDelegate =
+                new DelegateInvocationHandler<>( TransactionCommitProcess.class );
 
-        new TxIdGeneratorModeSwitcher( memberStateMachine, txIdGeneratorDelegate, masterDelegateInvocationHandler,
-                requestContextFactory, msgLog, config, slaves, jobScheduler );
-        return txIdGenerator;
+        final TransactionCommitProcess txCommitProcess =
+                (TransactionCommitProcess) Proxy.newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
+                        new Class[]{ TransactionCommitProcess.class }, txCommitProcessDelegate );
+
+        return new CommitProcessFactory()
+        {
+            @Override
+            public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
+                                                    KernelHealth kernelHealth, NeoStore neoStore,
+                                                    TransactionRepresentationStoreApplier storeApplier,
+                                                    boolean recovery )
+            {
+                new CommitProcessSwitcher( logicalTransactionStore, kernelHealth, neoStore, storeApplier,
+                        masterDelegateInvocationHandler, txCommitProcessDelegate, requestContextFactory,
+                        memberStateMachine, availabilityGuard  );
+                return txCommitProcess;
+            }
+        };
     }
 
     @Override

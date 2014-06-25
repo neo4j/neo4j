@@ -49,6 +49,7 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeImpl;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestSizeOf
@@ -80,12 +81,12 @@ public class TestSizeOf
     @SuppressWarnings( "unchecked" )
     private Cache<NodeImpl> getNodeCache()
     {
-        return db.getDependencyResolver().resolveDependency( Caches.class ).node();
+        return db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class ).getNodeCache();
     }
 
     private Cache<RelationshipImpl> getRelationshipCache()
     {
-        return db.getDependencyResolver().resolveDependency( Caches.class ).relationship();
+        return db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class ).getRelationshipCache();
     }
 
     private Node createNodeAndLoadFresh( Map<String, Object> properties, int nrOfRelationships, int nrOfTypes )

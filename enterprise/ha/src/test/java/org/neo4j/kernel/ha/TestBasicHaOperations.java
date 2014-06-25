@@ -148,7 +148,6 @@ public class TestBasicHaOperations
             tx.success();
         }
 
-
         // No need to wait, the push factor is 2
         HighlyAvailableGraphDatabase slave1 = cluster.getAnySlave();
         String value;

@@ -20,6 +20,7 @@
 package org.neo4j.kernel.ha.com.master;
 
 import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
 import static org.mockito.Matchers.anyLong;
@@ -102,7 +103,7 @@ public class MasterImplTest
         Config config = config( 20 );
 
         when( spi.isAccessible() ).thenReturn( true );
-//        when( spi.beginTx() ).thenThrow( new SystemException("Nope") );
+        when( spi.acquireClient() ).thenThrow( new RuntimeException( "Nope" ) );
         when( spi.getMasterIdForCommittedTx( anyLong() ) ).thenReturn( Pair.of( 1, 1L ) );
 
         MasterImpl instance = new MasterImpl( spi, mock( MasterImpl.Monitor.class ),
@@ -119,8 +120,8 @@ public class MasterImplTest
         catch ( Exception e )
         {
             // Then
-//            assertThat(e.getCause(), instanceOf( SystemException.class ));
-            assertThat(e.getCause().getMessage(), equalTo( "Nope" ));
+            assertThat(e, instanceOf( RuntimeException.class ) );
+            assertThat(e.getMessage(), equalTo( "Nope" ));
         }
     }
 

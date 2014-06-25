@@ -28,7 +28,6 @@ import static org.neo4j.kernel.impl.util.Cursors.exhaust;
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ExecutionException;
 
 import org.neo4j.com.AccumulatorVisitor;
 import org.neo4j.com.RequestContext;
@@ -45,8 +44,10 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.id.IdAllocation;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
@@ -72,6 +73,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     private final Logging logging;
     private final Monitors monitors;
     private LogicalTransactionStore txStore;
+    private final TransactionCommitProcess txCommitProcess;
     private final TransactionIdStore transactionIdStore;
     private final FileSystemAbstraction fileSystem;
     private final File storeDir;
@@ -88,6 +90,9 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         this.transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
         this.fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
         this.storeDir = new File( graphDb.getStoreDir() );
+        this.txStore = dependencyResolver.resolveDependency( NeoStoreXaDataSource.class ).getTransactionStore();
+        this.txCommitProcess = dependencyResolver.resolveDependency( NeoStoreXaDataSource.class ).
+                getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
     }
 
     @Override
@@ -132,20 +137,10 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
-    public long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException
+    public long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException,
+            TransactionFailureException
     {
-        try
-        {
-            return txStore.getAppender().append( preparedTransaction ).get();
-        }
-        catch ( InterruptedException e )
-        {
-            throw new RuntimeException( e );
-        }
-        catch ( ExecutionException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return txCommitProcess.commit( preparedTransaction );
     }
 
     @Override
