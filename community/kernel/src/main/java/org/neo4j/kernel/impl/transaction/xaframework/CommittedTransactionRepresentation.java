@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+
 /**
  * This class represents the concept of a TransactionRepresentation that has been
  * committed to the TransactionStore. It contains, in addition to the TransactionRepresentation

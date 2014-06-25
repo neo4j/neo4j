@@ -715,7 +715,6 @@ public class PhysicalLogNeoCommandReaderV1 implements CommandReader
         {
             byte[] headerBytes = new byte[3];
             channel.get( headerBytes, headerBytes.length );
-//            byte commandType = (byte) ((headerBytes[0] & 0xE0) >> 5);
             byte valueType = (byte) ((headerBytes[0] & 0x1C) >> 2);
             byte entityType = (byte) ((headerBytes[0] & 0x2) >> 1);
             boolean entityIdNeedsLong = (headerBytes[0] & 0x1) > 0;

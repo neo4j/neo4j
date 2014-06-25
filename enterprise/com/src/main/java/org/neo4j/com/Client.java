@@ -19,10 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
-
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -46,6 +42,7 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
+
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -55,6 +52,10 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 /**
  * A means for a client to communicate with a {@link Server}. It
@@ -71,8 +72,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     // with the server in some way.
     public static final int DEFAULT_MAX_NUMBER_OF_CONCURRENT_CHANNELS_PER_CLIENT = 20;
     public static final int DEFAULT_READ_RESPONSE_TIMEOUT_SECONDS = 20;
-    private ClientBootstrap bootstrap;
 
+    private ClientBootstrap bootstrap;
     private final SocketAddress address;
     private final StringLogger msgLog;
     private ExecutorService executor;
@@ -84,10 +85,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     private final StoreId storeId;
     private ResourceReleaser resourcePoolReleaser;
     private final List<MismatchingVersionHandler> mismatchingVersionHandlers;
-
     private final RequestMonitor requestMonitor;
-
-    private int chunkSize;
 
     public Client( String hostNameOrIp, int port, Logging logging, Monitors monitors,
                    StoreId storeId, int frameLength,
@@ -102,7 +100,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
         this.readTimeout = readTimeout;
         // ResourcePool no longer controls max concurrent channels. Use this value for the pool size
         this.maxUnusedChannels = maxConcurrentChannels;
-        this.mismatchingVersionHandlers = new ArrayList<MismatchingVersionHandler>( 2 );
+        this.mismatchingVersionHandlers = new ArrayList<>( 2 );
         this.address = new InetSocketAddress( hostNameOrIp, port );
         this.protocol = new Protocol( chunkSize, applicationProtocolVersion, getInternalProtocolVersion() );
 
@@ -213,7 +211,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
             ByteBuffer input = channelContext.third();
 
 
-            Map<String, String> requestContext = new HashMap<String, String>();
+            Map<String, String> requestContext = new HashMap<>();
             requestContext.put( "type", type.toString() );
             requestContext.put( "slaveContext", context.toString() );
             requestContext.put( "serverAddress", channel.getRemoteAddress().toString() );
@@ -240,9 +238,6 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                     assertCorrectStoreId( response.getStoreId(), storeId );
                 }
             }
-
-            // Append response.result;
-            // apply to store
 
             return response;
         }
@@ -332,7 +327,7 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         ChannelPipeline pipeline = Channels.pipeline();
         addLengthFieldPipes( pipeline, frameLength );
-        BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<ChannelBuffer>(
+        BlockingReadHandler<ChannelBuffer> reader = new BlockingReadHandler<>(
                 new ArrayBlockingQueue<ChannelEvent>( 3, false ) );
         pipeline.addLast( "blockingHandler", reader );
         return pipeline;

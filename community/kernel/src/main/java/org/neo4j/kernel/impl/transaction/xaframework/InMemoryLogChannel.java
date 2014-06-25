@@ -88,16 +88,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     }
 
     @Override
-    public InMemoryLogChannel put( char[] chars, int length ) throws IOException
-    {
-        for ( int i = 0; i < length; i++ )
-        {
-            asWriter.putChar( chars[i] );
-        }
-        return this;
-    }
-
-    @Override
     public void force() throws IOException
     {
     }
@@ -170,16 +160,6 @@ public class InMemoryLogChannel implements WritableLogChannel, ReadableLogChanne
     {
         ensureAvailableToRead( length );
         asReader.get( bytes, 0, length );
-    }
-
-    @Override
-    public void get( char[] chars, int length ) throws IOException
-    {
-        ensureAvailableToRead( length * 2 );
-        for ( int i = 0; i < length; i++)
-        {
-            chars[i] = asReader.getChar();
-        }
     }
 
     private void ensureAvailableToRead( int i ) throws ReadPastEndException

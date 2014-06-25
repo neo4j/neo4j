@@ -47,7 +47,6 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
@@ -68,7 +67,7 @@ import static org.neo4j.helpers.collection.Iterables.single;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
 import static org.neo4j.io.fs.FileUtils.relativePath;
-import static org.neo4j.kernel.impl.util.Cursors.exhaust;
+import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 public class RemoteStoreCopierTest
 {
@@ -87,72 +86,62 @@ public class RemoteStoreCopierTest
                 .newEmbeddedDatabase( originalDir.getAbsolutePath() );
         final DependencyResolver resolver = original.getDependencyResolver();
         final FileSystemAbstraction fileSystem = resolver.resolveDependency( FileSystemAbstraction.class );
-        LogVersionRepository logVersionRepository =
-                original.getDependencyResolver().resolveDependency( LogVersionRepository.class );
-        RemoteStoreCopier copier = new RemoteStoreCopier( config, loadKernelExtensions(),
-                new ConsoleLogger( StringLogger.SYSTEM ), fs, logVersionRepository );
+        StoreCopyClient copier = new StoreCopyClient( config, loadKernelExtensions(),
+                new ConsoleLogger( StringLogger.SYSTEM ), fs );
 
         // When
-        RemoteStoreCopier.StoreCopyRequester requester = spy( new RemoteStoreCopier.StoreCopyRequester()
+        StoreCopyClient.StoreCopyRequester requester = spy( new StoreCopyClient.StoreCopyRequester()
         {
             private Response<Object> response;
 
             @Override
             public Response<?> copyStore( StoreWriter writer ) throws IOException
             {
-                try
+                // Data that should be available in the store files
+                try ( Transaction tx = original.beginTx() )
                 {
-                    // Data that should be available in the store files
-                    try ( Transaction tx = original.beginTx() )
-                    {
-                        original.createNode( label( "BeforeCopyBegins" ) );
-                        tx.success();
-                    }
+                    original.createNode( label( "BeforeCopyBegins" ) );
+                    tx.success();
+                }
 
-                    // TODO This code is sort-of-copied from DefaultMasterImplSPI. Please dedup that
-                    // <copy>
-                    TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
-                    long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittingTransactionId();
-                    NeoStoreXaDataSource dataSource =
-                            resolver.resolveDependency( DataSourceManager.class ).getDataSource();
-                    dataSource.forceEverything();
-                    File baseDir = getMostCanonicalFile( originalDir );
-                    ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
+                // TODO This code is sort-of-copied from DefaultMasterImplSPI. Please dedup that
+                // <copy>
+                TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+                long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittingTransactionId();
+                NeoStoreXaDataSource dataSource =
+                        resolver.resolveDependency( DataSourceManager.class ).getDataSource();
+                dataSource.forceEverything();
+                File baseDir = getMostCanonicalFile( originalDir );
+                ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
 
-                    // Copy the store files
-                    try ( ResourceIterator<File> files = dataSource.listStoreFiles() )
+                // Copy the store files
+                try ( ResourceIterator<File> files = dataSource.listStoreFiles() )
+                {
+                    while ( files.hasNext() )
                     {
-                        while ( files.hasNext() )
+                        File file = files.next();
+                        try ( StoreChannel fileChannel = fileSystem.open( file, "r" ) )
                         {
-                            File file = files.next();
-                            try ( StoreChannel fileChannel = fileSystem.open( file, "r" ) )
-                            {
-                                writer.write( relativePath( baseDir, file ), fileChannel, temporaryBuffer, file.length() > 0 );
-                            }
+                            writer.write( relativePath( baseDir, file ), fileChannel, temporaryBuffer, file.length() > 0 );
                         }
                     }
-                    // </copy>
-
-                    // Data that should be made available as part of recovery
-                    try ( Transaction tx = original.beginTx() )
-                    {
-                        original.createNode( label( "AfterCopy" ) );
-                        tx.success();
-                    }
-
-                    // Stream committed transaction since the start of copying
-                    long highTransactionId = transactionIdStore.getLastCommittingTransactionId();
-                    AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>(
-                            upAndIncluding( highTransactionId ) );
-                    LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
-                    exhaust( txStore.getCursor( transactionIdWhenStartingCopy + 1, accumulator ) );
-                    return response = spy( new Response<>( null, original.storeId(), accumulator.getAccumulator(), NO_OP ) );
                 }
-                catch ( final Throwable t )
+                // </copy>
+
+                // Data that should be made available as part of recovery
+                try ( Transaction tx = original.beginTx() )
                 {
-                    t.printStackTrace();
-                    throw t;
+                    original.createNode( label( "AfterCopy" ) );
+                    tx.success();
                 }
+
+                // Stream committed transaction since the start of copying
+                long highTransactionId = transactionIdStore.getLastCommittingTransactionId();
+                AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>(
+                        upAndIncluding( highTransactionId ) );
+                LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
+                exhaustAndClose( txStore.getCursor( transactionIdWhenStartingCopy + 1, accumulator ) );
+                return response = spy( new Response<>( null, original.storeId(), accumulator.getAccumulator(), NO_OP ) );
             }
 
             @Override

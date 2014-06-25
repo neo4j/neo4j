@@ -31,7 +31,6 @@ import org.junit.Test;
 import org.junit.rules.TestName;
 
 import org.neo4j.cluster.InstanceId;
-import org.neo4j.com.ServerUtil;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -53,7 +52,7 @@ import org.neo4j.management.Neo4jManager;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
-import org.neo4j.test.ha.ClusterManager.RepairKit;
+import org.neo4j.test.ha.FutureLifecycleAdapter.RepairKit;
 
 import static java.util.concurrent.TimeUnit.SECONDS;
 
@@ -62,8 +61,9 @@ import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import static org.neo4j.helpers.collection.Iterables.filter;
+import static org.neo4j.helpers.collection.Iterables.first;
 import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
-import static org.neo4j.test.ha.ClusterManager.masterSeesMembers;
 
 public class HaBeanIT
 {
@@ -233,7 +233,10 @@ public class HaBeanIT
                         info.isAvailable() );
                 for ( String role : info.getRoles() )
                 {
-                    if (role.equals( HighAvailabilityModeSwitcher.MASTER )) mastersFound++;
+                    if (role.equals( HighAvailabilityModeSwitcher.MASTER ))
+                    {
+                        mastersFound++;
+                    }
                 }
             }
             assertEquals( 1, mastersFound );
@@ -338,10 +341,22 @@ public class HaBeanIT
         }
     }
 
+    public static URI getUriForScheme( final String scheme, Iterable<URI> uris )
+    {
+        return first( filter( new Predicate<URI>()
+        {
+            @Override
+            public boolean accept( URI item )
+            {
+                return item.getScheme().equals( scheme );
+            }
+        }, uris ) );
+    }
+
     private void assertMasterAndSlaveInformation( ClusterMemberInfo[] instancesInCluster ) throws Exception
     {
         ClusterMemberInfo master = member( instancesInCluster, 1 );
-        assertEquals( 1137, ServerUtil.getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
+        assertEquals( 1137, getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
         {
             @Override
             public URI apply( String from )
@@ -352,7 +367,7 @@ public class HaBeanIT
         assertEquals( HighAvailabilityModeSwitcher.MASTER, master.getHaRole() );
 
         ClusterMemberInfo slave = member( instancesInCluster, 2 );
-        assertEquals( 1138, ServerUtil.getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
+        assertEquals( 1138, getUriForScheme( "ha", Iterables.map( new Function<String, URI>()
         {
             @Override
             public URI apply( String from )

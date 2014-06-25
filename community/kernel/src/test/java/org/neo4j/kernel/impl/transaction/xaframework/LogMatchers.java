@@ -38,9 +38,8 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
-import org.neo4j.kernel.impl.util.Cursor;
 
-import static org.neo4j.kernel.impl.util.Cursors.exhaust;
+import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
@@ -77,10 +76,7 @@ public class LogMatchers
 
             ReadableLogChannel logChannel = new ReadAheadLogChannel(
                     new PhysicalLogVersionedStoreChannel( fileChannel ), LogVersionBridge.NO_MORE_CHANNELS, 4096 );
-            try ( Cursor<IOException> cursor = deserializer.cursor( logChannel, consumer ) )
-            {
-                exhaust( cursor );
-            }
+            exhaustAndClose( deserializer.cursor( logChannel, consumer ) );
 
             return entries;
         }

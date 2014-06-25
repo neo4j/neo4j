@@ -33,7 +33,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.com.storecopy.RemoteStoreCopier;
+import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
@@ -64,7 +64,6 @@ import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
@@ -102,9 +101,7 @@ public class SwitchToSlave
     private final UpdateableSchemaState updateableSchemaState;
     private final Monitors monitors;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
-
     private final MasterClientResolver masterClientResolver;
-    private LogVersionRepository logVersionRepository;
 
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver, HaIdGeneratorFactory
             idGeneratorFactory, Logging logging, DelegateInvocationHandler<Master> masterDelegateHandler,
@@ -318,8 +315,8 @@ public class SwitchToSlave
 
             // This will move the copied db to the graphdb location
             console.log( "Copying store from master" );
-            new RemoteStoreCopier( config, kernelExtensions, console,
-                    fs, logVersionRepository ).copyStore( new RemoteStoreCopier.StoreCopyRequester()
+            new StoreCopyClient( config, kernelExtensions, console, fs ).copyStore(
+                    new StoreCopyClient.StoreCopyRequester()
             {
                 @Override
                 public Response<?> copyStore( StoreWriter writer )

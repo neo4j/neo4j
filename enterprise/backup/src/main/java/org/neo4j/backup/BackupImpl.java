@@ -19,69 +19,56 @@
  */
 package org.neo4j.backup;
 
+import java.io.IOException;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.ServerUtil;
+import org.neo4j.com.ServerFailureException;
+import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
 
 class BackupImpl implements TheBackupInterface
 {
     private final BackupMonitor backupMonitor;
+    private final StoreCopyServer storeCopyServer;
+    private final ResponsePacker responsePacker;
 
-    public interface SPI
+    public BackupImpl( StoreCopyServer storeCopyServer, ResponsePacker responsePacker,
+            Monitors monitors )
     {
-        String getStoreDir();
-        StoreId getStoreId();
-    }
-
-    private final StringLogger logger;
-    private final SPI spi;
-    private final KernelPanicEventGenerator kpeg;
-
-    public BackupImpl( StringLogger logger, SPI spi, KernelPanicEventGenerator kpeg, Monitors monitors )
-    {
-        this.logger = logger;
-        this.spi = spi;
-        this.kpeg = kpeg;
+        this.storeCopyServer = storeCopyServer;
+        this.responsePacker = responsePacker;
         this.backupMonitor = monitors.newMonitor( BackupMonitor.class, getClass() );
     }
 
     @Override
     public Response<Void> fullBackup( StoreWriter writer )
     {
-        backupMonitor.startCopyingFiles();
-        RequestContext context = ServerUtil.rotateLogsAndStreamStoreFiles( spi.getStoreDir(),
-                kpeg, logger, false, writer, new DefaultFileSystemAbstraction(), backupMonitor );
-        writer.done();
-        backupMonitor.finishedCopyingStoreFiles();
-        return packResponse( context );
+        try ( StoreWriter storeWriter = writer )
+        {
+            backupMonitor.startCopyingFiles();
+            RequestContext context = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter );
+            return responsePacker.packResponse( context, null/*no response object*/ );
+        }
+        catch ( IOException e )
+        {
+            throw new ServerFailureException( e );
+        }
     }
 
     @Override
     public Response<Void> incrementalBackup( RequestContext context )
     {
-        return packResponse( context );
-    }
-
-    private Response<Void> packResponse( RequestContext context )
-    {
-        // On Windows there's a problem extracting logs from the current log version
-        // where a rotation is requested during the time of extracting transactions
-        // from it, especially if the extraction process is waiting for the client
-        // to catch up on reading them. On Linux/Mac this isn't a due to a more flexible
-        // file handling system. Solution: rotate before doing an incremental backup
-        // in Windows to avoid running into that problem.
-        if ( Settings.osIsWindows() )
+        try
         {
-            ServerUtil.rotateLogs( kpeg, logger );
+            return responsePacker.packResponse( context, null );
         }
-        return ServerUtil.packResponse( spi.getStoreId(), context, null, ServerUtil.ALL );
+        catch ( IOException e )
+        {
+            throw new ServerFailureException( e );
+        }
     }
 }

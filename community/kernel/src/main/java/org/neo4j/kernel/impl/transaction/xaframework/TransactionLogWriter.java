@@ -21,17 +21,25 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 
-import org.neo4j.helpers.collection.Visitor;
-import org.neo4j.kernel.lifecycle.Lifecycle;
-
-public interface LogicalTransactionStore extends Lifecycle
+public class TransactionLogWriter
 {
-    TransactionAppender getAppender();
+    private final LogEntryWriter writer;
 
-    IOCursor getCursor( long transactionIdToStartFrom,
-            Visitor<CommittedTransactionRepresentation, IOException> visitor )
-            throws NoSuchTransactionException, IOException;
+    public TransactionLogWriter( LogEntryWriter writer )
+    {
+        this.writer = writer;
+    }
 
-    TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId )
-            throws NoSuchTransactionException, IOException;
+    public void append( TransactionRepresentation transaction, long transactionId ) throws IOException
+    {
+        writer.writeStartEntry( transaction.getMasterId(), transaction.getAuthorId(),
+                transaction.getTimeWritten(), transaction.getLatestCommittedTxWhenStarted(),
+                transaction.additionalHeader() );
+
+        // Write all the commands to the log channel
+        writer.serialize( transaction );
+
+        // Write commit record
+        writer.writeCommitEntry( transactionId, transaction.getTimeWritten() );
+    }
 }

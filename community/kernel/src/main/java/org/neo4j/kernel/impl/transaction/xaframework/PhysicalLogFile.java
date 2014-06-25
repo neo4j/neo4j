@@ -20,7 +20,6 @@
 package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.File;
-import java.io.FileNotFoundException;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
@@ -30,13 +29,14 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
 import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 
 /**
  * {@link LogFile} backup by one or more files in a {@link FileSystemAbstraction}.
  */
-public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVersionBridge
+public class PhysicalLogFile extends LifecycleAdapter implements LogFile
 {
     public static final String DEFAULT_NAME = "nioneo_logical.log";
     private final long rotateAtSize;
@@ -52,6 +52,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     private PhysicalWritableLogChannel writer;
     private final LogVersionRepository logVersionRepository;
     private PhysicalLogVersionedStoreChannel channel;
+    private final LogVersionBridge readerLogVersionBridge;
 
     public PhysicalLogFile( FileSystemAbstraction fileSystem, PhysicalLogFiles logFiles, long rotateAtSize,
             LogPruneStrategy pruneStrategy, TransactionIdStore transactionIdStore,
@@ -68,6 +69,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
         this.transactionMetadataCache = transactionMetadataCache;
         this.recoveredDataVisitor = recoveredDataVisitor;
         this.logFiles = logFiles;
+        this.readerLogVersionBridge = new ReaderLogVersionBridge( fileSystem, logFiles );
     }
 
     @Override
@@ -98,6 +100,13 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
         logVersionRepository.incrementVersion();
     }
 
+    @Override
+    public void shutdown() throws Throwable
+    {
+        writer.close();
+        channel.close();
+    }
+
     private PhysicalLogVersionedStoreChannel openLogChannelForVersion( long forVersion ) throws IOException
     {
         File toOpen = logFiles.getVersionFileName( forVersion );
@@ -126,7 +135,6 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
             recoveredDataVisitor.visit( recoveredDataChannel );
             // intentionally keep it open since we're continuing using the underlying channel for the writer below
             logRotationControl.forceEverything();
-            // TODO rotate after recovery?
         }
     }
 
@@ -171,89 +179,6 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
         return newLog;
     }
 
-    //    @Override
-    //    public Long getFirstCommittedTxId( long version )
-    //    {
-    //        if ( version == 0 )
-    //        {
-    //            return 1L;
-    //        }
-    //
-    //        // First committed tx for version V = last committed tx version V-1 + 1
-    //        Long header = positionCache.getHeader( version - 1 );
-    //        if ( header != null )
-    //        // It existed in cache
-    //        {
-    //            return header + 1;
-    //        }
-    //
-    //        // Wasn't cached, go look for it
-    //        synchronized ( this )
-    //        {
-    //            if ( version > logVersion )
-    //            {
-    //                throw new IllegalArgumentException( "Too high version " + version + ", active is " + logVersion );
-    //            }
-    //            else if ( version == logVersion )
-    //            {
-    //                throw new IllegalArgumentException( "Last committed tx for the active log isn't determined yet" );
-    //            }
-    //            else if ( version == logVersion - 1 )
-    //            {
-    //                return previousLogLastCommittedTx;
-    //            }
-    //            else
-    //            {
-    //                File file = getFileName( version );
-    //                if ( fileSystem.fileExists( file ) )
-    //                {
-    //                    try
-    //                    {
-    //                        long[] headerLongs = VersionAwareLogEntryReader.readLogHeader( fileSystem, file );
-    //                        return headerLongs[1] + 1;
-    //                    }
-    //                    catch ( IOException e )
-    //                    {
-    //                        throw new RuntimeException( e );
-    //                    }
-    //                }
-    //            }
-    //        }
-    //        return null;
-    //    }
-    //
-    //
-    //    @Override
-    //    public Long getFirstStartRecordTimestamp( long version ) throws IOException
-    //    {
-    //        ReadableByteChannel log = null;
-    //        try
-    //        {
-    //            ByteBuffer buffer = LogExtractor.newLogReaderBuffer();
-    //            log = getLogicalLog( version );
-    //            VersionAwareLogEntryReader.readLogHeader( buffer, log, true );
-    //            LogDeserializer deserializer = new LogDeserializer( buffer, commandReaderFactory );
-    //
-    //            TimeWrittenConsumer consumer = new TimeWrittenConsumer();
-    //
-    //            try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( log ) )
-    //            {
-    //                while( cursor.next( consumer ) )
-    //                {
-    //                    ;
-    //                }
-    //            }
-    //            return consumer.getTimeWritten();
-    //        }
-    //        finally
-    //        {
-    //            if ( log != null )
-    //            {
-    //                log.close();
-    //            }
-    //        }
-    //    }
-    //
     @Override
     public WritableLogChannel getWriter()
     {
@@ -264,25 +189,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     public ReadableLogChannel getReader( LogPosition position ) throws IOException
     {
         VersionedStoreChannel channel = openLogChannel( position );
-        return new ReadAheadLogChannel( channel, this, 4 * 1024 );
-    }
-
-    @Override
-    public VersionedStoreChannel next( VersionedStoreChannel channel ) throws IOException
-    {
-        PhysicalLogVersionedStoreChannel nextChannel;
-        try
-        {
-            nextChannel = openLogChannel( new LogPosition( channel.getVersion() + 1, 0 ) );
-        }
-        catch ( FileNotFoundException e )
-        {
-            return channel;
-        }
-        // TODO read header properly
-        channel.close();
-        nextChannel.position( VersionAwareLogEntryReader.LOG_HEADER_SIZE );
-        return nextChannel;
+        return new ReadAheadLogChannel( channel, readerLogVersionBridge, 4 * 1024 );
     }
 
     private PhysicalLogVersionedStoreChannel openLogChannel( LogPosition position ) throws IOException
@@ -352,9 +259,12 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile, LogVer
     {
         long currentLogVersion = logFiles.getHighestLogVersion();
         LogPosition position = new LogPosition( currentLogVersion, 16 );
-        while( logFiles.versionExists( currentLogVersion ) && visitor.visit( position, getReader( position  ) ) )
+        try ( ReadableLogChannel reader = getReader( position ) )
         {
-            currentLogVersion--;
+            while( logFiles.versionExists( currentLogVersion ) && visitor.visit( position, reader ) )
+            {
+                currentLogVersion--;
+            }
         }
     }
 }

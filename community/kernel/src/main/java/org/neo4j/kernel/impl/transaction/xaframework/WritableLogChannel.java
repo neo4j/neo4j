@@ -40,7 +40,5 @@ public interface WritableLogChannel extends Closeable
 
     WritableLogChannel put( byte[] value, int length ) throws IOException;
 
-    WritableLogChannel put( char[] value, int length ) throws IOException;
-
     LogPosition getCurrentPosition() throws IOException;
 }

@@ -19,7 +19,6 @@
  */
 package org.neo4j.com;
 
-import java.util.Arrays;
 
 /**
  * A representation of the context in which an HA slave operates. Contains <li>
@@ -87,7 +86,7 @@ public final class RequestContext
     public String toString()
     {
         return "RequestContext[session: " + epoch + ", ID:" + machineId + ", eventIdentifier:" + eventIdentifier
-               + ", " + Arrays.asList( lastAppliedTransaction ) + "]";
+               + ", lastTx:" + lastAppliedTransaction + "]";
     }
 
     @Override

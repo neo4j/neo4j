@@ -28,6 +28,7 @@ import org.junit.Test;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 
@@ -47,7 +48,9 @@ public class PhysicalTransactionAppenderTest
         when( logFile.getWriter() ).thenReturn( channel );
         TxIdGenerator txIdGenerator = mock( TxIdGenerator.class );
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 100 );
-        TransactionAppender appender = new PhysicalTransactionAppender( logFile, txIdGenerator, positionCache );
+        TransactionIdStore transactionIdStore = mock( TransactionIdStore.class );
+        TransactionAppender appender = new PhysicalTransactionAppender(
+                logFile, txIdGenerator, positionCache, transactionIdStore );
 
         // WHEN
         PhysicalTransactionRepresentation transaction = new PhysicalTransactionRepresentation(

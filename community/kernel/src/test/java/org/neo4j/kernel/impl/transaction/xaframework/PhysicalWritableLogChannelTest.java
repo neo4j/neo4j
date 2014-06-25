@@ -54,7 +54,6 @@ public class PhysicalWritableLogChannelTest
         float floatValue = 45849.332f;
         double doubleValue = 458493343D;
         byte[] byteArrayValue = new byte[] {1,4,2,5,3,6};
-        char[] charArrayValue = new char[] {'4', '5', '6', '7'};
 
         channel.put( byteValue );
         channel.putShort( shortValue );
@@ -67,7 +66,6 @@ public class PhysicalWritableLogChannelTest
         channel.putFloat( floatValue );
         channel.putDouble( doubleValue );
         channel.put( byteArrayValue, byteArrayValue.length );
-        channel.put( charArrayValue, charArrayValue.length );
         channel.close();
 
         // The two chunks of values should end up in two different files
@@ -83,10 +81,6 @@ public class PhysicalWritableLogChannelTest
         byte[] readByteArray = new byte[byteArrayValue.length];
         secondFileContents.get( readByteArray );
         assertArrayEquals( byteArrayValue, readByteArray );
-
-        char[] readCharArray = new char[charArrayValue.length];
-        secondFileContents.asCharBuffer().get( readCharArray );
-        assertArrayEquals( charArrayValue, readCharArray );
     }
 
     private ByteBuffer readFile( File file ) throws IOException

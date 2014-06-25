@@ -49,24 +49,19 @@ import org.neo4j.kernel.monitoring.Monitors;
  */
 public class NeoStore extends AbstractStore implements TransactionIdStore, LogVersionRepository
 {
-    public static abstract class Configuration
-        extends AbstractStore.Configuration
+    public static abstract class Configuration extends AbstractStore.Configuration
     {
         public static final Setting<Integer> relationship_grab_size = GraphDatabaseSettings.relationship_grab_size;
         public static final Setting<Integer> dense_node_threshold = GraphDatabaseSettings.dense_node_threshold;
     }
 
     public static final String TYPE_DESCRIPTOR = "NeoStore";
-
     /*
      *  7 longs in header (long + in use), time | random | version | txid | store version | graph next prop | latest constraint tx
      */
     public static final int RECORD_SIZE = 9;
-
     public static final String DEFAULT_NAME = "neostore";
-
     // Positions of meta-data records
-
     private static final int TIME_POSITION = 0;
     private static final int RANDOM_POSITION = 1;
     private static final int VERSION_POSITION = 2;
@@ -93,19 +88,14 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private final AtomicLong latestConstraintIntroducingTx = new AtomicLong( -1 );
     private final int relGrabSize;
 
-    public NeoStore( File fileName,
-                     Config conf,
-                     IdGeneratorFactory idGeneratorFactory,
-                     PageCache pageCache,
-                     FileSystemAbstraction fileSystemAbstraction,
-                     StringLogger stringLogger, RelationshipTypeTokenStore relTypeStore,
-                     LabelTokenStore labelTokenStore, PropertyStore propStore, RelationshipStore relStore,
-                     NodeStore nodeStore, SchemaStore schemaStore, RelationshipGroupStore relGroupStore,
-                     StoreVersionMismatchHandler versionMismatchHandler,
-                     Monitors monitors )
+    public NeoStore( File fileName, Config conf, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+            RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore, PropertyStore propStore,
+            RelationshipStore relStore, NodeStore nodeStore, SchemaStore schemaStore,
+            RelationshipGroupStore relGroupStore, StoreVersionMismatchHandler versionMismatchHandler, Monitors monitors )
     {
-        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, fileSystemAbstraction,
+                stringLogger, versionMismatchHandler, monitors );
         this.relTypeStore = relTypeStore;
         this.labelTokenStore = labelTokenStore;
         this.propStore = propStore;
@@ -114,7 +104,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         this.schemaStore = schemaStore;
         this.relGroupStore = relGroupStore;
         relGrabSize = conf.get( Configuration.relationship_grab_size );
-
         /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
          * corresponding store version record was not added. That record was added in the release
          * thereafter so this missing record doesn't trigger an upgrade of the neostore file and so any
@@ -127,8 +116,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         setRecovered();
         try
         {
-            if ( getCreationTime() != 0 /*Store that wasn't just now created*/ &&
-                    getStoreVersion() == 0 /*Store is missing the store version record*/ )
+            if ( getCreationTime() != 0 /*Store that wasn't just now created*/&& getStoreVersion() == 0 /*Store is missing the store version record*/)
             {
                 setStoreVersion( versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
                 updateHighId();
@@ -166,20 +154,21 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
                  * in garbage.
                  * Yes, this has to be fixed to be prettier.
                  */
-                String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.get( org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration.neo_store) ));
+                String foundVersion = versionLongToString( getStoreVersion( fileSystemAbstraction,
+                        configuration
+                                .get( org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration.neo_store ) ) );
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
-                    throw new IllegalStateException( format(
-                            "Mismatching store version found (%s while expecting %s). The store cannot be automatically upgraded since it isn't cleanly shutdown." +
-                            " Recover by starting the database using the previous Neo4j version, followed by a clean shutdown. Then start with this version again.",
-                            foundVersion, CommonAbstractStore.ALL_STORES_VERSION ) );
+                    throw new IllegalStateException(
+                            format( "Mismatching store version found (%s while expecting %s). The store cannot be automatically upgraded since it isn't cleanly shutdown."
+                                    + " Recover by starting the database using the previous Neo4j version, followed by a clean shutdown. Then start with this version again.",
+                                    foundVersion, CommonAbstractStore.ALL_STORES_VERSION ) );
                 }
             }
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to check version "
-                    + getStorageFileName(), e );
+            throw new UnderlyingStorageException( "Unable to check version " + getStorageFileName(), e );
         }
     }
 
@@ -187,7 +176,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     protected void verifyFileSizeAndTruncate() throws IOException
     {
         super.verifyFileSizeAndTruncate();
-
         /* MP: 2011-11-23
          * A little silent upgrade for the "next prop" record. It adds one record last to the neostore file.
          * It's backwards compatible, that's why it can be a silent and automatic upgrade.
@@ -197,7 +185,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             insertRecord( NEXT_GRAPH_PROP_POSITION, -1 );
             registerIdFromUpdateRecord( NEXT_GRAPH_PROP_POSITION );
         }
-
         /* Silent upgrade for latest constraint introducing tx
          */
         if ( getFileChannel().size() == RECORD_SIZE * 6 )
@@ -216,7 +203,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         StoreChannel channel = getFileChannel();
         long previousPosition = channel.position();
         channel.position( RECORD_SIZE * recordPosition );
-        int trail = (int) (channel.size()-channel.position());
+        int trail = (int) (channel.size() - channel.position());
         ByteBuffer trailBuffer = null;
         if ( trail > 0 )
         {
@@ -280,11 +267,24 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         }
     }
 
+    @Override
+    public void flush()
+    {
+        flushNeoStoreOnly();
+        try
+        {
+            pageCache.flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Failed to flush", e );
+        }
+    }
+
     public void flushNeoStoreOnly()
     {
         ensureLastCommittingTransactionIdRead();
         setRecord( LATEST_TX_POSITION, lastCommittingTx.get() );
-
         try
         {
             storeFile.flush();
@@ -333,12 +333,12 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     {
         try ( StoreChannel channel = fileSystem.open( neoStore, "rw" ) )
         {
-            channel.position( RECORD_SIZE * position + 1/*inUse*/ );
+            channel.position( RECORD_SIZE * position + 1/*inUse*/);
             ByteBuffer buffer = ByteBuffer.allocate( 8 );
             channel.read( buffer );
             buffer.flip();
             long previous = buffer.getLong();
-            channel.position( RECORD_SIZE * position + 1/*inUse*/ );
+            channel.position( RECORD_SIZE * position + 1/*inUse*/);
             buffer.clear();
             buffer.putLong( value ).flip();
             channel.write( buffer );
@@ -458,7 +458,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     {
         // Here we set the record...
         incrementVersion();
-        super.flush();
+        flushNeoStoreOnly();
         // ...to then read it back. Unnecessary, but this happens once every log rotation, so it's OK
         return getCurrentLogVersion();
     }
@@ -474,7 +474,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     public long getLatestConstraintIntroducingTx()
     {
         long txId = latestConstraintIntroducingTx.get();
-        if( txId == -1)
+        if ( txId == -1 )
         {
             synchronized ( this )
             {
@@ -528,8 +528,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         try
         {
             cursor.setOffset( offsetForId( id ) );
-            cursor.putByte(Record.IN_USE.byteValue());
-            cursor.putLong(value);
+            cursor.putByte( Record.IN_USE.byteValue() );
+            cursor.putLong( value );
         }
         finally
         {
@@ -676,16 +676,15 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public boolean isStoreOk()
     {
-        return getStoreOk() && relTypeStore.getStoreOk() && labelTokenStore.getStoreOk() &&
-            propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk() && schemaStore.getStoreOk() &&
-            relGroupStore.getStoreOk();
+        return getStoreOk() && relTypeStore.getStoreOk() && labelTokenStore.getStoreOk() && propStore.getStoreOk()
+                && relStore.getStoreOk() && nodeStore.getStoreOk() && schemaStore.getStoreOk()
+                && relGroupStore.getStoreOk();
     }
 
     @Override
-    public void logVersions( StringLogger.LineLogger msgLog)
+    public void logVersions( StringLogger.LineLogger msgLog )
     {
         msgLog.logLine( "Store versions:" );
-
         super.logVersions( msgLog );
         schemaStore.logVersions( msgLog );
         nodeStore.logVersions( msgLog );
@@ -694,7 +693,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         labelTokenStore.logVersions( msgLog );
         propStore.logVersions( msgLog );
         relGroupStore.logVersions( msgLog );
-
         stringLogger.flush();
     }
 
@@ -709,7 +707,6 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         labelTokenStore.logIdUsage( msgLog );
         propStore.logIdUsage( msgLog );
         relGroupStore.logIdUsage( msgLog );
-
         stringLogger.flush();
     }
 
@@ -730,21 +727,18 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
      * helicopters. Anyway, it should suffice for some time and by then
      * it should have become SEP.
      */
-
     public static long versionStringToLong( String storeVersion )
     {
         if ( CommonAbstractStore.UNKNOWN_VERSION.equals( storeVersion ) )
         {
             return -1;
         }
-        Bits bits = Bits.bits(8);
+        Bits bits = Bits.bits( 8 );
         int length = storeVersion.length();
         if ( length == 0 || length > 7 )
         {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "The given string %s is not of proper size for a store version string",
-                            storeVersion ) );
+            throw new IllegalArgumentException( String.format(
+                    "The given string %s is not of proper size for a store version string", storeVersion ) );
         }
         bits.put( length, 8 );
         for ( int i = 0; i < length; i++ )
@@ -752,10 +746,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
             char c = storeVersion.charAt( i );
             if ( c < 0 || c >= 256 )
             {
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Store version strings should be encode-able as Latin1 - %s is not",
-                                storeVersion ) );
+                throw new IllegalArgumentException( String.format(
+                        "Store version strings should be encode-able as Latin1 - %s is not", storeVersion ) );
             }
             bits.put( c, 8 ); // Just the lower byte
         }
@@ -768,12 +760,11 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
         {
             return CommonAbstractStore.UNKNOWN_VERSION;
         }
-        Bits bits = Bits.bitsFromLongs( new long[]{storeVersion} );
+        Bits bits = Bits.bitsFromLongs( new long[] { storeVersion } );
         int length = bits.getShort( 8 );
         if ( length == 0 || length > 7 )
         {
-            throw new IllegalArgumentException( String.format(
-                    "The read version string length %d is not proper.",
+            throw new IllegalArgumentException( String.format( "The read version string length %d is not proper.",
                     length ) );
         }
         char[] result = new char[length];

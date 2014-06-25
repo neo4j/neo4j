@@ -590,7 +590,7 @@ public abstract class CommonAbstractStore implements IdSequence
     {
         try
         {
-            pageCache.flush();
+            storeFile.flush();
         }
         catch ( IOException e )
         {

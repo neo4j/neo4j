@@ -128,21 +128,6 @@ public class ReadAheadLogChannel implements ReadableLogChannel
         }
     }
 
-    @Override
-    public void get( char[] chars, int length ) throws IOException
-    {
-        assert length <= chars.length;
-
-        int charsGotten = 0;
-        while ( charsGotten < length )
-        {   // get max 1024 bytes at the time, so that ensureDataExists functions as it should
-            int chunkSize = min( readAheadSize >> 3, (length-charsGotten) );
-            ensureDataExists( chunkSize*2 /*since char*2bytes*/ );
-            aheadBuffer.asCharBuffer().get( chars, charsGotten, chunkSize );
-            charsGotten += chunkSize;
-        }
-    }
-
     private void ensureDataExists( int requestedNumberOfBytes ) throws IOException
     {
         int remaining = aheadBuffer.remaining();

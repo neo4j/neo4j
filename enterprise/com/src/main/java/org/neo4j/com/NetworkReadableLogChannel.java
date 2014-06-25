@@ -22,6 +22,7 @@ package org.neo4j.com;
 import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
@@ -48,7 +49,8 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
         {
             throw new ReadPastEndException();
         }
-        return delegate.readByte();
+        byte value = delegate.readByte();
+        return value;
     }
 
     @Override
@@ -112,22 +114,9 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
     }
 
     @Override
-    public void get( char[] chars, int length ) throws IOException
-    {
-        if ( delegate.readableBytes() < length*2 )
-        {
-            throw new ReadPastEndException();
-        }
-        for ( int i = 0; i < length; i++ )
-        {
-            chars[i] = delegate.readChar();
-        }
-    }
-
-    @Override
     public LogPosition getCurrentPosition() throws IOException
     {
-        throw new UnsupportedOperationException( "Network channels do not support log positions" );
+        return LogPosition.UNSPECIFIED;
     }
 
     @Override

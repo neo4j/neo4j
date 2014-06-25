@@ -21,6 +21,18 @@ package org.neo4j.kernel.impl.util;
 
 public class Cursors
 {
+    public static <E extends Exception> int exhaustAndClose( Cursor<E> cursor ) throws E
+    {
+        try
+        {
+            return exhaust( cursor );
+        }
+        finally
+        {
+            cursor.close();
+        }
+    }
+
     public static <E extends Exception> int exhaust( Cursor<E> cursor ) throws E
     {
         int count = 0;

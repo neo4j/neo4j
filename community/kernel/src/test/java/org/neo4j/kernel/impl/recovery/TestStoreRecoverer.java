@@ -116,10 +116,11 @@ public class TestStoreRecoverer
                 mock( LogRotationControl.class ), positionCache, mock( Visitor.class ) ) );
         life.start();
 
-        try ( TransactionAppender appender = new PhysicalTransactionAppender( logFile,
-                new DefaultTxIdGenerator( Providers.<TransactionIdStore>singletonProvider( transactionIdStore ) ),
-                positionCache ) )
+        try
         {
+            TransactionAppender appender = new PhysicalTransactionAppender( logFile,
+                    new DefaultTxIdGenerator( Providers.<TransactionIdStore>singletonProvider( transactionIdStore ) ),
+                    positionCache, transactionIdStore );
             appender.append( singleNodeTransaction() );
         }
         finally

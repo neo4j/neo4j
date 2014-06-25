@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.neo4j.helpers.UTF8;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
@@ -52,9 +53,9 @@ public abstract class IoPrimitiveUtils
     public static String readString( ReadableLogChannel channel, int length ) throws IOException
     {
         assert length >= 0 : "invalid array length " + length;
-        char[] chars = new char[length];
+        byte[] chars = new byte[length];
         channel.get( chars, length );
-        return new String( chars );
+        return UTF8.decode( chars );
     }
 
     public static void write3bLengthAndString( WritableLogChannel channel, String string ) throws IOException
@@ -64,7 +65,13 @@ public abstract class IoPrimitiveUtils
         // this space optimization is a bit overkill also :)
         channel.putShort( (short)chars.length );
         channel.put( (byte)(chars.length >> 16) );
-        channel.put( chars, chars.length );
+        writeUTF8EncodedString( channel, string );
+    }
+
+    private static void writeUTF8EncodedString( WritableLogChannel channel, String string ) throws IOException
+    {
+        byte[] encoded = UTF8.encode( string );
+        channel.put( encoded, encoded.length );
     }
 
     public static String read3bLengthAndString( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException
@@ -91,7 +98,7 @@ public abstract class IoPrimitiveUtils
     {
         char[] chars = string.toCharArray();
         channel.putShort( (short)chars.length );
-        channel.put( chars, chars.length );
+        writeUTF8EncodedString( channel, string );
     }
 
     public static String read2bLengthAndString( ReadableByteChannel channel, ByteBuffer buffer ) throws IOException

@@ -20,30 +20,22 @@
 package org.neo4j.backup;
 
 import java.io.IOException;
-import java.io.RandomAccessFile;
-import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
-import java.nio.channels.ReadableByteChannel;
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
 
-import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.TransactionStream;
-import org.neo4j.com.TxExtractor;
-import org.neo4j.helpers.Triplet;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
-import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
+import org.neo4j.kernel.impl.transaction.xaframework.NoSuchTransactionException;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
 import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.RequestContext.anonymous;
 
 /**
  * When performing a full backup, if there are no transactions to apply after the backup, we will not have any logical
@@ -60,151 +52,61 @@ public class LogicalLogSeeder
         this.logger = logger;
     }
 
-    public void ensureAtLeastOneLogicalLogPresent( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb )
+    public void ensureAtLeastOneLogicalLogPresent( String sourceHostNameOrIp, int sourcePort,
+            GraphDatabaseAPI targetDb ) throws IOException
     {
-        // Then go over all datasources, try to extract the latest tx
-        Set<String> noTxPresent = new HashSet<>();
-        XaDataSourceManager dsManager = targetDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
-        for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
+        // Try to extract metadata about the last transaction
+        DependencyResolver resolver = targetDb.getDependencyResolver();
+        TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+        LogicalTransactionStore transactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
+        try
         {
-            long lastTx = ds.getLastCommittedTxId();
-            try
-            {
-                // This fails if the tx is not present with NSLVE
-                ds.getMasterForCommittedTx( lastTx );
-            }
-            catch ( NoSuchLogVersionException e )
-            {
-                // Note the name of the datasource
-                noTxPresent.add( ds.getName() );
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            transactionStore.getMetadataFor( transactionIdStore.getLastCommittingTransactionId() );
+            return; // since we have transaction metadata for the last transaction.
+        }
+        catch ( NoSuchTransactionException e )
+        {   // we need to fetch transaction metadata, below.
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
         }
 
-        if ( !noTxPresent.isEmpty() )
+        // Create a fake slave context, asking for the transactions that span the next-to-last up to the last
+        LifeSupport life = new LifeSupport();
+        BackupClient recoveryClient = life.add( new BackupClient(
+                sourceHostNameOrIp, sourcePort,
+                resolver.resolveDependency( Logging.class ),
+                resolver.resolveDependency( Monitors.class ),
+                targetDb.storeId() ) );
+        life.start();
+        try ( Response<Void> response = recoveryClient.incrementalBackup(
+                anonymous( transactionIdStore.getLastCommittingTransactionId()-1 ) ) )
         {
-                    /*
-                     * Create a fake slave context, asking for the transactions that
-                     * span the next-to-last up to the latest for each datasource
-                     */
-            BackupClient recoveryClient = new BackupClient(
-                    sourceHostNameOrIp, sourcePort,
-                    targetDb.getDependencyResolver().resolveDependency( Logging.class ),
-                    targetDb.getDependencyResolver().resolveDependency( Monitors.class ),
-                    targetDb.storeId() );
-            recoveryClient.start();
-            Response<Void> recoveryResponse = null;
-            Map<String, Long> recoveryDiff = new HashMap<>();
-            for ( String ds : noTxPresent )
+            TransactionAppender appender = transactionStore.getAppender();
+            for ( CommittedTransactionRepresentation transaction : response.getTxs() )
             {
-                recoveryDiff.put( ds, -1L );
+                appender.append( transaction );
             }
-            RequestContext recoveryCtx = addDiffToSlaveContext( slaveContextOf( dsManager ), recoveryDiff );
-            try
+        }
+        catch ( RuntimeException e )
+        {
+            if ( e.getCause() != null && e.getCause() instanceof MissingLogDataException )
             {
-                recoveryResponse = recoveryClient.incrementalBackup( recoveryCtx );
-                // Ok, the response is here, apply it.
-                TransactionStream txs = recoveryResponse.transactions();
-                ByteBuffer scratch = ByteBuffer.allocate( 64 );
-                while ( txs.hasNext() )
-                {
-                            /*
-                             * For each tx stream in the response, create the latest archived
-                             * logical log file and write out in there the transaction.
-                             *
-                             */
-                    Triplet<String, Long, TxExtractor> tx = txs.next();
-                    scratch.clear();
-                    XaDataSource ds = dsManager.getXaDataSource( tx.first() );
-                    long logVersion = ds.getCurrentLogVersion() - 1;
-                    FileChannel newLog = new RandomAccessFile( ds.getFileName( logVersion ), "rw" ).getChannel();
-                    newLog.truncate( 0 );
-                    VersionAwareLogEntryReader.writeLogHeader( scratch, logVersion, -1 );
-                    // scratch buffer is flipped by writeLogHeader
-                    newLog.write( scratch );
-                    ReadableByteChannel received = tx.third().extract();
-                    scratch.flip();
-                    while ( received.read( scratch ) > 0 )
-                    {
-                        scratch.flip();
-                        newLog.write( scratch );
-                        scratch.flip();
-                    }
-                    newLog.force( false );
-                    newLog.close();
-                    received.close();
-                }
+                logger.warn( "Important: There are no available transaction logs on the target database, which " +
+                        "means the backup could not save a point-in-time reference. This means you cannot use this " +
+                        "backup for incremental backups, and it means you cannot use it directly to seed an HA " +
+                        "cluster. The next time you perform a backup, a full backup will be done. If you wish to " +
+                        "use this backup as a seed for a cluster, you need to start a stand-alone database on " +
+                        "it, and commit one write transaction, to create the transaction log needed to seed the " +
+                        "cluster. To avoid this happening, make sure you never manually delete transaction log " +
+                        "files (nioneo_logical.log.vXXX), and that you configure the database to keep at least a " +
+                        "few days worth of transaction logs." );
             }
-            catch( RuntimeException e)
-            {
-                if(e.getCause() != null && e.getCause() instanceof NoSuchLogVersionException)
-                {
-                    logger.warn( "Important: There are no available transaction logs on the target database, which " +
-                            "means the backup could not save a point-in-time reference. This means you cannot use this " +
-                            "backup for incremental backups, and it means you cannot use it directly to seed an HA " +
-                            "cluster. The next time you perform a backup, a full backup will be done. If you wish to " +
-                            "use this backup as a seed for a cluster, you need to start a stand-alone database on " +
-                            "it, and commit one write transaction, to create the transaction log needed to seed the " +
-                            "cluster. To avoid this happening, make sure you never manually delete transaction log " +
-                            "files (nioneo_logical.log.vXXX), and that you configure the database to keep at least a " +
-                            "few days worth of transaction logs." );
-                }
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-            finally
-            {
-                try
-                {
-                    recoveryClient.stop();
-                }
-                catch ( Throwable throwable )
-                {
-                    throw new RuntimeException( throwable );
-                }
-                if ( recoveryResponse != null )
-                {
-                    recoveryResponse.close();
-                }
-                targetDb.shutdown();
-            }
+        }
+        finally
+        {
+            life.shutdown();
         }
     }
-
-    private RequestContext slaveContextOf( XaDataSourceManager dsManager )
-    {
-        List<RequestContext.Tx> txs = new ArrayList<>();
-        for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
-        {
-            txs.add( RequestContext.lastAppliedTx( ds.getName(), ds.getLastCommittedTxId() ) );
-        }
-        return RequestContext.anonymous( txs.toArray( new RequestContext.Tx[txs.size()] ) );
-    }
-
-    private RequestContext addDiffToSlaveContext( RequestContext original,
-                                                  Map<String, Long> diffPerDataSource )
-    {
-        RequestContext.Tx[] oldTxs = original.lastAppliedTransaction();
-        RequestContext.Tx[] newTxs = new RequestContext.Tx[oldTxs.length];
-        for ( int i = 0; i < oldTxs.length; i++ )
-        {
-            RequestContext.Tx oldTx = oldTxs[i];
-            String dsName = oldTx.getDataSourceName();
-            long originalTxId = oldTx.getTxId();
-            Long diff = diffPerDataSource.get( dsName );
-            if ( diff == null )
-            {
-                diff = 0L;
-            }
-            long newTxId = originalTxId + diff;
-            newTxs[i] = RequestContext.lastAppliedTx( dsName, newTxId );
-        }
-        return RequestContext.anonymous( newTxs );
-    }
-
 }

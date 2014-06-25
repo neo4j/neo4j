@@ -19,12 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.com.Protocol.writeString;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -56,6 +50,7 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
+
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
@@ -63,13 +58,16 @@ import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
@@ -247,7 +245,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
     public void shutdown() throws Throwable
     {
     }
-    
+
     public InetSocketAddress getSocketAddress()
     {
         return socketAddress;
@@ -554,7 +552,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
             @SuppressWarnings("unchecked")
             public void run()
             {
-                Map<String, String> requestContext = new HashMap<String, String>();
+                Map<String, String> requestContext = new HashMap<>();
                 requestContext.put( "type", type.toString() );
                 requestContext.put( "remoteClient", channel.getRemoteAddress().toString() );
                 requestContext.put( "slaveContext", context.toString() );
@@ -617,18 +615,15 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         targetBuffer.writeBytes( storeId.serialize() );
     }
 
-    private static void writeTransactionStreams( Iterable<CommittedTransactionRepresentation> txs, ChannelBuffer buffer,
-                                                 ByteCounterMonitor bufferMonitor )
+    private static void writeTransactionStreams( Iterable<CommittedTransactionRepresentation> txs,
+            ChannelBuffer buffer, ByteCounterMonitor bufferMonitor )
     {
         // TODO 2.2-future this used to write the number of datasources - it is now always 1
-        buffer.writeByte( 1 );
-        writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+//        buffer.writeByte( 1 );
+//        writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         try
         {
-            for ( CommittedTransactionRepresentation tx : txs )
-            {
-                new Protocol.CommittedTransactionRepresentationSerializer( tx ).write( buffer );
-            }
+            new Protocol.CommittedTransactionRepresentationSerializer( txs ).write( buffer );
         }
         catch ( IOException e )
         {
@@ -642,12 +637,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         long sessionId = buffer.readLong();
         int machineId = buffer.readInt();
         int eventIdentifier = buffer.readInt();
-        int txsSize = buffer.readByte(); // TODO 2.2-future this will always be 1
-        assert txsSize == 1;
-        String ds = readString( buffer ); // TODO 2.2-future this will always be the same - NeoStoreXaDS
-        assert ds.equals( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
         long neoTx = buffer.readLong();
-
         int masterId = buffer.readInt();
         long checksum = buffer.readLong();
 

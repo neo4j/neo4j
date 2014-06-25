@@ -19,28 +19,18 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
-import static java.lang.Math.max;
-import static org.neo4j.com.RequestContext.anonymous;
-import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
-import static org.neo4j.io.fs.FileUtils.relativePath;
-import static org.neo4j.kernel.impl.util.Cursors.exhaust;
-
 import java.io.File;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.neo4j.com.AccumulatorVisitor;
 import org.neo4j.com.RequestContext;
-import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
-import org.neo4j.com.ServerFailureException;
+import org.neo4j.com.storecopy.ResponsePacker;
+import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
@@ -66,17 +56,17 @@ import org.neo4j.kernel.monitoring.Monitors;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
 {
-    private static final int MIN_TRANSACTIONS_STORE_COPY = 10;
     private static final int ID_GRAB_SIZE = 1000;
     private final DependencyResolver dependencyResolver;
     private final GraphDatabaseAPI graphDb;
     private final Logging logging;
     private final Monitors monitors;
-    private LogicalTransactionStore txStore;
+    private final LogicalTransactionStore txStore;
     private final TransactionCommitProcess txCommitProcess;
     private final TransactionIdStore transactionIdStore;
     private final FileSystemAbstraction fileSystem;
     private final File storeDir;
+    private final ResponsePacker responsePacker;
 
     public DefaultMasterImplSPI( GraphDatabaseAPI graphDb, Logging logging, Monitors monitors )
     {
@@ -93,6 +83,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         this.txStore = dependencyResolver.resolveDependency( NeoStoreXaDataSource.class ).getTransactionStore();
         this.txCommitProcess = dependencyResolver.resolveDependency( NeoStoreXaDataSource.class ).
                 getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
+        this.responsePacker = new ResponsePacker( txStore, graphDb );
     }
 
     @Override
@@ -159,41 +150,10 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
-        try
-        {
-            long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittingTransactionId();
-            NeoStoreXaDataSource dataSource = graphDb.getDependencyResolver().resolveDependency(
-                    DataSourceManager.class ).getDataSource();
-            dataSource.forceEverything();
-            File baseDir = getMostCanonicalFile( storeDir );
-            ByteBuffer temporaryBuffer = ByteBuffer.allocateDirect( 1024 * 1024 );
-
-            // Copy the store files
-            try ( ResourceIterator<File> files = dataSource.listStoreFiles() )
-            {
-                while ( files.hasNext() )
-                {
-                    File file = files.next();
-                    try ( StoreChannel fileChannel = fileSystem.open( file, "r" ) )
-                    {
-                        writer.write( relativePath( baseDir, file ), fileChannel, temporaryBuffer, file.length() > 0 );
-                    }
-                }
-            }
-
-            return anonymous( figureOutTransactionIdToStartStreamFrom( transactionIdWhenStartingCopy ) );
-        }
-        catch ( IOException e )
-        {
-            throw new ServerFailureException( e );
-        }
-    }
-
-    private long figureOutTransactionIdToStartStreamFrom( long low )
-    {
-        long high = transactionIdStore.getLastCommittingTransactionId();
-        return high-low < MIN_TRANSACTIONS_STORE_COPY ?
-                max( 1, low-MIN_TRANSACTIONS_STORE_COPY ) : low;
+        NeoStoreXaDataSource dataSource = graphDb.getDependencyResolver().resolveDependency(
+                DataSourceManager.class ).getDataSource();
+        StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource, fileSystem, 10, storeDir );
+        return streamer.flushStoresAndStreamStoreFiles( writer );
     }
 
     @Override
@@ -208,15 +168,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     {
         try
         {
-            AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>(
-                    wrapLongFilter( filter ) );
-            exhaust( txStore.getCursor( context.lastAppliedTransaction() + 1, accumulator ) );
-            Iterable<CommittedTransactionRepresentation> txs = accumulator.getAccumulator();
-
-            return new Response<>( response,
-                    storeId(),
-                    txs,
-                    ResourceReleaser.NO_OP );
+            return responsePacker.packResponse( context, response, wrapLongFilter( filter ) );
         }
         catch ( IOException e )
         {

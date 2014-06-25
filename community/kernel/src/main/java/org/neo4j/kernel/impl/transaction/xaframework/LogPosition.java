@@ -61,4 +61,31 @@ public class LogPosition
                 ", byteOffset=" + byteOffset +
                 '}';
     }
+
+    public static final LogPosition UNSPECIFIED = new LogPosition( -1, -1 )
+    {
+        @Override
+        public boolean earlierThan( LogPosition other )
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getLogVersion()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public long getByteOffset()
+        {
+            throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public String toString()
+        {
+            return "UNSPECIFIED";
+        }
+    };
 }

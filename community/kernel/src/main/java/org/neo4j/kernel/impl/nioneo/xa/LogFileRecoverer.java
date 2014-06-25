@@ -44,6 +44,8 @@ public class LogFileRecoverer implements Visitor<ReadableLogChannel, IOException
     @Override
     public boolean visit( ReadableLogChannel channel ) throws IOException
     {
+        // Intentionally don't close the cursor here since after recovery the channel is still used.
+        // I dislike this exception to the rule though.
         exhaust( new PhysicalTransactionCursor( channel, logEntryReader, visitor ) );
         return true;
     }

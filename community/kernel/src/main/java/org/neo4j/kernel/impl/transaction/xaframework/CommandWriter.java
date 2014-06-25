@@ -247,9 +247,8 @@ public class CommandWriter implements NeoCommandHandler
     public boolean visitIndexDefineCommand( IndexDefineCommand command ) throws IOException
     {
         channel.put(  NeoCommandType.INDEX_DEFINE_COMMAND );
-        channel.put( (byte)(NeoCommandType.INDEX_DEFINE_COMMAND << 5) );
-        channel.put( (byte)0 );
-        channel.put( (byte)0 );
+        byte zero = 0;
+        writeIndexCommandHeader( zero, zero, zero, zero, zero, zero, zero );
         writeMap( command.getIndexNameIdRange() );
         writeMap( command.getKeyIdRange() );
         return true;
@@ -318,11 +317,16 @@ public class CommandWriter implements NeoCommandHandler
 
     protected void writeIndexCommandHeader( IndexCommand command ) throws IOException
     {
-        channel.put( (byte) ((command.getCommandType() << 5) | (command.getValueType() << 2)
-                | (command.getEntityType() << 1) | (needsLong( command.getEntityId() ))) );
-        channel.put( (byte) ((command.startNodeNeedsLong() << 7) | (command.endNodeNeedsLong() << 6) | (command
-                .getIndexNameId())) );
-        channel.put( command.getKeyId() );
+        writeIndexCommandHeader( command.getValueType(), command.getEntityType(), needsLong( command.getEntityId() ),
+                command.startNodeNeedsLong(), command.endNodeNeedsLong(), command.getIndexNameId(), command.getKeyId() );
+    }
+
+    protected void writeIndexCommandHeader( byte valueType, byte entityType, byte entityIdNeedsLong,
+            byte startNodeNeedsLong, byte endNodeNeedsLong, byte indexNameId, byte commandKeyId ) throws IOException
+    {
+        channel.put( (byte) ((valueType << 2) | (entityType << 1) | (entityIdNeedsLong)) );
+        channel.put( (byte) ((startNodeNeedsLong << 7) | (endNodeNeedsLong << 6) | (indexNameId)) );
+        channel.put( commandKeyId );
     }
 
     protected void putIntOrLong( long id ) throws IOException

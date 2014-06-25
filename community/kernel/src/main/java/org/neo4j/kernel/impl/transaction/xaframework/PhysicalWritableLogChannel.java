@@ -109,17 +109,6 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     }
 
     @Override
-    public WritableLogChannel put( char[] value, int length ) throws IOException
-    {
-        // TODO 2.2-future do this better
-        for ( char ch : value )
-        {
-            bufferWithGuaranteedSpace( 2 ).putChar( ch );
-        }
-        return this;
-    }
-
-    @Override
     public LogPosition getCurrentPosition() throws IOException
     {
         return channel.getCurrentPosition();
@@ -139,6 +128,5 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     public void close() throws IOException
     {
         emptyBufferIntoChannelAndClearIt();
-        channel.close();
     }
 }

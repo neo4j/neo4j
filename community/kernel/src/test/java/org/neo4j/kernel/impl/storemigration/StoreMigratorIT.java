@@ -221,7 +221,7 @@ public class StoreMigratorIT
         assertEquals( -472309512128245482l, neoStore.getRandomNumber() );
         assertEquals( 3l, neoStore.getCurrentLogVersion() );
         assertEquals( ALL_STORES_VERSION, versionLongToString( neoStore.getStoreVersion() ) );
-        assertEquals( 1004l, neoStore.getLastCommittingTransactionId() );
+        assertEquals( 1007l, neoStore.getLastCommittingTransactionId() );
     }
 
     private static class DatabaseContentVerifier

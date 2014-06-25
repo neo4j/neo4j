@@ -36,21 +36,21 @@ import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.ReadOnlyTransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
-import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionAppender;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadOnlyLogVersionRepository;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
+import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
@@ -58,14 +58,21 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
 
-public class RemoteStoreCopier
+/**
+ * Client-side store copier. Deals with issuing a request to a source of a database, which will
+ * reply with a {@link Response} containing the store files and transactions happening while streaming
+ * all the files. After the store files have been streamed, the transactions will be applied so that
+ * the store will end up in a consistent state.
+ *
+ * @see StoreCopyServer
+ */
+public class StoreCopyClient
 {
-    public static final String COPY_FROM_MASTER_TEMP = "temp-copy";
+    public static final String TEMP_COPY_DIRECTORY_NAME = "temp-copy";
     private final Config config;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final ConsoleLogger console;
     private final FileSystemAbstraction fs;
-    private final LogVersionRepository logVersionRepository;
 
     /**
      * This is built as a pluggable interface to allow backup and HA to use this code independently of each other,
@@ -78,21 +85,20 @@ public class RemoteStoreCopier
         void done();
     }
 
-    public RemoteStoreCopier( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
-            ConsoleLogger console, FileSystemAbstraction fs, LogVersionRepository logVersionRepository )
+    public StoreCopyClient( Config config, Iterable<KernelExtensionFactory<?>> kernelExtensions,
+            ConsoleLogger console, FileSystemAbstraction fs )
     {
         this.config = config;
         this.kernelExtensions = kernelExtensions;
         this.console = console;
         this.fs = fs;
-        this.logVersionRepository = logVersionRepository;
     }
 
     public void copyStore( StoreCopyRequester requester ) throws IOException
     {
         // Clear up the current temp directory if there
         File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
-        File tempStore = new File( storeDir, COPY_FROM_MASTER_TEMP );
+        File tempStore = new File( storeDir, TEMP_COPY_DIRECTORY_NAME );
         cleanDirectory( tempStore );
 
         // Request store files and transactions that will need recovery
@@ -100,12 +106,6 @@ public class RemoteStoreCopier
                 new ToFileStoreWriter( tempStore ) ) ) )
         {
             // Update highest archived log id
-            long highestLogVersion = logVersionRepository.getCurrentLogVersion();
-            if ( highestLogVersion > -1 )
-            {
-                NeoStore.setVersion( fs, new File( tempStore, NeoStore.DEFAULT_NAME ), highestLogVersion + 1 );
-            }
-
             // Write transactions that happened during the copy to the currently active logical log
             writeTransactionsToActiveLogFile( tempStore, response.getTxs() );
         }
@@ -139,14 +139,16 @@ public class RemoteStoreCopier
                     transactionMetadataCache, new NoRecoveryAssertingVisitor() ) );
             life.start();
 
-            // Create an appender and append all the transactions to the log
-            try ( TransactionAppender appender = new PhysicalTransactionAppender( logFile,
-                    new TxIdGeneratorPreventor(), transactionMetadataCache ) )
+            // Just write all transactions to the active log version. Remember that this is after a store copy
+            // where there are no logs, and the transaction stream we're about to write will probably contain
+            // transactions that goes some time back, before the last committed transaction id. So we cannot
+            // use a TransactionAppender, since it has checks for which transactions one can append.
+            WritableLogChannel channel = logFile.getWriter();
+            TransactionLogWriter writer = new TransactionLogWriter(
+                    new LogEntryWriterv1( channel, new CommandWriter( channel ) ) );
+            for ( CommittedTransactionRepresentation transaction : txs )
             {
-                for ( CommittedTransactionRepresentation transaction : txs )
-                {
-                    appender.append( transaction );
-                }
+                writer.append( transaction.getTransactionRepresentation(), transaction.getCommitEntry().getTxId() );
             }
         }
         finally

@@ -25,6 +25,7 @@ import java.util.TimeZone;
 
 import org.neo4j.helpers.Format;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogHandler;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache.TransactionMetadata;
 
 public abstract class LogEntry
 {
@@ -141,6 +142,11 @@ public abstract class LogEntry
         public byte[] getAdditionalHeader()
         {
             return additionalHeader;
+        }
+
+        public TransactionMetadata asTransactionMetadata()
+        {
+            return new TransactionMetadata( masterId, authorId, startPosition, checksum( this ) );
         }
 
         /**

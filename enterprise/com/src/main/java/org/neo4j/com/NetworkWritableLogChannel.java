@@ -22,6 +22,7 @@ package org.neo4j.com;
 import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 
@@ -89,24 +90,13 @@ public class NetworkWritableLogChannel implements WritableLogChannel
     }
 
     @Override
-    public WritableLogChannel put( char[] value, int length ) throws IOException
-    {
-        for ( int i = 0; i < length; i++ )
-        {
-            delegate.writeChar( value[i] );
-        }
-        return this;
-    }
-
-    @Override
     public LogPosition getCurrentPosition() throws IOException
     {
-        throw new UnsupportedOperationException( "Network channels do not support position" );
+        return LogPosition.UNSPECIFIED;
     }
 
     @Override
     public void close() throws IOException
     {
-
     }
 }

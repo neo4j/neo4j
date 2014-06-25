@@ -23,47 +23,42 @@ import java.io.IOException;
 import java.util.concurrent.Future;
 
 import org.neo4j.helpers.FutureAdapter;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 
 public class PhysicalTransactionAppender implements TransactionAppender
 {
     private final WritableLogChannel channel;
     private final TxIdGenerator txIdGenerator;
-    private final LogEntryWriter logEntryWriter;
     private final TransactionMetadataCache transactionMetadataCache;
     private final LogFile logFile;
+    private final TransactionIdStore transactionIdStore;
+    private final TransactionLogWriter transactionLogWriter;
 
     public PhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
-                                        TransactionMetadataCache transactionMetadataCache )
+            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore )
     {
         this.logFile = logFile;
+        this.transactionIdStore = transactionIdStore;
         this.channel = logFile.getWriter();
         this.txIdGenerator = txIdGenerator;
         this.transactionMetadataCache = transactionMetadataCache;
-        this.logEntryWriter = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
+
+        LogEntryWriterv1 logEntryWriter = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
+        this.transactionLogWriter = new TransactionLogWriter( logEntryWriter );
     }
 
-    private Future<Long> append( TransactionRepresentation transaction,
+    private void append( TransactionRepresentation transaction,
             long transactionId ) throws IOException
     {
-        // Write start record
         LogPosition logPosition = channel.getCurrentPosition();
-        logEntryWriter.writeStartEntry( transaction.getMasterId(), transaction.getAuthorId(),
-                transaction.getTimeWritten(), transaction.getLatestCommittedTxWhenStarted(),
-                transaction.additionalHeader() );
 
-        // Write all the commands to the log channel
-        logEntryWriter.serialize( transaction );
+        transactionLogWriter.append( transaction, transactionId );
 
-        // Write commit record
-        logEntryWriter.writeCommitEntry( transactionId, transaction.getTimeWritten() );
         transactionMetadataCache.cacheTransactionMetadata( transactionId, logPosition, transaction.getMasterId(),
                 transaction.getAuthorId(), LogEntry.Start.checksum( transaction.additionalHeader(),
                         transaction.getMasterId(), transaction.getAuthorId() ) );
 
-        // force
         channel.force();
-
-        return FutureAdapter.present( transactionId );
     }
 
     @Override
@@ -72,19 +67,29 @@ public class PhysicalTransactionAppender implements TransactionAppender
         // We put log rotation check outside the private append method since it must happen before
         // we generate the next transaction id
         logFile.checkRotation();
-        return append( transaction, txIdGenerator.generate( transaction ) );
+        long transactionId = txIdGenerator.generate( transaction );
+        append( transaction, transactionId );
+        return FutureAdapter.present( transactionId );
     }
 
     @Override
-    public synchronized Future<Long> append( CommittedTransactionRepresentation transaction ) throws IOException
+    public synchronized boolean append( CommittedTransactionRepresentation transaction )
+            throws IOException
     {
         logFile.checkRotation();
-        return append( transaction.getTransactionRepresentation(), transaction.getCommitEntry().getTxId() );
-    }
-
-    @Override
-    public void close() throws IOException
-    {
-        channel.close();
+        long txId = transaction.getCommitEntry().getTxId();
+        long lastCommittedTxId = transactionIdStore.getLastCommittingTransactionId();
+        if ( lastCommittedTxId + 1 == txId )
+        {
+            txIdGenerator.generate( transaction.getTransactionRepresentation() );
+            append( transaction.getTransactionRepresentation(), txId );
+            return true;
+        }
+        else if ( lastCommittedTxId + 1 < txId )
+        {
+            throw new IOException( "Tried to apply transaction with txId=" + txId +
+                    " but last committed txId=" + lastCommittedTxId );
+        }
+        return false;
     }
 }
