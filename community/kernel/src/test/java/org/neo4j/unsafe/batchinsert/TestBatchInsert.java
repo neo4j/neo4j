@@ -50,6 +50,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.api.direct.AllEntriesLabelScanReader;
 import org.neo4j.kernel.api.index.IndexConfiguration;
 import org.neo4j.kernel.api.index.IndexDescriptor;
@@ -63,7 +64,15 @@ import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory;
 import org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension;
 import org.neo4j.kernel.impl.api.scan.LabelScanStoreProvider;
+import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
+import org.neo4j.kernel.impl.nioneo.store.IndexRule;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
+import org.neo4j.kernel.impl.nioneo.store.SchemaStore;
 import org.neo4j.kernel.impl.nioneo.store.UnderlyingStorageException;
+import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -946,6 +955,57 @@ public class TestBatchInsert
         assertEquals( "Hacker", definition.getLabel().name() );
         assertEquals( ConstraintType.UNIQUENESS, definition.getConstraintType() );
         assertEquals( asSet( "handle" ), asSet( definition.getPropertyKeys() ) );
+    }
+
+    @Test
+    public void shouldCreateConsistentUniquenessConstraint() throws Exception
+    {
+        // given
+        BatchInserter inserter = newBatchInserter();
+
+        // when
+        inserter.createDeferredConstraint( label( "Hacker" ) ).assertPropertyIsUnique( "handle" ).create();
+
+        // then
+        GraphDatabaseAPI graphdb = (GraphDatabaseAPI) switchToEmbeddedGraphDatabaseService( inserter );
+        try
+        {
+            NeoStore neoStore = graphdb.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+            SchemaStore store = neoStore.getSchemaStore();
+            SchemaStorage storage = new SchemaStorage( store );
+            List<Long> inUse = new ArrayList<>();
+            for ( long i = 1, high = store.getHighestPossibleIdInUse(); i <= high; i++ )
+            {
+                DynamicRecord record = store.forceGetRecord( i );
+                if ( record.inUse() && record.isStartRecord() )
+                {
+                    inUse.add( i );
+                }
+            }
+            assertEquals( "records in use", 2, inUse.size() );
+            SchemaRule rule0 = storage.loadSingleSchemaRule( inUse.get( 0 ) );
+            SchemaRule rule1 = storage.loadSingleSchemaRule( inUse.get( 1 ) );
+            IndexRule indexRule;
+            UniquenessConstraintRule constraintRule;
+            if ( rule0 instanceof IndexRule )
+            {
+                indexRule = (IndexRule) rule0;
+                constraintRule = (UniquenessConstraintRule) rule1;
+            }
+            else
+            {
+                constraintRule = (UniquenessConstraintRule) rule0;
+                indexRule = (IndexRule) rule1;
+            }
+            assertEquals( "index should reference constraint",
+                          constraintRule.getId(), indexRule.getOwningConstraint().longValue() );
+            assertEquals( "constraint should reference index",
+                          indexRule.getId(), constraintRule.getOwnedIndex() );
+        }
+        finally
+        {
+            graphdb.shutdown();
+        }
     }
 
     @Test
