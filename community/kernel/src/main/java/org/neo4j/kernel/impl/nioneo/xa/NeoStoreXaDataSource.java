@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -64,9 +66,9 @@ import org.neo4j.kernel.impl.api.SchemaStateConcern;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
-import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -140,8 +142,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
-
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
     public static final String DEFAULT_DATA_SOURCE_NAME = "nioneodb";
@@ -195,10 +195,11 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private CacheLayer storeLayer;
     private final Caches cacheProvider;
     private final NodeManager nodeManager;
+    private final CommitProcessFactory commitProcessFactory;
 
     private LogFile logFile;
     private LogicalTransactionStore logicalTransactionStore;
-    private TransactionRepresentationCommitProcess commitProcess;
+    private TransactionCommitProcess commitProcess;
 
     private final AtomicInteger recoveredCount = new AtomicInteger();
     private StatementOperationParts statementOperations;
@@ -308,7 +309,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                  TransactionHeaderInformation transactionHeaderInformation,
                                  StartupStatisticsProvider startupStatistics,
                                  Caches cacheProvider, NodeManager nodeManager, Guard guard,
-                                 IndexConfigStore indexConfigStore )
+                                 IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory )
     {
         this.config = config;
         this.tokenNameLookup = tokenNameLookup;
@@ -361,6 +362,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                 return indexProviders.values();
             }
         };
+
+        this.commitProcessFactory = commitProcessFactory;
     }
 
     @Override
@@ -455,7 +458,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
 
             storeApplier = new TransactionRepresentationStoreApplier( indexingService, labelScanStore, neoStore,
                     cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore );
-            commitProcess = new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
+            commitProcess = commitProcessFactory.create( logicalTransactionStore, kernelHealth,
                     neoStore, storeApplier, false );
 
             Factory<KernelTransaction> transactionFactory = new Factory<KernelTransaction>()

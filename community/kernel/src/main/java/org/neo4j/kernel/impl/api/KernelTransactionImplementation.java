@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.lang.System.currentTimeMillis;
+
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
@@ -57,8 +59,6 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 
-import static java.lang.System.currentTimeMillis;
-
 /**
  * This class should replace the {@link org.neo4j.kernel.api.KernelTransaction} interface, and take its name, as soon as
  * {@code TransitionalTxManagementKernelTransaction} is gone from {@code server}.
@@ -88,7 +88,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
 
     // For committing
     private final TransactionHeaderInformation headerInformation;
-    private final TransactionRepresentationCommitProcess commitProcess;
+    private final TransactionCommitProcess commitProcess;
     private final TransactionMonitor transactionMonitor;
     private final TransactionIdStore transactionIdStore;
     private final PersistenceCache persistenceCache;
@@ -104,7 +104,7 @@ public class KernelTransactionImplementation implements KernelTransaction, TxSta
                                             Locks.Client locks, TransactionHooks hooks,
                                             ConstraintIndexCreator constraintIndexCreator,
                                             TransactionHeaderInformation transactionHeaderInformation,
-                                            TransactionRepresentationCommitProcess commitProcess,
+                                            TransactionCommitProcess commitProcess,
                                             TransactionMonitor transactionMonitor,
                                             TransactionIdStore transactionIdStore,
                                             PersistenceCache persistenceCache,

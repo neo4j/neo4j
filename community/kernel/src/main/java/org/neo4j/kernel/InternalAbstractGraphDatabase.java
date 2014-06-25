@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.Functions.identity;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -86,7 +95,9 @@ import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.api.NonTransactionalTokenNameLookup;
 import org.neo4j.kernel.impl.api.RelationshipVisitor;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
+import org.neo4j.kernel.impl.api.TransactionCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.api.index.IndexingService;
@@ -134,6 +145,7 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.nioneo.xa.CommitProcessFactory;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -171,16 +183,6 @@ import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static java.lang.String.format;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.Functions.identity;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -825,9 +827,23 @@ public abstract class InternalAbstractGraphDatabase
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
                 storeMigrationProcess, transactionMonitor, kernelHealth, txIdGenerator,
-                transactionHeaderInformation, startupStatistics, caches, nodeManager, guard, indexStore );
+                transactionHeaderInformation, startupStatistics, caches, nodeManager, guard, indexStore,
+                defaultCommitProcessFactory );
         dataSourceManager.register( neoDataSource );
     }
+
+    public static CommitProcessFactory defaultCommitProcessFactory = new CommitProcessFactory()
+    {
+        @Override
+        public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
+                                                KernelHealth kernelHealth, NeoStore neoStore,
+                                                TransactionRepresentationStoreApplier storeApplier,
+                                                boolean recovery )
+        {
+            return new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,
+                    neoStore, storeApplier, recovery );
+        }
+    } ;
 
     protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
     {
