@@ -19,6 +19,8 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.kernel.impl.util.Cursors.exhaust;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.LinkedList;
@@ -30,7 +32,6 @@ import org.jboss.netty.channel.ChannelPipeline;
 import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
-
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
@@ -46,8 +47,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresen
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
-
-import static org.neo4j.kernel.impl.util.Cursors.exhaust;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -253,6 +252,7 @@ public class Protocol
         {
             NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
 
+            writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
             channel.putInt( tx.getAuthorId() );
             channel.putInt( tx.getMasterId() );
             channel.putLong( tx.getLatestCommittedTxWhenStarted() );

@@ -42,50 +42,82 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
     }
 
     @Override
-    public byte get() throws IOException, ReadPastEndException
+    public byte get() throws IOException
     {
+        if ( delegate.readableBytes() < 1 )
+        {
+            throw new ReadPastEndException();
+        }
         return delegate.readByte();
     }
 
     @Override
-    public short getShort() throws IOException, ReadPastEndException
+    public short getShort() throws IOException
     {
+        if ( delegate.readableBytes() < 2 )
+        {
+            throw new ReadPastEndException();
+        }
         return delegate.readShort();
     }
 
     @Override
-    public int getInt() throws IOException, ReadPastEndException
+    public int getInt() throws IOException
     {
+        if ( delegate.readableBytes() < 4 )
+        {
+            throw new ReadPastEndException();
+        }
         return delegate.readInt();
     }
 
     @Override
-    public long getLong() throws IOException, ReadPastEndException
+    public long getLong() throws IOException
     {
+        if ( delegate.readableBytes() < 8 )
+        {
+            throw new ReadPastEndException();
+        }
         return delegate.readLong();
     }
 
     @Override
-    public float getFloat() throws IOException, ReadPastEndException
+    public float getFloat() throws IOException
     {
+        if ( delegate.readableBytes() < 4 )
+        {
+            throw new ReadPastEndException();
+        }
         return delegate.readFloat();
     }
 
     @Override
-    public double getDouble() throws IOException, ReadPastEndException
+    public double getDouble() throws IOException
     {
+        if ( delegate.readableBytes() < 8 )
+        {
+            throw new ReadPastEndException();
+        }
         return delegate.readDouble();
     }
 
     @Override
-    public void get( byte[] bytes, int length ) throws IOException, ReadPastEndException
+    public void get( byte[] bytes, int length ) throws IOException
     {
+        if ( delegate.readableBytes() < length )
+        {
+            throw new ReadPastEndException();
+        }
         delegate.readBytes( bytes, 0, length );
     }
 
     @Override
-    public void get( char[] chars, int length ) throws IOException, ReadPastEndException
+    public void get( char[] chars, int length ) throws IOException
     {
+        if ( delegate.readableBytes() < length*2 )
+        {
+            throw new ReadPastEndException();
+        }
         for ( int i = 0; i < length; i++ )
         {
             chars[i] = delegate.readChar();

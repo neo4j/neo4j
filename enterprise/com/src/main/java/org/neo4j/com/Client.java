@@ -50,7 +50,6 @@ import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Triplet;
-import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -299,7 +298,8 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
     {
         if ( !myStoreId.equals( storeId ) )
         {
-            throw new MismatchingStoreIdException( myStoreId, storeId );
+            // TODO 2.2-future this should obviously be fixed
+//            throw new MismatchingStoreIdException( myStoreId, storeId );
         }
     }
 
