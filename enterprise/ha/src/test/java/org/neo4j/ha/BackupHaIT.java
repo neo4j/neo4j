@@ -19,39 +19,10 @@
  */
 package org.neo4j.ha;
 
-<<<<<<< HEAD
 import org.junit.Ignore;
-=======
-import java.util.ArrayList;
-import java.util.List;
-
-import org.apache.commons.io.FileUtils;
-import org.junit.After;
-import org.junit.Before;
-import org.junit.Ignore;
-import org.junit.Test;
-
-import org.neo4j.backup.OnlineBackupSettings;
-import org.neo4j.cluster.InstanceId;
-import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
-import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.collection.MapUtil;
->>>>>>> master
 import org.neo4j.test.DbRepresentation;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
-
-<<<<<<< HEAD
-//import org.neo4j.backup.OnlineBackupSettings;
-=======
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.backup.BackupEmbeddedIT.BACKUP_PATH;
-import static org.neo4j.backup.BackupEmbeddedIT.PATH;
-import static org.neo4j.backup.BackupEmbeddedIT.createSomeData;
-import static org.neo4j.backup.BackupEmbeddedIT.runBackupToolFromOtherJvmToGetExitCode;
-import static org.neo4j.test.ha.ClusterManager.fromXml;
->>>>>>> master
 
 @Ignore("Breaks occasionally, needs investigation")
 public class BackupHaIT

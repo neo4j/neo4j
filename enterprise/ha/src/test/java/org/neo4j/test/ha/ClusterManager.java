@@ -24,7 +24,7 @@ import static java.util.Arrays.asList;
 import static java.util.Collections.emptyMap;
 import static org.junit.Assert.fail;
 import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.kernel.impl.util.FileUtils.copyRecursively;
+import static org.neo4j.io.fs.FileUtils.copyRecursively;
 
 import java.io.File;
 import java.io.IOException;
@@ -85,19 +85,7 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.LogbackService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-<<<<<<< HEAD
 import org.w3c.dom.Document;
-=======
-
-import static java.lang.String.format;
-import static java.util.Arrays.asList;
-import static java.util.Collections.emptyMap;
-
-import static org.junit.Assert.fail;
-
-import static org.neo4j.helpers.collection.Iterables.count;
-import static org.neo4j.io.fs.FileUtils.copyRecursively;
->>>>>>> master
 
 public class ClusterManager
         extends LifecycleAdapter

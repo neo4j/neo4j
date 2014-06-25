@@ -242,6 +242,9 @@ public abstract class Client<T> extends LifecycleAdapter implements ChannelPipel
                 }
             }
 
+            // Append response.result;
+            // apply to store
+
             return response;
         }
         catch ( IllegalProtocolVersionException e )

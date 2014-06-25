@@ -128,10 +128,10 @@ public enum HaRequestType210 implements RequestType<Master>
     },
 
     // ====
-    COMMIT( new TargetCaller<Master, Void>()
+    COMMIT( new TargetCaller<Master, Long>()
     {
         @Override
-        public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
+        public Response<Long> call( Master master, RequestContext context, ChannelBuffer input,
                                     ChannelBuffer target )
         {
             readString( input ); // Always neostorexadatasource

@@ -48,7 +48,7 @@ public interface Master
      */
     Response<Void> initializeTx( RequestContext context );
 
-    Response<Void> commitSingleResourceTransaction( RequestContext context, TransactionRepresentation channel );
+    Response<Long> commitSingleResourceTransaction( RequestContext context, TransactionRepresentation channel );
 
     Response<Void> finishTransaction( RequestContext context, boolean success );
 

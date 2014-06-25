@@ -256,7 +256,7 @@ public class MasterClient201 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Void> commitSingleResourceTransaction( RequestContext context, final TransactionRepresentation tx )
+    public Response<Long> commitSingleResourceTransaction( RequestContext context, final TransactionRepresentation tx )
     {
 //        return sendRequest( HaRequestType201.COMMIT, context, new Serializer()
 //                {

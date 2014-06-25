@@ -209,10 +209,18 @@ public class MasterClient210 extends Client<Master> implements MasterClient
     }
 
     @Override
-    public Response<Void> commitSingleResourceTransaction( RequestContext context, TransactionRepresentation tx )
+    public Response<Long> commitSingleResourceTransaction( RequestContext context, TransactionRepresentation tx )
     {
         return sendRequest( HaRequestType210.COMMIT, context, new Protocol.TransactionSerializer( tx ),
-               VOID_DESERIALIZER
+                new Deserializer<Long>()
+                {
+                    @Override
+                    @SuppressWarnings("boxing")
+                    public Long read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
+                    {
+                        return buffer.readLong();
+                    }
+                }
         );
     }
 

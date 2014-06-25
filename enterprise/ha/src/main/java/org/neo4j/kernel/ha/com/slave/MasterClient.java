@@ -64,7 +64,7 @@ public interface MasterClient extends Master
 
     public Response<Void> initializeTx( RequestContext context );
 
-    public Response<Void> commitSingleResourceTransaction( RequestContext context, final TransactionRepresentation channel );
+    public Response<Long> commitSingleResourceTransaction( RequestContext context, final TransactionRepresentation channel );
 
     public Response<Void> finishTransaction( RequestContext context, final boolean success );
 

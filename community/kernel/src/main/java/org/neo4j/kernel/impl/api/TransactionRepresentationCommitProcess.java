@@ -30,7 +30,7 @@ import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
-public class TransactionRepresentationCommitProcess
+public class TransactionRepresentationCommitProcess implements TransactionCommitProcess
 {
     private final LogicalTransactionStore logicalTransactionStore;
     private final KernelHealth kernelHealth;
@@ -51,11 +51,32 @@ public class TransactionRepresentationCommitProcess
 
     public void commit( TransactionRepresentation representation ) throws TransactionFailureException
     {
+        long transactionId = persistTransaction( representation );
+        // apply changes to the store
+        try
+        {
+            storeApplier.apply( representation, transactionId, recovery );
+        }
+        // TODO catch different types of exceptions here, some which are OK
+        catch ( IOException e )
+        {
+            kernelHealth.panic( e );
+            throw new TransactionFailureException( Status.Transaction.CouldNotCommit, e,
+                    "Could not apply the transaction to the store after written to log" );
+        }
+        finally
+        {
+            neoStore.transactionClosed( transactionId );
+        }
+    }
+
+    protected long persistTransaction( TransactionRepresentation tx ) throws TransactionFailureException
+    {
         // write it to the log
         Future<Long> commitFuture;
         try
         {
-            commitFuture = logicalTransactionStore.getAppender().append( representation );
+            commitFuture = logicalTransactionStore.getAppender().append( tx );
         }
         catch ( IOException e )
         {
@@ -74,22 +95,6 @@ public class TransactionRepresentationCommitProcess
         {
             throw new TransactionFailureException( Status.Transaction.CouldNotWriteToLog, e, "" );
         }
-
-        // apply changes to the store
-        try
-        {
-            storeApplier.apply( representation, transactionId, recovery );
-        }
-        // TODO catch different types of exceptions here, some which are OK
-        catch ( IOException e )
-        {
-            kernelHealth.panic( e );
-            throw new TransactionFailureException( Status.Transaction.CouldNotCommit, e,
-                    "Could not apply the transaction to the store after written to log" );
-        }
-        finally
-        {
-            neoStore.transactionClosed( transactionId );
-        }
+        return transactionId;
     }
 }

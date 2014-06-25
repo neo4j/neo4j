@@ -19,17 +19,16 @@
  */
 package org.neo4j.kernel.ha;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.when;
 
+import org.junit.Test;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
-
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.when;
 
 public class OnDiskLastTxIdGetterTest
 {
@@ -45,7 +44,7 @@ public class OnDiskLastTxIdGetterTest
         when( graphdb.getDependencyResolver() ).thenReturn( resolver );
         when( resolver.resolveDependency( NeoStoreProvider.class ) ).thenReturn( provider );
         when( provider.evaluate() ).thenReturn( neoStore );
-        when( neoStore.getLastCommittedTx() ).thenReturn( 13L );
+        when( neoStore.getLastCommittingTransactionId() ).thenReturn( 13L );
 
         OnDiskLastTxIdGetter getter = new OnDiskLastTxIdGetter( graphdb );
         assertEquals( 13L, getter.getLastTxId() );

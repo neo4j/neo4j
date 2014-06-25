@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -59,10 +61,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-
 import org.omg.CORBA.SystemException;
-
-import static java.lang.String.format;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -90,7 +89,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         StoreId storeId();
 
-        void applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException;
+        long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException;
 
         Integer createRelationshipType( String name );
 
@@ -247,14 +246,14 @@ public class MasterImpl extends LifecycleAdapter implements Master
     }
 
     @Override
-    public Response<Void> commitSingleResourceTransaction( RequestContext context,
+    public Response<Long> commitSingleResourceTransaction( RequestContext context,
                                                            TransactionRepresentation preparedTransaction )
     {
         assertCorrectEpoch( context );
         try
         {
-            spi.applyPreparedTransaction( preparedTransaction );
-            return packResponse( context, null );
+            long txId = spi.applyPreparedTransaction( preparedTransaction );
+            return packResponse( context, txId );
         }
         catch ( IOException e )
         {

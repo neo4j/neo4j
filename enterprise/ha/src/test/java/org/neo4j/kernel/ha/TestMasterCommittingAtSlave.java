@@ -41,6 +41,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.com.master.Slave;
@@ -48,18 +49,13 @@ import org.neo4j.kernel.ha.com.master.SlavePriorities;
 import org.neo4j.kernel.ha.com.master.SlavePriority;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
-<<<<<<< HEAD
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
-import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
-=======
-import org.neo4j.kernel.ha.transaction.MasterTxIdGenerator;
-import org.neo4j.io.fs.FileSystemAbstraction;
->>>>>>> master
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.LogMarker;
+
 
 public class TestMasterCommittingAtSlave
 {
@@ -227,15 +223,9 @@ public class TestMasterCommittingAtSlave
 
         log = new FakeStringLogger();
         Config config = new Config( MapUtil.stringMap(
-<<<<<<< HEAD
                 HaSettings.tx_push_factor.name(), "" + replication, ClusterSettings.server_id.name(), "" + MasterServerId ) );
-        Neo4jJobScheduler scheduler = new Neo4jJobScheduler( new TestLogger() );
-        TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),
-=======
-                HaSettings.tx_push_factor.name(), "" + replication ) );
         Neo4jJobScheduler scheduler = new Neo4jJobScheduler();
-        MasterTxIdGenerator result = new MasterTxIdGenerator( MasterTxIdGenerator.from( config, slavePriority ),
->>>>>>> master
+        TransactionPropagator result = new TransactionPropagator( TransactionPropagator.from( config, slavePriority ),
                 log, new Slaves()
         {
             @Override

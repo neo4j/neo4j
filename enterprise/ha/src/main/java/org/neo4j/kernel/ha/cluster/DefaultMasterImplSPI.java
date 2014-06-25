@@ -19,6 +19,12 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import static java.lang.Math.max;
+import static org.neo4j.com.RequestContext.anonymous;
+import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
+import static org.neo4j.io.fs.FileUtils.relativePath;
+import static org.neo4j.kernel.impl.util.Cursors.exhaust;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -56,13 +62,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.Math.max;
-
-import static org.neo4j.com.RequestContext.anonymous;
-import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
-import static org.neo4j.io.fs.FileUtils.relativePath;
-import static org.neo4j.kernel.impl.util.Cursors.exhaust;
 
 class DefaultMasterImplSPI implements MasterImpl.SPI
 {
@@ -133,11 +132,11 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     }
 
     @Override
-    public void applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException
+    public long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException
     {
         try
         {
-            txStore.getAppender().append( preparedTransaction ).get();
+            return txStore.getAppender().append( preparedTransaction ).get();
         }
         catch ( InterruptedException e )
         {

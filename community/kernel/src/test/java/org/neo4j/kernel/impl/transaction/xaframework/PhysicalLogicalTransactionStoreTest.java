@@ -44,6 +44,7 @@ import org.neo4j.kernel.impl.nioneo.xa.LogFileRecoverer;
 import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.monitoring.Monitors;
+import org.neo4j.test.TargetDirectory;
 
 public class PhysicalLogicalTransactionStoreTest
 {
@@ -51,12 +52,15 @@ public class PhysicalLogicalTransactionStoreTest
 //    private final FileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
     private final DefaultFileSystemAbstraction fs = new DefaultFileSystemAbstraction();
 
-    private final File dir = new File( "dir" );
+    private TargetDirectory dir = TargetDirectory.forTest( getClass() );
+
+    private File testDir;
 
     @Before
     public void setup()
     {
-        fs.mkdir( dir );
+        testDir = dir.cleanDirectory( "dir" );
+        fs.mkdir( testDir );
     }
 
     @Test
@@ -68,7 +72,7 @@ public class PhysicalLogicalTransactionStoreTest
         TransactionMetadataCache positionCache = new TransactionMetadataCache( 10, 1000 );
 
         LifeSupport life = new LifeSupport(  );
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, DEFAULT_NAME, fs );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         LogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                 transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
                 positionCache, new Visitor<ReadableLogChannel, IOException>()
@@ -80,9 +84,9 @@ public class PhysicalLogicalTransactionStoreTest
                                     fail( "Should be nothing to recover" );
                                     return false;
                                 }
-                            } ));
+                            } ) );
         TxIdGenerator txIdGenerator = new DefaultTxIdGenerator( singletonProvider( transactionIdStore ) );
-        life.add(new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache,
+        life.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator, positionCache,
                 new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT ) ) );
 
         try
@@ -108,7 +112,7 @@ public class PhysicalLogicalTransactionStoreTest
         final int masterId = 2, authorId = 1;
         final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
         LifeSupport life = new LifeSupport(  );
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, DEFAULT_NAME, fs );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                 transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
                 positionCache, new Visitor<ReadableLogChannel, IOException>()
@@ -176,7 +180,7 @@ public class PhysicalLogicalTransactionStoreTest
         final int masterId = 2, authorId = 1;
         final long timeWritten = 12345, latestCommittedTxWhenStarted = 4545;
         LifeSupport life = new LifeSupport(  );
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( dir, DEFAULT_NAME, fs );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( testDir, DEFAULT_NAME, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000, NO_PRUNING,
                 transactionIdStore, mock( LogVersionRepository.class), new Monitors().newMonitor( PhysicalLogFile.Monitor.class ), logRotationControl,
                 positionCache, new Visitor<ReadableLogChannel, IOException>()

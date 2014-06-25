@@ -50,12 +50,7 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.UpdatePuller;
-<<<<<<< HEAD
-import org.neo4j.kernel.impl.util.FileUtils;
-=======
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.impl.util.StringLogger;
->>>>>>> master
 import org.neo4j.test.TargetDirectory;
 
 //@Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
