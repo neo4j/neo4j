@@ -64,6 +64,11 @@ public interface ShellServer extends Remote
 	 */
 	Serializable interpretVariable( Serializable clientID, String key ) throws ShellException, RemoteException;
 
+    /**
+     *
+     */
+    public void interrupt(  Serializable clientID ) throws ShellException, RemoteException;
+
 	/**
 	 * @param initialSession the initial session variables that the client would
 	 * like to override or add to any initial server session variables.

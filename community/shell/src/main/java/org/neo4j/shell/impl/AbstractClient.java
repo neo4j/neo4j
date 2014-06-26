@@ -19,6 +19,7 @@
  */
 package org.neo4j.shell.impl;
 
+import java.io.Closeable;
 import java.io.Serializable;
 import java.rmi.NoSuchObjectException;
 import java.rmi.Remote;
@@ -32,6 +33,7 @@ import java.util.Map;
 import java.util.Set;
 
 import org.neo4j.shell.Console;
+import org.neo4j.shell.CtrlCHandler;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Response;
 import org.neo4j.shell.ShellClient;
@@ -45,6 +47,7 @@ import org.neo4j.shell.Welcome;
  */
 public abstract class AbstractClient implements ShellClient
 {
+    private final CtrlCHandler signalHandler;
     public static final String WARN_UNTERMINATED_INPUT =
             "Warning: Exiting with unterminated multi-line input.";
     private static final Set<String> EXIT_COMMANDS = new HashSet<>(
@@ -59,35 +62,62 @@ public abstract class AbstractClient implements ShellClient
 
     private final Map<String, Serializable> initialSession;
     
-    public AbstractClient( Map<String, Serializable> initialSession )
+    public AbstractClient( Map<String, Serializable> initialSession, CtrlCHandler signalHandler )
     {
+        this.signalHandler = signalHandler;
         this.initialSession = initialSession;
     }
-    
+
+    private Runnable getInterruptAction()
+    {
+        return new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    getServer().interrupt( getId() );
+                }
+                catch ( Exception e )
+                {
+                    printStackTrace( e );
+                }
+            }
+        };
+    }
+
     public void grabPrompt()
     {
         init();
+        Runnable ctrlcAction = getInterruptAction();
         while ( !end )
         {
-            try
+            String command = readLine( getPrompt() );
+            try ( Closeable ignored = signalHandler.install( ctrlcAction ) )
             {
-                evaluate( readLine( getPrompt() ) );
+                evaluate( command );
             }
             catch ( Exception e )
             {
-                if ( this.shouldPrintStackTraces() )
-                {
-                    e.printStackTrace();
-                }
-                else
-                {
-                    this.console.format( getShortExceptionMessage( e ) + "\n" );
-                }
+                printStackTrace( e );
             }
         }
         this.shutdown();
     }
-    
+
+    private void printStackTrace( Exception e )
+    {
+        if ( this.shouldPrintStackTraces() )
+        {
+            e.printStackTrace();
+        }
+        else
+        {
+            this.console.format( getShortExceptionMessage( e ) + "\n" );
+        }
+    }
+
     @Override
     public void evaluate( String line ) throws ShellException
     {
@@ -106,7 +136,7 @@ public abstract class AbstractClient implements ShellClient
         boolean success = false;
         try
         {
-            String expandedLine = fullLine( line ); //expandLine( fullLine( line ) );
+            String expandedLine = fullLine( line );
             Response response = getServer().interpretLine( id, expandedLine, out );
             switch ( response.getContinuation() )
             {

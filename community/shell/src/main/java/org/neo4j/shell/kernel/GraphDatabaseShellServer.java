@@ -51,7 +51,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
 {
     private final GraphDatabaseAPI graphDb;
     private boolean graphDbCreatedHere;
-    protected final Map<Serializable, TopLevelTransaction> transactions = new ConcurrentHashMap<>();
+    protected final Map<Serializable, TopLevelTransaction> clients = new ConcurrentHashMap<>();
 
     /**
      * @throws RemoteException if an RMI error occurs.
@@ -86,33 +86,56 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     @Override
     public Response interpretLine( Serializable clientId, String line, Output out ) throws ShellException
     {
-        restoreTransaction( clientId );
+        bindTransaction( clientId );
         try
         {
             return super.interpretLine( clientId, line, out );
         }
         finally
         {
-            saveTransaction( clientId );
+            unbindAndRegisterTransaction( clientId );
         }
     }
 
-    private void saveTransaction( Serializable clientId ) throws ShellException
+    @Override
+    public void interrupt( Serializable clientId ) throws ShellException
+    {
+        TopLevelTransaction tx = clients.get( clientId );
+        if ( tx != null )
+        {
+            tx.interrupt();
+        }
+    }
+
+    public void registerTopLevelTransactionInProgress( Serializable clientId ) throws ShellException
+    {
+        if ( !clients.containsKey( clientId ) )
+        {
+            ThreadToStatementContextBridge threadToStatementContextBridge = getThreadToStatementContextBridge();
+            TopLevelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
+            clients.put( clientId, tx );
+        }
+    }
+
+    private ThreadToStatementContextBridge getThreadToStatementContextBridge()
+    {
+        return getDb().getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+    }
+
+    public void unbindAndRegisterTransaction( Serializable clientId ) throws ShellException
     {
         try
         {
-            ThreadToStatementContextBridge threadToStatementContextBridge = getDb().getDependencyResolver()
-                    .resolveDependency(
-                            ThreadToStatementContextBridge.class );
+            ThreadToStatementContextBridge threadToStatementContextBridge = getThreadToStatementContextBridge();
             TopLevelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
             threadToStatementContextBridge.unbindTransactionFromCurrentThread();
             if ( tx == null )
             {
-                transactions.remove( clientId );
+                clients.remove( clientId );
             }
             else
             {
-                transactions.put( clientId, tx );
+                clients.put( clientId, tx );
             }
         }
         catch ( Exception e )
@@ -121,16 +144,15 @@ public class GraphDatabaseShellServer extends AbstractAppServer
         }
     }
 
-    private void restoreTransaction( Serializable clientId ) throws ShellException
+    public void bindTransaction( Serializable clientId ) throws ShellException
     {
-        TopLevelTransaction tx = transactions.get( clientId );
+        TopLevelTransaction tx = clients.get( clientId );
         if ( tx != null )
         {
             try
             {
-                getDb().getDependencyResolver()
-                        .resolveDependency(
-                                ThreadToStatementContextBridge.class ).bindTransactionToCurrentThread( tx );
+                ThreadToStatementContextBridge threadToStatementContextBridge = getThreadToStatementContextBridge();
+                threadToStatementContextBridge.bindTransactionToCurrentThread( tx );
             }
             catch ( Exception e )
             {
@@ -192,7 +214,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
 
     /**
      * @return the {@link GraphDatabaseAPI} instance given in the
-     *         constructor.
+     * constructor.
      */
     public GraphDatabaseAPI getDb()
     {

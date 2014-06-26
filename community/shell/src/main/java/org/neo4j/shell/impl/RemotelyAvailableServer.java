@@ -68,6 +68,12 @@ class RemotelyAvailableServer extends UnicastRemoteObject implements ShellServer
     }
 
     @Override
+    public void interrupt( Serializable clientID ) throws ShellException, RemoteException
+    {
+        actual.interrupt( clientID );
+    }
+
+    @Override
     public Welcome welcome( Map<String, Serializable> initialSession ) throws RemoteException, ShellException
     {
         return actual.welcome( initialSession );
