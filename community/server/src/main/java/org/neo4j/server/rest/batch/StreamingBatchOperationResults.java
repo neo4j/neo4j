@@ -25,6 +25,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
 
 import org.codehaus.jackson.JsonGenerator;
 
@@ -90,6 +91,25 @@ public class StreamingBatchOperationResults
                 writeChar( i );
                 bytesWritten++;
                 checkHead();
+            }
+
+            @Override
+            public boolean isReady()
+            {
+                return true;
+            }
+
+            @Override
+            public void setWriteListener( WriteListener writeListener )
+            {
+                try
+                {
+                    writeListener.onWritePossible();
+                }
+                catch ( IOException e )
+                {
+                    // Ignore
+                }
             }
         };
     }

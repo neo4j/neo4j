@@ -19,14 +19,6 @@
  */
 package org.neo4j.ext.udc.impl;
 
-import static org.hamcrest.CoreMatchers.equalTo;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.neo4j.ext.udc.UdcConstants.ID;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.HashMap;
@@ -42,7 +34,17 @@ import org.apache.http.localserver.LocalTestServer;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
+
 import org.neo4j.ext.udc.UdcConstants;
+
+import static org.hamcrest.CoreMatchers.equalTo;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+
+import static org.neo4j.ext.udc.UdcConstants.ID;
 
 /**
  * Unit tests for the UDC statistics pinger.
@@ -66,8 +68,8 @@ public class PingerTest
         server.register( "/*", handler );
         server.start();
 
-        hostname = server.getServiceHostName();
-        serverUrl = "http://" + hostname + ":" + server.getServicePort();
+        hostname = server.getServiceAddress().getHostName();
+        serverUrl = "http://" + hostname + ":" + server.getServiceAddress().getPort();
     }
 
     /**
@@ -134,7 +136,7 @@ public class PingerTest
     @Test
     public void shouldPingServer()
     {
-        final String hostURL = hostname+":"+ server.getServicePort();
+        final String hostURL = hostname+":"+ server.getServiceAddress().getPort();
         final Map<String, String> udcFields = new HashMap<String, String>();
         udcFields.put( ID, EXPECTED_STORE_ID );
         udcFields.put( UdcConstants.VERSION, EXPECTED_KERNEL_VERSION );
@@ -162,7 +164,7 @@ public class PingerTest
     public void shouldIncludePingCountInURI() throws IOException
     {
         final int EXPECTED_PING_COUNT = 16;
-        final String hostURL = hostname+":"+ server.getServicePort();
+        final String hostURL = hostname+":"+ server.getServiceAddress().getPort();
         final Map<String, String> udcFields = new HashMap<String, String>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
@@ -181,7 +183,7 @@ public class PingerTest
     public void normalPingSequenceShouldBeOneThenTwoThenThreeEtc() throws Exception
     {
         int[] expectedSequence = {1, 2, 3, 4};
-        final String hostURL = hostname+":"+ server.getServicePort();
+        final String hostURL = hostname+":"+ server.getServiceAddress().getPort();
         final Map<String, String> udcFields = new HashMap<String, String>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ) );
@@ -197,7 +199,7 @@ public class PingerTest
     public void crashPingSequenceShouldBeMinusOneThenTwoThenThreeEtc() throws Exception
     {
         int[] expectedSequence = {-1, 2, 3, 4};
-        final String hostURL = hostname+":"+ server.getServicePort();
+        final String hostURL = hostname+":"+ server.getServiceAddress().getPort();
         final Map<String, String> udcFields = new HashMap<String, String>();
 
         Pinger p = new Pinger( hostURL, new TestUdcCollector( udcFields ).withCrash() );

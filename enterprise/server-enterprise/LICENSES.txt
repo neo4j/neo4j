@@ -2,51 +2,12 @@ This file contains the full license text of the included third party
 libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
-ASM License
-  ASM Core
-------------------------------------------------------------------------------
-
-Copyright (c) 2000-2011 INRIA, France Telecom
-All rights reserved.
-
-Redistribution and use in source and binary forms, with or without
-modification, are permitted provided that the following conditions
-are met:
-
-1. Redistributions of source code must retain the above copyright
-   notice, this list of conditions and the following disclaimer.
-
-2. Redistributions in binary form must reproduce the above copyright
-   notice, this list of conditions and the following disclaimer in the
-   documentation and/or other materials provided with the distribution.
-
-3. Neither the name of the copyright holders nor the names of its
-   contributors may be used to endorse or promote products derived from
-   this software without specific prior written permission.
-
-THIS SOFTWARE IS PROVIDED BY THE COPYRIGHT HOLDERS AND CONTRIBUTORS "AS IS"
-AND ANY EXPRESS OR IMPLIED WARRANTIES, INCLUDING, BUT NOT LIMITED TO, THE
-IMPLIED WARRANTIES OF MERCHANTABILITY AND FITNESS FOR A PARTICULAR PURPOSE
-ARE DISCLAIMED. IN NO EVENT SHALL THE COPYRIGHT OWNER OR CONTRIBUTORS BE
-LIABLE FOR ANY DIRECT, INDIRECT, INCIDENTAL, SPECIAL, EXEMPLARY, OR
-CONSEQUENTIAL DAMAGES (INCLUDING, BUT NOT LIMITED TO, PROCUREMENT OF
-SUBSTITUTE GOODS OR SERVICES; LOSS OF USE, DATA, OR PROFITS; OR BUSINESS
-INTERRUPTION) HOWEVER CAUSED AND ON ANY THEORY OF LIABILITY, WHETHER IN
-CONTRACT, STRICT LIABILITY, OR TORT (INCLUDING NEGLIGENCE OR OTHERWISE)
-ARISING IN ANY WAY OUT OF THE USE OF THIS SOFTWARE, EVEN IF ADVISED OF
-THE POSSIBILITY OF SUCH DAMAGE.
-
-
-------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Apache Commons Configuration
   Commons BeanUtils
-  Commons BeanUtils Core
-  Commons Collections
-  Commons Configuration
   Commons Digester
   Commons IO
   Commons Lang
-  Commons Logging
   ConcurrentLinkedHashMap
   Data Mapper for Jackson
   Jackson
@@ -379,10 +340,11 @@ CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE SOFTWARE.
 
 ------------------------------------------------------------------------------
 Common Development and Distribution License Version 1.1
+  Java Servlet API
   jersey-core
   jersey-multipart
   jersey-server
-  Jetty Orbit :: Servlet API
+  jersey-servlet
   jsr311-api
   MIME streaming extension
 ------------------------------------------------------------------------------
@@ -738,6 +700,14 @@ County, California.
 
 ------------------------------------------------------------------------------
 Eclipse Public License, Version 1.0
+  Jetty :: Http Utility
+  Jetty :: IO Utility
+  Jetty :: Security
+  Jetty :: Server Core
+  Jetty :: Servlet Handling
+  Jetty :: Utilities
+  Jetty :: Webapp Application Support
+  Jetty :: XML utilities
   Logback Access Module
   Logback Classic Module
   Logback Core Module
@@ -957,10 +927,11 @@ any resulting litigation.
 
 ------------------------------------------------------------------------------
 GNU General Public License, version 2 with the Classpath Exception
+  Java Servlet API
   jersey-core
   jersey-multipart
   jersey-server
-  Jetty Orbit :: Servlet API
+  jersey-servlet
   jsr311-api
   MIME streaming extension
 ------------------------------------------------------------------------------
@@ -2251,9 +2222,41 @@ Exhibit B - "Incompatible With Secondary Licenses" Notice
 Dependencies with multiple licenses
 -----------------------------------
 
-Jetty Orbit :: Servlet API
+Java Servlet API
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
+
+Jetty :: Http Utility
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: IO Utility
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Security
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Server Core
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Servlet Handling
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Utilities
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: Webapp Application Support
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
+
+Jetty :: XML utilities
+  Apache Software License, Version 2.0
+  Eclipse Public License, Version 1.0
 
 Logback Access Module
   Eclipse Public License, Version 1.0
@@ -2280,6 +2283,10 @@ jersey-multipart
   GNU General Public License, version 2 with the Classpath Exception
 
 jersey-server
+  Common Development and Distribution License Version 1.1
+  GNU General Public License, version 2 with the Classpath Exception
+
+jersey-servlet
   Common Development and Distribution License Version 1.1
   GNU General Public License, version 2 with the Classpath Exception
 

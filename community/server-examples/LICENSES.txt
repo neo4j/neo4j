@@ -3,13 +3,10 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 
 ------------------------------------------------------------------------------
 Apache Software License, Version 2.0
+  Apache Commons Configuration
   Commons BeanUtils
-  Commons BeanUtils Core
-  Commons Collections
-  Commons Configuration
   Commons Digester
   Commons Lang
-  Commons Logging
   JTA 1.1
 ------------------------------------------------------------------------------
 

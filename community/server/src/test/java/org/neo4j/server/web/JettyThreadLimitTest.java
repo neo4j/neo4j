@@ -66,7 +66,7 @@ public class JettyThreadLimitTest
         final CyclicBarrier cb = new CyclicBarrier(tasksToSubmit);
         for ( int i = 0; i < tasksToSubmit; i++ )
         {
-            threadPool.dispatch( new Runnable()
+            threadPool.execute( new Runnable()
             {
                 @Override
                 public void run()

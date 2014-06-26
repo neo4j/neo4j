@@ -167,7 +167,7 @@ the relevant Commercial Agreement.
       <plugin>
         <artifactId>maven-javadoc-plugin</artifactId>
         <configuration>
-          <additionnalDependencies>
+          <additionalDependencies>
             <additionnalDependency>
               <groupId>ch.qos.logback</groupId>
               <artifactId>logback-classic</artifactId>
@@ -183,7 +183,7 @@ the relevant Commercial Agreement.
               <artifactId>slf4j-api</artifactId>
               <version>${slf4j-api.version}</version>
             </additionnalDependency>
-          </additionnalDependencies>
+          </additionalDependencies>
           <excludePackageNames>org.neo4j.kernel,*.impl.*</excludePackageNames>
           <groups>
             <group>
@@ -333,11 +333,13 @@ the relevant Commercial Agreement.
       <artifactId>powermock-api-mockito</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>org.ow2.jotm</groupId>
       <artifactId>jotm-core</artifactId>
       <scope>test</scope>
     </dependency>
+
     <dependency>
       <groupId>geronimo-spec</groupId>
       <artifactId>geronimo-spec-j2ee</artifactId>

@@ -183,8 +183,8 @@ public class UdcExtensionImplTest
         server.register( "/*", handler );
         server.start();
 
-        int servicePort = server.getServicePort();
-        String serviceHostName = server.getServiceHostName();
+        int servicePort = server.getServiceAddress().getPort();
+        String serviceHostName = server.getServiceAddress().getHostName();
         String serverAddress = serviceHostName + ":" + servicePort;
 
         config = new HashMap<>();
