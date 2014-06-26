@@ -233,7 +233,6 @@ public class LogPruneStrategies
                         if ( highest == null )
                         {
                             highest = source.getLastCommittedTxId();
-                            return false;
                         }
                         return highest - tx >= maxTransactionCount;
                     }

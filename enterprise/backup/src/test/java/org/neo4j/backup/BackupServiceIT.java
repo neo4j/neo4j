@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
+import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -153,6 +154,7 @@ public class BackupServiceIT
     private File storeDir;
     private File backupDir;
     public int backupPort = 8200;
+    private GraphDatabaseAPI database;
 
     @Before
     public void setup() throws IOException
@@ -167,6 +169,15 @@ public class BackupServiceIT
         fileSystem.deleteRecursively( backupDir );
 
         backupPort = backupPort + 1;
+    }
+
+    @After
+    public void tearDown()
+    {
+        if ( database != null )
+        {
+            database.shutdown();
+        }
     }
 
     @Test
@@ -249,24 +260,6 @@ public class BackupServiceIT
     }
 
     @Test
-    public void shouldFindTransactionLogContainingLastLuceneTransaction() throws Throwable
-    {
-        // given
-        GraphDatabaseService db = createDb( storeDir, defaultBackupPortHostParams() );
-        createAndIndexNode( db, 1 );
-
-        // when
-        BackupService backupService = new BackupService( fileSystem );
-        backupService.doFullBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false,
-                new Config( defaultBackupPortHostParams() ) );
-        db.shutdown();
-
-        // then
-        assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
-        assertNotNull( getLastMasterForCommittedTx() );
-    }
-
-    @Test
     public void shouldGiveHelpfulErrorMessageIfLogsPrunedPastThePointOfNoReturn() throws Exception
     {
         // Given
@@ -286,25 +279,23 @@ public class BackupServiceIT
         // And the log the backup uses is rotated out
         createAndIndexNode( db, 2 );
         createAndIndexNode( db, 3 );
-        createAndIndexNode( db, 3 );
+        createAndIndexNode( db, 4 );
 
         // when
         try
         {
             backupService.doIncrementalBackup( BACKUP_HOST, backupPort, backupDir.getAbsolutePath(), false );
-            fail("Should have thrown exception.");
+            fail( "Should have thrown exception." );
         }
-
         // Then
-        catch(IncrementalBackupNotPossibleException e)
+        catch ( IncrementalBackupNotPossibleException e )
         {
-            assertThat( e.getMessage(), equalTo("It's been too long since this backup was last updated, and it has " +
+            assertThat( e.getMessage(), equalTo( "It's been too long since this backup was last updated, and it has " +
                     "fallen too far behind the database transaction stream for incremental backup to be possible. " +
                     "You need to perform a full backup at this point. You can modify this time interval by setting " +
                     "the '" + GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a " +
-                    "higher value.") );
+                    "higher value." ) );
         }
-        db.shutdown();
     }
 
     @Test
@@ -406,11 +397,6 @@ public class BackupServiceIT
         assertEquals( DbRepresentation.of( storeDir ), DbRepresentation.of( backupDir ) );
     }
 
-//    private void rotateLog( GraphDatabaseAPI db ) throws IOException
-//    {
-//        db.getDependencyResolver().resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource().rotateLogicalLog();
-//    }
-
     @Test
     public void shouldContainTransactionsThatHappenDuringBackupProcess() throws Throwable
     {
@@ -485,7 +471,7 @@ public class BackupServiceIT
 
     private GraphDatabaseAPI createDb( File storeDir, Map<String, String> params )
     {
-        return (GraphDatabaseAPI) new GraphDatabaseFactory()
+        return database = (GraphDatabaseAPI) new GraphDatabaseFactory()
                 .newEmbeddedDatabaseBuilder( storeDir.getPath() )
                 .setConfig( params )
                 .newGraphDatabase();
@@ -493,18 +479,13 @@ public class BackupServiceIT
 
     private void createAndIndexNode( GraphDatabaseService db, int i )
     {
-        Transaction tx = db.beginTx();
-        try
+        try ( Transaction tx = db.beginTx() )
         {
             Index<Node> index = db.index().forNodes( "delete_me" );
             Node node = db.createNode();
             node.setProperty( "id", System.currentTimeMillis() + i );
             index.add( node, "delete", "me" );
             tx.success();
-        }
-        finally
-        {
-            tx.finish();
         }
     }
 

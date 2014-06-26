@@ -80,7 +80,7 @@ public class OnlineBackupKernelExtension implements Lifecycle
                         resolver.resolveDependency( TransactionIdStore.class ),
                         resolver.resolveDependency( DataSourceManager.class ).getDataSource(),
                         resolver.resolveDependency( FileSystemAbstraction.class ),
-                        10, new File( graphDatabaseAPI.getStoreDir() ) );
+                        new File( graphDatabaseAPI.getStoreDir() ) );
                 ResponsePacker responsePacker = new ResponsePacker(
                         resolver.resolveDependency( LogicalTransactionStore.class ), graphDatabaseAPI );
                 return new BackupImpl( copier, responsePacker, monitors );

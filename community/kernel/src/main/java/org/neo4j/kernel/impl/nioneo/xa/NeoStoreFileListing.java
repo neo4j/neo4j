@@ -72,7 +72,9 @@ public class NeoStoreFileListing
         final Collection<ResourceIterator<File>> snapshots = new ArrayList<>();
         for ( IndexImplementation indexProvider : legacyIndexProviders.providers() )
         {
-            snapshots.add( indexProvider.listStoreFiles() );
+            ResourceIterator<File> snapshot = indexProvider.listStoreFiles();
+            snapshots.add( snapshot );
+            IteratorUtil.addToCollection( snapshot, files );
         }
         // Intentionally don't close the snapshot here, return it for closing by the consumer of
         // the targetFiles list.

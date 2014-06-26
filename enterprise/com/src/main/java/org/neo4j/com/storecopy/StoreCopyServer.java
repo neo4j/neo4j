@@ -32,8 +32,6 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 
-import static java.lang.Math.max;
-
 import static org.neo4j.com.RequestContext.anonymous;
 import static org.neo4j.io.fs.FileUtils.getMostCanonicalFile;
 import static org.neo4j.io.fs.FileUtils.relativePath;
@@ -49,17 +47,14 @@ public class StoreCopyServer
     private final TransactionIdStore transactionIdStore;
     private final NeoStoreXaDataSource dataSource;
     private final FileSystemAbstraction fileSystem;
-    private final int streamAtLeastNumberOfTransactions;
     private final File storeDirectory;
 
     public StoreCopyServer( TransactionIdStore transactionIdStore,
-            NeoStoreXaDataSource dataSource, FileSystemAbstraction fileSystem, int streamAtLeastNumberOfTransactions,
-            File storeDirectory )
+            NeoStoreXaDataSource dataSource, FileSystemAbstraction fileSystem, File storeDirectory )
     {
         this.transactionIdStore = transactionIdStore;
         this.dataSource = dataSource;
         this.fileSystem = fileSystem;
-        this.streamAtLeastNumberOfTransactions = streamAtLeastNumberOfTransactions;
         this.storeDirectory = getMostCanonicalFile( storeDirectory );
     }
 
@@ -85,18 +80,11 @@ public class StoreCopyServer
                 }
             }
 
-            return anonymous( figureOutTransactionIdToStartStreamFrom( transactionIdWhenStartingCopy ) );
+            return anonymous( transactionIdWhenStartingCopy );
         }
         catch ( IOException e )
         {
             throw new ServerFailureException( e );
         }
-    }
-
-    private long figureOutTransactionIdToStartStreamFrom( long low )
-    {
-        long high = transactionIdStore.getLastCommittingTransactionId();
-        return high-low < streamAtLeastNumberOfTransactions ?
-                max( 0, low-streamAtLeastNumberOfTransactions ) : low;
     }
 }

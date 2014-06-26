@@ -152,7 +152,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     {
         NeoStoreXaDataSource dataSource = graphDb.getDependencyResolver().resolveDependency(
                 DataSourceManager.class ).getDataSource();
-        StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource, fileSystem, 10, storeDir );
+        StoreCopyServer streamer = new StoreCopyServer( transactionIdStore, dataSource, fileSystem, storeDir );
         return streamer.flushStoresAndStreamStoreFiles( writer );
     }
 

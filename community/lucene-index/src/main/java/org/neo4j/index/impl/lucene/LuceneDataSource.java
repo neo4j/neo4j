@@ -69,7 +69,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.cache.LruCache;
 import org.neo4j.kernel.impl.index.IndexConfigStore;
 import org.neo4j.kernel.impl.index.IndexEntityType;
-import org.neo4j.kernel.impl.index.IndexProviderStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
@@ -137,7 +136,6 @@ public class LuceneDataSource implements Lifecycle
     private File baseStorePath;
     private final ReentrantReadWriteLock lock = new ReentrantReadWriteLock();
     final IndexConfigStore indexStore;
-    IndexProviderStore providerStore;
     private IndexTypeCache typeCache;
     private boolean closed;
     private Cache caching;
@@ -175,7 +173,6 @@ public class LuceneDataSource implements Lifecycle
                 baseDirectory( storeDir ) );
         this.filesystemFacade.cleanWriteLocks( baseStorePath );
         boolean allowUpgrade = config.get( Configuration.allow_store_upgrade );
-        this.providerStore = newIndexStore( baseStorePath, fileSystemAbstraction, allowUpgrade );
         this.typeCache = new IndexTypeCache( indexStore );
         boolean isReadOnly = config.get( Configuration.read_only );
         closed = false;
@@ -192,12 +189,6 @@ public class LuceneDataSource implements Lifecycle
     IndexType getType( IndexIdentifier identifier, boolean recovery )
     {
         return typeCache.getIndexType( identifier, recovery );
-    }
-
-    private IndexProviderStore newIndexStore( File dbStoreDir, FileSystemAbstraction fileSystem, boolean allowUpgrade )
-    {
-        File file = new File( dbStoreDir, "lucene-store.db" );
-        return new IndexProviderStore( file, fileSystem, INDEX_VERSION, allowUpgrade );
     }
 
     @Override
@@ -223,7 +214,6 @@ public class LuceneDataSource implements Lifecycle
             }
             indexSearchers.clear();
         }
-        providerStore.close();
     }
 
     @Override
@@ -250,7 +240,6 @@ public class LuceneDataSource implements Lifecycle
                 throw new RuntimeException( "unable to commit changes to " + index.getIdentifier(), e );
             }
         }
-        providerStore.flush();
     }
 
     void getReadLock()
@@ -585,32 +574,6 @@ public class LuceneDataSource implements Lifecycle
         this.caching.disable( identifier );
     }
 
-    public long getCreationTime()
-    {
-        return providerStore.getCreationTime();
-    }
-
-    public long getRandomIdentifier()
-    {
-        return providerStore.getRandomNumber();
-    }
-
-    public long getCurrentLogVersion()
-    {
-        return providerStore.getVersion();
-    }
-
-    public long getLastCommittedTxId()
-    {
-        return providerStore.getLastCommittedTx();
-    }
-
-    public void setLastCommittedTxId( long txId )
-    {
-        providerStore.setLastCommittedTx( txId );
-    }
-
-
     public ResourceIterator<File> listStoreFiles( boolean includeLogicalLogs ) throws IOException
     { // Never include logical logs since they are of little importance
         final Collection<File> files = new ArrayList<>();
@@ -641,7 +604,6 @@ public class LuceneDataSource implements Lifecycle
                  */
             }
         }
-        files.add( providerStore.getFile() );
         return new PrefetchingResourceIterator<File>()
         {
             private final Iterator<File> filesIterator = files.iterator();

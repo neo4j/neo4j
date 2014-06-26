@@ -21,7 +21,6 @@ package org.neo4j.kernel.ha;
 
 import static org.neo4j.helpers.collection.Iterables.iterable;
 import static org.neo4j.helpers.collection.Iterables.option;
-import static org.neo4j.helpers.collection.Iterables.sort;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.DEFAULT_TO_CLASSIC;
 import static org.neo4j.kernel.logging.LogbackWeakDependency.NEW_LOGGER_CONTEXT;
 

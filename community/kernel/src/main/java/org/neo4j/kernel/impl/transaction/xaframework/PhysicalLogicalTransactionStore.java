@@ -19,6 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
@@ -66,25 +67,33 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
             throws NoSuchTransactionException, IOException
     {
         // look up in position cache
-        TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache
-                .getTransactionMetadata( transactionIdToStartFrom );
-        if ( transactionMetadata != null )
+        try
         {
-            // we're good
-            return new PhysicalTransactionCursor( logFile.getReader( transactionMetadata.getStartPosition() ), logEntryReader, visitor );
+            TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache
+                    .getTransactionMetadata( transactionIdToStartFrom );
+            if ( transactionMetadata != null )
+            {
+                // we're good
+                return new PhysicalTransactionCursor( logFile.getReader( transactionMetadata.getStartPosition() ), logEntryReader, visitor );
+            }
+
+            // ask LogFile about the version it may be in
+            LogVersionLocator headerVisitor = new LogVersionLocator( transactionIdToStartFrom );
+            logFile.accept( headerVisitor );
+
+            // ask LogFile
+            TransactionPositionLocator transactionPositionLocator =
+                    new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
+            logFile.accept( transactionPositionLocator, headerVisitor.getLogPosition() );
+            LogPosition position = transactionPositionLocator.getAndCacheFoundLogPosition( transactionMetadataCache );
+            IOCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader, visitor );
+            return cursor;
         }
-
-        // ask LogFile about the version it may be in
-        LogVersionLocator headerVisitor = new LogVersionLocator( transactionIdToStartFrom );
-        logFile.accept( headerVisitor );
-
-        // ask LogFile
-        TransactionPositionLocator transactionPositionLocator =
-                new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
-        logFile.accept( transactionPositionLocator, headerVisitor.getLogPosition() );
-        LogPosition position = transactionPositionLocator.getAndCacheFoundLogPosition( transactionMetadataCache );
-        IOCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader, visitor );
-        return cursor;
+        catch ( FileNotFoundException e )
+        {
+            throw new NoSuchTransactionException( transactionIdToStartFrom,
+                    "Log position acquired, but couldn't find the log file itself. Perhaps it just recently was deleted?" );
+        }
     }
 
     @Override
