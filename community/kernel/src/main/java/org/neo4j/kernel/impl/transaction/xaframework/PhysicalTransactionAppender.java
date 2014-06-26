@@ -33,6 +33,7 @@ public class PhysicalTransactionAppender implements TransactionAppender
     private final LogFile logFile;
     private final TransactionIdStore transactionIdStore;
     private final TransactionLogWriter transactionLogWriter;
+    private final LogPositionMarker positionMarker = new LogPositionMarker();
 
     public PhysicalTransactionAppender( LogFile logFile, TxIdGenerator txIdGenerator,
             TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore )
@@ -50,7 +51,8 @@ public class PhysicalTransactionAppender implements TransactionAppender
     private void append( TransactionRepresentation transaction,
             long transactionId ) throws IOException
     {
-        LogPosition logPosition = channel.getCurrentPosition();
+        channel.getCurrentPosition( positionMarker );
+        LogPosition logPosition = positionMarker.newPosition();
 
         transactionLogWriter.append( transaction, transactionId );
 

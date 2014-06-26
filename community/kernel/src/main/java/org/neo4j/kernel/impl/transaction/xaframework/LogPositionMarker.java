@@ -19,26 +19,29 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-public interface WritableLogChannel extends Closeable
+/**
+ * Mutable marker that can create immutable {@link LogPosition} objects when requested to.
+ */
+public class LogPositionMarker
 {
-    void force() throws IOException;
+    private long logVersion;
+    private long byteOffset;
+    private boolean specified;
 
-    WritableLogChannel put( byte value ) throws IOException;
+    public void mark( long logVersion, long byteOffset )
+    {
+        this.logVersion = logVersion;
+        this.byteOffset = byteOffset;
+        this.specified = true;
+    }
 
-    WritableLogChannel putShort( short value ) throws IOException;
+    public void unspecified()
+    {
+        specified = false;
+    }
 
-    WritableLogChannel putInt( int value ) throws IOException;
-
-    WritableLogChannel putLong( long value ) throws IOException;
-
-    WritableLogChannel putFloat( float value ) throws IOException;
-
-    WritableLogChannel putDouble( double value ) throws IOException;
-
-    WritableLogChannel put( byte[] value, int length ) throws IOException;
-
-    void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
+    public LogPosition newPosition()
+    {
+        return specified ? new LogPosition( logVersion, byteOffset ) : LogPosition.UNSPECIFIED;
+    }
 }

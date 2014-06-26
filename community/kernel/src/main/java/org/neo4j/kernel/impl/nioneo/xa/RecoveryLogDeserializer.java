@@ -25,7 +25,6 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.xa.command.LogReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
-import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
 import org.neo4j.kernel.impl.util.Cursor;
@@ -60,8 +59,6 @@ public class RecoveryLogDeserializer implements LogReader<ReadableLogChannel>
         @Override
         public boolean next(  ) throws IOException
         {
-            LogPosition position = channel.getCurrentPosition();
-
             LogEntry entry = logEntryReader.readLogEntry( channel );
             if ( entry instanceof LogEntry.Start )
             {

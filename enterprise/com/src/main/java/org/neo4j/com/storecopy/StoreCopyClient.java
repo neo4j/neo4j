@@ -57,6 +57,7 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 
 import static org.neo4j.helpers.Format.bytes;
 import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 
 /**
  * Client-side store copier. Deals with issuing a request to a source of a database, which will
@@ -133,9 +134,9 @@ public class StoreCopyClient
             // Start the log and appender
             PhysicalLogFiles logFiles = new PhysicalLogFiles( storeDir, fs );
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
+            ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( fs, storeDir );
             LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                    NO_PRUNING, new ReadOnlyTransactionIdStore( fs, storeDir ), new ReadOnlyLogVersionRepository( fs,
-                            storeDir ), PhysicalLogFile.NO_MONITOR, LogRotationControl.NO_ROTATION_CONTROL,
+                    NO_PRUNING, new ReadOnlyTransactionIdStore( fs, storeDir ), logVersionRepository, PhysicalLogFile.NO_MONITOR, LogRotationControl.NO_ROTATION_CONTROL,
                     transactionMetadataCache, new NoRecoveryAssertingVisitor() ) );
             life.start();
 
@@ -146,10 +147,22 @@ public class StoreCopyClient
             WritableLogChannel channel = logFile.getWriter();
             TransactionLogWriter writer = new TransactionLogWriter(
                     new LogEntryWriterv1( channel, new CommandWriter( channel ) ) );
+            Long firstTxId = null;
             for ( CommittedTransactionRepresentation transaction : txs )
             {
-                writer.append( transaction.getTransactionRepresentation(), transaction.getCommitEntry().getTxId() );
+                long txId = transaction.getCommitEntry().getTxId();
+                writer.append( transaction.getTransactionRepresentation(), txId );
+                if ( firstTxId == null )
+                {
+                    firstTxId = txId;
+                }
             }
+
+            // And since we write this manually we need to set the correct transaction id in the
+            // header of the log that we just wrote.
+            writeLogHeader( fs,
+                    logFiles.getVersionFileName( logVersionRepository.getCurrentLogVersion() ),
+                    logVersionRepository.getCurrentLogVersion(), firstTxId != null ? firstTxId-1 : 0 );
         }
         finally
         {

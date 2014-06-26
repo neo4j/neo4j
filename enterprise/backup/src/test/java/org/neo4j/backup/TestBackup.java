@@ -20,7 +20,6 @@
 package org.neo4j.backup;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
@@ -147,7 +146,7 @@ public class TestBackup
             shutdownServer( server );
             server = null;
 
-            assertMetadataAboutLastTransactionExists( backupPath );;
+            assertMetadataAboutLastTransactionExists( backupPath );
 
             addMoreData( serverPath );
             server = startServer( serverPath );
@@ -156,66 +155,6 @@ public class TestBackup
             shutdownServer( server );
             server = null;
 
-            assertMetadataAboutLastTransactionExists( backupPath );;
-        }
-        finally
-        {
-            if ( db != null )
-            {
-                db.shutdown();
-            }
-            if ( server != null )
-            {
-                shutdownServer( server );
-            }
-        }
-    }
-
-    @Test
-    public void incrementalBackupLeavesOnlyLastTxInLog() throws Exception
-    {
-        GraphDatabaseAPI db = null;
-        ServerInterface server = null;
-        try
-        {
-            createInitialDataSet( serverPath );
-            server = startServer( serverPath );
-            OnlineBackup backup = OnlineBackup.from( "127.0.0.1" );
-            backup.full( backupPath.getPath() );
-            assertTrue( "Should be consistent", backup.isConsistent() );
-            shutdownServer( server );
-            server = null;
-
-            addMoreData( serverPath );
-            server = startServer( serverPath );
-            backup.incremental( backupPath.getPath() );
-            assertTrue( "Should be consistent", backup.isConsistent() );
-            shutdownServer( server );
-            server = null;
-
-            // do 2 rotations, add two empty logs
-            new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() ).shutdown();
-            new GraphDatabaseFactory().newEmbeddedDatabase( backupPath.getPath() ).shutdown();
-
-            addMoreData( serverPath );
-            server = startServer( serverPath );
-            backup.incremental( backupPath.getPath() );
-            assertTrue( "Should be consistent", backup.isConsistent() );
-            shutdownServer( server );
-            server = null;
-
-            int logsFound = backupPath.listFiles( new FilenameFilter()
-            {
-                @Override
-                public boolean accept( File dir, String name )
-                {
-                    return name.startsWith( "nioneo_logical.log" )
-                           && !name.endsWith( "active" );
-                }
-            } ).length;
-
-            // 2 one the real and the other from the rotation of shutdown
-            assertEquals( 2, logsFound );
             assertMetadataAboutLastTransactionExists( backupPath );
         }
         finally
@@ -664,6 +603,7 @@ public class TestBackup
 
     private void createInitialDataset( GraphDatabaseService db )
     {
+        // 4 transactions: THE transaction, "mykey" property key, "db-index" index, "KNOWS" rel type.
         try ( Transaction tx = db.beginTx() )
         {
             Node node = db.createNode();

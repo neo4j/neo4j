@@ -86,7 +86,7 @@ public class Protocol
                                                            Deserializer<PAYLOAD> payloadDeserializer,
                                                            ResourceReleaser channelReleaser) throws IOException
     {
-        DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
+        DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, 1_000_000,
                 internalProtocolVersion, applicationProtocolVersion );
 
         PAYLOAD response = payloadDeserializer.read( dechunkingBuffer, input );

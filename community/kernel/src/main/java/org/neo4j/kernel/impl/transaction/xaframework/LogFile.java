@@ -45,7 +45,9 @@ public interface LogFile extends Lifecycle
      */
     ReadableLogChannel getReader( LogPosition position ) throws IOException;
 
-    void accept( LogFileVisitor visitor ) throws IOException;
+    void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException;
+
+    void accept( LogHeaderVisitor visitor ) throws IOException;
 
     void checkRotation() throws IOException;
 }

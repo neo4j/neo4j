@@ -85,7 +85,8 @@ public class PhysicalLogFileTest
             life.start();
 
             WritableLogChannel writer = logFile.getWriter();
-            LogPosition position = writer.getCurrentPosition();
+            LogPositionMarker positionMarker = new LogPositionMarker();
+            writer.getCurrentPosition( positionMarker );
             int intValue = 45;
             long longValue = 4854587;
             writer.putInt( intValue );
@@ -93,7 +94,7 @@ public class PhysicalLogFileTest
             writer.force();
 
             // THEN
-            try ( ReadableLogChannel reader = logFile.getReader( position ) )
+            try ( ReadableLogChannel reader = logFile.getReader( positionMarker.newPosition() ) )
             {
                 assertEquals( intValue, reader.getInt() );
                 assertEquals( longValue, reader.getLong() );
@@ -122,7 +123,9 @@ public class PhysicalLogFileTest
         try
         {
             WritableLogChannel writer = logFile.getWriter();
-            LogPosition position1 = writer.getCurrentPosition();
+            LogPositionMarker positionMarker = new LogPositionMarker();
+            writer.getCurrentPosition( positionMarker );
+            LogPosition position1 = positionMarker.newPosition();
             int intValue = 45;
             long longValue = 4854587;
             byte[] someBytes = someBytes( 40 );
@@ -130,7 +133,8 @@ public class PhysicalLogFileTest
             writer.putLong( longValue );
             writer.put( someBytes, someBytes.length );
             writer.force();
-            LogPosition position2 = writer.getCurrentPosition();
+            writer.getCurrentPosition( positionMarker );
+            LogPosition position2 = positionMarker.newPosition();
             long longValue2 = 123456789L;
             writer.putLong( longValue2 );
             writer.put( someBytes, someBytes.length );

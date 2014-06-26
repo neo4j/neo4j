@@ -109,9 +109,9 @@ public class PhysicalWritableLogChannel implements WritableLogChannel
     }
 
     @Override
-    public LogPosition getCurrentPosition() throws IOException
+    public void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
     {
-        return channel.getCurrentPosition();
+        channel.getCurrentPosition( positionMarker );
     }
 
     private ByteBuffer bufferWithGuaranteedSpace( int spaceInBytes ) throws IOException

@@ -147,17 +147,24 @@ public class ReadAheadLogChannel implements ReadableLogChannel
         {   // read from the current channel to try and fill the buffer
             int read = channel.read( aheadBuffer );
             if ( read == -1 )
-            {   // current channel ran out, try the next channel
+            {
+                // current channel ran out...
+                if ( aheadBuffer.position() >= requestedNumberOfBytes )
+                {   // ...although we have satisfied the request
+                    break;
+                }
+
+                // ... we need to read even further, into the next version
                 VersionedStoreChannel nextChannel = channelBridge.next( channel );
                 assert nextChannel != null;
                 if ( nextChannel == channel )
                 {   // no more channels...
                     if ( aheadBuffer.position() >= requestedNumberOfBytes )
-                    {   // ...although we have read enough to satisfy the requested number of bytes
+                    {   // ... although we have read enough to satisfy the requested number of bytes
                         break;
                     }
 
-                    // ...so we cannot satisfy the requested number of bytes
+                    // ... so we cannot satisfy the requested number of bytes
                     throw new ReadPastEndException();
                 }
                 channel = nextChannel;
@@ -174,8 +181,8 @@ public class ReadAheadLogChannel implements ReadableLogChannel
     }
 
     @Override
-    public LogPosition getCurrentPosition() throws IOException
+    public void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
     {
-        return channel.getCurrentPosition();
+        positionMarker.mark( channel.getVersion(), channel.position()-aheadBuffer.remaining() );
     }
 }

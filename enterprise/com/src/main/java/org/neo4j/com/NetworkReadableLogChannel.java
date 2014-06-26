@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadPastEndException;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 
@@ -114,9 +114,9 @@ public class NetworkReadableLogChannel implements ReadableLogChannel
     }
 
     @Override
-    public LogPosition getCurrentPosition() throws IOException
+    public void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
     {
-        return LogPosition.UNSPECIFIED;
+        positionMarker.unspecified();
     }
 
     @Override

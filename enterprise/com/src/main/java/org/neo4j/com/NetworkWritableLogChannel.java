@@ -23,7 +23,7 @@ import java.io.IOException;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 
 public class NetworkWritableLogChannel implements WritableLogChannel
@@ -90,9 +90,9 @@ public class NetworkWritableLogChannel implements WritableLogChannel
     }
 
     @Override
-    public LogPosition getCurrentPosition() throws IOException
+    public void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
     {
-        return LogPosition.UNSPECIFIED;
+        positionMarker.unspecified();
     }
 
     @Override

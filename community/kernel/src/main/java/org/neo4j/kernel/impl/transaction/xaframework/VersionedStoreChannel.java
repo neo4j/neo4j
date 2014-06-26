@@ -27,5 +27,5 @@ public interface VersionedStoreChannel extends StoreChannel
 {
     long getVersion();
 
-    LogPosition getCurrentPosition() throws IOException;
+    void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
 }

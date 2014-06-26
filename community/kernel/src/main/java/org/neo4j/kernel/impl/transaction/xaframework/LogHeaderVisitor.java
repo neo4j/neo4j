@@ -19,26 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.Closeable;
-import java.io.IOException;
-
-public interface WritableLogChannel extends Closeable
+public interface LogHeaderVisitor
 {
-    void force() throws IOException;
-
-    WritableLogChannel put( byte value ) throws IOException;
-
-    WritableLogChannel putShort( short value ) throws IOException;
-
-    WritableLogChannel putInt( int value ) throws IOException;
-
-    WritableLogChannel putLong( long value ) throws IOException;
-
-    WritableLogChannel putFloat( float value ) throws IOException;
-
-    WritableLogChannel putDouble( double value ) throws IOException;
-
-    WritableLogChannel put( byte[] value, int length ) throws IOException;
-
-    void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
+    boolean visit( LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog );
 }

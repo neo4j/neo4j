@@ -40,5 +40,5 @@ public interface ReadableLogChannel extends Closeable
 
     void get( byte[] bytes, int length ) throws IOException, ReadPastEndException;
 
-    LogPosition getCurrentPosition() throws IOException;
+    void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException;
 }

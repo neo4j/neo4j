@@ -61,7 +61,7 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
     }
 
     @Override
-    public IOCursor getCursor( long transactionIdToStartFrom,
+    public IOCursor getCursor( final long transactionIdToStartFrom,
             Visitor<CommittedTransactionRepresentation, IOException> visitor )
             throws NoSuchTransactionException, IOException
     {
@@ -74,10 +74,14 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
             return new PhysicalTransactionCursor( logFile.getReader( transactionMetadata.getStartPosition() ), logEntryReader, visitor );
         }
 
+        // ask LogFile about the version it may be in
+        LogVersionLocator headerVisitor = new LogVersionLocator( transactionIdToStartFrom );
+        logFile.accept( headerVisitor );
+
         // ask LogFile
         TransactionPositionLocator transactionPositionLocator =
                 new TransactionPositionLocator( transactionIdToStartFrom, logEntryReader );
-        logFile.accept( transactionPositionLocator );
+        logFile.accept( transactionPositionLocator, headerVisitor.getLogPosition() );
         LogPosition position = transactionPositionLocator.getAndCacheFoundLogPosition( transactionMetadataCache );
         IOCursor cursor = new PhysicalTransactionCursor( logFile.getReader( position ), logEntryReader, visitor );
         return cursor;
@@ -159,6 +163,39 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
                     element.getStartEntry().getStartPosition(), element.getStartEntry().getMasterId(),
                     element.getStartEntry().getLocalId(), LogEntry.Start.checksum( element.getStartEntry() ) );
             return true;
+        }
+    }
+
+    private static final class LogVersionLocator implements LogHeaderVisitor
+    {
+        private final long transactionId;
+        private LogPosition foundPosition;
+
+        private LogVersionLocator( long transactionId )
+        {
+            this.transactionId = transactionId;
+        }
+
+        @Override
+        public boolean visit( LogPosition position, long firstTransactionIdInLog, long lastTransactionIdInLog )
+        {
+            boolean foundIt = transactionId >= firstTransactionIdInLog &&
+                    transactionId <= lastTransactionIdInLog;
+            if ( foundIt )
+            {
+                foundPosition = position;
+            }
+            return !foundIt; // continue as long we don't find it
+        }
+
+        public LogPosition getLogPosition() throws NoSuchTransactionException
+        {
+            if ( foundPosition == null )
+            {
+                throw new NoSuchTransactionException( transactionId, "Couldn't find any log containing " +
+                        transactionId );
+            }
+            return foundPosition;
         }
     }
 }

@@ -30,11 +30,12 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 import static org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge.NO_MORE_CHANNELS;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.readLogHeader;
 import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 
 /**
- * {@link LogFile} backup by one or more files in a {@link FileSystemAbstraction}.
+ * {@link LogFile} backed by one or more files in a {@link FileSystemAbstraction}.
  */
 public class PhysicalLogFile extends LifecycleAdapter implements LogFile
 {
@@ -129,7 +130,7 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
             Visitor<ReadableLogChannel, IOException> recoveredDataVisitor ) throws IOException
     {
         if ( new LogRecoveryCheck( toRecover ).recoveryRequired() )
-        { // There are already data in here, which means recovery will need to be performed.
+        {   // There's already data in here, which means recovery will need to be performed.
             ReadableLogChannel recoveredDataChannel = new ReadAheadLogChannel( toRecover, NO_MORE_CHANNELS,
                     ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE );
             recoveredDataVisitor.visit( recoveredDataChannel );
@@ -255,16 +256,38 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
     }
 
     @Override
-    public void accept( LogFileVisitor visitor ) throws IOException
+    public void accept( LogFileVisitor visitor, LogPosition startingFromPosition ) throws IOException
     {
-        long currentLogVersion = logFiles.getHighestLogVersion();
-        LogPosition position = new LogPosition( currentLogVersion, 16 );
-        try ( ReadableLogChannel reader = getReader( position ) )
+        try ( ReadableLogChannel reader = getReader( startingFromPosition ) )
         {
-            while( logFiles.versionExists( currentLogVersion ) && visitor.visit( position, reader ) )
+            visitor.visit( startingFromPosition, reader );
+        }
+    }
+
+    @Override
+    public void accept( LogHeaderVisitor visitor ) throws IOException
+    {
+        // Start from the where we're currently at and go backwards in time (versions)
+        long logVersion = logFiles.getHighestLogVersion();
+        long highTransactionId = transactionIdStore.getLastCommittingTransactionId();
+        while ( logFiles.versionExists( logVersion ) )
+        {
+            Long previousLogLastTxId = transactionMetadataCache.getHeader( logVersion );
+            if ( previousLogLastTxId == null )
             {
-                currentLogVersion--;
+                long[] header = readLogHeader( fileSystem, logFiles.getVersionFileName( logVersion ) );
+                transactionMetadataCache.putHeader( header[0], header[1] );
+                previousLogLastTxId = header[1];
             }
+
+            long lowTransactionId = previousLogLastTxId.longValue()+1;
+            if ( !visitor.visit( new LogPosition( logVersion, LOG_HEADER_SIZE ),
+                    lowTransactionId, highTransactionId ) )
+            {
+                break;
+            }
+            logVersion--;
+            highTransactionId = previousLogLastTxId;
         }
     }
 }

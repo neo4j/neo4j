@@ -44,6 +44,7 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
     static final int LOG_HEADER_SIZE = 16;
 
     private final CommandReaderFactory commandReaderFactory;
+    private final LogPositionMarker positionMarker = new LogPositionMarker();
 
     public VersionAwareLogEntryReader( CommandReaderFactory commandReaderFactory )
     {
@@ -58,6 +59,9 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         }
     }
 
+    /**
+     * @return long[] {logVersion, lastCommittedTxIdOfPreviousLog}
+     */
     public static long[] readLogHeader( ByteBuffer buffer, ReadableByteChannel channel,
             boolean strict ) throws IOException
     {
@@ -94,6 +98,17 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         return buffer;
     }
 
+    public static void writeLogHeader( FileSystemAbstraction fileSystem, File file, long logVersion,
+            long previousLastCommittedTxId ) throws IOException
+    {
+        try ( StoreChannel channel = fileSystem.open( file, "rw" ) )
+        {
+            ByteBuffer buffer = ByteBuffer.allocate( LOG_HEADER_SIZE );
+            writeLogHeader( buffer, logVersion, previousLastCommittedTxId );
+            channel.write( buffer );
+        }
+    }
+
     @Override
     public LogEntry readLogEntry( ReadableLogChannel channel ) throws IOException
     {
@@ -107,13 +122,16 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
              * extra byte read. After 2.1 is released we can remove it.
              */
 
+            // TODO this is wasteful. Turn this around so that LogPosition is mutable and pass it in,
+            // or introduce a LogPositionMark that is mutable and that can create LogPosition when requested.
+            channel.getCurrentPosition( positionMarker );
             byte version = channel.get();
             byte type = channel.get();
 
             switch ( type )
             {
                 case LogEntry.TX_START:
-                    return readTxStartEntry( version, channel );
+                    return readTxStartEntry( version, channel, positionMarker.newPosition() );
                 case LogEntry.TX_1P_COMMIT:
                     return readTxOnePhaseCommitEntry( version, channel );
                 case LogEntry.COMMAND:
@@ -130,9 +148,9 @@ public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogCha
         }
     }
 
-    private LogEntry.Start readTxStartEntry( byte version, ReadableLogChannel channel ) throws IOException
+    private LogEntry.Start readTxStartEntry( byte version, ReadableLogChannel channel,
+            LogPosition position ) throws IOException
     {
-        LogPosition position = channel.getCurrentPosition();
         int masterId = channel.getInt();
         int authorId = channel.getInt();
         long timeWritten = channel.getLong();
