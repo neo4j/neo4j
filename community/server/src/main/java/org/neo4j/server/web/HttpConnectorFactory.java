@@ -50,9 +50,6 @@ public class HttpConnectorFactory
 
     public ServerConnector createConnector( Server server, String host, int port, JettyThreadCalculator jettyThreadCalculator, ConnectionFactory... httpFactories )
     {
-
-        int availableProcessors = Runtime.getRuntime().availableProcessors();
-
         int acceptors = jettyThreadCalculator.getAcceptors();
         int selectors = jettyThreadCalculator.getSelectors();
 
