@@ -71,16 +71,22 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         {
             throw new NotInTransactionException();
         }
+    }
+
+    private void assertNotInterrupted( TopLevelTransaction transaction )
+    {
         if ( transaction.getTransaction().shouldBeInterrupted() )
         {
             throw new TransactionInterruptException();
         }
     }
 
-    public void assertInTransaction()
+    public void assertInUninterruptedTransaction()
     {
         checkIfShutdown();
-        assertInTransaction( threadToTransactionMap.get() );
+        TopLevelTransaction transaction = threadToTransactionMap.get();
+        assertInTransaction( transaction );
+        assertNotInterrupted( transaction );
     }
 
     @Override

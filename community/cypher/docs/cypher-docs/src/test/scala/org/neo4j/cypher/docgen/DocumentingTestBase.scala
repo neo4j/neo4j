@@ -49,7 +49,6 @@ import org.scalatest.junit.JUnitSuite
 import scala.collection.JavaConverters._
 import scala.reflect.ClassTag
 
-
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
   def db: GraphDatabaseAPI

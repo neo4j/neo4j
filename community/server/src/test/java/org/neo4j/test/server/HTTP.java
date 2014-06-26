@@ -20,6 +20,7 @@
 package org.neo4j.test.server;
 
 import java.net.URI;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -267,6 +268,11 @@ public class HTTP
             }
             throw new RuntimeException( "The request did not contain a location header, " +
                     "unable to provide location. Status code was: " + status() );
+        }
+
+        public String firstXHeader(String name)
+        {
+            return response.getHeaders().getFirst( "X-" + name );
         }
 
         @SuppressWarnings("unchecked")

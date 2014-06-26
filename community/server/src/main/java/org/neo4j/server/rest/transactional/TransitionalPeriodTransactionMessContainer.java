@@ -19,6 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
+import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
@@ -35,11 +36,12 @@ public class TransitionalPeriodTransactionMessContainer
 
     public TransitionalTxManagementKernelTransaction newTransaction()
     {
-        db.beginTx();
-        
+        Transaction tx = db.beginTx();
+        TransactionInterruptor txInterruptor = new TransactionInterruptor( tx );
+
         // Get and use the TransactionContext created in db.beginTx(). The role of creating
         // TransactionContexts will be reversed soonish.
-        return new TransitionalTxManagementKernelTransaction( txBridge );
+        return new TransitionalTxManagementKernelTransaction( txInterruptor, txBridge );
     }
 
 }

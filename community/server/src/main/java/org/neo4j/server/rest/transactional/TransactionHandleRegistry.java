@@ -54,17 +54,35 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private static abstract class TransactionMarker
     {
-        abstract SuspendedTransaction getTransaction() throws InvalidConcurrentTransactionAccess;
+        abstract ActiveTransaction getActiveTransaction();
+
+        abstract SuspendedTransaction getSuspendedTransaction() throws InvalidConcurrentTransactionAccess;
 
         abstract boolean isSuspended();
     }
 
     private static class ActiveTransaction extends TransactionMarker
     {
-        public static final ActiveTransaction INSTANCE = new ActiveTransaction();
+        final TransactionInterruptHandle interruptHandle;
+
+        private ActiveTransaction( TransactionInterruptHandle interruptHandle )
+        {
+            this.interruptHandle = interruptHandle;
+        }
+
+        TransactionInterruptHandle getInterruptHandler()
+        {
+            return interruptHandle;
+        }
 
         @Override
-        SuspendedTransaction getTransaction() throws InvalidConcurrentTransactionAccess
+        ActiveTransaction getActiveTransaction()
+        {
+            return this;
+        }
+
+        @Override
+        SuspendedTransaction getSuspendedTransaction() throws InvalidConcurrentTransactionAccess
         {
             throw new InvalidConcurrentTransactionAccess();
         }
@@ -78,17 +96,25 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private class SuspendedTransaction extends TransactionMarker
     {
+        final ActiveTransaction activeMarker;
         final TransactionHandle transactionHandle;
         final long lastActiveTimestamp;
 
-        private SuspendedTransaction( TransactionHandle transactionHandle )
+        private SuspendedTransaction( ActiveTransaction activeMarker, TransactionHandle transactionHandle )
         {
+            this.activeMarker = activeMarker;
             this.transactionHandle = transactionHandle;
             this.lastActiveTimestamp = clock.currentTimeMillis();
         }
 
         @Override
-        SuspendedTransaction getTransaction() throws InvalidConcurrentTransactionAccess
+        ActiveTransaction getActiveTransaction()
+        {
+            return activeMarker;
+        }
+
+        @Override
+        SuspendedTransaction getSuspendedTransaction() throws InvalidConcurrentTransactionAccess
         {
             return this;
         }
@@ -106,10 +132,10 @@ public class TransactionHandleRegistry implements TransactionRegistry
     }
 
     @Override
-    public long begin()
+    public long begin( TransactionHandle handle )
     {
         long id = idGenerator.incrementAndGet();
-        if ( null == registry.putIfAbsent( id, ActiveTransaction.INSTANCE ) )
+        if ( null == registry.putIfAbsent( id, new ActiveTransaction( handle ) ) )
         {
             return id;
         }
@@ -134,7 +160,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
             throw new IllegalStateException( "Trying to suspend transaction that was already suspended" );
         }
 
-        SuspendedTransaction suspendedTx = new SuspendedTransaction( transactionHandle );
+        SuspendedTransaction suspendedTx = new SuspendedTransaction( marker.getActiveTransaction(), transactionHandle );
         if ( !registry.replace( id, marker, suspendedTx ) )
         {
             throw new IllegalStateException( "Trying to suspend transaction that has been concurrently suspended" );
@@ -162,8 +188,8 @@ public class TransactionHandleRegistry implements TransactionRegistry
             throw new InvalidConcurrentTransactionAccess();
         }
 
-        SuspendedTransaction transaction = marker.getTransaction();
-        if ( registry.replace( id, marker, ActiveTransaction.INSTANCE ) )
+        SuspendedTransaction transaction = marker.getSuspendedTransaction();
+        if ( registry.replace( id, marker, marker.getActiveTransaction() ) )
         {
             return transaction.transactionHandle;
         }
@@ -196,6 +222,21 @@ public class TransactionHandleRegistry implements TransactionRegistry
     }
 
     @Override
+    public TransactionInterruptHandle interruptHandler( long id ) throws TransactionLifecycleException
+    {
+        TransactionMarker marker = registry.get( id );
+
+        if ( null == marker )
+        {
+            throw new InvalidTransactionId();
+        }
+        else
+        {
+            return marker.getActiveTransaction().getInterruptHandler();
+        }
+    }
+
+    @Override
     public void rollbackAllSuspendedTransactions()
     {
         rollbackSuspended( Predicates.<TransactionMarker>TRUE() );
@@ -210,7 +251,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
             {
                 try
                 {
-                    SuspendedTransaction transaction = item.getTransaction();
+                    SuspendedTransaction transaction = item.getSuspendedTransaction();
                     return transaction.lastActiveTimestamp < oldestLastActiveTime;
                 }
                 catch ( InvalidConcurrentTransactionAccess concurrentTransactionAccessError )

@@ -17,16 +17,8 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.api.exceptions;
+package org.neo4j.server.rest.transactional;
 
-/**
- * Thrown when there's a transaction wanting to commit, but was unable to and was therefore
- * forced to roll back instead.
- */
-public class TransactionForcefullyRolledBackException extends TransactionFailureException
-{
-    public TransactionForcefullyRolledBackException( RuntimeException cause )
-    {
-        super( Status.Transaction.CouldNotRollback, cause, "" );
-    }
+public interface TransactionInterruptHandle {
+    void interrupt();
 }

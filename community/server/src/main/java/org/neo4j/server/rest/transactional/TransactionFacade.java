@@ -81,12 +81,17 @@ public class TransactionFacade
        return registry.acquire( txId );
     }
 
+    public TransactionInterruptHandle findTransactionInterruptHandle( long txId ) throws TransactionLifecycleException
+    {
+        return registry.interruptHandler( txId );
+    }
+
     public StatementDeserializer deserializer( InputStream input )
     {
         return new StatementDeserializer( input );
     }
 
-    public ExecutionResultSerializer serializer( OutputStream output ) 
+    public ExecutionResultSerializer serializer( OutputStream output )
     {
         return new ExecutionResultSerializer( output, baseUri, log );
     }

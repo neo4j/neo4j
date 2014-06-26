@@ -45,7 +45,7 @@ public class PropertyUniqueConstraintCreator extends BaseConstraintCreator
     @Override
     public final ConstraintDefinition create()
     {
-        assertInTransaction();
+        assertInUninterruptedTransaction();
 
         try
         {

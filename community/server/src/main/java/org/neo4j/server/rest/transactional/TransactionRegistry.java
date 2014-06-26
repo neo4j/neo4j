@@ -28,11 +28,13 @@ import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
  */
 public interface TransactionRegistry
 {
-    public long begin();
+    public long begin( TransactionHandle handle );
 
     public long release( long id, TransactionHandle transactionHandle );
 
     public TransactionHandle acquire( long id ) throws TransactionLifecycleException;
+
+    public TransactionInterruptHandle interruptHandler( long id ) throws TransactionLifecycleException;
 
     public void forget( long id );
 

@@ -234,9 +234,9 @@ public class NodeProxy implements Node
         }
     }
 
-    private void assertInTransaction()
+    private void assertInUninterruptedTransaction()
     {
-        statementContextProvider.assertInTransaction();
+        statementContextProvider.assertInUninterruptedTransaction();
     }
 
     @Override
@@ -470,7 +470,7 @@ public class NodeProxy implements Node
                                StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
                                RelationshipType relationshipType, Direction direction )
     {
-        assertInTransaction();
+        assertInUninterruptedTransaction();
         return OldTraverserWrapper.traverse( this,
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipType, direction );
@@ -482,7 +482,7 @@ public class NodeProxy implements Node
                                RelationshipType firstRelationshipType, Direction firstDirection,
                                RelationshipType secondRelationshipType, Direction secondDirection )
     {
-        assertInTransaction();
+        assertInUninterruptedTransaction();
         return OldTraverserWrapper.traverse( this,
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, firstRelationshipType, firstDirection,
@@ -494,7 +494,7 @@ public class NodeProxy implements Node
                                StopEvaluator stopEvaluator, ReturnableEvaluator returnableEvaluator,
                                Object... relationshipTypesAndDirections )
     {
-        assertInTransaction();
+        assertInUninterruptedTransaction();
         return OldTraverserWrapper.traverse( this,
                 traversalOrder, stopEvaluator,
                 returnableEvaluator, relationshipTypesAndDirections );

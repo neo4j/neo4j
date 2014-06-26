@@ -82,7 +82,7 @@ public class GlobalGraphOperations
      */
     public ResourceIterable<Node> getAllNodes()
     {
-        assertInTransaction();
+        assertInUninterruptedTransaction();
         return new ResourceIterable<Node>()
         {
             @Override
@@ -117,7 +117,7 @@ public class GlobalGraphOperations
      */
     public Iterable<Relationship> getAllRelationships()
     {
-        assertInTransaction();
+        assertInUninterruptedTransaction();
         return new ResourceIterable<Relationship>()
         {
             @Override
@@ -155,7 +155,7 @@ public class GlobalGraphOperations
      */
     public Iterable<RelationshipType> getAllRelationshipTypes()
     {
-        assertInTransaction();
+        assertInUninterruptedTransaction();
         return cast( relationshipTypes.getAllTokens() );
     }
 
@@ -171,7 +171,7 @@ public class GlobalGraphOperations
      */
     public ResourceIterable<Label> getAllLabels()
     {
-        assertInTransaction();
+        assertInUninterruptedTransaction();
         return new ResourceIterable<Label>()
         {
             @Override
@@ -203,7 +203,7 @@ public class GlobalGraphOperations
      */
     public ResourceIterable<String> getAllPropertyKeys()
     {
-        assertInTransaction();
+        assertInUninterruptedTransaction();
         return new ResourceIterable<String>()
         {
             @Override
@@ -233,7 +233,7 @@ public class GlobalGraphOperations
      */
     public ResourceIterable<Node> getAllNodesWithLabel( final Label label )
     {
-        assertInTransaction();
+        assertInUninterruptedTransaction();
         return new ResourceIterable<Node>()
         {
             @Override
@@ -266,8 +266,8 @@ public class GlobalGraphOperations
         }, nodeIds ) );
     }
 
-    private void assertInTransaction()
+    private void assertInUninterruptedTransaction()
     {
-        statementCtxProvider.assertInTransaction();
+        statementCtxProvider.assertInUninterruptedTransaction();
     }
 }

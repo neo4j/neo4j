@@ -17,27 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.transaction.xaframework;
+package org.neo4j.server.rest.transactional;
 
-public interface TransactionMonitor
+import org.neo4j.graphdb.Transaction;
+
+public class TransactionInterruptor
 {
-    // Inputs
-    void transactionStarted();
+    private final Transaction transaction;
 
-    void transactionInterrupted();
+    public TransactionInterruptor( Transaction transaction )
+    {
+        this.transaction = transaction;
+    }
 
-    void transactionFinished( boolean successful );
-
-    // Outputs
-    int getNumberOfActiveTransactions();
-
-    int getPeakConcurrentNumberOfTransactions();
-
-    int getNumberOfStartedTransactions();
-
-    long getNumberOfCommittedTransactions();
-
-    long getNumberOfRolledbackTransactions();
-
-    long getNumberOfTransactionInterrupts();
+    public void interrupt()
+    {
+        transaction.interrupt();
+    }
 }
