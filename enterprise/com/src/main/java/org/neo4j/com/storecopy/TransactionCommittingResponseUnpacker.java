@@ -23,6 +23,7 @@ import java.io.IOException;
 
 import org.neo4j.com.Response;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
 
@@ -30,12 +31,14 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
 {
     private final TransactionAppender appender;
     private final TransactionRepresentationStoreApplier storeApplier;
+    private final TransactionIdStore transactionIdStore;
 
     public TransactionCommittingResponseUnpacker( TransactionAppender appender,
-            TransactionRepresentationStoreApplier storeApplier )
+            TransactionRepresentationStoreApplier storeApplier, TransactionIdStore transactionIdStore )
     {
         this.appender = appender;
         this.storeApplier = storeApplier;
+        this.transactionIdStore = transactionIdStore;
     }
 
     @Override
@@ -49,9 +52,16 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
             {
                 if ( appender.append( transaction ) )
                 {
-                    storeApplier.apply( transaction.getTransactionRepresentation(),
-                            transaction.getCommitEntry().getTxId(), true ); // TODO recovery=true needed?
-                    handler.accept( transaction );
+                    long transactionId = transaction.getCommitEntry().getTxId();
+                    try
+                    {
+                        storeApplier.apply( transaction.getTransactionRepresentation(), transactionId, true ); // TODO recovery=true needed?
+                        handler.accept( transaction );
+                    }
+                    finally
+                    {
+                        transactionIdStore.transactionClosed( transactionId );
+                    }
                 }
             }
         }

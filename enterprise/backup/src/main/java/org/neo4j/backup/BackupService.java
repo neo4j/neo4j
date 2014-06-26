@@ -299,7 +299,8 @@ class BackupService
             Response<Void> response = client.incrementalBackup( context );
             TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
                     resolver.resolveDependency( LogicalTransactionStore.class ).getAppender(),
-                    resolver.resolveDependency( TransactionRepresentationStoreApplier.class ) );
+                    resolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
+                    resolver.resolveDependency( TransactionIdStore.class ) );
             unpacker.unpackResponse( response, handler );
             consistent = true;
         }
