@@ -85,14 +85,24 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
         return trapLatch;
     }
 
-    private synchronized void trip( Event event )
+    private void trip( Event event )
     {
+        Matcher<? extends Event> theTrap;
+        CountDownLatch theTrapLatch;
 
-        if ( trap != null && trap.matches( event ) )
+        // The synchronized block is in here, so we don't risk calling await on
+        // the trapLatch while holding the monitor lock.
+        synchronized ( this )
+        {
+            theTrap = trap;
+            theTrapLatch = trapLatch;
+        }
+
+        if ( theTrap != null && theTrap.matches( event ) )
         {
             try
             {
-                trapLatch.await();
+                theTrapLatch.await();
             }
             catch ( InterruptedException e )
             {
