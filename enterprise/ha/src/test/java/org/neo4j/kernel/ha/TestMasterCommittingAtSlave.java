@@ -59,7 +59,7 @@ import org.neo4j.kernel.logging.LogMarker;
 
 public class TestMasterCommittingAtSlave
 {
-    private static final int MasterServerId = 1;
+    private static final int MasterServerId = 0;
 
     private Iterable<Slave> slaves;
     private FakeStringLogger log;
@@ -68,7 +68,7 @@ public class TestMasterCommittingAtSlave
     public void commitSuccessfullyToTheFirstOne() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
-        propagator.committed( 2, 1 );
+        propagator.committed( 2, MasterServerId );
         assertCalls( (FakeSlave) slaves.iterator().next(), 2l );
         assertNoFailureLogs();
     }
@@ -77,9 +77,9 @@ public class TestMasterCommittingAtSlave
     public void commitACoupleOfTransactionsSuccessfully() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder() );
-        propagator.committed( 2, 1 );
-        propagator.committed( 3, 1 );
-        propagator.committed( 4, 1 );
+        propagator.committed( 2, MasterServerId );
+        propagator.committed( 3, MasterServerId );
+        propagator.committed( 4, MasterServerId );
         assertCalls( (FakeSlave) slaves.iterator().next(), 2, 3, 4 );
         assertNoFailureLogs();
     }
@@ -88,7 +88,7 @@ public class TestMasterCommittingAtSlave
     public void commitFailureAtFirstOneShouldMoveOnToNext() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 3, 1, givenOrder(), true );
-        propagator.committed( 2, 1 );
+        propagator.committed( 2, MasterServerId );
         Iterator<Slave> slaveIt = slaves.iterator();
         assertCalls( (FakeSlave) slaveIt.next() );
         assertCalls( (FakeSlave) slaveIt.next(), 2 );
@@ -99,15 +99,15 @@ public class TestMasterCommittingAtSlave
     public void commitSuccessfullyAtThreeSlaves() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 5, 3, givenOrder() );
-        propagator.committed( 2, 1 );
-        propagator.committed( 3, 2 );
-        propagator.committed( 4, 3 );
+        propagator.committed( 2, MasterServerId );
+        propagator.committed( 3, 1 );
+        propagator.committed( 4, 2 );
 
         Iterator<Slave> slaveIt = slaves.iterator();
 
-        assertCalls( (FakeSlave) slaveIt.next(), 2, 3, 4 );
         assertCalls( (FakeSlave) slaveIt.next(), 2, 4 );
         assertCalls( (FakeSlave) slaveIt.next(), 2, 3 );
+        assertCalls( (FakeSlave) slaveIt.next(), 2, 3, 4 );
         assertCalls( (FakeSlave) slaveIt.next() );
         assertCalls( (FakeSlave) slaveIt.next() );
 
@@ -118,7 +118,7 @@ public class TestMasterCommittingAtSlave
     public void commitSuccessfullyOnSomeOfThreeSlaves() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 5, 3, givenOrder(), false, true, true );
-        propagator.committed( 2, 1 );
+        propagator.committed( 2, MasterServerId );
         Iterator<Slave> slaveIt = slaves.iterator();
         assertCalls( (FakeSlave) slaveIt.next(), 2 );
         slaveIt.next();
@@ -134,7 +134,7 @@ public class TestMasterCommittingAtSlave
         TransactionPropagator propagator = newPropagator( 3, 1, roundRobin() );
         for ( long tx = 2; tx <= 6; tx++ )
         {
-            propagator.committed( tx, 1 );
+            propagator.committed( tx, MasterServerId );
         }
         Iterator<Slave> slaveIt = slaves.iterator();
         assertCalls( (FakeSlave) slaveIt.next(), 2, 5 );
@@ -149,7 +149,7 @@ public class TestMasterCommittingAtSlave
         TransactionPropagator propagator = newPropagator( 4, 2, roundRobin(), false, true );
         for ( long tx = 2; tx <= 6; tx++ )
         {
-            propagator.committed( tx, 1 );
+            propagator.committed( tx, MasterServerId );
         }
 
         /* SLAVE |    TX
@@ -171,7 +171,7 @@ public class TestMasterCommittingAtSlave
     public void notEnoughSlavesSuccessful() throws Exception
     {
         TransactionPropagator propagator = newPropagator( 3, 2, givenOrder(), true, true );
-        propagator.committed( 2, 1 );
+        propagator.committed( 2, MasterServerId );
         Iterator<Slave> slaveIt = slaves.iterator();
         slaveIt.next();
         slaveIt.next();
@@ -255,7 +255,7 @@ public class TestMasterCommittingAtSlave
         List<Slave> slaves = new ArrayList<Slave>();
         for ( int i = 0; i < count; i++ )
         {
-            slaves.add( new FakeSlave( i < failingSlaves.length && failingSlaves[i], i ) );
+            slaves.add( new FakeSlave( i < failingSlaves.length && failingSlaves[i], i + MasterServerId + 1 ) );
         }
         return slaves;
     }
