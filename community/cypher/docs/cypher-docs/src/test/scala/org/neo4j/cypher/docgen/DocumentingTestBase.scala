@@ -19,6 +19,8 @@
  */
 package org.neo4j.cypher.docgen
 
+import java.util.concurrent.TimeUnit
+
 import org.neo4j.graphdb.index.Index
 import org.junit.{ Before, After }
 import scala.collection.JavaConverters._
