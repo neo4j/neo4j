@@ -52,9 +52,10 @@ class CommonContextState
         return boundAt;
     }
 
-    public void setBoundAt( URI boundAt )
+    public void setBoundAt( InstanceId me, URI boundAt )
     {
         this.boundAt = boundAt;
+        configuration.getMembers().put(me, boundAt);
     }
 
     public long lastKnownLearnedInstanceInCluster()

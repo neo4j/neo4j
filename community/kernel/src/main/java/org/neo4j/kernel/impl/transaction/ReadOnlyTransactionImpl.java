@@ -23,7 +23,6 @@ import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
 import java.util.List;
-
 import javax.transaction.HeuristicMixedException;
 import javax.transaction.RollbackException;
 import javax.transaction.Status;
@@ -34,6 +33,7 @@ import javax.transaction.xa.XAException;
 import javax.transaction.xa.XAResource;
 import javax.transaction.xa.Xid;
 
+import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.util.StringLogger;
 
 class ReadOnlyTransactionImpl implements Transaction
@@ -57,12 +57,15 @@ class ReadOnlyTransactionImpl implements Transaction
     private final ReadOnlyTxManager txManager;
     private final StringLogger logger;
 
+    private final TransactionState transactionState;
+
     ReadOnlyTransactionImpl( byte[] xidGlobalId, ReadOnlyTxManager txManager, StringLogger logger )
     {
         this.txManager = txManager;
         this.logger = logger;
         globalId = xidGlobalId;
         eventIdentifier = txManager.getNextEventIdentifier();
+        transactionState = new ReadOnlyTransactionState();
     }
 
     @Override
@@ -470,5 +473,10 @@ class ReadOnlyTransactionImpl implements Transaction
                 + "] already suspended" );
         }
         active = false;
+    }
+
+    TransactionState getTransactionState()
+    {
+        return transactionState;
     }
 }

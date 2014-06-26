@@ -249,7 +249,7 @@ class ClusterContextImpl
                     return;
                 }
             }
-            else if ( version < electorVersion && electorId.equals( lastElector ) )
+            else if ( electorId.equals( lastElector ) && (version < electorVersion && version > 0) )
             {
                 getLogger( getClass() ).warn( "Election result for role " + roleName +
                         " received from elector instance " + electorId + " with version " + version +
@@ -347,7 +347,7 @@ class ClusterContextImpl
     @Override
     public void setBoundAt( URI boundAt )
     {
-        commonState.setBoundAt( boundAt );
+        commonState.setBoundAt( me, boundAt );
     }
 
     @Override
