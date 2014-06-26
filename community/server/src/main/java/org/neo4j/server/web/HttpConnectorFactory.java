@@ -42,20 +42,19 @@ public class HttpConnectorFactory
         return httpConfig;
     }
 
-    public ServerConnector createConnector( Server server, String host, int port, int jettyMaxThreads )
+    public ServerConnector createConnector( Server server, String host, int port, JettyThreadCalculator jettyThreadCalculator )
     {
         ConnectionFactory httpFactory = createHttpConnectionFactory();
-        return createConnector(server, host, port, jettyMaxThreads, httpFactory );
+        return createConnector(server, host, port, jettyThreadCalculator, httpFactory );
     }
 
-    public ServerConnector createConnector( Server server, String host, int port, int jettyMaxThreads, ConnectionFactory... httpFactories )
+    public ServerConnector createConnector( Server server, String host, int port, JettyThreadCalculator jettyThreadCalculator, ConnectionFactory... httpFactories )
     {
-        // Note: 1/4 accept, 3/4 select
+
         int availableProcessors = Runtime.getRuntime().availableProcessors();
-        int cpusByConfiguredThreads = jettyMaxThreads / 10;
-        int cpusToConsider = Math.max(1, Math.min( availableProcessors, cpusByConfiguredThreads ) );
-        int acceptors = Math.max( 1 ,cpusToConsider / 4 );
-        int selectors = Math.max( 1, cpusToConsider - acceptors );
+
+        int acceptors = jettyThreadCalculator.getAcceptors();
+        int selectors = jettyThreadCalculator.getSelectors();
 
         ServerConnector connector = new ServerConnector( server , null, null, null, acceptors, selectors, httpFactories );
 
