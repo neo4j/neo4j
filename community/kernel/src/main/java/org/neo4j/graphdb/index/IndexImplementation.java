@@ -25,7 +25,6 @@ import java.util.Map;
 
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
-import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
  * An index provider which can create and give access to index transaction state and means of applying
@@ -33,7 +32,7 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
  * An {@link IndexImplementation} is typically tied to one implementation, f.ex.
  * lucene, http://lucene.apache.org/java.
  */
-public interface IndexImplementation extends Lifecycle
+public interface IndexImplementation
 {
     /**
      * Returns a {@link LegacyIndexProviderTransaction} that keeps transaction state for all

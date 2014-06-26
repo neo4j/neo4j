@@ -54,7 +54,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
     }
 
     @Override
-    public void start() throws Throwable
+    public void init()
     {
         luceneDataSource = life.add( new LuceneDataSource( config, indexStore, fileSystemAbstraction ) );
         // TODO Don't do this here, do proper life cycle management
@@ -64,7 +64,7 @@ public class LuceneKernelExtension extends LifecycleAdapter
     }
 
     @Override
-    public void stop() throws Throwable
+    public void shutdown()
     {
         indexProviders.unregisterIndexProvider( LuceneIndexImplementation.SERVICE_NAME );
         // TODO Don't do this here, do proper life cycle management

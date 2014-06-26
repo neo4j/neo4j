@@ -32,9 +32,8 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.index.LegacyIndexProviderTransaction;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
-import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
-public class LuceneIndexImplementation extends LifecycleAdapter implements IndexImplementation
+public class LuceneIndexImplementation implements IndexImplementation
 {
     static final String KEY_TYPE = "type";
     static final String KEY_ANALYZER = "analyzer";
@@ -140,30 +139,6 @@ public class LuceneIndexImplementation extends LifecycleAdapter implements Index
     public ResourceIterator<File> listStoreFiles() throws IOException
     {
         return dataSource.listStoreFiles();
-    }
-
-    @Override
-    public void init() throws Throwable
-    {
-        dataSource.init();
-    }
-
-    @Override
-    public void start() throws Throwable
-    {
-        dataSource.start();
-    }
-
-    @Override
-    public void stop() throws Throwable
-    {
-        dataSource.stop();
-    }
-
-    @Override
-    public void shutdown() throws Throwable
-    {
-        dataSource.shutdown();
     }
 
     @Override
