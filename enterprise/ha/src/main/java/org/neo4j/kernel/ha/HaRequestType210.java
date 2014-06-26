@@ -140,7 +140,7 @@ public enum HaRequestType210 implements RequestType<Master>
             TransactionRepresentation tx = null;
             try
             {
-                tx = new Protocol.TransactionRepresentationDeserializer().read( input, null );
+                tx = Protocol.TRANSACTION_REPRESENTATION_DESERIALIZER.read( input, null );
             }
             catch ( IOException e )
             {

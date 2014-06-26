@@ -37,7 +37,6 @@ import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
-import org.neo4j.com.ServerUtil;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.TransactionFailureException;
@@ -45,6 +44,7 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
+import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
@@ -184,14 +184,13 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         if ( this.epoch != context.getEpoch() )
         {
-            // TODO 2.2-future this is wrong and i (CG) should feel wrong
-//            throw new InvalidEpochException( epoch, context.getEpoch() );
+            throw new InvalidEpochException( epoch, context.getEpoch() );
         }
     }
 
     private <T> Response<T> packResponse( RequestContext context, T response )
     {
-        return packResponse( context, response, ServerUtil.ALL );
+        return packResponse( context, response, Predicates.<Long>TRUE() );
     }
 
     private <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter )
