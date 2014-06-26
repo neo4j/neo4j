@@ -2,6 +2,9 @@
 -----
 o Fixes potential leak of transaction state in entity locks that could
   lead to excess GC activity
+o Fixes "illegal position" errors from persistence window pool
+o Fixes potential race in XaLogicalLog that could lead to duplicate
+  entries in the log
 
 2.0.2
 -----

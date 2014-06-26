@@ -75,7 +75,7 @@ public abstract class LockableWindow implements PersistenceWindow
 
     private static class LockElement
     {
-        private final Thread thread;
+        private Thread thread;
         private boolean movedOn = false;
         
         LockElement( Thread thread )
@@ -87,9 +87,12 @@ public abstract class LockableWindow implements PersistenceWindow
     synchronized void lock( OperationType operationType )
     {
         Thread currentThread = Thread.currentThread();
-        LockElement le = new LockElement( currentThread );
+        LockElement le = null;
         while ( locked && lockingThread != currentThread )
         {
+            if (le == null)
+                le = new LockElement( currentThread );
+
             waitingThreadList.addFirst( le );
             try
             {
@@ -102,7 +105,10 @@ public abstract class LockableWindow implements PersistenceWindow
         }
         locked = true;
         lockingThread = currentThread;
-        le.movedOn = true;
+
+        if (le != null)
+            le.movedOn = true;
+
         marked--;
         if ( operationType == OperationType.WRITE )
         {

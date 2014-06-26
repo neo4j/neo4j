@@ -1,3 +1,10 @@
+2.0.4
+-----
+o Adds version marking in election results, solving problems with
+  incorrect election outcomes and instances failing to join the cluster
+o Slave only instances will not become coordinators under any
+  circumstances
+
 2.0.3
 -----
 o Fixes issue where an instance could revert into SLAVE mode while shutting down.
@@ -16,6 +23,17 @@ o Fixes message reordering issue
 o Fixes a Paxos instance reuse issue
 o Cluster join denial now includes cluster configuration
 o Fixes issues with proper Payload values passed around
+
+1.9.8
+-----
+o Adds version marking in election results, solving problems with
+ incorrect election outcomes and instances failing to join the cluster
+o Slave only instances will not become coordinators under any
+ circumstances
+
+1.9.7
+-----
+o Fixes issue where an instance could revert into SLAVE mode while shutting down.
 
 1.9.5 (2013-11-11)
 ------------------
