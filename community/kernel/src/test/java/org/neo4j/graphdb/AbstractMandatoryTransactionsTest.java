@@ -21,6 +21,8 @@ package org.neo4j.graphdb;
 
 import org.junit.Rule;
 
+import org.neo4j.function.Function;
+import org.neo4j.kernel.TransactionInterruptException;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.fail;
@@ -43,6 +45,19 @@ public abstract class AbstractMandatoryTransactionsTest<T>
         }
     }
 
+    public <R> R obtainEntityInInterruptedTransaction(Function<T, R> f)
+    {
+        GraphDatabaseService graphDatabaseService = dbRule.getGraphDatabaseService();
+
+        try ( Transaction tx = graphDatabaseService.beginTx() )
+        {
+            T result = obtainEntityInTransaction( graphDatabaseService );
+            tx.interrupt();
+
+            return f.apply(result);
+        }
+    }
+
     protected abstract T obtainEntityInTransaction( GraphDatabaseService graphDatabaseService );
 
     public static <T> void assertFacadeMethodsThrowNotInTransaction( T entity, Iterable<FacadeMethod<T>> methods )
@@ -59,6 +74,31 @@ public abstract class AbstractMandatoryTransactionsTest<T>
             {
                 // awesome
             }
+        }
+    }
+
+    public void assertFacadeMethodsThrowAfterInterrupt( Iterable<FacadeMethod<T>> methods )
+    {
+        for ( final FacadeMethod<T> method : methods )
+        {
+            obtainEntityInInterruptedTransaction(  new Function<T, Void>()
+            {
+                @Override
+                public Void apply( T entity )
+                {
+                    try
+                    {
+                        method.call( entity );
+
+                        fail( "Transaction was interrupted, yet not exception thrown in: " + method );
+                    }
+                    catch ( TransactionInterruptException e )
+                    {
+                        // awesome
+                    }
+                    return null;
+                }
+            });
         }
     }
 }

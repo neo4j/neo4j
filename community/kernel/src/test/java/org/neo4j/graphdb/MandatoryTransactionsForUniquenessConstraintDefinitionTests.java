@@ -33,6 +33,13 @@ public class MandatoryTransactionsForUniquenessConstraintDefinitionTests
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
     }
 
+    @Test
+    public void shouldInterruptWhenCallingMethodsOnUniquenessConstraintDefinitions() throws Exception
+    {
+        assertFacadeMethodsThrowAfterInterrupt( ALL_CONSTRAINT_DEFINITION_FACADE_METHODS );
+    }
+
+
     @Override
     protected ConstraintDefinition obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {

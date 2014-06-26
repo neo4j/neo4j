@@ -205,6 +205,16 @@ public class ConstraintIndexCreatorTest
                     return true;
                 }
 
+                public boolean shouldBeInterrupted()
+                {
+                    return false;
+                }
+
+                @Override
+                public void markForInterrupt()
+                {
+                }
+
                 @Override
                 public LegacyIndexTransactionState getLegacyIndexTransactionState()
                 {

@@ -38,6 +38,12 @@ public class PlaceboTransaction implements Transaction
     }
 
     @Override
+    public void interrupt()
+    {
+        parentTransaction.interrupt();
+    }
+
+    @Override
     public void failure()
     {
     	parentTransaction.failure();

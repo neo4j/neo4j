@@ -30,6 +30,7 @@ import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
+import org.neo4j.test.DoubleLatch;
 
 import static org.junit.Assert.assertTrue;
 import static org.mockito.Mockito.mock;
@@ -96,6 +97,148 @@ public class KernelTransactionImplementationTest
             transaction.success();
         }
         catch ( TransactionFailureException e )
+        {
+            // Expected.
+            exceptionReceived = true;
+        }
+
+        // THEN
+        assertTrue( exceptionReceived );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackOnClosingInterruptedTransaction() throws Exception
+    {
+        // GIVEN
+        boolean exceptionReceived = false;
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.success();
+            transaction.markForInterrupt();
+        }
+        catch ( TransactionFailureException e )
+        {
+            // Expected.
+            exceptionReceived = true;
+        }
+
+        // THEN
+        assertTrue( exceptionReceived );
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackOnClosingSuccessfulButInterruptedTransaction() throws Exception
+    {
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.markForInterrupt();
+            assertTrue( transaction.shouldBeInterrupted() );
+        }
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldRollbackOnClosingInterruptedButSuccessfulTransaction() throws Exception
+    {
+        // GIVEN
+        boolean exceptionReceived = false;
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.markForInterrupt();
+            transaction.success();
+            assertTrue( transaction.shouldBeInterrupted() );
+        }
+        catch ( TransactionFailureException e )
+        {
+            // Expected.
+            exceptionReceived = true;
+        }
+
+        // THEN
+        assertTrue( exceptionReceived );
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldNotDowngradeFailureState() throws Exception
+    {
+        try ( KernelTransaction transaction = newTransaction() )
+        {
+            // WHEN
+            transaction.markForInterrupt();
+            transaction.failure();
+            assertTrue( transaction.shouldBeInterrupted() );
+        }
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldIgnoreInterruptAfterCommit() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.success();
+        transaction.close();
+        transaction.markForInterrupt();
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldIgnoreInterruptAfterRollback() throws Exception
+    {
+        KernelTransaction transaction = newTransaction();
+        transaction.close();
+        transaction.markForInterrupt();
+
+        // THEN
+        verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
+        verifyNoMoreInteractions( transactionMonitor );
+    }
+
+    @Test
+    public void shouldAllowInterruptingFromADifferentThread() throws Exception
+    {
+        // GIVEN
+        final DoubleLatch latch = new DoubleLatch( 1 );
+        final KernelTransaction transaction = newTransaction();
+        Thread thread = new Thread( new Runnable () {
+            @Override
+            public void run()
+            {
+                latch.awaitStart();
+                transaction.markForInterrupt();
+                latch.finish();
+            }
+        });
+
+        // WHEN
+        thread.start();
+        transaction.success();
+        latch.startAndAwaitFinish();
+
+        boolean exceptionReceived = false;
+        try
+        {
+            transaction.close();
+        } catch ( TransactionFailureException e )
         {
             // Expected.
             exceptionReceived = true;

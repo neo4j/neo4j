@@ -34,6 +34,12 @@ public class MandatoryTransactionsForConstraintCreatorTests
         assertFacadeMethodsThrowNotInTransaction( obtainEntity(), ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
     }
 
+    @Test
+    public void shouldInterruptWhenCallingMethodsConstraintCreators() throws Exception
+    {
+        assertFacadeMethodsThrowAfterInterrupt( ALL_CONSTRAINT_CREATOR_FACADE_METHODS );
+    }
+
     @Override
     protected ConstraintCreator obtainEntityInTransaction( GraphDatabaseService graphDatabaseService )
     {

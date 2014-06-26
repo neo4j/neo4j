@@ -94,6 +94,22 @@ package org.neo4j.graphdb;
 public interface Transaction extends AutoCloseable
 {
     /**
+     * Marks this transaction as interrupted, which means that it will be, much like in the case of failure,
+     * unconditionally rolled back when {@link #close()} is called. Once this method has been invoked, it doesn't matter
+     * if {@link #success()} is invoked afterwards -- the transaction will still be rolled back.
+     *
+     * Additionally, interrupting a transaction causes all subsequent operations carried out within that
+     * transaction to throw a {@link org.neo4j.kernel.TransactionInterruptException} in the owning thread.
+     *
+     * Note that, unlike the other transaction operations, this method can be called from threads other than
+     * the owning thread of the transaction. When this method is called from a different thread,
+     * it signals the owning thread to interrupt the transaction and returns immediately.
+     *
+     * Calling {@link #interrupt()} on an already closed transaction has no effect.
+     */
+    void interrupt();
+
+    /**
      * Marks this transaction as failed, which means that it will
      * unconditionally be rolled back when {@link #close()} is called. Once
      * this method has been invoked, it doesn't matter if
