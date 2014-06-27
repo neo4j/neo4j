@@ -41,13 +41,22 @@ public class PhysicalLogFileInformation implements LogFileInformation
     public Long getFirstCommittedTxId() throws IOException
     {
         long version = logFiles.getHighestLogVersion();
-        Long firstCommittedTx = null;
+        Long candidateFirstTx = null;
         while ( logFiles.versionExists( version ) )
         {
-            firstCommittedTx = getOrExtractFirstCommittedTx( version );
+            candidateFirstTx = getOrExtractFirstCommittedTx( version );
             version--;
         }
-        return firstCommittedTx;
+        version++; // the loop above goes back one version too far.
+
+        if ( candidateFirstTx == null )
+        {
+            return null;
+        }
+
+        // OK, so we now have the oldest existing log version here. Open it and see if there's any transaction
+        // in there. If there is then that transaction is the first one that we have.
+        return logFiles.hasAnyTransaction( version ) ? candidateFirstTx : null;
     }
 
     @Override
@@ -90,6 +99,8 @@ public class PhysicalLogFileInformation implements LogFileInformation
     @Override
     public Long getFirstStartRecordTimestamp( long version ) throws IOException
     {
+
+
 //        ReadableByteChannel log = null;
 //        try
 //        {

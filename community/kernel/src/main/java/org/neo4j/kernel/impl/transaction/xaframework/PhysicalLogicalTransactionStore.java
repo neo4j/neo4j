@@ -26,6 +26,7 @@ import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
 import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
@@ -96,9 +97,17 @@ public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements
         }
     }
 
+    private static final TransactionMetadataCache.TransactionMetadata METADATA_FOR_EMPTY_STORE =
+            new TransactionMetadataCache.TransactionMetadata( -1, -1, new LogPosition( 0, LOG_HEADER_SIZE ), 0 );
+
     @Override
     public TransactionMetadataCache.TransactionMetadata getMetadataFor( long transactionId ) throws IOException
     {
+        if ( transactionId == 0 )
+        {
+            return METADATA_FOR_EMPTY_STORE;
+        }
+
         TransactionMetadataCache.TransactionMetadata transactionMetadata = transactionMetadataCache
                 .getTransactionMetadata( transactionId );
         if ( transactionMetadata == null )

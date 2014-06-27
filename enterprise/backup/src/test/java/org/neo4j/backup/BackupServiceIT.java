@@ -224,8 +224,10 @@ public class BackupServiceIT
     }
 
     @Test
-    public void shouldFindTransactionLogContainingLastNeoStoreAndLuceneTransactionInAnEmptyStore() throws IOException
+    public void shouldFindTransactionLogContainingLastNeoStoreTransactionInAnEmptyStore() throws IOException
     {
+        // This test highlights a special case where an empty store can return transaction metadata for transaction 0.
+
         // given
         GraphDatabaseService db = createDb( storeDir, defaultBackupPortHostParams() );
 
@@ -280,6 +282,7 @@ public class BackupServiceIT
         createAndIndexNode( db, 2 );
         createAndIndexNode( db, 3 );
         createAndIndexNode( db, 4 );
+        createAndIndexNode( db, 5 );
 
         // when
         try

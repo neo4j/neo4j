@@ -92,4 +92,9 @@ public class PhysicalLogFiles
     {
         return VersionAwareLogEntryReader.readLogHeader( fileSystem, getVersionFileName( version ) );
     }
+
+    public boolean hasAnyTransaction( long version )
+    {
+        return fileSystem.getFileSize( getVersionFileName( version ) ) > VersionAwareLogEntryReader.LOG_HEADER_SIZE;
+    }
 }

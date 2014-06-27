@@ -59,7 +59,7 @@ public class ResponsePacker
     {
         AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>( filter );
         long toStartFrom = context.lastAppliedTransaction()+1;
-        if ( toStartFrom < transactionIdStore.getLastCommittingTransactionId() )
+        if ( toStartFrom <= transactionIdStore.getLastCommittingTransactionId() )
         {
             extractTransactions( toStartFrom, accumulator );
         }
