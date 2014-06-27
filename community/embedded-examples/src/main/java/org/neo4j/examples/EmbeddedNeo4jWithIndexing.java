@@ -19,12 +19,14 @@
 package org.neo4j.examples;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.index.Index;
+import org.neo4j.io.fs.FileUtils;
 
 public class EmbeddedNeo4jWithIndexing
 {
@@ -33,9 +35,10 @@ public class EmbeddedNeo4jWithIndexing
     private static GraphDatabaseService graphDb;
     private static Index<Node> nodeIndex;
 
-    public static void main( final String[] args )
+    public static void main( final String[] args ) throws IOException
     {
-        deleteFileOrDirectory( new File( DB_PATH ) );
+        FileUtils.deleteRecursively( new File( DB_PATH ) );
+
         // START SNIPPET: startDb
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         registerShutdownHook();
@@ -107,20 +110,5 @@ public class EmbeddedNeo4jWithIndexing
                 shutdown();
             }
         } );
-    }
-
-    private static void deleteFileOrDirectory( File file )
-    {
-        if ( file.exists() )
-        {
-            if ( file.isDirectory() )
-            {
-                for ( File child : file.listFiles() )
-                {
-                    deleteFileOrDirectory( child );
-                }
-            }
-            file.delete();
-        }
     }
 }

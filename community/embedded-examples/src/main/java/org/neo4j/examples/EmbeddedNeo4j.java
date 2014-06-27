@@ -20,6 +20,7 @@
 package org.neo4j.examples;
 
 import java.io.File;
+import java.io.IOException;
 
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -28,6 +29,7 @@ import org.neo4j.graphdb.Relationship;
 import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
+import org.neo4j.io.fs.FileUtils;
 
 public class EmbeddedNeo4j
 {
@@ -49,7 +51,7 @@ public class EmbeddedNeo4j
     }
     // END SNIPPET: createReltype
 
-    public static void main( final String[] args )
+    public static void main( final String[] args ) throws IOException
     {
         EmbeddedNeo4j hello = new EmbeddedNeo4j();
         hello.createDb();
@@ -57,9 +59,10 @@ public class EmbeddedNeo4j
         hello.shutDown();
     }
 
-    void createDb()
+    void createDb() throws IOException
     {
-        deleteFileOrDirectory( new File( DB_PATH ) );
+        FileUtils.deleteRecursively( new File( DB_PATH ) );
+
         // START SNIPPET: startDb
         graphDb = new GraphDatabaseFactory().newEmbeddedDatabase( DB_PATH );
         registerShutdownHook( graphDb );
@@ -136,19 +139,4 @@ public class EmbeddedNeo4j
         } );
     }
     // END SNIPPET: shutdownHook
-
-    private static void deleteFileOrDirectory( File file )
-    {
-        if ( file.exists() )
-        {
-            if ( file.isDirectory() )
-            {
-                for ( File child : file.listFiles() )
-                {
-                    deleteFileOrDirectory( child );
-                }
-            }
-            file.delete();
-        }
-    }
 }
