@@ -80,10 +80,10 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         this.transactionIdStore = dependencyResolver.resolveDependency( TransactionIdStore.class );
         this.fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
         this.storeDir = new File( graphDb.getStoreDir() );
-        this.txStore = dependencyResolver.resolveDependency( NeoStoreXaDataSource.class ).getTransactionStore();
+        this.txStore = dependencyResolver.resolveDependency( LogicalTransactionStore.class );
         this.txCommitProcess = dependencyResolver.resolveDependency( NeoStoreXaDataSource.class ).
                 getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
-        this.responsePacker = new ResponsePacker( txStore, graphDb );
+        this.responsePacker = new ResponsePacker( txStore, transactionIdStore, graphDb );
     }
 
     @Override

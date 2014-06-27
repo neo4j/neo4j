@@ -19,30 +19,39 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import java.io.File;
 import java.io.IOException;
 
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 
 public class PhysicalLogFileInformation implements LogFileInformation
 {
     private final PhysicalLogFiles logFiles;
     private final TransactionMetadataCache transactionMetadataCache;
-    private final FileSystemAbstraction fileSystem;
     private final TransactionIdStore transactionIdStore;
 
-    public PhysicalLogFileInformation( PhysicalLogFiles logFiles, TransactionMetadataCache transactionMetadataCache,
-            FileSystemAbstraction fileSystem, TransactionIdStore transactionIdStore )
+    public PhysicalLogFileInformation( PhysicalLogFiles logFiles,
+            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore )
     {
         this.logFiles = logFiles;
         this.transactionMetadataCache = transactionMetadataCache;
-        this.fileSystem = fileSystem;
         this.transactionIdStore = transactionIdStore;
     }
 
     @Override
-    public Long getFirstCommittedTxId( long version )
+    public Long getFirstCommittedTxId() throws IOException
+    {
+        long version = logFiles.getHighestLogVersion();
+        Long firstCommittedTx = null;
+        while ( logFiles.versionExists( version ) )
+        {
+            firstCommittedTx = getOrExtractFirstCommittedTx( version );
+            version--;
+        }
+        return firstCommittedTx;
+    }
+
+    @Override
+    public Long getFirstCommittedTxId( long version ) throws IOException
     {
         if ( version == 0 )
         {
@@ -50,25 +59,24 @@ public class PhysicalLogFileInformation implements LogFileInformation
         }
 
         // First committed tx for version V = last committed tx version V-1 + 1
-        Long header = transactionMetadataCache.getHeader( version - 1 );
+        return getOrExtractFirstCommittedTx( version );
+    }
+
+    private Long getOrExtractFirstCommittedTx( long version ) throws IOException
+    {
+        Long header = transactionMetadataCache.getHeader( version );
         if ( header != null )
         {   // It existed in cache
-            return header + 1;
+            return header+1;
         }
 
         // Wasn't cached, go look for it
-        File file = logFiles.getVersionFileName( version );
-        if ( fileSystem.fileExists( file ) )
+        if ( logFiles.versionExists( version ) )
         {
-            try
-            {
-                long[] headerLongs = VersionAwareLogEntryReader.readLogHeader( fileSystem, file );
-                return headerLongs[1] + 1;
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
+            long[] headerLongs = logFiles.extractHeader( version );
+            long previousVersionLastCommittedTx = headerLongs[1];
+            transactionMetadataCache.putHeader( version, previousVersionLastCommittedTx );
+            return previousVersionLastCommittedTx+1;
         }
         return null;
     }

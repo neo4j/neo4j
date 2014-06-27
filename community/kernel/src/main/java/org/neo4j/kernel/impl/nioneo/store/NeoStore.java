@@ -300,6 +300,7 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public void flushNeoStoreOnly()
     {
+        getLastCommittingTransactionId(); // ensures that field is read
         setRecord( LATEST_TX_POSITION, lastCommittedTxField.get() );
         try
         {

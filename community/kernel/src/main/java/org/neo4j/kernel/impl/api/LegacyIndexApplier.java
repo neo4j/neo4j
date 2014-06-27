@@ -70,7 +70,7 @@ public class LegacyIndexApplier extends NeoCommandHandler.Adapter
             Map<String, String> config = indexConfigStore.get( entityType.entityClass(), indexName );
             if ( config == null )
             {
-                throw new IllegalStateException( "Unknown " + entityType.name() + " index '" + indexName );
+                throw new IllegalStateException( "Unknown " + entityType.name() + " index '" + indexName + "'" );
             }
             String providerName = config.get( PROVIDER );
             applier = providerLookup.lookup( providerName ).newApplier( recovery );

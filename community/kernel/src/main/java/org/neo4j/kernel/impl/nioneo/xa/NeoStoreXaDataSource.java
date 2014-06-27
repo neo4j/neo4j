@@ -131,6 +131,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.util.Dependencies;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.info.DiagnosticsExtractor;
@@ -156,7 +157,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         public static final Setting<File> neo_store = InternalAbstractGraphDatabase.Configuration.neo_store;
     }
 
-    private final DependencyResolver.Dependencies dependencies = new DependencyResolver.Dependencies();
+    private final Dependencies dependencies = new Dependencies();
     private final StringLogger msgLog;
     private final Logging logging;
     private final DependencyResolver dependencyResolver;
@@ -393,7 +394,8 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         // TODO: Build a real provider map
         final DefaultSchemaIndexProviderMap providerMap = new DefaultSchemaIndexProviderMap( indexProvider );
         storeMigrationProcess.migrateIfNeeded( store.getParentFile() );
-        neoStore = dependencies.add( storeFactory.newNeoStore( false ) );
+        neoStore = dependencies.satisfyDependency( storeFactory.newNeoStore( false ) );
+        dependencies.satisfyDependency( TransactionIdStore.class, neoStore );
 
         schemaCache = new SchemaCache( Collections.<SchemaRule>emptyList() );
 
@@ -448,21 +450,23 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             File directory = config.get( GraphDatabaseSettings.store_dir );
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
             PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, PhysicalLogFile.DEFAULT_NAME, fs );
-            LogFileInformation logFileInformation = new PhysicalLogFileInformation(
-                    logFiles, transactionMetadataCache, fs, neoStore );
+            LogFileInformation logFileInformation = dependencies.satisfyDependency( LogFileInformation.class,
+                    new PhysicalLogFileInformation( logFiles, transactionMetadataCache, neoStore ) );
             LogPruneStrategy logPruneStrategy = LogPruneStrategies.fromConfigValue( fs, logFileInformation,
                     logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
-            logFile = dependencies.add( new PhysicalLogFile( fs, logFiles,
+            logFile = dependencies.satisfyDependency( new PhysicalLogFile( fs, logFiles,
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
                     neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
                     this, transactionMetadataCache, logFileRecoverer ) );
-            logicalTransactionStore = dependencies.add( new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
-                    transactionMetadataCache, logEntryReader, neoStore ) );
+            logicalTransactionStore = dependencies.satisfyDependency( LogicalTransactionStore.class,
+                    new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
+                            transactionMetadataCache, logEntryReader, neoStore ) );
 
-            storeApplier = new TransactionRepresentationStoreApplier( indexingService, labelScanStore, neoStore,
-                    cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore );
-            commitProcess = dependencies.add( commitProcessFactory.create( logicalTransactionStore, kernelHealth,
-                    neoStore, storeApplier, false ) );
+            storeApplier = dependencies.satisfyDependency( new TransactionRepresentationStoreApplier(
+                    indexingService, labelScanStore, neoStore,
+                    cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore ) );
+            commitProcess = dependencies.satisfyDependency( commitProcessFactory.create( logicalTransactionStore,
+                    kernelHealth, neoStore, storeApplier, false ) );
 
             Factory<KernelTransaction> transactionFactory = new Factory<KernelTransaction>()
             {
@@ -852,19 +856,5 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     {
         IndexImplementation removed = indexProviders.remove( name );
         return removed != null;
-    }
-
-    /**
-     * TODO The reason we expose these here is so that {@link InternalAbstractGraphDatabase#getDependencyResolver()}
-     * can see it. IAGD should instead provide this class with a commit process.
-     */
-    public LogicalTransactionStore getTransactionStore()
-    {
-        return logicalTransactionStore;
-    }
-
-    public TransactionRepresentationStoreApplier getStoreApplier()
-    {
-        return storeApplier;
     }
 }

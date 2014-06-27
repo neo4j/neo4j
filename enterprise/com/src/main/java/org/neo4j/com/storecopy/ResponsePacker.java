@@ -27,21 +27,25 @@ import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
-import org.neo4j.kernel.impl.transaction.xaframework.NoSuchTransactionException;
 
 import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 public class ResponsePacker
 {
-    private final LogicalTransactionStore transactionStore;
-    private final GraphDatabaseAPI db;
+    protected final LogicalTransactionStore transactionStore;
+    protected final GraphDatabaseAPI db; // for lazy storeId getter
+    private final TransactionIdStore transactionIdStore;
 
-    public ResponsePacker( LogicalTransactionStore transactionStore, GraphDatabaseAPI db )
+    public ResponsePacker( LogicalTransactionStore transactionStore, TransactionIdStore transactionIdStore,
+            GraphDatabaseAPI db )
     {
         this.transactionStore = transactionStore;
+        this.transactionIdStore = transactionIdStore;
         this.db = db; // just so that we can get the store ID at a later point. It's probably not available right now
     }
 
@@ -54,15 +58,19 @@ public class ResponsePacker
             Predicate<CommittedTransactionRepresentation> filter ) throws IOException
     {
         AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>( filter );
-        try
+        long toStartFrom = context.lastAppliedTransaction()+1;
+        if ( toStartFrom < transactionIdStore.getLastCommittingTransactionId() )
         {
-            exhaustAndClose( transactionStore.getCursor( context.lastAppliedTransaction() + 1, accumulator ) );
-        }
-        catch ( NoSuchTransactionException e )
-        {   // OK, so there were no transactions to pack
-            // TODO do this w/o exception being thrown?
+            extractTransactions( toStartFrom, accumulator );
         }
         Iterable<CommittedTransactionRepresentation> txs = accumulator.getAccumulator();
         return new Response<>( response, db.storeId(), txs, ResourceReleaser.NO_OP );
+    }
+
+    protected void extractTransactions( long startingAtTransactionId,
+            Visitor<CommittedTransactionRepresentation,IOException> accumulator )
+                    throws IOException
+    {
+        exhaustAndClose( transactionStore.getCursor( startingAtTransactionId, accumulator ) );
     }
 }

@@ -24,24 +24,41 @@ import java.io.IOException;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.ServerFailureException;
+import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.com.storecopy.ResponsePacker;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.Math.max;
+
+import static org.neo4j.com.RequestContext.anonymous;
 
 class BackupImpl implements TheBackupInterface
 {
     private final BackupMonitor backupMonitor;
     private final StoreCopyServer storeCopyServer;
-    private final ResponsePacker responsePacker;
+    private final ResponsePacker incrementalResponsePacker;
+    private final LogicalTransactionStore logicalTransactionStore;
+    private final GraphDatabaseAPI db;
+    private final TransactionIdStore transactionIdStore;
+    private final LogFileInformation logFileInformation;
 
-    public BackupImpl( StoreCopyServer storeCopyServer, ResponsePacker responsePacker,
-            Monitors monitors )
+    public BackupImpl( StoreCopyServer storeCopyServer, Monitors monitors,
+            LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
+            LogFileInformation logFileInformation, GraphDatabaseAPI db )
     {
         this.storeCopyServer = storeCopyServer;
-        this.responsePacker = responsePacker;
+        this.logicalTransactionStore = logicalTransactionStore;
+        this.transactionIdStore = transactionIdStore;
+        this.logFileInformation = logFileInformation;
+        this.db = db;
         this.backupMonitor = monitors.newMonitor( BackupMonitor.class, getClass() );
+        this.incrementalResponsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, db );
     }
 
     @Override
@@ -50,8 +67,13 @@ class BackupImpl implements TheBackupInterface
         try ( StoreWriter storeWriter = writer )
         {
             backupMonitor.startCopyingFiles();
-            RequestContext context = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter );
-            return responsePacker.packResponse( context, null/*no response object*/ );
+            RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter );
+            ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
+                    transactionIdStore, logFileInformation, db,
+                    copyStartContext.lastAppliedTransaction()+1 ); // mandatory transaction id
+            long optionalTransactionId = boBackACoupleOfTransactionsIfRequired(
+                    copyStartContext.lastAppliedTransaction() ); // optional transaction id
+            return responsePacker.packResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
         }
         catch ( IOException e )
         {
@@ -59,12 +81,22 @@ class BackupImpl implements TheBackupInterface
         }
     }
 
+    private long boBackACoupleOfTransactionsIfRequired( long transactionWhenStartingCopy )
+    {
+        int atLeast = 10;
+        if ( transactionIdStore.getLastCommittingTransactionId()-transactionWhenStartingCopy < atLeast )
+        {
+            return max( 1, transactionIdStore.getLastCommittingTransactionId()-atLeast );
+        }
+        return transactionWhenStartingCopy;
+    }
+
     @Override
     public Response<Void> incrementalBackup( RequestContext context )
     {
         try
         {
-            return responsePacker.packResponse( context, null );
+            return incrementalResponsePacker.packResponse( context, null );
         }
         catch ( IOException e )
         {

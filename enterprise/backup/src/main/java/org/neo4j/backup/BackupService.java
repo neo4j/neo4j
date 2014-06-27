@@ -147,7 +147,6 @@ class BackupService
                 }
             } );
             targetDb = startTemporaryDb( targetDirectory );
-            new LogicalLogSeeder( logger ).ensureAtLeastOneLogicalLogPresent( sourceHostNameOrIp, sourcePort, targetDb );
         }
         catch ( IOException e )
         {

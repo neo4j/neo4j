@@ -58,6 +58,9 @@ public class StoreCopyServer
         this.storeDirectory = getMostCanonicalFile( storeDirectory );
     }
 
+    /**
+     * @return a {@link RequestContext} specifying at which point the store copy started.
+     */
     public RequestContext flushStoresAndStreamStoreFiles( StoreWriter writer )
     {
         try

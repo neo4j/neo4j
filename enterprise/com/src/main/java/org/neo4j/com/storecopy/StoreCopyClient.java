@@ -136,7 +136,8 @@ public class StoreCopyClient
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 10, 100 );
             ReadOnlyLogVersionRepository logVersionRepository = new ReadOnlyLogVersionRepository( fs, storeDir );
             LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, Long.MAX_VALUE /*don't rotate*/,
-                    NO_PRUNING, new ReadOnlyTransactionIdStore( fs, storeDir ), logVersionRepository, PhysicalLogFile.NO_MONITOR, LogRotationControl.NO_ROTATION_CONTROL,
+                    NO_PRUNING, new ReadOnlyTransactionIdStore( fs, storeDir ), logVersionRepository,
+                    PhysicalLogFile.NO_MONITOR, LogRotationControl.NO_ROTATION_CONTROL,
                     transactionMetadataCache, new NoRecoveryAssertingVisitor() ) );
             life.start();
 
@@ -163,6 +164,19 @@ public class StoreCopyClient
             writeLogHeader( fs,
                     logFiles.getVersionFileName( logVersionRepository.getCurrentLogVersion() ),
                     logVersionRepository.getCurrentLogVersion(), firstTxId != null ? firstTxId-1 : 0 );
+
+            if ( firstTxId == null )
+            {
+                console.warn( "Important: There are no available transaction logs on the target database, which " +
+                        "means the backup could not save a point-in-time reference. This means you cannot use this " +
+                        "backup for incremental backups, and it means you cannot use it directly to seed an HA " +
+                        "cluster. The next time you perform a backup, a full backup will be done. If you wish to " +
+                        "use this backup as a seed for a cluster, you need to start a stand-alone database on " +
+                        "it, and commit one write transaction, to create the transaction log needed to seed the " +
+                        "cluster. To avoid this happening, make sure you never manually delete transaction log " +
+                        "files (nioneo_logical.log.vXXX), and that you configure the database to keep at least a " +
+                        "few days worth of transaction logs." );
+            }
         }
         finally
         {

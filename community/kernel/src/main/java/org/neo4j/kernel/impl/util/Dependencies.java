@@ -17,24 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.storemigration;
+package org.neo4j.kernel.impl.util;
 
 import java.util.HashMap;
 import java.util.Map;
 
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Function;
-import org.neo4j.kernel.impl.util.DependencySatisfier;
-import org.neo4j.kernel.impl.util.UnsatisfiedDependencyException;
 
 @SuppressWarnings( "rawtypes" )
-public class MigrationDependencyResolver extends DependencyResolver.Adapter implements DependencySatisfier
+public class Dependencies extends DependencyResolver.Adapter implements DependencySatisfier
 {
     private final Map<Class, Object> dependencies = new HashMap<>();
 
     @Override
     public <T> T resolveDependency( Class<T> type, SelectionStrategy selector )
-            throws UnsatisfiedDependencyException
     {
         // Try super classes
         Object dependency = dependencies.get( type );
@@ -52,18 +49,26 @@ public class MigrationDependencyResolver extends DependencyResolver.Adapter impl
         // Out of options
         if ( dependency == null )
         {
-            throw new UnsatisfiedDependencyException( new Exception(
-                    "Weird exception nesting here, but anyways, I couldn't find any dependency for " + type ) );
+            throw new IllegalArgumentException(
+                    "Weird exception nesting here, but anyways, I couldn't find any dependency for " + type );
         }
 
         // We found it
         return type.cast( dependency );
     }
 
+    @SuppressWarnings( "unchecked" )
     @Override
-    public <T> void satisfyDependency( Class<T> type, T dependency )
+    public <T> T satisfyDependency( T dependency )
+    {
+        return satisfyDependency( (Class<T>) dependency.getClass(), dependency );
+    }
+
+    @Override
+    public <T> T satisfyDependency( Class<T> type, T dependency )
     {
         this.dependencies.put( type, dependency );
+        return dependency;
     }
 
     private Object getDependencyForType( Class type, Function<Class,Class[]> traverser )
@@ -98,7 +103,6 @@ public class MigrationDependencyResolver extends DependencyResolver.Adapter impl
 
     private static final Function<Class,Class[]> INTERFACES = new Function<Class,Class[]>()
     {
-
         @Override
         public Class[] apply( Class from )
         {

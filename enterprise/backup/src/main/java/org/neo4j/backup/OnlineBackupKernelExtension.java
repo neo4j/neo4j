@@ -30,7 +30,6 @@ import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.com.ServerUtil;
-import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -39,6 +38,7 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
@@ -76,14 +76,16 @@ public class OnlineBackupKernelExtension implements Lifecycle
             public TheBackupInterface newBackup()
             {
                 DependencyResolver resolver = graphDatabaseAPI.getDependencyResolver();
+                TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
                 StoreCopyServer copier = new StoreCopyServer(
-                        resolver.resolveDependency( TransactionIdStore.class ),
+                        transactionIdStore,
                         resolver.resolveDependency( DataSourceManager.class ).getDataSource(),
                         resolver.resolveDependency( FileSystemAbstraction.class ),
                         new File( graphDatabaseAPI.getStoreDir() ) );
-                ResponsePacker responsePacker = new ResponsePacker(
-                        resolver.resolveDependency( LogicalTransactionStore.class ), graphDatabaseAPI );
-                return new BackupImpl( copier, responsePacker, monitors );
+                LogicalTransactionStore logicalTransactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
+                LogFileInformation logFileInformation = resolver.resolveDependency( LogFileInformation.class );
+                return new BackupImpl( copier, monitors,
+                        logicalTransactionStore, transactionIdStore, logFileInformation, graphDatabaseAPI );
             }
         }, monitors, logging );
     }

@@ -24,11 +24,16 @@ import java.io.IOException;
 public interface LogFileInformation
 {
     /**
+     * @return the reachable transaction that is farthest back of them all, in any existing version.
+     */
+    Long getFirstCommittedTxId() throws IOException;
+
+    /**
      * @param version the log version to get first committed tx for.
      * @return the first committed transaction id for the log with {@code version}.
      * If that log doesn't exist {@code null} is returned.
      */
-    Long getFirstCommittedTxId( long version );
+    Long getFirstCommittedTxId( long version ) throws IOException;
 
     /**
      * @return the last committed transaction id for this Log

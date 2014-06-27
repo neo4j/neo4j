@@ -19,9 +19,7 @@
  */
 package org.neo4j.graphdb;
 
-import java.util.ArrayList;
 import java.util.Iterator;
-import java.util.List;
 
 /**
  * Find a dependency given a type. This can be the exact type or a super type of
@@ -93,41 +91,6 @@ public interface DependencyResolver
         public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
         {
             return resolveDependency( type, FIRST );
-        }
-    }
-
-    class Dependencies
-        extends Adapter
-    {
-        List<Object> dependencies = new ArrayList<>(  );
-
-        public <T> T add(T instance)
-        {
-            dependencies.add(instance);
-            return instance;
-        }
-
-        public boolean remove(Object instance)
-        {
-            return dependencies.remove( instance );
-        }
-
-        public void clear()
-        {
-            dependencies.clear();
-        }
-
-        @Override
-        public <T> T resolveDependency( Class<T> type, SelectionStrategy selector ) throws IllegalArgumentException
-        {
-            List<T> candidates = new ArrayList<>(  );
-            for ( Object dependency : dependencies )
-            {
-                if (type.isInstance( dependency ))
-                    candidates.add(type.cast(dependency));
-            }
-
-            return selector.select( type, candidates );
         }
     }
 }

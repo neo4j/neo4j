@@ -42,21 +42,21 @@ public class IndexConfigStore extends LifecycleAdapter
     public static final String INDEX_DB_FILE_NAME = "index.db";
     private static final byte[] MAGICK = new byte[] { 'n', 'e', 'o', '4', 'j', '-', 'i', 'n', 'd', 'e', 'x' };
     private static final int VERSION = 1;
-    
+
     private final File file;
     private final File oldFile;
     private final Map<String, Map<String, String>> nodeConfig = new ConcurrentHashMap<String, Map<String,String>>();
     private final Map<String, Map<String, String>> relConfig = new ConcurrentHashMap<String, Map<String,String>>();
     private ByteBuffer dontUseBuffer = ByteBuffer.allocate( 100 );
     private final FileSystemAbstraction fileSystem;
-    
+
     public IndexConfigStore( File graphDbStoreDir, FileSystemAbstraction fileSystem )
     {
         this.fileSystem = fileSystem;
         this.file = new File( graphDbStoreDir, INDEX_DB_FILE_NAME );
         this.oldFile = new File( file.getParentFile(), file.getName() + ".old" );
     }
-    
+
     private ByteBuffer buffer( int size )
     {
         if ( dontUseBuffer.capacity() < size )
@@ -65,7 +65,7 @@ public class IndexConfigStore extends LifecycleAdapter
         }
         return dontUseBuffer;
     }
-    
+
     private void read()
     {
         File fileToReadFrom = fileSystem.fileExists( file ) ? file : oldFile;
@@ -73,7 +73,7 @@ public class IndexConfigStore extends LifecycleAdapter
         {
             return;
         }
-        
+
         StoreChannel channel = null;
         try
         {
@@ -107,13 +107,13 @@ public class IndexConfigStore extends LifecycleAdapter
             close( channel );
         }
     }
-    
+
     @Override
-    public void start()
+    public void init()
     {
         read();
     }
-    
+
     private Map<String, Map<String, String>> readMap( StoreChannel channel,
             Map<String, Map<String, String>> map, Integer sizeOrTillEof ) throws IOException
     {
@@ -148,7 +148,7 @@ public class IndexConfigStore extends LifecycleAdapter
         }
         return Collections.unmodifiableMap( map );
     }
-    
+
     private Integer tryToReadVersion( ReadableByteChannel channel ) throws IOException
     {
         byte[] array = IoPrimitiveUtils.readBytes( channel, new byte[MAGICK.length] );
@@ -183,7 +183,7 @@ public class IndexConfigStore extends LifecycleAdapter
     {
         return IoPrimitiveUtils.readLengthAndString( channel, buffer( 100 ) );
     }
-    
+
     public boolean has( Class<? extends PropertyContainer> cls, String indexName )
     {
         return map( cls ).containsKey( indexName );
@@ -193,13 +193,13 @@ public class IndexConfigStore extends LifecycleAdapter
     {
         return map( cls ).get( indexName );
     }
-    
+
     public String[] getNames( Class<? extends PropertyContainer> cls )
     {
         Map<String, Map<String, String>> indexMap = map( cls );
         return indexMap.keySet().toArray( new String[indexMap.size()] );
     }
-    
+
     private Map<String, Map<String, String>> map( Class<? extends PropertyContainer> cls )
     {
         if ( cls.equals( Node.class ) )
@@ -222,7 +222,7 @@ public class IndexConfigStore extends LifecycleAdapter
         }
         write();
     }
-    
+
     // Synchronized since only one thread are allowed to write at any given time
     public synchronized void set( Class<? extends PropertyContainer> cls,
             String name, Map<String, String> config )
@@ -230,7 +230,7 @@ public class IndexConfigStore extends LifecycleAdapter
         map( cls ).put( name, Collections.unmodifiableMap( config ) );
         write();
     }
-    
+
     // Synchronized since only one thread are allowed to write at any given time
     public synchronized boolean setIfNecessary( Class<? extends PropertyContainer> cls,
             String name, Map<String, String> config )
@@ -244,13 +244,13 @@ public class IndexConfigStore extends LifecycleAdapter
         write();
         return true;
     }
-    
+
     private void write()
     {
         // Write to a .tmp file
         File tmpFile = new File( this.file.getParentFile(), this.file.getName() + ".tmp" );
         write( tmpFile );
-        
+
         // Make sure the .old file doesn't exist, then rename the current one to .old
         fileSystem.deleteFile( oldFile );
         try
@@ -264,7 +264,7 @@ public class IndexConfigStore extends LifecycleAdapter
         {
             throw new RuntimeException( "Couldn't rename " + file + " -> " + oldFile );
         }
-        
+
         // Rename the .tmp file to the current name
         try
         {
@@ -279,7 +279,7 @@ public class IndexConfigStore extends LifecycleAdapter
         }
         fileSystem.deleteFile( oldFile );
     }
-    
+
     private void write( File file )
     {
         StoreChannel channel = null;
@@ -321,7 +321,7 @@ public class IndexConfigStore extends LifecycleAdapter
     {
         IoPrimitiveUtils.writeInt( channel, buffer( 4 ), value );
     }
-    
+
     private void writeString( StoreChannel channel, String value ) throws IOException
     {
         IoPrimitiveUtils.writeLengthAndString( channel, buffer( 200 ), value );

@@ -236,16 +236,13 @@ public class LogPruneStrategies
                         }
                         return highest - tx >= maxTransactionCount;
                     }
-                    catch(RuntimeException e)
+                    catch ( IllegalLogFormatException e )
                     {
-                        if(e.getCause() != null && e.getCause() instanceof IllegalLogFormatException )
-                        {
-                            return decidePruneForIllegalLogFormat( (IllegalLogFormatException) e.getCause() );
-                        }
-                        else
-                        {
-                            throw e;
-                        }
+                        return decidePruneForIllegalLogFormat( (IllegalLogFormatException) e.getCause() );
+                    }
+                    catch ( IOException e )
+                    {
+                        throw new RuntimeException( e );
                     }
                 }
             };
