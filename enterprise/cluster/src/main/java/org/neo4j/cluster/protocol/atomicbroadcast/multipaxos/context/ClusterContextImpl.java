@@ -249,7 +249,7 @@ class ClusterContextImpl
                     return;
                 }
             }
-            else if ( electorId.equals( lastElector ) && (version < electorVersion && version > 0)  )
+            else if ( electorId.equals( lastElector ) && (version < electorVersion && version > 0) )
             {
                 getLogger( getClass() ).warn( "Election result for role " + roleName +
                         " received from elector instance " + electorId + " with version " + version +
@@ -260,10 +260,10 @@ class ClusterContextImpl
             {
                 getLogger( getClass() ).debug( "Setting elector to " + electorId + " and its version to " + version );
             }
-
             this.electorVersion = version;
             this.lastElector = electorId;
         }
+
         commonState.configuration().elected( roleName, instanceId );
         Listeners.notifyListeners( clusterListeners, executor, new Listeners.Notification<ClusterListener>()
         {
