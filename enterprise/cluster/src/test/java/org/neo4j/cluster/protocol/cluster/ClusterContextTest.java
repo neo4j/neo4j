@@ -19,13 +19,6 @@
  */
 package org.neo4j.cluster.protocol.cluster;
 
-import static org.junit.Assert.assertEquals;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.verifyNoMoreInteractions;
-import static org.mockito.Mockito.when;
-
 import java.util.Collections;
 import java.util.concurrent.Executor;
 
@@ -44,6 +37,9 @@ import org.neo4j.cluster.timeout.Timeouts;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
+
+import static org.junit.Assert.*;
+import static org.mockito.Mockito.*;
 
 public class ClusterContextTest
 {
