@@ -37,6 +37,7 @@ import org.neo4j.cypher.javacompat.ExecutionResult;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Path;
 import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.ResourceIterable;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -568,6 +569,39 @@ public class ExecutionResultSerializerTest
 
         // then
         log.assertExactly( error( "Failed to generate JSON output.", failure ) );
+    }
+
+    @SuppressWarnings({"unchecked"})
+    @Test
+    public void shouldCloseResultIterator() throws Exception
+    {
+        // given
+        OutputStream output = mock( OutputStream.class );
+        ExecutionResultSerializer serializer = new ExecutionResultSerializer( output, null, null );
+        RuntimeException onCloseException = new IllegalStateException("Iterator closed");
+        ResourceIterator iterator = mock( ResourceIterator.class );
+        when( iterator.hasNext() ).thenReturn( true );
+        when( iterator.next() ).thenThrow( onCloseException );
+        ExecutionResult result = mock( ExecutionResult.class );
+        when( result.iterator() ).thenReturn( iterator );
+
+        // when
+        try
+        {
+            serializer.statementResult( result, false );
+            fail("Expected IllegalStateException to be thrown when closing the iterator");
+        }
+        catch (IllegalStateException e)
+        {
+            // expected to be thrown by iterator access
+            assertEquals( onCloseException, e );
+        }
+
+        // then
+        verify( iterator, times( 1 ) ).hasNext();
+        verify( iterator, times( 1 ) ).next();
+        verify( iterator, times( 1 ) ).close();
+        verifyNoMoreInteractions( iterator );
     }
 
     @SafeVarargs
