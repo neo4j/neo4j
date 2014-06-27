@@ -149,12 +149,6 @@ terms of the relevant Commercial Agreement.
       <version>${neo4j.version}</version>
     </dependency>
     <dependency>
-      <groupId>org.neo4j</groupId>
-      <artifactId>neo4j-enterprise</artifactId>
-      <version>${neo4j.version}</version>
-      <classifier>javadoc</classifier>
-    </dependency>
-    <dependency>
       <groupId>org.neo4j.app</groupId>
       <artifactId>neo4j-server-enterprise</artifactId>
       <version>${neo4j.version}</version>

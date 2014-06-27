@@ -27,7 +27,7 @@ import java.util.concurrent.locks.LockSupport;
 import org.neo4j.io.pagecache.PageCacheMonitor;
 import org.neo4j.io.pagecache.PageLock;
 
-import static org.neo4j.io.pagecache.impl.standard.StandardPinnablePage.UNBOUND_PAGE_ID;
+import static org.neo4j.io.pagecache.PageCursor.UNBOUND_PAGE_ID;
 
 /**
  * An implementation of {@link org.neo4j.io.pagecache.impl.standard.PageTable} which uses
@@ -40,6 +40,24 @@ import static org.neo4j.io.pagecache.impl.standard.StandardPinnablePage.UNBOUND_
  */
 public class ClockSweepPageTable implements PageTable, Runnable
 {
+    /**
+     * Only evict pages if more than this percentage is used.
+     * For instance, if the ratio is 0.96, then the eviction thread will only do work
+     * if more than 96% of the pages in the cache are in use.
+     */
+    static final double PAGE_UTILISATION_RATIO = getDouble(
+            "org.neo4j.io.pagecache.impl.standard.ClockSweepPageTable.pageUtilisationRatio", 0.96 );
+
+    private static double getDouble( String propertyName, double defaultValue )
+    {
+        String property = System.getProperty( propertyName );
+        if ( property == null )
+        {
+            return defaultValue;
+        }
+        return Double.parseDouble( property );
+    }
+
     private final AtomicReference<StandardPinnablePage> freeList;
     private final StandardPinnablePage[] pages;
     private final int pageSize;
@@ -65,7 +83,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
     }
 
     @Override
-    public PinnablePage load( PageIO io, long pageId, PageLock lock ) throws IOException
+    public PinnablePage load( PageSwapper io, long pageId, PageLock lock ) throws IOException
     {
         StandardPinnablePage page = nextFreePage();
         if ( page.pin( null, UNBOUND_PAGE_ID, lock ) )
@@ -115,7 +133,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
     }
 
     @Override
-    public void flush( PageIO io ) throws IOException
+    public void flush( PageSwapper io ) throws IOException
     {
         assertNoSweeperException();
         for ( StandardPinnablePage page : pages )
@@ -138,7 +156,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
 
     private void assertNoSweeperException() throws IOException
     {
-        if(sweeperException != null)
+        if ( sweeperException != null )
         {
             throw new IOException( "Cannot safely flush, page eviction thread has hit IO problems.", sweeperException );
         }
@@ -164,7 +182,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
          * This is the minimum amount of pages to keep around, we will stop
          * evicting pages once we reach this threshold.
          */
-        final int minLoadedPages = (int) Math.round(pages.length * 0.96);
+        final int minLoadedPages = (int) Math.round(pages.length * PAGE_UTILISATION_RATIO );
         int maxPagesToEvict = Math.max( pages.length - minLoadedPages, 1 );
         int clockHand = 0;
 
@@ -227,13 +245,13 @@ public class ClockSweepPageTable implements PageTable, Runnable
                 }
                 maxPagesToEvict = loadedPages - minLoadedPages;
             }
-            catch(IOException e)
+            catch ( IOException e )
             {
                 // Failed to write to disk, this is fatal, shut down.
                 sweeperException = e;
                 return;
             }
-            catch(Exception e)
+            catch ( Exception e )
             {
                 // Other than IO Exception, avoid having this thread die at all cost.
                 // TODO: Report this via a monitor rather than like this
@@ -245,7 +263,7 @@ public class ClockSweepPageTable implements PageTable, Runnable
     private void evict( StandardPinnablePage page ) throws IOException
     {
         long pageId = page.pageId();
-        PageIO io = page.io();
+        PageSwapper io = page.io();
 
         page.flush();
         page.evicted();

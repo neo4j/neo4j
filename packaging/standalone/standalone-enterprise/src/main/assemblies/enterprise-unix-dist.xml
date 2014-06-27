@@ -117,7 +117,6 @@
         <include>net.sf.opencsv:opencsv</include>
       </includes>
       <excludes>
-        <exclude>*:javadoc:*</exclude>
         <exclude>*:pom:*</exclude>
         <exclude>org.neo4j:neo4j-enterprise:jar</exclude>
         <exclude>org.neo4j:neo4j-advanced</exclude>

@@ -19,11 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import org.junit.Ignore;
 import org.junit.Test;
-
-@Ignore
 // TODO 2.2-future some tests here may be a good idea to reimplement.
+
 public class TestXa
 {
     @Test

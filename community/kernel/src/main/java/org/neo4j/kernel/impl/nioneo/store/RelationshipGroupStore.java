@@ -26,12 +26,14 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
-import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGroupRecord> implements Store
 {
@@ -63,22 +65,25 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public RelationshipGroupRecord getRecord( long id )
     {
-        PageCursor cursor = pageCache.newCursor();
-        try
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+            if ( cursor.next() )
+            {
+                RelationshipGroupRecord record;
+                do
+                {
+                    record = getRecord( id, cursor, RecordLoad.NORMAL );
+                } while ( cursor.retry() );
+                return record;
+            }
+            else
+            {
+                throw new InvalidRecordException( "Record[" + id + "] not in use" );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-        try
-        {
-            return getRecord( id, cursor, RecordLoad.NORMAL );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 
@@ -151,22 +156,19 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public void updateRecord( RelationshipGroupRecord record )
     {
-        PageCursor cursor = pageCache.newCursor();
-        try
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_EXCLUSIVE_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+            if ( cursor.next() )
+            {
+                do
+                {
+                    updateRecord( record, cursor, false );
+                } while ( cursor.retry() );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-        try
-        {
-            updateRecord( record, cursor, false );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 
@@ -227,22 +229,25 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public RelationshipGroupRecord forceGetRecord( long id )
     {
-        PageCursor cursor = pageCache.newCursor();
-        try
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( id ), PF_SHARED_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.SHARED, pageIdForRecord( id ) );
+            if ( cursor.next() )
+            {
+                RelationshipGroupRecord record;
+                do
+                {
+                    record = getRecord( id, cursor, RecordLoad.FORCE );
+                } while ( cursor.retry() );
+                return record;
+            }
+            else
+            {
+                return new RelationshipGroupRecord( id, -1 );
+            }
         }
         catch ( IOException e )
         {
             return new RelationshipGroupRecord( id, -1 );
-        }
-        try
-        {
-            return getRecord( id, cursor, RecordLoad.FORCE );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 
@@ -255,23 +260,19 @@ public class RelationshipGroupStore extends AbstractRecordStore<RelationshipGrou
     @Override
     public void forceUpdateRecord( RelationshipGroupRecord record )
     {
-        PageCursor cursor = pageCache.newCursor();
-        try
+        try ( PageCursor cursor = storeFile.io( pageIdForRecord( record.getId() ), PF_EXCLUSIVE_LOCK ) )
         {
-            storeFile.pin( cursor, PageLock.EXCLUSIVE, pageIdForRecord( record.getId() ) );
+            if ( cursor.next() ) // should always be true
+            {
+                do
+                {
+                    updateRecord( record, cursor, true );
+                } while ( cursor.retry() );
+            }
         }
         catch ( IOException e )
         {
             throw new UnderlyingStorageException( e );
-        }
-
-        try
-        {
-            updateRecord( record, cursor, true );
-        }
-        finally
-        {
-            storeFile.unpin( cursor );
         }
     }
 

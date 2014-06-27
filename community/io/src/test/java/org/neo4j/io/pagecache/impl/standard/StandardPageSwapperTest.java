@@ -19,25 +19,34 @@
  */
 package org.neo4j.io.pagecache.impl.standard;
 
-import java.io.IOException;
+import java.io.File;
 import java.nio.ByteBuffer;
 
-/**
- * <strong>Implementation note:</strong> These methods must NEVER swallow a thread-interrupt.
- * If the thread is interrupted when these methods are called, or gets interrupted while they are
- * executing, then they must either throw an InterruptedException, or leave the interrupted-status
- * flag alone.
- */
-public interface PageIO
+import org.junit.Test;
+import org.neo4j.io.fs.StoreChannel;
+
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.verifyNoMoreInteractions;
+import static org.mockito.Mockito.when;
+
+public class StandardPageSwapperTest
 {
-    void read( long pageId, ByteBuffer into ) throws IOException;
-    void write( long pageId, ByteBuffer from ) throws IOException;
+    @Test
+    public void shouldNotGoToDiskIfReadingPageBeyondFileSize() throws Exception
+    {
+        // Given
+        StoreChannel channel = mock( StoreChannel.class );
+        when(channel.size()).thenReturn( 128l );
 
-    /**
-     * Notification that a page has been evicted, used to clean up state in structures
-     * outside the page table.
-     */
-    void evicted( long pageId );
+        StandardPageSwapper io = new StandardPageSwapper( new File("SomeFile"), channel, 64, null );
 
-    String fileName();
+        // When
+        io.read( 16, ByteBuffer.allocateDirect(64) );
+
+        // Then
+        verify(channel).size();
+        verifyNoMoreInteractions( channel );
+    }
+
 }

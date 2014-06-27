@@ -42,6 +42,7 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
 
     public BreakPoint( Event event, Class<?> type, String method, Class<?>... args )
     {
+        assert methodExists( type, method, args );
         this.event = event;
         this.type = type.getName();
         this.method = method;
@@ -49,6 +50,19 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
         for ( int i = 0; i < args.length; i++ )
         {
             this.args[i] = args[i].getName();
+        }
+    }
+
+    private static boolean methodExists( Class<?> type, String method, Class<?>[] args )
+    {
+        try
+        {
+            type.getDeclaredMethod( method, args );
+            return true;
+        }
+        catch ( Exception e )
+        {
+            throw new AssertionError( e );
         }
     }
 
@@ -227,7 +241,7 @@ public abstract class BreakPoint implements DebuggerDeadlockCallback
     {
         return thatCrashesTheProcess( Event.ENTRY, crashNotification, letNumberOfCallsPass, ALL, type, method, args );
     }
-    
+
     public static BreakPoint thatCrashesTheProcess( Event event, final CountDownLatch crashNotification,
             final int letNumberOfCallsPass, final Predicate<StackTraceElement[]> stackTraceMustContain, Class<?> type,
             String method, Class<?>... args )

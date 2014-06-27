@@ -538,7 +538,7 @@ public class DiskLayer
                         {
                             try
                             {
-                                NodeRecord record = store.getRecord( currentId, reusableNodeRecord, CHECK );
+                                NodeRecord record = store.getRecord( currentId, reusableNodeRecord );
                                 if ( record != null && record.inUse() )
                                 {
                                     return next( record.getId() );
@@ -546,6 +546,7 @@ public class DiskLayer
                             }
                             catch ( InvalidRecordException e )
                             {
+                                // TODO please don't rely on exceptions for flow control
                                 // OK, just continue
                             }
                         }

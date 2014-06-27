@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.store;
 public class DynamicRecord extends Abstract64BitRecord
 {
     private static final int MAX_BYTES_IN_TO_STRING = 8, MAX_CHARS_IN_TO_STRING = 16;
+
     private byte[] data = null;
     private int length;
     private long nextBlock = Record.NO_NEXT_BLOCK.intValue();

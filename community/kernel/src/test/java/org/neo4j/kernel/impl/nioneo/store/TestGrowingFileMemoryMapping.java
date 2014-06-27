@@ -105,7 +105,7 @@ public class TestGrowingFileMemoryMapping
         for ( int i = 0; i < iterations; i++ )
         {
             record.setId( startingId + i );
-            nodeStore.getRecord( i, record, RecordLoad.NORMAL );
+            nodeStore.getRecord( i, record );
             assertTrue( "record[" + i + "] should be in use", record.inUse() );
             assertThat( "record[" + i + "] should have nextRelId of " + i,
                     record.getNextRel(), is( (long) i ) );

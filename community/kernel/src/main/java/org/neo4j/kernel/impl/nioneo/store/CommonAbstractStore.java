@@ -146,7 +146,7 @@ public abstract class CommonAbstractStore implements IdSequence
         return typeDescriptor + " " + ALL_STORES_VERSION;
     }
 
-    protected long longFromIntAndMod( long base, long modifier )
+    protected static long longFromIntAndMod( long base, long modifier )
     {
         return modifier == 0 && base == IdGeneratorImpl.INTEGER_MINUS_ONE ? -1 : base | modifier;
     }
@@ -253,6 +253,11 @@ public abstract class CommonAbstractStore implements IdSequence
     protected int offsetForId( long id )
     {
         return (int) (id * getEffectiveRecordSize() % storeFile.pageSize());
+    }
+
+    protected long recordsPerPage()
+    {
+        return storeFile.pageSize() / getEffectiveRecordSize();
     }
 
     protected abstract int getEffectiveRecordSize();

@@ -1,5 +1,6 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <modelVersion>4.0.0</modelVersion>
   <parent>
     <groupId>org.neo4j</groupId>
@@ -26,9 +27,8 @@
   </properties>
 
   <scm>
-	  <url>https://github.com/neo4j/neo4j/tree/master/manual/javadocs</url>
+    <url>https://github.com/neo4j/neo4j/tree/master/manual/javadocs</url>
   </scm>
-
 
   <dependencies>
     <dependency>
@@ -91,11 +91,11 @@ the relevant Commercial Agreement.
                   <directory>${project.build.directory}/../../../enterprise/ha/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
-                 <resource>
+                <resource>
                   <directory>${project.build.directory}/../../../advanced/management/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
-                 <resource>
+                <resource>
                   <directory>${project.build.directory}/../../../community/lucene-index/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
@@ -120,14 +120,15 @@ the relevant Commercial Agreement.
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>${project.build.directory}/../../../community/cypher/cypher-commons/src/main/java/</directory>
+                  <directory>${project.build.directory}/../../../community/cypher/cypher-commons/src/main/java/
+                  </directory>
                   <filtering>false</filtering>
                 </resource>
                 <resource>
                   <directory>${project.build.directory}/../../../community/server-api/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
-             </resources>
+              </resources>
             </configuration>
           </execution>
         </executions>
@@ -136,11 +137,13 @@ the relevant Commercial Agreement.
         <artifactId>maven-javadoc-plugin</artifactId>
         <executions>
           <execution>
+            <id>attach-javadoc</id>
+            <phase>none</phase>
+          </execution>
+          <execution>
             <id>create-javadocs</id>
             <phase>${attach-javadoc-phase}</phase>
-            <goals>
-              <goal>javadoc</goal>
-            </goals>
+            <goals><goal>javadoc</goal></goals>
             <configuration>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
               <header>Neo4j</header>
@@ -210,9 +213,27 @@ the relevant Commercial Agreement.
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <id>package-javadocs</id>
+            <phase>${attach-javadoc-phase}</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <attach>true</attach>
+              <descriptors>
+                <descriptor>src/main/assembly/assembly.xml</descriptor>
+              </descriptors>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
     </plugins>
   </build>
-  
+
   <profiles>
     <profile>
       <id>neo-docs-build</id>

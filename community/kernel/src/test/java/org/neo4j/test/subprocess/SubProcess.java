@@ -214,7 +214,10 @@ public abstract class SubProcess<T, P> implements Serializable
 
     private static Process start( String... args )
     {
-        ProcessBuilder builder = new ProcessBuilder( args );
+        // The inheritIO() call means that stdout, stderr and stdin from the
+        // parent (this) process is reused for the child. This means that
+        // e.g. System.out.println()'s work in the child process.
+        ProcessBuilder builder = new ProcessBuilder( args ).inheritIO();
         try
         {
             return builder.start();

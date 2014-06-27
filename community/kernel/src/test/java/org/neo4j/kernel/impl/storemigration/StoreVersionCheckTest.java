@@ -25,7 +25,7 @@ import java.io.OutputStream;
 
 import org.junit.Test;
 
-import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;

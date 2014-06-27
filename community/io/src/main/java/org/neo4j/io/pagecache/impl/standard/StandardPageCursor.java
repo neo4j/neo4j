@@ -24,9 +24,28 @@ import java.io.IOException;
 import org.neo4j.io.pagecache.PageLock;
 import org.neo4j.io.pagecache.impl.common.OffsetTrackingCursor;
 
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_NO_GROW;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+
 public class StandardPageCursor extends OffsetTrackingCursor
 {
+    private final CursorFreelist cursorFreelist;
+    StandardPageCursor nextFree; // for the free-list chain
+
     private PageLock lockTypeHeld;
+    private StandardPagedFile pagedFile;
+    private long pageId;
+    private long nextPageId;
+    private long currentPageId;
+    private long lastPageId;
+    private int pf_flags;
+
+    public StandardPageCursor( CursorFreelist cursorFreelist )
+    {
+
+        this.cursorFreelist = cursorFreelist;
+    }
 
     public PinnablePage page()
     {
@@ -47,9 +66,127 @@ public class StandardPageCursor extends OffsetTrackingCursor
 
     public void assertNotInUse() throws IOException
     {
-        if(lockTypeHeld != null)
+        if ( lockTypeHeld != null )
         {
             throw new IOException( "The cursor is already in use, you need to unpin the cursor before using it again." );
         }
+    }
+
+    private static PageLock getLockType( int pf_flags ) throws IOException
+    {
+        // TODO this is an annoying conversion... we should use ints all the way down
+        switch ( pf_flags & (PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK) )
+        {
+            case PF_EXCLUSIVE_LOCK: return PageLock.EXCLUSIVE;
+            case PF_SHARED_LOCK: return PageLock.SHARED;
+            case PF_EXCLUSIVE_LOCK | PF_SHARED_LOCK: throw new IOException(
+                    "Invalid flags: cannot ask to pin a page with both a shared and an exclusive lock" );
+            default: throw new IOException(
+                    "Invalid flags: must specify either shared or exclusive lock for page pinning" );
+        }
+    }
+
+    @Override
+    public boolean next() throws IOException
+    {
+        unpinCurrentPage();
+
+        if ( checkNoGrow() )
+        {
+            pinNextPage();
+
+            nextPageId++;
+            return true;
+        }
+
+        return false;
+    }
+
+    @Override
+    public boolean next( long pageId ) throws IOException
+    {
+        unpinCurrentPage();
+        nextPageId = pageId;
+
+        if ( checkNoGrow() )
+        {
+            pinNextPage();
+            return true;
+        }
+
+        return false;
+    }
+
+    private void unpinCurrentPage()
+    {
+        if ( page != null )
+        {
+            pagedFile.unpin( this );
+        }
+    }
+
+    private boolean checkNoGrow()
+    {
+        if ( nextPageId > lastPageId )
+        {
+            if ( (pf_flags & PF_NO_GROW) != 0 )
+            {
+                return false;
+            }
+            else
+            {
+                lastPageId = pagedFile.increaseLastPageIdTo( nextPageId );
+            }
+        }
+        return true;
+    }
+
+    private void pinNextPage() throws IOException
+    {
+        currentPageId = nextPageId;
+        try
+        {
+            pagedFile.pin( this, getLockType( pf_flags ), currentPageId );
+        }
+        catch ( IOException e )
+        {
+            unpinCurrentPage();
+            throw e;
+        }
+    }
+
+    @Override
+    public long getCurrentPageId()
+    {
+        return currentPageId;
+    }
+
+    @Override
+    public void rewind() throws IOException
+    {
+        nextPageId = pageId;
+        currentPageId = UNBOUND_PAGE_ID;
+        lastPageId = pagedFile.getLastPageId();
+    }
+
+    @Override
+    public boolean retry()
+    {
+        return false;
+    }
+
+    @Override
+    public void close()
+    {
+        unpinCurrentPage();
+        pagedFile = null;
+        cursorFreelist.returnCursor( this );
+    }
+
+    public void initialise( StandardPagedFile pagedFile, long pageId, int pf_flags )
+    {
+        this.pagedFile = pagedFile;
+        this.pageId = pageId;
+        this.pf_flags = pf_flags;
     }
 }

@@ -35,7 +35,7 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
     private Matcher<? extends Event> trap;
 
     @Override
-    public void pageFault( long pageId, PageIO io )
+    public void pageFault( long pageId, PageSwapper io )
     {
         Fault event = new Fault( io, pageId );
         record.add( event );
@@ -43,7 +43,7 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
     }
 
     @Override
-    public void evict( long pageId, PageIO io )
+    public void evict( long pageId, PageSwapper io )
     {
         Evict event = new Evict( io, pageId );
         record.add( event );
@@ -51,13 +51,13 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
     }
 
     @Override
-    public void pin( PageLock lock, long pageId, PageIO io )
+    public void pin( PageLock lock, long pageId, PageSwapper io )
     {
         // we currently do not record these
     }
 
     @Override
-    public void unpin( PageLock lock, long pageId, PageIO io )
+    public void unpin( PageLock lock, long pageId, PageSwapper io )
     {
         // we currently do not record these
     }
@@ -85,14 +85,24 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
         return trapLatch;
     }
 
-    private synchronized void trip( Event event )
+    private void trip( Event event )
     {
+        Matcher<? extends Event> theTrap;
+        CountDownLatch theTrapLatch;
 
-        if ( trap != null && trap.matches( event ) )
+        // The synchronized block is in here, so we don't risk calling await on
+        // the trapLatch while holding the monitor lock.
+        synchronized ( this )
+        {
+            theTrap = trap;
+            theTrapLatch = trapLatch;
+        }
+
+        if ( theTrap != null && theTrap.matches( event ) )
         {
             try
             {
-                trapLatch.await();
+                theTrapLatch.await();
             }
             catch ( InterruptedException e )
             {
@@ -104,10 +114,10 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
 
     static abstract class Event
     {
-        public final PageIO io;
+        public final PageSwapper io;
         public final long pageId;
 
-        Event( PageIO io, long pageId )
+        Event( PageSwapper io, long pageId )
         {
             this.io = io;
             this.pageId = pageId;
@@ -149,7 +159,7 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
 
     static class Fault extends Event
     {
-        Fault( PageIO io, long pageId )
+        Fault( PageSwapper io, long pageId )
         {
             super( io, pageId );
         }
@@ -157,7 +167,7 @@ public class RecordingPageCacheMonitor implements PageCacheMonitor
 
     static class Evict extends Event
     {
-        Evict( PageIO io, long pageId )
+        Evict( PageSwapper io, long pageId )
         {
             super( io, pageId );
         }
