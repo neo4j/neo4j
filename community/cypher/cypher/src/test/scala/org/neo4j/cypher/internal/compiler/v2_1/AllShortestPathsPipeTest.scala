@@ -19,16 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import commands.{SingleNode, ShortestPath}
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, ShortestPathPipe, FakePipe}
-import symbols._
+import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ShortestPath, SingleNode}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{FakePipe, PipeMonitor, ShortestPathPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.graphdb.{Direction, Node, Path}
-import org.junit.Test
-import org.scalatest.Assertions
-import collection.mutable.Map
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
 
-class AllShortestPathsPipeTest extends GraphDatabaseJUnitSuite {
+import scala.collection.mutable.Map
+
+class AllShortestPathsPipeTest extends GraphDatabaseFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
 
@@ -40,19 +39,19 @@ class AllShortestPathsPipeTest extends GraphDatabaseJUnitSuite {
     graph.inTx(pipe.createResults(QueryStateHelper.empty).toList.map(m => m("p").asInstanceOf[Path]))
   }
 
-  @Test def shouldReturnTheShortestPathBetweenTwoNodes() {
+  test("should return the shortest path between two nodes") {
     val (a, _, _, d) = createDiamond()
 
     val resultPaths = runThroughPipeAndGetPath(a, d)
 
-    assert(resultPaths.size === 2)
+    resultPaths should have size 2
 
     resultPaths.foreach(resultPath => {
       val number_of_relationships_in_path = resultPath.length()
 
-      assert(number_of_relationships_in_path === 2)
-      assert(resultPath.startNode() === a)
-      assert(resultPath.endNode() === d)
+      number_of_relationships_in_path should equal(2)
+      resultPath.startNode() should equal(a)
+      resultPath.endNode() should equal(d)
     })
   }
 }

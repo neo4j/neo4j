@@ -17,17 +17,22 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{astDocBuilder, astExpressionDocBuilder}
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{ASTNode, LabelName, AstConstructionTestSupport, UsingIndexHint}
+import org.neo4j.cypher.internal.compiler.v2_1.perty.CachingDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.planner.QueryShuffle
+import org.neo4j.cypher.internal.compiler.v2_1.perty.Doc._
 
-class AstDocBuilderTest extends DocBuilderTestSuite[Any] with AstConstructionTestSupport {
+object queryShuffleDocBuilder extends CachingDocBuilder[Any] {
 
-  val docBuilder = astDocBuilder orElse astExpressionDocBuilder orElse simpleDocBuilder
+  override protected def newNestedDocGenerator = {
+    case shuffle: QueryShuffle => (inner) =>
+      val sortItemDocs = shuffle.sortItems.map(inner)
+      val sortItems = if (sortItemDocs.isEmpty) nil else group("ORDER BY" :/: sepList(sortItemDocs))
 
-  test("USING INDEX n:Person(name)") {
-    val astNode: ASTNode = UsingIndexHint(ident("n"), LabelName("Person")_, ident("name"))_
-    format(astNode) should equal("USING INDEX n:Person(name)")
+      val skip = shuffle.skip.fold(nil)(skip => group("SKIP" :/: inner(skip)))
+      val limit = shuffle.limit.fold(nil)(limit => group("LIMIT" :/: inner(limit)))
+
+      sortItems :+: skip :+: limit
   }
 }

@@ -260,7 +260,7 @@ return coalesce(a.title, a.name)""")
     createNode()
     createNode()
 
-    val result = execute("match a return distinct a.name").toList
+    val result = executeWithNewPlanner("match a return distinct a.name").toList
 
     result should equal(List(Map("a.name" -> "Florescu"), Map("a.name" -> null)))
   }

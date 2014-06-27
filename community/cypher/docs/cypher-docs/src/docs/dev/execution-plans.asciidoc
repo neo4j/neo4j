@@ -12,6 +12,7 @@ These are some of the operators you will see if you look at execution plans.
 
 :leveloffset: 1
 
+include::ql/query-plan/apply.asciidoc[]
 include::ql/query-plan/anti-semi-apply.asciidoc[]
 include::ql/query-plan/all-nodes-scan.asciidoc[]
 include::ql/query-plan/cartesian-product.asciidoc[]
@@ -32,11 +33,9 @@ include::ql/query-plan/skip.asciidoc[]
 include::ql/query-plan/sort.asciidoc[]
 include::ql/query-plan/sorted-limit.asciidoc[]
 include::ql/query-plan/undirected-relationship-by-id-seek.asciidoc[]
+include::ql/query-plan/union.asciidoc[]
 
 ////
-include::operators/apply.asciidoc[]
 include::operators/node-outer-hash-join.asciidoc[]
-include::operators/optional-expand.asciidoc[]
 include::operators/single-row.asciidoc[]
 ////
-

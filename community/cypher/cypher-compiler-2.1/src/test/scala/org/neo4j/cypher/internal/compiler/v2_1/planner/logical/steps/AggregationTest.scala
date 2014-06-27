@@ -30,15 +30,17 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   val aggregatingMap: Map[String, Expression] = Map("count(*)" -> CountStar()(pos))
 
   test("should introduce aggregation when needed") {
-    val projection = AggregationProjection(
+    val projection = AggregatingQueryProjection(
       groupingKeys = Map.empty,
       aggregationExpressions = aggregatingMap,
-      sortItems = Seq.empty,
-      limit = None,
-      skip = None
+      shuffle = QueryShuffle(
+        sortItems = Seq.empty,
+        limit = None,
+        skip = None
+      )
     )
 
-    val query = PlannerQuery(projection = projection)
+    val query = PlannerQuery(horizon = QueryHorizon(projection = projection))
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
@@ -53,22 +55,19 @@ class AggregationTest extends CypherFunSuite with LogicalPlanningTestSupport {
   test("RETURN x.prop, count(*) => WITH x.prop as `x.prop` RETURN `x.prop`, count(*)") {
     // Given RETURN x.prop, count(*) => WITH x.prop as `x.prop` RETURN `x.prop`, count(*)
     val groupingMap = Map("x.prop" -> Property(Identifier("x")(pos), PropertyKeyName("prop")(pos))(pos))
-    val projection = AggregationProjection(
+    val projection = AggregatingQueryProjection(
       groupingKeys = groupingMap,
-      aggregationExpressions = aggregatingMap,
-      sortItems = Seq.empty,
-      limit = None,
-      skip = None
+      aggregationExpressions = aggregatingMap
     )
 
-    val query = PlannerQuery(projection = projection)
+    val query = PlannerQuery(horizon = QueryHorizon(projection = projection))
     val context = newMockedLogicalPlanningContext(
       planContext = newMockedPlanContext
     )
 
     val startPlan = newMockedQueryPlan()
 
-    val solvedQuery = PlannerQuery(projection = QueryProjection(projections = groupingMap))
+    val solvedQuery = PlannerQuery(horizon = QueryHorizon(projection = RegularQueryProjection(groupingMap)))
 
     val projectionPlan = QueryPlan(
       plan = Projection(startPlan.plan, groupingMap),

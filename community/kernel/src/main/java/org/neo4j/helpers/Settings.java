@@ -572,7 +572,7 @@ public final class Settings
             public List<T> apply( String value )
             {
                 List<T> list = new ArrayList<T>();
-                if (value.length() > 0)
+                if ( value.length() > 0 )
                 {
                     String[] parts = value.split( separator );
                     for ( String part : parts )

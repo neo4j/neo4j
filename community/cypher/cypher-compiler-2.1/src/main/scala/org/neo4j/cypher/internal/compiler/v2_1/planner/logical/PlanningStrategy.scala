@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner.logical
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.QueryPlan
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{QueryGraph, PlannerQuery}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, QueryPlan}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.{UnionQuery, QueryGraph}
 import org.neo4j.cypher.internal.compiler.v2_1.ast.PatternExpression
 
 trait PlanningStrategy {
-  def plan(plannerQuery: PlannerQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): QueryPlan
+  def plan(plannerQuery: UnionQuery)(implicit context: LogicalPlanningContext, subQueryLookupTable: Map[PatternExpression, QueryGraph], leafPlan: Option[QueryPlan] = None): LogicalPlan
 }
 
 trait QueryGraphSolver {

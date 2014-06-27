@@ -19,126 +19,126 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import commands.expressions.Literal
-import pipes.QueryState
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
-import org.neo4j.graphdb.{PropertyContainer, Transaction}
-import org.junit.{After, Before, Test}
+import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_1.mutation.MapPropertySetAction
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
+import org.neo4j.graphdb.PropertyContainer
 
-class MapPropertySetActionTest extends GraphDatabaseJUnitSuite {
+class MapPropertySetActionTest extends GraphDatabaseFunSuite with QueryStateTestSupport {
 
-  var tx: Transaction = null
-  var state: QueryState = null
-
-  @Before
-  def init() {
-    tx = graph.beginTx()
-    state = QueryStateHelper.countStats(QueryStateHelper.queryStateFrom(graph, tx))
-  }
-
-  @After
-  def teardown() {
-    tx.failure()
-    tx.close()
-  }
-
-  @Test def set_single_value_on_node() {
+  test("set single value on node") {
     val a = createNode()
     val m = Map("meaning_of_life" -> 420)
 
-    setProperties(a, m)
+    withCountsQueryState { queryState =>
+      setProperties(a, m)(queryState)
 
-    assert(a.getProperty("meaning_of_life") === 420)
-    assert(state.getStatistics.propertiesSet === 1)
+      queryState.getStatistics.propertiesSet should equal(1)
+      a.getProperty("meaning_of_life") should equal(420)
+    }
   }
 
-  @Test def set_multiple_properties() {
+  test("set multiple properties") {
     val a = createNode()
     val m = Map("A" -> 1, "b" -> 2)
 
-    setProperties(a, m)
+    withCountsQueryState { queryState =>
+      setProperties(a, m)(queryState)
 
-    assert(a.getProperty("A") === 1)
-    assert(a.getProperty("b") === 2)
-    assert(state.getStatistics.propertiesSet === 2)
+      queryState.getStatistics.propertiesSet should equal(2)
+      a.getProperty("A") should equal(1)
+      a.getProperty("b") should equal(2)
+    }
   }
 
-  @Test def set_properties_on_relationship() {
+  test("set properties on relationship") {
     val a = createNode()
     val r = relate(createNode(), a)
 
     val m = Map("A" -> 1, "b" -> 2)
 
-    setProperties(r, m)
+    withCountsQueryState { queryState =>
+      setProperties(a, m)(queryState)
 
-    assert(r.getProperty("A") === 1)
-    assert(r.getProperty("b") === 2)
-    assert(state.getStatistics.propertiesSet === 2)
+      queryState.getStatistics.propertiesSet should equal(2)
+      a.getProperty("A") should equal(1)
+      a.getProperty("b") should equal(2)
+    }
   }
 
-  @Test def transfer_properties_from_node_to_node() {
+  test("transfer properties from node to node") {
     val from = createNode("foo" -> "bar", "buzz" -> 42)
     val to = createNode()
 
-    setProperties(to, from)
 
-    assert(to.getProperty("foo") === "bar")
-    assert(to.getProperty("buzz") === 42)
-    assert(state.getStatistics.propertiesSet === 2)
+    withCountsQueryState { queryState =>
+      setProperties(to, from)(queryState)
+
+      queryState.getStatistics.propertiesSet should equal(2)
+      to.getProperty("foo") should equal("bar")
+      to.getProperty("buzz") should equal(42)
+    }
   }
 
-  @Test def remove_properties_from_node() {
+  test("remove properties from node") {
     val from = Map("a" -> 1)
     val to = createNode("b" -> 2)
 
-    setProperties(to, from)
+    withCountsQueryState { queryState =>
+      setProperties(to, from)(queryState)
 
-    assert(to.getProperty("a") === 1)
-    assert(to.hasProperty("b") === false, "Expected the `b` property to removed")
-    assert(state.getStatistics.propertiesSet === 2)
+      queryState.getStatistics.propertiesSet should equal(2)
+      to.getProperty("a") should equal(1)
+      to.hasProperty("b") should equal(false)
+    }
   }
 
-  @Test def should_overwrite_values() {
+  test("should overwrite values") {
     val from = Map("a" -> 1)
     val to = createNode("a" -> "apa")
 
-    setProperties(to, from)
+    withCountsQueryState { queryState =>
+      setProperties(to, from)(queryState)
 
-    assert(to.getProperty("a") === 1)
-    assert(state.getStatistics.propertiesSet === 1)
+      queryState.getStatistics.propertiesSet should equal(1)
+      to.getProperty("a") should equal(1)
+    }
   }
 
-  @Test def should_overwrite_but_keep_other_values() {
+  test("should overwrite but keep other values") {
     val from = Map("a" -> 1)
     val to = createNode("a" -> "apa", "b" -> "apa")
 
-    setPropertiesWithoutCleaning(to, from)
+    withCountsQueryState { queryState =>
+      setPropertiesWithoutCleaning(to, from)(queryState)
 
-    assert(to.getProperty("a") === 1)
-    assert(to.getProperty("b") === "apa")
-    assert(state.getStatistics.propertiesSet === 1)
+      queryState.getStatistics.propertiesSet should equal(1)
+      to.getProperty("a") should equal(1)
+      to.getProperty("b") should equal("apa")
+    }
   }
 
-  @Test def explicit_null_removes_values() {
+  test("explicit null removes values") {
     val from = Map("a" -> 1, "b" -> null)
     val to = createNode("a" -> "A", "b" -> "B", "c" -> "C")
 
-    setPropertiesWithoutCleaning(to, from)
+    withCountsQueryState { queryState =>
+      setPropertiesWithoutCleaning(to, from)(queryState)
 
-    assert(to.getProperty("a") === 1)
-    assert(to.hasProperty("b") === false)
-    assert(to.getProperty("c") === "C")
-    assert(state.getStatistics.propertiesSet === 2)
+      queryState.getStatistics.propertiesSet should equal(2)
+      to.getProperty("a") should equal(1)
+      to.hasProperty("b") should equal(false)
+    }
   }
 
-  private def setProperties(a: PropertyContainer, m: Any) {
+  private def setProperties(a: PropertyContainer, m: Any) = (queryState: QueryState) => {
     val setter = MapPropertySetAction(Literal(a), Literal(m), removeOtherProps = true)
-    setter.exec(ExecutionContext.empty, state)
+    setter.exec(ExecutionContext.empty, queryState)
   }
 
-  private def setPropertiesWithoutCleaning(a: PropertyContainer, m: Any) {
+  private def setPropertiesWithoutCleaning(a: PropertyContainer, m: Any) = (queryState: QueryState) =>  {
     val setter = MapPropertySetAction(Literal(a), Literal(m), removeOtherProps = false)
-    setter.exec(ExecutionContext.empty, state)
+    setter.exec(ExecutionContext.empty, queryState)
   }
 }

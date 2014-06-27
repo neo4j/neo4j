@@ -17,18 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans
 
-import org.neo4j.cypher.internal.compiler.v2_1.perty.{NestedDocGenerator, Doc}
-import scala.reflect.ClassTag
+case class Union(left: LogicalPlan, right: LogicalPlan) extends LogicalPlan {
+  def availableSymbols: Set[IdName] = left.availableSymbols
 
-case class catchNotImplemented[T: ClassTag](instance: NestedDocGenerator[T]) extends NestedDocGenerator[T] {
+  def lhs: Option[LogicalPlan] = Some(left)
 
-  import Doc._
-
-  override def isDefinedAt(v: T) =
-    try { instance.isDefinedAt(v) } catch { case _: NotImplementedError => true }
-
-  override def apply(v: T) =
-    (inner) => try { instance(v)(inner) } catch { case _: NotImplementedError => text("???") }
+  def rhs: Option[LogicalPlan] = Some(right)
 }

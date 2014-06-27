@@ -24,8 +24,7 @@ import org.scalatest.matchers.{MatchResult, Matcher}
 import org.neo4j.graphdb.{Node, PropertyContainer}
 import collection.JavaConverters._
 
-abstract class GraphDatabaseJUnitSuite
-  extends CypherJUnitSuite with GraphDatabaseTestSupport
+abstract class GraphDatabaseFunSuite extends CypherFunSuite with GraphDatabaseTestSupport
 
 abstract class ExecutionEngineFunSuite
   extends CypherFunSuite with GraphDatabaseTestSupport with ExecutionEngineTestSupport {
@@ -73,5 +72,4 @@ abstract class ExecutionEngineFunSuite
       )
     }
   }
-
 }

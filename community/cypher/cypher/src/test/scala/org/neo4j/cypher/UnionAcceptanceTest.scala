@@ -19,12 +19,58 @@
  */
 package org.neo4j.cypher
 
-class UnionAcceptanceTest extends ExecutionEngineFunSuite {
-  test("should_be_able_to_create_text_output_from_union_queries") {
+class UnionAcceptanceTest extends ExecutionEngineFunSuite with NewPlannerTestSupport {
+  test("should be able to create text output from union queries") {
     // When
     val result = execute("merge (a) return a union merge (a) return a")
 
     // Then
     result.columns should not be empty
+  }
+
+  test("two elements, both unique, not distinct") {
+    // When
+    val result = executeWithNewPlanner("return 1 as x union all return 2 as x")
+
+    // Then
+    result.columns should not be empty
+    result.toList should equal(List(Map("x" -> 1), Map("x" -> 2)))
+  }
+
+  test("two elements, both unique, distinct") {
+    // When
+    val result = executeWithNewPlanner("return 1 as x union return 2 as x")
+
+    // Then
+    result.columns should not be empty
+    result.toList should equal(List(Map("x" -> 2), Map("x" -> 1)))
+  }
+
+  test("three elements, two unique, distinct") {
+    // When
+    val result = executeWithNewPlanner(
+      """return 2 as x
+        |union
+        |return 1 as x
+        |union
+        |return 2 as x""".stripMargin)
+
+    // Then
+    result.columns should not be empty
+    result.toList should equal(List(Map("x" -> 2), Map("x" -> 1)))
+  }
+
+  test("three elements, two unique, not distinct") {
+    // When
+    val result = executeWithNewPlanner(
+      """return 2 as x
+        |union all
+        |return 1 as x
+        |union all
+        |return 2 as x""".stripMargin)
+
+    // Then
+    result.columns should not be empty
+    result.toList should equal(List(Map("x" -> 2), Map("x" -> 1), Map("x" -> 2)))
   }
 }

@@ -17,12 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
-import org.neo4j.cypher.internal.compiler.v2_1.planner.{PlannerQuery, QueryProjection, QueryGraph}
+import org.neo4j.cypher.internal.compiler.v2_1.planner._
+import org.neo4j.cypher.internal.compiler.v2_1.ast.SignedDecimalIntegerLiteral
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.{SignedDecimalIntegerLiteral, SignedIntegerLiteral}
-import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{plannerDocBuilder, plannerQueryDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{scalaDocBuilder, toStringDocBuilder, DocBuilderTestSuite}
 
 class PlannerQueryDocBuilderTest extends DocBuilderTestSuite[Any] {
 
@@ -31,21 +31,21 @@ class PlannerQueryDocBuilderTest extends DocBuilderTestSuite[Any] {
   test("renders tail free empty planner query") {
     format(PlannerQuery(
       graph = QueryGraph(),
-      projection = QueryProjection()
+      horizon = QueryHorizon.empty
     )) should equal("GIVEN * RETURN *")
   }
 
   test("renders tail free non-empty planner query") {
     format(PlannerQuery(
       graph = QueryGraph(patternNodes = Set(IdName("a"))),
-      projection = QueryProjection( projections = Map("a" -> SignedDecimalIntegerLiteral("1")_))
+      horizon = QueryHorizon( projection = RegularQueryProjection( projections = Map("a" -> SignedDecimalIntegerLiteral("1")_)) )
     )) should equal("GIVEN * MATCH (a) RETURN SignedDecimalIntegerLiteral(\"1\") AS `a`")
   }
 
   test("render planner query with tail") {
     format(PlannerQuery(
       graph = QueryGraph(patternNodes = Set(IdName("a"))),
-      projection = QueryProjection( projections = Map("a" -> SignedDecimalIntegerLiteral("1")_)),
+      horizon = QueryHorizon( projection = RegularQueryProjection(  projections = Map("a" -> SignedDecimalIntegerLiteral("1")_)) ),
       tail = Some(PlannerQuery.empty)
     )) should equal("GIVEN * MATCH (a) WITH SignedDecimalIntegerLiteral(\"1\") AS `a` GIVEN * RETURN *")
   }

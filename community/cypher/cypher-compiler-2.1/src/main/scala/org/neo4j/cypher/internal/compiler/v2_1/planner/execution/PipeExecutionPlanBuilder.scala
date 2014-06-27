@@ -168,6 +168,9 @@ class PipeExecutionPlanBuilder(monitors: Monitors) {
           val legacyShortestPath = legacyShortestPaths.head
           new ShortestPathPipe(buildPipe(input), legacyShortestPath)
 
+        case Union(lhs, rhs) =>
+          NewUnionPipe(buildPipe(lhs), buildPipe(rhs))
+
         case _ =>
           throw new CantHandleQueryException
       }
