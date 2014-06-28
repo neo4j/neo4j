@@ -21,7 +21,6 @@ package org.neo4j.kernel.impl.nioneo.xa.command;
 
 import java.io.IOException;
 
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 
 public interface LogHandler
@@ -74,12 +73,5 @@ public interface LogHandler
         {
             delegate.endLog( true );
         }
-    }
-
-    public interface SPI
-    {
-        LogBuffer getWriteBuffer();
-
-        void commitTransactionWithoutTxId( LogEntry.Start startEntry ) throws IOException;
     }
 }

@@ -34,25 +34,27 @@ import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriter;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.transaction.xaframework.LogVersionBridge;
-import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles.LogVersionVisitor;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogVersionedStoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalWritableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 import org.neo4j.kernel.impl.util.Cursor;
-import org.neo4j.kernel.monitoring.ByteCounterMonitor;
-import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.util.Arrays.asList;
 
 import static org.hamcrest.core.Is.is;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
+
+import static org.neo4j.kernel.impl.transaction.xaframework.ReadAheadLogChannel.DEFAULT_READ_AHEAD_SIZE;
 
 /**
  * Utility for reading and filtering logical logs as well as tx logs.
@@ -169,9 +171,16 @@ public class LogTestUtils
     public static File[] filterNeostoreLogicalLog( FileSystemAbstraction fileSystem,
             String storeDir, LogHook<LogEntry> filter ) throws IOException
     {
-        List<File> files = new ArrayList<>( asList(
-                oneOrTwo( fileSystem, new File( storeDir, PhysicalLogFile.DEFAULT_NAME ) ) ) );
-        gatherHistoricalLogicalLogFiles( fileSystem, storeDir, files );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( new File( storeDir ), fileSystem );
+        final List<File> files = new ArrayList<>();
+        logFiles.accept( new LogVersionVisitor()
+        {
+            @Override
+            public void visit( File file, long logVersion )
+            {
+                files.add( file );
+            }
+        } );
         for ( File file : files )
         {
             File filteredLog = filterNeostoreLogicalLog( fileSystem, file, filter );
@@ -181,108 +190,46 @@ public class LogTestUtils
         return files.toArray( new File[files.size()] );
     }
 
-    private static void gatherHistoricalLogicalLogFiles( FileSystemAbstraction fileSystem, String storeDir,
-            List<File> files )
-    {
-        PhysicalLogFiles logFiles = new PhysicalLogFiles( new File(storeDir), fileSystem );
-        long highestVersion = logFiles.getHighestLogVersion();
-        for ( long version = 0; version <= highestVersion; version++ )
-        {
-            File versionFile = logFiles.getVersionFileName( version );
-            if ( fileSystem.fileExists( versionFile ) )
-            {
-                files.add( versionFile );
-            }
-        }
-    }
-
-    public static File filterNeostoreLogicalLog( FileSystemAbstraction fileSystem, File file, final LogHook<LogEntry> filter )
+    public static File filterNeostoreLogicalLog( FileSystemAbstraction fileSystem, File file,
+            final LogHook<LogEntry> filter )
             throws IOException
     {
         filter.file( file );
         File tempFile = new File( file.getAbsolutePath() + ".tmp" );
         fileSystem.deleteFile( tempFile );
-        StoreChannel in = fileSystem.open( file, "r" );
-        StoreChannel out = fileSystem.open( tempFile, "rw" );
-        final LogBuffer outBuffer = new DirectMappedLogBuffer( out, new Monitors().newMonitor( ByteCounterMonitor.class ) );
-        ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
-        transferLogicalLogHeader( in, outBuffer, buffer );
-//        final LogEntryWriterv1 writer = new LogEntryWriterv1();
-//        writer.setCommandWriter( new PhysicalLogNeoXaCommandWriter() );
-//
-//        LogDeserializer deserializer =
-//                new LogDeserializer( XaCommandReaderFactory.DEFAULT );
-//
-//        Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
-//        {
-//            @Override
-//            public boolean accept( LogEntry entry ) throws IOException
-//            {
-//                boolean accepted = filter.accept( entry );
-//                if ( accepted )
-//                {
-//                    writer.writeLogEntry( entry, outBuffer );
-//                }
-//                return true;
-//            }
-//        };
+        try ( StoreChannel in = fileSystem.open( file, "r" );
+                StoreChannel out = fileSystem.open( tempFile, "rw" ) )
+        {
+            final WritableLogChannel outBuffer = new PhysicalWritableLogChannel(
+                    new PhysicalLogVersionedStoreChannel( out ) );
+            ByteBuffer buffer = ByteBuffer.allocate( 1024*1024 );
+            LogEntryWriter entryWriter = new LogEntryWriterv1( outBuffer, new CommandWriter( outBuffer ) );
+            transferLogicalLogHeader( in, outBuffer, buffer );
 
-//        try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( in ) )
-//        {
-//            while ( cursor.next( consumer ) )
-//            {
-//                ;
-//            }
-//        }
-//        finally
-//        {
-//            safeClose( in );
-//            outBuffer.force();
-//            safeClose( out );
-//            filter.done( file );
-//        }
+            ReadableLogChannel inBuffer = new ReadAheadLogChannel( new PhysicalLogVersionedStoreChannel( in ),
+                    LogVersionBridge.NO_MORE_CHANNELS, DEFAULT_READ_AHEAD_SIZE );
+            LogEntryReader<ReadableLogChannel> entryReader = new VersionAwareLogEntryReader(
+                    CommandReaderFactory.DEFAULT );
+            LogEntry entry;
+            while ( (entry = entryReader.readLogEntry( inBuffer )) != null )
+            {
+                if ( filter.accept( entry ) )
+                {   // TODO allright, write to outBuffer
+                }
+            }
+        }
 
         return tempFile;
     }
 
-    private static void transferLogicalLogHeader( StoreChannel in, LogBuffer outBuffer,
+    private static void transferLogicalLogHeader( StoreChannel in, WritableLogChannel outBuffer,
             ByteBuffer buffer ) throws IOException
     {
         long[] header = VersionAwareLogEntryReader.readLogHeader( buffer, in, true );
         VersionAwareLogEntryReader.writeLogHeader( buffer, header[0], header[1] );
         byte[] headerBytes = new byte[buffer.limit()];
         buffer.get( headerBytes );
-        outBuffer.put( headerBytes );
-    }
-
-    private static void safeClose( StoreChannel channel )
-    {
-        try
-        {
-            if ( channel != null )
-            {
-                channel.close();
-            }
-        }
-        catch ( IOException e )
-        {   // OK
-        }
-    }
-
-    public static File[] oneOrTwo( FileSystemAbstraction fileSystem, File file )
-    {
-        List<File> files = new ArrayList<>();
-        File one = new File( file.getPath() + ".1" );
-        if ( fileSystem.fileExists( one ) )
-        {
-            files.add( one );
-        }
-        File two = new File( file.getPath() + ".2" );
-        if ( fileSystem.fileExists( two ) )
-        {
-            files.add( two );
-        }
-        return files.toArray( new File[files.size()] );
+        outBuffer.put( headerBytes, headerBytes.length );
     }
 
     public static NonCleanLogCopy copyLogicalLog( FileSystemAbstraction fileSystem,

@@ -33,6 +33,22 @@ import static java.lang.Math.max;
  */
 public class PhysicalLogFiles
 {
+    public interface LogVersionVisitor
+    {
+        void visit( File file, long logVersion );
+    }
+
+    public class HighestLogVersionVisitor implements LogVersionVisitor
+    {
+        private long highest = -1;
+
+        @Override
+        public void visit( File file, long logVersion )
+        {
+            highest = max( highest, logVersion );
+        }
+    }
+
     private final File logBaseName;
     private final FileSystemAbstraction fileSystem;
 
@@ -71,16 +87,9 @@ public class PhysicalLogFiles
 
     public long getHighestLogVersion()
     {
-        Pattern logFilePattern = getVersionFileNamePattern();
-        long highest = -1;
-        for ( File file : fileSystem.listFiles( logBaseName.getParentFile() ) )
-        {
-            if ( logFilePattern.matcher( file.getName() ).matches() )
-            {
-                highest = max( highest, getLogVersion( file ) );
-            }
-        }
-        return highest;
+        HighestLogVersionVisitor visitor = new HighestLogVersionVisitor();
+        accept( visitor );
+        return visitor.highest;
     }
 
     public boolean versionExists( long version )
@@ -96,5 +105,17 @@ public class PhysicalLogFiles
     public boolean hasAnyTransaction( long version )
     {
         return fileSystem.getFileSize( getVersionFileName( version ) ) > VersionAwareLogEntryReader.LOG_HEADER_SIZE;
+    }
+
+    public void accept( LogVersionVisitor visitor )
+    {
+        Pattern logFilePattern = getVersionFileNamePattern();
+        for ( File file : fileSystem.listFiles( logBaseName.getParentFile() ) )
+        {
+            if ( logFilePattern.matcher( file.getName() ).matches() )
+            {
+                visitor.visit( file, getLogVersion( file ) );
+            }
+        }
     }
 }

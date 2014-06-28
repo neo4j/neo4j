@@ -25,8 +25,8 @@ import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPositionMarker;
+import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 /**
@@ -39,7 +39,7 @@ import org.neo4j.kernel.monitoring.ByteCounterMonitor;
  * byte which is 0 for every non-last chunk and the actual number of bytes for
  * the last one (always > 0).
  */
-public class BlockLogBuffer implements LogBuffer
+public class BlockLogBuffer implements WritableLogChannel
 {
     // First byte of every chunk that is not the last one
     static final byte FULL_BLOCK_AND_MORE = 0;
@@ -74,7 +74,7 @@ public class BlockLogBuffer implements LogBuffer
      *
      * @return the buffer
      */
-    private LogBuffer checkFlush()
+    private WritableLogChannel checkFlush()
     {
         if ( byteBuffer.position() > MAX_SIZE )
         {
@@ -88,73 +88,56 @@ public class BlockLogBuffer implements LogBuffer
     }
 
     @Override
-    public LogBuffer put( byte b ) throws IOException
+    public WritableLogChannel put( byte b ) throws IOException
     {
         byteBuffer.put( b );
         return checkFlush();
     }
 
     @Override
-    public LogBuffer putShort( short s ) throws IOException
+    public WritableLogChannel putShort( short s ) throws IOException
     {
         byteBuffer.putShort( s );
         return checkFlush();
     }
 
     @Override
-    public LogBuffer putInt( int i ) throws IOException
+    public WritableLogChannel putInt( int i ) throws IOException
     {
         byteBuffer.putInt( i );
         return checkFlush();
     }
 
     @Override
-    public LogBuffer putLong( long l ) throws IOException
+    public WritableLogChannel putLong( long l ) throws IOException
     {
         byteBuffer.putLong( l );
         return checkFlush();
     }
 
     @Override
-    public LogBuffer putFloat( float f ) throws IOException
+    public WritableLogChannel putFloat( float f ) throws IOException
     {
         byteBuffer.putFloat( f );
         return checkFlush();
     }
 
     @Override
-    public LogBuffer putDouble( double d ) throws IOException
+    public WritableLogChannel putDouble( double d ) throws IOException
     {
         byteBuffer.putDouble( d );
         return checkFlush();
     }
 
     @Override
-    public LogBuffer put( byte[] bytes ) throws IOException
+    public WritableLogChannel put( byte[] bytes, int length ) throws IOException
     {
-        for ( int pos = 0; pos < bytes.length; )
+        for ( int pos = 0; pos < length; )
         {
-            int toWrite = Math.min( byteBuffer.remaining(), bytes.length - pos );
+            int toWrite = Math.min( byteBuffer.remaining(), length - pos );
             byteBuffer.put( bytes, pos, toWrite );
             checkFlush();
             pos += toWrite;
-        }
-        return this;
-    }
-
-    @Override
-    public LogBuffer put( char[] chars ) throws IOException
-    {
-        for ( int bytePos = 0; bytePos < chars.length * 2; )
-        {
-            int bytesToWrite = Math.min( byteBuffer.remaining(), chars.length * 2 - bytePos );
-            bytesToWrite -= ( bytesToWrite % 2 );
-            for ( int i = 0; i < bytesToWrite / 2; i++ )
-            {
-                byteBuffer.putChar( chars[( bytePos / 2 ) + i] );
-            }
-            checkFlush();
-            bytePos += bytesToWrite;
         }
         return this;
     }
@@ -165,14 +148,10 @@ public class BlockLogBuffer implements LogBuffer
         // Do nothing
     }
 
-    public long getFileChannelPosition() throws IOException
+    @Override
+    public void getCurrentPosition( LogPositionMarker positionMarker ) throws IOException
     {
-        throw new UnsupportedOperationException( "BlockLogBuffer does not have a FileChannel" );
-    }
-
-    public StoreChannel getFileChannel()
-    {
-        throw new UnsupportedOperationException( "BlockLogBuffer does not have a FileChannel" );
+        positionMarker.unspecified();
     }
 
     /**
@@ -180,16 +159,20 @@ public class BlockLogBuffer implements LogBuffer
      * the chunk is set to the position of the buffer ( != 0, instead of
      * FULL_BLOCK_AND_MORE) and it is written to the channel.
      */
-    public void done()
+    @Override
+    public void close()
     {
-        assert byteBuffer.position() > 1 : "buffer should contain more than the header";
-        assert byteBuffer.position() <= MAX_SIZE : "buffer should not be over full";
-        long howManyBytesToWrite = byteBuffer.position();
-        byteBuffer.put( 0, (byte) ( byteBuffer.position() - 1 ) );
-        byteBuffer.flip();
-        target.writeBytes( byteBuffer );
-        monitor.bytesWritten( howManyBytesToWrite );
-        clearInternalBuffer();
+        if ( byteBuffer.position() > 0 )
+        {
+            assert byteBuffer.position() > 1 : "buffer should contain more than the header";
+            assert byteBuffer.position() <= MAX_SIZE : "buffer should not be over full";
+            long howManyBytesToWrite = byteBuffer.position();
+            byteBuffer.put( 0, (byte) ( byteBuffer.position() - 1 ) );
+            byteBuffer.flip();
+            target.writeBytes( byteBuffer );
+            monitor.bytesWritten( howManyBytesToWrite );
+            clearInternalBuffer();
+        }
     }
 
     public int write( ReadableByteChannel data ) throws IOException

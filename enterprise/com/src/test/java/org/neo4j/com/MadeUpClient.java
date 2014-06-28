@@ -19,10 +19,6 @@
  */
 package org.neo4j.com;
 
-import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
-import static org.neo4j.com.Protocol.writeString;
-import static org.neo4j.com.RequestContext.EMPTY;
-
 import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
@@ -30,11 +26,16 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
+
 import org.neo4j.com.MadeUpServer.MadeUpRequestType;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
+import static org.neo4j.com.Protocol.writeString;
+import static org.neo4j.com.RequestContext.EMPTY;
 
 public class MadeUpClient extends Client<MadeUpCommunicationInterface> implements MadeUpCommunicationInterface
 {
@@ -109,7 +110,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
             }
         } );
     }
-    
+
     @Override
     public Response<Void> sendDataStream( final ReadableByteChannel data )
     {
@@ -118,14 +119,9 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
             @Override
             public void write( ChannelBuffer buffer ) throws IOException
             {
-                BlockLogBuffer writer = new BlockLogBuffer( buffer, new Monitors().newMonitor( ByteCounterMonitor.class ) );
-                try
+                try ( BlockLogBuffer writer = new BlockLogBuffer( buffer, new Monitors().newMonitor( ByteCounterMonitor.class ) ) )
                 {
                     writer.write( data );
-                }
-                finally
-                {
-                    writer.done();
                 }
             }
         }, Protocol.VOID_DESERIALIZER );
@@ -143,6 +139,7 @@ public class MadeUpClient extends Client<MadeUpCommunicationInterface> implement
             }
         }, new Deserializer<Integer>()
         {
+            @Override
             public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
                     throws IOException
             {
