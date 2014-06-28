@@ -19,39 +19,27 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.number.OrderingComparison.lessThan;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-import static org.mockito.Mockito.CALLS_REAL_METHODS;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.spy;
-import static org.mockito.Mockito.when;
-import static org.mockito.Mockito.withSettings;
-import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
-import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
-import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
-import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
-
 import java.io.File;
 import java.io.IOException;
 import java.io.RandomAccessFile;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.util.List;
-
 import javax.transaction.xa.XAException;
 import javax.transaction.xa.Xid;
 
+import org.hamcrest.Description;
+import org.hamcrest.Matcher;
+import org.hamcrest.TypeSafeMatcher;
 import org.junit.Rule;
 import org.junit.Test;
+import org.mockito.ArgumentCaptor;
 import org.mockito.Matchers;
 import org.mockito.invocation.InvocationOnMock;
 import org.mockito.listeners.InvocationListener;
 import org.mockito.listeners.MethodInvocationReport;
 import org.mockito.stubbing.Answer;
+
 import org.neo4j.helpers.Functions;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
@@ -59,6 +47,7 @@ import org.neo4j.kernel.impl.core.TransactionState;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFileChannel;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReader;
 import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
@@ -67,6 +56,8 @@ import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriterFactory;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.TransactionStateFactory;
 import org.neo4j.kernel.impl.transaction.XidImpl;
+import org.neo4j.kernel.impl.util.Consumer;
+import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.kernel.impl.util.IoPrimitiveUtils;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
@@ -78,6 +69,26 @@ import org.neo4j.test.FailureOutput;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.number.OrderingComparison.lessThan;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.mockito.Mockito.CALLS_REAL_METHODS;
+import static org.mockito.Mockito.any;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.spy;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.mockito.Mockito.withSettings;
+
+import static org.neo4j.kernel.impl.transaction.XidImpl.DEFAULT_SEED;
+import static org.neo4j.kernel.impl.transaction.XidImpl.getNewGlobalId;
+import static org.neo4j.kernel.impl.transaction.xaframework.ForceMode.forced;
+import static org.neo4j.kernel.impl.transaction.xaframework.InjectedTransactionValidator.ALLOW_ALL;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+
 public class XaLogicalLogTest
 {
     @Rule
@@ -85,6 +96,92 @@ public class XaLogicalLogTest
     private static final byte[] RESOURCE_ID = new byte[]{0x00, (byte) 0x99, (byte) 0xcc};
     private long version;
     private int reads;
+
+    @Test
+    public void shouldRotateLogWithDoneRecordsOrEarlierTransactionsInTheRegionToCopy() throws Exception
+    {
+        // given
+        EphemeralFileSystemAbstraction fs = ephemeralFs.get();
+        XaTransactionFactory xaTf = mock( XaTransactionFactory.class );
+        when( xaTf.getAndSetNewVersion() ).thenAnswer( new TxVersion( TxVersion.UPDATE_AND_GET ) );
+        when( xaTf.getCurrentVersion() ).thenAnswer( new TxVersion( TxVersion.GET ) );
+        File dir = TargetDirectory.forTest( fs, XaLogicalLogTest.class ).cleanDirectory( "log" );
+        XaLogicalLog xaLogicalLog = new XaLogicalLog( new File( dir, "logical.log" ), mock( XaResourceManager.class ),
+                                                      mock( XaCommandReaderFactory.class ),
+                                                      mock( XaCommandWriterFactory.class ),
+                                                      xaTf, fs, new Monitors(),
+                                                      new SingleLoggingService( StringLogger.wrap( output.writer() ) ),
+                                                      LogPruneStrategies.NO_PRUNING,
+                                                      mock( TransactionStateFactory.class ),
+                                                      mock( KernelHealth.class ),
+                                                      25 * 1024 * 1024, ALLOW_ALL,
+                                                      Functions.<List<LogEntry>>identity(),
+                                                      Functions.<List<LogEntry>>identity() );
+        xaLogicalLog.open();
+        // first write a transaction that should not be copied during rotation, just to verify we don't copy everything
+        int tx0 = xaLogicalLog.start( new XidImpl( getNewGlobalId( DEFAULT_SEED, 0 ), RESOURCE_ID ), -1, 0, 0 );
+        xaLogicalLog.writeStartEntry( tx0 );
+        xaLogicalLog.commitOnePhase( tx0, 1, ForceMode.forced );
+        xaLogicalLog.done( tx0 );
+
+        // when
+        int tx1 = xaLogicalLog.start( new XidImpl( getNewGlobalId( DEFAULT_SEED, 0 ), RESOURCE_ID ), -1, 0, 0 );
+        int tx2 = xaLogicalLog.start( new XidImpl( getNewGlobalId( DEFAULT_SEED, 0 ), RESOURCE_ID ), -1, 0, 0 );
+        int tx3 = xaLogicalLog.start( new XidImpl( getNewGlobalId( DEFAULT_SEED, 0 ), RESOURCE_ID ), -1, 0, 0 );
+        // start and prepare tx1
+        xaLogicalLog.writeStartEntry( tx1 );
+        xaLogicalLog.prepare( tx1 );
+        // start and prepare tx2
+        xaLogicalLog.writeStartEntry( tx2 );
+        xaLogicalLog.prepare( tx2 );
+        // complete tx1
+        xaLogicalLog.commitTwoPhase( tx1, 2, ForceMode.forced );
+        xaLogicalLog.done( tx1 );
+        // start tx1
+        xaLogicalLog.writeStartEntry( tx3 );
+        // rotate
+        xaLogicalLog.rotate();
+
+        // then
+        xaLogicalLog.close();
+        StoreChannel log = fs.open( new File( dir, "logical.log.2" ), "r" );
+        ByteBuffer buffer = ByteBuffer.allocateDirect( 9 + Xid.MAXGTRIDSIZE+ Xid.MAXBQUALSIZE * 10 );
+        VersionAwareLogEntryReader.readLogHeader( buffer, log, false );
+        LogDeserializer deserializer = new LogDeserializer( buffer, null );
+        Cursor<LogEntry, IOException> cursor = deserializer.cursor( log );
+        @SuppressWarnings("unchecked")
+        Consumer<LogEntry, IOException> consumer = mock( Consumer.class );
+        when( consumer.accept( any( LogEntry.class ) ) ).thenReturn( true );
+        while ( cursor.next( consumer ) );
+        ArgumentCaptor<LogEntry> entryCaptor = ArgumentCaptor.forClass( LogEntry.class );
+        verify( consumer, times( 7 ) ).accept( entryCaptor.capture() );
+        List<LogEntry> entries = entryCaptor.getAllValues();
+        assertThat( entries.get( 0 ), isEntry( LogEntry.Start.class, tx2 ) );
+        assertThat( entries.get( 1 ), isEntry( LogEntry.Prepare.class, tx2 ) );
+        assertThat( entries.get( 2 ), isEntry( LogEntry.Start.class, tx1 ) );
+        assertThat( entries.get( 3 ), isEntry( LogEntry.Prepare.class, tx1 ) );
+        assertThat( entries.get( 4 ), isEntry( LogEntry.TwoPhaseCommit.class, tx1 ) );
+        assertThat( entries.get( 5 ), isEntry( LogEntry.Done.class, tx1 ) );
+        assertThat( entries.get( 6 ), isEntry( LogEntry.Start.class, tx3 ) );
+    }
+
+    private Matcher<? super LogEntry> isEntry( final Class<? extends LogEntry> entryType, final int txId )
+    {
+        return new TypeSafeMatcher<LogEntry>(entryType)
+        {
+            @Override
+            protected boolean matchesSafely( LogEntry item )
+            {
+                return item.getIdentifier() == txId;
+            }
+
+            @Override
+            public void describeTo( Description description )
+            {
+                description.appendText( entryType.getSimpleName() ).appendText( " entry with id " ).appendValue( txId );
+            }
+        };
+    }
 
     @Test
     public void shouldNotReadExcessivelyFromTheFileChannelWhenRotatingLogWithNoOpenTransactions() throws Exception
