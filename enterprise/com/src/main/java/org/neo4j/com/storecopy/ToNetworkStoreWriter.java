@@ -50,15 +50,14 @@ public class ToNetworkStoreWriter implements StoreWriter
         Protocol.writeChars( targetBuffer, chars );
         targetBuffer.writeByte( hasData ? 1 : 0 );
         // TODO Make use of temporaryBuffer?
-        try ( BlockLogBuffer buffer = new BlockLogBuffer( targetBuffer, bufferMonitor ) )
+        BlockLogBuffer buffer = new BlockLogBuffer( targetBuffer, bufferMonitor );
+        int totalWritten = 2 + chars.length*2 + 1;
+        if ( hasData )
         {
-            int totalWritten = 2 + chars.length*2 + 1;
-            if ( hasData )
-            {
-                totalWritten += buffer.write( data );
-            }
-            return totalWritten;
+            totalWritten += buffer.write( data );
+            buffer.close();
         }
+        return totalWritten;
     }
 
     @Override

@@ -162,17 +162,14 @@ public class BlockLogBuffer implements WritableLogChannel
     @Override
     public void close()
     {
-        if ( byteBuffer.position() > 0 )
-        {
-            assert byteBuffer.position() > 1 : "buffer should contain more than the header";
-            assert byteBuffer.position() <= MAX_SIZE : "buffer should not be over full";
-            long howManyBytesToWrite = byteBuffer.position();
-            byteBuffer.put( 0, (byte) ( byteBuffer.position() - 1 ) );
-            byteBuffer.flip();
-            target.writeBytes( byteBuffer );
-            monitor.bytesWritten( howManyBytesToWrite );
-            clearInternalBuffer();
-        }
+        assert byteBuffer.position() > 1 : "buffer should contain more than the header";
+        assert byteBuffer.position() <= MAX_SIZE : "buffer should not be over full";
+        long howManyBytesToWrite = byteBuffer.position();
+        byteBuffer.put( 0, (byte) ( byteBuffer.position() - 1 ) );
+        byteBuffer.flip();
+        target.writeBytes( byteBuffer );
+        monitor.bytesWritten( howManyBytesToWrite );
+        clearInternalBuffer();
     }
 
     public int write( ReadableByteChannel data ) throws IOException
