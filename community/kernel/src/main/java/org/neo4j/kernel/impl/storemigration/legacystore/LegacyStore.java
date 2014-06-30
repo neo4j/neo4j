@@ -21,12 +21,18 @@ package org.neo4j.kernel.impl.storemigration.legacystore;
 
 import java.io.Closeable;
 import java.io.File;
+import java.io.FilenameFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
+import java.util.regex.Pattern;
 
+import org.neo4j.graphdb.Resource;
+import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.helpers.UTF8;
+import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.impl.index.IndexStore;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
 import org.neo4j.kernel.impl.nioneo.store.DynamicArrayStore;
@@ -34,13 +40,15 @@ import org.neo4j.kernel.impl.nioneo.store.DynamicStringStore;
 import org.neo4j.kernel.impl.nioneo.store.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.IdGeneratorImpl;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipTypeTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
 
+import static org.neo4j.helpers.collection.ResourceClosingIterator.newResourceIterator;
 import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.buildTypeDescriptorAndVersion;
 
 /**
@@ -56,7 +64,7 @@ public class LegacyStore implements Closeable
     public static final String LEGACY_VERSION = "v0.A.0";
 
     private final File storageFileName;
-    private final Collection<Closeable> allStoreReaders = new ArrayList<Closeable>();
+    private final Collection<Closeable> allStoreReaders = new ArrayList<>();
     private LegacyNodeStoreReader nodeStoreReader;
     private LegacyPropertyIndexStoreReader propertyIndexReader;
     private LegacyPropertyStoreReader propertyStoreReader;
@@ -161,24 +169,6 @@ public class LegacyStore implements Closeable
                 buildTypeDescriptorAndVersion( DynamicStringStore.TYPE_DESCRIPTOR ) );
     }
 
-    public void copyPropertyStore( NeoStore neoStore ) throws IOException
-    {
-        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_STORE_NAME,
-                buildTypeDescriptorAndVersion( PropertyStore.TYPE_DESCRIPTOR ) );
-    }
-
-    public void copyPropertyKeyTokenStore( NeoStore neoStore ) throws IOException
-    {
-        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_KEY_TOKEN_STORE_NAME,
-                buildTypeDescriptorAndVersion( PropertyKeyTokenStore.TYPE_DESCRIPTOR ) );
-    }
-
-    public void copyPropertyKeyTokenNameStore( NeoStore neoStore ) throws IOException
-    {
-        copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_KEY_TOKEN_NAMES_STORE_NAME,
-                buildTypeDescriptorAndVersion( DynamicStringStore.TYPE_DESCRIPTOR ) );
-    }
-
     public void copyDynamicStringPropertyStore( NeoStore neoStore ) throws IOException
     {
         copyStore( neoStore.getStorageFileName(), StoreFactory.PROPERTY_STRINGS_STORE_NAME,
@@ -230,5 +220,95 @@ public class LegacyStore implements Closeable
             File toFile = new File( toDirectory, IndexStore.INDEX_DB_FILE_NAME );
             fs.copyFile( fromFile, toFile );
         }
+    }
+
+    /**
+     * Prepare a StoreChannel for writing a translated version of the last transaction log
+     * to the correct location, or return null if the legacy store has no transaction logs
+     * that can be translated.
+     */
+    public StoreChannel beginTranslatingLastTransactionLog( NeoStore neoStore ) throws IOException
+    {
+        // We are going to blindly assume that people never configure their
+        // transaction log filenames off the default. If they do, then they're
+        // in trouble.
+        File lastLegacyTransactionLog = findLastTransactionLog();
+        if ( lastLegacyTransactionLog == null )
+        {
+            return null;
+        }
+        File newTransactionLog = new File(
+                neoStore.getStorageFileName().getParent(),
+                lastLegacyTransactionLog.getName() );
+        return fs.open( newTransactionLog, "rw" );
+    }
+
+    private File findLastTransactionLog()
+    {
+        File legacyDirectory = storageFileName.getParentFile();
+        final Pattern logFileName = Pattern.compile( "nioneo_logical\\.log\\.v.*" );
+        FilenameFilter logFiles = new FilenameFilter()
+        {
+            @Override
+            public boolean accept( File dir, String name )
+            {
+                return logFileName.matcher( name ).find();
+            }
+        };
+        File[] files = legacyDirectory.listFiles( logFiles );
+        // 'files' will be 'null' if an IO error occurs.
+        if ( files != null && files.length > 0 )
+        {
+            Arrays.sort( files );
+            return files[ files.length - 1 ];
+        }
+        return null;
+    }
+
+    public ResourceIterator<LogEntry> iterateLastTransactionLogEntries(
+            LogBuffer logBuffer ) throws IOException
+    {
+        File legacyTransactionLog = findLastTransactionLog();
+        final StoreChannel channel = fs.open( legacyTransactionLog, "r" );
+        final ByteBuffer buffer = ByteBuffer.allocate( 100000 );
+
+        long[] header = LegacyLogIoUtil.readLogHeader( buffer, channel, false );
+        if ( header != null )
+        {
+            ByteBuffer headerBuf = ByteBuffer.allocate( 16 );
+            LogIoUtils.writeLogHeader( headerBuf, header[0], header[1] );
+            logBuffer.put( headerBuf.array() );
+        }
+
+        Resource resource = new Resource()
+        {
+            @Override
+            public void close()
+            {
+                try
+                {
+                    channel.close();
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( "Failed to close legacy log channel", e );
+                }
+            }
+        };
+        return newResourceIterator( resource, new PrefetchingIterator<LogEntry>()
+        {
+            @Override
+            protected LogEntry fetchNextOrNull()
+            {
+                try
+                {
+                    return LegacyLogIoUtil.readEntry( buffer, channel );
+                }
+                catch ( IOException e )
+                {
+                    throw new RuntimeException( "Failed to read legacy log entry", e );
+                }
+            }
+        } );
     }
 }

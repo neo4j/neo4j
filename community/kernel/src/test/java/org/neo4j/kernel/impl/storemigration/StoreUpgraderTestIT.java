@@ -58,8 +58,10 @@ public class StoreUpgraderTestIT
     {
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, LegacyStore.LEGACY_VERSION ) );
 
-        newUpgrader( alwaysAllowed(), new StoreMigrator( new SilentMigrationProgressMonitor() ),
-                new DatabaseFiles( fileSystem ) ).attemptUpgrade( new File( dbDirectory, NeoStore.DEFAULT_NAME ) );
+        StoreUpgrader upgrader = newUpgrader( alwaysAllowed(),
+                new StoreMigrator( new SilentMigrationProgressMonitor() ),
+                new DatabaseFiles( fileSystem ) );
+        upgrader.attemptUpgrade( new File( dbDirectory, NeoStore.DEFAULT_NAME ) );
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, ALL_STORES_VERSION ) );
 
@@ -71,8 +73,9 @@ public class StoreUpgraderTestIT
     @Test
     public void shouldLeaveACopyOfOriginalStoreFilesInBackupDirectory() throws IOException
     {
-        newUpgrader( alwaysAllowed(), new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles( fileSystem ) )
-                .attemptUpgrade( new File( dbDirectory, NeoStore.DEFAULT_NAME ) );
+        StoreUpgrader upgrader = newUpgrader( alwaysAllowed(),
+                new StoreMigrator( new SilentMigrationProgressMonitor() ), new DatabaseFiles( fileSystem ) );
+        upgrader.attemptUpgrade( new File( dbDirectory, NeoStore.DEFAULT_NAME ) );
 
         File backupDirectory = new File( dbDirectory, "upgrade_backup" );
 

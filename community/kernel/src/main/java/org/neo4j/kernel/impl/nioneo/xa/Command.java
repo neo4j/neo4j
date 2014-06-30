@@ -360,13 +360,13 @@ public abstract class Command extends XaCommand
 
     abstract void removeFromCache( CacheAccessBackDoor cacheAccess );
 
-    static class NodeCommand extends Command
+    public static class NodeCommand extends Command
     {
         private final NodeStore store;
         private final NodeRecord before;
         private final NodeRecord after;
 
-        NodeCommand( NodeStore store, NodeRecord before, NodeRecord after )
+        public NodeCommand( NodeStore store, NodeRecord before, NodeRecord after )
         {
             super( after.getId(), Mode.fromRecordState( after ) );
             this.store = store;
@@ -528,14 +528,14 @@ public abstract class Command extends XaCommand
         }
     }
 
-    static class RelationshipCommand extends Command
+    public static class RelationshipCommand extends Command
     {
         private final RelationshipRecord record;
         // before update stores the record as it looked before the command is executed
         private RelationshipRecord beforeUpdate;
         private final RelationshipStore store;
 
-        RelationshipCommand( RelationshipStore store, RelationshipRecord record )
+        public RelationshipCommand( RelationshipStore store, RelationshipRecord record )
         {
             super( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
@@ -666,12 +666,12 @@ public abstract class Command extends XaCommand
         }
     }
 
-    static class NeoStoreCommand extends Command
+    public static class NeoStoreCommand extends Command
     {
         private final NeoStoreRecord record;
         private final NeoStore neoStore;
 
-        NeoStoreCommand( NeoStore neoStore, NeoStoreRecord record )
+        public NeoStoreCommand( NeoStore neoStore, NeoStoreRecord record )
         {
             super( record.getId(), Mode.fromRecordState( record ) );
             this.neoStore = neoStore;
@@ -723,13 +723,13 @@ public abstract class Command extends XaCommand
         }
     }
 
-    static class PropertyKeyTokenCommand extends Command
+    public static class PropertyKeyTokenCommand extends Command
     {
         private final PropertyKeyTokenRecord record;
         private final PropertyKeyTokenStore store;
 
-        PropertyKeyTokenCommand( PropertyKeyTokenStore store,
-                                 PropertyKeyTokenRecord record )
+        public PropertyKeyTokenCommand( PropertyKeyTokenStore store,
+                                        PropertyKeyTokenRecord record )
         {
             super( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;
@@ -823,7 +823,7 @@ public abstract class Command extends XaCommand
         }
     };
 
-    static class PropertyCommand extends Command implements PropertyRecordChange
+    public static class PropertyCommand extends Command implements PropertyRecordChange
     {
         private final PropertyStore store;
         private final PropertyRecord before;
@@ -831,7 +831,7 @@ public abstract class Command extends XaCommand
 
         // TODO as optimization the deserialized key/values could be passed in here
         // so that the cost of deserializing them only applies in recovery/HA
-        PropertyCommand( PropertyStore store, PropertyRecord before, PropertyRecord after )
+        public PropertyCommand( PropertyStore store, PropertyRecord before, PropertyRecord after )
         {
             super( after.getId(), Mode.fromRecordState( after ) );
             this.store = store;
@@ -1070,13 +1070,13 @@ public abstract class Command extends XaCommand
         }
     };
 
-    static class RelationshipTypeTokenCommand extends Command
+    public static class RelationshipTypeTokenCommand extends Command
     {
         private final RelationshipTypeTokenRecord record;
         private final RelationshipTypeTokenStore store;
 
-        RelationshipTypeTokenCommand( RelationshipTypeTokenStore store,
-                                      RelationshipTypeTokenRecord record )
+        public RelationshipTypeTokenCommand( RelationshipTypeTokenStore store,
+                                             RelationshipTypeTokenRecord record )
         {
             super( record.getId(), Mode.fromRecordState( record ) );
             this.record = record;

@@ -35,8 +35,14 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.StoreChannel;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.transaction.xaframework.DirectMappedLogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogIoUtils;
+import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 
 import static org.neo4j.helpers.UTF8.encode;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
@@ -85,6 +91,7 @@ public class StoreMigrator
             migrateNeoStore( neoStore );
             migrateNodes( neoStore.getNodeStore() );
             migratePropertyIndexes( neoStore.getPropertyStore() );
+            migrateLastTransactionLog();
 
             // Close
             neoStore.close();
@@ -109,6 +116,25 @@ public class StoreMigrator
 
             // read property store, replace property key ids
             migratePropertyStore( propertyKeyTranslation, propertyStore );
+        }
+
+        private void migrateLastTransactionLog() throws IOException
+        {
+            StoreChannel newLogChannel = legacyStore.beginTranslatingLastTransactionLog( neoStore );
+            if ( newLogChannel == null )
+            {
+                // There are no transaction logs for us to translate, so we skip this step.
+                return;
+            }
+
+            LogBuffer logBuffer = new DirectMappedLogBuffer( newLogChannel, ByteCounterMonitor.NULL );
+
+            for ( LogEntry entry : loop( legacyStore.iterateLastTransactionLogEntries( logBuffer ) ) )
+            {
+                LogIoUtils.writeLogEntry( entry, logBuffer );
+            }
+            logBuffer.force();
+            newLogChannel.close();
         }
 
         private void migrateNeoStore( NeoStore neoStore ) throws IOException
