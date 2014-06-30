@@ -55,7 +55,7 @@ public class ResponsePacker
     }
 
     public <T> Response<T> packResponse( RequestContext context, T response,
-            Predicate<CommittedTransactionRepresentation> filter )
+            final Predicate<CommittedTransactionRepresentation> filter )
     {
         final long toStartFrom = context.lastAppliedTransaction()+1;
         TransactionStream transactions = new TransactionStream()
@@ -65,11 +65,29 @@ public class ResponsePacker
             {
                 if ( toStartFrom <= transactionIdStore.getLastCommittingTransactionId() )
                 {
-                    extractTransactions( toStartFrom, visitor );
+                    extractTransactions( toStartFrom, filterVisitor( visitor, filter ) );
                 }
             }
         };
         return new Response<>( response, db.storeId(), transactions, ResourceReleaser.NO_OP );
+    }
+
+    protected Visitor<CommittedTransactionRepresentation, IOException> filterVisitor(
+            final Visitor<CommittedTransactionRepresentation, IOException> delegate,
+            final Predicate<CommittedTransactionRepresentation> filter )
+    {
+        return new Visitor<CommittedTransactionRepresentation, IOException>()
+        {
+            @Override
+            public boolean visit( CommittedTransactionRepresentation element ) throws IOException
+            {
+                if ( filter.accept( element ) )
+                {
+                    return delegate.visit( element );
+                }
+                return true;
+            }
+        };
     }
 
     protected void extractTransactions( long startingAtTransactionId,
