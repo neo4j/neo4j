@@ -21,6 +21,10 @@ Exactly how to submit them depends on the driver in use.
 
 include::includes/exampleWithStringLiteralAsParameter.asciidoc[]
 
+You can use parameters in this syntax as well:
+
+include::includes/exampleWithShortSyntaxStringLiteralAsParameter.asciidoc[]
+
 == Regular expression ==
 
 include::includes/exampleWithParameterRegularExpression.asciidoc[]
