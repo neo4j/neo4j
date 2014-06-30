@@ -71,7 +71,7 @@ Specify the number of threads used by the Neo4j Web server to control the level 
 org.neo4j.server.webserver.maxthreads=200
 ----
 
-NOTE: The default value is 10 times the number of CPUs reported available by the JVM.
+NOTE: The default value is the number of CPUs reported available by the JVM, limited to a maximum of 500. The limit can be exceeded by specifying a larger value.
 
 The server guards against orphaned transactions by using a timeout. If there are no requests for a given transaction
 within the timeout period, the server will roll it back. You can configure the timeout period by setting

@@ -56,7 +56,7 @@ import org.neo4j.test.TargetDirectory;
 //@Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
 public class RollingUpgradeIT
 {
-    private static final String OLD_VERSION = "2.0.1";
+    private static final String OLD_VERSION = "2.1.2";
 
     public static final RelationshipType type1 = DynamicRelationshipType.withName( "type1" );
     public static final RelationshipType type2 = DynamicRelationshipType.withName( "type2" );
