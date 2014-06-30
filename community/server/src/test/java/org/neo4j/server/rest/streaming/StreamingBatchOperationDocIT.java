@@ -22,6 +22,8 @@ package org.neo4j.server.rest.streaming;
 import java.util.List;
 import java.util.Map;
 
+import com.sun.jersey.api.client.ClientHandlerException;
+import com.sun.jersey.api.client.UniformInterfaceException;
 import org.json.JSONException;
 import org.junit.Test;
 
@@ -39,9 +41,6 @@ import org.neo4j.server.rest.repr.StreamingFormat;
 import org.neo4j.server.rest.web.PropertyValueException;
 import org.neo4j.test.GraphDescription.Graph;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import com.sun.jersey.api.client.ClientHandlerException;
-import com.sun.jersey.api.client.UniformInterfaceException;
 
 import static javax.ws.rs.core.MediaType.APPLICATION_JSON_TYPE;
 

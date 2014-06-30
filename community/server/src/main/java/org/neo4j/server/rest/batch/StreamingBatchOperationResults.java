@@ -26,6 +26,7 @@ import java.util.Map;
 
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
+import javax.ws.rs.core.Response;
 
 import org.codehaus.jackson.JsonGenerator;
 
@@ -166,7 +167,7 @@ public class StreamingBatchOperationResults
     public void writeError( int status, String message ) throws IOException {
         if (bytesWritten == 0 || bytesWritten == IS_ERROR) g.writeRaw( "null" );
         g.writeNumberField( "status",  status );
-        if (message!=null && !message.trim().isEmpty())  g.writeStringField( "message", message);
+        if (message!=null && !message.trim().equals( Response.Status.fromStatusCode( status ).getReasonPhrase()))  g.writeStringField( "message", message);
         else {
             if (errorStream!=null) {
                 g.writeStringField( "message", errorStream.toString( encoding ));

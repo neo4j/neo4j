@@ -65,7 +65,8 @@ public class InternalJettyServletRequest extends Request
         {
             if ( bytes.length > position ) return (int) bytes[position++];
 
-            readListener.onAllDataRead();
+            if (readListener != null)
+                readListener.onAllDataRead();
 
             return -1;
         }

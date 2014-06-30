@@ -31,23 +31,25 @@ public class EideticRequestMonitor implements RequestMonitor
     private int requestsEnded;
 
     @Override
-    public void beginRequest( Map<String, String> requestContext )
+    public synchronized void beginRequest( Map<String, String> requestContext )
     {
         requests.add( requestContext );
     }
 
     @Override
-    public void endRequest( Throwable t )
+    public synchronized void endRequest( Throwable t )
     {
         requestsEnded++;
+        if (t != null)
+            t.printStackTrace();
     }
 
-    public List<Map<String, String>> getRequests()
+    public synchronized List<Map<String, String>> getRequests()
     {
         return requests;
     }
 
-    public int getRequestsEnded()
+    public synchronized int getRequestsEnded()
     {
         return requestsEnded;
     }
