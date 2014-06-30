@@ -23,9 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 
 public class MadeUpServerImplementation implements MadeUpCommunicationInterface
 {
@@ -42,7 +40,7 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
     {
         gotCalled = true;
         return new Response<Integer>( value1 * value2, storeIdToRespondWith,
-                Iterables.<CommittedTransactionRepresentation>empty(), ResourceReleaser.NO_OP );
+                TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
 
     @Override
@@ -56,9 +54,9 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
     private Response<Void> emptyResponse()
     {
         return new Response<Void>( null, storeIdToRespondWith,
-                Iterables.<CommittedTransactionRepresentation>empty(), ResourceReleaser.NO_OP );
+                TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
-    
+
     @Override
     public Response<Void> sendDataStream( ReadableByteChannel data )
     {
@@ -76,7 +74,9 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
             {
                 buffer.clear();
                 if ( data.read( buffer ) == -1 )
+                {
                     break;
+                }
             }
         }
         catch ( IOException e )

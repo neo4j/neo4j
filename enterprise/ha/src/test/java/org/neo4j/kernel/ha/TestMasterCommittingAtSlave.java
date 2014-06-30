@@ -19,13 +19,6 @@
  */
 package org.neo4j.kernel.ha;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
-import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
-
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.LinkedList;
@@ -33,12 +26,13 @@ import java.util.List;
 import java.util.Queue;
 
 import org.junit.Test;
+
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.com.ComException;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
+import org.neo4j.com.TransactionStream;
 import org.neo4j.helpers.Exceptions;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -51,10 +45,17 @@ import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.LogMarker;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
+
+import static org.neo4j.kernel.ha.com.master.SlavePriorities.givenOrder;
+import static org.neo4j.kernel.ha.com.master.SlavePriorities.roundRobin;
 
 
 public class TestMasterCommittingAtSlave
@@ -259,7 +260,7 @@ public class TestMasterCommittingAtSlave
         }
         return slaves;
     }
-    
+
     private static final FileSystemAbstraction FS = new DefaultFileSystemAbstraction();
 
     private static class FakeSlave implements Slave
@@ -283,8 +284,7 @@ public class TestMasterCommittingAtSlave
             }
 
             calledWithTxId.add( txId );
-            return new Response<>( null, new StoreId(), Iterables.<CommittedTransactionRepresentation>empty(),
-                    ResourceReleaser.NO_OP );
+            return new Response<>( null, new StoreId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
         }
 
         Long popCalledTx()

@@ -28,8 +28,8 @@ import java.util.List;
 import org.junit.Rule;
 import org.junit.Test;
 
-import org.neo4j.com.AccumulatorVisitor;
 import org.neo4j.com.Response;
+import org.neo4j.com.TransactionStream;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.ResourceIterator;
@@ -37,6 +37,7 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Service;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
@@ -106,8 +107,8 @@ public class RemoteStoreCopierTest
 
                 // TODO This code is sort-of-copied from DefaultMasterImplSPI. Please dedup that
                 // <copy>
-                TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
-                long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittingTransactionId();
+                final TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+                final long transactionIdWhenStartingCopy = transactionIdStore.getLastCommittingTransactionId();
                 NeoStoreXaDataSource dataSource =
                         resolver.resolveDependency( DataSourceManager.class ).getDataSource();
                 dataSource.forceEverything();
@@ -136,12 +137,18 @@ public class RemoteStoreCopierTest
                 }
 
                 // Stream committed transaction since the start of copying
-                long highTransactionId = transactionIdStore.getLastCommittingTransactionId();
-                AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>(
-                        upAndIncluding( highTransactionId ) );
-                LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
-                exhaustAndClose( txStore.getCursor( transactionIdWhenStartingCopy + 1, accumulator ) );
-                return response = spy( new Response<>( null, original.storeId(), accumulator.getAccumulator(), NO_OP ) );
+                TransactionStream transactions = new TransactionStream()
+                {
+                    @Override
+                    public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor )
+                            throws IOException
+                    {
+//                        long highTransactionId = transactionIdStore.getLastCommittingTransactionId();
+                        LogicalTransactionStore txStore = resolver.resolveDependency( LogicalTransactionStore.class );
+                        exhaustAndClose( txStore.getCursor( transactionIdWhenStartingCopy + 1, visitor ) );
+                    }
+                };
+                return response = spy( new Response<>( null, original.storeId(), transactions, NO_OP ) );
             }
 
             @Override
@@ -173,7 +180,7 @@ public class RemoteStoreCopierTest
         verify( requester, times( 1 ) ).done();
     }
 
-    protected Predicate<CommittedTransactionRepresentation> upAndIncluding( final long upToAndIncludingTxId )
+    protected Predicate<CommittedTransactionRepresentation> upToAndIncluding( final long upToAndIncludingTxId )
     {
         return new Predicate<CommittedTransactionRepresentation>()
         {

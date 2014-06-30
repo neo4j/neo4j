@@ -19,26 +19,27 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.mock;
-import static org.mockito.Mockito.times;
-import static org.mockito.Mockito.verify;
-import static org.mockito.Mockito.when;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
-
 import org.junit.Before;
 import org.junit.Test;
 import org.mockito.Matchers;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.com.TransactionStream;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 public class SlaveLocksClientTest
 {
@@ -69,12 +70,12 @@ public class SlaveLocksClientTest
         when( master.acquireSharedLock( Matchers.<RequestContext>anyObject(),
                 Matchers.<Locks.ResourceType>anyObject(), Matchers.<long[]>anyVararg() ) ).thenReturn( new Response
                 <LockResult>(new LockResult( LockStatus.OK_LOCKED ), null,
-                Iterables.<CommittedTransactionRepresentation>empty(), ResourceReleaser.NO_OP  ));
+                TransactionStream.EMPTY, ResourceReleaser.NO_OP  ));
 
         when( master.acquireExclusiveLock( Matchers.<RequestContext>anyObject(),
                 Matchers.<Locks.ResourceType>anyObject(), Matchers.<long[]>anyVararg() ) ).thenReturn( new Response
                 <LockResult>(new LockResult( LockStatus.OK_LOCKED ), null,
-                Iterables.<CommittedTransactionRepresentation>empty(), ResourceReleaser.NO_OP  ));
+                TransactionStream.EMPTY, ResourceReleaser.NO_OP  ));
         AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
         when( availabilityGuard.isAvailable( anyLong() )).thenReturn( true );
         SlaveLockManager.Configuration config = mock( SlaveLockManager.Configuration.class );

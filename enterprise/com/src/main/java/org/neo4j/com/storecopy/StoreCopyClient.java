@@ -24,6 +24,7 @@ import java.io.FileFilter;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.com.Response;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -108,7 +109,7 @@ public class StoreCopyClient
         {
             // Update highest archived log id
             // Write transactions that happened during the copy to the currently active logical log
-            writeTransactionsToActiveLogFile( tempStore, response.getTxs() );
+            writeTransactionsToActiveLogFile( tempStore, response );
         }
         finally
         {
@@ -125,8 +126,7 @@ public class StoreCopyClient
         }
     }
 
-    private void writeTransactionsToActiveLogFile( File storeDir,
-            Iterable<CommittedTransactionRepresentation> txs ) throws IOException
+    private void writeTransactionsToActiveLogFile( File storeDir, Response<?> response ) throws IOException
     {
         LifeSupport life = new LifeSupport();
         try
@@ -146,24 +146,26 @@ public class StoreCopyClient
             // transactions that goes some time back, before the last committed transaction id. So we cannot
             // use a TransactionAppender, since it has checks for which transactions one can append.
             WritableLogChannel channel = logFile.getWriter();
-            TransactionLogWriter writer = new TransactionLogWriter(
+            final TransactionLogWriter writer = new TransactionLogWriter(
                     new LogEntryWriterv1( channel, new CommandWriter( channel ) ) );
-            Long firstTxId = null;
-            for ( CommittedTransactionRepresentation transaction : txs )
+            final AtomicLong firstTxId = new AtomicLong( -1 );
+            response.accept( new Visitor<CommittedTransactionRepresentation, IOException>()
             {
-                long txId = transaction.getCommitEntry().getTxId();
-                writer.append( transaction.getTransactionRepresentation(), txId );
-                if ( firstTxId == null )
+                @Override
+                public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
                 {
-                    firstTxId = txId;
+                    long txId = transaction.getCommitEntry().getTxId();
+                    writer.append( transaction.getTransactionRepresentation(), txId );
+                    firstTxId.compareAndSet( -1, txId );
+                    return true;
                 }
-            }
+            } );
 
             // And since we write this manually we need to set the correct transaction id in the
             // header of the log that we just wrote.
             writeLogHeader( fs,
                     logFiles.getVersionFileName( logVersionRepository.getCurrentLogVersion() ),
-                    logVersionRepository.getCurrentLogVersion(), firstTxId != null ? firstTxId-1 : 0 );
+                    logVersionRepository.getCurrentLogVersion(), firstTxId.get() != -1 ? firstTxId.get()-1 : 0 );
 
             if ( firstTxId == null )
             {

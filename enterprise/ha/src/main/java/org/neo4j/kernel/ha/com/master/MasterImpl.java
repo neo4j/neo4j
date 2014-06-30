@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
-import static java.lang.String.format;
-
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -38,6 +36,7 @@ import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionNotPresentOnMasterException;
+import org.neo4j.com.TransactionStream;
 import org.neo4j.com.storecopy.StoreWriter;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Exceptions;
@@ -45,7 +44,6 @@ import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
-import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -56,11 +54,12 @@ import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
+
+import static java.lang.String.format;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -234,7 +233,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         assertCorrectEpoch( context );
         IdAllocation result = spi.allocateIds( idType );
-        return new Response<>( result, spi.storeId(), Iterables.<CommittedTransactionRepresentation>empty(), ResourceReleaser.NO_OP );
+        return new Response<>( result, spi.storeId(), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
 
     @Override
@@ -317,7 +316,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
             Pair<Integer, Long> masterId = spi.getMasterIdForCommittedTx( txId );
             return new Response<>(
                     new HandshakeResult( masterId.first(), masterId.other(), epoch ), spi.storeId(),
-                    Iterables.<CommittedTransactionRepresentation>empty(), ResourceReleaser.NO_OP );
+                    TransactionStream.EMPTY, ResourceReleaser.NO_OP );
         }
         catch ( IOException e )
         {

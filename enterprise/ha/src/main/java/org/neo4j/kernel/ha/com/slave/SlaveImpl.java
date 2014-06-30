@@ -21,12 +21,11 @@ package org.neo4j.kernel.ha.com.slave;
 
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
-import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.com.TransactionStream;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 
 public class SlaveImpl implements Slave
 {
@@ -46,7 +45,7 @@ public class SlaveImpl implements Slave
     {
         // TODO 2.2-future figure out a way to apply transactions
 //        xaDsm.applyTransactions( master.pullUpdates( requestContextFactory.newRequestContext( 0 ) ), ServerUtil.NO_ACTION );
-        return new Response( null, storeId, Iterables.<CommittedTransactionRepresentation>empty(), ResourceReleaser.NO_OP );
+        return new Response( null, storeId, TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
 
     @Override

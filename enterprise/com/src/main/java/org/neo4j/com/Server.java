@@ -57,8 +57,12 @@ import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
@@ -565,7 +569,7 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                     response = type.getTargetCaller().call( requestTarget, context, bufferToReadFrom, targetBuffer );
                     type.getObjectSerializer().write( response.response(), targetBuffer );
                     writeStoreId( response.getStoreId(), targetBuffer );
-                    writeTransactionStreams( response.getTxs(), targetBuffer, byteCounterMonitor );
+                    writeTransactionStreams( response, targetBuffer, byteCounterMonitor );
                     targetBuffer.done();
                     responseWritten( type, channel, context );
                 }
@@ -615,21 +619,26 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         targetBuffer.writeBytes( storeId.serialize() );
     }
 
-    private static void writeTransactionStreams( Iterable<CommittedTransactionRepresentation> txs,
-            ChannelBuffer buffer, ByteCounterMonitor bufferMonitor )
+    private static void writeTransactionStreams( Response<?> response,
+            ChannelBuffer buffer, ByteCounterMonitor bufferMonitor ) throws IOException
     {
-        // TODO 2.2-future this used to write the number of datasources - it is now always 1
-//        buffer.writeByte( 1 );
-//        writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
-        try
+        final NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
+        final LogEntryWriterv1 writer = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
+        response.accept( new Visitor<CommittedTransactionRepresentation, IOException>()
         {
-            new Protocol.CommittedTransactionRepresentationSerializer( txs ).write( buffer );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
-        buffer.writeByte( 0/*no more transactions*/ );
+            @Override
+            public boolean visit( CommittedTransactionRepresentation tx ) throws IOException
+            {
+                LogEntry.Start startEntry = tx.getStartEntry();
+                writer.writeStartEntry( startEntry.getMasterId(), startEntry.getLocalId(),
+                        startEntry.getTimeWritten(), startEntry.getLastCommittedTxWhenTransactionStarted(),
+                        startEntry.getAdditionalHeader() );
+                writer.serialize( tx.getTransactionRepresentation() );
+                LogEntry.Commit commitEntry = tx.getCommitEntry();
+                writer.writeCommitEntry( commitEntry.getTxId(), commitEntry.getTimeWritten() );
+                return true;
+            }
+        } );
     }
 
     protected RequestContext readContext( ChannelBuffer buffer )

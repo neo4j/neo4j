@@ -166,14 +166,7 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     @Override
     public <T> Response<T> packResponse( RequestContext context, T response, Predicate<Long> filter )
     {
-        try
-        {
-            return responsePacker.packResponse( context, response, wrapLongFilter( filter ) );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( e );
-        }
+        return responsePacker.packResponse( context, response, wrapLongFilter( filter ) );
     }
 
     // TODO there should be no need to wrap this here, provide the proper predicate type from the outside

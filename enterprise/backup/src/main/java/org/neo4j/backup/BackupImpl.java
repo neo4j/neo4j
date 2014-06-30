@@ -19,11 +19,8 @@
  */
 package org.neo4j.backup;
 
-import java.io.IOException;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.ServerFailureException;
 import org.neo4j.com.storecopy.ResponsePacker;
 import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
@@ -75,10 +72,6 @@ class BackupImpl implements TheBackupInterface
                     copyStartContext.lastAppliedTransaction() ); // optional transaction id
             return responsePacker.packResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
         }
-        catch ( IOException e )
-        {
-            throw new ServerFailureException( e );
-        }
     }
 
     private long boBackACoupleOfTransactionsIfRequired( long transactionWhenStartingCopy )
@@ -94,13 +87,6 @@ class BackupImpl implements TheBackupInterface
     @Override
     public Response<Void> incrementalBackup( RequestContext context )
     {
-        try
-        {
-            return incrementalResponsePacker.packResponse( context, null );
-        }
-        catch ( IOException e )
-        {
-            throw new ServerFailureException( e );
-        }
+        return incrementalResponsePacker.packResponse( context, null );
     }
 }

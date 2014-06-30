@@ -19,6 +19,9 @@
  */
 package org.neo4j.com;
 
+import java.io.IOException;
+
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 
@@ -27,14 +30,13 @@ public class Response<T> implements AutoCloseable
     private final T response;
     private final StoreId storeId;
     private final ResourceReleaser releaser;
-    private final Iterable<CommittedTransactionRepresentation> txs;
+    private final TransactionStream transactions;
 
-    public Response( T response, StoreId storeId,
-                     Iterable<CommittedTransactionRepresentation> txs, ResourceReleaser releaser )
+    public Response( T response, StoreId storeId, TransactionStream transactions, ResourceReleaser releaser )
     {
         this.storeId = storeId;
         this.response = response;
-        this.txs = txs;
+        this.transactions = transactions;
         this.releaser = releaser;
     }
 
@@ -56,11 +58,11 @@ public class Response<T> implements AutoCloseable
 
     public static <T> Response<T> empty()
     {
-        return new Response<T>( null, new StoreId( -1, -1 ), null, ResourceReleaser.NO_OP );
+        return new Response<>( null, new StoreId( -1, -1 ), TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
 
-    public Iterable<CommittedTransactionRepresentation> getTxs()
+    public void accept( Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
     {
-        return txs;
+        transactions.accept( visitor );
     }
 }

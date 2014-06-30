@@ -21,10 +21,10 @@ package org.neo4j.com.storecopy;
 
 import java.io.IOException;
 
-import org.neo4j.com.AccumulatorVisitor;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
+import org.neo4j.com.TransactionStream;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
 import org.neo4j.helpers.collection.Visitor;
@@ -49,28 +49,32 @@ public class ResponsePacker
         this.db = db; // just so that we can get the store ID at a later point. It's probably not available right now
     }
 
-    public <T> Response<T> packResponse( RequestContext context, T response ) throws IOException
+    public <T> Response<T> packResponse( RequestContext context, T response )
     {
         return packResponse( context, response, Predicates.<CommittedTransactionRepresentation>TRUE() );
     }
 
     public <T> Response<T> packResponse( RequestContext context, T response,
-            Predicate<CommittedTransactionRepresentation> filter ) throws IOException
+            Predicate<CommittedTransactionRepresentation> filter )
     {
-        AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>( filter );
-        long toStartFrom = context.lastAppliedTransaction()+1;
-        if ( toStartFrom <= transactionIdStore.getLastCommittingTransactionId() )
+        final long toStartFrom = context.lastAppliedTransaction()+1;
+        TransactionStream transactions = new TransactionStream()
         {
-            extractTransactions( toStartFrom, accumulator );
-        }
-        Iterable<CommittedTransactionRepresentation> txs = accumulator.getAccumulator();
-        return new Response<>( response, db.storeId(), txs, ResourceReleaser.NO_OP );
+            @Override
+            public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
+            {
+                if ( toStartFrom <= transactionIdStore.getLastCommittingTransactionId() )
+                {
+                    extractTransactions( toStartFrom, visitor );
+                }
+            }
+        };
+        return new Response<>( response, db.storeId(), transactions, ResourceReleaser.NO_OP );
     }
 
     protected void extractTransactions( long startingAtTransactionId,
-            Visitor<CommittedTransactionRepresentation,IOException> accumulator )
-                    throws IOException
+            Visitor<CommittedTransactionRepresentation,IOException> visitor ) throws IOException
     {
-        exhaustAndClose( transactionStore.getCursor( startingAtTransactionId, accumulator ) );
+        exhaustAndClose( transactionStore.getCursor( startingAtTransactionId, visitor ) );
     }
 }

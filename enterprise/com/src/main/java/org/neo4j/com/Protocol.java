@@ -32,6 +32,7 @@ import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 
 import org.neo4j.com.storecopy.StoreWriter;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
@@ -82,16 +83,26 @@ public class Protocol
         chunkingBuffer.done();
     }
 
-    public <PAYLOAD> Response<PAYLOAD> deserializeResponse(BlockingReadHandler<ChannelBuffer> reader, ByteBuffer input, long timeout,
-                                                           Deserializer<PAYLOAD> payloadDeserializer,
-                                                           ResourceReleaser channelReleaser) throws IOException
+    public <PAYLOAD> Response<PAYLOAD> deserializeResponse( BlockingReadHandler<ChannelBuffer> reader,
+            ByteBuffer input, long timeout, Deserializer<PAYLOAD> payloadDeserializer,
+            ResourceReleaser channelReleaser) throws IOException
     {
-        DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
+        final DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
                 internalProtocolVersion, applicationProtocolVersion );
 
         PAYLOAD response = payloadDeserializer.read( dechunkingBuffer, input );
         StoreId storeId = readStoreId( dechunkingBuffer, input );
-        return new Response<PAYLOAD>( response, storeId, readTransactionStreams( dechunkingBuffer ), channelReleaser );
+        TransactionStream transactions = new TransactionStream()
+        {
+            @Override
+            public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
+            {
+                LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+                NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
+                exhaustAndClose( new PhysicalTransactionCursor( channel, reader, visitor ) );
+            }
+        };
+        return new Response<PAYLOAD>( response, storeId, transactions, channelReleaser );
     }
 
     private void writeContext( RequestContext context, ChannelBuffer targetBuffer )

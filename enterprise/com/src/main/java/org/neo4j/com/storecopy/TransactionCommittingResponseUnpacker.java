@@ -22,6 +22,7 @@ package org.neo4j.com.storecopy;
 import java.io.IOException;
 
 import org.neo4j.com.Response;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
@@ -42,29 +43,34 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
     }
 
     @Override
-    public <T> T unpackResponse( Response<T> response, TxHandler handler ) throws IOException
+    public <T> T unpackResponse( Response<T> response, final TxHandler handler ) throws IOException
     {
-        for ( CommittedTransactionRepresentation transaction : response.getTxs() )
+        response.accept( new Visitor<CommittedTransactionRepresentation, IOException>()
         {
-            // TODO why do we synchronize here, read all about it at
-            // TransactionAppender#append(CommittedTransactionRepresentation)
-            synchronized ( appender )
+            @Override
+            public boolean visit( CommittedTransactionRepresentation transaction ) throws IOException
             {
-                if ( appender.append( transaction ) )
+                // TODO why do we synchronize here, read all about it at
+                // TransactionAppender#append(CommittedTransactionRepresentation)
+                synchronized ( appender )
                 {
-                    long transactionId = transaction.getCommitEntry().getTxId();
-                    try
+                    if ( appender.append( transaction ) )
                     {
-                        storeApplier.apply( transaction.getTransactionRepresentation(), transactionId, true ); // TODO recovery=true needed?
-                        handler.accept( transaction );
-                    }
-                    finally
-                    {
-                        transactionIdStore.transactionClosed( transactionId );
+                        long transactionId = transaction.getCommitEntry().getTxId();
+                        try
+                        {
+                            storeApplier.apply( transaction.getTransactionRepresentation(), transactionId, true ); // TODO recovery=true needed?
+                            handler.accept( transaction );
+                        }
+                        finally
+                        {
+                            transactionIdStore.transactionClosed( transactionId );
+                        }
                     }
                 }
+                return true;
             }
-        }
+        } );
         return response.response();
     }
 }
