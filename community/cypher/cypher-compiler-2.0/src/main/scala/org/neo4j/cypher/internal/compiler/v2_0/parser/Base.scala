@@ -28,15 +28,15 @@ trait Base extends Parser {
 
   def OpChar = rule("an operator char") { anyOf("|^&<>=?!:+-*/%~") }
 
-  def DecimalReal = rule { (optional(DecimalInteger) ~ "." ~ Digits).memoMismatches }
   def DecimalInteger = rule { (optional("-") ~ UnsignedDecimalInteger).memoMismatches }
-  def UnsignedDecimalInteger = rule { (("1" - "9") ~ Digits | Digit).memoMismatches }
-  def Exponent = rule { ((DecimalReal | DecimalInteger) ~ "E" ~ DecimalInteger).memoMismatches }
-  def Digits = rule { oneOrMore(Digit) }
-  def Digit = rule { "0" - "9" }
+  def UnsignedDecimalInteger = rule { (group(("1" - "9") ~ optional(DigitString)) | "0").memoMismatches }
+  def RegularDecimalReal = rule { (optional("-") ~ zeroOrMore("0" - "9") ~ "." ~ DigitString).memoMismatches }
+  def ExponentDecimalReal = rule { (optional("-") ~ oneOrMore("0" - "9" | ".") ~ "E" ~ optional("-") ~ DigitString).memoMismatches }
+  def DigitString = rule("'0'-'9'") { oneOrMore(IdentifierPart) ~ !IdentifierPart }
   def HexInteger = rule { (optional("-") ~ UnsignedHexInteger).memoMismatches }
-  def UnsignedHexInteger = rule { ("0x" ~ oneOrMore(HexDigit)).memoMismatches }
-  def HexDigit = rule { "0" - "9" | "a" - "f" | "A" - "Z" }
+  def UnsignedHexInteger = rule { ("0x" ~ HexString).memoMismatches }
+  def HexString = rule("'0'-'9', 'a'-'f'") { oneOrMore(IdentifierPart) ~ !IdentifierPart }
+
   def Dash = rule("'-'") {
     // U+002D ‑ hyphen-minus
     // U+00AD - soft hyphen

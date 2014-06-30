@@ -52,7 +52,7 @@ trait Expressions extends Parser
   private def Expression11 = Expression10
 
   private def Expression10: Rule1[ast.Expression] = rule("an expression") (
-      group(keyword("NOT") ~~ Expression9) ~~>> (ast.Not(_))
+      group(keyword("NOT") ~~ Expression10) ~~>> (ast.Not(_))
     | Expression9
   )
 
@@ -96,8 +96,8 @@ trait Expressions extends Parser
 
   private def Expression4: Rule1[ast.Expression] = rule("an expression") (
       Expression3
-    | group(operator("+") ~~ Expression) ~~>> (ast.UnaryAdd(_))
-    | group(operator("-") ~~ Expression) ~~>> (ast.UnarySubtract(_))
+    | group(operator("+") ~~ Expression4) ~~>> (ast.UnaryAdd(_))
+    | group(operator("-") ~~ Expression4) ~~>> (ast.UnarySubtract(_))
   )
 
   private def Expression3: Rule1[ast.Expression] = rule("an expression") {

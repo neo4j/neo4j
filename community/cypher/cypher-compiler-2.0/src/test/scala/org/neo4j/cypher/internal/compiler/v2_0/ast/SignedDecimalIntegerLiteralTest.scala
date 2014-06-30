@@ -23,27 +23,26 @@ import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_0._
 import org.neo4j.cypher.internal.compiler.v2_0.ast.Expression.SemanticContext
 
-class HexIntegerLiteralTest extends CypherFunSuite {
-  test("correctly parses hexadecimal numbers") {
-    assert(SignedHexIntegerLiteral("0x22")(DummyPosition(0)).value === 0x22)
-    assert(SignedHexIntegerLiteral("0x0")(DummyPosition(0)).value === 0)
-    assert(SignedHexIntegerLiteral("0xffFF")(DummyPosition(0)).value === 0xffff)
-    assert(SignedHexIntegerLiteral("-0x9abc")(DummyPosition(0)).value === -0x9abc)
+class SignedDecimalIntegerLiteralTest extends CypherFunSuite {
+  test("correctly parses decimal numbers") {
+    assert(SignedDecimalIntegerLiteral("22")(DummyPosition(0)).value === 22)
+    assert(SignedDecimalIntegerLiteral("0")(DummyPosition(0)).value === 0)
+    assert(SignedDecimalIntegerLiteral("-0")(DummyPosition(0)).value === 0)
+    assert(SignedDecimalIntegerLiteral("-432")(DummyPosition(0)).value === -432)
   }
 
-  test("throws error for invalid hexadecimal numbers") {
-    assertSemanticError("0x12g3", "invalid literal number")
-    assertSemanticError("0x", "invalid literal number")
-    assertSemanticError("0x33Y23", "invalid literal number")
-    assertSemanticError("-0x12g3", "invalid literal number")
+  test("throws error for invalid decimal numbers") {
+    assertSemanticError("12g3", "invalid literal number")
+    assertSemanticError("923_23", "invalid literal number")
+    assertSemanticError("-92f3", "invalid literal number")
   }
 
-  test("throws error for too large hexadecimal numbers") {
-    assertSemanticError("0xfffffffffffffffff", "integer is too large")
+  test("throws error for too large decimal numbers") {
+    assertSemanticError("999999999999999999999999999", "integer is too large")
   }
 
   private def assertSemanticError(stringValue: String, errorMessage: String) {
-    val literal = SignedHexIntegerLiteral(stringValue)(DummyPosition(4))
+    val literal = SignedDecimalIntegerLiteral(stringValue)(DummyPosition(4))
     val result = literal.semanticCheck(SemanticContext.Simple)(SemanticState.clean)
     assert(result.errors === Vector(SemanticError(errorMessage, DummyPosition(4))))
   }
