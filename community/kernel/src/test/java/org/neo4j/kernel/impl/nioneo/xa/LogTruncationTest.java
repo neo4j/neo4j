@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 
 import org.junit.Test;
+
 import org.neo4j.kernel.api.index.SchemaIndexProvider;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
@@ -45,13 +46,15 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogBuffer;
 import org.neo4j.kernel.impl.transaction.xaframework.XaCommand;
 
 import static java.util.Arrays.asList;
+
 import static junit.framework.TestCase.assertNull;
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+
 import static org.neo4j.kernel.impl.nioneo.store.DynamicRecord.dynamicRecord;
 
 /**
  * At any point, a power outage may stop us from writing to the log, which means that, at any point, all our commands
- * need to be able to handl the log ending mid-way through reading it.
+ * need to be able to handle the log ending mid-way through reading it.
  */
 public class LogTruncationTest
 {
@@ -304,6 +307,12 @@ public class LogTruncationTest
         public StoreChannel getFileChannel()
         {
             throw new UnsupportedOperationException();
+        }
+
+        @Override
+        public ReadableByteChannel getReadableChannel()
+        {
+            return this;
         }
 
         @Override
