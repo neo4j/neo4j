@@ -29,6 +29,9 @@ import java.util.Set;
 import org.junit.Before;
 import org.junit.Test;
 
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -39,6 +42,7 @@ import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
 import org.neo4j.kernel.DefaultTxHook;
+import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.Token;
 import org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore;
@@ -48,8 +52,14 @@ import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyType;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.storemigration.legacystore.LegacyStore;
 import org.neo4j.kernel.impl.storemigration.monitoring.MigrationProgressMonitor;
+import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.InMemoryLogBuffer;
+import org.neo4j.kernel.impl.transaction.xaframework.LogExtractor;
+import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
+import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.Unzip;
@@ -57,6 +67,7 @@ import org.neo4j.tooling.GlobalGraphOperations;
 
 import static java.lang.Integer.MAX_VALUE;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertArrayEquals;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
@@ -105,7 +116,7 @@ public class StoreMigratorIT
     }
 
     @Test
-    public void shouldDedupUniquePropertyIndexKeys() throws Exception
+    public void shouldDeduplicateUniquePropertyIndexKeys() throws Exception
     {
         // GIVEN
         // a store that contains two nodes with property "name" of which there are two key tokens
@@ -139,12 +150,90 @@ public class StoreMigratorIT
                 storeFactory.newPropertyKeyTokenStore( new File( storeFileName + PROPERTY_KEY_TOKEN_STORE_NAME ) );
         Token[] tokens = tokenStore.getTokens( MAX_VALUE );
         tokenStore.close();
-        assertNuDuplicates( tokens );
+        assertNoDuplicates( tokens );
     }
 
-    private void assertNuDuplicates( Token[] tokens )
+    @Test
+    public void shouldTranslateTheLastTransactionLog() throws Exception
     {
-        Set<String> visited = new HashSet<String>();
+        // GIVEN
+        // A store that has a couple of transaction logs
+        File unzippedStore = Unzip.unzip( LegacyStore.class, "legacy-store-with-transaction-logs.zip" );
+        File legacyStoreDir = new File( unzippedStore, "legacystore" );
+        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreDir, NeoStore.DEFAULT_NAME ) );
+        NeoStore neoStore = storeFactory.createNeoStore( storeFileName );
+
+        // WHEN
+        new StoreMigrator( monitor ).migrate( legacyStore, neoStore );
+        legacyStore.close();
+
+        // THEN
+        // We verify that we have a transaction log with two transactions in it, and it exposes
+        // the correction transaction version, so that it can be used for incremental backup,
+        // and for when an instance joins a cluster in HA and needs to verify that it is up to
+        // date with the leader instance.
+        // The store we are upgrading has two transaction logs, with two transactions in each.
+        // So we should be able to enquire a migrated database about transactions 2 and 3.
+        GraphDatabaseFactory factory = new GraphDatabaseFactory();
+        GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( storeDir );
+        DependencyResolver resolver = db.getDependencyResolver();
+        XaDataSourceManager xaDataSourceManager = resolver.resolveDependency( XaDataSourceManager.class );
+        NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
+        XaContainer xaContainer = neoStoreDataSource.getXaContainer();
+        XaLogicalLog logicalLog = xaContainer.getLogicalLog();
+        // The dataset has been specifically constructed such that these two transactions are
+        // contained in the last transaction log:
+        LogExtractor logExtractor = logicalLog.getLogExtractor( 5, 6 );
+        InMemoryLogBuffer buf = new InMemoryLogBuffer();
+
+        // The first transaction must have the correct checksum
+        assertThat( logExtractor.extractNext( buf ), is( 5L ) );
+        assertThat( logExtractor.getLastTxChecksum(), is( -161474256273L ) );
+
+        // The second transaction must have the correct checksum
+        // As it happens, our checksum generation is woefully bad, so these two transactions
+        // end up with the same checksum. Well... all we care about here is that we somehow
+        // compute the same number as we did in the previous version. Not cool, but it's a
+        // fight for another day.
+        assertThat( logExtractor.extractNext( buf ), is( 6L ) );
+        assertThat( logExtractor.getLastTxChecksum(), is( -161474256273L ) );
+
+        // And then we reach the end of the file
+        assertThat( logExtractor.extractNext( buf ), is( -1L ) );
+    }
+
+    @Test
+    public void shouldMigrateStoresThatHaveNoTransactionLogs() throws Exception
+    {
+        // GIVEN
+        // A store that has data, but somehow no transaction logs.
+        File unzippedStore = Unzip.unzip( LegacyStore.class, "legacy-store-without-transaction-logs.zip" );
+        File legacyStoreDir = new File( unzippedStore, "legacystore" );
+        LegacyStore legacyStore = new LegacyStore( fs, new File( legacyStoreDir, NeoStore.DEFAULT_NAME ) );
+        NeoStore neoStore = storeFactory.createNeoStore( storeFileName );
+
+        // WHEN
+        new StoreMigrator( monitor ).migrate( legacyStore, neoStore );
+        legacyStore.close();
+
+        // THEN
+        // Verify that it was migrated correctly with some sanity checks of the data
+        GraphDatabaseFactory factory = new GraphDatabaseFactory();
+        GraphDatabaseService db = factory.newEmbeddedDatabase( storeDir );
+        try ( Transaction ignore = db.beginTx() )
+        {
+            Node a = db.getNodeById( 2 );
+            Node b = db.getNodeById( 1 );
+            assertThat( (String) a.getProperty( "a" ), is( "a" ) );
+            assertThat( (String) b.getProperty( "b" ), is( "b" ) );
+            DynamicRelationshipType relates = DynamicRelationshipType.withName( "relates" );
+            assertThat( a.getSingleRelationship( relates, Direction.OUTGOING ).getEndNode(), is( b ) );
+        }
+    }
+
+    private void assertNoDuplicates( Token[] tokens )
+    {
+        Set<String> visited = new HashSet<>();
         for ( Token token : tokens )
         {
             assertTrue( visited.add( token.name() ) );
@@ -315,7 +404,7 @@ public class StoreMigratorIT
 
     private class ListAccumulatorMigrationProgressMonitor implements MigrationProgressMonitor
     {
-        private final List<Integer> events = new ArrayList<Integer>();
+        private final List<Integer> events = new ArrayList<>();
         private boolean started = false;
         private boolean finished = false;
 

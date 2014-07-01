@@ -68,7 +68,7 @@ public abstract class LogEntry
         private final long lastCommittedTxWhenTransactionStarted;
         private long startPosition;
 
-        Start( Xid xid, int identifier, int masterId, int myId, long startPosition, long timeWritten,
+        public Start( Xid xid, int identifier, int masterId, int myId, long startPosition, long timeWritten,
                long lastCommittedTxWhenTransactionStarted )
         {
             super( identifier );
@@ -145,7 +145,7 @@ public abstract class LogEntry
     {
         private final long timeWritten;
 
-        Prepare( int identifier, long timeWritten )
+        public Prepare( int identifier, long timeWritten )
         {
             super( identifier );
             this.timeWritten = timeWritten;
@@ -208,7 +208,7 @@ public abstract class LogEntry
 
     public static class OnePhaseCommit extends Commit
     {
-        OnePhaseCommit( int identifier, long txId, long timeWritten )
+        public OnePhaseCommit( int identifier, long txId, long timeWritten )
         {
             super( identifier, txId, timeWritten, "1PC" );
         }
@@ -216,7 +216,7 @@ public abstract class LogEntry
 
     public static class TwoPhaseCommit extends Commit
     {
-        TwoPhaseCommit( int identifier, long txId, long timeWritten )
+        public TwoPhaseCommit( int identifier, long txId, long timeWritten )
         {
             super( identifier, txId, timeWritten, "2PC" );
         }
@@ -224,7 +224,7 @@ public abstract class LogEntry
 
     public static class Done extends LogEntry
     {
-        Done( int identifier )
+        public Done( int identifier )
         {
             super( identifier );
         }
@@ -240,7 +240,7 @@ public abstract class LogEntry
     {
         private final XaCommand command;
 
-        Command( int identifier, XaCommand command )
+        public Command( int identifier, XaCommand command )
         {
             super( identifier );
             this.command = command;

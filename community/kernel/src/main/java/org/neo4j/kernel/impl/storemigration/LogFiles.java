@@ -54,8 +54,6 @@ public class LogFiles
      * to another. Since it just renames files (the standard way of moving with
      * JDK6) from and to must be on the same disk partition.
      * @param fs 
-     *
-     * @param filename The base filename for the logical logs
      * @param fromDirectory The directory that hosts the database and its logs
      * @param toDirectory The directory to move the log files to
      * @throws IOException If any of the move operations fail for any reason.
