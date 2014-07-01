@@ -47,7 +47,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   var relIndex: Index[Relationship] = null
   val properties: Map[String, Map[String, Any]] = Map()
   var generateConsole: Boolean = true
-  var dir: File = null
+  var dir: File = createDir(section)
   var allQueriesWriter: Writer = null
 
   def title: String
@@ -58,11 +58,21 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   def graphDescription: List[String]
   def indexProps: List[String] = List()
 
+  protected val baseUrl = System.getProperty("remote-csv-upload")
+  var filePaths: Map[String, String] = Map.empty
+  var urls: Map[String, String] = Map.empty
+
   def executeQuery(queryText: String, params: Map[String, Any])(implicit engine: ExecutionEngine): ExecutionResult = try {
     val query = replaceNodeIds(queryText)
-    val fullQuerySnippet = AsciidocHelper.createCypherSnippetFromPreformattedQuery(Prettifier(query))
+
+    assert(filePaths.size == urls.size)
+    val testQuery = filePaths.foldLeft(query)((acc, entry) => acc.replace(entry._1, entry._2))
+    val docQuery = urls.foldLeft(query)((acc, entry) => acc.replace(entry._1, entry._2))
+
+    val fullQuerySnippet = AsciidocHelper.createCypherSnippetFromPreformattedQuery(Prettifier(docQuery))
     allQueriesWriter.append(fullQuerySnippet).append("\n\n")
-    val result = engine.execute(query, params)
+
+    val result = engine.execute(testQuery, params)
     result
   } catch {
     case e: CypherException => throw new InternalException(queryText, e)
@@ -99,7 +109,11 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   def runQuery(query: String, possibleAssertion: Seq[String], parametersChoice: String): ExecutionResult = {
     var result: ExecutionResult = null
     db.inTx {
-      result = executeQuery(query, parameters(parametersChoice))
+      if (parametersChoice == null) {
+        result = executeQuery(query, Map.empty)
+      } else {
+        result = executeQuery(query, parameters(parametersChoice))
+      }
     }
     db.inTx {
       possibleAssertion.foreach(name => {
@@ -130,7 +144,9 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
     for (i <- 0 until queryLines.length by 2) {
       writer.println("a|[\"source\",\"cypher\"]")
       writer.println("----")
-      writer.println(queryLines(i).trim().replace("|", "\\|"))
+      def query = queryLines(i).trim().replace("|", "\\|")
+      def docQuery = urls.foldLeft(query)((acc, entry) => acc.replace(entry._1, entry._2))
+      writer.println(docQuery)
       writer.println("----")
       writer.println(queryLines(i + 1).trim())
     }
@@ -194,7 +210,7 @@ abstract class RefcardTest extends Assertions with DocumentationHelper with Grap
   @Before
   def init() {
     dir = createDir(section)
-    allQueriesWriter = new OutputStreamWriter(new FileOutputStream( new File("target/all-queries.asciidoc"), true), "UTF-8")
+    allQueriesWriter = new OutputStreamWriter(new FileOutputStream(new File("target/all-queries.asciidoc"), true), "UTF-8")
     db = new TestGraphDatabaseFactory().newImpermanentDatabaseBuilder().newGraphDatabase().asInstanceOf[GraphDatabaseAPI]
 
     db.asInstanceOf[ImpermanentGraphDatabase].cleanContent()
