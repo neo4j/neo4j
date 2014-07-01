@@ -21,6 +21,7 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.ReadableByteChannel;
 
 import org.neo4j.io.fs.StoreChannel;
 
@@ -141,6 +142,12 @@ public class DirectLogBuffer implements LogBuffer
     }
 
     public StoreChannel getFileChannel()
+    {
+        return fileChannel;
+    }
+
+    @Override
+    public ReadableByteChannel getReadableChannel()
     {
         return fileChannel;
     }

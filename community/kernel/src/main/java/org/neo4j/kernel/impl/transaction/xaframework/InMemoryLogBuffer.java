@@ -143,6 +143,12 @@ public class InMemoryLogBuffer implements LogBuffer, ReadableByteChannel
         throw new UnsupportedOperationException();
     }
 
+    @Override
+    public ReadableByteChannel getReadableChannel()
+    {
+        return this;
+    }
+
     public boolean isOpen()
     {
         return true;

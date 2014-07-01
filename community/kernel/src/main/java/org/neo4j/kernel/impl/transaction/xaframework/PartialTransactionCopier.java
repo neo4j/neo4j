@@ -47,7 +47,7 @@ class PartialTransactionCopier
     private final LogExtractor.LogPositionCache positionCache;
     private final LogExtractor.LogLoader logLoader;
     private final ArrayMap<Integer,LogEntry.Start> xidIdentMap;
-    private final DoesSomethingConsumer consumer;
+    private final EntireTransactionCopyingConsumer copyEntireTransactions;
 
     PartialTransactionCopier( ByteBuffer sharedBuffer, XaCommandReaderFactory commandReaderFactory,
                               XaCommandWriterFactory commandWriterFactory, StringLogger log,
@@ -62,21 +62,21 @@ class PartialTransactionCopier
         this.positionCache = positionCache;
         this.logLoader = logLoader;
         this.xidIdentMap = xidIdentMap;
-        consumer = new DoesSomethingConsumer();
+        this.copyEntireTransactions = new EntireTransactionCopyingConsumer();
     }
 
     public void copy( StoreChannel sourceLog, LogBuffer targetLog, long targetLogVersion ) throws IOException
     {
         LogDeserializer deserializer = new LogDeserializer( sharedBuffer, commandReaderFactory );
-        consumer.init( targetLog, targetLogVersion );
+        copyEntireTransactions.init( targetLog, targetLogVersion );
         Cursor<LogEntry, IOException> cursor = deserializer.cursor( sourceLog );
-        while( cursor.next( consumer ) ); // let exceptions propagate, the channel is closed outside
+        while( cursor.next( copyEntireTransactions ) ); // let exceptions propagate, the channel is closed outside
     }
 
-    private class DoesSomethingConsumer implements Consumer<LogEntry, IOException>
+    private class EntireTransactionCopyingConsumer implements Consumer<LogEntry, IOException>
     {
         private final Map<Integer,LogEntry.Start> startEntriesEncountered = new HashMap<>();
-        private final IAmNotReallySureWhatThisDoes consumer = new IAmNotReallySureWhatThisDoes();
+        private final CopyUntilCommitConsumer copyUntilCommitEntry = new CopyUntilCommitConsumer();
         private boolean foundFirstActiveTx;
 
         private LogBuffer targetLog;
@@ -116,8 +116,8 @@ class PartialTransactionCopier
                     LogEntry.Start startEntry = startEntriesEncountered.get( identifier );
                     if ( startEntry == null )
                     {
-                        // Fetch from log extractor instead (all entries except done records, which will be copied from the source).
-                        startEntry = fetchTransactionBulkFromLogExtractor( commitEntry.getTxId() );
+                        // Fetch from log extractor instead (all entries except commit (and done) records, which will be copied from the source).
+                        startEntry = extractTransactionFromEarlierInLog( commitEntry.getTxId() );
                         startEntriesEncountered.put( identifier, startEntry );
                     }
                     else
@@ -132,24 +132,24 @@ class PartialTransactionCopier
                 {
                     logEntryWriter.writeLogEntry( logEntry, targetLog );
                 }
-            };
+            }
             return true;
         }
 
-        private LogEntry.Start fetchTransactionBulkFromLogExtractor( long txId ) throws IOException
+        private LogEntry.Start extractTransactionFromEarlierInLog( long txId ) throws IOException
         {
             LogExtractor extractor = new LogExtractor( positionCache, logLoader, commandReaderFactory,
                     commandWriterFactory, logEntryWriter, txId, txId );
 
-            try (Cursor<LogEntry, IOException> cursor = extractor.cursor( new InMemoryLogBuffer() ) )
+            try ( Cursor<LogEntry, IOException> cursor = extractor.cursor( new InMemoryLogBuffer() ) )
             {
-                while ( cursor.next( consumer ) );
+                while ( cursor.next( copyUntilCommitEntry ) );
             }
 
             return extractor.getLastStartEntry();
         }
 
-        private class IAmNotReallySureWhatThisDoes implements Consumer<LogEntry, IOException>
+        private class CopyUntilCommitConsumer implements Consumer<LogEntry, IOException>
         {
             @Override
             public boolean accept( LogEntry entry ) throws IOException
