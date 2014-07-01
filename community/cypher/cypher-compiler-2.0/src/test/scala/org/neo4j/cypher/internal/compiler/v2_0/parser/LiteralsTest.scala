@@ -59,8 +59,12 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     implicit val parserToTest = NumberLiteral
 
     parsing("123") shouldGive ast.SignedDecimalIntegerLiteral("123")(t)
+    parsing("0") shouldGive ast.SignedDecimalIntegerLiteral("0")(t)
     parsing("-23") shouldGive ast.SignedDecimalIntegerLiteral("-23")(t)
     parsing("-0") shouldGive ast.SignedDecimalIntegerLiteral("-0")(t)
+
+    parsing("0234") shouldGive ast.SignedOctalIntegerLiteral("0234")(t)
+    parsing("-0234") shouldGive ast.SignedOctalIntegerLiteral("-0234")(t)
 
     parsing("0x1") shouldGive ast.SignedHexIntegerLiteral("0x1")(t)
     parsing("0xffff") shouldGive ast.SignedHexIntegerLiteral("0xffff")(t)

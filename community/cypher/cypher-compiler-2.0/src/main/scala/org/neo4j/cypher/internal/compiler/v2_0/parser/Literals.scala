@@ -74,6 +74,7 @@ trait Literals extends Parser
 
   def SignedIntegerLiteral: Rule1[ast.SignedIntegerLiteral] = rule("an integer") (
       HexInteger ~>>> (ast.SignedHexIntegerLiteral(_))
+    | OctalInteger ~>>> (ast.SignedOctalIntegerLiteral(_))
     | DecimalInteger ~>>> (ast.SignedDecimalIntegerLiteral(_))
   )
 
