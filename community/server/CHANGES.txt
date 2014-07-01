@@ -1,3 +1,8 @@
+2.0.4
+-----
+o Ensure transactional endpoint responds with an https location for https
+  calls.
+
 2.0.2
 -----
 o Fixes github issues #1872, #961 that deal with Content-Encoding headers
