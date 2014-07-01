@@ -100,7 +100,6 @@ public class Jetty9WebServer implements WebServer
         }
     }
 
-    private static final int MAX_THREADPOOL_SIZE = 640;
     private static final int DEFAULT_HTTPS_PORT = 7473;
     public static final int DEFAULT_PORT = 80;
     public static final String DEFAULT_ADDRESS = "0.0.0.0";
@@ -118,7 +117,7 @@ public class Jetty9WebServer implements WebServer
             new HashMap<>();
     private final List<FilterDefinition> filters = new ArrayList<>();
 
-    private int jettyMaxThreads = Math.min( tenThreadsPerProcessor(), MAX_THREADPOOL_SIZE );
+    private int jettyMaxThreads;
     private boolean httpsEnabled = false;
     private KeyStoreInformation httpsCertificateInformation = null;
     private final SslSocketConnectorFactory sslSocketFactory = new SslSocketConnectorFactory();
@@ -143,11 +142,12 @@ public class Jetty9WebServer implements WebServer
     {
         if ( jetty == null )
         {
-            QueuedThreadPool pool = createQueuedThreadPool( jettyMaxThreads );
+            JettyThreadCalculator jettyThreadCalculator = new JettyThreadCalculator(jettyMaxThreads);
+            QueuedThreadPool pool = createQueuedThreadPool( jettyThreadCalculator );
 
             jetty = new Server( pool );
 
-            jetty.addConnector( connectorFactory.createConnector( jetty, jettyAddr, jettyHttpPort, jettyMaxThreads ) );
+            jetty.addConnector( connectorFactory.createConnector( jetty, jettyAddr, jettyHttpPort, jettyThreadCalculator ) );
 
             if ( httpsEnabled )
             {
@@ -155,7 +155,7 @@ public class Jetty9WebServer implements WebServer
                 {
                     jetty.addConnector(
                             sslSocketFactory.createConnector( jetty, httpsCertificateInformation, jettyAddr,
-                                    jettyHttpsPort, jettyMaxThreads ) );
+                                    jettyHttpsPort, jettyThreadCalculator ) );
                 }
                 else
                 {
@@ -179,14 +179,10 @@ public class Jetty9WebServer implements WebServer
 
     }
 
-    private QueuedThreadPool createQueuedThreadPool( int jettyMaxThreads )
+    private QueuedThreadPool createQueuedThreadPool( JettyThreadCalculator jtc )
     {
-        // see: http://wiki.eclipse.org/Jetty/Howto/High_Load
-        int minThreads = Math.max( 2, jettyMaxThreads / 10 );
-        int maxCapacity = jettyMaxThreads * 1000 * 60; // threads * 1000 req/s * 60 s
-        BlockingQueue<Runnable> queue = new BlockingArrayQueue<>( minThreads, minThreads, maxCapacity );
-        int maxThreads = Math.max( jettyMaxThreads, minThreads );
-        return new QueuedThreadPool( maxThreads, minThreads, 60000, queue );
+        BlockingQueue<Runnable> queue = new BlockingArrayQueue<>( jtc.getMinThreads(), jtc.getMinThreads(), jtc.getMaxCapacity() );
+        return new QueuedThreadPool( jtc.getMaxThreads(), jtc.getMinThreads(), 60000, queue );
     }
 
     @Override
@@ -378,12 +374,6 @@ public class Jetty9WebServer implements WebServer
         {
             throw new RuntimeException( e );
         }
-    }
-
-    private int tenThreadsPerProcessor()
-    {
-        return 10 * Runtime.getRuntime()
-                .availableProcessors();
     }
 
     private void loadAllMounts()

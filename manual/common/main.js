@@ -85,6 +85,13 @@ function addBootstrapStyling()
   $('#content div.titlepage div.abstract').addClass('alert alert-info');
 }
 
+function addSearchHighlightButton()
+{
+  $('#navLinks')
+  .append('<span id="showHideHighlight"><a tabindex="6" href="javascript:;" title="Toggle search highlight">Highlight <i class="fa fa-eraser"></i></a></span>')
+  .click(toggleHighlight);
+}
+
 function initialize()
 {
   // Set the webhelp-currentid class on the current page in the treenav.
@@ -116,9 +123,6 @@ function initialize()
    * "#treeDiv" || this.hash == "") && $target.length) { var targetOffset = $target.offset().top - 120;
    * $('html,body').animate({ 'scrollTop' : targetOffset }, 200); return false; } } });
    */
-  // $("#showHideHighlight").button();
-  // //add jquery button styling to 'Go'
-  // button
   // Generate tabs in nav-pane with JQuery
   $( function()
   {
@@ -177,18 +181,28 @@ function initialize()
     } );
   } );
 
-  // 'ui-tabs-1' is the cookie name which
-  // is used for the persistence of the
-  // tabs.(Content/Search tab)
-  if ( $.cookie( 'ui-tabs-1' ) === '1' )
+  var searchText = $.cookie( 'textToSearch' );
+  if ( searchText != undefined && searchText.length > 0 )
   {
-    // search tab is active
-    if ( $.cookie( 'textToSearch' ) != undefined && $.cookie( 'textToSearch' ).length > 0 )
+    document.getElementById( 'textToSearch' ).value = searchText;
+    // 'ui-tabs-1' is the cookie name which
+    // is used for the persistence of the
+    // tabs.(Content/Search tab)
+    if ( $.cookie( 'ui-tabs-1' ) === '1' )
     {
-      document.getElementById( 'textToSearch' ).value = $.cookie( 'textToSearch' );
+      // search tab is active
+      $.cookie( 'ui-tabs-1', '0' ); // default to not keep it active on next page
       Verifie( 'searchForm' );
-      searchHighlight( $.cookie( 'textToSearch' ) );
-      $( "#showHideHighlight" ).css( "display", "block" );
+      if ( searchText.length > 1 )
+      {
+        searchHighlight( searchText );
+        addSearchHighlightButton();
+        $('#showHideHighlight i').css('color', '#ffe48b');
+      }
+      else
+      {
+        highlightOn = false;
+      }
     }
   }
 
@@ -226,10 +240,12 @@ function doSearch()
 {
   // 'ui-tabs-1' is the cookie name which is used for the persistence of the
   // tabs.(Content/Search tab)
-  if ( $.cookie( 'textToSearch' ) != undefined && $.cookie( 'textToSearch' ).length > 0 )
+  var searchText = $.cookie( 'textToSearch' );
+  if ( searchText != undefined && searchText.length > 0 )
   {
-    document.getElementById( 'textToSearch' ).value = $.cookie( 'textToSearch' );
+    document.getElementById( 'textToSearch' ).value = searchText;
     Verifie( 'searchForm' );
+    
   }
 }
 
@@ -382,22 +398,17 @@ function searchHighlight( searchText_ )
   }
 }
 
-function searchUnhighlight()
-{
-  highlightOn = false;
-  // unhighlight the search input's all stems
-  $( "#content" ).unhighlight();
-  $( "#content" ).unhighlight();
-}
-
 function toggleHighlight()
 {
   if ( highlightOn )
   {
-    searchUnhighlight();
+    $('span.highlight', '#content').addClass('unhighlight');
+    $('#showHideHighlight i').css('color', 'inherit');
   }
   else
   {
-    searchHighlight( $.cookie( 'textToSearch' ) );
+    $('span.highlight', '#content').removeClass('unhighlight');
+    $('#showHideHighlight i').css('color', '#ffe48b');
   }
+  highlightOn = !highlightOn;
 }

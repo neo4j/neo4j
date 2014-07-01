@@ -412,8 +412,8 @@ public abstract class AbstractNeoServer implements NeoServer
 
     private int defaultMaxWebServerThreads()
     {
-        return 10 * Runtime.getRuntime()
-                .availableProcessors();
+        return Math.min(Runtime.getRuntime()
+                .availableProcessors(),500);
     }
 
     private void startWebServer()

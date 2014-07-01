@@ -68,7 +68,7 @@ MIDDLE -> END [label="outgoing relationship"]
 START -> MIDDLE [label="incoming relationship"]
 ----
 
-'Relationships are equally well traversed in either direction.'
+_Relationships are equally well traversed in either direction._
 This means that there is no need to add duplicate relationships in the opposite direction (with regard to traversal or performance).
 
 While relationships always have a direction, you can ignore the direction where it is not useful in your application.
@@ -81,7 +81,7 @@ Note that a node can have relationships to itself as well:
 ----
 
 To further enhance graph traversal all relationships have a relationship type.
-Note that the word _type_ might be misleading here, you could rather think of it as a _label_.
+Note that the word _type_ might be misleading here, you could rather think of it as a _name_.
 The following example shows a simple social network with two relationship types.
 
 ["dot", "graphdb-rels-twitter.svg"]
