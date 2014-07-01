@@ -67,6 +67,10 @@ include::match-by-relationship-type-and-use-an-identifier.asciidoc[]
 
 == Relationships in depth ==
 
+[NOTE]
+Inside a single pattern, relationships will only be matched once.
+You can read more about this in <<cypherdoc-uniqueness>>.
+
 :leveloffset: 3
 
 include::relationship-types-with-uncommon-characters.asciidoc[]
