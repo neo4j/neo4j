@@ -30,5 +30,5 @@ case object simpleDocBuilder extends DocBuilderChain[Any] with TopLevelDocBuilde
     toStringDocBuilder
   )
 
-  override protected def newNestedDocGenerator = catchNotImplemented(super.newNestedDocGenerator)
+  override protected def newNestedDocGenerator = catchErrors(super.newNestedDocGenerator)
 }

@@ -33,6 +33,9 @@
     </encoder>
   </appender>
 
+  <logger name="org.neo4j.kernel.InternalAbstractGraphDatabase" level="WARN">
+  </logger>
+
   <logger name="org.neo4j" level="INFO" additivity="false">
     <appender-ref ref="CONSOLE"/>
   </logger>

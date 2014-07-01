@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import org.junit.Test
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
+import org.neo4j.cypher.GraphDatabaseFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.{MatchingPair, PatternNode}
+import org.neo4j.graphdb.Direction
 
-class PatternNodeTest extends GraphDatabaseJUnitSuite {
-  @Test def returnsPatternRelationships() {
+class PatternNodeTest extends GraphDatabaseFunSuite {
+  test("returns pattern relationships") {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
 
@@ -33,10 +32,10 @@ class PatternNodeTest extends GraphDatabaseJUnitSuite {
 
     val rels = a.getPRels(Seq())
 
-    assert(rels === Seq(r))
+    rels should equal(Seq(r))
   }
 
-  @Test def doesntReturnRelsAlreadyVisited() {
+  test("does not return rels already visited") {
     val a = createNode()
     val b = createNode()
     val rel = relate(a, b, "r")
@@ -48,6 +47,6 @@ class PatternNodeTest extends GraphDatabaseJUnitSuite {
 
     val rels = pA.getPRels(Seq(MatchingPair(pRel, rel)))
 
-    assert(rels === Seq())
+    rels shouldBe empty
   }
 }

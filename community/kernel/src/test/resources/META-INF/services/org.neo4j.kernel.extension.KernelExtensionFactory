@@ -2,4 +2,3 @@ org.neo4j.kernel.impl.api.index.inmemory.InMemoryIndexProviderFactory
 org.neo4j.kernel.impl.api.scan.InMemoryLabelScanStoreExtension
 org.neo4j.kernel.DummyExtensionFactory
 org.neo4j.kernel.impl.index.DummyIndexExtensionFactory
-org.neo4j.ext.monitorlogging.MonitorLoggingExtensionFactory

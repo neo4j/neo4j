@@ -23,7 +23,6 @@ import org.neo4j.cypher.ProfilerStatisticsNotReadyException;
 
 import java.util.List;
 import java.util.Map;
-import java.util.NoSuchElementException;
 
 /**
  * Instances describe single execution steps in a Cypher query execution plan

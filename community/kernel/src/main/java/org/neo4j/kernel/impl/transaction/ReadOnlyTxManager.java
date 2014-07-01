@@ -321,6 +321,7 @@ public class ReadOnlyTxManager extends AbstractTransactionManager
     @Override
     public TransactionState getTransactionState()
     {
-        return TransactionState.NO_STATE;
+        ReadOnlyTransactionImpl tx = txThreadMap.get();
+        return tx != null ? tx.getTransactionState() : TransactionState.NO_STATE;
     }
 }

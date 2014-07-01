@@ -31,3 +31,15 @@ case class UnionPipe(in: Seq[Pipe], columns:List[String])(implicit val monitor: 
 
   def exists(pred: Pipe => Boolean) = pred(this) || in.exists(_.exists(pred))
 }
+
+case class NewUnionPipe(l: Pipe, r: Pipe)(implicit val monitor: PipeMonitor) extends Pipe {
+  def planDescription: PlanDescription =
+    new PlanDescriptionImpl(this, "Union", TwoChildren(l.planDescription, r.planDescription), Seq.empty)
+
+  def symbols: SymbolTable = l.symbols
+
+  protected def internalCreateResults(state: QueryState): Iterator[ExecutionContext] =
+    l.createResults(state) ++ r.createResults(state)
+
+  def exists(pred: Pipe => Boolean): Boolean = l.exists(pred) || r.exists(pred)
+}

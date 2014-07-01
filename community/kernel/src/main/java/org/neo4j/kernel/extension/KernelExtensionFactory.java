@@ -44,7 +44,6 @@ public abstract class KernelExtensionFactory<DEPENDENCIES> extends Service
      * Create a new instance of this kernel extension.
      *
      * @param dependencies
-     * @return
      */
     public abstract Lifecycle newKernelExtension( DEPENDENCIES dependencies )
             throws Throwable;

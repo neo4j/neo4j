@@ -118,7 +118,7 @@ case class selectPatternPredicates(simpleSelection: PlanTransformer[QueryGraph])
 
     private def applicable(outerPlan: QueryPlan, qg: QueryGraph, expression: Expression) = {
       val symbolsAvailable = qg.argumentIds.subsetOf(outerPlan.availableSymbols)
-      val isSolved = outerPlan.solved.graph.selections.contains(expression)
+      val isSolved = outerPlan.solved.exists(_.graph.selections.contains(expression))
       symbolsAvailable && !isSolved
     }
   }
