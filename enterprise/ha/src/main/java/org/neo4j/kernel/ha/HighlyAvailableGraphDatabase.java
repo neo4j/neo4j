@@ -188,6 +188,14 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         // 3 conditions: DatabaseAvailability, HighAvailabilityMemberStateMachine, and HA Kernel Panic
         return new AvailabilityGuard( Clock.SYSTEM_CLOCK, 3 );
     }
+    /**
+     * to notify all states changes for slaves/master
+     * @param toAdd
+     */
+    public void addHighAvailabilityMemberListener( HighAvailabilityMemberListener toAdd )
+    {
+        memberStateMachine.addHighAvailabilityMemberListener( toAdd ); 
+    }
 
     @Override
     protected void createDatabaseAvailability()
