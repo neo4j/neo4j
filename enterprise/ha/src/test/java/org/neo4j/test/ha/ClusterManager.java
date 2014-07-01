@@ -660,7 +660,7 @@ public class ClusterManager
             return member.getConfig().get( GraphDatabaseSettings.store_dir );
         }
 
-        public void sync( HighlyAvailableGraphDatabase... except )
+        public void sync( HighlyAvailableGraphDatabase... except ) throws IOException
         {
             Set<HighlyAvailableGraphDatabase> exceptSet = new HashSet<>( asList( except ) );
             for ( HighlyAvailableGraphDatabase db : getAllMembers() )

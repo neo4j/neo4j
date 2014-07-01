@@ -97,6 +97,7 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -232,8 +233,8 @@ public class TestNeoStore
                     {
                         return ds.evaluate();
                     }
-                } ), headerInformation, new StartupStatisticsProvider(), caches, nodeManager, null, null,
-                InternalAbstractGraphDatabase.defaultCommitProcessFactory );
+                } ), TransactionHeaderInformationFactory.DEFAULT, new StartupStatisticsProvider(), caches, nodeManager,
+                null, null, InternalAbstractGraphDatabase.defaultCommitProcessFactory );
         ds.init();
         ds.start();
 

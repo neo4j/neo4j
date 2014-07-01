@@ -46,6 +46,10 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
     @Override
     public void assertMatch( long txId, int masterId, long checksum )
     {
+        if ( txId == 0 )
+        {
+            return;
+        }
         TransactionMetadataCache.TransactionMetadata metadata = null;
         try
         {
@@ -55,12 +59,6 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
         {
             throw new RuntimeException( e );
         }
-        // TODO 2.2-future this is wrong and I (CG) should feel wrong
-        if ( metadata == null )
-        {
-            System.out.println("Could not find metadata for txid " + txId);
-            return;
-        }
         int readMaster = metadata.getMasterId();
         long readChecksum = metadata.getChecksum();
         boolean match = masterId == readMaster && checksum == readChecksum;
@@ -68,7 +66,7 @@ public class BranchDetectingTxVerifier implements TxChecksumVerifier
         if ( !match )
         {
             throw new BranchedDataException( stringify( txId, masterId, checksum ) +
-                    " doesn't match " + readChecksum );
+                    " doesn't match " + stringify( txId, readMaster, readChecksum ) );
         }
     }
 

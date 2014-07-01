@@ -19,15 +19,15 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
+import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
+
 import java.io.FileNotFoundException;
 import java.io.IOException;
 
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.LOG_HEADER_SIZE;
-import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 public class PhysicalLogicalTransactionStore extends LifecycleAdapter implements LogicalTransactionStore
 {

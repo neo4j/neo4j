@@ -58,7 +58,21 @@ public class RequestContextFactory extends LifecycleAdapter
 
     public RequestContext newRequestContext( long sessionId, int machineId, int eventIdentifier )
     {
+        try
+        {
+            // TODO 2.2-future seriously? start()? Seriously?
+            // TODO 2.2-future we should probably (spelled fucking definitely) restart the RCF when restarting the neoDS
+            start();
+        }
+        catch ( Throwable throwable )
+        {
+            throw new RuntimeException( throwable );
+        }
         long latestTxId = txIdStore.getLastCommittingTransactionId();
+        if ( latestTxId == 0 )
+        {
+            return new RequestContext( sessionId, machineId, eventIdentifier, 0, -1, -1 );
+        }
         TransactionMetadataCache.TransactionMetadata txMetadata = null;
         try
         {
@@ -71,8 +85,7 @@ public class RequestContextFactory extends LifecycleAdapter
         if ( txMetadata != null )
         {
             return new RequestContext(
-                    sessionId, machineId, eventIdentifier, latestTxId, txMetadata.getMasterId(), txMetadata.getAuthorId() );
-
+                    sessionId, machineId, eventIdentifier, latestTxId, txMetadata.getMasterId(), txMetadata.getChecksum() );
         }
         else
         {

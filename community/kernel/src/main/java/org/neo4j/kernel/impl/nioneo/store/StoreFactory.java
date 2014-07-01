@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -36,8 +38,6 @@ import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 
 /**
 * Factory for Store implementations. Can also be used to create empty stores.
@@ -285,9 +285,6 @@ public class StoreFactory
      * Creates a new node store contained in <CODE>fileName</CODE> If filename
      * is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
-     *
-     * @param fileName
-     *            File name of the new node store
      */
     public void createNodeStore()
     {
@@ -306,9 +303,6 @@ public class StoreFactory
      * Creates a new relationship store contained in <CODE>fileName</CODE> If
      * filename is <CODE>null</CODE> or the file already exists an <CODE>IOException</CODE>
      * is thrown.
-     *
-     * @param fileName
-     *            File name of the new relationship store
      */
     public void createRelationshipStore()
     {
@@ -320,9 +314,6 @@ public class StoreFactory
      * Creates a new property store contained in <CODE>fileName</CODE> If
      * filename is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
-     *
-     * @param fileName
-     *            File name of the new property store
      */
     public void createPropertyStore()
     {
@@ -341,9 +332,6 @@ public class StoreFactory
      * Creates a new relationship type store contained in <CODE>fileName</CODE>
      * If filename is <CODE>null</CODE> or the file already exists an
      * <CODE>IOException</CODE> is thrown.
-     *
-     * @param fileName
-     *            File name of the new relationship type store
      */
     private void createRelationshipTypeStore()
     {

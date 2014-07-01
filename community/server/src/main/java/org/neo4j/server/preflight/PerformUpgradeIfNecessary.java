@@ -19,14 +19,15 @@
  */
 package org.neo4j.server.preflight;
 
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+
 import java.io.File;
 import java.util.Map;
 
 import org.apache.commons.configuration.Configuration;
-
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.storemigration.CurrentDatabase;
 import org.neo4j.kernel.impl.storemigration.StoreMigrationTool;
 import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
@@ -38,8 +39,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.server.configuration.Configurator;
-
-import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
 
 public class PerformUpgradeIfNecessary implements PreflightTask
 {
@@ -87,6 +86,7 @@ public class PerformUpgradeIfNecessary implements PreflightTask
             catch ( UpgradeNotAllowedByConfigurationException e )
             {
                 log.log( e.getMessage() );
+                // TODO Do my eyes deceive me? We have a logger AND we print to stdout explicitly? That can't be right...
                 System.out.println( e.getMessage() );
                 failureMessage = e.getMessage();
                 return false;

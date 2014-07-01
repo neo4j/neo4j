@@ -19,13 +19,19 @@
  */
 package examples;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.graphdb.Direction.BOTH;
+import static org.neo4j.graphdb.Direction.INCOMING;
+import static org.neo4j.graphdb.Direction.OUTGOING;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+import static org.neo4j.test.BatchTransaction.beginBatchTx;
+
 import java.io.File;
 
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
@@ -36,14 +42,6 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.test.BatchTransaction;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.graphdb.Direction.BOTH;
-import static org.neo4j.graphdb.Direction.INCOMING;
-import static org.neo4j.graphdb.Direction.OUTGOING;
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-import static org.neo4j.test.BatchTransaction.beginBatchTx;
 
 @Ignore( "Not a test. Here for show-off purposes" )
 public class CreateAndLoadDenseNodeIT
@@ -58,25 +56,19 @@ public class CreateAndLoadDenseNodeIT
             node = db.getNodeById( 0 );
             tx.success();
         }
-        System.out.println( "Starting" );
         // WHEN
         loadRelationships( node, MyRelTypes.TEST, INCOMING );
         loadRelationships( node, MyRelTypes.TEST2, OUTGOING );
         loadRelationships( node, MyRelTypes.TEST_TRAVERSAL, INCOMING );
-        System.out.println( "Done" );
     }
 
     private int loadRelationships( Node node, RelationshipType type, Direction direction )
     {
-        long t = System.currentTimeMillis();
         int count;
         try ( Transaction tx = db.beginTx() )
         {
             count = count( node.getRelationships( type, direction ) );
-            System.out.println( "loading " + type + " " + direction + " took " + (System.currentTimeMillis()-t) + "ms" );
-            t = System.currentTimeMillis();
             int pCount = node.getDegree( type, direction );
-            System.out.println( "counting " + type + " " + direction + " took " + (System.currentTimeMillis()-t) + "ms" );
             assertEquals( count, pCount );
             tx.success();
         }
@@ -100,7 +92,6 @@ public class CreateAndLoadDenseNodeIT
     {
         if ( !new File( storeDir, "neostore" ).exists() )
         {
-            System.out.println( "Creating db" );
             db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir.getPath() );
             BatchTransaction tx = beginBatchTx( db );
             try

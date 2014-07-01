@@ -19,29 +19,12 @@
  */
 package org.neo4j.server.rest.transactional.integration;
 
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Set;
-
-import org.codehaus.jackson.JsonNode;
-import org.junit.Test;
-
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.kernel.api.exceptions.Status;
-import org.neo4j.server.ServerTestUtils;
-import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
-import org.neo4j.test.server.HTTP;
-import org.neo4j.test.server.HTTP.Response;
-import org.neo4j.tooling.GlobalGraphOperations;
-
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.CoreMatchers.equalTo;
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
-
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.server.rest.domain.JsonHelper.jsonNode;
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.containsNoErrors;
@@ -50,6 +33,21 @@ import static org.neo4j.server.rest.transactional.integration.TransactionMatcher
 import static org.neo4j.server.rest.transactional.integration.TransactionMatchers.matches;
 import static org.neo4j.test.server.HTTP.RawPayload.quotedJson;
 import static org.neo4j.test.server.HTTP.RawPayload.rawPayload;
+
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Set;
+
+import org.codehaus.jackson.JsonNode;
+import org.junit.Test;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.server.ServerTestUtils;
+import org.neo4j.server.rest.AbstractRestFunctionalTestBase;
+import org.neo4j.test.server.HTTP;
+import org.neo4j.test.server.HTTP.Response;
+import org.neo4j.tooling.GlobalGraphOperations;
 
 public class TransactionIT extends AbstractRestFunctionalTestBase
 {
@@ -305,7 +303,6 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             @Override
             public void execute( String url )
             {
-                System.out.println(url);
                 // begin and execute
                 Response begin = http.POST(
                         "/db/data/transaction",

@@ -192,11 +192,13 @@ public final class ConfigurationBean extends Neo4jMBean
         // Apply new config
         try
         {
+            // TODO What does a System.out do here?
             System.out.println( "Apply new config" );
             configuration.applyChanges( config );
         }
         catch( Throwable e )
         {
+            // TODO i mean, come on
             e.printStackTrace();
         }
     }

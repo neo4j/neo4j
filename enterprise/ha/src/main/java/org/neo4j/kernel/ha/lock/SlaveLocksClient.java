@@ -49,6 +49,7 @@ class SlaveLocksClient implements Locks.Client
     // Using atomic ints to avoid creating garbage through boxing.
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
+    private boolean initialized = false;
 
     public SlaveLocksClient(
             Master master,
@@ -231,6 +232,10 @@ class SlaveLocksClient implements Locks.Client
     {
         sharedLocks.clear();
         exclusiveLocks.clear();
+        if ( initialized )
+        {
+            master.finishTransaction( requestContextFactory.newRequestContext( (int) client.getIdentifier() ), true );
+        }
         client.close();
     }
 
@@ -291,8 +296,11 @@ class SlaveLocksClient implements Locks.Client
             throw new RuntimeException( "Timed out waiting for database to allow operations to proceed. "
                     + availabilityGuard.describeWhoIsBlocking() );
         }
-
-        master.initializeTx( requestContextFactory.newRequestContext( (int) client.getIdentifier() ) );
+        if ( !initialized )
+        {
+            master.initializeTx( requestContextFactory.newRequestContext( (int) client.getIdentifier() ) );
+            initialized = true;
+        }
     }
 
     private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()

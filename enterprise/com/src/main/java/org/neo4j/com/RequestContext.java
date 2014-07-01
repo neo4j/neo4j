@@ -85,8 +85,15 @@ public final class RequestContext
     @Override
     public String toString()
     {
-        return "RequestContext[session: " + epoch + ", ID:" + machineId + ", eventIdentifier:" + eventIdentifier
-               + ", lastTx:" + lastAppliedTransaction + "]";
+        return "RequestContext[" +
+                "machineId=" + machineId +
+                ", lastAppliedTransaction=" + lastAppliedTransaction +
+                ", eventIdentifier=" + eventIdentifier +
+                ", hashCode=" + hashCode +
+                ", epoch=" + epoch +
+                ", masterId=" + masterId +
+                ", checksum=" + checksum +
+                ']';
     }
 
     @Override

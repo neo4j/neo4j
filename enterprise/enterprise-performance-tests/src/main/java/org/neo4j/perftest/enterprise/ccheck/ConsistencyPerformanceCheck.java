@@ -19,7 +19,16 @@
  */
 package org.neo4j.perftest.enterprise.ccheck;
 
-import java.io.File;
+import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
+import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
+import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
+import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.enumSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
+import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
+import static org.neo4j.perftest.enterprise.windowpool.MemoryMappingConfiguration.addLegacyMemoryMappingConfiguration;
+
 import java.util.Map;
 
 import org.neo4j.consistency.ConsistencyCheckSettings;
@@ -31,7 +40,6 @@ import org.neo4j.index.lucene.LuceneLabelScanStoreBuilder;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.api.direct.DirectStoreAccess;
 import org.neo4j.kernel.api.impl.index.DirectoryFactory;
 import org.neo4j.kernel.api.impl.index.LuceneSchemaIndexProvider;
@@ -48,16 +56,6 @@ import org.neo4j.perftest.enterprise.generator.DataGenerator;
 import org.neo4j.perftest.enterprise.util.Configuration;
 import org.neo4j.perftest.enterprise.util.Parameters;
 import org.neo4j.perftest.enterprise.util.Setting;
-
-import static org.neo4j.perftest.enterprise.util.Configuration.SYSTEM_PROPERTIES;
-import static org.neo4j.perftest.enterprise.util.Configuration.settingsOf;
-import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.param;
-import static org.neo4j.perftest.enterprise.util.DirectlyCorrelatedParameter.passOn;
-import static org.neo4j.perftest.enterprise.util.Setting.booleanSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.enumSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.integerSetting;
-import static org.neo4j.perftest.enterprise.util.Setting.stringSetting;
-import static org.neo4j.perftest.enterprise.windowpool.MemoryMappingConfiguration.addLegacyMemoryMappingConfiguration;
 
 public class ConsistencyPerformanceCheck
 {
@@ -157,10 +155,9 @@ public class ConsistencyPerformanceCheck
                 pageCache,
                 fileSystem,
                 logger,
-                new DefaultTxHook(),
                 monitors );
 
-        NeoStore neoStore = factory.newNeoStore( new File( storeDir, NeoStore.DEFAULT_NAME ) );
+        NeoStore neoStore = factory.newNeoStore( true );
 
         SchemaIndexProvider indexes = new LuceneSchemaIndexProvider( DirectoryFactory.PERSISTENT, tuningConfiguration );
         return new DirectStoreAccess( new StoreAccess( neoStore ),

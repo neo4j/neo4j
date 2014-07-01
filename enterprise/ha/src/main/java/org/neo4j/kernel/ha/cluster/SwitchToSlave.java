@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
+import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.ArrayList;
@@ -35,6 +38,7 @@ import org.neo4j.com.Server;
 import org.neo4j.com.ServerUtil;
 import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.HostnamePort;
 import org.neo4j.io.fs.FileSystemAbstraction;
@@ -49,6 +53,7 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.MasterClient210;
 import org.neo4j.kernel.ha.StoreOutOfDateException;
 import org.neo4j.kernel.ha.StoreUnableToParticipateInClusterException;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -58,8 +63,8 @@ import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
@@ -75,18 +80,18 @@ import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
-import static org.neo4j.kernel.ha.cluster.HighAvailabilityModeSwitcher.getServerId;
-import static org.neo4j.kernel.impl.nioneo.store.NeoStore.isStorePresent;
-
 public class SwitchToSlave
 {
     // TODO solve this with lifecycle instance grouping or something
     @SuppressWarnings( "rawtypes" )
     private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {
             StoreLockerLifecycleAdapter.class,
-            NodeManager.class,
+            NeoStoreXaDataSource.class,
+            RequestContextFactory.class
+//            NodeManager.class,
             // TODO 2.2-future what is this next line?
 //            IndexStore.class
+
     };
 
     private final Logging logging;
@@ -142,12 +147,8 @@ public class SwitchToSlave
             copyStoreFromMaster( masterUri );
         }
 
-        /*
-         * We get here either with a fresh store from the master copy above so we need to start the ds
-         * or we already had a store, so we have already started the ds. Either way, make sure it's there.
-         */
-        NeoStoreXaDataSource nioneoDataSource = ensureDataSourceStarted( resolver );
-        checkDataConsistency(  resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
+        NeoStoreXaDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreXaDataSource.class );
+        checkDataConsistency( resolver.resolveDependency( RequestContextFactory.class ), nioneoDataSource, masterUri );
 
         URI slaveUri = startHaCommunication( haCommunicationLife, nioneoDataSource, me, masterUri );
 
@@ -180,9 +181,13 @@ public class SwitchToSlave
              * the master but eventually only one will get to apply them.
              */
             console.log( "Catching up with master" );
-            RequestContext context = requestContextFactory.newRequestContext( -1 );
-            // TODO 2.2-future
-//            xaDataSourceManager.applyTransactions( checkConsistencyMaster.pullUpdates( context ) );
+
+            // TODO 2.2-future the response unpacked must be a restartable service that is injected
+            new TransactionCommittingResponseUnpacker(
+                    resolver.resolveDependency( LogicalTransactionStore.class ).getAppender(),
+                    resolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
+                    resolver.resolveDependency( TransactionIdStore.class ) ).
+                    unpackResponse( checkConsistencyMaster.pullUpdates( requestContextFactory.newRequestContext() ) );
             console.log( "Now consistent with master" );
         }
         catch ( NoSuchLogVersionException e )
@@ -206,9 +211,6 @@ public class SwitchToSlave
             msgLog.warn( "Current store is unable to participate in the cluster; fetching new store from master", upe );
             try
             {
-                // Unregistering from a running DSManager stops the datasource
-                // TODO 2.2-future
-//                xaDataSourceManager.unregisterDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
                 stopServicesAndHandleBranchedStore( config.get( HaSettings.branched_data_policy ) );
             }
             catch ( IOException e )
@@ -221,7 +223,7 @@ public class SwitchToSlave
         catch ( MismatchingStoreIdException e )
         {
             console.log( "The store does not represent the same database as master. Will remove and fetch a new one from master" );
-            if ( txIdStore.getLastCommittingTransactionId() == 1 )
+            if ( txIdStore.getLastCommittingTransactionId() == 0 )
             {
                 msgLog.warn( "Found and deleting empty store with mismatching store id " + e.getMessage() );
                 stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
@@ -243,8 +245,7 @@ public class SwitchToSlave
     {
         MasterClient master = newMasterClient( masterUri, nioneoDataSource.getStoreId(), haCommunicationLife );
 
-        Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), master,
-                resolver.resolveDependency( RequestContextFactory.class ) );
+        Slave slaveImpl = new SlaveImpl( nioneoDataSource.getStoreId(), resolver.resolveDependency( UpdatePuller.class ) );
 
         SlaveServer server = new SlaveServer( slaveImpl, serverConfig(), logging,
                 resolver.resolveDependency( Monitors.class ) );
@@ -309,7 +310,7 @@ public class SwitchToSlave
         try
         {
             // Remove the current store - neostore file is missing, nothing we can really do
-            stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
+//            stopServicesAndHandleBranchedStore( BranchedDataPolicy.keep_none );
             final MasterClient copyMaster = newMasterClient( masterUri, null, life );
             life.start();
 
@@ -370,6 +371,11 @@ public class SwitchToSlave
             resolver.resolveDependency( serviceClass ).stop();
         }
 
+        handleBranchedStore( branchPolicy );
+    }
+
+    private void handleBranchedStore( BranchedDataPolicy branchPolicy  ) throws IOException
+    {
         branchPolicy.handle( config.get( InternalAbstractGraphDatabase.Configuration.store_dir ) );
     }
 
@@ -379,14 +385,15 @@ public class SwitchToSlave
             throws IOException
     {
         long myLastCommittedTx = transactionIdStore.getLastCommittingTransactionId();
+
+        int myMaster = -1;
+        long myChecksum = 0;
         TransactionMetadataCache.TransactionMetadata metadata = nioneoDataSource.getDependencyResolver()
                 .resolveDependency( LogicalTransactionStore.class ).getMetadataFor( myLastCommittedTx );
-        if ( metadata == null )
-        {
-            return;
-        }
-        int myMaster = metadata.getMasterId();
-        long myChecksum = metadata.getChecksum();
+
+        myMaster = metadata.getMasterId();
+        myChecksum = metadata.getChecksum();
+
 
         HandshakeResult handshake;
         try ( Response<HandshakeResult> response = master.handshake( myLastCommittedTx, nioneoDataSource.getStoreId() ) )
@@ -394,7 +401,7 @@ public class SwitchToSlave
             handshake = response.response();
             requestContextFactory.setEpoch( handshake.epoch() );
         }
-        catch( BranchedDataException e )
+        catch ( BranchedDataException e )
         {
             // Rethrow wrapped in a branched data exception on our side, to clarify where the problem originates.
             throw new BranchedDataException( "Master detected branched data for this machine.", e );
@@ -428,61 +435,5 @@ public class SwitchToSlave
         }
         msgLog.logMessage( "Master id for last committed tx ok with highestTxId=" +
                 myLastCommittedTx + " with masterId=" + myMaster, true );
-    }
-
-    private NeoStoreXaDataSource ensureDataSourceStarted( DependencyResolver resolver )
-            throws IOException
-    {
-        // TODO 2.2-future properly start the datasource
-        NeoStoreXaDataSource nioneoDataSource = resolver.resolveDependency( NeoStoreXaDataSource.class );
-        if ( nioneoDataSource == null )
-        {
-            // TODO here we used to instantiate the transaction translator. No longer necessary
-
-//            Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> transactionTranslatorFactory =
-//                    new Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>>()
-//            {
-//                @Override
-//                public Function<List<LogEntry>, List<LogEntry>> apply( NeoStore neoStore )
-//                {
-//                    return new DenseNodeTransactionTranslator( neoStore );
-//                }
-//            };
-//
-//            // TODO 2.2-future properly start the datasource
-//            nioneoDataSource = new NeoStoreXaDataSource( config,
-//                    resolver.resolveDependency( StoreFactory.class ),
-//                    resolver.resolveDependency( StringLogger.class ),
-//                    resolver.resolveDependency( JobScheduler.class ),
-//                    logging,
-//                    updateableSchemaState,
-//                    new NonTransactionalTokenNameLookup(
-//                            resolver.resolveDependency( LabelTokenHolder.class ),
-//                            resolver.resolveDependency( PropertyKeyTokenHolder.class ) ),
-//                    resolver,
-//                    resolver.resolveDependency( PropertyKeyTokenHolder.class ),
-//                    resolver.resolveDependency( LabelTokenHolder.class ),
-//                    resolver.resolveDependency( RelationshipTypeTokenHolder.class ),
-//                    resolver.resolveDependency( Locks.class ),
-//                    resolver.resolveDependency( SchemaWriteGuard.class ),
-//                    resolver.resolveDependency( TransactionEventHandlers.class ),
-//                    monitors.newMonitor( IndexingService.Monitor.class ),
-//                    resolver.resolveDependency( FileSystemAbstraction.class ),
-//                    transactionTranslatorFactory,
-//                    resolver.resolveDependency( StoreUpgrader.class ));
-
-            // TODO 2.2-future i don't think the next action is necessary anymore
-//                /*
-//                 * CAUTION: The next line may cause severe eye irritation, mental instability and potential
-//                 * emotional breakdown. On the plus side, it is correct.
-//                 * See, it is quite possible to get here without the NodeManager having stopped, because we don't
-//                 * properly manage lifecycle in this class (this is the cause of this ugliness). So, after we
-//                 * register the datasource with the DsMgr we need to make sure that NodeManager re-reads the reltype
-//                 * and propindex information. Normally, we would have shutdown everything before getting here.
-//                 */
-//            resolver.resolveDependency( NodeManager.class ).start();
-
-        }
-        return nioneoDataSource;
     }
 }

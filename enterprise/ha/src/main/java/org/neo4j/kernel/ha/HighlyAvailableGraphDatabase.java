@@ -76,26 +76,29 @@ import org.neo4j.kernel.ha.cluster.SimpleHighAvailabilityMemberContext;
 import org.neo4j.kernel.ha.cluster.SwitchToMaster;
 import org.neo4j.kernel.ha.cluster.SwitchToSlave;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
+import org.neo4j.kernel.ha.cluster.member.HighAvailabilitySlaves;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.DefaultSlaveFactory;
 import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.com.master.Slaves;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
 import org.neo4j.kernel.ha.lock.LockManagerModeSwitcher;
 import org.neo4j.kernel.ha.management.ClusterDatabaseInfoProvider;
 import org.neo4j.kernel.ha.management.HighlyAvailableKernelData;
+import org.neo4j.kernel.ha.transaction.CommitPusher;
 import org.neo4j.kernel.ha.transaction.DenseNodeTransactionTranslator;
 import org.neo4j.kernel.ha.transaction.OnDiskLastTxIdGetter;
-import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
+import org.neo4j.kernel.ha.transaction.TransactionPropagator;
+import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.TokenCreator;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommitProcessFactory;
-import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
@@ -127,6 +130,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private DelegateInvocationHandler memberContextDelegateInvocationHandler;
     private DelegateInvocationHandler clusterMemberAvailabilityDelegateInvocationHandler;
     private HighAvailabilityModeSwitcher highAvailabilityModeSwitcher;
+    private DefaultSlaveFactory slaveFactory;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
@@ -159,7 +163,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( availabilityGuard, logging,
                 masterDelegateInvocationHandler ) );
         life.add( updatePuller = new UpdatePuller( memberStateMachine, master, requestContextFactory,
-                availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog ) );
+                availabilityGuard, lastUpdateTime, config, jobScheduler, dependencyResolver, msgLog ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
 
@@ -375,29 +379,44 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     }
 
     @Override
-    protected CommitProcessFactory getCommitProcessFactory()
+    protected TransactionHeaderInformationFactory createHeaderInformationFactory()
     {
-        final DelegateInvocationHandler<TransactionCommitProcess> txCommitProcessDelegate =
-                new DelegateInvocationHandler<>( TransactionCommitProcess.class );
-
-        final TransactionCommitProcess txCommitProcess =
-                (TransactionCommitProcess) Proxy.newProxyInstance( TransactionCommitProcess.class.getClassLoader(),
-                        new Class[]{ TransactionCommitProcess.class }, txCommitProcessDelegate );
-
-        return new CommitProcessFactory()
+        return new TransactionHeaderInformationFactory()
         {
             @Override
-            public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
-                                                    KernelHealth kernelHealth, NeoStore neoStore,
-                                                    TransactionRepresentationStoreApplier storeApplier,
-                                                    boolean recovery )
+            public TransactionHeaderInformation create()
             {
-                new CommitProcessSwitcher( logicalTransactionStore, kernelHealth, neoStore, storeApplier,
-                        masterDelegateInvocationHandler, txCommitProcessDelegate, requestContextFactory,
-                        memberStateMachine, availabilityGuard  );
-                return txCommitProcess;
+                return new TransactionHeaderInformation( memberContext.getElectedMasterId().toIntegerIndex(),
+                        memberContext.getMyId().toIntegerIndex(), new byte[0] );
             }
         };
+    }
+
+    @Override
+    protected CommitProcessFactory getCommitProcessFactory()
+    {
+        final DelegateInvocationHandler<CommitProcessFactory> commitProcessFactoryDelegate =
+                new DelegateInvocationHandler<>( CommitProcessFactory.class );
+
+        final CommitProcessFactory commitProcessFactory =
+                (CommitProcessFactory) Proxy.newProxyInstance( CommitProcessFactory.class.getClassLoader(),
+                        new Class[]{ CommitProcessFactory.class }, commitProcessFactoryDelegate );
+
+        slaves = life.add( new HighAvailabilitySlaves( members, clusterClient,
+                this.slaveFactory = new DefaultSlaveFactory( logging, monitors, config.get( HaSettings.com_chunk_size ).intValue() ) ) );
+        final TransactionPropagator pusher = life.add (new TransactionPropagator( TransactionPropagator.from( config ),
+                msgLog, slaves, new CommitPusher( jobScheduler ) ) );
+
+        new CommitProcessFactorySwitcher( pusher,
+                master, commitProcessFactoryDelegate, requestContextFactory, memberStateMachine, getDependencyResolver() );
+
+        return commitProcessFactory;
+    }
+
+    @Override
+    protected void createNeoDataSource()
+    {
+        super.createNeoDataSource();
     }
 
     @Override
@@ -669,6 +688,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     else if ( RequestContextFactory.class.isAssignableFrom( type ) )
                     {
                         result = type.cast( requestContextFactory );
+                    }
+                    else if ( SlaveFactory.class.isAssignableFrom( type ) )
+                    {
+                        result = type.cast( slaveFactory );
                     }
                     else
                     {

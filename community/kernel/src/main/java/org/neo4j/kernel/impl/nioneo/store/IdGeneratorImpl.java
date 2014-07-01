@@ -19,6 +19,9 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.Math.max;
+import static org.neo4j.io.fs.FileUtils.truncateFile;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,9 +30,6 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
-
-import static java.lang.Math.max;
-import static org.neo4j.io.fs.FileUtils.truncateFile;
 
 /**
  * This class generates unique ids for a resource type. For example, nodes in a
@@ -592,6 +592,7 @@ public class IdGeneratorImpl implements IdGenerator
      * could corrupt the id generator (not thread safe). This method will close
      * the id generator after being invoked.
      */
+    // TODO make this a nice, cosy, reusable visitor instead?
     public synchronized void dumpFreeIds()
     {
         while ( canReadMoreIdBatches() )

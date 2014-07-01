@@ -74,7 +74,6 @@ public class PullStormIT
             // Create data
             final HighlyAvailableGraphDatabase master = cluster.getMaster();
             {
-                System.out.println( "Creating data" );
                 Transaction tx = master.beginTx();
                 for ( int i = 0; i < 1000; i++ )
                 {
@@ -86,11 +85,9 @@ public class PullStormIT
 
             // Slave goes down
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            System.out.println( "Slave failed" );
             ClusterManager.RepairKit repairKit = cluster.fail( slave );
 
             // Create more data
-            System.out.println( "Creating more data" );
             for ( int i = 0; i < 1000; i++ )
             {
                 {
@@ -106,7 +103,6 @@ public class PullStormIT
             }
 
             // Slave comes back online
-            System.out.println( "Slave comes up" );
             repairKit.repair();
 
             cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );

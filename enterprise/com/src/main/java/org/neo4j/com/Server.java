@@ -19,6 +19,10 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.ObjectOutputStream;
@@ -50,7 +54,6 @@ import org.jboss.netty.channel.WriteCompletionEvent;
 import org.jboss.netty.channel.group.ChannelGroup;
 import org.jboss.netty.channel.group.DefaultChannelGroup;
 import org.jboss.netty.channel.socket.nio.NioServerSocketChannelFactory;
-
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Clock;
 import org.neo4j.helpers.Exceptions;
@@ -68,10 +71,6 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.ByteCounterMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.com.DechunkingChannelBuffer.assertSameProtocolVersion;
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
 
 /**
  * Receives requests from {@link Client clients}. Delegates actual work to an instance
@@ -650,10 +649,15 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
         int masterId = buffer.readInt();
         long checksum = buffer.readLong();
 
+        RequestContext readRequestContext = new RequestContext( sessionId, machineId, eventIdentifier, neoTx, masterId,
+                checksum );
         // Only perform checksum checks on the neo data source. If there's none in the request
         // then don't perform any such check.
-        txVerifier.assertMatch( neoTx, masterId, checksum );
-        return new RequestContext( sessionId, machineId, eventIdentifier, neoTx, masterId, checksum );
+        if ( neoTx > 0 )
+        {
+            txVerifier.assertMatch( neoTx, masterId, checksum );
+        }
+        return readRequestContext;
     }
 
     protected abstract RequestType<T> getRequestContext( byte id );
@@ -673,8 +677,8 @@ public abstract class Server<T, R> extends SimpleChannelHandler implements Chann
                 }
                 else
                 {
-                    connectedSlaveChannels.put( channel, Pair.of( slave, new AtomicLong( System.currentTimeMillis() )
-                    ) );
+                    connectedSlaveChannels.put( channel,
+                            Pair.of( slave, new AtomicLong( System.currentTimeMillis() ) ) );
                 }
             }
         }

@@ -251,7 +251,6 @@ public class MultiPaxosServer
 
         Collection<InstanceId> failed = ((HeartbeatContext) server.getStateMachines().getStateMachine( HeartbeatMessage
                 .class ).getContext()).getFailed();
-        System.out.println( configuration + " Failed:" + failed );
     }
 
     private Method getCommandMethod( String name )

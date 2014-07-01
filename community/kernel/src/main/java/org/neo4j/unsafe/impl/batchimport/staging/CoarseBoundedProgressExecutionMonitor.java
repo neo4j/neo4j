@@ -19,12 +19,11 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.unsafe.impl.batchimport.stats.Keys;
-
 import static java.lang.Math.min;
 import static java.util.concurrent.TimeUnit.SECONDS;
-
 import static org.neo4j.helpers.collection.IteratorUtil.last;
+
+import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
 /**
  * An {@link ExecutionMonitor} that prints progress in percent, knowing the max number of nodes and relationships
@@ -75,6 +74,7 @@ public class CoarseBoundedProgressExecutionMonitor extends PollingExecutionMonit
 
     protected void percent( int percent )
     {
+        // TODO An execution monitor that does not accept the writer? A kitten dies every time this happens, you know
         System.out.print( "." );
         if ( percent % 10 == 0 )
         {

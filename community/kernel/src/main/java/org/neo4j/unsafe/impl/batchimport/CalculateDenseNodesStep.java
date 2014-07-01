@@ -19,15 +19,15 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import static java.lang.Math.max;
+import static java.lang.Math.round;
+
 import java.util.List;
 
 import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutorServiceStep;
 import org.neo4j.unsafe.impl.batchimport.staging.StageControl;
-
-import static java.lang.Math.max;
-import static java.lang.Math.round;
 
 /**
  * Runs through relationship input and counts relationships per node so that dense nodes can be designated.
@@ -88,6 +88,7 @@ public class CalculateDenseNodesStep extends ExecutorServiceStep<List<InputRelat
                 numberOfDenseNodes++;
             }
         }
+        // TODO no, No, NO NO NO!!! No. Pass in the PrintStream instead.
         System.out.println( "# dense nodes: " + numberOfDenseNodes + ", which is " +
                 round( 100D*numberOfDenseNodes/highestSeenNodeId ) + " %" );
         super.done();

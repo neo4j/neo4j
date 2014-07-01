@@ -63,7 +63,7 @@ public class CleanupRule extends ExternalResource
             }
             catch ( Exception e )
             {
-                System.out.println( "Couldn't clean up " + toClose + " after test finished" );
+                throw new RuntimeException( e );
             }
         }
     }

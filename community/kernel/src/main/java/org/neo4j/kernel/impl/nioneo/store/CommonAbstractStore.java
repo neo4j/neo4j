@@ -19,6 +19,11 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.nio.ByteBuffer.wrap;
+import static org.neo4j.helpers.Exceptions.launderedException;
+import static org.neo4j.helpers.UTF8.encode;
+import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -40,12 +45,6 @@ import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.ReadOnlyDbException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.nio.ByteBuffer.wrap;
-
-import static org.neo4j.helpers.Exceptions.launderedException;
-import static org.neo4j.helpers.UTF8.encode;
-import static org.neo4j.io.fs.FileUtils.windowsSafeIOOperation;
 
 /**
  * Contains common implementation for {@link AbstractStore} and

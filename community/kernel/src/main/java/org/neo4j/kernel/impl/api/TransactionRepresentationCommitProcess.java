@@ -25,7 +25,7 @@ import java.util.concurrent.Future;
 
 import org.neo4j.kernel.api.exceptions.Status;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
@@ -34,16 +34,16 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
 {
     private final LogicalTransactionStore logicalTransactionStore;
     private final KernelHealth kernelHealth;
-    private final NeoStore neoStore;
+    private final TransactionIdStore transactionIdStore;
     private final boolean recovery;
     private final TransactionRepresentationStoreApplier storeApplier;
 
     public TransactionRepresentationCommitProcess( LogicalTransactionStore logicalTransactionStore,
-            KernelHealth kernelHealth, NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-            boolean recovery )
+            KernelHealth kernelHealth, TransactionIdStore transactionIdStore,
+            TransactionRepresentationStoreApplier storeApplier, boolean recovery )
     {
         this.logicalTransactionStore = logicalTransactionStore;
-        this.neoStore = neoStore;
+        this.transactionIdStore = transactionIdStore;
         this.recovery = recovery;
         this.kernelHealth = kernelHealth;
         this.storeApplier = storeApplier;
@@ -67,7 +67,7 @@ public class TransactionRepresentationCommitProcess implements TransactionCommit
         }
         finally
         {
-            neoStore.transactionClosed( transactionId );
+            transactionIdStore.transactionClosed( transactionId );
         }
         return transactionId;
     }

@@ -974,6 +974,7 @@ public class BatchInserterImpl implements BatchInserter
             Object value = config.get( key );
             if ( value != null )
             {
+                // TODO no, No, NO NO NO!!! No. Pass in the PrintStream instead.
                 System.out.println( key + "=" + value );
             }
         }

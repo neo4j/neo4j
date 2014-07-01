@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import static java.lang.String.format;
+
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -44,6 +46,7 @@ import org.neo4j.helpers.NamedThreadFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.Predicates;
+import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
@@ -54,12 +57,11 @@ import org.neo4j.kernel.ha.lock.LockStatus;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.transaction.IllegalResourceException;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-
-import static java.lang.String.format;
 
 /**
  * This is the real master code that executes on a master. The actual
@@ -156,6 +158,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         monitor.initializeTx( context );
 
+
         if ( !spi.isAccessible() )
         {
             throw new TransactionFailureException( "Database is currently not available" );
@@ -197,7 +200,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
         return spi.packResponse( context, response, filter );
     }
 
-    private Locks.Client getTx( RequestContext txId )
+    private Locks.Client getLockClient( RequestContext txId )
     {
         TimestampedLockClient result = slaveLockState.get( txId );
         if ( result == null )
@@ -216,7 +219,7 @@ public class MasterImpl extends LifecycleAdapter implements Master
     {
         try
         {
-            getTx( txId ).close();
+            getLockClient( txId ).close();
         }
         catch ( Exception e )
         {
@@ -311,6 +314,11 @@ public class MasterImpl extends LifecycleAdapter implements Master
     @Override
     public Response<HandshakeResult> handshake( long txId, StoreId storeId )
     {
+        if ( txId == 0 )
+        {
+            return new Response<>( new HandshakeResult( -1, 0, epoch ), spi.storeId(), TransactionStream.EMPTY,
+                    ResourceReleaser.NO_OP );
+        }
         try
         {
             Pair<Integer, Long> masterId = spi.getMasterIdForCommittedTx( txId );
@@ -350,7 +358,6 @@ public class MasterImpl extends LifecycleAdapter implements Master
         assertCorrectEpoch( context );
         try
         {
-            System.out.println("Acquiring exlusive log for " + context );
             Locks.Client locks = slaveLockState.get( context ).getLockClient();
             locks.acquireExclusive( type, resourceIds );
             return packResponse( context, new LockResult( LockStatus.OK_LOCKED ) );

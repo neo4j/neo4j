@@ -31,7 +31,6 @@ public class DefaultSlaveFactory implements SlaveFactory
     private final int chunkSize;
     private StoreId storeId;
 
-    // TODO 2.2-future we need to known the store Id somehow
     public DefaultSlaveFactory( Logging logging, Monitors monitors, int chunkSize )
     {
         this.logging = logging;
@@ -46,5 +45,11 @@ public class DefaultSlaveFactory implements SlaveFactory
                 clusterMember.getHAUri().getPort(), logging, monitors, storeId,
                 2, // and that's 1 too many, because we push from the master from one thread only anyway
                 chunkSize );
+    }
+
+    @Override
+    public void setStoreId( StoreId storeId )
+    {
+        this.storeId = storeId;
     }
 }

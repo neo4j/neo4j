@@ -19,6 +19,15 @@
  */
 package org.neo4j.kernel;
 
+import static java.lang.String.format;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
+import static org.neo4j.helpers.Functions.identity;
+import static org.neo4j.helpers.Settings.STRING;
+import static org.neo4j.helpers.Settings.setting;
+import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
+import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
+
 import java.io.File;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -152,6 +161,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.DefaultTxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.RecoveryVerifier;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitorImpl;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -173,16 +183,6 @@ import org.neo4j.kernel.logging.DefaultLogging;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static java.lang.String.format;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.map;
-import static org.neo4j.helpers.Functions.identity;
-import static org.neo4j.helpers.Settings.STRING;
-import static org.neo4j.helpers.Settings.setting;
-import static org.neo4j.kernel.extension.UnsatisfiedDependencyStrategies.fail;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_LABEL;
-import static org.neo4j.kernel.impl.api.operations.KeyReadOperations.NO_SUCH_PROPERTY_KEY;
 
 /**
  * Base implementation of GraphDatabaseService. Responsible for creating services, handling dependencies between them,
@@ -413,6 +413,7 @@ public abstract class InternalAbstractGraphDatabase
                 logging.getConsoleLog( AutoConfigurator.class ) );
         if (config.get( GraphDatabaseSettings.dump_configuration ))
         {
+            // TODO please, PLEASE pass in a PrintStream instead
             System.out.println( autoConfigurator.getNiceMemoryInformation() );
         }
         Map<String, String> configParams = config.getParams();
@@ -827,7 +828,7 @@ public abstract class InternalAbstractGraphDatabase
                 lockManager, this, transactionEventHandlers,
                 monitors.newMonitor( IndexingService.Monitor.class ), fileSystem, createTranslationFactory(),
                 storeMigrationProcess, transactionMonitor, kernelHealth, txIdGenerator,
-                transactionHeaderInformation, startupStatistics, caches, nodeManager, guard, indexStore,
+                createHeaderInformationFactory(), startupStatistics, caches, nodeManager, guard, indexStore,
                 getCommitProcessFactory() );
         dataSourceManager.register( neoDataSource );
     }
@@ -849,6 +850,11 @@ public abstract class InternalAbstractGraphDatabase
                     neoStore, storeApplier, recovery );
         }
     } ;
+
+    protected TransactionHeaderInformationFactory createHeaderInformationFactory()
+    {
+        return TransactionHeaderInformationFactory.DEFAULT;
+    }
 
     protected Function<NeoStore, Function<List<LogEntry>, List<LogEntry>>> createTranslationFactory()
     {

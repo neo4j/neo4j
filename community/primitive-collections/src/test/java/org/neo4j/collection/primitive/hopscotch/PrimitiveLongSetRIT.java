@@ -19,13 +19,19 @@
  */
 package org.neo4j.collection.primitive.hopscotch;
 
+import static java.lang.String.format;
+import static java.lang.System.currentTimeMillis;
+import static java.util.concurrent.TimeUnit.SECONDS;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 
 import org.junit.Test;
-
 import org.neo4j.collection.primitive.Primitive;
 import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.test.randomized.Action;
@@ -37,14 +43,7 @@ import org.neo4j.test.randomized.RandomizedTester.TargetFactory;
 import org.neo4j.test.randomized.Result;
 import org.neo4j.test.randomized.TestResource;
 
-import static java.lang.String.format;
-import static java.lang.System.currentTimeMillis;
-import static java.util.concurrent.TimeUnit.SECONDS;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
+// TODO please either characterise this as NOT a unit test or find a way to make System.out disappear
 public class PrimitiveLongSetRIT
 {
     @Test

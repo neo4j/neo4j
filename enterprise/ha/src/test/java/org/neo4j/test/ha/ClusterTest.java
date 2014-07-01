@@ -19,13 +19,17 @@
  */
 package org.neo4j.test.ha;
 
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.fromXml;
+
 import java.net.InetAddress;
 
 import org.hamcrest.CoreMatchers;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.cluster.client.Clusters;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -38,12 +42,6 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
-
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.fromXml;
 
 public class ClusterTest
 {
@@ -330,7 +328,7 @@ public class ClusterTest
 
         try
         {
-            System.out.println(db.isAvailable( 10 ));
+            db.isAvailable( 10 );
         }
         finally
         {

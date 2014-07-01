@@ -35,7 +35,9 @@ import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
+import org.neo4j.kernel.ha.com.master.SlaveFactory;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -108,6 +110,9 @@ public class SwitchToMaster
             clusterMemberAvailability.memberIsAvailable( HighAvailabilityModeSwitcher.MASTER, masterHaURI );
             msgLog.logMessage( "I am " + config.get( ClusterSettings.server_id ) +
                     ", successfully moved to master" );
+
+            resolver.resolveDependency( SlaveFactory.class ).setStoreId( resolver.resolveDependency(
+                    NeoStoreXaDataSource.class ).getStoreId() );
 
             return masterHaURI;
         }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.com.storecopy;
 
+import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
+
 import java.io.IOException;
 
 import org.neo4j.com.RequestContext;
@@ -32,8 +34,6 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
-
-import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 public class ResponsePacker
 {
@@ -57,13 +57,13 @@ public class ResponsePacker
     public <T> Response<T> packResponse( RequestContext context, T response,
             final Predicate<CommittedTransactionRepresentation> filter )
     {
-        final long toStartFrom = context.lastAppliedTransaction()+1;
+        final long toStartFrom = context.lastAppliedTransaction() + 1;
         TransactionStream transactions = new TransactionStream()
         {
             @Override
             public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
             {
-                if ( toStartFrom <= transactionIdStore.getLastCommittingTransactionId() )
+                if ( toStartFrom > 0 && toStartFrom <= transactionIdStore.getLastCommittingTransactionId() )
                 {
                     extractTransactions( toStartFrom, filterVisitor( visitor, filter ) );
                 }

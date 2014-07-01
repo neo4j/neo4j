@@ -19,6 +19,10 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.String.format;
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -37,11 +41,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.String.format;
-
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,

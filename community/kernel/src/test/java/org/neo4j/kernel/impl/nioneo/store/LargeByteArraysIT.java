@@ -32,7 +32,7 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 
-@Ignore( "Written as a reaction to an observed bug, but it doesn't seem to trigger it though" )
+//@Ignore( "Written as a reaction to an observed bug, but it doesn't seem to trigger it though" )
 public class LargeByteArraysIT
 {
     private static final Random RANDOM = new Random();

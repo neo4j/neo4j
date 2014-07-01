@@ -70,7 +70,6 @@ public class MetricsLogExtension implements Lifecycle
         monitors.addMonitorListener( diskCounterMetrics, "this used to attach to XaLogicalLog" );
 
         File path = new File( config.get( GraphDatabaseSettings.store_dir ), "metrics.txt" );
-        System.out.println("CSV:"+path);
 
         OutputStream file = fileSystemAbstraction.openAsOutputStream( path, false );
 

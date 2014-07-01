@@ -144,11 +144,6 @@ public abstract class LogEntry
             return additionalHeader;
         }
 
-        public TransactionMetadata asTransactionMetadata()
-        {
-            return new TransactionMetadata( masterId, authorId, startPosition, checksum( this ) );
-        }
-
         /**
          * @return combines necessary state to get a unique checksum to identify this transaction uniquely.
          */

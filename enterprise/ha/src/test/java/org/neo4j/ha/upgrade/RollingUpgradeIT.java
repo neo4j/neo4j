@@ -28,6 +28,7 @@ import static org.neo4j.ha.upgrade.Utils.downloadAndUnpack;
 import static org.neo4j.kernel.ha.HaSettings.ha_server;
 
 import java.io.File;
+import java.io.IOException;
 import java.net.InetAddress;
 import java.net.UnknownHostException;
 import java.rmi.RemoteException;
@@ -132,6 +133,7 @@ public class RollingUpgradeIT
 
     private void debug( String message, boolean enter )
     {
+        // TODO come on, tests should not output to the screen.
         String string = "RUT " + message;
         if ( enter )
         {
@@ -243,7 +245,6 @@ public class RollingUpgradeIT
             LegacyDatabase legacyDb = legacyDbs[i];
             if ( legacyDb == master.first() )
             {   // Roll over the master last
-                System.out.println("master is " + master.first().getStoreDir());
                 continue;
             }
 
@@ -393,7 +394,7 @@ public class RollingUpgradeIT
         }
     }
 
-    public void verifyComplexLoad( GraphDatabaseAPI db, long centralNode )
+    public void verifyComplexLoad( GraphDatabaseAPI db, long centralNode ) throws IOException
     {
         db.getDependencyResolver().resolveDependency( UpdatePuller.class ).pullUpdates();
         try( Transaction tx = db.beginTx() )

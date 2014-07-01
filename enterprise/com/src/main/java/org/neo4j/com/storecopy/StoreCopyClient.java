@@ -19,6 +19,10 @@
  */
 package org.neo4j.com.storecopy;
 
+import static org.neo4j.helpers.Format.bytes;
+import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
+import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
+
 import java.io.File;
 import java.io.FileFilter;
 import java.io.IOException;
@@ -49,16 +53,10 @@ import org.neo4j.kernel.impl.transaction.xaframework.ReadOnlyLogVersionRepositor
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionLogWriter;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
 import org.neo4j.kernel.impl.transaction.xaframework.WritableLogChannel;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.ConsoleLogger;
-
-import static org.neo4j.helpers.Format.bytes;
-import static org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies.NO_PRUNING;
-import static org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader.writeLogHeader;
 
 /**
  * Client-side store copier. Deals with issuing a request to a source of a database, which will
@@ -117,7 +115,8 @@ public class StoreCopyClient
         }
 
         // Run recovery, so that the transactions we just wrote into the active log will be applied.
-        newTempDatabase( tempStore ).shutdown();
+        GraphDatabaseService graphDatabaseService = newTempDatabase( tempStore );
+        graphDatabaseService.shutdown();
 
         // All is well, move the streamed files to the real store directory
         for ( File candidate : tempStore.listFiles( STORE_FILE_FILTER ) )
@@ -252,15 +251,6 @@ public class StoreCopyClient
         public boolean visit( ReadableLogChannel element ) throws IOException
         {
             throw new UnsupportedOperationException( "There should not be any recovery needed here" );
-        }
-    }
-
-    public static class TxIdGeneratorPreventor implements TxIdGenerator
-    {
-        @Override
-        public long generate( TransactionRepresentation transaction )
-        {
-            throw new UnsupportedOperationException( "There should be no need generating transaction ids here" );
         }
     }
 }

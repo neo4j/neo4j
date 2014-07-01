@@ -19,12 +19,18 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.io.IOException;
+
+import org.neo4j.com.storecopy.ResponseUnpacker;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
@@ -33,20 +39,46 @@ public class SlaveTransactionCommitProcess extends TransactionRepresentationComm
 {
     private final Master master;
     private final RequestContextFactory requestContextFactory;
+    private final DependencyResolver resolver;
 
     public SlaveTransactionCommitProcess( Master master, RequestContextFactory requestContextFactory,
-                                          LogicalTransactionStore logicalTransactionSTore, KernelHealth kernelHealth,
+                                          LogicalTransactionStore logicalTransactionStore, KernelHealth kernelHealth,
                                           NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
+                                          DependencyResolver resolver,
                                           boolean recovery )
     {
-        super( logicalTransactionSTore, kernelHealth, neoStore, storeApplier, recovery );
+        super( logicalTransactionStore, kernelHealth, neoStore, storeApplier, recovery );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
+        this.resolver = resolver;
+    }
+
+    @Override
+    public long commit( TransactionRepresentation representation ) throws TransactionFailureException
+    {
+        // TODO Oh my gawd, my eyes, fix this
+        /*
+         * The separation of the commit process to persist() and commit() is probably wrong, since
+         * both the master and slave processes override the whole method. Revisit this and probably
+         * undo the split
+         */
+        return persistTransaction( representation );
     }
 
     @Override
     public long persistTransaction( TransactionRepresentation representation ) throws TransactionFailureException
     {
-        return master.commitSingleResourceTransaction( requestContextFactory.newRequestContext(), representation ).response();
+        ResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
+            resolver.resolveDependency( LogicalTransactionStore.class ).getAppender(),
+            resolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
+            resolver.resolveDependency( TransactionIdStore.class ) );
+        try
+        {
+            return unpacker.unpackResponse( master.commitSingleResourceTransaction( requestContextFactory.newRequestContext(), representation ) );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

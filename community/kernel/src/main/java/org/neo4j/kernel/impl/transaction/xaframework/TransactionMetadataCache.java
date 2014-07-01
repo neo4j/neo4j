@@ -104,12 +104,12 @@ public class TransactionMetadataCache
         @Override
         public String toString()
         {
-            return "TransactionMetadata{" +
+            return "TransactionMetadata[" +
                     "masterId=" + masterId +
                     ", authorId=" + authorId +
                     ", startPosition=" + startPosition +
                     ", checksum=" + checksum +
-                    '}';
+                    ']';
         }
     }
 }

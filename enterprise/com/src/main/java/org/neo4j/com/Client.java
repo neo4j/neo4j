@@ -19,6 +19,10 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.com.Protocol.addLengthFieldPipes;
+import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
+import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
+
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.ByteBuffer;
@@ -42,7 +46,6 @@ import org.jboss.netty.channel.ChannelPipelineFactory;
 import org.jboss.netty.channel.Channels;
 import org.jboss.netty.channel.socket.nio.NioClientSocketChannelFactory;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
-
 import org.neo4j.com.monitor.RequestMonitor;
 import org.neo4j.helpers.Exceptions;
 import org.neo4j.helpers.NamedThreadFactory;
@@ -53,10 +56,6 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.com.Protocol.addLengthFieldPipes;
-import static org.neo4j.com.Protocol.assertChunkSizeIsWithinFrameSize;
-import static org.neo4j.helpers.Clock.SYSTEM_CLOCK;
 
 /**
  * A means for a client to communicate with a {@link Server}. It

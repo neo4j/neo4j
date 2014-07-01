@@ -182,6 +182,7 @@ public class RaceBetweenCommitAndGetMoreRelationshipsIT extends TimerTask
         }
     }
 
+    // TODO i don't know if i should be impressed or if i should crawl in a corner and cry
     private static boolean assertions()
     {
         boolean assertions = false;

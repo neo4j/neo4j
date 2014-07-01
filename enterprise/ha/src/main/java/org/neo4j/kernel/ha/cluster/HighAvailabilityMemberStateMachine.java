@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.cluster;
 
+import static org.neo4j.cluster.util.Quorums.isQuorum;
+
 import java.net.URI;
 
 import org.neo4j.cluster.InstanceId;
@@ -31,8 +33,6 @@ import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.cluster.member.ClusterMembers;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
-
-import static org.neo4j.cluster.util.Quorums.isQuorum;
 
 /**
  * State machine that listens for global cluster events, and coordinates
@@ -195,7 +195,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                         if ( oldState == HighAvailabilityMemberState.TO_MASTER && state ==
                                 HighAvailabilityMemberState.MASTER )
                         {
-                            availabilityGuard.grant(HighAvailabilityMemberStateMachine.this);
+                            availabilityGuard.grant( HighAvailabilityMemberStateMachine.this );
                         }
                     }
                 }
@@ -220,7 +220,7 @@ public class HighAvailabilityMemberStateMachine extends LifecycleAdapter impleme
                     if ( oldState == HighAvailabilityMemberState.TO_SLAVE &&
                             state == HighAvailabilityMemberState.SLAVE )
                     {
-                        availabilityGuard.grant(HighAvailabilityMemberStateMachine.this);
+                        availabilityGuard.grant( HighAvailabilityMemberStateMachine.this );
                     }
                 }
             }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
+import static org.neo4j.helpers.collection.IteratorUtil.loop;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Collections;
@@ -65,7 +67,6 @@ import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StateHandlingStatementOperations;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
 import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
@@ -127,6 +128,7 @@ import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFileInformation;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionHeaderInformationFactory;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.impl.transaction.xaframework.TxIdGenerator;
@@ -141,8 +143,6 @@ import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 import org.neo4j.kernel.logging.Logging;
-
-import static org.neo4j.helpers.collection.IteratorUtil.loop;
 
 public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRotationControl, IndexProviders
 {
@@ -194,7 +194,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     private final TransactionMonitor transactionMonitor;
     private final KernelHealth kernelHealth;
     private final TxIdGenerator txIdGenerator;
-    private final TransactionHeaderInformation transactionHeaderInformation;
+    private final TransactionHeaderInformationFactory transactionHeaderInformationFactory;
     private final StartupStatisticsProvider startupStatistics;
     private CacheLayer storeLayer;
     private final Caches cacheProvider;
@@ -310,7 +310,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                                  Function <NeoStore, Function<List<LogEntry>, List<LogEntry>>> translatorFactory,
                                  StoreUpgrader storeMigrationProcess, TransactionMonitor transactionMonitor,
                                  KernelHealth kernelHealth, TxIdGenerator txIdGenerator,
-                                 TransactionHeaderInformation transactionHeaderInformation,
+                                 TransactionHeaderInformationFactory transactionHeaderInformationFactory,
                                  StartupStatisticsProvider startupStatistics,
                                  Caches cacheProvider, NodeManager nodeManager, Guard guard,
                                  IndexConfigStore indexConfigStore, CommitProcessFactory commitProcessFactory )
@@ -332,7 +332,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
         this.transactionMonitor = transactionMonitor;
         this.kernelHealth = kernelHealth;
         this.txIdGenerator = txIdGenerator;
-        this.transactionHeaderInformation = transactionHeaderInformation;
+        this.transactionHeaderInformationFactory = transactionHeaderInformationFactory;
         this.startupStatistics = startupStatistics;
         this.cacheProvider = cacheProvider;
         this.nodeManager = nodeManager;
@@ -380,6 +380,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     @Override
     public void start() throws IOException
     {
+//        new Exception("Starting neo store " ).printStackTrace();
         life = new LifeSupport();
         readOnly = config.get( Configuration.read_only );
         storeDir = config.get( Configuration.store_dir );
@@ -465,14 +466,18 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             storeApplier = dependencies.satisfyDependency( new TransactionRepresentationStoreApplier(
                     indexingService, labelScanStore, neoStore,
                     cacheAccess, lockService, legacyIndexProviderLookup, indexConfigStore ) );
-            commitProcess = dependencies.satisfyDependency( commitProcessFactory.create( logicalTransactionStore,
-                    kernelHealth, neoStore, storeApplier, false ) );
+
+
 
             Factory<KernelTransaction> transactionFactory = new Factory<KernelTransaction>()
             {
                 @Override
                 public KernelTransaction newInstance()
                 {
+
+                    commitProcess = dependencies.satisfyDependency( TransactionCommitProcess.class,
+                            commitProcessFactory.create( logicalTransactionStore, kernelHealth, neoStore, storeApplier, false ) );
+
                     checkIfShutdown();
                     NeoStoreTransactionContext context = neoStoreTransactionContextSupplier.acquire();
                     Locks.Client locksClient = locks.newClient();
@@ -485,7 +490,7 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
                             new LegacyIndexTransactionState( indexConfigStore, legacyIndexProviderLookup );
                     return new KernelTransactionImplementation( statementOperations, readOnly, schemaWriteGuard,
                             labelScanStore, indexingService, updateableSchemaState, neoStoreTransaction, providerMap,
-                            neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformation,
+                            neoStore, locksClient, hooks, constraintIndexCreator, transactionHeaderInformationFactory.create(),
                             commitProcess, transactionMonitor, neoStore, persistenceCache, storeLayer,
                             legacyIndexTransactionState );
                 }

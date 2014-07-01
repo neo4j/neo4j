@@ -19,11 +19,22 @@
  */
 package org.neo4j.kernel.impl.core;
 
+import static java.lang.Math.pow;
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assume.assumeTrue;
+import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
+import static org.neo4j.helpers.collection.MapUtil.map;
+import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
+
 import java.io.File;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.Map;
+
+import javax.crypto.Mac;
 
 import org.junit.After;
 import org.junit.Before;
@@ -31,7 +42,6 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
-
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.DynamicLabel;
 import org.neo4j.graphdb.DynamicRelationshipType;
@@ -47,17 +57,6 @@ import org.neo4j.helpers.Settings;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
-
-import static java.lang.Math.pow;
-import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assume.assumeTrue;
-
-import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
-import static org.neo4j.helpers.collection.MapUtil.map;
-import static org.neo4j.kernel.impl.AbstractNeo4jTestCase.deleteFileOrDirectory;
 
 public class BigStoreIT implements RelationshipType
 {
@@ -210,19 +209,19 @@ public class BigStoreIT implements RelationshipType
     {
         if ( Settings.osIsWindows() )
         {
-            System.out.println( testName + ": This test cannot be run on Windows because it can't handle files of this size in a timely manner" );
+            // This test cannot be run on Windows because it can't handle files of this size in a timely manner
             return false;
         }
         if ( Settings.osIsMacOS() )
         {
-            System.out.println( testName + ": This test cannot be run on Mac OS X because Mac OS X doesn't support sparse files" );
+            // This test cannot be run on Mac OS X because Mac OS X doesn't support sparse files
             return false;
         }
         
         long heapMb = Runtime.getRuntime().maxMemory() / (1000*1000); // Not 1024, matches better wanted result with -Xmx
         if ( heapMb < requiredHeapMb )
         {
-            System.out.println( testName + ": This test requires a heap of size " + requiredHeapMb + ", this heap has only " + heapMb );
+            // This test requires a heap of size requiredHeapMb, this heap has only heapMb
             return false;
         }
         return true;

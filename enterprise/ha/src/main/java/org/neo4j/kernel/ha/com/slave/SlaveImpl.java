@@ -19,32 +19,37 @@
  */
 package org.neo4j.kernel.ha.com.slave;
 
+import java.io.IOException;
+
 import org.neo4j.com.ResourceReleaser;
 import org.neo4j.com.Response;
 import org.neo4j.com.TransactionStream;
-import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.ha.UpdatePuller;
 import org.neo4j.kernel.ha.com.master.Slave;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 
 public class SlaveImpl implements Slave
 {
-    private final Master master;
-    private final RequestContextFactory requestContextFactory;
     private final StoreId storeId;
+    private final UpdatePuller puller;
 
-    public SlaveImpl( StoreId storeId, Master master, RequestContextFactory requestContextFactory )
+    public SlaveImpl( StoreId storeId, UpdatePuller puller )
     {
         this.storeId = storeId;
-        this.master = master;
-        this.requestContextFactory = requestContextFactory;
+        this.puller = puller;
     }
 
     @Override
     public Response<Void> pullUpdates( long upToAndIncludingTxId )
     {
-        // TODO 2.2-future figure out a way to apply transactions
-//        xaDsm.applyTransactions( master.pullUpdates( requestContextFactory.newRequestContext( 0 ) ), ServerUtil.NO_ACTION );
+        try
+        {
+            puller.pullUpdates();
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
         return new Response( null, storeId, TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
 

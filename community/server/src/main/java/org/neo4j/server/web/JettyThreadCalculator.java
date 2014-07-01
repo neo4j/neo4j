@@ -57,7 +57,6 @@ public class JettyThreadCalculator
         minThreads = Math.max(2, transactionThreads);
         maxThreads = Math.max((jettyMaxThreads - selectors - acceptors), 8);
         maxCapacity = maxThreads * 1000 * 60; // threads * 1000 req/s * 60 s
-
     }
 
     public int getAcceptors()

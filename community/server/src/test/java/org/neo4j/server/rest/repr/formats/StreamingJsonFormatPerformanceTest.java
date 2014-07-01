@@ -93,7 +93,6 @@ public class StreamingJsonFormatPerformanceTest {
         input.close();
         final long delta = System.currentTimeMillis() - time;
         //System.out.println("result.length() = " + counter.getCount()+" took "+ delta +" ms.");
-        System.out.println(" took "+ delta +" ms.");
         return delta;
     }
 

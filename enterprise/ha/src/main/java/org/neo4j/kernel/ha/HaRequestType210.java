@@ -135,7 +135,7 @@ public enum HaRequestType210 implements RequestType<Master>
         public Response<Long> call( Master master, RequestContext context, ChannelBuffer input,
                                     ChannelBuffer target )
         {
-            System.out.println("Read string as " + readString( input )); // Always neostorexadatasource
+            readString( input ); // Always neostorexadatasource
 
             TransactionRepresentation tx = null;
             try

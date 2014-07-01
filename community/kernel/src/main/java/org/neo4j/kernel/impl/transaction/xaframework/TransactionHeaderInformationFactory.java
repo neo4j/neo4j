@@ -17,17 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel.impl.nioneo.xa;
+package org.neo4j.kernel.impl.transaction.xaframework;
 
-import org.neo4j.kernel.impl.api.TransactionCommitProcess;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.KernelHealth;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 
-public interface CommitProcessFactory
+public interface TransactionHeaderInformationFactory
 {
-    TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, KernelHealth kernelHealth,
-                                     NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier, boolean recovery );
+    TransactionHeaderInformation create();
+
+    public static final TransactionHeaderInformationFactory DEFAULT =
+            new TransactionHeaderInformationFactory()
+            {
+                @Override
+                public TransactionHeaderInformation create()
+                {
+                    return new TransactionHeaderInformation( -1, -1, new byte[0] );
+                }
+            };
 }

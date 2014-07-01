@@ -62,7 +62,6 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     private final Logging logging;
     private final Monitors monitors;
     private final LogicalTransactionStore txStore;
-    private final TransactionCommitProcess txCommitProcess;
     private final TransactionIdStore transactionIdStore;
     private final FileSystemAbstraction fileSystem;
     private final File storeDir;
@@ -81,8 +80,6 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
         this.fileSystem = dependencyResolver.resolveDependency( FileSystemAbstraction.class );
         this.storeDir = new File( graphDb.getStoreDir() );
         this.txStore = dependencyResolver.resolveDependency( LogicalTransactionStore.class );
-        this.txCommitProcess = dependencyResolver.resolveDependency( NeoStoreXaDataSource.class ).
-                getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
         this.responsePacker = new ResponsePacker( txStore, transactionIdStore, graphDb );
     }
 
@@ -131,6 +128,9 @@ class DefaultMasterImplSPI implements MasterImpl.SPI
     public long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException,
             TransactionFailureException
     {
+
+        TransactionCommitProcess txCommitProcess = dependencyResolver.resolveDependency( NeoStoreXaDataSource.class ).
+                getDependencyResolver().resolveDependency( TransactionCommitProcess.class );
         return txCommitProcess.commit( preparedTransaction );
     }
 

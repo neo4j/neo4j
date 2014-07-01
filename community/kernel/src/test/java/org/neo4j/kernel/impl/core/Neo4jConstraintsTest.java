@@ -19,8 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.junit.Test;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.fail;
 
+import org.junit.Test;
 import org.neo4j.graphdb.Direction;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.NotFoundException;
@@ -29,10 +32,6 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.tooling.GlobalGraphOperations;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.fail;
 
 public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
 {
@@ -60,11 +59,6 @@ public class Neo4jConstraintsTest extends AbstractNeo4jTestCase
         tx.success();
         tx.close();
         tx = getGraphDb().beginTx();
-        // the DB should be empty
-        // long numNodesPost = getNodeManager().getNumberOfIdsInUse( Node.class
-        // );
-        // System.out.println(String.format( "pre: %d, post: %d", numNodesPre,
-        // numNodesPost ));
         assertFalse( GlobalGraphOperations.at( getGraphDb() ).getAllNodes().iterator().hasNext() );
         // TODO: this should be valid, fails right now!
         // assertEquals( 0, numNodesPost );
