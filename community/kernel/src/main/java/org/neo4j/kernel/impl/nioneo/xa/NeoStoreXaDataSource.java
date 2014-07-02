@@ -750,4 +750,12 @@ public class NeoStoreXaDataSource extends LogBackedXaDataSource implements NeoSt
             }
         } );
     }
+
+    /**
+     * This must only be called when the database is otherwise inaccessible.
+     */
+    public void reloadSchemaCache()
+    {
+        ((Kernel) kernel).loadSchemaCache();
+    }
 }

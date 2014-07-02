@@ -38,6 +38,7 @@ import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.com.master.MasterImpl;
 import org.neo4j.kernel.ha.com.master.MasterServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
@@ -86,6 +87,9 @@ public class SwitchToMaster
             final TransactionManager txManager = resolver.resolveDependency( TransactionManager.class );
 
             idGeneratorFactory.switchToMaster();
+            NeoStoreXaDataSource neoStoreXaDataSource = (NeoStoreXaDataSource) xaDataSourceManager.getXaDataSource(
+                    NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            neoStoreXaDataSource.reloadSchemaCache();
 
             Monitors monitors = resolver.resolveDependency( Monitors.class );
 
