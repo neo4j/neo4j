@@ -272,15 +272,15 @@ public class PhysicalLogFile extends LifecycleAdapter implements LogFile
         long highTransactionId = transactionIdStore.getLastCommittingTransactionId();
         while ( logFiles.versionExists( logVersion ) )
         {
-            Long previousLogLastTxId = transactionMetadataCache.getHeader( logVersion );
-            if ( previousLogLastTxId == null )
+            long previousLogLastTxId = transactionMetadataCache.getLogHeader( logVersion );
+            if ( previousLogLastTxId == -1 )
             {
                 long[] header = readLogHeader( fileSystem, logFiles.getVersionFileName( logVersion ) );
                 transactionMetadataCache.putHeader( header[0], header[1] );
                 previousLogLastTxId = header[1];
             }
 
-            long lowTransactionId = previousLogLastTxId.longValue()+1;
+            long lowTransactionId = previousLogLastTxId + 1;
             if ( !visitor.visit( new LogPosition( logVersion, LOG_HEADER_SIZE ),
                     lowTransactionId, highTransactionId ) )
             {

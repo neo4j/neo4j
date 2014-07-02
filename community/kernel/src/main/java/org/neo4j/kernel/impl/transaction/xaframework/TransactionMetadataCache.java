@@ -43,9 +43,10 @@ public class TransactionMetadataCache
         logHeaderCache.put( logVersion, previousLogLastCommittedTx );
     }
 
-    public Long getHeader( long logVersion )
+    public long getLogHeader( long logVersion )
     {
-        return logHeaderCache.get( logVersion );
+        Long value = logHeaderCache.get( logVersion );
+        return value == null ? -1 : value.longValue();
     }
 
     public TransactionMetadata getTransactionMetadata( long txId )

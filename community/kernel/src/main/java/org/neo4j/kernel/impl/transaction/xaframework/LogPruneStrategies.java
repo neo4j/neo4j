@@ -26,6 +26,7 @@ import java.io.IOException;
 import java.util.Arrays;
 import java.util.concurrent.TimeUnit;
 
+import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class LogPruneStrategies
@@ -178,6 +179,11 @@ public class LogPruneStrategies
             {
                 // Here we know that the log version exists (checked in AbstractPruneStrategy#prune)
                 long tx = source.getFirstCommittedTxId( version );
+                if ( tx == -1 )
+                {
+                    throw new ThisShouldNotHappenError( "not really sure",
+                            "Here we know that the log version exists (checked in AbstractPruneStrategy#prune)" );
+                }
                 if ( highest == null )
                 {
                     highest = source.getLastCommittedTxId();

@@ -67,8 +67,8 @@ public class StoreCopyResponsePacker extends ResponsePacker
             {
                 // We don't necessarily need to ask that far back. Ask which is the oldest transaction in the log(s)
                 // that we can possibly serve
-                Long oldestExistingTransactionId = logFileInformation.getFirstCommittedTxId();
-                if ( oldestExistingTransactionId == null )
+                long oldestExistingTransactionId = logFileInformation.getFirstExistingTxId();
+                if ( oldestExistingTransactionId == -1 )
                 {
                     // Seriously, there are no logs that we can serve?
                     if ( mandatoryStartTransactionId >= transactionIdStore.getLastCommittingTransactionId() )

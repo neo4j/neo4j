@@ -36,8 +36,9 @@ public class PhysicalLogFileInformation implements LogFileInformation
     private final SPI spi;
 
     public PhysicalLogFileInformation( PhysicalLogFiles logFiles,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
-            SPI spi )
+                                       TransactionMetadataCache transactionMetadataCache,
+                                       TransactionIdStore transactionIdStore,
+                                       SPI spi )
     {
         this.logFiles = logFiles;
         this.transactionMetadataCache = transactionMetadataCache;
@@ -46,21 +47,16 @@ public class PhysicalLogFileInformation implements LogFileInformation
     }
 
     @Override
-    public long getFirstCommittedTxId() throws IOException
+    public long getFirstExistingTxId() throws IOException
     {
         long version = logFiles.getHighestLogVersion();
         long candidateFirstTx = -1;
         while ( logFiles.versionExists( version ) )
         {
-            candidateFirstTx = getOrExtractFirstCommittedTx( version );
+            candidateFirstTx = getFirstCommittedTxId( version );
             version--;
         }
         version++; // the loop above goes back one version too far.
-
-        if ( candidateFirstTx == -1 )
-        {
-            return -1;
-        }
 
         // OK, so we now have the oldest existing log version here. Open it and see if there's any transaction
         // in there. If there is then that transaction is the first one that we have.
@@ -70,21 +66,10 @@ public class PhysicalLogFileInformation implements LogFileInformation
     @Override
     public long getFirstCommittedTxId( long version ) throws IOException
     {
-        if ( version == 0 )
-        {
-            return 1L;
-        }
-
-        // First committed tx for version V = last committed tx version V-1 + 1
-        return getOrExtractFirstCommittedTx( version );
-    }
-
-    private long getOrExtractFirstCommittedTx( long version ) throws IOException
-    {
-        Long header = transactionMetadataCache.getHeader( version );
-        if ( header != null )
+        long logHeader = transactionMetadataCache.getLogHeader( version );
+        if ( logHeader != -1 )
         {   // It existed in cache
-            return header+1;
+            return logHeader + 1;
         }
 
         // Wasn't cached, go look for it
@@ -93,7 +78,7 @@ public class PhysicalLogFileInformation implements LogFileInformation
             long[] headerLongs = logFiles.extractHeader( version );
             long previousVersionLastCommittedTx = headerLongs[1];
             transactionMetadataCache.putHeader( version, previousVersionLastCommittedTx );
-            return previousVersionLastCommittedTx+1;
+            return previousVersionLastCommittedTx + 1;
         }
         return -1;
     }

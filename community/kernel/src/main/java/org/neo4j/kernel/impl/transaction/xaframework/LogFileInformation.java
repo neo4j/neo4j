@@ -26,7 +26,7 @@ public interface LogFileInformation
     /**
      * @return the reachable transaction that is farthest back of them all, in any existing version.
      */
-    long getFirstCommittedTxId() throws IOException;
+    long getFirstExistingTxId() throws IOException;
 
     /**
      * @param version the log version to get first committed tx for.
