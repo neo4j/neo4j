@@ -38,10 +38,10 @@ public class PhysicalLogFileInformation implements LogFileInformation
     }
 
     @Override
-    public Long getFirstCommittedTxId() throws IOException
+    public long getFirstCommittedTxId() throws IOException
     {
         long version = logFiles.getHighestLogVersion();
-        Long candidateFirstTx = null;
+        long candidateFirstTx = -1;
         while ( logFiles.versionExists( version ) )
         {
             candidateFirstTx = getOrExtractFirstCommittedTx( version );
@@ -49,18 +49,18 @@ public class PhysicalLogFileInformation implements LogFileInformation
         }
         version++; // the loop above goes back one version too far.
 
-        if ( candidateFirstTx == null )
+        if ( candidateFirstTx == -1 )
         {
-            return null;
+            return -1;
         }
 
         // OK, so we now have the oldest existing log version here. Open it and see if there's any transaction
         // in there. If there is then that transaction is the first one that we have.
-        return logFiles.hasAnyTransaction( version ) ? candidateFirstTx : null;
+        return logFiles.hasAnyTransaction( version ) ? candidateFirstTx : -1;
     }
 
     @Override
-    public Long getFirstCommittedTxId( long version ) throws IOException
+    public long getFirstCommittedTxId( long version ) throws IOException
     {
         if ( version == 0 )
         {
@@ -71,7 +71,7 @@ public class PhysicalLogFileInformation implements LogFileInformation
         return getOrExtractFirstCommittedTx( version );
     }
 
-    private Long getOrExtractFirstCommittedTx( long version ) throws IOException
+    private long getOrExtractFirstCommittedTx( long version ) throws IOException
     {
         Long header = transactionMetadataCache.getHeader( version );
         if ( header != null )
@@ -87,7 +87,7 @@ public class PhysicalLogFileInformation implements LogFileInformation
             transactionMetadataCache.putHeader( version, previousVersionLastCommittedTx );
             return previousVersionLastCommittedTx+1;
         }
-        return null;
+        return -1;
     }
 
     @Override
@@ -97,34 +97,8 @@ public class PhysicalLogFileInformation implements LogFileInformation
     }
 
     @Override
-    public Long getFirstStartRecordTimestamp( long version ) throws IOException
+    public long getFirstStartRecordTimestamp( long version ) throws IOException
     {
-
-
-//        ReadableByteChannel log = null;
-//        try
-//        {
-//            ByteBuffer buffer = LogExtractor.newLogReaderBuffer();
-//            log = getLogicalLog( version );
-//            VersionAwareLogEntryReader.readLogHeader( buffer, log, true );
-//            LogDeserializer deserializer = new LogDeserializer( buffer, commandReaderFactory );
-//
-//            TimeWrittenConsumer consumer = new TimeWrittenConsumer();
-//
-//            try ( Cursor<LogEntry, IOException> cursor = deserializer.cursor( log ) )
-//            {
-//                while( cursor.next( consumer ) );
-//            }
-//            return consumer.getTimeWritten();
-//        }
-//        finally
-//        {
-//            if ( log != null )
-//            {
-//                log.close();
-//            }
-//        }
-
-        return null;
+        return -1;
     }
 }

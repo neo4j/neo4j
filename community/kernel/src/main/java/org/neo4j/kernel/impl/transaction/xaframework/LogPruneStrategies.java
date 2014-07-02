@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
+
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
@@ -26,15 +28,14 @@ import java.util.concurrent.TimeUnit;
 
 import org.neo4j.io.fs.FileSystemAbstraction;
 
-import static org.neo4j.kernel.configuration.Config.parseLongWithUnit;
-
 public class LogPruneStrategies
 {
     public static final LogPruneStrategy NO_PRUNING = new LogPruneStrategy()
     {
         @Override
         public void prune()
-        {   // Don't prune logs at all.
+        {
+            // do nothing
         }
 
         @Override
@@ -49,21 +50,22 @@ public class LogPruneStrategies
         boolean reached( File file, long version, LogFileInformation source );
     }
 
-    private abstract static class AbstractPruneStrategy implements LogPruneStrategy
+    public static class ThresholdBasedPruneStrategy implements LogPruneStrategy
     {
-        protected final FileSystemAbstraction fileSystem;
-        protected final LogFileInformation logFileInformation;
-        protected final PhysicalLogFiles files;
-        protected final LogVersionRepository versionRepo;
+        private final FileSystemAbstraction fileSystem;
+        private final LogFileInformation logFileInformation;
+        private final PhysicalLogFiles files;
+        private final LogVersionRepository versionRepo;
+        private final Threshold threshold;
 
-        AbstractPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation,
-                PhysicalLogFiles files, LogVersionRepository versionRepo )
+        ThresholdBasedPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation,
+                                     PhysicalLogFiles files, LogVersionRepository versionRepo, Threshold threshold )
         {
-            super();
             this.fileSystem = fileSystem;
             this.logFileInformation = logFileInformation;
             this.files = files;
             this.versionRepo = versionRepo;
+            this.threshold = threshold;
         }
 
         @Override
@@ -76,7 +78,6 @@ public class LogPruneStrategies
             }
 
             long upper = currentLogVersion-1;
-            Threshold threshold = newThreshold();
             boolean exceeded = false;
             while ( upper >= 0 )
             {
@@ -115,183 +116,112 @@ public class LogPruneStrategies
                 fileSystem.deleteFile( files.getVersionFileName( version ) );
             }
         }
-
-        /**
-         * @return a {@link Threshold} which if returning {@code false} states that the log file
-         * is within the threshold and doesn't need to be pruned. The first time it returns
-         * {@code true} it says that the threshold has been reached and the log file it just
-         * returned {@code true} for should be kept, but all previous logs should be pruned.
-         */
-        protected abstract Threshold newThreshold();
-
     }
 
-    public static LogPruneStrategy nonEmptyFileCount( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
-            LogVersionRepository versionRepo, int maxLogCountToKeep )
+    private static final class FileCountThreshold implements Threshold
     {
-        return new FileCountPruneStrategy( fileSystem, logFileInformation, files, versionRepo, maxLogCountToKeep );
-    }
-
-    private static class FileCountPruneStrategy extends AbstractPruneStrategy
-    {
+        private int nonEmptyLogCount = 0;
         private final int maxNonEmptyLogCount;
 
-        public FileCountPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
-                LogVersionRepository versionRepo, int maxNonEmptyLogCount )
+        private FileCountThreshold( int maxNonEmptyLogCount )
         {
-            super( fileSystem, logFileInformation, files, versionRepo );
             this.maxNonEmptyLogCount = maxNonEmptyLogCount;
         }
 
         @Override
-        protected Threshold newThreshold()
+        public boolean reached( File file, long version, LogFileInformation source )
         {
-            return new Threshold()
-            {
-                int nonEmptyLogCount = 0;
-
-                @Override
-                public boolean reached( File file, long version, LogFileInformation source )
-                {
-                    return ++nonEmptyLogCount >= maxNonEmptyLogCount;
-                }
-            };
+            return ++nonEmptyLogCount >= maxNonEmptyLogCount;
         }
 
         @Override
         public String toString()
         {
-            return getClass().getSimpleName() + "[max:" + maxNonEmptyLogCount + "]";
+            return "[max:" + maxNonEmptyLogCount + "]";
         }
     }
 
-    public static LogPruneStrategy totalFileSize( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
-            LogVersionRepository versionRepo, int numberOfBytes )
+    private static final class FileSizeThreshold implements Threshold
     {
-        return new FileSizePruneStrategy( fileSystem, logFileInformation, files, versionRepo, numberOfBytes );
-    }
-
-    public static class FileSizePruneStrategy extends AbstractPruneStrategy
-    {
+        private int size;
+        private final FileSystemAbstraction fileSystem;
         private final int maxSize;
 
-        public FileSizePruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
-                LogVersionRepository versionRepo, int maxSizeBytes )
+        private FileSizeThreshold( FileSystemAbstraction fileSystem, int maxSize )
         {
-            super( fileSystem, logFileInformation, files, versionRepo );
-            this.maxSize = maxSizeBytes;
+            this.fileSystem = fileSystem;
+            this.maxSize = maxSize;
         }
 
         @Override
-        protected Threshold newThreshold()
+        public boolean reached( File file, long version, LogFileInformation source )
         {
-            return new Threshold()
-            {
-                private int size;
-
-                @Override
-                public boolean reached( File file, long version, LogFileInformation source )
-                {
-                    size += fileSystem.getFileSize( file );
-                    return size >= maxSize;
-                }
-            };
+            size += fileSystem.getFileSize( file );
+            return size >= maxSize;
         }
     }
 
-    public static LogPruneStrategy transactionCount( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
-            LogVersionRepository versionRepo, int maxCount )
+    private static final class TransactionCountThreshold implements Threshold
     {
-        return new TransactionCountPruneStrategy( fileSystem, logFileInformation, files, versionRepo, maxCount );
-    }
+        private Long highest;
+        private final long maxTransactionCount;
 
-    public static class TransactionCountPruneStrategy extends AbstractPruneStrategy
-    {
-        private final int maxTransactionCount;
-
-        public TransactionCountPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
-                LogVersionRepository versionRepo, int maxTransactionCount )
+        private TransactionCountThreshold( long maxTransactionCount )
         {
-            super( fileSystem, logFileInformation, files, versionRepo );
             this.maxTransactionCount = maxTransactionCount;
         }
 
         @Override
-        protected Threshold newThreshold()
+        public boolean reached( File file, long version, LogFileInformation source )
         {
-            return new Threshold()
+            try
             {
-                private Long highest;
-
-                @Override
-                public boolean reached( File file, long version, LogFileInformation source )
+                // Here we know that the log version exists (checked in AbstractPruneStrategy#prune)
+                long tx = source.getFirstCommittedTxId( version );
+                if ( highest == null )
                 {
-                    try
-                    {
-                        // Here we know that the log version exists (checked in AbstractPruneStrategy#prune)
-                        long tx = source.getFirstCommittedTxId( version );
-                        if ( highest == null )
-                        {
-                            highest = source.getLastCommittedTxId();
-                        }
-                        return highest - tx >= maxTransactionCount;
-                    }
-                    catch ( IllegalLogFormatException e )
-                    {
-                        return decidePruneForIllegalLogFormat( (IllegalLogFormatException) e.getCause() );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
+                    highest = source.getLastCommittedTxId();
                 }
-            };
+                return highest - tx >= maxTransactionCount;
+            }
+            catch ( IllegalLogFormatException e )
+            {
+                return decidePruneForIllegalLogFormat( (IllegalLogFormatException) e.getCause() );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 
-    public static LogPruneStrategy transactionTimeSpan( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
-            LogVersionRepository versionRepo, int timeToKeep, TimeUnit timeUnit )
+    private static final class TransactionTimespanThreshold implements Threshold
     {
-        return new TransactionTimeSpanPruneStrategy( fileSystem, logFileInformation, files, versionRepo, timeToKeep, timeUnit );
-    }
-
-    public static class TransactionTimeSpanPruneStrategy extends AbstractPruneStrategy
-    {
+        private final TimeUnit timeUnit;
         private final int timeToKeep;
-        private final TimeUnit unit;
 
-        public TransactionTimeSpanPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
-                LogVersionRepository versionRepo,  int timeToKeep, TimeUnit unit )
+        private TransactionTimespanThreshold( TimeUnit timeUnit, int timeToKeep )
         {
-            super( fileSystem, logFileInformation, files, versionRepo );
+            this.timeUnit = timeUnit;
             this.timeToKeep = timeToKeep;
-            this.unit = unit;
         }
 
         @Override
-        protected Threshold newThreshold()
+        public boolean reached( File file, long version, LogFileInformation source )
         {
-            return new Threshold()
+            try
             {
-                private final long lowerLimit = System.currentTimeMillis() - unit.toMillis( timeToKeep );
-
-                @Override
-                public boolean reached( File file, long version, LogFileInformation source )
-                {
-                    try
-                    {
-                        return source.getFirstStartRecordTimestamp( version ) < lowerLimit;
-                    }
-                    catch(IllegalLogFormatException e)
-                    {
-                        return decidePruneForIllegalLogFormat( e );
-                    }
-                    catch ( IOException e )
-                    {
-                        throw new RuntimeException( e );
-                    }
-                }
-            };
+                long lowerLimit = System.currentTimeMillis() - timeUnit.toMillis( timeToKeep );
+                return source.getFirstStartRecordTimestamp( version ) < lowerLimit;
+            }
+            catch(IllegalLogFormatException e)
+            {
+                return decidePruneForIllegalLogFormat( e );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
         }
     }
 
@@ -321,8 +251,9 @@ public class LogPruneStrategies
      *   <li>1k hours - For keeping last 1000 hours worth of log data</li>
      * </ul>
      */
-    public static LogPruneStrategy fromConfigValue( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation, PhysicalLogFiles files,
-            LogVersionRepository versionRepo, String configValue )
+    public static LogPruneStrategy fromConfigValue( FileSystemAbstraction fileSystem,
+                                                    LogFileInformation logFileInformation, PhysicalLogFiles files,
+                                                    LogVersionRepository versionRepo, String configValue )
     {
         String[] tokens = configValue.split( " " );
         if ( tokens.length == 0 )
@@ -331,6 +262,9 @@ public class LogPruneStrategies
         }
 
         String numberWithUnit = tokens[0];
+
+        Threshold thresholdToUse;
+
         if ( tokens.length == 1 )
         {
             if ( numberWithUnit.equals( "true" ) )
@@ -339,7 +273,7 @@ public class LogPruneStrategies
             }
             else if ( numberWithUnit.equals( "false" ) )
             {
-                return transactionCount( fileSystem, logFileInformation, files, versionRepo, 1 );
+                thresholdToUse = new TransactionCountThreshold( 1 );
             }
             else
             {
@@ -355,28 +289,30 @@ public class LogPruneStrategies
         int typeIndex = 0;
         if ( type.equals( types[typeIndex++] ) )
         {
-            return nonEmptyFileCount( fileSystem, logFileInformation, files, versionRepo, number );
+            thresholdToUse = new FileCountThreshold( number );
         }
         else if ( type.equals( types[typeIndex++] ) )
         {
-            return totalFileSize( fileSystem, logFileInformation, files, versionRepo, number );
+            thresholdToUse = new FileSizeThreshold( fileSystem, number );
         }
         else if ( type.equals( types[typeIndex++] ) )
         {
-            return transactionCount( fileSystem, logFileInformation, files, versionRepo, number );
+            thresholdToUse = new TransactionCountThreshold( number );
         }
         else if ( type.equals( types[typeIndex++] ) )
         {
-            return transactionTimeSpan( fileSystem, logFileInformation, files, versionRepo, number, TimeUnit.HOURS );
+            thresholdToUse = new TransactionTimespanThreshold( TimeUnit.HOURS, number );
         }
         else if ( type.equals( types[typeIndex++] ) )
         {
-            return transactionTimeSpan( fileSystem, logFileInformation, files, versionRepo, number, TimeUnit.DAYS );
+            thresholdToUse = new TransactionTimespanThreshold( TimeUnit.DAYS, number );
         }
         else
         {
             throw new IllegalArgumentException( "Invalid log pruning configuration value '" + configValue +
                     "'. Invalid type '" + type + "', valid are " + Arrays.asList( types ) );
         }
+
+        return new ThresholdBasedPruneStrategy( fileSystem, logFileInformation, files, versionRepo, thresholdToUse );
     }
 }
