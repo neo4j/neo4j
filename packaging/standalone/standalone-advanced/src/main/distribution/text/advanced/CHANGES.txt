@@ -16,6 +16,9 @@ o Index transactional state now properly distinguishes between indexes
   committed yet if asking by label.
 o Properly close IndexReaders, preventing potential file descriptor leaks.
 o Fixes a bug that could cause locks to improperly clean up state
+o Store upgrades will now migrate some transaction logs along with the
+  store, allowing extraction of transactions without requiring
+  new transactions to happen
 
 Server:
 o Ensure transactional endpoint responds with an https location for https
