@@ -24,6 +24,7 @@ import org.junit.Test
 import org.scalatest.Assertions
 import org.hamcrest.CoreMatchers.equalTo
 import org.neo4j.cypher.{ExecutionEngineJUnitSuite, ExecutionEngineTestSupport, CypherException}
+import scala.util.matching.Regex
 
 class SyntaxExceptionTest extends ExecutionEngineJUnitSuite {
   @Test def shouldRaiseErrorWhenMissingIndexValue() {
@@ -203,15 +204,39 @@ class SyntaxExceptionTest extends ExecutionEngineJUnitSuite {
     )
   }
 
+  @Test def shouldRaiseErrorForInvalidHexLiteral() {
+    test(
+      "return 0x23G34",
+      "invalid literal number (line 1, column 8)"
+    )
+    test(
+      "return 0x23j",
+      "invalid literal number (line 1, column 8)"
+    )
+  }
+
   def test(query: String, message: String) {
     try {
       execute(query)
-      fail(s"Did not get the expected syntax error, expected: ${message}")
+      fail(s"Did not get the expected syntax error, expected: $message")
     } catch {
-      case x: CypherException => {
-        val actual = x.getMessage.lines.next.trim
+      case x: CypherException =>
+        val actual = x.getMessage.lines.next().trim
         assertThat(actual, equalTo(message))
-      }
+    }
+  }
+
+  def test(query: String, messageRegex: Regex) {
+    try {
+      execute(query)
+      fail(s"Did not get the expected syntax error, expected matching: '$messageRegex'")
+    } catch {
+      case x: CypherException =>
+        val actual = x.getMessage.lines.next().trim
+        messageRegex findFirstIn actual match {
+          case None => fail(s"Expected matching '$messageRegex', but was '$actual'")
+          case Some(_) => ()
+        }
     }
   }
 }

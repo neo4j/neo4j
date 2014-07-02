@@ -68,8 +68,8 @@ trait Literals extends Parser
   ).memoMismatches
 
   def DoubleLiteral: Rule1[ast.DecimalDoubleLiteral] = rule("a floating point number") (
-      Exponent ~>>> (ast.DecimalDoubleLiteral(_))
-    | DecimalReal ~>>> (ast.DecimalDoubleLiteral(_))
+      ExponentDecimalReal ~>>> (ast.DecimalDoubleLiteral(_))
+    | RegularDecimalReal ~>>> (ast.DecimalDoubleLiteral(_))
   )
 
   def SignedIntegerLiteral: Rule1[ast.SignedIntegerLiteral] = rule("an integer") (
