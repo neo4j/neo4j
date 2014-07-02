@@ -553,6 +553,10 @@ public class StateHandlingStatementOperations implements
         else
         {
             legacyPropertyTrackers.nodeChangeStoreProperty( nodeId, (DefinedProperty) existingProperty, property );
+            if ( existingProperty.equals( property ) )
+            {
+                return existingProperty; // no change, abort
+            }
             state.neoStoreTransaction.nodeChangeProperty( nodeId, property.propertyKeyId(), property.value() );
         }
         state.txState().nodeDoReplaceProperty( nodeId, existingProperty, property );
@@ -573,6 +577,10 @@ public class StateHandlingStatementOperations implements
         {
             legacyPropertyTrackers.relationshipChangeStoreProperty( relationshipId, (DefinedProperty)
                     existingProperty, property );
+            if ( existingProperty.equals( property ) )
+            {
+                return existingProperty; // no change, abort
+            }
             state.neoStoreTransaction.relChangeProperty( relationshipId, property.propertyKeyId(), property.value() );
         }
         state.txState().relationshipDoReplaceProperty( relationshipId, existingProperty, property );
