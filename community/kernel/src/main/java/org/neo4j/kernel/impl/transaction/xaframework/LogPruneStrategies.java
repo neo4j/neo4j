@@ -111,7 +111,7 @@ public class LogPruneStrategies
 
             // The reason we delete from lower to upper is that if it crashes in the middle
             // we can be sure that no holes are created
-            for ( long version = lower; version < upper; version++ )
+            for ( long version = lower; version <= upper; version++ )
             {
                 fileSystem.deleteFile( files.getVersionFileName( version ) );
             }
@@ -212,7 +212,9 @@ public class LogPruneStrategies
             try
             {
                 long lowerLimit = System.currentTimeMillis() - timeUnit.toMillis( timeToKeep );
-                return source.getFirstStartRecordTimestamp( version ) < lowerLimit;
+                long firstStartRecordTimestamp = source.getFirstStartRecordTimestamp( version );
+                return firstStartRecordTimestamp >= 0 &&
+                       firstStartRecordTimestamp < lowerLimit;
             }
             catch(IllegalLogFormatException e)
             {

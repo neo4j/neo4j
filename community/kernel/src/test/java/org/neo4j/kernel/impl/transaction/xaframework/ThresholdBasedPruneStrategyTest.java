@@ -19,13 +19,117 @@
  */
 package org.neo4j.kernel.impl.transaction.xaframework;
 
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+
+import java.io.File;
+
 import org.junit.Test;
+import org.mockito.Matchers;
+import org.neo4j.io.fs.FileSystemAbstraction;
 
 public class ThresholdBasedPruneStrategyTest
 {
-    @Test
-    public void shouldWork() throws Exception
-    {
+    private final FileSystemAbstraction fileSystem = mock( FileSystemAbstraction.class );
+    private final LogFileInformation logFileInfo = mock( LogFileInformation.class );
+    private final PhysicalLogFiles files = mock( PhysicalLogFiles.class );
+    private final LogVersionRepository logVersionRepository = mock( LogVersionRepository.class );
+    private final LogPruneStrategies.Threshold threshold = mock( LogPruneStrategies.Threshold.class );
 
+    @Test
+    public void shouldNotDeleteAnythingIfThresholdDoesNotAllow() throws Exception
+    {
+        // Given
+        when( logVersionRepository.getCurrentLogVersion() ).thenReturn( 7l );
+
+        File fileName1 = new File( "logical.log.v1" );
+        File fileName2 = new File( "logical.log.v2" );
+        File fileName3 = new File( "logical.log.v3" );
+        File fileName4 = new File( "logical.log.v4" );
+        File fileName5 = new File( "logical.log.v5" );
+        File fileName6 = new File( "logical.log.v6" );
+
+        when( files.getVersionFileName( 6 ) ).thenReturn( fileName6 );
+        when( files.getVersionFileName( 5 ) ).thenReturn( fileName5 );
+        when( files.getVersionFileName( 4 ) ).thenReturn( fileName4 );
+        when( files.getVersionFileName( 3 ) ).thenReturn( fileName3 );
+        when( files.getVersionFileName( 2 ) ).thenReturn( fileName2 );
+        when( files.getVersionFileName( 1 ) ).thenReturn( fileName1 );
+
+        when( fileSystem.fileExists( fileName6 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName5 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName4 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName3 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName2 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName1 ) ).thenReturn( true );
+
+        when( fileSystem.getFileSize( Matchers.<File>any() ) ).thenReturn( VersionAwareLogEntryReader.LOG_HEADER_SIZE + 1l );
+
+        when( threshold.reached( Matchers.<File>any(), anyLong(), Matchers.<LogFileInformation>any() ) ).thenReturn( false );
+
+        final LogPruneStrategies.ThresholdBasedPruneStrategy strategy = new LogPruneStrategies
+                .ThresholdBasedPruneStrategy( fileSystem, logFileInfo, files, logVersionRepository, threshold );
+
+        // When
+        strategy.prune();
+
+        // Then
+        verify( fileSystem, times(0) ).deleteFile( Matchers.<File>any() );
+    }
+
+    @Test
+    public void shouldDeleteJustWhatTheThresholdSays() throws Exception
+    {
+        // Given
+        when( threshold.reached( Matchers.<File>any(), Matchers.eq( 6l ), Matchers.<LogFileInformation>any() ) )
+                .thenReturn( false );
+        when( threshold.reached( Matchers.<File>any(), Matchers.eq( 5l ), Matchers.<LogFileInformation>any() ) )
+                .thenReturn( false );
+        when( threshold.reached( Matchers.<File>any(), Matchers.eq( 4l ), Matchers.<LogFileInformation>any() ) )
+                .thenReturn( false );
+        when( threshold.reached( Matchers.<File>any(), Matchers.eq( 3l ), Matchers.<LogFileInformation>any() ) )
+                .thenReturn( true );
+
+        File fileName1 = new File( "logical.log.v1" );
+        File fileName2 = new File( "logical.log.v2" );
+        File fileName3 = new File( "logical.log.v3" );
+        File fileName4 = new File( "logical.log.v4" );
+        File fileName5 = new File( "logical.log.v5" );
+        File fileName6 = new File( "logical.log.v6" );
+
+        when( files.getVersionFileName( 6 ) ).thenReturn( fileName6 );
+        when( files.getVersionFileName( 5 ) ).thenReturn( fileName5 );
+        when( files.getVersionFileName( 4 ) ).thenReturn( fileName4 );
+        when( files.getVersionFileName( 3 ) ).thenReturn( fileName3 );
+        when( files.getVersionFileName( 2 ) ).thenReturn( fileName2 );
+        when( files.getVersionFileName( 1 ) ).thenReturn( fileName1 );
+
+        when( fileSystem.fileExists( fileName6 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName5 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName4 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName3 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName2 ) ).thenReturn( true );
+        when( fileSystem.fileExists( fileName1 ) ).thenReturn( true );
+
+        when( fileSystem.getFileSize( Matchers.<File>any() ) ).thenReturn( VersionAwareLogEntryReader.LOG_HEADER_SIZE + 1l );
+
+
+        when( logVersionRepository.getCurrentLogVersion() ).thenReturn( 7l );
+
+        final LogPruneStrategies.ThresholdBasedPruneStrategy strategy = new LogPruneStrategies
+                .ThresholdBasedPruneStrategy(
+                fileSystem, logFileInfo, files, logVersionRepository, threshold
+        );
+
+        // When
+        strategy.prune();
+
+        // Then
+        verify( fileSystem, times( 1 ) ).deleteFile( fileName1 );
+        verify( fileSystem, times( 1 ) ).deleteFile( fileName2 );
+        verify( fileSystem, times( 1 ) ).deleteFile( fileName3 );
     }
 }

@@ -41,5 +41,6 @@ public interface LogVersionRepository
     /**
      * Increments the log version. Useful when just shutting down.
      */
+    // TODO wat? we have incrementAndGet above. Also, note how this method does not throw IOException. So, like i said, wat?
     void incrementVersion();
 }

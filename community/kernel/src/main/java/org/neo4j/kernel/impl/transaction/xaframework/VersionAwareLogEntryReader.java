@@ -41,7 +41,7 @@ import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 public class VersionAwareLogEntryReader implements LogEntryReader<ReadableLogChannel>
 {
     private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_LOG_VERSION) & 0xFF;
-    static final int LOG_HEADER_SIZE = 16;
+    public static final int LOG_HEADER_SIZE = 16;
 
     private final CommandReaderFactory commandReaderFactory;
     private final LogPositionMarker positionMarker = new LogPositionMarker();

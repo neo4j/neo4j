@@ -117,8 +117,10 @@ import org.neo4j.kernel.impl.storemigration.StoreUpgrader;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
 import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFile;
 import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogPosition;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategies;
 import org.neo4j.kernel.impl.transaction.xaframework.LogPruneStrategy;
 import org.neo4j.kernel.impl.transaction.xaframework.LogRotationControl;
@@ -451,14 +453,41 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
             File directory = config.get( GraphDatabaseSettings.store_dir );
             TransactionMetadataCache transactionMetadataCache = new TransactionMetadataCache( 1000, 100_000 );
             PhysicalLogFiles logFiles = new PhysicalLogFiles( directory, PhysicalLogFile.DEFAULT_NAME, fs );
+
             LogFileInformation logFileInformation = dependencies.satisfyDependency( LogFileInformation.class,
-                    new PhysicalLogFileInformation( logFiles, transactionMetadataCache, neoStore ) );
+                    new PhysicalLogFileInformation( logFiles, transactionMetadataCache, neoStore,
+                            new PhysicalLogFileInformation.SPI()
+                            {
+                                @Override
+                                public long getTimestampForVersion( long version ) throws IOException
+                                {
+
+                                    try ( ReadableLogChannel channel = logFile.getReader(
+                                            new LogPosition( version, VersionAwareLogEntryReader.LOG_HEADER_SIZE ) ) )
+                                    {
+                                        LogEntryReader<ReadableLogChannel> reader =
+                                                new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+                                        LogEntry entry;
+                                        while ( (entry = reader.readLogEntry( channel )) != null )
+                                        {
+                                            if ( entry instanceof LogEntry.Start )
+                                            {
+                                                return ((LogEntry.Start) entry).getTimeWritten();
+                                            }
+                                        }
+                                    }
+                                    return -1;
+                                }
+                            }) );
+
             LogPruneStrategy logPruneStrategy = LogPruneStrategies.fromConfigValue( fs, logFileInformation,
                     logFiles, neoStore, config.get( GraphDatabaseSettings.keep_logical_logs ) );
+
             logFile = dependencies.satisfyDependency( new PhysicalLogFile( fs, logFiles,
                     config.get( GraphDatabaseSettings.logical_log_rotation_threshold ), logPruneStrategy, neoStore,
                     neoStore, new PhysicalLogFile.LoggingMonitor( logging.getMessagesLog( getClass() ) ),
                     this, transactionMetadataCache, logFileRecoverer ) );
+
             logicalTransactionStore = dependencies.satisfyDependency( LogicalTransactionStore.class,
                     new PhysicalLogicalTransactionStore( logFile, txIdGenerator,
                             transactionMetadataCache, logEntryReader, neoStore ) );

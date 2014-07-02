@@ -25,16 +25,24 @@ import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 
 public class PhysicalLogFileInformation implements LogFileInformation
 {
+    public interface SPI
+    {
+        long getTimestampForVersion( long version ) throws IOException;
+    }
+
     private final PhysicalLogFiles logFiles;
     private final TransactionMetadataCache transactionMetadataCache;
     private final TransactionIdStore transactionIdStore;
+    private final SPI spi;
 
     public PhysicalLogFileInformation( PhysicalLogFiles logFiles,
-            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore )
+            TransactionMetadataCache transactionMetadataCache, TransactionIdStore transactionIdStore,
+            SPI spi )
     {
         this.logFiles = logFiles;
         this.transactionMetadataCache = transactionMetadataCache;
         this.transactionIdStore = transactionIdStore;
+        this.spi = spi;
     }
 
     @Override
@@ -99,6 +107,6 @@ public class PhysicalLogFileInformation implements LogFileInformation
     @Override
     public long getFirstStartRecordTimestamp( long version ) throws IOException
     {
-        return -1;
+        return spi.getTimestampForVersion( version );
     }
 }
