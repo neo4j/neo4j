@@ -20,18 +20,16 @@
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.{SingleNode, NamedPath, NodeById, RelatedTo}
-import executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, NamedPathPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{NamedPath, NodeById, RelatedTo, SingleNode}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{NamedPathPipe, PipeMonitor}
 import org.neo4j.graphdb.Direction
-import org.junit.Test
 
 class NamedPathBuilderTest extends BuilderTest {
   private implicit val monitor = mock[PipeMonitor]
   val builder = new NamedPathBuilder
 
-  @Test
-  def should_not_accept_if_pattern_is_not_yet_solved() {
+  test("should_not_accept_if_pattern_is_not_yet_solved") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
       patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, Map.empty))),
@@ -43,8 +41,7 @@ class NamedPathBuilderTest extends BuilderTest {
     assertRejects(p, q)
   }
 
-  @Test
-  def should_accept_if_pattern_is_solved() {
+  test("should_accept_if_pattern_is_solved") {
     val namedPath = NamedPath("p", ParsedRelation("rel", "l", "r", Seq(), Direction.OUTGOING))
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
@@ -56,12 +53,11 @@ class NamedPathBuilderTest extends BuilderTest {
 
     val result = assertAccepts(p, q)
 
-    assert(result.query.namedPaths == Seq(Solved(namedPath)))
-    assert(result.pipe === NamedPathPipe(p, "p", namedPath.pathPattern))
+    result.query.namedPaths should equal(Seq(Solved(namedPath)))
+    result.pipe should equal(NamedPathPipe(p, "p", namedPath.pathPattern))
   }
 
-  @Test
-  def should_not_accept_unless_all_parts_of_the_named_path_are_solved() {
+  test("should_not_accept_unless_all_parts_of_the_named_path_are_solved") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
       patterns = Seq(

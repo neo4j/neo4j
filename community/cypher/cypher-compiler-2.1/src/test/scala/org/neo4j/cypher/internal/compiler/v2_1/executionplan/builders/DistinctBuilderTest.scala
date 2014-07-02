@@ -19,21 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.{SortItem, ReturnItem}
-import commands.expressions._
-import executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
-import pipes.FakePipe
-import symbols._
-import org.junit.Test
-import org.junit.Assert._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{ReturnItem, SortItem}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.FakePipe
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class DistinctBuilderTest extends BuilderTest {
 
   val builder = new DistinctBuilder
 
-  @Test
-  def does_not_offer_to_solve_queries_with_aggregations() {
+  test("does_not_offer_to_solve_queries_with_aggregations") {
     val q = PartiallySolvedQuery().
       copy(returns = Seq(Unsolved(ReturnItem(Literal(42), "42"))),
       aggregation = Seq(Unsolved(CountStar())) ,
@@ -42,8 +38,7 @@ class DistinctBuilderTest extends BuilderTest {
     assertRejects(q)
   }
 
-  @Test
-  def does_not_offer_to_solve_solved_queries() {
+  test("does_not_offer_to_solve_solved_queries") {
     val q = PartiallySolvedQuery().
       copy(returns = Seq(Unsolved(ReturnItem(Literal(42), "42"))),
       aggregation = Seq.empty ,
@@ -52,8 +47,7 @@ class DistinctBuilderTest extends BuilderTest {
     assertRejects(q)
   }
 
-  @Test
-  def does_offer_to_solve_queries_without_empty_aggregations() {
+  test("does_offer_to_solve_queries_without_empty_aggregations") {
     val q = PartiallySolvedQuery().
       copy(returns = Seq(Unsolved(ReturnItem(Literal(42), "42"))),
       aggregation = Seq.empty,
@@ -62,8 +56,7 @@ class DistinctBuilderTest extends BuilderTest {
     assertAccepts(q)
   }
 
-  @Test
-  def should_rewrite_expressions_coming_after_return() {
+  test("should_rewrite_expressions_coming_after_return") {
     val query = PartiallySolvedQuery().
       copy(
       returns = Seq(Unsolved(ReturnItem(IdFunction(Identifier("n")), "42"))),
@@ -75,7 +68,7 @@ class DistinctBuilderTest extends BuilderTest {
     val planInProgress: ExecutionPlanInProgress = plan(pipe, query)
 
     val resultPlan: ExecutionPlanInProgress = assertAccepts(planInProgress)
-    assertTrue("Expected to have a single sort item", resultPlan.query.sort.size == 1)
-    assertTrue("didn't rewrite the expression to a cached one", resultPlan.query.sort.head.token.expression.isInstanceOf[CachedExpression] )
+    resultPlan.query.sort should have size 1
+    withClue("didn't rewrite the expression to a cached one")(resultPlan.query.sort.head.token.expression.isInstanceOf[CachedExpression]) should equal(true)
   }
 }

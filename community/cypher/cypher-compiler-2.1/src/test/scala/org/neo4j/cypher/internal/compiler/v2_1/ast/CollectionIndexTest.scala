@@ -19,34 +19,30 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
-import org.scalatest.Assertions
-import org.junit.Assert._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class CollectionIndexTest extends Assertions {
+class CollectionIndexTest extends CypherFunSuite {
   val dummyCollection = DummyExpression(
     CTCollection(CTNode) | CTNode | CTCollection(CTString))
 
-  @Test
-  def shouldReturnCollectionInnerTypesOfExpression() {
+  test("shouldReturnCollectionInnerTypesOfExpression") {
     val index = CollectionIndex(dummyCollection,
       SignedDecimalIntegerLiteral("1")(DummyPosition(5))
     )(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(), result.errors)
-    assertEquals(CTNode | CTString, index.types(result.state))
+    result.errors shouldBe empty
+    index.types(result.state) should equal(CTNode | CTString)
   }
 
-  @Test
-  def shouldRaiseErrorIfIndexingByFraction() {
+  test("shouldRaiseErrorIfIndexingByFraction") {
     val index = CollectionIndex(dummyCollection,
       DecimalDoubleLiteral("1.3")(DummyPosition(5))
     )(DummyPosition(4))
 
     val result = index.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Float", index.idx.position)), result.errors)
+    result.errors should equal(Seq(SemanticError("Type mismatch: expected Integer but was Float", index.idx.position)))
   }
 }

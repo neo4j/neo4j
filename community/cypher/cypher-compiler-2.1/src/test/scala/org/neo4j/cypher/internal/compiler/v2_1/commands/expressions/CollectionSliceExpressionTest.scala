@@ -19,56 +19,42 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.QueryStateHelper
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-class CollectionSliceExpressionTest extends Assertions {
+class CollectionSliceExpressionTest extends CypherFunSuite {
 
-  @Test def tests() {
+  test("tests") {
     implicit val collection = Literal(Seq(1, 2, 3, 4))
 
-    assert(slice(from = 0, to = 2) === Seq(1, 2), "[1,2,3,4][0..2]")
-
-    assert(slice(to = -2) === Seq(1, 2), "[1,2,3,4][..-2]")
-
-    assert(slice(from = 0, to = -1) === Seq(1, 2, 3), "[1,2,3,4][0..-1]")
-
-    assert(slice(from = 2) === Seq(3, 4), "[1,2,3,4][2..]")
-
-    assert(slice(from = -3) === Seq(2, 3, 4), "[1,2,3,4][-3..]")
-
-    assert(slice(to = 2) === Seq(1, 2), "[1,2,3,4][..2]")
-
-    assert(slice(from = -3, to = -1) === Seq(2, 3), "[1,2,3,4][-3..-1]")
-
-    assert(sliceValue(null) === null)
+    slice(from = 0, to = 2) should equal(Seq(1, 2))
+    slice(to = -2) should equal(Seq(1, 2))
+    slice(from = 0, to = -1) should equal(Seq(1, 2, 3))
+    slice(from = 2) should equal(Seq(3, 4))
+    slice(from = -3) should equal(Seq(2, 3, 4))
+    slice(to = 2) should equal(Seq(1, 2))
+    slice(from = -3, to = -1) should equal(Seq(2, 3))
+    sliceValue(null) should equal(null.asInstanceOf[Any])
   }
 
-  @Test def should_handle_null() {
+  test("should_handle_null") {
     implicit val collection = Literal(null)
 
-    assert(slice(from = -3, to = -1) === null, "null[-3..-1]")
+    slice(from = -3, to = -1) should equal(null.asInstanceOf[Any])
   }
 
-  @Test def should_handle_out_of_bounds_by_returning_null() {
+  test("should_handle_out_of_bounds_by_returning_null") {
     val fullSeq = Seq(1, 2, 3, 4)
     implicit val collection = Literal(fullSeq)
 
-    assert(slice(from = 2, to = 10) === Seq(3,4), "[1,2,3,4][2..10]")
-
-    assert(slice(to = -10) === Seq.empty, "[1,2,3,4][..-10]")
-
-    assert(slice(from = 5, to = -1) === Seq.empty, "[1,2,3,4][5..-1]")
-
-    assert(slice(from = 5) === Seq.empty, "[1,2,3,4][5..]")
-
-    assert(slice(from = -10) === fullSeq, "[1,2,3,4][-10..]")
-
-    assert(slice(to = 10) === fullSeq, "[1,2,3,4][..10]")
-
-    assert(slice(from = -10, to = -1) === Seq(1,2,3), "[1,2,3,4][-3..-1]")
+    slice(from = 2, to = 10) should equal(Seq(3,4))
+    slice(to = -10) should equal(Seq.empty)
+    slice(from = 5, to = -1) should equal(Seq.empty)
+    slice(from = 5) should equal(Seq.empty)
+    slice(from = -10) should equal(fullSeq)
+    slice(to = 10) should equal(fullSeq)
+    slice(from = -10, to = -1) should equal(Seq(1,2,3))
   }
 
   private val ctx = ExecutionContext.empty

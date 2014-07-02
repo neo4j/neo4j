@@ -19,129 +19,130 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.QueryStateHelper
-import org.junit.Test
-import org.scalatest.Assertions
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-class StringFunctionsTest extends Assertions {
+class StringFunctionsTest extends CypherFunSuite {
 
   // TODO Move these tests into individual classes, at least for the more complex ones
 
-  @Test def replaceTests() {
+  private val expectedNull = null.asInstanceOf[Any]
+
+  test("replaceTests") {
     def replace(orig: Any, from: Any, to: Any) =
       ReplaceFunction(Literal(orig), Literal(from), Literal(to)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 
-    assert(replace("hello", "l", "w") === "hewwo")
-    assert(replace("hello", "ell", "ipp") === "hippo")
-    assert(replace("hello", "a", "x") === "hello")
-    assert(replace(null, "a", "x") === null)
-    assert(replace("hello", null, "x") === null)
-    assert(replace("hello", "o", null) === null)
+    replace("hello", "l", "w") should equal("hewwo")
+    replace("hello", "ell", "ipp") should equal("hippo")
+    replace("hello", "a", "x") should equal("hello")
+    replace(null, "a", "x") should equal(expectedNull)
+    replace("hello", null, "x") should equal(expectedNull)
+    replace("hello", "o", null) should equal(expectedNull)
     intercept[CypherTypeException](replace(1042, "10", "30"))
   }
 
-  @Test def leftTests() {
+  test("leftTests") {
     def left(from: Any, r: Any) =
       LeftFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 
-    assert(left("hello", 2) === "he")
-    assert(left("hello", 4) === "hell")
-    assert(left("hello", 8) === "hello")
-    assert(left(null, 8) === null)
+    left("hello", 2) should equal("he")
+    left("hello", 4) should equal("hell")
+    left("hello", 8) should equal("hello")
+    left(null, 8) should equal(expectedNull)
     intercept[CypherTypeException](left(1042, 2))
     intercept[StringIndexOutOfBoundsException](left("hello", -4))
   }
 
-  @Test def rightTests() {
+  test("rightTests") {
     def right(from: Any, r: Any) =
       RightFunction(Literal(from), Literal(r)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 
-    assert(right("hello", 2) === "lo")
-    assert(right("hello", 4) === "ello")
-    assert(right("hello", 8) === "hello")
-    assert(right(null, 8) === null)
+    right("hello", 2) should equal("lo")
+    right("hello", 4) should equal("ello")
+    right("hello", 8) should equal("hello")
+    right(null, 8) should equal(expectedNull)
     intercept[CypherTypeException](right(1024, 2))
     intercept[StringIndexOutOfBoundsException](right("hello", -4))
   }
 
-  @Test def substringTests() {
+  test("substringTests") {
     def substring(orig: Any, from: Any, to: Any) =
       SubstringFunction(Literal(orig), Literal(from), Some(Literal(to))).apply(ExecutionContext.empty)(QueryStateHelper.empty)
     def substringFrom(orig: Any, from: Any) =
       SubstringFunction(Literal(orig), Literal(from), None).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 
-    assert(substring("hello", 2, 5) === "llo")
-    assert(substring("hello", 4, 5) === "o")
-    assert(substring("hello", 1, 3) === "ell")
-    assert(substring("hello", 8, 5) === "")
-    assert(substringFrom("0123456789", 1) === "123456789")
-    assert(substringFrom("0123456789", 5) === "56789")
-    assert(substringFrom("0123456789", 15) === "")
-    assert(substring(null, 8, 5) === null)
-    intercept[CypherTypeException](assert(substring(1024, 1, 2) === null))
-    intercept[StringIndexOutOfBoundsException](assert(substring("hello", -4, 2) === null))
+    substring("hello", 2, 5) should equal("llo")
+    substring("hello", 4, 5) should equal("o")
+    substring("hello", 1, 3) should equal("ell")
+    substring("hello", 8, 5) should equal("")
+    substringFrom("0123456789", 1) should equal("123456789")
+    substringFrom("0123456789", 5) should equal("56789")
+    substringFrom("0123456789", 15) should equal("")
+    substring(null, 8, 5) should equal(expectedNull)
+    intercept[CypherTypeException](substring(1024, 1, 2) should equal(expectedNull))
+    intercept[StringIndexOutOfBoundsException](substring("hello", -4, 2) should equal(expectedNull))
   }
 
-  @Test def lowerTests() {
+  test("lowerTests") {
     def lower(x: Any) = LowerFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
-    assert(lower("HELLO") === "hello")
-    assert(lower("Hello") === "hello")
-    assert(lower("hello") === "hello")
-    assert(lower(null) === null)
-    intercept[CypherTypeException](lower(1024) === null)
+    lower("HELLO") should equal("hello")
+    lower("Hello") should equal("hello")
+    lower("hello") should equal("hello")
+    lower(null) should equal(expectedNull)
+    intercept[CypherTypeException](lower(1024) should equal(expectedNull))
   }
 
-  @Test def upperTests() {
+  test("upperTests") {
     def upper(x: Any) = UpperFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
-    assert(upper("HELLO") === "HELLO")
-    assert(upper("Hello") === "HELLO")
-    assert(upper("hello") === "HELLO")
-    assert(upper(null) === null)
-    intercept[CypherTypeException](upper(1024) === null)
+    upper("HELLO") should equal("HELLO")
+    upper("Hello") should equal("HELLO")
+    upper("hello") should equal("HELLO")
+    upper(null) should equal(expectedNull)
+    intercept[CypherTypeException](upper(1024) should equal(expectedNull))
   }
 
-  @Test def ltrimTests() {
+  test("ltrimTests") {
     def ltrim(x: Any) = LTrimFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
-    assert(ltrim("  HELLO") === "HELLO")
-    assert(ltrim(" Hello") === "Hello")
-    assert(ltrim("  hello") === "hello")
-    assert(ltrim("  hello  ") === "hello  ")
-    assert(ltrim(null) === null)
+    ltrim("  HELLO") should equal("HELLO")
+    ltrim(" Hello") should equal("Hello")
+    ltrim("  hello") should equal("hello")
+    ltrim("  hello  ") should equal("hello  ")
+    ltrim(null) should equal(expectedNull)
     intercept[CypherTypeException](ltrim(1024))
   }
 
-  @Test def rtrimTests() {
+  test("rtrimTests") {
     def rtrim(x: Any) = RTrimFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
-    assert(rtrim("HELLO  ") === "HELLO")
-    assert(rtrim("Hello   ") === "Hello")
-    assert(rtrim("  hello   ") === "  hello")
-    assert(rtrim(null) === null)
+    rtrim("HELLO  ") should equal("HELLO")
+    rtrim("Hello   ") should equal("Hello")
+    rtrim("  hello   ") should equal("  hello")
+    rtrim(null) should equal(expectedNull)
     intercept[CypherTypeException](rtrim(1024))
   }
 
-  @Test def trimTests() {
+  test("trimTests") {
     def trim(x: Any) = TrimFunction(Literal(x))(ExecutionContext.empty)(QueryStateHelper.empty)
 
-    assert(trim("  hello  ") === "hello")
-    assert(trim("  hello ") === "hello")
-    assert(trim("hello  ") === "hello")
-    assert(trim("  hello  ") === "hello")
-    assert(trim("  hello") === "hello")
-    assert(trim(null) === null)
+    trim("  hello  ") should equal("hello")
+    trim("  hello ") should equal("hello")
+    trim("hello  ") should equal("hello")
+    trim("  hello  ") should equal("hello")
+    trim("  hello") should equal("hello")
+    trim(null) should equal(expectedNull)
     intercept[CypherTypeException](trim(1042))
   }
 
-  @Test def stringTests() {
+  test("stringTests") {
     def str(x: Any) = StrFunction(Literal(x)).apply(ExecutionContext.empty)(QueryStateHelper.empty)
 
-    assert(str(1234) === "1234")
-    assert(str(List(1, 2, 3, 4)) === "[1,2,3,4]")
-    assert(str(null) === null)
+    str(1234) should equal("1234")
+    str(List(1, 2, 3, 4)) should equal("[1,2,3,4]")
+    str(null) should equal(expectedNull)
   }
 }

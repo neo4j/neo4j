@@ -19,15 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.ReturnItem
-import commands.expressions.Identifier
-import symbols._
-import org.junit.Assert
-import org.junit.Test
-import org.scalatest.junit.JUnitSuite
-import collection.mutable.Map
 import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.ReturnItem
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+
+import scala.collection.mutable.Map
 
 class ColumnFilterPipeTest extends CypherFunSuite {
 
@@ -38,7 +35,7 @@ class ColumnFilterPipeTest extends CypherFunSuite {
 
     val columnPipe = new ColumnFilterPipe(source, returnItems)(mock[PipeMonitor])
 
-    Assert.assertEquals(Map(col -> CTNode), columnPipe.symbols.identifiers)
-    Assert.assertEquals(List(Map(col -> "bar")), columnPipe.createResults(QueryStateHelper.empty).toList)
+    columnPipe.symbols.identifiers should equal(Map(col -> CTNode))
+    columnPipe.createResults(QueryStateHelper.empty).toList should equal(List(Map(col -> "bar")))
   }
 }

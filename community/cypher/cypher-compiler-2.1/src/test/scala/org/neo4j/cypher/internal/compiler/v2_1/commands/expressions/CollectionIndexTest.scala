@@ -19,48 +19,48 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.QueryStateHelper
-import symbols._
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class CollectionIndexTest extends Assertions {
+class CollectionIndexTest extends CypherFunSuite {
 
   implicit val state = QueryStateHelper.empty
   val ctx = ExecutionContext.empty
+  val expectedNull: Any = null
 
-  @Test def tests() {
+  test("tests") {
     implicit val collection = Literal(Seq(1, 2, 3, 4))
 
-    assert(idx(0) === 1)
-    assert(idx(1) === 2)
-    assert(idx(2) === 3)
-    assert(idx(3) === 4)
-    assert(idx(-1) === 4)
-    assert(idx(100) === null)
+    idx(0) should equal(1)
+    idx(1) should equal(2)
+    idx(2) should equal(3)
+    idx(3) should equal(4)
+    idx(-1) should equal(4)
+    idx(100) should equal(expectedNull)
   }
 
-  @Test def empty_collection_tests() {
+  test("empty_collection_tests") {
     implicit val collection = Collection()
 
-    assert(idx(0) === null)
-    assert(idx(-1) === null)
-    assert(idx(100) === null)
+    idx(0) should equal(expectedNull)
+    idx(-1) should equal(expectedNull)
+    idx(100) should equal(expectedNull)
   }
 
-  @Test def shouldHandleNulls() {
+  test("shouldHandleNulls") {
     implicit val collection = Literal(null)
 
-    assert(idx(0) === null)
+    idx(0) should equal(expectedNull)
   }
 
-  @Test def typeWhenCollectionIsAnyTypeIsCollectionOfCTAny {
+  test("typeWhenCollectionIsAnyTypeIsCollectionOfCTAny") {
     val collection = new FakeExpression(CTAny)
     val symbols = new SymbolTable()
     val result = CollectionIndex(collection, Literal(2)).evaluateType(CTCollection(CTAny), symbols)
 
-    assert(result === CTAny)
+    result should equal(CTAny)
   }
 
   private def idx(value: Int)(implicit collection:Expression) =

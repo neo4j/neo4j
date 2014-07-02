@@ -19,9 +19,8 @@
  */
 package org.neo4j.cypher
 
-import org.junit.Test
-
 class CypherTypeAcceptanceTest extends ExecutionEngineFunSuite {
+
   test("does not loose precision") {
     // Given
     execute("CREATE (:Label { id: 4611686018427387905 })")

@@ -19,58 +19,56 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.aggregation
 
-import org.junit.Assert._
-import org.junit.Test
 import org.neo4j.cypher.CypherTypeException
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 
-class SumFunctionTest extends AggregateTest with Assertions {
+class SumFunctionTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new SumFunction(inner)
 
-  @Test def singleValueReturnsThatNumber() {
+  test("singleValueReturnsThatNumber") {
     val result = aggregateOn(1)
 
-    assertEquals(1, result)
-    assertTrue(result.isInstanceOf[Int])
+    result should equal(1)
+    result shouldBe a [java.lang.Integer]
   }
 
-  @Test def singleValueOfDecimalReturnsDecimal() {
+  test("singleValueOfDecimalReturnsDecimal") {
     val result = aggregateOn(1.0d)
 
-    assertEquals(1.0, result)
-    assertTrue(result.isInstanceOf[Double])
+    result should equal(1.0)
+    result shouldBe a [java.lang.Double]
   }
 
-  @Test def mixOfIntAndDoubleYieldsDouble() {
+  test("mixOfIntAndDoubleYieldsDouble") {
     val result = aggregateOn(1, 1.0d)
 
-    assertEquals(2.0, result)
-    assertTrue(result.isInstanceOf[Double])
+    result should equal(2.0)
+    result shouldBe a [java.lang.Double]
   }
 
-  @Test def mixedLotsOfStuff() {
+  test("mixedLotsOfStuff") {
     val result = aggregateOn(1.byteValue(), 1.shortValue())
 
-    assertEquals(2, result)
-    assertTrue(result.isInstanceOf[Int])
+    result should equal(2)
+    result shouldBe a [java.lang.Integer]
   }
 
-  @Test def noNumbersEqualsZero() {
+  test("noNumbersEqualsZero") {
     val result = aggregateOn()
 
-    assertEquals(0, result)
-    assertTrue(result.isInstanceOf[Int])
+    result should equal(0)
+    result shouldBe a [java.lang.Integer]
   }
 
-  @Test def nullDoesNotChangeTheSum() {
+  test("nullDoesNotChangeTheSum") {
     val result = aggregateOn(1, null)
 
-    assertEquals(1, result)
-    assertTrue(result.isInstanceOf[Int])
+    result should equal(1)
+    result shouldBe a [java.lang.Integer]
   }
 
-  @Test def noNumberValuesThrowAnException() {
+  test("noNumberValuesThrowAnException") {
     intercept[CypherTypeException](aggregateOn(1, "wut"))
   }
 }

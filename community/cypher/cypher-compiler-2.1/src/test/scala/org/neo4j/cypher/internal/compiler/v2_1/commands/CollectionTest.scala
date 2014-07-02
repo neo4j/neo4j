@@ -19,98 +19,85 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.scalatest.Assertions
-import org.junit.Test
-import org.junit.runners.Parameterized.Parameters
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal, Expression}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression, Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
 
-@RunWith(value = classOf[Parameterized])
-class CollectionTest(expectedResult: Any,
-                     collectionFunctionName: String,
-                     collectionFunction: CollectionTest.CollectionFunction,
-                     values: Seq[Boolean]) extends Assertions {
+class CollectionTest extends CypherFunSuite {
 
-  @Test def test() {
-    val function = collectionFunction(Literal(values), "x", CoercedPredicate(Identifier("x")))
-    val result = function(ExecutionContext.empty)(QueryStateHelper.empty)
-    assert(expectedResult === result)
+  test("any") {
+    Seq() any false
+    Seq(true) any true
+    Seq(false) any false
+    Seq(null) any null
+    Seq(null, true) any true
+    Seq(null, false) any null
+    Seq(false, null) any null
+    Seq(true, null) any true
   }
-}
 
-object CollectionTest {
+  test("all") {
+    Seq() all true
+    Seq(true) all true
+    Seq(false) all false
+    Seq(null) all null
+    Seq(null, true) all null
+    Seq(null, false) all false
+    Seq(false, null) all false
+    Seq(true, null) all null
+  }
 
-  type CollectionFunction = (Expression, String, Predicate) => InCollection
+  test("single") {
+    Seq() single false
+    Seq(true) single true
+    Seq(false) single false
+    Seq(null) single null
+    Seq(null, true) single null
+    Seq(null, false) single null
+    Seq(false, null) single null
+    Seq(true, null) single null
+    Seq(true, false) single true
+    Seq(false, true) single true
+    Seq(true, true) single false
+    Seq(false, true, true) single false
+    Seq(false, true, false) single true
+    Seq(false, true, null) single null
+  }
 
-  @Parameters(name = "{1} in {3} => {0}")
-  def parameters: java.util.Collection[Array[Any]] = {
-    val list = new java.util.ArrayList[Array[Any]]()
+  test("none") {
+    Seq() none true
+    Seq(true) none false
+    Seq(false) none true
+    Seq(null) none null
+    Seq(null, true) none false
+    Seq(null, false) none null
+    Seq(false, null) none null
+    Seq(true, null) none false
+    Seq(true, false) none false
+    Seq(false, true) none false
+    Seq(true, true) none false
+    Seq(false, true, true) none false
+    Seq(false, true, false) none false
+    Seq(false, true, null) none false
+  }
 
-    def add(expectedResult: Any,
-            collectionFunctionName: String,
-            collectionFunction: CollectionFunction,
-            values: Seq[Any]) {
-      list.add(Array(expectedResult, collectionFunctionName, collectionFunction, values))
+  implicit class Check(values: Seq[_]) {
+
+    def any(expected: Any) = check(expected, AnyInCollection.apply)
+
+    def all(expected: Any) = check(expected, AllInCollection.apply)
+
+    def single(expected: Any) = check(expected, SingleInCollection.apply)
+
+    def none(expected: Any) = check(expected, NoneInCollection.apply)
+
+    private def check(expected: Any,
+                      collectionFunction: (Expression, String, Predicate) => InCollection) {
+      val function = collectionFunction(Literal(values), "x", CoercedPredicate(Identifier("x")))
+      val result = function(ExecutionContext.empty)(QueryStateHelper.empty)
+      result should equal(expected)
     }
-
-    def addAny(expected: Any, values: Seq[Any]) = add(expected, "Any", AnyInCollection.apply, values)
-    def addAll(expected: Any, values: Seq[Any]) = add(expected, "All", AllInCollection.apply, values)
-    def addSingle(expected: Any, values: Seq[Any]) = add(expected, "Single", SingleInCollection.apply, values)
-    def addNone(expected: Any, values: Seq[Any]) = add(expected, "None", NoneInCollection.apply, values)
-
-    addAny(expected = false, Seq())
-    addAny(expected = true, Seq(true))
-    addAny(expected = false, Seq(false))
-    addAny(expected = null, Seq(null))
-    addAny(expected = true, Seq(null, true))
-    addAny(expected = null, Seq(null, false))
-    addAny(expected = null, Seq(false, null))
-    addAny(expected = true, Seq(true, null))
-
-    addAll(expected = true, Seq())
-    addAll(expected = true, Seq(true))
-    addAll(expected = false, Seq(false))
-    addAll(expected = null, Seq(null))
-    addAll(expected = null, Seq(null, true))
-    addAll(expected = false, Seq(null, false))
-    addAll(expected = false, Seq(false, null))
-    addAll(expected = null, Seq(true, null))
-
-    addSingle(expected = false, Seq())
-    addSingle(expected = true, Seq(true))
-    addSingle(expected = false, Seq(false))
-    addSingle(expected = null, Seq(null))
-    addSingle(expected = null, Seq(null, true))
-    addSingle(expected = null, Seq(null, false))
-    addSingle(expected = null, Seq(false, null))
-    addSingle(expected = null, Seq(true, null))
-    addSingle(expected = true, Seq(true, false))
-    addSingle(expected = true, Seq(false, true))
-    addSingle(expected = false, Seq(true, true))
-    addSingle(expected = false, Seq(false, true, true))
-    addSingle(expected = true, Seq(false, true, false))
-    addSingle(expected = null, Seq(false, true, null))
-
-    addNone(expected = true, Seq())
-    addNone(expected = false, Seq(true))
-    addNone(expected = true, Seq(false))
-    addNone(expected = null, Seq(null))
-    addNone(expected = false, Seq(null, true))
-    addNone(expected = null, Seq(null, false))
-    addNone(expected = null, Seq(false, null))
-    addNone(expected = false, Seq(true, null))
-    addNone(expected = false, Seq(true, false))
-    addNone(expected = false, Seq(false, true))
-    addNone(expected = false, Seq(true, true))
-    addNone(expected = false, Seq(false, true, true))
-    addNone(expected = false, Seq(false, true, false))
-    addNone(expected = false, Seq(false, true, null))
-
-    list
   }
-
 }

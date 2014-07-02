@@ -19,22 +19,9 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
-import org.junit.Test
-import org.scalatest.Assertions
-import org.junit.runner.RunWith
-import org.junit.runners.Parameterized
-import org.junit.runners.Parameterized.Parameters
-import java.util
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-@RunWith(value = classOf[Parameterized])
-class GraphElementPropertyFunctionsTest(given: List[_], expected: Array[_]) extends GraphElementPropertyFunctions with Assertions {
-
-  @Test def test_it() {
-    assert(makeValueNeoSafe(given) === expected)
-  }
-}
-
-object GraphElementPropertyFunctionsTest {
+class GraphElementPropertyFunctionsTest extends CypherFunSuite with GraphElementPropertyFunctions {
 
   val byte: Byte = 1
   val short: Short = 1
@@ -43,56 +30,53 @@ object GraphElementPropertyFunctionsTest {
   val float: Float = 1
   val double: Double = 1
 
-  @Parameters(name = "{0}")
-  def parameters: util.Collection[Array[AnyRef]] = {
-    val list = new util.ArrayList[Array[AnyRef]]()
-    def add(expected: Array[_],
-            values: Any*) {
-      list.add(Array(values.toList, expected))
-    }
+  test("checks") {
+    Array[Byte](1, 1) ==> (byte, byte)
+    Array[Short](1, 1) ==> (byte, short)
+    Array[Int](1, 1) ==> (byte, int)
+    Array[Long](1, 1) ==> (byte, long)
+    Array[Float](1, 1) ==> (byte, float)
+    Array[Double](1, 1) ==> (byte, double)
 
-    add(Array[Byte](1, 1), byte, byte)
-    add(Array[Short](1, 1), byte, short)
-    add(Array[Int](1, 1), byte, int)
-    add(Array[Long](1, 1), byte, long)
-    add(Array[Float](1, 1), byte, float)
-    add(Array[Double](1, 1), byte, double)
+    Array[Short](1, 1) ==> (short, byte)
+    Array[Short](1, 1) ==> (short, short)
+    Array[Int](1, 1) ==> (short, int)
+    Array[Long](1, 1) ==> (short, long)
+    Array[Float](1, 1) ==> (short, float)
+    Array[Double](1, 1) ==> (short, double)
 
-    add(Array[Short](1, 1), short, byte)
-    add(Array[Short](1, 1), short, short)
-    add(Array[Int](1, 1), short, int)
-    add(Array[Long](1, 1), short, long)
-    add(Array[Float](1, 1), short, float)
-    add(Array[Double](1, 1), short, double)
+    Array[Int](1, 1) ==> (int, byte)
+    Array[Int](1, 1) ==> (int, short)
+    Array[Int](1, 1) ==> (int, int)
+    Array[Long](1, 1) ==> (int, long)
+    Array[Float](1, 1) ==> (int, float)
+    Array[Double](1, 1) ==> (int, double)
 
-    add(Array[Int](1, 1), int, byte)
-    add(Array[Int](1, 1), int, short)
-    add(Array[Int](1, 1), int, int)
-    add(Array[Long](1, 1), int, long)
-    add(Array[Float](1, 1), int, float)
-    add(Array[Double](1, 1), int, double)
+    Array[Long](1, 1) ==> (long, byte)
+    Array[Long](1, 1) ==> (long, short)
+    Array[Long](1, 1) ==> (long, int)
+    Array[Long](1, 1) ==> (long, long)
+    Array[Float](1, 1) ==> (long, float)
+    Array[Double](1, 1) ==> (long, double)
 
-    add(Array[Long](1, 1), long, byte)
-    add(Array[Long](1, 1), long, short)
-    add(Array[Long](1, 1), long, int)
-    add(Array[Long](1, 1), long, long)
-    add(Array[Float](1, 1), long, float)
-    add(Array[Double](1, 1), long, double)
+    Array[Float](1, 1) ==> (float, byte)
+    Array[Float](1, 1) ==> (float, short)
+    Array[Float](1, 1) ==> (float, int)
+    Array[Float](1, 1) ==> (float, long)
+    Array[Float](1, 1) ==> (float, float)
+    Array[Double](1, 1) ==> (float, double)
 
-    add(Array[Float](1, 1), float, byte)
-    add(Array[Float](1, 1), float, short)
-    add(Array[Float](1, 1), float, int)
-    add(Array[Float](1, 1), float, long)
-    add(Array[Float](1, 1), float, float)
-    add(Array[Double](1, 1), float, double)
+    Array[Double](1, 1) ==> (double, byte)
+    Array[Double](1, 1) ==> (double, short)
+    Array[Double](1, 1) ==> (double, int)
+    Array[Double](1, 1) ==> (double, long)
+    Array[Double](1, 1) ==> (double, float)
+    Array[Double](1, 1) ==> (float, double)
+  }
 
-    add(Array[Double](1, 1), double, byte)
-    add(Array[Double](1, 1), double, short)
-    add(Array[Double](1, 1), double, int)
-    add(Array[Double](1, 1), double, long)
-    add(Array[Double](1, 1), double, float)
-    add(Array[Double](1, 1), float, double)
+  implicit class CheckValeNeoSafe(expected: Array[_]) {
 
-    list
+    def ==>(vals: Any*) =
+      makeValueNeoSafe(vals) should equal(expected)
   }
 }

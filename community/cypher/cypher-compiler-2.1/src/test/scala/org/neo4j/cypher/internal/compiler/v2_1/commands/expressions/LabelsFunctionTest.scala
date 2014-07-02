@@ -19,21 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
+import org.mockito.Mockito._
+import org.mockito.invocation.InvocationOnMock
+import org.mockito.stubbing.Answer
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
 import org.neo4j.graphdb.Node
-import org.scalatest.Assertions
-import org.junit.Test
-import org.scalatest.mock.MockitoSugar
-import org.mockito.Mockito._
-import org.mockito.stubbing.Answer
-import org.mockito.invocation.InvocationOnMock
 
-class LabelsFunctionTest extends Assertions with MockitoSugar {
+class LabelsFunctionTest extends CypherFunSuite {
 
-  @Test
-  def testIdLookup() {
+  test("testIdLookup") {
     // GIVEN
     val node = mock[Node]
     val queryContext = mock[QueryContext]
@@ -49,6 +46,6 @@ class LabelsFunctionTest extends Assertions with MockitoSugar {
     val result = LabelsFunction(Identifier("n"))(ctx)(state)
 
     // THEN
-    assert(Seq("bambi") === result)
+    result should equal(Seq("bambi"))
   }
 }

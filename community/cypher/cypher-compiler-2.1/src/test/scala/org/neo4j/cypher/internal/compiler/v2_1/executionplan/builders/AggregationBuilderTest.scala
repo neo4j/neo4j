@@ -19,20 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.junit.Test
-import org.junit.Assert._
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import expressions.CountStar
-import expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
-import org.neo4j.cypher.internal.compiler.v2_1.commands.ReturnItem
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.ExecutionPlanInProgress
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{CountStar, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{ExecutionPlanInProgress, PartiallySolvedQuery}
 
 class AggregationBuilderTest extends BuilderTest {
 
   val builder = new AggregationBuilder
 
-  @Test def should_accept_if_stuff_looks_ok() {
+  test("should_accept_if_stuff_looks_ok") {
     val q = PartiallySolvedQuery().
       copy(
       aggregation = Seq(Unsolved(CountStar())),
@@ -53,10 +48,10 @@ class AggregationBuilderTest extends BuilderTest {
       extracted = true
     )
 
-    assert(resultPlan.query === expectedQuery)
+    resultPlan.query should equal(expectedQuery)
   }
 
-  @Test def should_not_accept_if_there_are_still_other_things_to_do_in_the_query() {
+  test("should_not_accept_if_there_are_still_other_things_to_do_in_the_query") {
     val q = PartiallySolvedQuery().
       copy(
       start = Seq(Unsolved(NodeById("n", 0))),

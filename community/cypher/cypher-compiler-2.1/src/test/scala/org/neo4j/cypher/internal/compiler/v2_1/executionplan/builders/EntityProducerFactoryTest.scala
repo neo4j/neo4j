@@ -19,33 +19,28 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import pipes.QueryStateHelper
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{QueryContext, PlanContext}
-import org.neo4j.cypher.IndexHintException
-import org.scalatest.mock.MockitoSugar
-import org.junit.{Before, Test}
 import org.mockito.Mockito._
-import org.scalatest.Assertions
-import org.neo4j.kernel.api.index.IndexDescriptor
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SchemaIndex
+import org.neo4j.cypher.IndexHintException
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v2_1.commands.NodeByLabel
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{PlanContext, QueryContext}
+import org.neo4j.kernel.api.index.IndexDescriptor
 
-class EntityProducerFactoryTest extends MockitoSugar with Assertions {
+class EntityProducerFactoryTest extends CypherFunSuite {
   var planContext: PlanContext = null
   var factory: EntityProducerFactory = null
   val context = ExecutionContext.empty
 
-  @Before
-  def init() {
+  override def beforeEach() {
+    super.beforeEach()
     planContext = mock[PlanContext]
     factory = new EntityProducerFactory
   }
 
-  @Test
-  def throws_error_when_index_is_missing() {
+  test("throws_error_when_index_is_missing") {
     //GIVEN
     val label: String = "label"
     val prop: String = "prop"
@@ -55,8 +50,7 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
     intercept[IndexHintException](factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, AnyIndex, None)))
   }
 
-  @Test
-  def calls_the_right_methods() {
+  test("calls_the_right_methods") {
     //GIVEN
     val label: String = "label"
     val prop: String = "prop"
@@ -70,11 +64,10 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
 
     //WHEN
     val func = factory.nodeByIndexHint(planContext, SchemaIndex("id", label, prop, AnyIndex, Some(SingleQueryExpression(Literal(value)))))
-    assert(func(context, state) === indexResult)
+    func(context, state) should equal(indexResult)
   }
 
-  @Test
-  def retries_every_time_if_the_label_did_not_exist_at_plan_building() {
+  test("retries_every_time_if_the_label_did_not_exist_at_plan_building") {
     // given
     val label: String = "label"
     val queryContext: QueryContext = mock[QueryContext]
@@ -84,14 +77,13 @@ class EntityProducerFactoryTest extends MockitoSugar with Assertions {
 
     // when
     val func = factory.nodeByLabel(planContext, NodeByLabel("id", label))
-    assert(func(context, state) === Iterator.empty)
+    func(context, state) should equal(Iterator.empty)
 
     // then
     verify(queryContext, times(1)).getOptLabelId(label)
   }
 
-  @Test
-  def should_translate_values_to_neo4j() {
+  test("should_translate_values_to_neo4j") {
     //GIVEN
     val labelName = "Label"
     val propertyKey = "prop"

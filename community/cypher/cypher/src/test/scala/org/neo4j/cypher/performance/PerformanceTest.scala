@@ -19,33 +19,31 @@
  */
 package org.neo4j.cypher.performance
 
-import scala.util.Random
 import org.neo4j.cypher.ExecutionEngine
-import org.scalatest.Assertions
-import org.junit.{Ignore, After, Before, Test}
-import org.neo4j.graphdb.{GraphDatabaseService, DynamicRelationshipType, Node}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.graphdb.factory.GraphDatabaseFactory
+import org.neo4j.graphdb.{DynamicRelationshipType, GraphDatabaseService, Node}
 
-@Ignore
-class PerformanceTest extends Assertions {
+import scala.util.Random
+
+class PerformanceTest extends CypherFunSuite {
   val r = new Random()
 
   var db: GraphDatabaseService = null
   var engine: ExecutionEngine = null
 
-  @Before
-  def init() {
+  override def beforeEach() {
+    super.beforeEach()
     db = new GraphDatabaseFactory().newEmbeddedDatabase("target/db");
     engine = new ExecutionEngine(db)
   }
 
-  @After
-  def closeDown() {
+  override def afterEach() {
     db.shutdown()
+    super.afterEach()
   }
 
-  @Test
-  def createDatabase() {
+  ignore("createDatabase") {
 
     val startPoints = (0 to 10).map(x => {
       val tx = db.beginTx()

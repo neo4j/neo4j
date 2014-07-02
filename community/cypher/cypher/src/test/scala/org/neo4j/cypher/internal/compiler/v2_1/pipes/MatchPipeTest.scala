@@ -19,22 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.matching.PatternGraph
-import symbols._
-import org.junit.Test
-import org.scalatest.Assertions
-import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.PatternGraph
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class MatchPipeTest extends Assertions with MockitoSugar {
-  @Test
-  def should_yield_nothing_if_it_gets_an_incoming_null() {
+class MatchPipeTest extends CypherFunSuite {
+
+  test("should_yield_nothing_if_it_gets_an_incoming_null") {
     implicit val monitor = mock[PipeMonitor]
     val source = new FakePipe(Iterator(Map("x"->null)), "x"->CTNode)
     val patternGraph = new PatternGraph(Map.empty, Map.empty, Seq.empty, Seq.empty)
     val identifiersInClause = Set("x", "r", "z")
     val matchPipe = new MatchPipe(source, predicates = Seq.empty, patternGraph, identifiersInClause)
     val result: Iterator[ExecutionContext] = matchPipe.createResults(QueryStateHelper.empty)
-    assert(result.toList === List.empty)
+    result.toList shouldBe empty
   }
 }

@@ -19,23 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.mutation
 
-import org.scalatest.Assertions
-import org.junit.Test
 import org.neo4j.cypher.CypherTypeException
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class PropertySetActionTest extends Assertions {
+class PropertySetActionTest extends CypherFunSuite {
 
   val x = new Object with GraphElementPropertyFunctions
 
-  @Test def string_collection_turns_into_string_array() {
-    assert(x.makeValueNeoSafe(Seq("a", "b")) === Array("a", "b"))
+  test("string_collection_turns_into_string_array") {
+    x.makeValueNeoSafe(Seq("a", "b")) should equal(Array("a", "b"))
   }
 
-  @Test def empty_collection_in_is_empty_array() {
-    assert(x.makeValueNeoSafe(Seq()) === Array())
+  test("empty_collection_in_is_empty_array") {
+    x.makeValueNeoSafe(Seq()) should equal(Array())
   }
 
-  @Test def mixed_types_are_not_ok() {
+  test("mixed_types_are_not_ok") {
     intercept[CypherTypeException](x.makeValueNeoSafe(Seq("a", 12, false)))
   }
 }

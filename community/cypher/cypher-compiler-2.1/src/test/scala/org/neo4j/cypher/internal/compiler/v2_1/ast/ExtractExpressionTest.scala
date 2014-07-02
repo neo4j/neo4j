@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Assert._
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class ExtractExpressionTest extends Assertions {
+class ExtractExpressionTest extends CypherFunSuite {
 
   val dummyExpression = DummyExpression(
     CTCollection(CTNode) | CTBoolean | CTCollection(CTString)
@@ -33,25 +31,22 @@ class ExtractExpressionTest extends Assertions {
 
   val extractExpression = DummyExpression(CTNode | CTNumber, DummyPosition(2))
 
-  @Test
-  def shouldHaveCollectionWithInnerTypesOfExtractExpression() {
+  test("shouldHaveCollectionWithInnerTypesOfExtractExpression") {
     val extract = ExtractExpression(Identifier("x")(DummyPosition(5)), dummyExpression, None, Some(extractExpression))(DummyPosition(0))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(), result.errors)
-    assertEquals(CTCollection(CTNode) | CTCollection(CTNumber), extract.types(result.state))
+    result.errors shouldBe empty
+    extract.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTNumber))
   }
 
-  @Test
-  def shouldRaiseSemanticErrorIfPredicateSpecified() {
+  test("shouldRaiseSemanticErrorIfPredicateSpecified") {
     val extract = ExtractExpression(Identifier("x")(DummyPosition(5)), dummyExpression, Some(True()(DummyPosition(5))), Some(extractExpression))(DummyPosition(0))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("extract(...) should not contain a WHERE predicate", DummyPosition(0))), result.errors)
+    result.errors should equal(Seq(SemanticError("extract(...) should not contain a WHERE predicate", DummyPosition(0))))
   }
 
-  @Test
-  def shouldRaiseSemanticErrorIfMissingExtractExpression() {
+  test("shouldRaiseSemanticErrorIfMissingExtractExpression") {
     val extract = ExtractExpression(Identifier("x")(DummyPosition(5)), dummyExpression, None, None)(DummyPosition(0))
     val result = extract.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("extract(...) requires '| expression' (an extract expression)", DummyPosition(0))), result.errors)
+    result.errors should equal(Seq(SemanticError("extract(...) requires '| expression' (an extract expression)", DummyPosition(0))))
   }
 }

@@ -19,48 +19,37 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.junit.Test
-import org.junit.Assert._
-import org.junit.matchers.JUnitMatchers._
-import scala.collection.JavaConverters._
-import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import expressions._
-import org.scalatest.junit.JUnitSuite
 import org.neo4j.cypher.SyntaxException
-import org.neo4j.cypher.internal.compiler.v2_1.symbols._
-import collection.mutable.{Map => MutableMap}
-import java.lang.{Iterable => JIterable}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType.PropertyKey
-import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class EagerAggregationPipeTest extends JUnitSuite with MockitoSugar {
+class EagerAggregationPipeTest extends CypherFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
 
-  @Test def shouldReturnColumnsFromReturnItems() {
+  test("shouldReturnColumnsFromReturnItems") {
     val source = new FakePipe(List(), createSymbolTableFor("name"))
 
     val returnItems = createReturnItemsFor("name")
     val grouping = Map("count(*)" -> CountStar())
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
-    assertEquals(
-      Map("name" -> CTNode, "count(*)" -> CTInteger),
-      aggregationPipe.symbols.identifiers)
+    aggregationPipe.symbols.identifiers should equal(Map("name" -> CTNode, "count(*)" -> CTInteger))
   }
-
 
   private def createReturnItemsFor(names: String*): Map[String, Identifier] = names.map(x => x -> Identifier(x)).toMap
 
-  @Test(expected = classOf[SyntaxException]) def shouldThrowSemanticException() {
+  test("shouldThrowSemanticException") {
     val source = new FakePipe(List(), createSymbolTableFor("extractReturnItems"))
 
     val returnItems = createReturnItemsFor("name")
     val grouping = Map("count(*)" -> Count(Identifier("none-existing-identifier")))
-    new EagerAggregationPipe(source, returnItems, grouping)
+    intercept[SyntaxException](new EagerAggregationPipe(source, returnItems, grouping))
   }
 
-  @Test def shouldAggregateCountStar() {
+  test("shouldAggregateCountStar") {
     val source = new FakePipe(List(
       Map("name" -> "Andres", "age" -> 36),
       Map("name" -> "Peter", "age" -> 38),
@@ -71,13 +60,14 @@ class EagerAggregationPipeTest extends JUnitSuite with MockitoSugar {
     val grouping = Map("count(*)" -> CountStar())
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
-    assertThat(getResults(aggregationPipe), hasItems(
+    getResults(aggregationPipe) should contain allOf(
       Map("name" -> "Andres", "count(*)" -> 1),
       Map("name" -> "Peter", "count(*)" -> 1),
-      Map("name" -> "Michael", "count(*)" -> 2)))
+      Map("name" -> "Michael", "count(*)" -> 2)
+      )
   }
 
-  @Test def shouldReturnZeroForEmptyInput() {
+  test("shouldReturnZeroForEmptyInput") {
     val source = new FakePipe(List(), createSymbolTableFor("name"))
 
     val returnItems = createReturnItemsFor()
@@ -93,11 +83,12 @@ class EagerAggregationPipeTest extends JUnitSuite with MockitoSugar {
 
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
-    val results = getResults(aggregationPipe)
-    assertThat(results, hasItems(Map[String, Any]("avg(name.age)" -> null, "sum(name.age)" -> 0, "count(name.age)" -> 0, "min(name.age)" -> null, "collect(name.age)" -> List(), "max(name.age)" -> null, "count(*)" -> 0)))
+    getResults(aggregationPipe) should contain(
+      Map[String, Any]("avg(name.age)" -> null, "sum(name.age)" -> 0, "count(name.age)" -> 0, "min(name.age)" -> null, "collect(name.age)" -> List(), "max(name.age)" -> null, "count(*)" -> 0)
+    )
   }
 
-  @Test def shouldCountNonNullValues() {
+  test("shouldCountNonNullValues") {
     val source = new FakePipe(List(
       Map("name" -> "Andres", "age" -> 36),
       Map("name" -> null, "age" -> 38),
@@ -108,10 +99,10 @@ class EagerAggregationPipeTest extends JUnitSuite with MockitoSugar {
     val grouping = Map("count(name)" -> Count(Identifier("name")))
     val aggregationPipe = new EagerAggregationPipe(source, returnItems, grouping)
 
-    assertEquals(List(Map("count(name)" -> 3)), aggregationPipe.createResults(QueryStateHelper.empty).toList)
+    getResults(aggregationPipe) should equal(List(Map("count(name)" -> 3)))
   }
 
   private def createSymbolTableFor(name: String) = name -> CTNode
 
-  private def getResults(p: Pipe): JIterable[Map[String, Any]] = p.createResults(QueryStateHelper.empty).map(_.m.toMap).toIterable.asJava
+  private def getResults(p: Pipe) = p.createResults(QueryStateHelper.empty).map(_.m.toMap).toList
 }

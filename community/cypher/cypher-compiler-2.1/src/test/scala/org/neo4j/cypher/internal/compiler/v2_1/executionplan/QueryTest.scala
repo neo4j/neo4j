@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{AllIdentifiers, CreateNodeStartItem, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.mutation.CreateNode
-import org.scalatest.Assertions
 
-class QueryTest extends Assertions {
-  @Test
-  def shouldCompactCreateStatements() {
+class QueryTest extends CypherFunSuite {
+
+  test("shouldCompactCreateStatements") {
     val end = Query.
       start(CreateNodeStartItem(CreateNode("b", Map(), Seq.empty))).
       returns()
@@ -44,11 +43,10 @@ class QueryTest extends Assertions {
       CreateNodeStartItem(CreateNode("b", Map(), Seq.empty))).
       returns()
 
-    assert(expected === compacted)
+    expected should equal(compacted)
   }
 
-  @Test
-  def shouldCompactManyCreateStatementsWithoutBlowingUp() {
+  test("shouldCompactManyCreateStatementsWithoutBlowingUp") {
     val allHeads = (1 to 10000).map(x => Query.updates(CreateNode(s"a$x", Map.empty, Seq.empty)).returns())
     val query = allHeads.reduceLeft[Query] {
       case (acc, update) => update.copy( tail = Some(acc) )

@@ -19,25 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.functions
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import ast.Expression.SemanticContext
-import symbols._
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-abstract class FunctionTestBase(funcName: String) extends Assertions {
+abstract class FunctionTestBase(funcName: String) extends CypherFunSuite {
 
   protected val context: SemanticContext = SemanticContext.Simple
 
   protected def testValidTypes(argumentTypes: TypeSpec*)(expected: TypeSpec) {
     val (result, invocation) = evaluateWithTypes(argumentTypes.toIndexedSeq)
-    assert(result.errors.isEmpty, s"type check has errors: ${result.errors.mkString(",")}")
-    assert(invocation.types(result.state) === expected)
+    result.errors shouldBe empty
+    invocation.types(result.state) should equal(expected)
   }
 
   protected def testInvalidApplication(argumentTypes: TypeSpec*)(message: String) {
     val (result, _) = evaluateWithTypes(argumentTypes.toIndexedSeq)
-    assert(result.errors.nonEmpty)
-    assert(result.errors.head.msg === message)
+    result.errors should not be empty
+    result.errors.head.msg should equal(message)
   }
 
   protected def evaluateWithTypes(argumentTypes: IndexedSeq[TypeSpec]): (SemanticCheckResult, ast.FunctionInvocation) = {
@@ -52,5 +52,4 @@ abstract class FunctionTestBase(funcName: String) extends Assertions {
     val state = arguments.semanticCheck(context)(SemanticState.clean).state
     (invocation.semanticCheck(context)(state), invocation)
   }
-
 }
