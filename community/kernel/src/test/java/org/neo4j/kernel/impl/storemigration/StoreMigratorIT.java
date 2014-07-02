@@ -102,17 +102,22 @@ public class StoreMigratorIT
         assertTrue( monitor.started );
         assertTrue( monitor.finished );
 
-        GraphDatabaseService database = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
+        GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
 
-        DatabaseContentVerifier verifier = new DatabaseContentVerifier( database );
-        verifier.verifyNodes();
-        verifier.verifyRelationships();
-        verifier.verifyNodeIdsReused();
-        verifier.verifyRelationshipIdsReused();
-        verifier.verifyLegacyIndex();
-
-        // CLEANUP
-        database.shutdown();
+        try
+        {
+            DatabaseContentVerifier verifier = new DatabaseContentVerifier( db );
+            verifier.verifyNodes();
+            verifier.verifyRelationships();
+            verifier.verifyNodeIdsReused();
+            verifier.verifyRelationshipIdsReused();
+            verifier.verifyLegacyIndex();
+        }
+        finally
+        {
+            // CLEANUP
+            db.shutdown();
+        }
     }
 
     @Test
@@ -132,17 +137,23 @@ public class StoreMigratorIT
         // THEN
         // verify that the "name" property for both the involved nodes
         GraphDatabaseService db = new GraphDatabaseFactory().newEmbeddedDatabase( storeDir );
-        Node nodeA = getNodeWithName( db, "A" );
-        assertThat( nodeA, inTx( db, hasProperty( "name" ).withValue( "A" ) ) );
+        try
+        {
+            Node nodeA = getNodeWithName( db, "A" );
+            assertThat( nodeA, inTx( db, hasProperty( "name" ).withValue( "A" ) ) );
 
-        Node nodeB = getNodeWithName( db, "B" );
-        assertThat( nodeB, inTx( db, hasProperty( "name" ).withValue( "B" ) ) );
+            Node nodeB = getNodeWithName( db, "B" );
+            assertThat( nodeB, inTx( db, hasProperty( "name" ).withValue( "B" ) ) );
 
-        Node nodeC = getNodeWithName( db, "C" );
-        assertThat( nodeC, inTx( db, hasProperty( "name" ).withValue( "C" )  ) );
-        assertThat( nodeC, inTx( db, hasProperty( "other" ).withValue( "a value" ) ) );
-        assertThat( nodeC, inTx( db, hasProperty( "third" ).withValue( "something" ) ) );
-        db.shutdown();
+            Node nodeC = getNodeWithName( db, "C" );
+            assertThat( nodeC, inTx( db, hasProperty( "name" ).withValue( "C" )  ) );
+            assertThat( nodeC, inTx( db, hasProperty( "other" ).withValue( "a value" ) ) );
+            assertThat( nodeC, inTx( db, hasProperty( "third" ).withValue( "something" ) ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
 
         // THEN
         // verify that there are no duplicate keys in the store
@@ -176,30 +187,37 @@ public class StoreMigratorIT
         // So we should be able to enquire a migrated database about transactions 2 and 3.
         GraphDatabaseFactory factory = new GraphDatabaseFactory();
         GraphDatabaseAPI db = (GraphDatabaseAPI) factory.newEmbeddedDatabase( storeDir );
-        DependencyResolver resolver = db.getDependencyResolver();
-        XaDataSourceManager xaDataSourceManager = resolver.resolveDependency( XaDataSourceManager.class );
-        NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
-        XaContainer xaContainer = neoStoreDataSource.getXaContainer();
-        XaLogicalLog logicalLog = xaContainer.getLogicalLog();
-        // The dataset has been specifically constructed such that these two transactions are
-        // contained in the last transaction log:
-        LogExtractor logExtractor = logicalLog.getLogExtractor( 5, 6 );
-        InMemoryLogBuffer buf = new InMemoryLogBuffer();
+        try
+        {
+            DependencyResolver resolver = db.getDependencyResolver();
+            XaDataSourceManager xaDataSourceManager = resolver.resolveDependency( XaDataSourceManager.class );
+            NeoStoreXaDataSource neoStoreDataSource = xaDataSourceManager.getNeoStoreDataSource();
+            XaContainer xaContainer = neoStoreDataSource.getXaContainer();
+            XaLogicalLog logicalLog = xaContainer.getLogicalLog();
+            // The dataset has been specifically constructed such that these two transactions are
+            // contained in the last transaction log:
+            LogExtractor logExtractor = logicalLog.getLogExtractor( 5, 6 );
+            InMemoryLogBuffer buf = new InMemoryLogBuffer();
 
-        // The first transaction must have the correct checksum
-        assertThat( logExtractor.extractNext( buf ), is( 5L ) );
-        assertThat( logExtractor.getLastTxChecksum(), is( -161474256273L ) );
+            // The first transaction must have the correct checksum
+            assertThat( logExtractor.extractNext( buf ), is( 5L ) );
+            assertThat( logExtractor.getLastTxChecksum(), is( -161474256273L ) );
 
-        // The second transaction must have the correct checksum
-        // As it happens, our checksum generation is woefully bad, so these two transactions
-        // end up with the same checksum. Well... all we care about here is that we somehow
-        // compute the same number as we did in the previous version. Not cool, but it's a
-        // fight for another day.
-        assertThat( logExtractor.extractNext( buf ), is( 6L ) );
-        assertThat( logExtractor.getLastTxChecksum(), is( -161474256273L ) );
+            // The second transaction must have the correct checksum
+            // As it happens, our checksum generation is woefully bad, so these two transactions
+            // end up with the same checksum. Well... all we care about here is that we somehow
+            // compute the same number as we did in the previous version. Not cool, but it's a
+            // fight for another day.
+            assertThat( logExtractor.extractNext( buf ), is( 6L ) );
+            assertThat( logExtractor.getLastTxChecksum(), is( -161474256273L ) );
 
-        // And then we reach the end of the file
-        assertThat( logExtractor.extractNext( buf ), is( -1L ) );
+            // And then we reach the end of the file
+            assertThat( logExtractor.extractNext( buf ), is( -1L ) );
+        }
+        finally
+        {
+            db.shutdown();
+        }
     }
 
     @Test
@@ -228,6 +246,10 @@ public class StoreMigratorIT
             assertThat( (String) b.getProperty( "b" ), is( "b" ) );
             DynamicRelationshipType relates = DynamicRelationshipType.withName( "relates" );
             assertThat( a.getSingleRelationship( relates, Direction.OUTGOING ).getEndNode(), is( b ) );
+        }
+        finally
+        {
+            db.shutdown();
         }
     }
 
