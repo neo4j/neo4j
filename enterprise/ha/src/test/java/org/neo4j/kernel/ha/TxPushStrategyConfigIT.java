@@ -243,7 +243,7 @@ public class TxPushStrategyConfigIT
                 if ( failures.length() > 0 )
                     failures.append( ", " );
                 failures.append( String.format( "tx id on server:%d, expected [%d] but was [%d]",
-                        serverId, this.txId, txId ) );
+                        serverId.toIntegerIndex(), this.txId, txId ) );
             }
         }
     }

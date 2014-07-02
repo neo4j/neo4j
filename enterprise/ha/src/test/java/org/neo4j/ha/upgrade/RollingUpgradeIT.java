@@ -38,6 +38,7 @@ import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.After;
+import org.junit.Ignore;
 import org.junit.Test;
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.GraphDatabaseService;
@@ -49,12 +50,12 @@ import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.graphdb.factory.HighlyAvailableGraphDatabaseFactory;
 import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.ha.UpdatePuller;
-import org.neo4j.io.fs.FileUtils;
 import org.neo4j.test.TargetDirectory;
 
-//@Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
+@Ignore( "Keep this test around as it's a very simple and 'close' test to quickly verify rolling upgrades" )
 public class RollingUpgradeIT
 {
     private static final String OLD_VERSION = "2.1.2";

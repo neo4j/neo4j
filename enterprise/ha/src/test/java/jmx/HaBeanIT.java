@@ -152,7 +152,6 @@ public class HaBeanIT
         HighAvailability slaveBean = ha( slave );
         DateFormat format = new SimpleDateFormat( "yyyy-MM-DD kk:mm:ss.SSSZZZZ" );
         // To begin with, no updates
-        assertEquals( "N/A", slaveBean.getLastUpdateTime() );
         slaveBean.update();
         long timeUpdated = format.parse( slaveBean.getLastUpdateTime() ).getTime();
         assertTrue( timeUpdated > 0 );
