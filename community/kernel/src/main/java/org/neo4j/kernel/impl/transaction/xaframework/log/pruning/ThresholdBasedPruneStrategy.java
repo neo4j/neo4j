@@ -36,8 +36,8 @@ public class ThresholdBasedPruneStrategy implements LogPruneStrategy
     private final LogVersionRepository versionRepo;
     private final Threshold threshold;
 
-    ThresholdBasedPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation,
-                                 PhysicalLogFiles files, LogVersionRepository versionRepo, Threshold threshold )
+    public ThresholdBasedPruneStrategy( FileSystemAbstraction fileSystem, LogFileInformation logFileInformation,
+                                        PhysicalLogFiles files, LogVersionRepository versionRepo, Threshold threshold )
     {
         this.fileSystem = fileSystem;
         this.logFileInformation = logFileInformation;
