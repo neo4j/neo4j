@@ -90,7 +90,7 @@ NOTE: For brevity, we do not spell out wrapping of operations in a transaction t
 
 Now, let's create a few nodes.
 The API is very intuitive.
-Feel free to have a look at the JavaDocs at link:javadocs/.
+Feel free to have a look at the link:javadocs/[Neo4j Javadocs].
 They're included in the distribution, as well.
 Here's how to create a small graph consisting of two nodes, connected with one relationship and some properties: 
 
