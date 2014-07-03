@@ -32,6 +32,7 @@ import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile.Monitor;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TargetDirectory.TestDirectory;
@@ -51,7 +52,7 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        LogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 1000, LogPruneStrategies.NO_PRUNING,
+        LogFile logFile = life.add(new PhysicalLogFile( fs, logFiles, 1000, LogPruneStrategyFactory.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
                 new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ));
 
@@ -75,7 +76,7 @@ public class PhysicalLogFileTest
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
         LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 1000,
-                LogPruneStrategies.NO_PRUNING,
+                LogPruneStrategyFactory.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
                 new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
 
@@ -114,7 +115,7 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategies.NO_PRUNING,
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
                 new TransactionMetadataCache( 10, 100 ), NO_RECOVERY_EXPECTED ) );
 
@@ -181,7 +182,7 @@ public class PhysicalLogFileTest
         LogRotationControl logRotationControl = mock( LogRotationControl.class );
         LifeSupport life = new LifeSupport();
         PhysicalLogFiles logFiles = new PhysicalLogFiles( directory.directory(), name, fs );
-        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategies.NO_PRUNING,
+        LogFile logFile = life.add( new PhysicalLogFile( fs, logFiles, 50, LogPruneStrategyFactory.NO_PRUNING,
                 transactionIdStore, logVersionRepository, mock( Monitor.class ), logRotationControl,
                 new TransactionMetadataCache( 10, 100 ), new Visitor<ReadableLogChannel, IOException>()
                         {

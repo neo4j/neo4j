@@ -30,6 +30,8 @@ import java.io.File;
 import org.junit.Test;
 import org.mockito.Matchers;
 import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.LogPruneStrategyFactory;
+import org.neo4j.kernel.impl.transaction.xaframework.log.pruning.ThresholdBasedPruneStrategy;
 
 public class ThresholdBasedPruneStrategyTest
 {
@@ -37,7 +39,7 @@ public class ThresholdBasedPruneStrategyTest
     private final LogFileInformation logFileInfo = mock( LogFileInformation.class );
     private final PhysicalLogFiles files = mock( PhysicalLogFiles.class );
     private final LogVersionRepository logVersionRepository = mock( LogVersionRepository.class );
-    private final LogPruneStrategies.Threshold threshold = mock( LogPruneStrategies.Threshold.class );
+    private final LogPruneStrategyFactory.Threshold threshold = mock( LogPruneStrategyFactory.Threshold.class );
 
     @Test
     public void shouldNotDeleteAnythingIfThresholdDoesNotAllow() throws Exception
@@ -70,8 +72,7 @@ public class ThresholdBasedPruneStrategyTest
 
         when( threshold.reached( Matchers.<File>any(), anyLong(), Matchers.<LogFileInformation>any() ) ).thenReturn( false );
 
-        final LogPruneStrategies.ThresholdBasedPruneStrategy strategy = new LogPruneStrategies
-                .ThresholdBasedPruneStrategy( fileSystem, logFileInfo, files, logVersionRepository, threshold );
+        final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy( fileSystem, logFileInfo, files, logVersionRepository, threshold );
 
         // When
         strategy.prune();
@@ -119,8 +120,7 @@ public class ThresholdBasedPruneStrategyTest
 
         when( logVersionRepository.getCurrentLogVersion() ).thenReturn( 7l );
 
-        final LogPruneStrategies.ThresholdBasedPruneStrategy strategy = new LogPruneStrategies
-                .ThresholdBasedPruneStrategy(
+        final ThresholdBasedPruneStrategy strategy = new ThresholdBasedPruneStrategy(
                 fileSystem, logFileInfo, files, logVersionRepository, threshold
         );
 

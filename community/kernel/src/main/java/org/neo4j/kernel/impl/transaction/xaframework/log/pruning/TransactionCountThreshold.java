@@ -1,0 +1,66 @@
+/**
+ * Copyright (c) 2002-2014 "Neo Technology,"
+ * Network Engine for Objects in Lund AB [http://neotechnology.com]
+ *
+ * This file is part of Neo4j.
+ *
+ * Neo4j is free software: you can redistribute it and/or modify
+ * it under the terms of the GNU General Public License as published by
+ * the Free Software Foundation, either version 3 of the License, or
+ * (at your option) any later version.
+ *
+ * This program is distributed in the hope that it will be useful,
+ * but WITHOUT ANY WARRANTY; without even the implied warranty of
+ * MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
+ * GNU General Public License for more details.
+ *
+ * You should have received a copy of the GNU General Public License
+ * along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ */
+package org.neo4j.kernel.impl.transaction.xaframework.log.pruning;
+
+import java.io.File;
+import java.io.IOException;
+
+import org.neo4j.helpers.ThisShouldNotHappenError;
+import org.neo4j.kernel.impl.transaction.xaframework.IllegalLogFormatException;
+import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
+
+public final class TransactionCountThreshold implements Threshold
+{
+    private Long highest;
+    private final long maxTransactionCount;
+
+    TransactionCountThreshold( long maxTransactionCount )
+    {
+        this.maxTransactionCount = maxTransactionCount;
+    }
+
+    @Override
+    public boolean reached( File file, long version, LogFileInformation source )
+    {
+        try
+        {
+            // Here we know that the log version exists (checked in AbstractPruneStrategy#prune)
+            long tx = source.getFirstCommittedTxId( version );
+            if ( tx == -1 )
+            {
+                throw new ThisShouldNotHappenError( "not really sure",
+                        "Here we know that the log version exists (checked in AbstractPruneStrategy#prune)" );
+            }
+            if ( highest == null )
+            {
+                highest = source.getLastCommittedTxId();
+            }
+            return highest - tx + 1 >= maxTransactionCount;
+        }
+        catch ( IllegalLogFormatException e )
+        {
+            return LogPruneStrategyFactory.decidePruneForIllegalLogFormat( (IllegalLogFormatException) e.getCause() );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+    }
+}
