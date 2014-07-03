@@ -31,7 +31,7 @@ public interface LogFileInformation
     /**
      * @param version the log version to get first committed tx for.
      * @return the first committed transaction id for the log with {@code version}.
-     * If that log doesn't exist {@code null} is returned.
+     * If that log doesn't exist -1 is returned.
      */
     long getFirstCommittedTxId( long version ) throws IOException;
 

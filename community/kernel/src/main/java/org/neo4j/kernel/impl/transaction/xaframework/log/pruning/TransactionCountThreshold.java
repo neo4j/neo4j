@@ -28,7 +28,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
 
 public final class TransactionCountThreshold implements Threshold
 {
-    private long highest = -1;
     private final long maxTransactionCount;
 
     TransactionCountThreshold( long maxTransactionCount )
@@ -41,18 +40,15 @@ public final class TransactionCountThreshold implements Threshold
     {
         try
         {
-            // Here we know that the log version exists (checked in AbstractPruneStrategy#prune)
-            long tx = source.getFirstCommittedTxId( version );
-            if ( tx == -1 )
-            {
-                throw new ThisShouldNotHappenError( "not really sure",
-                        "Here we know that the log version exists (checked in AbstractPruneStrategy#prune)" );
+            // try to ask next version log file which is my last tx
+            long lastTx = source.getFirstCommittedTxId( version + 1 );
+            if (lastTx == -1) {
+                throw new ThisShouldNotHappenError( "ChrisG", "The next version should always exist, since this is " +
+                        "called after rotation and the PruneStrategy never checks the current active log file" );
             }
-            if ( highest == -1 )
-            {
-                highest = source.getLastCommittedTxId();
-            }
-            return highest - tx + 1 >= maxTransactionCount;
+
+            long highest = source.getLastCommittedTxId();
+            return highest - lastTx >= maxTransactionCount;
         }
         catch ( IllegalLogFormatException e )
         {
