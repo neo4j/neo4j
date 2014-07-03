@@ -23,6 +23,7 @@ import com.sun.net.httpserver.{HttpExchange, HttpHandler, HttpServer}
 import java.net.{InetAddress, InetSocketAddress}
 import java.io.IOException
 import java.util.concurrent.Executors
+import scala.collection.mutable
 import scala.collection.mutable.HashMap
 
 trait HttpServerTestSupport {
@@ -35,9 +36,9 @@ class HttpServerTestSupportBuilder {
   val ASK_OS_TO_PROVIDE_A_PORT = 0
   private var port = ASK_OS_TO_PROVIDE_A_PORT
   private var allowedMethods: Set[String] = Set()
-  private val mapping = new HashMap[String, (HttpExchange => Unit)]()
-  private val filters = new HashMap[String, (HttpExchange => Boolean)]()
-  private val transformations = new HashMap[String, (HttpExchange => HttpExchange)]()
+  private val mapping = new mutable.HashMap[String, (HttpExchange => Unit)]()
+  private val filters = new mutable.HashMap[String, (HttpExchange => Boolean)]()
+  private val transformations = new mutable.HashMap[String, (HttpExchange => HttpExchange)]()
 
   def withPort(newPort: Int) {
     assert(newPort >= 0 && newPort < 65536)
@@ -84,7 +85,7 @@ class HttpServerTestSupportBuilder {
 
     private def provideServer = {
       try {
-        val address = new InetSocketAddress(InetAddress.getLoopbackAddress(), port)
+        val address = new InetSocketAddress(InetAddress.getLoopbackAddress, port)
         HttpServer.create(address, 0)
       } catch {
         case (ex: IOException) =>
@@ -107,8 +108,8 @@ class HttpServerTestSupportBuilder {
 
           val path = exchange.getRequestURI.getPath
           if (mapping.contains(path)) {
-            if (filters.get(path).getOrElse({_: HttpExchange => true})(exchange)) {
-              val reply = transformations.get(path).getOrElse(identity[HttpExchange](_))(exchange)
+            if (filters.getOrElse(path, {_: HttpExchange => true})(exchange)) {
+              val reply = transformations.getOrElse(path, identity[HttpExchange](_))(exchange)
               mapping(path)(reply)
             }
           }
@@ -121,7 +122,7 @@ class HttpServerTestSupportBuilder {
       server.start()
     }
 
-    def stop {
+    def stop() {
       optServer.foreach(server => server.stop(0))
     }
   }
@@ -158,7 +159,7 @@ class HttpServerTestSupportBuilder {
 
     private def sendResponse(statusCode: Int, data: Array[Byte])(exchange: HttpExchange) {
       exchange.sendResponseHeaders(statusCode, data.length)
-      val os = exchange.getResponseBody()
+      val os = exchange.getResponseBody
       try {
         os.write(data)
       } finally {
@@ -170,8 +171,8 @@ class HttpServerTestSupportBuilder {
 
 object HttpServerTestSupport {
   def hasCookie(cookie: String)(exchange: HttpExchange) = {
-    val cookieString = Option(exchange.getRequestHeaders().getFirst("Cookie"))
-    cookieString.map(cookie => cookie.split(";").exists(s => s == cookie)).getOrElse(false)
+    val cookieString = Option(exchange.getRequestHeaders.getFirst("Cookie"))
+    cookieString.exists(cookie => cookie.split(";").contains(cookie))
   }
 
   def setCookie(cookie: String)(exchange: HttpExchange) = {
