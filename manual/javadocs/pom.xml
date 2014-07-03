@@ -146,6 +146,7 @@ the relevant Commercial Agreement.
             <goals><goal>javadoc</goal></goals>
             <configuration>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
+              <detectLinks>false</detectLinks>
               <header>Neo4j</header>
               <doctitle>Neo4j ${project.version} API</doctitle>
               <windowtitle>Neo4j ${project.version} API</windowtitle>

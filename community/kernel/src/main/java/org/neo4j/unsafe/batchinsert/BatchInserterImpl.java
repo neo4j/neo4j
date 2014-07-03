@@ -489,7 +489,7 @@ public class BatchInserterImpl implements BatchInserter
                 this.schemaIndexProviders.getDefaultProvider().getProviderDescriptor(),
                 constraintRuleId );
         UniquenessConstraintRule constraintRule = UniquenessConstraintRule.uniquenessConstraintRule(
-                schemaStore.nextId(), constraint.label(), constraint.propertyKeyId(), indexRuleId );
+                constraintRuleId, constraint.label(), constraint.propertyKeyId(), indexRuleId );
 
         for ( DynamicRecord record : schemaStore.allocateFrom( constraintRule ) )
         {

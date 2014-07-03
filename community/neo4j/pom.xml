@@ -154,7 +154,7 @@ the relevant Commercial Agreement.
                   <filtering>false</filtering>
                 </resource>
                 <resource>
-                  <directory>${project.build.directory}/../../cypher/cypher/src/main/scala/</directory>
+                  <directory>${project.build.directory}/../../cypher/cypher-commons/src/main/java/</directory>
                   <filtering>false</filtering>
                 </resource>
                 <resource>
@@ -216,6 +216,7 @@ the relevant Commercial Agreement.
                 </additionnalDependency>
               </additionnalDependencies>
               <sourcepath>${project.build.directory}/javadoc-sources</sourcepath>
+              <detectLinks>false</detectLinks>
               <header>${project.name}</header>
               <doctitle>${project.name} ${project.version} API</doctitle>
               <skip>${javadoc.skip}</skip>

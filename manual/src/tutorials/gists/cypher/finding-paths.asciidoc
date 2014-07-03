@@ -84,8 +84,9 @@ ORDER BY count(*) DESC LIMIT 10;
 
 Starting with paths, a path is a sequence of nodes and relationships from a start node to an end node.
 
-We know that Trinity loves Neo, but how many paths exist between their actors?
-We'll limit the path length and the query as it exhaustively searches the graph otherwise 
+We know that Trinity loves Neo, but how many paths exist between the two actors?
+We'll limit the path length of the pattern as it exhaustively searches the graph otherwise.
+This is done by using `*0..5` in the pattern relationship.
 
 [source,cypher]
 ----

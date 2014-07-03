@@ -142,7 +142,12 @@ public abstract class CommonAbstractStore implements IdSequence
 
     public static String buildTypeDescriptorAndVersion( String typeDescriptor )
     {
-        return typeDescriptor + " " + ALL_STORES_VERSION;
+        return buildTypeDescriptorAndVersion( typeDescriptor, ALL_STORES_VERSION );
+    }
+
+    public static String buildTypeDescriptorAndVersion( String typeDescriptor, String version )
+    {
+        return typeDescriptor + " " + version;
     }
 
     protected static long longFromIntAndMod( long base, long modifier )

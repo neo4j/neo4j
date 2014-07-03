@@ -17,14 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders
+package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.perty._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.{LogicalPlan, LogicalLeafPlan}
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.perty.PrintNewLine
-import org.neo4j.cypher.internal.compiler.v2_1.perty.PrintText
-import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.plannerDocBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{simpleDocBuilder, DocBuilderTestSuite}
 
 class LogicalPlanDocBuilderTest extends DocBuilderTestSuite[Any] {
 

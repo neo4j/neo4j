@@ -21,6 +21,7 @@
     <neo4j.version>2.2-SNAPSHOT</neo4j.version>
     <docs-plugin.skip>false</docs-plugin.skip>
     <attach-docs-phase>prepare-package</attach-docs-phase>
+    <remote-csv-upload>http://docs.neo4j.org/refcard/${project.version}/csv</remote-csv-upload>
   </properties>
 
   <licenses>
@@ -154,6 +155,19 @@
         </configuration>
       </plugin>
     </plugins>
+    <pluginManagement>
+      <plugins>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-surefire-plugin</artifactId>
+          <configuration>
+           <systemPropertyVariables>
+             <remote-csv-upload>${remote-csv-upload}/</remote-csv-upload>
+           </systemPropertyVariables>
+          </configuration>
+        </plugin>
+      </plugins>
+    </pluginManagement>
   </build>
   
   <profiles>

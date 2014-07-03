@@ -20,6 +20,7 @@
 package org.neo4j.kernel.logging;
 
 import org.neo4j.helpers.Function;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 
 import static org.neo4j.helpers.Exceptions.launderedException;
@@ -116,8 +117,9 @@ public class LogbackWeakDependency
     {
         Class<?> loggerContextClass = Class.forName( LOGGER_CONTEXT_CLASS_NAME );
         return LogbackService.class
-                .getConstructor( Config.class, loggerContextClass )
-                .newInstance( config, loggerContext );
+                .getConstructor( Config.class, loggerContextClass, String.class )
+                .newInstance( config, loggerContext, config.get( InternalAbstractGraphDatabase.Configuration
+                        .log_configuration_file ) );
     }
 
     private boolean logbackIsOnClasspath()

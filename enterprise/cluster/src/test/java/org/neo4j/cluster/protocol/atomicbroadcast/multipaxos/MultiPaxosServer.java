@@ -26,6 +26,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.URI;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.List;
 
 import ch.qos.logback.classic.Level;
@@ -56,7 +57,9 @@ import org.neo4j.cluster.protocol.heartbeat.HeartbeatListener;
 import org.neo4j.cluster.protocol.heartbeat.HeartbeatMessage;
 import org.neo4j.cluster.timeout.FixedTimeoutStrategy;
 import org.neo4j.cluster.timeout.MessageTimeoutStrategy;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
@@ -90,11 +93,14 @@ public class MultiPaxosServer
             MessageTimeoutStrategy timeoutStrategy = new MessageTimeoutStrategy( new FixedTimeoutStrategy( 5000 ) )
                     .timeout( HeartbeatMessage.sendHeartbeat, 200 );
 
+            LogbackService logging = new LogbackService( new Config( Collections.<String, String>emptyMap(),
+                    InternalAbstractGraphDatabase.Configuration.class, GraphDatabaseSettings.class ),
+                    new LoggerContext() );
             NetworkedServerFactory serverFactory = new NetworkedServerFactory( life,
                     new MultiPaxosServerFactory( new Monitors(), new ClusterConfiguration( "default",
                             StringLogger.SYSTEM ),
-                            new LogbackService( null, null ) ),
-                    timeoutStrategy, new Monitors(), new LogbackService( null, null ), new ObjectStreamFactory(),
+                            logging ),
+                    timeoutStrategy, new Monitors(), logging, new ObjectStreamFactory(),
                     new ObjectStreamFactory()
             );
 

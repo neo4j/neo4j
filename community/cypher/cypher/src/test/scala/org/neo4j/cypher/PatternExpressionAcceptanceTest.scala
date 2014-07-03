@@ -256,4 +256,37 @@ class PatternExpressionAcceptanceTest extends ExecutionEngineFunSuite with Match
       ))
     }
   }
+
+  test("MATCH (owner) WITH owner, COUNT(*) > 0 AS collected WHERE (owner)--() RETURN *") {
+    val a = createNode()
+    relate(a, createNode())
+
+    val result = executeWithNewPlanner(
+      """MATCH (owner)
+        |WITH owner, COUNT(*) > 0 AS collected
+        |WHERE (owner)-->()
+        |RETURN owner""".stripMargin)
+      .toList
+
+    result should equal(List(
+      Map("owner" -> a)
+    ))
+  }
+
+  test("MATCH (owner) WITH owner, COUNT(*) AS collected WHERE (owner)--() RETURN *") {
+    val a = createNode()
+    relate(a, createNode())
+
+    val result = executeWithNewPlanner(
+      """MATCH (owner)
+        |WITH owner, COUNT(*) AS collected
+        |WHERE (owner)-->()
+        |RETURN owner""".stripMargin)
+      .toList
+
+    result should equal(List(
+      Map("owner" -> a)
+    ))
+  }
+
 }

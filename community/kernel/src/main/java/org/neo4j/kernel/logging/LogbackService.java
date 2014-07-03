@@ -56,17 +56,14 @@ public class LogbackService
         this(config, loggerContext, "neo4j-logback.xml");
     }
 
-    public LogbackService( Config config, LoggerContext loggerContext, String logbackConfigurationFilename )
+    public LogbackService( final Config config, final LoggerContext loggerContext,
+                           final String logbackConfigurationFilename )
     {
         this.config = config;
         this.loggerContext = loggerContext;
         this.logbackConfigurationFilename = logbackConfigurationFilename;
-    }
 
-    @Override
-    public void init()
-            throws Throwable
-    {
+        // We do the initialization in the constructor, because some services will use logging during creation phase, before init.
         final File storeDir = config.get( InternalAbstractGraphDatabase.Configuration.store_dir );
 
         if ( storeDir != null )

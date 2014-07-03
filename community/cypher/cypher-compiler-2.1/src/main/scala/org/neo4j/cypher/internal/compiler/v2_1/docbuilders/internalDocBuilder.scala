@@ -20,7 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.docbuilders
 
 import org.neo4j.cypher.internal.compiler.v2_1.perty._
-import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{catchNotImplemented, simpleDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.perty.docbuilders.{catchErrors, simpleDocBuilder}
 
 case object internalDocBuilder extends DocBuilderChain[Any] with TopLevelDocBuilder[Any] {
 
@@ -31,5 +31,5 @@ case object internalDocBuilder extends DocBuilderChain[Any] with TopLevelDocBuil
     simpleDocBuilder
   )
 
-  override protected def newNestedDocGenerator = catchNotImplemented(super.newNestedDocGenerator)
+  override protected def newNestedDocGenerator = catchErrors(super.newNestedDocGenerator)
 }

@@ -227,6 +227,9 @@ public abstract class InternalAbstractGraphDatabase
         public static final Setting<String> lock_manager = setting( "lock_manager", STRING, "" );
         public static final Setting<Boolean> statistics_enabled =
                 setting("statistics_enabled", Settings.BOOLEAN, Settings.FALSE);
+
+        public static final Setting<String> log_configuration_file = setting( "log.configuration", STRING,
+                "neo4j-logback.xml" );
     }
 
     private static final long MAX_NODE_ID = IdType.NODE.getMaxValue();

@@ -71,6 +71,7 @@ import org.neo4j.helpers.Function;
 import org.neo4j.helpers.Predicate;
 import org.neo4j.helpers.collection.Iterables;
 import org.neo4j.helpers.collection.MapUtil;
+import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
@@ -570,7 +571,9 @@ public class ClusterManager
                         ClusterSettings.server_id.name(), serverId + "",
                         ClusterSettings.cluster_server.name(), "0.0.0.0:"+clusterUri.getPort(),
                         GraphDatabaseSettings.store_dir.name(), new File( parent, "arbiter" + serverId ).getAbsolutePath() );
-                Config config1 = new Config( config );
+                Config config1 = new Config( config, InternalAbstractGraphDatabase.Configuration.class,
+                        GraphDatabaseSettings.class );
+
                 Logging clientLogging =life.add( new LogbackService( config1, new LoggerContext()  ) );
                 ObjectStreamFactory objectStreamFactory = new ObjectStreamFactory();
                 ClusterClient clusterClient = new ClusterClient( new Monitors(), ClusterClient.adapt( config1 ),

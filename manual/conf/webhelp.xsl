@@ -166,6 +166,7 @@
                                           </xsl:call-template>
                                       </xsl:attribute>
                   <i class="fa fa-arrow-circle-left"></i>
+                  <xsl:text> </xsl:text>
                   <xsl:call-template name="navig.content">
                     <xsl:with-param name="direction" select="'prev'" />
                   </xsl:call-template>
@@ -188,6 +189,7 @@
                     <xsl:call-template name="navig.content">
                       <xsl:with-param name="direction" select="'up'" />
                     </xsl:call-template>
+                  <xsl:text> </xsl:text>
                   <i class="fa fa-arrow-circle-up"></i></a>
                 </span>
               </xsl:when>
@@ -205,6 +207,7 @@
                   <xsl:call-template name="navig.content">
                     <xsl:with-param name="direction" select="'next'" />
                   </xsl:call-template>
+                <xsl:text> </xsl:text>
                 <i class="fa fa-arrow-circle-right"></i></a>
               </span>
             </xsl:if>
@@ -322,7 +325,7 @@
       </script>
       <script type="text/javascript" src="search/htmlFileInfoList.js">
       </script>
-      <script type="text/javascript" src="search/nwSearchFnt.js">
+      <script type="text/javascript" src="{$webhelp.common.dir}search.js">
       </script>
 
       <!-- NOTE: Stemmer javascript files should be in format <language>_stemmer.js. For example, for 
@@ -465,13 +468,7 @@
                       </div>
                     </form>
                   </div>
-                  <div id="searchResults">
-                    <center>
-                    </center>
-                  </div>
-                  <p class="searchHighlight">
-                    <a href="#" onclick="toggleHighlight()">Search Highlighter (On/Off)</a>
-                  </p>
+                  <div id="searchResults"></div>
                 </div>
               </xsl:if>
               <xsl:call-template name="user.webhelp.tabs.content" />

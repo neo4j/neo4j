@@ -20,6 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.ast
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
 import org.neo4j.cypher.internal.compiler.v2_1.ast.rewriters._
 import org.neo4j.cypher.internal.compiler.v2_1.{Rewriter, topDown}
@@ -179,142 +180,150 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
     patternExpressions.map { e => (e, extractQueryGraph(e)) }
   }
 
-  override def produce(ast: Query): QueryPlanInput = ast match {
+  override def produce(parsedQuery: Query): QueryPlanInput = parsedQuery match {
     case Query(None, SingleQuery(clauses)) =>
-      val (query, subQueryTable, patternExprTable) = produceQueryGraphFromClauses(PlannerQuery.empty, Map.empty, Map.empty, clauses)
-      QueryPlanInput(query, subQueryTable, patternExprTable)
+      val singleQueryPlanInput = produceQueryGraphFromClauses(SingleQueryPlanInput.empty, clauses)
+      QueryPlanInput(
+        query = UnionQuery(Seq(singleQueryPlanInput.q), distinct = false),
+        patternInExpression = singleQueryPlanInput.patternExprTable
+      )
+
+    case Query(None, u: ast.Union) =>
+      val queries = u.unionedQueries
+      val distinct = u match {
+        case _: UnionAll      => false
+        case _: UnionDistinct => true
+      }
+      val plannedQueries: Seq[SingleQueryPlanInput] = queries.reverseMap(x => produceQueryGraphFromClauses(SingleQueryPlanInput.empty, x.clauses))
+      val table = plannedQueries.map(_.patternExprTable).reduce(_ ++ _)
+      QueryPlanInput(
+        query = UnionQuery(plannedQueries.map(_.q), distinct),
+        patternInExpression = table
+      )
 
     case _ =>
       throw new CantHandleQueryException
   }
 
-  private def produceQueryGraphFromClauses(querySoFar: PlannerQuery,
-                                           subQueryLookupTable: Map[PatternExpression, QueryGraph],
-                                           patternInExpressionTable: Map[PatternExpression, QueryGraph],
-                                           clauses: Seq[Clause]): (PlannerQuery,  Map[PatternExpression, QueryGraph], Map[PatternExpression, QueryGraph]) =
+  object SingleQueryPlanInput {
+    val empty = new SingleQueryPlanInput(PlannerQuery.empty, Map.empty)
+  }
+
+  case class SingleQueryPlanInput(q: PlannerQuery, patternExprTable: Map[PatternExpression, QueryGraph])
+
+  private def produceQueryGraphFromClauses(input: SingleQueryPlanInput, clauses: Seq[Clause]): SingleQueryPlanInput =
     clauses match {
-      case Return(false, ListedReturnItems(items), optOrderBy, skip, limit) :: tl =>
-        val newPatternInExpressionTable = patternInExpressionTable ++ getPatternInExpressionQueryGraphs(items.map(_.expression))
+      case Return(distinct, ListedReturnItems(items), optOrderBy, skip, limit) :: tl =>
+        val newPatternInExpressionTable = input.patternExprTable ++ getPatternInExpressionQueryGraphs(items.map(_.expression))
         val sortItems = produceSortItems(optOrderBy)
-        val projection = produceProjectionsMaps(items)
-          .withSortItems(sortItems)
-          .withLimit(limit.map(_.expression))
-          .withSkip(skip.map(_.expression))
+        val shuffle = QueryShuffle(sortItems, skip.map(_.expression), limit.map(_.expression))
+        val projection = produceProjectionsMaps(items, distinct).withShuffle(shuffle)
+        val newQG = input.q.withHorizon(QueryHorizon(projection = projection))
+        val nextStep = input.copy(
+          q = newQG,
+          patternExprTable = newPatternInExpressionTable
+        )
+        produceQueryGraphFromClauses(nextStep, tl)
 
-        val newQG = querySoFar.withProjection(projection)
-        produceQueryGraphFromClauses(newQG, subQueryLookupTable, newPatternInExpressionTable, tl)
+      case Match(optional@false, pattern: Pattern, hints, optWhere) :: tl =>
+        val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+        val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
+        val newPatternInExpressionTable = input.patternExprTable ++ subQueries ++ nestedPatternPredicates
 
-        case Match(optional@false, pattern: Pattern, hints, optWhere) :: tl =>
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-          val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
+        val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
 
-          val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
-          val newPatternInExpressionTable = patternInExpressionTable ++ nestedPatternPredicates
+        val plannerQuery = input.q.updateGraph {
+          qg => qg.
+            addSelections(selections).
+            addPatternNodes(nodeIds: _*).
+            addPatternRels(rels).
+            addHints(hints).
+            addShortestPaths(shortest: _*)
+        }
 
-          val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
+        val nextStep = input.copy(q = plannerQuery, patternExprTable = newPatternInExpressionTable)
+        produceQueryGraphFromClauses(nextStep, tl)
 
-          val newQuery = querySoFar.updateGraph {
-            qg => qg.
-              addSelections(selections).
-              addPatternNodes(nodeIds: _*).
-              addPatternRels(rels).
-              addHints(hints).
-              addShortestPaths(shortest: _*)
-          }
+      case Match(optional@true, pattern: Pattern, hints, optWhere) :: tl =>
+        val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
 
-          produceQueryGraphFromClauses(newQuery, newSubQueryPlanTable, newPatternInExpressionTable, tl)
+        val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+        val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
+        val newPatternInExpressionTable = input.patternExprTable ++ subQueries ++ nestedPatternPredicates
 
-        case Match(optional@true, pattern: Pattern, hints, optWhere) :: tl =>
-          val (nodeIds: Seq[IdName], rels: Seq[PatternRelationship], shortest: Seq[ShortestPathPattern]) = destruct(pattern)
+        val optionalMatch = QueryGraph(
+          selections = selections,
+          patternNodes = nodeIds.toSet,
+          patternRelationships = rels.toSet,
+          hints = hints.toSet,
+          shortestPathPatterns = shortest.toSet
+        )
 
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-          val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
+        val newQuery = input.q.updateGraph {
+          qg => qg.withAddedOptionalMatch(optionalMatch)
+        }
 
-          val nestedPatternPredicates = extractPatternInExpressionFromWhere(optWhere)
-          val newPatternInExpressionTable = patternInExpressionTable ++ nestedPatternPredicates
+        val nextStep = input.copy(q = newQuery, patternExprTable = newPatternInExpressionTable)
 
-          val optionalMatch = QueryGraph(
-            selections = selections,
-            patternNodes = nodeIds.toSet,
-            patternRelationships = rels.toSet,
-            hints = hints.toSet,
-            shortestPathPatterns = shortest.toSet
-          )
+        produceQueryGraphFromClauses(nextStep, tl)
 
-          val newQuery = querySoFar.updateGraph {
-            qg => qg.withAddedOptionalMatch(optionalMatch)
-          }
+      case With(false, _: ReturnAll, None, None, None, optWhere) :: tl if !input.q.graph.hasOptionalPatterns =>
+        val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+        val newPatternInExpressionTable = input.patternExprTable ++ subQueries
+        val newQuery = input.q
+          .updateGraph(_.addSelections(selections))
 
-          produceQueryGraphFromClauses(newQuery, newSubQueryPlanTable, newPatternInExpressionTable, tl)
+        val nextStep = input.copy(q = newQuery, patternExprTable = newPatternInExpressionTable)
+        produceQueryGraphFromClauses(nextStep, tl)
 
-        case With(false, _: ReturnAll, optOrderBy, None, None, optWhere) :: tl if !querySoFar.graph.hasOptionalPatterns =>
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-          val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
+      case With(distinct, _: ReturnAll, optOrderBy, skip, limit, optWhere) :: tl =>
+        val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
+        val newPatternInExpressionTable = input.patternExprTable ++ subQueries
 
-          val newQuery = querySoFar
-            .updateGraph(_.addSelections(selections))
-            .updateProjections(
-               _.withSortItems(produceSortItems(optOrderBy))
-            )
+        val tailInput: SingleQueryPlanInput = SingleQueryPlanInput(PlannerQuery(QueryGraph(selections = selections)), newPatternInExpressionTable)
+        val tailPlannedOutput = produceQueryGraphFromClauses(tailInput, tl)
 
-          produceQueryGraphFromClauses(newQuery, newSubQueryPlanTable, patternInExpressionTable, tl)
+        val inputIds = input.q.graph.coveredIds
+        val tailQuery = tailPlannedOutput.q
+        val argumentIds = inputIds intersect tailQuery.graph.coveredIds
+        val items = QueryProjection.forIds(inputIds)
+        val shuffle = QueryShuffle(
+          produceSortItems(optOrderBy),
+          skip.map(_.expression),
+          limit.map(_.expression)
+        )
+        val projection = produceProjectionsMaps(items, distinct).withShuffle(shuffle)
 
-        case With(false, _: ReturnAll, optOrderBy, skip, limit, optWhere) :: tl =>
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-          val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
+        val newQuery =
+          input.q
+            .withHorizon(QueryHorizon(projection = projection))
+            .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
 
-          val (tailQuery: PlannerQuery, tailSubQuery, tailPatternInExpression) = produceQueryGraphFromClauses(
-            PlannerQuery(QueryGraph(selections = selections)),
-            newSubQueryPlanTable,
-            patternInExpressionTable,
-            tl
-          )
+        input.copy(q = newQuery, tailPlannedOutput.patternExprTable)
 
-          val inputIds = querySoFar.graph.coveredIds
-          val argumentIds = inputIds intersect tailQuery.graph.coveredIds
+      case With(distinct, ListedReturnItems(items), optOrderBy, skip, limit, optWhere) :: tl =>
+        val orderBy = produceSortItems(optOrderBy)
+        val shuffle = QueryShuffle(orderBy, skip.map(_.expression), limit.map(_.expression))
+        val projection = produceProjectionsMaps(items, distinct).withShuffle(shuffle)
 
-          val newQuery =
-            querySoFar
-              .withProjection(
-                QueryProjection.forIds(inputIds)
-                  .withSortItems( produceSortItems(optOrderBy))
-                  .withLimit(limit.map(_.expression))
-                  .withSkip(skip.map(_.expression))
-              )
-              .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
+        val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
 
-          (newQuery, tailSubQuery, tailPatternInExpression)
+        val newPatternInExpressionTable = input.patternExprTable ++ getPatternInExpressionQueryGraphs(items.map(_.expression)) ++ subQueries
+        val tailInput: SingleQueryPlanInput = SingleQueryPlanInput(PlannerQuery(QueryGraph(selections = selections)), newPatternInExpressionTable)
+        val tail = produceQueryGraphFromClauses(tailInput, tl)
 
-        case With(false, ListedReturnItems(items), optOrderBy, skip, limit, optWhere) :: tl =>
-          val newPatternInExpressionTable = patternInExpressionTable ++ getPatternInExpressionQueryGraphs(items.map(_.expression))
-          val orderBy = produceSortItems(optOrderBy)
-          val projection = produceProjectionsMaps(items)
-            .withSortItems(orderBy)
-            .withLimit(limit.map(_.expression))
-            .withSkip(skip.map(_.expression))
+        val inputIds = projection.keySet.map(IdName)
+        val argumentIds = inputIds intersect tail.q.graph.coveredIds
 
-          val (selections, subQueries) = getSelectionsAndSubQueries(optWhere)
-          val newSubQueryPlanTable = subQueryLookupTable ++ subQueries
+        val newQuery =
+          input.q
+            .withHorizon(QueryHorizon(projection = projection))
+            .withTail(tail.q.updateGraph(_.withArgumentIds(argumentIds)))
 
-          val (tailQuery: PlannerQuery, tailSubQuery, tailPatternInExpression) = produceQueryGraphFromClauses(
-            PlannerQuery(QueryGraph(selections = selections)),
-            newSubQueryPlanTable,
-            newPatternInExpressionTable,
-            tl
-          )
+        input.copy(q = newQuery, patternExprTable = tail.patternExprTable)
 
-          val inputIds = projection.keySet.map(IdName)
-          val argumentIds = inputIds intersect tailQuery.graph.coveredIds
-
-          val newQuery =
-            querySoFar
-              .withProjection(projection)
-              .withTail(tailQuery.updateGraph(_.withArgumentIds(argumentIds)))
-
-          (newQuery, tailSubQuery, tailPatternInExpression)
-
-        case Seq() =>
-          (querySoFar, subQueryLookupTable, patternInExpressionTable)
+      case Seq() =>
+          input
 
         case _ =>
           throw new CantHandleQueryException
@@ -323,7 +332,7 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
   private def produceSortItems(optOrderBy: Option[OrderBy]) =
     optOrderBy.fold(Seq.empty[SortItem])(_.sortItems)
 
-  private def produceProjectionsMaps(items: Seq[ReturnItem]): QueryProjection = {
+  private def produceProjectionsMaps(items: Seq[ReturnItem], distinct: Boolean): QueryProjection = {
     val (aggregatingItems: Seq[ReturnItem], nonAggrItems: Seq[ReturnItem]) =
       items.partition(item => IsAggregate(item.expression))
 
@@ -335,9 +344,9 @@ class SimplePlannerQueryBuilder extends PlannerQueryBuilder {
     if(projectionMap.values.exists(containsAggregate))
       throw new InternalException("Grouping keys contains aggregation. AST has not been rewritten?")
 
-    if (aggregationsMap.isEmpty)
-      QueryProjection(projections = projectionMap)
+    if (aggregationsMap.nonEmpty || distinct)
+      AggregatingQueryProjection(groupingKeys = projectionMap, aggregationExpressions = aggregationsMap)
     else
-      AggregationProjection(groupingKeys = projectionMap, aggregationExpressions = aggregationsMap)
+      RegularQueryProjection(projections = projectionMap)
   }
 }

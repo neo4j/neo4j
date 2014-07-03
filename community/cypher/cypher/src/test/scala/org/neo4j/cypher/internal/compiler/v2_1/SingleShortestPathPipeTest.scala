@@ -19,26 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import commands._
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.{PipeMonitor, ShortestPathPipe, FakePipe}
-import symbols._
-import org.neo4j.cypher.GraphDatabaseJUnitSuite
+import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{FakePipe, PipeMonitor, ShortestPathPipe}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 import org.neo4j.graphdb.{Direction, Node, Path}
-import org.junit.Test
-import collection.mutable.Map
 
-class SingleShortestPathPipeTest extends GraphDatabaseJUnitSuite {
+class SingleShortestPathPipeTest extends GraphDatabaseFunSuite {
   private implicit val monitor = mock[PipeMonitor]
-  val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, Some(15), single = true, relIterator = None)
+  private val path = ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.BOTH, Some(15), single = true, relIterator = None)
 
-  def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): Path = {
-    val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"->CTNode, "b"->CTNode)
-
-    val pipe = new ShortestPathPipe(source, path)
-    graph.inTx(pipe.createResults(QueryStateHelper.empty).next()("p").asInstanceOf[Path])
-  }
-
-  @Test def shouldReturnTheShortestPathBetweenTwoNodes() {
+  test("should return the shortest path between two nodes") {
     val a = createNode("a")
     val b = createNode("b")
 
@@ -48,9 +39,16 @@ class SingleShortestPathPipeTest extends GraphDatabaseJUnitSuite {
 
     val number_of_relationships_in_path = resultPath.length()
 
-    assert(number_of_relationships_in_path === 1)
-    assert(resultPath.lastRelationship() === r)
-    assert(resultPath.startNode() === a)
-    assert(resultPath.endNode() === b)
+    number_of_relationships_in_path should equal(1)
+    resultPath.lastRelationship() should equal(r)
+    resultPath.startNode() should equal(a)
+    resultPath.endNode() should equal(b)
+  }
+
+  private def runThroughPipeAndGetPath(a: Node, b: Node, path: ShortestPath): Path = {
+    val source = new FakePipe(List(Map("a" -> a, "b" -> b)), "a"->CTNode, "b"->CTNode)
+
+    val pipe = new ShortestPathPipe(source, path)
+    graph.inTx(pipe.createResults(QueryStateHelper.empty).next()("p").asInstanceOf[Path])
   }
 }

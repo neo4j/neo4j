@@ -154,6 +154,12 @@ public class BlockLogBuffer implements WritableLogChannel
         positionMarker.unspecified();
     }
 
+    @Override
+    public ReadableByteChannel getReadableChannel()
+    {
+        return getFileChannel();
+    }
+
     /**
      * Signals the end of use for this buffer over this channel - first byte of
      * the chunk is set to the position of the buffer ( != 0, instead of
