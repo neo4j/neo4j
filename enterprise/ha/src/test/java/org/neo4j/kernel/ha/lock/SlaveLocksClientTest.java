@@ -19,27 +19,26 @@
  */
 package org.neo4j.kernel.ha.lock;
 
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.Matchers;
-
-import org.neo4j.com.RequestContext;
-import org.neo4j.com.ResourceReleaser;
-import org.neo4j.com.Response;
-import org.neo4j.com.TransactionStream;
-import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.ha.com.RequestContextFactory;
-import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.locking.Locks;
-
 import static org.mockito.Matchers.any;
 import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.when;
-
 import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.Matchers;
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.ResourceReleaser;
+import org.neo4j.com.Response;
+import org.neo4j.com.TransactionStream;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.kernel.AvailabilityGuard;
+import org.neo4j.kernel.ha.com.RequestContextFactory;
+import org.neo4j.kernel.ha.com.master.Master;
+import org.neo4j.kernel.impl.locking.Locks;
 
 public class SlaveLocksClientTest
 {
@@ -80,8 +79,12 @@ public class SlaveLocksClientTest
         when( availabilityGuard.isAvailable( anyLong() )).thenReturn( true );
         SlaveLockManager.Configuration config = mock( SlaveLockManager.Configuration.class );
 
+        TransactionCommittingResponseUnpacker unpacker = mock( TransactionCommittingResponseUnpacker.class );
+        when( unpacker.unpackResponse( Matchers.<Response>any() ) ).thenReturn( new LockResult( LockStatus.OK_LOCKED ) );
+
         client = new SlaveLocksClient(
-                master, local, localLockManager, requestContextFactory, availabilityGuard, config );
+                master, local, localLockManager, requestContextFactory, availabilityGuard,
+                unpacker, config );
     }
 
     @Test

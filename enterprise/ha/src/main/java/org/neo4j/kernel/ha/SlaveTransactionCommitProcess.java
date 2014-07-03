@@ -39,18 +39,17 @@ public class SlaveTransactionCommitProcess extends TransactionRepresentationComm
 {
     private final Master master;
     private final RequestContextFactory requestContextFactory;
-    private final DependencyResolver resolver;
+    private final TransactionCommittingResponseUnpacker unpacker;
 
     public SlaveTransactionCommitProcess( Master master, RequestContextFactory requestContextFactory,
                                           LogicalTransactionStore logicalTransactionStore, KernelHealth kernelHealth,
                                           NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-                                          DependencyResolver resolver,
-                                          boolean recovery )
+                                          TransactionCommittingResponseUnpacker unpacker, boolean recovery )
     {
         super( logicalTransactionStore, kernelHealth, neoStore, storeApplier, recovery );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
-        this.resolver = resolver;
+        this.unpacker = unpacker;
     }
 
     @Override
@@ -68,10 +67,6 @@ public class SlaveTransactionCommitProcess extends TransactionRepresentationComm
     @Override
     public long persistTransaction( TransactionRepresentation representation ) throws TransactionFailureException
     {
-        ResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-            resolver.resolveDependency( LogicalTransactionStore.class ).getAppender(),
-            resolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
-            resolver.resolveDependency( TransactionIdStore.class ) );
         try
         {
             return unpacker.unpackResponse( master.commitSingleResourceTransaction( requestContextFactory.newRequestContext(), representation ) );

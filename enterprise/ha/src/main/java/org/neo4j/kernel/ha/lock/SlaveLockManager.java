@@ -19,6 +19,8 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
@@ -31,6 +33,7 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     private final Locks local;
     private final Master master;
     private final AvailabilityGuard availabilityGuard;
+    private final TransactionCommittingResponseUnpacker unpacker;
     private final Configuration config;
 
     public static interface Configuration
@@ -39,10 +42,11 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     }
 
     public SlaveLockManager( Locks localLocks, RequestContextFactory requestContextFactory, Master master,
-                             AvailabilityGuard availabilityGuard, Configuration config )
+                             AvailabilityGuard availabilityGuard, TransactionCommittingResponseUnpacker unpacker, Configuration config )
     {
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
+        this.unpacker = unpacker;
         this.config = config;
         this.local = localLocks;
         this.master = master;
@@ -52,7 +56,7 @@ public class SlaveLockManager extends LifecycleAdapter implements Locks
     public Client newClient()
     {
         return new SlaveLocksClient( master, local.newClient(), local, requestContextFactory, availabilityGuard,
-                config );
+                unpacker, config );
     }
 
     @Override

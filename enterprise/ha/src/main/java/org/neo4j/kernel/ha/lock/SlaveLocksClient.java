@@ -22,12 +22,14 @@ package org.neo4j.kernel.ha.lock;
 import static org.neo4j.kernel.impl.transaction.LockType.READ;
 import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
 
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.com.Response;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
@@ -44,6 +46,7 @@ class SlaveLocksClient implements Locks.Client
     private final Locks localLockManager;
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
+    private final TransactionCommittingResponseUnpacker unpacker;
     private final SlaveLockManager.Configuration config;
 
     // Using atomic ints to avoid creating garbage through boxing.
@@ -57,13 +60,14 @@ class SlaveLocksClient implements Locks.Client
             Locks localLockManager,
             RequestContextFactory requestContextFactory,
             AvailabilityGuard availabilityGuard,
-            SlaveLockManager.Configuration config )
+            TransactionCommittingResponseUnpacker unpacker, SlaveLockManager.Configuration config )
     {
         this.master = master;
         this.client = local;
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
+        this.unpacker = unpacker;
         this.config = config;
         sharedLocks = new HashMap<>();
         exclusiveLocks = new HashMap<>();
@@ -271,8 +275,16 @@ class SlaveLocksClient implements Locks.Client
 
     private boolean receiveLockResponse( Response<LockResult> response )
     {
-        // TODO 2.2-future must apply transactions received
-        LockResult result = response.response();
+        LockResult result = null;
+        try
+        {
+            result = unpacker.unpackResponse( response );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
         switch ( result.getStatus() )
         {
             case DEAD_LOCKED:

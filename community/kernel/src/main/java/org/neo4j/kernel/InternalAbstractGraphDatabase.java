@@ -147,6 +147,7 @@ import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.CommitProcessFactory;
 import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
@@ -844,6 +845,7 @@ public abstract class InternalAbstractGraphDatabase
         public TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore,
                                                 KernelHealth kernelHealth, NeoStore neoStore,
                                                 TransactionRepresentationStoreApplier storeApplier,
+                                                NeoStoreInjectedTransactionValidator validator,
                                                 boolean recovery )
         {
             return new TransactionRepresentationCommitProcess( logicalTransactionStore, kernelHealth,

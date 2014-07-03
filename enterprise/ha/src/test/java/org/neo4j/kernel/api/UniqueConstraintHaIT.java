@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 import static org.neo4j.graphdb.DynamicLabel.label;
 import static org.neo4j.helpers.collection.Iterables.count;
@@ -33,12 +34,11 @@ import static org.neo4j.io.fs.FileUtils.deleteRecursively;
 
 import java.io.File;
 
-import javax.transaction.xa.XAException;
-
 import org.junit.Rule;
 import org.junit.Test;
 import org.neo4j.graphdb.InvalidTransactionTypeException;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.schema.ConstraintDefinition;
 import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.ha.HaSettings;
@@ -174,10 +174,10 @@ public class UniqueConstraintHaIT
             slaveTx.finish();
             fail( "Expected this commit to fail :(" );
         }
-        catch( Exception e )
+        catch( TransactionFailureException e )
         {
-            XAException cause = (XAException) e.getCause();
-            assertThat(cause.errorCode, equalTo(XAException.XA_RBINTEGRITY));
+            // It will come as wrapped in a RuntimeException because the master throws it that way
+            assertTrue( e.getCause().getCause() instanceof org.neo4j.kernel.api.exceptions.TransactionFailureException);
         }
 
         // And then both master and slave should keep working, accepting reads

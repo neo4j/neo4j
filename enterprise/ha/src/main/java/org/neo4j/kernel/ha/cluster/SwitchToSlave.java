@@ -63,7 +63,6 @@ import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
@@ -87,7 +86,8 @@ public class SwitchToSlave
     private static final Class[] SERVICES_TO_RESTART_FOR_STORE_COPY = new Class[] {
             StoreLockerLifecycleAdapter.class,
             NeoStoreXaDataSource.class,
-            RequestContextFactory.class
+            RequestContextFactory.class,
+            TransactionCommittingResponseUnpacker.class,
 //            NodeManager.class,
             // TODO 2.2-future what is this next line?
 //            IndexStore.class
@@ -182,11 +182,7 @@ public class SwitchToSlave
              */
             console.log( "Catching up with master" );
 
-            // TODO 2.2-future the response unpacked must be a restartable service that is injected
-            new TransactionCommittingResponseUnpacker(
-                    resolver.resolveDependency( LogicalTransactionStore.class ).getAppender(),
-                    resolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
-                    resolver.resolveDependency( TransactionIdStore.class ) ).
+            resolver.resolveDependency( TransactionCommittingResponseUnpacker.class ).
                     unpackResponse( checkConsistencyMaster.pullUpdates( requestContextFactory.newRequestContext() ) );
             console.log( "Now consistent with master" );
         }

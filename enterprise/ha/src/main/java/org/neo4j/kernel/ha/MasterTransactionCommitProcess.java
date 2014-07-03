@@ -26,6 +26,7 @@ import org.neo4j.kernel.ha.transaction.TransactionPropagator;
 import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreInjectedTransactionValidator;
 import org.neo4j.kernel.impl.transaction.KernelHealth;
 import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
@@ -33,18 +34,22 @@ import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 public class MasterTransactionCommitProcess extends TransactionRepresentationCommitProcess
 {
     private final TransactionPropagator pusher;
+    private final NeoStoreInjectedTransactionValidator validator;
 
     public MasterTransactionCommitProcess( LogicalTransactionStore logicalTransactionSTore, KernelHealth kernelHealth,
                                            NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
-                                           TransactionPropagator pusher)
+                                           TransactionPropagator pusher, NeoStoreInjectedTransactionValidator validator )
     {
         super( logicalTransactionSTore, kernelHealth, neoStore, storeApplier, false );
         this.pusher = pusher;
+        this.validator = validator;
     }
 
     @Override
     public long commit( TransactionRepresentation representation ) throws TransactionFailureException
     {
+        validator.assertInjectionAllowed( representation.getLatestCommittedTxWhenStarted() );
+
         long result = super.commit( representation );
 
         pusher.committed( result, representation.getAuthorId() );

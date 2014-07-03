@@ -187,7 +187,7 @@ public class TransactionCountThresholdTest
         when( info.getFirstCommittedTxId( 6l ) ).thenReturn( 13l );
         when( info.getLastCommittedTxId() ).thenReturn( 13l );
 
-        // The threshold is 9, which is one more than what version 5 has, which means 2 should be deleted
+        // The threshold is 8, which is exactly what version 5 has, which means 2 should be deleted
         TransactionCountThreshold threshold = new TransactionCountThreshold( 8 );
 
         assertFalse( threshold.reached( file, 5l, info ) );

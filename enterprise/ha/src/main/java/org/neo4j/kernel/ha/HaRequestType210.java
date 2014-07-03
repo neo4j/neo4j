@@ -37,6 +37,7 @@ import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.id.IdAllocation;
@@ -133,7 +134,7 @@ public enum HaRequestType210 implements RequestType<Master>
     {
         @Override
         public Response<Long> call( Master master, RequestContext context, ChannelBuffer input,
-                                    ChannelBuffer target )
+                                    ChannelBuffer target ) throws IOException, TransactionFailureException
         {
             readString( input ); // Always neostorexadatasource
 

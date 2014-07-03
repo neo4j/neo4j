@@ -29,5 +29,6 @@ import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 public interface CommitProcessFactory
 {
     TransactionCommitProcess create( LogicalTransactionStore logicalTransactionStore, KernelHealth kernelHealth,
-                                     NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier, boolean recovery );
+                                     NeoStore neoStore, TransactionRepresentationStoreApplier storeApplier,
+                                     NeoStoreInjectedTransactionValidator validator, boolean recovery );
 }

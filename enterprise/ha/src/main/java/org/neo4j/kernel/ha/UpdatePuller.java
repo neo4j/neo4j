@@ -27,7 +27,6 @@ import org.neo4j.cluster.InstanceId;
 import org.neo4j.com.ComException;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -36,9 +35,6 @@ import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberListener;
 import org.neo4j.kernel.ha.cluster.HighAvailabilityMemberStateMachine;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
-import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.util.CappedOperation;
 import org.neo4j.kernel.impl.util.JobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
@@ -55,15 +51,14 @@ public class UpdatePuller implements Lifecycle
     private final JobScheduler scheduler;
     private final StringLogger logger;
     private final CappedOperation<Pair<String, ? extends Exception>> cappedLogger;
-    private final DependencyResolver resolver;
-    private TransactionCommittingResponseUnpacker unpacker;
+    private final TransactionCommittingResponseUnpacker unpacker;
     private volatile boolean pullUpdates = false;
     private final UpdatePullerHighAvailabilityMemberListener listener;
 
     public UpdatePuller( HighAvailabilityMemberStateMachine memberStateMachine, Master master,
                          RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
                          LastUpdateTime lastUpdateTime, Config config, JobScheduler scheduler,
-                         DependencyResolver resolver, final StringLogger logger )
+                         final StringLogger logger, TransactionCommittingResponseUnpacker unpacker )
     {
         this.memberStateMachine = memberStateMachine;
         this.master = master;
@@ -73,8 +68,9 @@ public class UpdatePuller implements Lifecycle
         this.config = config;
         this.scheduler = scheduler;
         this.logger = logger;
+        this.unpacker = unpacker;
         this.cappedLogger = new CappedOperation<Pair<String, ? extends Exception>>(
-                CappedOperation.count( 10 ))
+                CappedOperation.count( 10 ) )
         {
             @Override
             protected void triggered( Pair<String, ? extends Exception> event )
@@ -85,19 +81,15 @@ public class UpdatePuller implements Lifecycle
 
         listener = new UpdatePullerHighAvailabilityMemberListener( config.get( ClusterSettings.server_id ) );
 
-        this.resolver = resolver;
     }
 
     public void pullUpdates() throws IOException
     {
         if ( availabilityGuard.isAvailable( 5000 ) )
         {
-            Response<Void> response = master.pullUpdates( requestContextFactory.newRequestContext(-3) );
+            Response<Void> response = master.pullUpdates( requestContextFactory.newRequestContext( -3 ) );
 
-                    new TransactionCommittingResponseUnpacker(
-                            resolver.resolveDependency( LogicalTransactionStore.class ).getAppender(),
-                            resolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
-                            resolver.resolveDependency( TransactionIdStore.class ) ).unpackResponse( response );
+            unpacker.unpackResponse( response );
             lastUpdateTime.setLastUpdateTime( System.currentTimeMillis() );
         }
     }
@@ -140,12 +132,6 @@ public class UpdatePuller implements Lifecycle
     {
         this.pullUpdates = true;
         memberStateMachine.addHighAvailabilityMemberListener( listener );
-
-        unpacker =
-                new TransactionCommittingResponseUnpacker(
-                        resolver.resolveDependency( LogicalTransactionStore.class ).getAppender(),
-                        resolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
-                        resolver.resolveDependency( TransactionIdStore.class ) );
     }
 
     @Override

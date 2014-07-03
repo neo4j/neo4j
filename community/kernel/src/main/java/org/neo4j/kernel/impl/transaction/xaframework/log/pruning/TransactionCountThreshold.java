@@ -42,7 +42,8 @@ public final class TransactionCountThreshold implements Threshold
         {
             // try to ask next version log file which is my last tx
             long lastTx = source.getFirstCommittedTxId( version + 1 );
-            if (lastTx == -1) {
+            if ( lastTx == -1 )
+            {
                 throw new ThisShouldNotHappenError( "ChrisG", "The next version should always exist, since this is " +
                         "called after rotation and the PruneStrategy never checks the current active log file" );
             }

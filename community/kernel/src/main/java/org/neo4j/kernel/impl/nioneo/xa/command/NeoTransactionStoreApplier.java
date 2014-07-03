@@ -331,7 +331,6 @@ public class NeoTransactionStoreApplier extends NeoCommandHandler.Adapter
                 break;
             default:
                 cacheAccess.addSchemaRule( command.getSchemaRule() );
-                invalidateCache(command);
         }
         return true;
     }

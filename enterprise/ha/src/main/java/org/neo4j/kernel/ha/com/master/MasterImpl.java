@@ -89,7 +89,8 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
         StoreId storeId();
 
-        long applyPreparedTransaction( TransactionRepresentation preparedTransaction ) throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException;
+        long applyPreparedTransaction( TransactionRepresentation preparedTransaction )
+                throws IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException;
 
         Integer createRelationshipType( String name );
 
@@ -241,19 +242,13 @@ public class MasterImpl extends LifecycleAdapter implements Master
 
     @Override
     public Response<Long> commitSingleResourceTransaction( RequestContext context,
-                                                           TransactionRepresentation preparedTransaction )
+                                                           TransactionRepresentation preparedTransaction ) throws
+            IOException, org.neo4j.kernel.api.exceptions.TransactionFailureException
     {
         assertCorrectEpoch( context );
-        try
-        {
-            long txId = spi.applyPreparedTransaction( preparedTransaction );
-            return packResponse( context, txId );
-        }
-        catch ( IOException | org.neo4j.kernel.api.exceptions.TransactionFailureException e )
-        {
-            throw new RuntimeException( e );
-        }
-    }
+        long txId = spi.applyPreparedTransaction( preparedTransaction );
+        return packResponse( context, txId );
+}
 
     @Override
     public Response<Void> finishTransaction( RequestContext context, boolean success )

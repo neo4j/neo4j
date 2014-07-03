@@ -46,6 +46,7 @@ import org.neo4j.cluster.protocol.cluster.ClusterConfiguration;
 import org.neo4j.cluster.protocol.cluster.ClusterListener;
 import org.neo4j.cluster.protocol.election.ElectionCredentialsProvider;
 import org.neo4j.cluster.protocol.election.NotElectableElectionCredentialsProvider;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -131,6 +132,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private DelegateInvocationHandler clusterMemberAvailabilityDelegateInvocationHandler;
     private HighAvailabilityModeSwitcher highAvailabilityModeSwitcher;
     private DefaultSlaveFactory slaveFactory;
+    private TransactionCommittingResponseUnpacker unpacker;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
@@ -156,14 +158,19 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 masterDelegateInvocationHandler );
         requestContextFactory = new RequestContextFactory( config.get( ClusterSettings.server_id ).toIntegerIndex(),
                 getDependencyResolver() );
+
+        this.unpacker = new TransactionCommittingResponseUnpacker( dependencyResolver );
+
         super.create();
 
         life.add( requestContextFactory );
 
+        life.add( unpacker );
+
         kernelEventHandlers.registerKernelEventHandler( new HaKernelPanicHandler( availabilityGuard, logging,
                 masterDelegateInvocationHandler ) );
         life.add( updatePuller = new UpdatePuller( memberStateMachine, master, requestContextFactory,
-                availabilityGuard, lastUpdateTime, config, jobScheduler, dependencyResolver, msgLog ) );
+                availabilityGuard, lastUpdateTime, config, jobScheduler, msgLog, unpacker ) );
 
         stateSwitchTimeoutMillis = config.get( HaSettings.state_switch_timeout );
 
@@ -408,7 +415,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 msgLog, slaves, new CommitPusher( jobScheduler ) ) );
 
         new CommitProcessFactorySwitcher( pusher,
-                master, commitProcessFactoryDelegate, requestContextFactory, memberStateMachine, getDependencyResolver() );
+                master, commitProcessFactoryDelegate, requestContextFactory, memberStateMachine, unpacker );
 
         return commitProcessFactory;
     }
@@ -464,7 +471,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (Locks) Proxy.newProxyInstance( Locks.class.getClassLoader(),
                         new Class[]{Locks.class}, lockManagerDelegate );
         new LockManagerModeSwitcher( memberStateMachine, lockManagerDelegate, masterDelegateInvocationHandler,
-                requestContextFactory, availabilityGuard, config, new Factory<Locks>()
+                requestContextFactory, availabilityGuard, config, unpacker, new Factory<Locks>()
         {
             @Override
             public Locks newInstance()
@@ -692,6 +699,10 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                     else if ( SlaveFactory.class.isAssignableFrom( type ) )
                     {
                         result = type.cast( slaveFactory );
+                    }
+                    else if ( TransactionCommittingResponseUnpacker.class.isAssignableFrom( type ) )
+                    {
+                        result = type.cast( unpacker );
                     }
                     else
                     {

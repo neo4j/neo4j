@@ -19,6 +19,8 @@
  */
 package org.neo4j.backup;
 
+import static org.neo4j.com.RequestContext.anonymous;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
@@ -49,19 +51,15 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
-import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.com.RequestContext.anonymous;
 
 /**
  * Client-side convenience service for doing backups from a running database instance.
@@ -296,10 +294,8 @@ class BackupService
         try
         {
             Response<Void> response = client.incrementalBackup( context );
-            TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker(
-                    resolver.resolveDependency( LogicalTransactionStore.class ).getAppender(),
-                    resolver.resolveDependency( TransactionRepresentationStoreApplier.class ),
-                    resolver.resolveDependency( TransactionIdStore.class ) );
+            TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver );
+            unpacker.start();
             unpacker.unpackResponse( response, handler );
             consistent = true;
         }
@@ -319,6 +315,10 @@ class BackupService
         catch ( IOException e )
         {
             throw new RuntimeException( "Failed to perform incremental backup.", e );
+        }
+        catch ( Throwable throwable )
+        {
+            throw new RuntimeException( throwable );
         }
         finally
         {

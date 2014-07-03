@@ -22,24 +22,25 @@ package org.neo4j.com.storecopy;
 import java.io.IOException;
 
 import org.neo4j.com.Response;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.api.TransactionRepresentationStoreApplier;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.impl.transaction.xaframework.TransactionAppender;
+import org.neo4j.kernel.lifecycle.Lifecycle;
 
-public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adapter
+public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adapter implements Lifecycle
 {
-    private final TransactionAppender appender;
-    private final TransactionRepresentationStoreApplier storeApplier;
-    private final TransactionIdStore transactionIdStore;
+    private final DependencyResolver resolver;
+    private TransactionAppender appender;
+    private TransactionRepresentationStoreApplier storeApplier;
+    private TransactionIdStore transactionIdStore;
 
-    public TransactionCommittingResponseUnpacker( TransactionAppender appender,
-            TransactionRepresentationStoreApplier storeApplier, TransactionIdStore transactionIdStore )
+    public TransactionCommittingResponseUnpacker( DependencyResolver resolver )
     {
-        this.appender = appender;
-        this.storeApplier = storeApplier;
-        this.transactionIdStore = transactionIdStore;
+        this.resolver = resolver;
     }
 
     @Override
@@ -72,5 +73,33 @@ public class TransactionCommittingResponseUnpacker extends ResponseUnpacker.Adap
             }
         } );
         return response.response();
+    }
+
+    @Override
+    public void init() throws Throwable
+    {
+
+    }
+
+    @Override
+    public void start() throws Throwable
+    {
+        this.appender = resolver.resolveDependency( LogicalTransactionStore.class ).getAppender();
+        this.storeApplier = resolver.resolveDependency( TransactionRepresentationStoreApplier.class );
+        this.transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+    }
+
+    @Override
+    public void stop() throws Throwable
+    {
+        this.appender = null;
+        this.storeApplier = null;
+        this.transactionIdStore = null;
+    }
+
+    @Override
+    public void shutdown() throws Throwable
+    {
+
     }
 }

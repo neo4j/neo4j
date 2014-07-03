@@ -21,6 +21,8 @@ package org.neo4j.kernel.ha.lock;
 
 import java.net.URI;
 
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Factory;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;
@@ -38,18 +40,20 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     private final RequestContextFactory requestContextFactory;
     private final AvailabilityGuard availabilityGuard;
     private final Config config;
+    private final TransactionCommittingResponseUnpacker unpacker;
     private final Factory<Locks> locksFactory;
 
     public LockManagerModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                     DelegateInvocationHandler<Locks> delegate, DelegateInvocationHandler<Master> master,
                                     RequestContextFactory requestContextFactory, AvailabilityGuard availabilityGuard,
-                                    Config config, Factory<Locks> locksFactory)
+                                    Config config, TransactionCommittingResponseUnpacker unpacker, Factory<Locks> locksFactory )
     {
         super( stateMachine, delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.availabilityGuard = availabilityGuard;
         this.config = config;
+        this.unpacker = unpacker;
         this.locksFactory = locksFactory;
     }
 
@@ -63,7 +67,7 @@ public class LockManagerModeSwitcher extends AbstractModeSwitcher<Locks>
     protected Locks getSlaveImpl( URI serverHaUri )
     {
         return new SlaveLockManager( locksFactory.newInstance(), requestContextFactory, master.cement(),
-                availabilityGuard, new SlaveLockManager.Configuration()
+                availabilityGuard, unpacker, new SlaveLockManager.Configuration()
         {
             @Override
             public long getAvailabilityTimeout()
