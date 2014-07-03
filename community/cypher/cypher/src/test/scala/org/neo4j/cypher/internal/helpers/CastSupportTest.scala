@@ -20,42 +20,41 @@
 package org.neo4j.cypher.internal.helpers
 
 import org.neo4j.cypher.CypherTypeException
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class CastSupportTest extends Assertions {
+class CastSupportTest extends CypherFunSuite {
 
-  @Test def siftTest() {
+  test("siftTest") {
     val given = Seq(1, 2, "a", 3, "b", 42, "z")
     val then  = CastSupport.sift[String](given)
-    assert(then == Seq("a", "b", "z"))
+    then should equal(Seq("a", "b", "z"))
   }
 
-  @Test def siftComplexTest() {
+  test("siftComplexTest") {
     val given = Seq(1, 2, List("a"), 3, "b", 42, List("z"))
     val then  = CastSupport.sift[List[String]](given)
-    assert(then == Seq(List("a"), List("z")))
+    then should equal(Seq(List("a"), List("z")))
   }
 
-  @Test def downcastPfMatchTest() {
+  test("downcastPfMatchTest") {
     val given: Any                          = Seq(1)
     val fun: PartialFunction[Any, Seq[Int]] = CastSupport.erasureCast[Seq[Int]]
     val then                                = fun(given)
-    assert(then == Seq(1))
+    then should equal(Seq(1))
   }
 
-  @Test def downcastPfMismatchTest() {
+  test("downcastPfMismatchTest") {
     val given: Any                           = "Hallo"
     val fun: PartialFunction[Any, Seq[Long]] = CastSupport.erasureCast[Seq[Long]]
-    assert(! fun.isDefinedAt(given))
+    fun.isDefinedAt(given) should equal(false)
   }
 
-  @Test def downcastAppMatchTest() {
+  test("downcastAppMatchTest") {
     val given: Any = 1
-    assert(CastSupport.castOrFail[java.lang.Integer](given) == 1)
+    CastSupport.castOrFail[java.lang.Integer](given) should equal(1)
   }
 
-  @Test def downcastAppMismatchTest() {
+  test("downcastAppMismatchTest") {
     val given: Any = Seq(1)
     intercept[CypherTypeException](CastSupport.castOrFail[Int](given))
   }

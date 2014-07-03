@@ -19,64 +19,62 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.ExecutionContext
 
-class IfElseIteratorTest extends Assertions {
-  val startIterator = Iterator(ExecutionContext.empty)
-  val a = ExecutionContext.from("a" -> 1)
-  val b = ExecutionContext.from("a" -> 2)
+class IfElseIteratorTest extends CypherFunSuite {
+  val a1 = ExecutionContext.from("a" -> 1)
+  val a2 = ExecutionContext.from("a" -> 2)
 
-  @Test def should_pass_through_if_ifClause_returns_values() {
-    val ifClause = (_: ExecutionContext) => Iterator(a)
+  test("should_pass_through_if_ifClause_returns_values") {
+    val ifClause = (_: ExecutionContext) => Iterator(a1)
     val elseClause = (_: ExecutionContext) => fail("should not have run")
 
-    val result = new IfElseIterator(startIterator, ifClause, elseClause, () => {})
-    assert(result.toList === List(a))
+    val result = new IfElseIterator(Iterator(ExecutionContext.empty), ifClause, elseClause, () => {})
+    result.toList should equal(List(a1))
   }
 
-  @Test def should_return_elseClause_value_if_ifClause_is_empty() {
+  test("should_return_elseClause_value_if_ifClause_is_empty") {
     val ifClause = (_: ExecutionContext) => Iterator()
-    val elseClause = (_: ExecutionContext) => Iterator(b)
+    val elseClause = (_: ExecutionContext) => Iterator(a2)
 
-    val result = new IfElseIterator(startIterator, ifClause, elseClause, () => {})
-    assert(result.toList === List(b))
+    val result = new IfElseIterator(Iterator(ExecutionContext.empty), ifClause, elseClause, () => {})
+    result.toList should equal(List(a2))
   }
 
-  @Test def should_return_all_values_produces_by_ifClause() {
-    val ifClause = (_: ExecutionContext) => Iterator(a, b)
+  test("should_return_all_values_produces_by_ifClause") {
+    val ifClause = (_: ExecutionContext) => Iterator(a1, a2)
     val elseClause = (_: ExecutionContext) => fail("should not have run")
 
-    val result = new IfElseIterator(startIterator, ifClause, elseClause, () => {})
-    assert(result.toList === List(a, b))
+    val result = new IfElseIterator(Iterator(ExecutionContext.empty), ifClause, elseClause, () => {})
+    result.toList should equal(List(a1, a2))
   }
 
-  @Test def should_be_empty_when_the_input_is_empty() {
+  test("should_be_empty_when_the_input_is_empty") {
     val ifClause = (_: ExecutionContext) => fail("should not have run")
     val elseClause = (_: ExecutionContext) => fail("should not have run")
 
     val result = new IfElseIterator(Iterator.empty, ifClause, elseClause, () => {})
-    assert(result.toList === List())
+    result.toList should equal(List())
   }
 
-  @Test def should_run_finally_block_when_if_succeeds() {
+  test("should_run_finally_block_when_if_succeeds") {
     var touched = false
-    val ifClause = (_: ExecutionContext) => Iterator(a)
+    val ifClause = (_: ExecutionContext) => Iterator(a1)
     val elseClause = (_: ExecutionContext) => fail("should not have run")
 
-    val result = new IfElseIterator(startIterator, ifClause, elseClause, () => touched = true)
-    assert(result.toList === List(a))
-    assert(touched, "The finally block was never run")
+    val result = new IfElseIterator(Iterator(ExecutionContext.empty), ifClause, elseClause, () => touched = true)
+    result.toList should equal(List(a1))
+    touched should equal(true)
   }
 
-  @Test def should_run_finally_block_when_if_fails() {
+  test("should_run_finally_block_when_if_fails") {
     var touched = false
-    val ifClause = (_: ExecutionContext) => Iterator(a)
+    val ifClause = (_: ExecutionContext) => Iterator(a1)
     val elseClause = (_: ExecutionContext) => fail("should not have run")
 
-    val result = new IfElseIterator(startIterator, ifClause, elseClause, () => touched = true)
-    assert(result.toList === List(a))
-    assert(touched, "The finally block was never run")
+    val result = new IfElseIterator(Iterator(ExecutionContext.empty), ifClause, elseClause, () => touched = true)
+    result.toList should equal(List(a1))
+    touched should equal(true)
   }
 }

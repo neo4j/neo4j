@@ -20,24 +20,20 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class AndTest extends InfixExpressionTestBase(And(_, _)(DummyPosition(0))) {
 
-  @Test
-  def shouldCombineBooleans() {
+  test("shouldCombineBooleans") {
     testValidTypes(CTBoolean, CTBoolean)(CTBoolean)
   }
 
-  @Test
-  def shouldCoerceArguments() {
+  test("shouldCoerceArguments") {
     testValidTypes(CTInteger, CTBoolean)(CTBoolean)
     testValidTypes(CTBoolean, CTInteger)(CTBoolean)
   }
 
-  @Test
-  def shouldReturnErrorIfInvalidArgumentTypes() {
+  test("shouldReturnErrorIfInvalidArgumentTypes") {
     testInvalidApplication(CTNode, CTBoolean)("Type mismatch: expected Boolean but was Node")
     testInvalidApplication(CTBoolean, CTNode)("Type mismatch: expected Boolean but was Node")
   }

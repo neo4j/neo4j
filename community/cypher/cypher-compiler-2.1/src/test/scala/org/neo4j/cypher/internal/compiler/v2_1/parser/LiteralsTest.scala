@@ -20,7 +20,6 @@
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.junit.Test
 import org.parboiled.scala._
 
 class LiteralsTest extends ParserTest[Any, Any] with Literals {
@@ -28,7 +27,7 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
   def Expression: Rule1[ast.Expression] = ???
   val t = DummyPosition(0)
 
-  @Test def testIdentifierCanContainASCII() {
+  test("testIdentifierCanContainASCII") {
     implicit val parserToTest = Identifier
 
     parsing("abc") shouldGive ast.Identifier("abc")(t)
@@ -38,7 +37,7 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     parsing("abc_de") shouldGive ast.Identifier("abc_de")(t)
   }
 
-  @Test def testIdentifierCanContainUTF8() {
+  test("testIdentifierCanContainUTF8") {
     implicit val parserToTest = Identifier
 
     parsing("aé") shouldGive ast.Identifier("aé")(t)
@@ -47,15 +46,13 @@ class LiteralsTest extends ParserTest[Any, Any] with Literals {
     parsing("a＿test") shouldGive ast.Identifier("a＿test")(t)
   }
 
-  @Test
-  def testIdentifierCannotStartWithNumber() {
+  test("testIdentifierCannotStartWithNumber") {
     implicit val parserToTest = Identifier
 
     assertFails("1bcd")
   }
 
-  @Test
-  def testCanParseNumbers() {
+  test("testCanParseNumbers") {
     implicit val parserToTest = NumberLiteral
 
     parsing("123") shouldGive ast.SignedDecimalIntegerLiteral("123")(t)

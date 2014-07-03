@@ -19,10 +19,8 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
-import org.neo4j.cypher.internal.compiler.v2_1.DummyPosition
+import org.neo4j.cypher.internal.compiler.v2_1.{DummyPosition, ast}
 import org.parboiled.scala._
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_1.ast
 
 class PeriodicCommitHintTest extends ParserTest[ast.PeriodicCommitHint, Any] with Query {
 
@@ -30,7 +28,7 @@ class PeriodicCommitHintTest extends ParserTest[ast.PeriodicCommitHint, Any] wit
 
   val t = DummyPosition(0)
 
-  @Test def tests() {
+  test("tests") {
     parsing("USING PERIODIC COMMIT") shouldGive ast.PeriodicCommitHint(None)(t)
     parsing("USING PERIODIC COMMIT 300") shouldGive ast.PeriodicCommitHint(Some(ast.SignedDecimalIntegerLiteral("300")(t)))(t)
   }

@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
+import org.neo4j.cypher.GraphDatabaseFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{LabelAction, LabelSetOp}
 import org.neo4j.cypher.internal.compiler.v2_1.spi.{IdempotentResult, LockingQueryContext, QueryContext}
 import org.neo4j.graphdb.{Direction, Node}
-import org.junit.Test
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
-import org.neo4j.cypher.GraphDatabaseFunSuite
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{LabelSetOp, LabelAction}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{TokenType, KeyToken}
 import org.neo4j.kernel.api.index.IndexDescriptor
 
 class LabelActionTest extends GraphDatabaseFunSuite {

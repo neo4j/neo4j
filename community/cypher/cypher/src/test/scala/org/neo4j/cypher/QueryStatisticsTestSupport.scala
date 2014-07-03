@@ -19,7 +19,6 @@
  */
 package org.neo4j.cypher
 
-import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
 import org.scalatest.Assertions
 
 trait QueryStatisticsTestSupport {

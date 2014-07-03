@@ -19,33 +19,34 @@
  */
 package org.neo4j.cypher.docgen
 
-import org.neo4j.graphdb.index.Index
-import org.junit.{ Before, After }
-import scala.collection.JavaConverters._
-import java.io.{ StringWriter, PrintWriter, File, ByteArrayOutputStream }
-import org.neo4j.graphdb._
-import factory.GraphDatabaseSettings
-import org.neo4j.visualization.graphviz.{ AsciiDocStyle, GraphvizWriter, GraphStyle }
-import org.neo4j.walk.Walker
-import org.neo4j.visualization.asciidoc.AsciidocHelper
-import org.neo4j.cypher.javacompat.GraphImpl
-import org.neo4j.cypher.{ CypherException, ExecutionResult }
-import org.neo4j.test.{ TestGraphDatabaseFactory, GraphDescription }
-import org.neo4j.test.AsciiDocGenerator
-import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
-import org.neo4j.kernel.{ GraphDatabaseAPI, AbstractGraphDatabase }
-import org.neo4j.cypher.internal.helpers.{ Materialized, GraphIcing }
-import org.neo4j.cypher.export.{ SubGraphExporter, DatabaseSubGraph }
-import org.neo4j.helpers.Settings
-import org.neo4j.cypher.example.JavaExecutionEngineDocTest
-import org.neo4j.tooling.GlobalGraphOperations
-import scala.reflect.ClassTag
-import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
-import org.neo4j.kernel.impl.core.NodeManager
-import org.neo4j.cypher.internal.ServerExecutionEngine
-import org.neo4j.cypher.internal.commons.CypherJUnitSuite
-import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+import java.io.{ByteArrayOutputStream, File, PrintWriter, StringWriter}
 import java.util.concurrent.TimeUnit
+
+import org.junit.{After, Before}
+import org.neo4j.cypher.example.JavaExecutionEngineDocTest
+import org.neo4j.cypher.export.{DatabaseSubGraph, SubGraphExporter}
+import org.neo4j.cypher.internal.ServerExecutionEngine
+import org.neo4j.cypher.internal.compiler.v2_1.RewindableExecutionResult
+import org.neo4j.cypher.internal.compiler.v2_1.prettifier.Prettifier
+import org.neo4j.cypher.internal.helpers.{GraphIcing, Materialized}
+import org.neo4j.cypher.javacompat.GraphImpl
+import org.neo4j.cypher.{CypherException, ExecutionResult}
+import org.neo4j.graphdb._
+import org.neo4j.graphdb.factory.GraphDatabaseSettings
+import org.neo4j.graphdb.index.Index
+import org.neo4j.helpers.Settings
+import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.{AbstractGraphDatabase, GraphDatabaseAPI}
+import org.neo4j.test.GraphDatabaseServiceCleaner.cleanDatabaseContent
+import org.neo4j.test.{AsciiDocGenerator, GraphDescription, TestGraphDatabaseFactory}
+import org.neo4j.tooling.GlobalGraphOperations
+import org.neo4j.visualization.asciidoc.AsciidocHelper
+import org.neo4j.visualization.graphviz.{AsciiDocStyle, GraphStyle, GraphvizWriter}
+import org.neo4j.walk.Walker
+import org.scalatest.junit.JUnitSuite
+
+import scala.collection.JavaConverters._
+import scala.reflect.ClassTag
 
 trait DocumentationHelper extends GraphIcing {
   def generateConsole: Boolean
@@ -138,7 +139,7 @@ trait DocumentationHelper extends GraphIcing {
 
 }
 
-abstract class DocumentingTestBase extends CypherJUnitSuite with DocumentationHelper with GraphIcing {
+abstract class DocumentingTestBase extends JUnitSuite with DocumentationHelper with GraphIcing {
 
   def testQuery(title: String, text: String, queryText: String, optionalResultExplanation: String, assertions: (ExecutionResult => Unit)*) {
     internalTestQuery(title, text, queryText, optionalResultExplanation, None, None, assertions: _*)

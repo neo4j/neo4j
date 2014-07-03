@@ -19,52 +19,51 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.aggregation
 
-import org.junit.Test
-import org.junit.Assert._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 
-class AvgFunctionTest extends AggregateTest {
+class AvgFunctionTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new AvgFunction(inner)
 
-  @Test def singleOne() {
+  test("singleOne") {
     val result = aggregateOn(1)
 
-    assertEquals(1.0, result)
+     result should equal(1.0)
   }
 
-  @Test def allOnesAvgIsOne() {
+  test("allOnesAvgIsOne") {
     val result = aggregateOn(1, 1)
 
-    assertEquals(1.0, result)
+     result should equal(1.0)
   }
 
-  @Test def twoAndEightAvgIs10() {
+  test("twoAndEightAvgIs10") {
     val result = aggregateOn(2, 8)
 
-    assertEquals(5.0, result)
+     result should equal(5.0)
   }
 
-  @Test def negativeOneIsStillOk() {
+  test("negativeOneIsStillOk") {
     val result = aggregateOn(-1)
 
-    assertEquals(-1.0, result)
+     result should equal(-1.0)
   }
 
-  @Test def ZeroIsAnOKAvg() {
+  test("ZeroIsAnOKAvg") {
     val result = aggregateOn(-10, 10)
 
-    assertEquals(0.0, result)
+     result should equal(0.0)
   }
 
-  @Test def ADoubleInTheListTurnsTheAvgToDouble() {
+  test("ADoubleInTheListTurnsTheAvgToDouble") {
     val result = aggregateOn(1, 1.0, 1)
 
-    assertEquals(1.0, result)
+     result should equal(1.0)
   }
 
-  @Test def nullDoesntChangeThings() {
+  test("nullDoesntChangeThings") {
     val result = aggregateOn(3, null, 6)
 
-    assertEquals(4.5, result)
+     result should equal(4.5)
   }
 }

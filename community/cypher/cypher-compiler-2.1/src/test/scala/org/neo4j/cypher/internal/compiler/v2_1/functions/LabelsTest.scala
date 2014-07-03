@@ -19,25 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.functions
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class LabelsTest extends FunctionTestBase("labels") {
 
-  @Test
-  def shouldFailIfWrongArguments() {
+  test("shouldFailIfWrongArguments") {
     testInvalidApplication()("Insufficient parameters for function 'labels'")
     testInvalidApplication(CTNode, CTNode)("Too many parameters for function 'labels'")
   }
 
-  @Test
-  def shouldHaveCollectionOfStringsType() {
+  test("shouldHaveCollectionOfStringsType") {
     testValidTypes(CTNode)(CTCollection(CTString))
   }
 
-  @Test
-  def shouldReturnErrorIfInvalidArgumentTypes() {
+  test("shouldReturnErrorIfInvalidArgumentTypes") {
     testInvalidApplication(CTInteger)("Type mismatch: expected Node but was Integer")
   }
 }

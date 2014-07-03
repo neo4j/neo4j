@@ -19,32 +19,32 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions.{Expression, Null, Literal, CoalesceFunction}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.{QueryStateHelper, QueryState}
-import symbols._
-import org.scalatest.Assertions
-import org.junit.{Assert, Test}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{CoalesceFunction, Expression, Literal, Null}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.{QueryState, QueryStateHelper}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class CoalesceTest extends Assertions {
-  @Test def givenANonNullValueThenReturnsTheValue() {
+class CoalesceTest extends CypherFunSuite {
+
+  test("givenANonNullValueThenReturnsTheValue") {
     val func = new CoalesceFunction(Literal("a"))
-    assert(calc(func) === "a")
+    calc(func) should equal("a")
   }
 
-  @Test def givenANullValueThenReturnsNull() {
+  test("givenANullValueThenReturnsNull") {
     val func = new CoalesceFunction(Null())
-    assert(calc(func) === null)
+    calc(func) should equal(null.asInstanceOf[Any])
   }
 
-  @Test def givenOneNullAndOneValueThenReturnsTheValue() {
+  test("givenOneNullAndOneValueThenReturnsTheValue") {
     val func = new CoalesceFunction(Null(), Literal("Alistair"))
-    assert(calc(func) === "Alistair")
+    calc(func) should equal("Alistair")
   }
 
-  @Test def coalesce_should_be_lazy() {
+  test("coalesce_should_be_lazy") {
     val func = new CoalesceFunction(Literal("Hunger"), BreakingExpression())
-    assert(calc(func) === "Hunger")
+    calc(func) should equal("Hunger")
   }
 
   private def calc(e: Expression): Any = e(ExecutionContext.empty)(QueryStateHelper.empty)
@@ -52,7 +52,8 @@ class CoalesceTest extends Assertions {
 
 case class BreakingExpression() extends Expression {
   def apply(v1: ExecutionContext)(implicit state: QueryState) {
-    Assert.fail("Coalesce is not lazy")
+    import org.scalatest.Assertions._
+    fail("Coalesce is not lazy")
   }
 
   def rewrite(f: (Expression) => Expression) = null

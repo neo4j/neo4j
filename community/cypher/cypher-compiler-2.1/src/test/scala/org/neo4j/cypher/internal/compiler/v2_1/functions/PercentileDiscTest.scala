@@ -19,36 +19,30 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.functions
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
 import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class PercentileDiscTest extends FunctionTestBase("percentileDisc") {
 
   override val context = SemanticContext.Results
 
-  @Test
-  def shouldHandleAllSpecializations() {
+  test("shouldHandleAllSpecializations") {
     testValidTypes(CTInteger, CTInteger)(CTInteger)
     testValidTypes(CTInteger, CTFloat)(CTInteger)
     testValidTypes(CTFloat, CTInteger)(CTFloat)
     testValidTypes(CTFloat, CTFloat)(CTFloat)
   }
 
-  @Test
-  def shouldHandleCombinedSpecializations() {
+  test("shouldHandleCombinedSpecializations") {
     testValidTypes(CTFloat | CTInteger, CTFloat | CTInteger)(CTInteger | CTFloat)
   }
 
-  @Test
-  def shouldFailIfWrongArguments() {
+  test("shouldFailIfWrongArguments") {
     testInvalidApplication(CTFloat)("Insufficient parameters for function 'percentileDisc'")
     testInvalidApplication(CTFloat, CTFloat, CTFloat)("Too many parameters for function 'percentileDisc'")
   }
 
-  @Test
-  def shouldFailTypeCheckWhenAddingIncompatible() {
+  test("shouldFailTypeCheckWhenAddingIncompatible") {
     testInvalidApplication(CTInteger, CTBoolean)(
       "Type mismatch: expected Float but was Boolean"
     )

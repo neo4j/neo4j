@@ -19,29 +19,29 @@
  */
 package org.neo4j.cypher.performance
 
-import org.scalatest.Assertions
 import java.io.File
-import scala.collection.JavaConverters._
-import org.neo4j.graphdb.DynamicRelationshipType
-import scala.io.Source.fromFile
-import org.junit.{Ignore, Test}
-import org.neo4j.unsafe.batchinsert.{BatchInserter, BatchInserters, BatchInserterIndex}
-import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProviderNewImpl
 
-class DataImportTest extends Assertions {
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.graphdb.DynamicRelationshipType
+import org.neo4j.index.impl.lucene.LuceneBatchInserterIndexProviderNewImpl
+import org.neo4j.unsafe.batchinsert.{BatchInserter, BatchInserterIndex, BatchInserters}
+
+import scala.collection.JavaConverters._
+import scala.io.Source.fromFile
+
+class DataImportTest extends CypherFunSuite {
 
   val CATEGORY = DynamicRelationshipType.withName("category")
   val RATING = DynamicRelationshipType.withName("rating")
 
-  @Ignore("This test creates a database")
-  @Test
-  def createDatabase() {
+  // This test creates a database
+  ignore("createDatabase") {
     val sourceDir = new File("/Users/ata/Downloads/apa/ml-10M100K")
     val targetDir = "target/perf-graph.db"
     val dir = new File(targetDir)
     deleteAll(dir)
 
-    assert(dir.exists() === false)
+    dir.exists() should equal(false)
 
     val (inserter, moviesId, moviesTitles, indexProvider, typeIdx) = createInserters(targetDir)
 

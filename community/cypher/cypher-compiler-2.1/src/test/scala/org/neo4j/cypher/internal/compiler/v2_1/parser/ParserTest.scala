@@ -19,12 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
-import org.scalatest.Assertions
-import org.parboiled.scala._
-import org.parboiled.errors.InvalidInputError
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.InvalidInputErrorFormatter
+import org.parboiled.errors.InvalidInputError
+import org.parboiled.scala._
 
-trait ParserTest[T, J] extends Assertions {
+trait ParserTest[T, J] extends CypherFunSuite {
 
   def convert(astNode: T): J
 
@@ -35,13 +35,13 @@ trait ParserTest[T, J] extends Assertions {
     def shouldGive(expected: J) {
       actuals foreach {
         actual =>
-          assert(actual === expected, s"'$text' was not parsed successfully")
+          actual should equal(expected)
       }
     }
 
     def shouldMatch(expected: PartialFunction[J, Unit]) {
       actuals foreach {
-        actual => assert(expected.isDefinedAt(actual), s"'$text' was not parsed successfully")
+        actual => expected.isDefinedAt(actual) should equal(true)
       }
     }
   }

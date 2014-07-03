@@ -19,19 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.SortItem
-import commands.expressions._
-import commands.values.TokenType._
-import executionplan.PartiallySolvedQuery
-import symbols._
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.commands.SortItem
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class SortBuilderTest extends BuilderTest {
 
   val builder = new SortBuilder
 
-  @Test def should_accept_if_all_work_is_done_and_sorting_not_yet() {
+  test("should_accept_if_all_work_is_done_and_sorting_not_yet") {
     val q = PartiallySolvedQuery().copy(
       sort = Seq(Unsolved(SortItem(Property(Identifier("x"), PropertyKey("foo")), ascending = true))),
       extracted = true
@@ -45,11 +43,11 @@ class SortBuilderTest extends BuilderTest {
 
     resultQ.sort match {
       case List(Solved(SortItem(CachedExpression(_, _: AnyType), true))) => //correct, don't check anything else
-      case _                                                            => assert(resultQ.sort === expected)
+      case _                                                            => resultQ.sort should equal(expected)
     }
   }
 
-  @Test def should_not_accept_if_not_yet_extracted() {
+  test("should_not_accept_if_not_yet_extracted") {
     val q = PartiallySolvedQuery().copy(
       sort = Seq(Unsolved(SortItem(Property(Identifier("x"), PropertyKey("foo")), ascending = true))),
       extracted = false
@@ -60,7 +58,7 @@ class SortBuilderTest extends BuilderTest {
     assertRejects(p, q)
   }
 
-  @Test def should_not_accept_aggregations_not_in_return() {
+  test("should_not_accept_aggregations_not_in_return") {
     val q = PartiallySolvedQuery().copy(
       sort = Seq(Unsolved(SortItem(CountStar(), ascending = true))),
       extracted = true

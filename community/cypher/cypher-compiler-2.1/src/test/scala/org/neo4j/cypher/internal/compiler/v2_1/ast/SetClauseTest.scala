@@ -19,18 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
-import org.scalatest.Assertions
-import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.hamcrest.CoreMatchers._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class SetClauseTest extends Assertions {
+class SetClauseTest extends CypherFunSuite {
 
-  @Test
-  def shouldHaveMergedTypesOfAllAlternativesInSimpleCase() {
+  test("shouldHaveMergedTypesOfAllAlternativesInSimpleCase") {
 
     val mapLiteral = DummyExpression(CTMap)
     val property = Property(mapLiteral, PropertyKeyName("key")(DummyPosition(3)))(DummyPosition(5))
@@ -40,7 +35,7 @@ class SetClauseTest extends Assertions {
 
     val result = setClause.semanticCheck(SemanticState.clean)
 
-    assert(result.errors.size === 1)
-    assertThat(result.errors.head.msg, startsWith("Type mismatch: expected Node or Relationship but was Map"))
+    result.errors should have size 1
+    result.errors.head.msg should startWith("Type mismatch: expected Node or Relationship but was Map")
   }
 }

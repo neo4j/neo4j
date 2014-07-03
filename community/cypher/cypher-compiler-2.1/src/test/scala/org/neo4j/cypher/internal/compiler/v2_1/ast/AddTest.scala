@@ -20,8 +20,7 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
 
@@ -39,8 +38,7 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
   // [a] + b => [a, b]
   // a + [b] => [a, b]
 
-  @Test
-  def shouldHandleAllSpecializations() {
+  test("shouldHandleAllSpecializations") {
     testValidTypes(CTString, CTString)(CTString)
     testValidTypes(CTString, CTInteger)(CTString)
     testValidTypes(CTString, CTFloat)(CTString)
@@ -61,21 +59,18 @@ class AddTest extends InfixExpressionTestBase(Add(_, _)(DummyPosition(0))) {
     testValidTypes(CTFloat, CTCollection(CTFloat))(CTCollection(CTFloat))
   }
 
-  @Test
-  def shouldHandleCombinedSpecializations() {
+  test("shouldHandleCombinedSpecializations") {
     testValidTypes(CTFloat | CTString, CTInteger)(CTFloat | CTString)
     testValidTypes(CTFloat | CTCollection(CTFloat), CTFloat)(CTFloat | CTCollection(CTFloat))
     testValidTypes(CTFloat, CTFloat | CTCollection(CTFloat))(CTFloat | CTCollection(CTFloat))
   }
 
-  @Test
-  def shouldHandleCoercions() {
+  test("shouldHandleCoercions") {
     testValidTypes(CTCollection(CTFloat), CTInteger)(CTCollection(CTFloat))
     testValidTypes(CTFloat | CTCollection(CTFloat), CTInteger)(CTFloat | CTCollection(CTFloat))
   }
 
-  @Test
-  def shouldFailTypeCheckForIncompatibleArguments() {
+  test("shouldFailTypeCheckForIncompatibleArguments") {
     testInvalidApplication(CTInteger, CTBoolean)(
       "Type mismatch: expected Float, Integer, String or Collection<Integer> but was Boolean"
     )

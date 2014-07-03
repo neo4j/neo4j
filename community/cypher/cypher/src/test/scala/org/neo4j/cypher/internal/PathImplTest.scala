@@ -19,44 +19,45 @@
  */
 package org.neo4j.cypher.internal
 
-import org.junit.Test
 import java.lang.Iterable
+
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
-import org.scalatest.Spec
+
 import scala.collection.JavaConverters._
 
-class PathImplTest extends Spec {
+class PathImplTest extends CypherFunSuite {
 
   val typ = DynamicRelationshipType.withName("a")
 
-  @Test def singleNodeTests() {
+  test("singleNodeTests") {
     val node = new FakeNode
     val path = new PathImpl(node)
 
-    assert(path.length() === 0)
-    assert(path.startNode() === node)
-    assert(path.endNode() === node)
-    assert(path.nodes().asScala.toList == List(node))
-    assert(path.relationships().asScala.toList == List())
-    assert(path.toSeq === Seq(node))
+    path.length() should equal(0)
+    path.startNode() should equal(node)
+    path.endNode() should equal(node)
+    path.nodes().asScala.toList should equal(List(node))
+    path.relationships().asScala.toList should equal(List())
+    path.toSeq should equal(Seq(node))
   }
 
-  @Test def twoNodesOneRelationship() {
+  test("twoNodesOneRelationship") {
     val nodA = new FakeNode
     val nodB = new FakeNode
     val rel = new FakeRel(nodA, nodB, typ)
     val path = new PathImpl(nodA, rel, nodB)
 
-    assert(path.length() === 1)
-    assert(path.startNode() === nodA)
-    assert(path.endNode() === nodB)
-    assert(path.nodes().asScala.toList == List(nodA, nodB))
-    assert(path.relationships().asScala.toList == List(rel))
-    assert(path.toSeq === Seq(nodA, rel, nodB))
+    path.length() should equal(1)
+    path.startNode() should equal(nodA)
+    path.endNode() should equal(nodB)
+    path.nodes().asScala.toList should equal(List(nodA, nodB))
+    path.relationships().asScala.toList should equal(List(rel))
+    path.toSeq should equal(Seq(nodA, rel, nodB))
   }
 
-  @Test def acceptOnlyProperPaths() {
+  test("acceptOnlyProperPaths") {
     val nodA = new FakeNode
     val nodB = new FakeNode
     val rel1 = new FakeRel(nodA, nodB, typ)
@@ -174,5 +175,4 @@ class PathImplTest extends Spec {
 
     def getDegree( relType:RelationshipType, direction:Direction ):Int = ???
   }
-
 }

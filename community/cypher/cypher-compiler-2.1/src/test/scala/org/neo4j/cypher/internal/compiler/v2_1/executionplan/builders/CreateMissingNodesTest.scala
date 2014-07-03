@@ -19,30 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.{Expression, Identifier, Literal}
-import commands.values.{UnresolvedLabel, KeyToken}
-import mutation.{CreateNode, RelationshipEndpoint, CreateRelationship}
-import symbols._
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression, Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, UnresolvedLabel}
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.{CreateNode, CreateRelationship, RelationshipEndpoint}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class CreateMissingNodesTest extends Assertions {
-  @Test def should_do_it_simplest_case() {
+class CreateMissingNodesTest extends CypherFunSuite {
+  test("should_do_it_simplest_case") {
     // Given (@a)-[:FOO]->(b)
 
     val symbolTable = new SymbolTable(Map("a" -> CTNode))
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b"), "FOO", Map.empty)
     val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(actions.toList === List(CreateNode("b", Map.empty, Seq.empty), relationship))
-    assert(symbols === symbolTable.add("b", CTNode))
+    actions.toList should equal(List(CreateNode("b", Map.empty, Seq.empty), relationship))
+    symbols should equal(symbolTable.add("b", CTNode))
   }
 
-  private def endPoint(name: String, props: Map[String, Expression] = Map.empty, labels: Seq[KeyToken] = Seq.empty) =
-    RelationshipEndpoint(Identifier(name), props, labels)
-
-  @Test def should_handle_properties() {
+  test("should_handle_properties") {
     // Given (@a)-[:FOO]->(b {id:42})
 
     val symbolTable = new SymbolTable(Map("a" -> CTNode))
@@ -50,11 +45,11 @@ class CreateMissingNodesTest extends Assertions {
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b", props), "FOO", Map.empty)
     val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(actions.toList === List(CreateNode("b", props, Seq.empty), relationship))
-    assert(symbols === symbolTable.add("b", CTNode))
+    actions.toList should equal(List(CreateNode("b", props, Seq.empty), relationship))
+    symbols should equal(symbolTable.add("b", CTNode))
   }
 
-  @Test def should_handle_labels() {
+  test("should_handle_labels") {
     // Given (@a)-[:FOO]->(b:Foo)
 
     val symbolTable = new SymbolTable(Map("a" -> CTNode))
@@ -62,11 +57,11 @@ class CreateMissingNodesTest extends Assertions {
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b", labels = labels), "FOO", Map.empty)
     val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(actions.toList === List(CreateNode("b", Map.empty, labels), relationship))
-    assert(symbols === symbolTable.add("b", CTNode))
+    actions.toList should equal(List(CreateNode("b", Map.empty, labels), relationship))
+    symbols should equal(symbolTable.add("b", CTNode))
   }
 
-  @Test def should_handle_labels_and_properties() {
+  test("should_handle_labels_and_properties") {
     // Given (@a)-[:FOO]->(b:Foo {id:42})
 
     val symbolTable = new SymbolTable(Map("a" -> CTNode))
@@ -75,11 +70,11 @@ class CreateMissingNodesTest extends Assertions {
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b", labels = labels, props = props), "FOO", Map.empty)
     val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(actions.toList === List(CreateNode("b", props, labels), relationship))
-    assert(symbols === symbolTable.add("b", CTNode))
+    actions.toList should equal(List(CreateNode("b", props, labels), relationship))
+    symbols should equal(symbolTable.add("b", CTNode))
   }
 
-  @Test def should_not_create_nodes() {
+  test("should_not_create_nodes") {
     // Given (@a)-[r1:FOO]->(b)-[r2:FOO]->(c)
 
     val symbolTable = new SymbolTable(Map("a" -> CTNode))
@@ -87,22 +82,25 @@ class CreateMissingNodesTest extends Assertions {
     val r2 = CreateRelationship("r2", endPoint("b"), endPoint("c"), "FOO", Map.empty)
     val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(r1, r2))
 
-    assert(actions.toList === List(bareNode("b"), r1, bareNode("c"), r2))
+    actions.toList should equal(List(bareNode("b"), r1, bareNode("c"), r2))
     val expectedSymbols = symbolTable.add("b", CTNode).add("c", CTNode)
-    assert(symbols === expectedSymbols)
+    symbols should equal(expectedSymbols)
   }
 
-  @Test def should_create_both_nodes()   {
+  test("should_create_both_nodes") {
     // Given (a)-[:FOO]->(b)
 
     val symbolTable = new SymbolTable()
     val relationship = CreateRelationship("r", endPoint("a"), endPoint("b"), "FOO", Map.empty)
     val (symbols, actions) = MergePatternBuilder.createActions(symbolTable, Seq(relationship))
 
-    assert(actions.toList === List(CreateNode("a", Map.empty, Seq.empty), CreateNode("b", Map.empty, Seq.empty), relationship))
+    actions.toList should equal(List(CreateNode("a", Map.empty, Seq.empty), CreateNode("b", Map.empty, Seq.empty), relationship))
     val expectedSymbols = new SymbolTable(Map("a" -> CTNode, "b" -> CTNode))
-    assert(symbols === expectedSymbols)
+    symbols should equal(expectedSymbols)
   }
+
+  private def endPoint(name: String, props: Map[String, Expression] = Map.empty, labels: Seq[KeyToken] = Seq.empty) =
+    RelationshipEndpoint(Identifier(name), props, labels)
 
   private def bareNode(name: String) = CreateNode(name, Map.empty, Seq.empty)
 }

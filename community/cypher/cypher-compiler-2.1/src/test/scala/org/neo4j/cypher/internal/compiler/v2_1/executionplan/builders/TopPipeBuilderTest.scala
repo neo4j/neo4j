@@ -19,19 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PartiallySolvedQuery, PlanBuilder}
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{Query, SortItem}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.CountStar
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{Query, SortItem}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.{PartiallySolvedQuery, PlanBuilder}
 
 class TopPipeBuilderTest extends BuilderTest {
   def builder: PlanBuilder = new TopPipeBuilder
 
-  @Test def should_not_accept_aggregations_not_in_return() {
+  test("should_not_accept_aggregations_not_in_return") {
     val query = Query.start().orderBy(SortItem(CountStar(), ascending = true)).limit(2).returns()
     val psq = PartiallySolvedQuery(query).copy(extracted = true)
 
     assertRejects(psq)
   }
-
 }

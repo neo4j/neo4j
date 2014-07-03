@@ -19,16 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions.Literal
-import values.{TokenType, KeyToken}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.QueryStateHelper
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-class HasLabelTests extends Assertions {
-  @Test
-  def should_handle_null_values() {
+class HasLabelTests extends CypherFunSuite {
+  test("should_handle_null_values") {
     //given match n-[?]-m
     val predicate = HasLabel(Literal(null), KeyToken.Unresolved("Person", TokenType.Label))
 
@@ -37,6 +35,6 @@ class HasLabelTests extends Assertions {
     implicit val state = QueryStateHelper.empty
 
     //then
-    assert(predicate.isMatch(ctx) === None)
+    predicate.isMatch(ctx) should equal(None)
   }
 }

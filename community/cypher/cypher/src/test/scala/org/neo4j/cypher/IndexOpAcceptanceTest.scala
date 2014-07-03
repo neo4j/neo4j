@@ -95,7 +95,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
   private def createDbWithFailedIndex: GraphDatabaseService = {
     new File("target/test-data/impermanent-db").deleteAll()
     var graph = new GraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db")
-    engine = new ExecutionEngine(graph)
+    eengine = new ExecutionEngine(graph)
     execute("CREATE INDEX ON :Person(name)")
     execute("create (:Person {name:42})")
     val tx = graph.beginTx()
@@ -112,7 +112,7 @@ class IndexOpAcceptanceTest extends ExecutionEngineFunSuite with QueryStatistics
     stream.close()
 
     graph = new GraphDatabaseFactory().newEmbeddedDatabase("target/test-data/impermanent-db")
-    engine = new ExecutionEngine(graph)
+    eengine = new ExecutionEngine(graph)
     graph
   }
 }

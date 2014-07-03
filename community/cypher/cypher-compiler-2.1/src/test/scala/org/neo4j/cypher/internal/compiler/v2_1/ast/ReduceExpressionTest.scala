@@ -19,22 +19,20 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
-import Expression.SemanticContext
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.compiler.v2_1.ast.Expression.SemanticContext
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class ReduceExpressionTest extends Assertions {
+class ReduceExpressionTest extends CypherFunSuite {
 
-  @Test
-  def shouldEvaluateReduceExpressionWithTypedIdentifiers() {
+  test("shouldEvaluateReduceExpressionWithTypedIdentifiers") {
     val error = SemanticError("dummy error", DummyPosition(10))
 
     val reduceExpression = new DummyExpression(CTAny, DummyPosition(10)) {
       override def semanticCheck(ctx: SemanticContext) = s => {
-        assert(s.symbolTypes("x") === CTString.invariant)
-        assert(s.symbolTypes("y") === CTInteger.invariant)
+        s.symbolTypes("x") should equal(CTString.invariant)
+        s.symbolTypes("y") should equal(CTInteger.invariant)
         (this.specifyType(CTString) chain error)(s)
       }
     }
@@ -48,20 +46,19 @@ class ReduceExpressionTest extends Assertions {
     )(DummyPosition(0))
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assert(result.errors === Seq(error))
-    assert(result.state.symbol("x").isEmpty)
-    assert(result.state.symbol("y").isEmpty)
+    result.errors should equal(Seq(error))
+    result.state.symbol("x") shouldBe empty
+    result.state.symbol("y") shouldBe empty
   }
 
-  @Test
-  def shouldReturnMinimalTypeOfAccumulatorAndReduceFunction() {
+  test("shouldReturnMinimalTypeOfAccumulatorAndReduceFunction") {
     val initType = CTString.covariant | CTFloat.covariant
     val collectionType = CTCollection(CTInteger)
 
     val reduceExpression = new DummyExpression(CTAny, DummyPosition(10)) {
       override def semanticCheck(ctx: SemanticContext) = s => {
-        assert(s.symbolTypes("x") === (CTString | CTFloat))
-        assert(s.symbolTypes("y") === collectionType.innerType.invariant)
+        s.symbolTypes("x") should equal(CTString | CTFloat)
+        s.symbolTypes("y") should equal(collectionType.innerType.invariant)
         (this.specifyType(CTFloat) chain SemanticCheckResult.success)(s)
       }
     }
@@ -75,19 +72,18 @@ class ReduceExpressionTest extends Assertions {
     )(DummyPosition(0))
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assert(result.errors === Seq())
-    assert(filter.types(result.state) === (CTAny | CTFloat))
+    result.errors shouldBe empty
+    filter.types(result.state) should equal(CTAny | CTFloat)
   }
 
-  @Test
-  def shouldFailSemanticCheckIfReduceFunctionTypeDiffersFromAccumulator() {
+  test("shouldFailSemanticCheckIfReduceFunctionTypeDiffersFromAccumulator") {
     val accumulatorType = CTString | CTNumber
     val collectionType = CTCollection(CTInteger)
 
     val reduceExpression = new DummyExpression(CTAny, DummyPosition(10)) {
       override def semanticCheck(ctx: SemanticContext) = s => {
-        assert(s.symbolTypes("x") === accumulatorType)
-        assert(s.symbolTypes("y") === collectionType.innerType.invariant)
+        s.symbolTypes("x") should equal(accumulatorType)
+        s.symbolTypes("y") should equal(collectionType.innerType.invariant)
         (this.specifyType(CTNode) chain SemanticCheckResult.success)(s)
       }
     }
@@ -101,9 +97,8 @@ class ReduceExpressionTest extends Assertions {
     )(DummyPosition(0))
 
     val result = filter.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assert(result.errors.size === 1)
-    assert(result.errors.head.msg === "Type mismatch: expected Number or String but was Node")
-    assert(result.errors.head.position === reduceExpression.position)
+    result.errors should have size 1
+    result.errors.head.msg should equal("Type mismatch: expected Number or String but was Node")
+    result.errors.head.position should equal(reduceExpression.position)
   }
-
 }

@@ -86,7 +86,7 @@ trait NewPlannerTestSupport extends CypherTestSupport {
     }
 
   private def innerExecute(queryText: String, params: (String, Any)*): ExecutionResult =
-    RewindableExecutionResult(engine.execute(queryText, params.toMap))
+    RewindableExecutionResult(eengine.execute(queryText, params.toMap))
 
   override def execute(queryText: String, params: (String, Any)*): ExecutionResult =
     monitoringNewPlanner(innerExecute(queryText, params: _*)) { trace =>

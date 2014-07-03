@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.QueryStateHelper
-import symbols._
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class ReduceTest extends Assertions {
-  @Test def canReturnSomethingFromAnIterable() {
+class ReduceTest extends CypherFunSuite {
+
+  test("canReturnSomethingFromAnIterable") {
     val l = Seq("x", "xxx", "xx")
     val expression = Add(Identifier("acc"), LengthFunction(Identifier("n")))
     val collection = Identifier("l")
@@ -36,10 +36,10 @@ class ReduceTest extends Assertions {
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
-    assert(reduce.apply(m)(s) === 6)
+    reduce.apply(m)(s) should equal(6)
   }
 
-  @Test def returns_null_from_null_collection() {
+  test("returns_null_from_null_collection") {
     val expression = Add(Identifier("acc"), LengthFunction(Identifier("n")))
     val collection = Literal(null)
     val m = ExecutionContext.empty
@@ -47,36 +47,36 @@ class ReduceTest extends Assertions {
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
 
-    assert(reduce(m)(s) === null)
+    reduce(m)(s) should equal(null.asInstanceOf[Any])
   }
 
-  @Test def reduce_has_the_expected_type_string() {
+  test("reduce_has_the_expected_type_string") {
     val expression = Add(Identifier("acc"), Identifier("n"))
     val collection = Literal(Seq(1,2,3))
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(""))
     val typ = reduce.calculateType(SymbolTable())
 
-    assert(typ === CTString)
+    typ should equal(CTString)
   }
 
-  @Test def reduce_has_the_expected_type_number() {
+  test("reduce_has_the_expected_type_number") {
     val expression = Add(Identifier("acc"), Identifier("n"))
     val collection = Literal(Seq(1,2,3))
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(0))
     val typ = reduce.calculateType(SymbolTable())
 
-    assert(typ === CTNumber)
+    typ should equal(CTNumber)
   }
 
-  @Test def reduce_has_the_expected_type_array() {
+  test("reduce_has_the_expected_type_array") {
     val expression = Add(Identifier("acc"), Identifier("n"))
     val collection = Literal(Seq(1,2,3))
 
     val reduce = ReduceFunction(collection, "n", expression, "acc", Literal(Seq(1,2)))
     val typ = reduce.calculateType(new SymbolTable())
 
-    assert(typ === CTCollection(CTNumber))
+    typ should equal(CTCollection(CTNumber))
   }
 }

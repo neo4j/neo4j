@@ -19,26 +19,14 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import expressions._
-import org.neo4j.graphdb.Direction
-import org.scalatest.Assertions
-import org.neo4j.graphdb.Direction._
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.VarLengthStep
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.NodeIdentifier
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.VariableLengthStepTrail
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.SingleStep
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.EndPoint
-import org.neo4j.cypher.internal.compiler.v2_1.commands.Equals
-import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching.SingleStepTrail
-import org.neo4j.cypher.internal.compiler.v2_1.commands.True
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Property
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.matching._
+import org.neo4j.graphdb.Direction
 
-class TrailToStepTest extends Assertions {
+class TrailToStepTest extends CypherFunSuite {
   val A = "A"
   val B = "B"
   val C = "C"
@@ -63,15 +51,15 @@ class TrailToStepTest extends Assertions {
   val BtoB2 = RelatedTo(SingleNode("b"), SingleNode("b2"), "pr4", Seq("D"), Direction.OUTGOING, Map.empty)
   val BtoE = VarLengthRelatedTo("p", SingleNode("b"), SingleNode("e"), None, None, Seq("A"), Direction.OUTGOING, None, Map.empty)
 
-  @Test def single_step() {
+  test("single_step") {
     val expected = step(0, Seq(A), Direction.INCOMING, None)
 
     val steps = SingleStepTrail(EndPoint("b"), Direction.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq()).toSteps(0).get
 
-    assert(steps === expected)
+    steps should equal(expected)
   }
 
-  @Test def two_steps() {
+  test("two_steps") {
     val boundPoint = EndPoint("c")
     val second = SingleStepTrail(boundPoint, Direction.INCOMING, "pr2", Seq("B"), "b", True(), True(), BtoC, Seq())
     val first = SingleStepTrail(second, Direction.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
@@ -79,10 +67,10 @@ class TrailToStepTest extends Assertions {
     val backward2 = step(1, Seq(B), Direction.INCOMING, None)
     val backward1 = step(0, Seq(A), Direction.INCOMING, Some(backward2))
 
-    assert(first.toSteps(0).get === backward1)
+    first.toSteps(0).get should equal(backward1)
   }
 
-  @Test def two_steps_with_rel_predicates() {
+  test("two_steps_with_rel_predicates") {
 
     //()<-[r1:A]-(a)<-[r2:B]-()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
@@ -97,10 +85,10 @@ class TrailToStepTest extends Assertions {
     val backward2 = step(1, Seq(B), Direction.INCOMING, None, relPredicate = r2Pred)
     val backward1 = step(0, Seq(A), Direction.INCOMING, Some(backward2), relPredicate = r1Pred)
 
-    assert(first.toSteps(0).get === backward1)
+    first.toSteps(0).get should equal(backward1)
   }
 
-  @Test def two_steps_away_with_nodePredicate() {
+  test("two_steps_away_with_nodePredicate") {
     //()-[pr1:A]->(a)-[pr2:B]->()
     //WHERE r1.prop = 42 AND r2.prop = "FOO"
 
@@ -114,10 +102,10 @@ class TrailToStepTest extends Assertions {
     val first = SingleStepTrail(second, Direction.INCOMING, "pr1", Seq("A"), "a", True(), True(), AtoB, Seq())
 
 
-    assert(first.toSteps(0).get === forward1)
+    first.toSteps(0).get should equal(forward1)
   }
 
-  @Test def longer_pattern_with_predicates() {
+  test("longer_pattern_with_predicates") {
     // GIVEN
     // MATCH (a)-[r1]->(b)-[r2]->(c)<-[r3]-(d)
     // WHERE c.name = 'c ' and b.name = 'b '
@@ -138,30 +126,30 @@ class TrailToStepTest extends Assertions {
     val steps = first.toSteps(0).get
 
     //THEN
-    assert(steps === forward1)
+    steps should equal(forward1)
   }
 
-  @Test def three_steps() {
-    val pr3 = step(2, Seq(A), OUTGOING, None)
-    val pr2 = step(1, Seq(B), OUTGOING, Some(pr3))
-    val pr1 = step(0, Seq(C), OUTGOING, Some(pr2))
+  test("three_steps") {
+    val pr3 = step(2, Seq(A), Direction.OUTGOING, None)
+    val pr2 = step(1, Seq(B), Direction.OUTGOING, Some(pr3))
+    val pr1 = step(0, Seq(C), Direction.OUTGOING, Some(pr2))
 
     val boundPoint = EndPoint("a")
     val third = SingleStepTrail(boundPoint, Direction.OUTGOING, "pr1", Seq("A"), "b", True(), True(), AtoB, Seq())
     val second = SingleStepTrail(third, Direction.OUTGOING, "pr2", Seq("B"), "c", True(), True(), BtoC, Seq())
     val first = SingleStepTrail(second, Direction.OUTGOING, "pr3", Seq("C"), "d", True(), True(), CtoD, Seq())
 
-    assert(first.toSteps(0).get === pr1)
+    first.toSteps(0).get should equal(pr1)
   }
 
-  @Test def single_varlength_step() {
-    val expected = varlengthStep(0, Seq(A), OUTGOING, 1, None, None)
+  test("single_varlength_step") {
+    val expected = varlengthStep(0, Seq(A), Direction.OUTGOING, 1, None, None)
 
     val boundPoint = EndPoint("e")
     val trail = VariableLengthStepTrail(boundPoint, Direction.OUTGOING, Seq("A"), 1, None, "p", None, "b", BtoE)
 
     val result = trail.toSteps(0).get
-    assert(result.equals(expected))
+    result should equal(expected)
   }
 
   private def step(id: Int,
