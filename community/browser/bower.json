@@ -8,7 +8,7 @@
     "json3": "~3.2.4",
     "es5-shim": "~2.0.8",
     "angular-ui-codemirror": "git@github.com:angular-ui/ui-codemirror.git#727d86d9166c23d24ab4fdefec347ae3b9bfd2fb",
-    "d3": "~3.2.2",
+    "d3": "~3.4.8",
     "blob": "latest",
     "file-saver": "latest",
     "angular-local-storage": "latest",
