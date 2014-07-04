@@ -19,27 +19,29 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions._
-import values.TokenType._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.QueryStateHelper
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-class PropertyValueTest extends Assertions {
-  @Test def nullNodeShouldGiveNullProperty() {
+class PropertyValueTest extends CypherFunSuite {
+
+  private val expectedNull = null.asInstanceOf[Any]
+
+  test("nullNodeShouldGiveNullProperty") {
     val p = Property(Identifier("identifier"), PropertyKey("property"))
     val ctx = ExecutionContext.from("identifier" -> null)
     val state = QueryStateHelper.empty
 
-    assert(p(ctx)(state) === null)
+    p(ctx)(state) should equal(expectedNull)
   }
 
-  @Test def nonExistentPropertyShouldEvaluateToNull() {
+  test("nonExistentPropertyShouldEvaluateToNull") {
     val p = Property(Identifier("identifier"), PropertyKey("nonExistent"))
     val ctx = ExecutionContext.from("identifier" -> Map("property" -> 42))
     val state = QueryStateHelper.empty
 
-    assert(p(ctx)(state) === null)
+    p(ctx)(state) should equal(expectedNull)
   }
 }

@@ -19,14 +19,10 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.InternalException
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.perty.PrettyToString
-import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.{internalDocBuilder, plannerQueryDocBuilder, queryProjectionDocBuilder}
+import org.neo4j.cypher.internal.compiler.v2_1.ast._
 import org.neo4j.cypher.internal.compiler.v2_1.docbuilders.internalDocBuilder
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans.IdName
-import org.neo4j.cypher.internal.compiler.v2_1.ast.Identifier
 
 final case class QueryHorizon(unwinds: Map[String, Expression] = Map.empty,
                               projection: QueryProjection = QueryProjection.empty)

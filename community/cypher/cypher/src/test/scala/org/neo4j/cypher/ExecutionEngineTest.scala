@@ -899,7 +899,7 @@ order by a.COL1""")
   test("should_be_able_to_prettify_queries") {
     val query = "match (n)-->(x) return n"
 
-    engine.prettify(query) should equal(String.format("MATCH (n)-->(x)%nRETURN n"))
+    eengine.prettify(query) should equal(String.format("MATCH (n)-->(x)%nRETURN n"))
   }
 
   test("doctest_gone_wild") {

@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.UnresolvedProperty
-import org.scalatest.Assertions
 
-class LiteralMapTest extends Assertions {
-  @Test
-  def should_present_all_child_expressions() {
+class LiteralMapTest extends CypherFunSuite {
+
+  test("should_present_all_child_expressions") {
     val x = Identifier("x")
     // given
     val propX = Property(x, UnresolvedProperty("foo"))
@@ -36,6 +35,6 @@ class LiteralMapTest extends Assertions {
     val subExpressions = literalMap.arguments.toSet
 
     // then
-    assert(subExpressions === Set(propX, count))
+    subExpressions should equal(Set(propX, count))
   }
 }

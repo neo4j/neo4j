@@ -19,19 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Null, Literal}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Literal, Null}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
-import org.scalatest.Assertions
 
-class RegularExpressionPredicateTest extends Assertions {
-  @Test def shouldNotMatchIfTheExpressionEvaluatesToNull() {
+class RegularExpressionPredicateTest extends CypherFunSuite {
+  test("shouldNotMatchIfTheExpressionEvaluatesToNull") {
     val expression = new LiteralRegularExpression(Null(), Literal(".*"))
-    assert(None === expression.isMatch(null)(QueryStateHelper.empty))
+    expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
   }
 
-  @Test def shouldNotMatchIfTheExpressionEvaluatesToNull2() {
+  test("shouldNotMatchIfTheExpressionEvaluatesToNull2") {
     val expression = new RegularExpression(Null(), Literal(".*"))
-    assert(None === expression.isMatch(null)(QueryStateHelper.empty))
+    expression.isMatch(null)(QueryStateHelper.empty) should equal(None)
   }
 }

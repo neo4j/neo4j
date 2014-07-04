@@ -19,15 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1
 
-import pipes.QueryState
+import java.lang.Iterable
+
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.{CreateUniqueAction, UniqueLink}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.graphdb.Traverser.Order
 import org.neo4j.graphdb._
 import org.neo4j.test.ImpermanentGraphDatabase
-import org.junit.{After, Test}
-import org.scalatest.Assertions
-import java.lang.Iterable
-import collection.JavaConverters._
-import org.neo4j.cypher.internal.compiler.v2_1.mutation.{UniqueLink, CreateUniqueAction}
+
+import scala.collection.JavaConverters._
 
 /*
 This test tries to set up a situation where CREATE UNIQUE would fail, unless we guard with locks to prevent creating
@@ -37,40 +38,35 @@ It does so by using a decorator around ImpermanentGraphDatabase, so directly aft
 getRelationships on a node, we'll create a new relationship.
 */
 
-class DoubleCheckCreateUniqueTest extends Assertions {
+class DoubleCheckCreateUniqueTest extends CypherFunSuite {
   var done = false
   val db = new ImpermanentGraphDatabase() with TripIt
   var tx:Transaction = null
 
-  @Test def double_check_unique() {
+  test("double_check_unique") {
     //GIVEN
     db.afterGetRelationship = createRel
     val a = createNode()
-    val state = createQueryState()
 
-    //WHEN we create a relationship just after seeing an empty iterable
-    relateAction.exec(createExecutionContext(state, a), state)
+    withQueryState { state =>
+      //WHEN we create a relationship just after seeing an empty iterable
+      relateAction.exec(createExecutionContext(state, a), state)
 
-    //THEN we double-check, and don't create a second rel
-    assert(a.getRelationships.asScala.size === 1)
+      //THEN we double-check, and don't create a second rel
+      a.getRelationships.asScala should have size 1
+    }
   }
 
   val relateAction = CreateUniqueAction(UniqueLink("a", "b", "r", "X", Direction.OUTGOING))
-
-
-  @After
-  def cleanup() {
-    if(tx != null) tx.close()
-  }
 
   private def createExecutionContext(state:QueryState, a: Node): ExecutionContext = {
     ExecutionContext().newWith(Map("a" -> a))
   }
 
-  private def createQueryState(): QueryState = {
-    if(tx == null)
-      tx = db.beginTx()
-    QueryStateHelper.queryStateFrom(db, tx)
+  private def withQueryState(f: QueryState => Unit) {
+    val tx = db.beginTx()
+    f(QueryStateHelper.queryStateFrom(db, tx))
+    tx.close()
   }
 
   private def createNode(): Node = {

@@ -19,23 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.junit.{Before, Test}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 import org.neo4j.cypher.internal.compiler.v2_1.commands.{AllIdentifiers, LoadCSV, Query}
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.LoadCSVPipe
-import org.scalatest.mock.MockitoSugar
 import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 
-class LoadCSVBuilderTest extends BuilderTest with MockitoSugar {
-  var builder: LoadCSVBuilder = _
+class LoadCSVBuilderTest extends BuilderTest {
+  context = mock[PlanContext]
+  val builder = new LoadCSVBuilder
 
-  @Before
-  def init() {
-    builder = new LoadCSVBuilder
-    context = mock[PlanContext]
-  }
-
-  @Test def should_accept_queries_containing_unsolved_load_csv_items() {
+  test("should_accept_queries_containing_unsolved_load_csv_items") {
     val loadCSV = LoadCSV(withHeaders = false, new Literal("file:///tmp/data.csv"), "row", None)
     val q = Query.
       start(loadCSV).
@@ -43,11 +36,11 @@ class LoadCSVBuilderTest extends BuilderTest with MockitoSugar {
 
     val result = assertAccepts(q)
 
-    assert(result.query.start === Seq(Solved(loadCSV)))
-    assert(result.pipe.isInstanceOf[LoadCSVPipe])
+    result.query.start should equal(Seq(Solved(loadCSV)))
+    result.pipe shouldBe a [LoadCSVPipe]
   }
 
-  @Test def should_reject_queries_containing_no_unsolved_load_csv_items() {
+  test("should_reject_queries_containing_no_unsolved_load_csv_items") {
     val q = Query.start().returns(AllIdentifiers())
     assertRejects(q)
   }

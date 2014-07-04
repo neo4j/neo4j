@@ -19,43 +19,42 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.aggregation
 
-import org.junit.Assert._
-import org.junit.Test
 import org.neo4j.cypher.SyntaxException
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Expression
 
-class MaxFunctionTest extends AggregateTest {
+class MaxFunctionTest extends CypherFunSuite with AggregateTest {
   def createAggregator(inner: Expression) = new MaxFunction(inner)
 
-  @Test def singleValueReturnsThatNumber() {
+  test("singleValueReturnsThatNumber") {
     val result = aggregateOn(1)
 
-    assertEquals(1, result)
-    assertTrue(result.isInstanceOf[Int])
+    result should equal(1)
+    result shouldBe a[java.lang.Integer]
   }
 
-  @Test def singleValueOfDecimalReturnsDecimal() {
+  test("singleValueOfDecimalReturnsDecimal") {
     val result = aggregateOn(1.0d)
 
-    assertEquals(1.0, result)
-    assertTrue(result.isInstanceOf[Double])
+    result should equal(1.0)
+    result shouldBe a[java.lang.Double]
   }
 
-  @Test def mixOfIntAndDoubleYieldsDouble() {
+  test("mixOfIntAndDoubleYieldsDouble") {
     val result = aggregateOn(1, 2.0d)
 
-    assertEquals(2.0, result)
-    assertTrue(result.isInstanceOf[Double])
+    result should equal(2.0)
+    result shouldBe a[java.lang.Double]
   }
 
-  @Test def nullDoesNotChangeTheSum() {
+  test("nullDoesNotChangeTheSum") {
     val result = aggregateOn(1, null)
 
-    assertEquals(1, result)
-    assertTrue(result.isInstanceOf[Int])
+    result should equal(1)
+    result shouldBe a[java.lang.Integer]
   }
 
-  @Test(expected = classOf[SyntaxException]) def noNumberValuesThrowAnException() {
-    aggregateOn(1, "wut")
+  test("noNumberValuesThrowAnException") {
+    intercept[SyntaxException](aggregateOn(1, "wut"))
   }
 }

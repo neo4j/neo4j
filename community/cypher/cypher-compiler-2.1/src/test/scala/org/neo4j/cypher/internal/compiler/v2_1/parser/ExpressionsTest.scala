@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import ast.convert.ExpressionConverters._
-import commands.{expressions => legacy}
-import commands.values.TokenType.PropertyKey
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType.PropertyKey
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
 
 class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
   implicit val parserToTest = Expression
 
-  @Test def simple_cases() {
+  test("simple_cases") {
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive
       legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE"))), None)
 
@@ -48,7 +47,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
       legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE")), (legacy.Literal(2), legacy.Literal("TWO"))), Some(legacy.Literal("DEFAULT")))
   }
 
-  @Test def generic_cases() {
+  test("generic_cases") {
     parsing("CASE WHEN true THEN 'ONE' END") shouldGive
       legacy.GenericCase(Seq((commands.True(), legacy.Literal("ONE"))), None)
 
@@ -71,7 +70,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
       legacy.GenericCase(Seq(alt1, alt2), Some(legacy.Literal("OTHER")))
   }
 
-  @Test def list_comprehension() {
+  test("list_comprehension") {
     val predicate = commands.Equals(legacy.Property(legacy.Identifier("x"), PropertyKey("prop")), legacy.Literal(42))
     val mapExpression = legacy.Property(legacy.Identifier("x"), PropertyKey("name"))
 
@@ -85,7 +84,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
       legacy.ExtractFunction(legacy.Identifier("collection"), "x", mapExpression)
   }
 
-  @Test def array_indexing() {
+  test("array_indexing") {
     val collection = legacy.Collection(legacy.Literal(1), legacy.Literal(2), legacy.Literal(3), legacy.Literal(4))
 
     parsing("[1,2,3,4][1..2]") shouldGive
@@ -113,7 +112,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
       legacy.CollectionSliceExpression(legacy.Identifier("collection"), Some(legacy.Literal(1)), None)
   }
 
-  @Test def literal_maps() {
+  test("literal_maps") {
     parsing("{ name: 'Andres' }") shouldGive
       legacy.LiteralMap(Map("name" -> legacy.Literal("Andres")))
 
@@ -124,7 +123,7 @@ class ExpressionsTest extends ParserTest[ast.Expression, legacy.Expression] with
       legacy.LiteralMap(Map())
   }
 
-  @Test def better_map_support() {
+  test("better_map_support") {
     parsing("map.key1.key2.key3") shouldGive
       legacy.Property(legacy.Property(legacy.Property(legacy.Identifier("map"), PropertyKey("key1")), PropertyKey("key2")), PropertyKey("key3"))
 

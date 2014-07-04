@@ -19,23 +19,23 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.symbols
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.{Expression, Add}
-import pipes.QueryState
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Add, Expression}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryState
 import org.neo4j.cypher.{CypherTypeException, SyntaxException}
-import org.junit.Test
-import org.scalatest.Assertions
 
-class SymbolTableTest extends Assertions {
-  @Test def anytype_is_ok() {
+class SymbolTableTest extends CypherFunSuite {
+
+  test("anytype_is_ok") {
     //given
     val s = createSymbols("p" -> CTPath)
 
     //then
-    assert(s.evaluateType("p", CTAny) === CTPath)
+    s.evaluateType("p", CTAny) should equal(CTPath)
   }
 
-  @Test def missing_identifier() {
+  test("missing_identifier") {
     //given
     val s = createSymbols()
 
@@ -43,7 +43,7 @@ class SymbolTableTest extends Assertions {
     intercept[SyntaxException](s.evaluateType("p", CTAny))
   }
 
-  @Test def identifier_with_wrong_type() {
+  test("identifier_with_wrong_type") {
     //given
     val symbolTable = createSymbols("x" -> CTString)
 
@@ -51,7 +51,7 @@ class SymbolTableTest extends Assertions {
     intercept[CypherTypeException](symbolTable.evaluateType("x", CTNumber))
   }
 
-  @Test def identifier_with_type_not_specific_enough() {
+  test("identifier_with_type_not_specific_enough") {
     //given
     val symbolTable = createSymbols("x" -> CTMap)
 
@@ -59,7 +59,7 @@ class SymbolTableTest extends Assertions {
     symbolTable.evaluateType("x", CTRelationship)
   }
 
-  @Test def adding_string_with_string_gives_string_type() {
+  test("adding_string_with_string_gives_string_type") {
     //given
     val symbolTable = createSymbols()
     val exp = new Add(new FakeExpression(CTString), new FakeExpression(CTString))
@@ -68,10 +68,10 @@ class SymbolTableTest extends Assertions {
     val returnType = exp.evaluateType(CTAny, symbolTable)
 
     //then
-    assert(returnType === CTString)
+    returnType should equal(CTString)
   }
 
-  @Test def adding_number_with_number_gives_number_type() {
+  test("adding_number_with_number_gives_number_type") {
     //given
     val symbolTable = createSymbols()
     val exp = new Add(new FakeExpression(CTNumber), new FakeExpression(CTNumber))
@@ -80,10 +80,10 @@ class SymbolTableTest extends Assertions {
     val returnType = exp.evaluateType(CTAny, symbolTable)
 
     //then
-    assert(returnType === CTNumber)
+    returnType should equal(CTNumber)
   }
 
-  @Test def adding_to_string_collection() {
+  test("adding_to_string_collection") {
     //given
     val symbolTable = createSymbols()
     val exp = new Add(new FakeExpression(CTCollection(CTString)), new FakeExpression(CTString))
@@ -92,16 +92,16 @@ class SymbolTableTest extends Assertions {
     val returnType = exp.evaluateType(CTAny, symbolTable)
 
     //then
-    assert(returnType === CTCollection(CTString))
+    returnType should equal(CTCollection(CTString))
   }
 
-  @Test def covariance() {
+  test("covariance") {
     //given
     val actual = CTCollection(CTNode)
     val expected = CTCollection(CTMap)
 
     //then
-    assert(expected.isAssignableFrom(actual))
+    expected.isAssignableFrom(actual) should equal(true)
   }
 
 

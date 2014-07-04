@@ -19,39 +19,40 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions.{Literal, Subtract}
-import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.QueryStateHelper
 import org.neo4j.cypher.CypherTypeException
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Literal, Subtract}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-class SubtractTest extends Assertions {
+class SubtractTest extends CypherFunSuite {
 
   val m = ExecutionContext.empty
+  val s = QueryStateHelper.empty
 
-  @Test def numbers() {
+
+  test("numbers") {
     val expr = Subtract(Literal(2), Literal(1))
-    assert(expr(m)(QueryStateHelper.empty) === 1)
+   expr(m)(s) should equal(1)
   }
 
-  @Test def strings() {
+  test("strings") {
     val expr = Subtract(Literal("hello"), Literal("world"))
-    intercept[CypherTypeException](expr(m)(QueryStateHelper.empty))
+    intercept[CypherTypeException](expr(m)(s))
   }
 
-  @Test def stringPlusNumber() {
+  test("stringPlusNumber") {
     val expr = Subtract(Literal("hello"), Literal(1))
-    intercept[CypherTypeException](expr(m)(QueryStateHelper.empty))
+    intercept[CypherTypeException](expr(m)(s))
   }
 
-  @Test def numberPlusString() {
+  test("numberPlusString") {
     val expr = Subtract(Literal(1), Literal("world"))
-    intercept[CypherTypeException](expr(m)(QueryStateHelper.empty))
+    intercept[CypherTypeException](expr(m)(s))
   }
 
-  @Test def numberPlusBool() {
+  test("numberPlusBool") {
     val expr = Subtract(Literal("1"), Literal(true))
-    intercept[CypherTypeException](expr(m)(QueryStateHelper.empty))
+    intercept[CypherTypeException](expr(m)(s))
   }
 }

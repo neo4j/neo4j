@@ -19,23 +19,22 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.junit.Test
 import org.neo4j.cypher.IndexHintException
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, TokenType}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
 
 class IndexLookupBuilderTest extends BuilderTest {
 
   def builder = new IndexLookupBuilder()
 
-  @Test def should_not_accept_empty_query() {
+  test("should_not_accept_empty_query") {
     assertRejects(PartiallySolvedQuery())
   }
 
-  @Test def should_accept_a_query_with_index_hints() {
+  test("should_accept_a_query_with_index_hints") {
     //GIVEN
     val identifier = "id"
     val label = "label"
@@ -43,10 +42,10 @@ class IndexLookupBuilderTest extends BuilderTest {
     val valueExpression = Literal(42)
     val predicate = Equals(Property(Identifier(identifier), PropertyKey(property)), valueExpression)
 
-    test(identifier, label, property, predicate, valueExpression)
+    check(identifier, label, property, predicate, valueExpression)
   }
 
-  @Test def should_accept_a_query_with_index_hints2() {
+  test("should_accept_a_query_with_index_hints2") {
     //GIVEN
     val identifier = "id"
     val label = "label"
@@ -54,10 +53,10 @@ class IndexLookupBuilderTest extends BuilderTest {
     val valueExpression = Literal(42)
     val predicate = Equals(valueExpression, Property(Identifier(identifier), PropertyKey(property)))
 
-    test(identifier, label, property, predicate, valueExpression)
+    check(identifier, label, property, predicate, valueExpression)
   }
 
-  @Test def should_throw_if_no_matching_index_is_found() {
+  test("should_throw_if_no_matching_index_is_found") {
     //GIVEN
     val identifier = "id"
     val label = "label"
@@ -71,8 +70,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     intercept[IndexHintException](assertAccepts(q))
   }
 
-  @Test
-  def should_pick_out_correct_label_predicate() {
+  test("should_pick_out_correct_label_predicate") {
     //GIVEN
     val identifier = "id"
     val label1 = "label1"
@@ -98,13 +96,11 @@ class IndexLookupBuilderTest extends BuilderTest {
     val plan = assertAccepts(q)
 
     //THEN
-    assert(plan.query.start === Seq(Unsolved(SchemaIndex(identifier, label1, property, AnyIndex, Some(SingleQueryExpression(valueExpression))))))
-    val a = plan.query.where.toSet
-    val b = Set(Solved(label1Predicate), Unsolved(label2Predicate), Solved(propertyPredicate))
-    assert(a === b)
+    plan.query.start should equal(Seq(Unsolved(SchemaIndex(identifier, label1, property, AnyIndex, Some(SingleQueryExpression(valueExpression))))))
+    plan.query.where.toSet should equal(Set(Solved(label1Predicate), Unsolved(label2Predicate), Solved(propertyPredicate)))
   }
 
-  @Test def should_accept_a_query_with_index_hints_on_in() {
+  test("should_accept_a_query_with_index_hints_on_in") {
     //GIVEN
     val identifier = "id"
     val label = "label"
@@ -112,10 +108,10 @@ class IndexLookupBuilderTest extends BuilderTest {
     val collectionExpression: Expression = Collection(Literal(42),Literal(43))
     val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Identifier(identifier), PropertyKey(property)),Identifier("_identifier_")))
 
-    test(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
+    check(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
   }
 
-  @Test def should_accept_a_query_with_index_hints_on_in_with_collection_containing_duplicates() {
+  test("should_accept_a_query_with_index_hints_on_in_with_collection_containing_duplicates") {
     //GIVEN
     val identifier = "id"
     val label = "label"
@@ -123,10 +119,10 @@ class IndexLookupBuilderTest extends BuilderTest {
     val collectionExpression: Expression = Collection(Literal(42),Literal(42))
     val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Identifier(identifier), PropertyKey(property)),Identifier("_identifier_")))
 
-    test(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
+    check(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
   }
 
-  @Test def should_accept_a_query_with_index_hints_on_in_with_null() {
+  test("should_accept_a_query_with_index_hints_on_in_with_null") {
     //GIVEN
     val identifier = "id"
     val label = "label"
@@ -134,10 +130,10 @@ class IndexLookupBuilderTest extends BuilderTest {
     val collectionExpression: Expression = Null()
     val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Identifier(identifier), PropertyKey(property)),Identifier("_identifier_")))
 
-    test(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
+    check(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
   }
 
-  @Test def should_accept_a_query_with_index_hints_on_in_with_empty_collection() {
+  test("should_accept_a_query_with_index_hints_on_in_with_empty_collection") {
     //GIVEN
     val identifier = "id"
     val label = "label"
@@ -145,14 +141,14 @@ class IndexLookupBuilderTest extends BuilderTest {
     val collectionExpression: Expression = Collection()
     val predicate = AnyInCollection(collectionExpression,"_identifier_",Equals(Property(Identifier(identifier), PropertyKey(property)),Identifier("_identifier_")))
 
-    test(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
+    check(identifier, label, property, predicate, ManyQueryExpression(collectionExpression))
   }
 
-  private def test(identifier: String, label: String, property: String, predicate: Equals, expression: Expression) {
-    test(identifier, label,property,predicate,SingleQueryExpression(expression))
+  private def check(identifier: String, label: String, property: String, predicate: Equals, expression: Expression) {
+    check(identifier, label, property, predicate, SingleQueryExpression(expression))
   }
 
-  private def test(identifier: String, label: String, property: String, predicate: Predicate, queryExpression: QueryExpression[Expression]) {
+  private def check(identifier: String, label: String, property: String, predicate: Predicate, queryExpression: QueryExpression[Expression]) {
     val labelPredicate = HasLabel(Identifier(identifier), KeyToken.Unresolved(label, TokenType.Label))
 
     val q = PartiallySolvedQuery().copy(
@@ -164,7 +160,7 @@ class IndexLookupBuilderTest extends BuilderTest {
     val plan = assertAccepts(q)
 
     //THEN
-    assert(plan.query.start === Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, Some(queryExpression)))))
-    assert(plan.query.where.toSet === Set(Solved(predicate), Solved(labelPredicate)))
+    plan.query.start should equal(Seq(Unsolved(SchemaIndex(identifier, label, property, AnyIndex, Some(queryExpression)))))
+    plan.query.where.toSet should equal(Set(Solved(predicate), Solved(labelPredicate)))
   }
 }

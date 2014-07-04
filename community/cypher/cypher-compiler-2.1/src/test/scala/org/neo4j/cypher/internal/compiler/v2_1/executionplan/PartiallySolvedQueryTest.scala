@@ -19,15 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan
 
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_1.commands.{SingleNode, AllIdentifiers, CreateNodeStartItem, Query}
-import org.neo4j.cypher.internal.compiler.v2_1.mutation.{DeleteEntityAction, CreateNode}
-import org.scalatest.Assertions
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.Unsolved
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{AllIdentifiers, CreateNodeStartItem, Query, SingleNode}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.Unsolved
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.{CreateNode, DeleteEntityAction}
 
-class PartiallySolvedQueryTest extends Assertions {
-  @Test def should_compact_query() {
+class PartiallySolvedQueryTest extends CypherFunSuite {
+
+  test("should_compact_query") {
     // Given CREATE a1 WITH * CREATE a2 WITH * CREATE a3
     val q1 = Query.start(createNode("a1")).returns()
     val q2 = Query.start(createNode("a2")).tail(q1).returns(AllIdentifiers())
@@ -37,10 +37,10 @@ class PartiallySolvedQueryTest extends Assertions {
     val psq = PartiallySolvedQuery(q3)
 
     // Then CREATE a1,a2,a3
-    assert(psq.start.toSet === Set(Unsolved(createNode("a1")), Unsolved(createNode("a2")), Unsolved(createNode("a3"))))
+    psq.start.toSet should equal(Set(Unsolved(createNode("a1")), Unsolved(createNode("a2")), Unsolved(createNode("a3"))))
   }
 
-  @Test def should_not_compact_query() {
+  test("should_not_compact_query") {
     // Given MATCH (a) WITH a DELETE a WITH a CREATE (:Person)
     val deleteAction = DeleteEntityAction(Identifier("a"))
     val q3 = Query.start(createNode("a3")).returns()
@@ -51,14 +51,14 @@ class PartiallySolvedQueryTest extends Assertions {
     val psq = PartiallySolvedQuery(q1)
 
     // Then First query part doesn't contain updates
-    assert(psq.updates.isEmpty)
+    psq.updates shouldBe empty
 
     // Second query part contains no create node
-    assert(psq.tail.get.updates.toList === List(Unsolved(deleteAction)))
-    assert(psq.tail.get.start.isEmpty)
+    psq.tail.get.updates.toList should equal(List(Unsolved(deleteAction)))
+    psq.tail.get.start shouldBe empty
 
     // Third part contains the create node
-    assert(psq.tail.get.tail.get.start.toList === List(Unsolved(createNode("a3"))))
+    psq.tail.get.tail.get.start.toList should equal(List(Unsolved(createNode("a3"))))
 
   }
 

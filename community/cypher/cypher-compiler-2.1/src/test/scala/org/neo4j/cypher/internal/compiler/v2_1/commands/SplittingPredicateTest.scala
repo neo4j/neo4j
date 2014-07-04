@@ -19,28 +19,27 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions.Literal
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 
-class SplittingPredicateTest extends Assertions {
+class SplittingPredicateTest extends CypherFunSuite {
 
-  @Test def cantDivideMore() {
+  test("cantDivideMore") {
     val x = Equals(Literal("a"), Literal("a"))
-    assert(x.atoms === Seq(x))
+    x.atoms should equal(Seq(x))
   }
 
-  @Test def andCanBeSplitInTwo() {
+  test("andCanBeSplitInTwo") {
     val x = And(Not(Not(True())), Not(True()))
-    assert(x.atoms === Seq(Not(Not(True())), Not(True())))
+    x.atoms should equal(Seq(Not(Not(True())), Not(True())))
   }
 
-  @Test def or_cannot_be_split() {
+  test("or_cannot_be_split") {
     val x = Or(True(), True())
-    assert(x.atoms === Seq(x))
+    x.atoms should equal(Seq(x))
   }
 
-  @Test def more_complex_splitting() {
+  test("more_complex_splitting") {
     val x = And(
       Equals(
         Literal(1), Literal(2)),
@@ -49,6 +48,6 @@ class SplittingPredicateTest extends Assertions {
       )
     )
 
-    assert(x.atoms === Seq(Equals(Literal(1), Literal(2)), Or(True(), Not(True()))))
+    x.atoms should equal(Seq(Equals(Literal(1), Literal(2)), Or(True(), Not(True()))))
   }
 }

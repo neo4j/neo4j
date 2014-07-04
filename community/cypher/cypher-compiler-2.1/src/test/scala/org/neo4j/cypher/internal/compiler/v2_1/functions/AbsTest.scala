@@ -19,31 +19,25 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.functions
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class AbsTest extends FunctionTestBase("abs") {
 
-  @Test
-  def shouldFailIfWrongArguments() {
+  test("shouldFailIfWrongArguments") {
     testInvalidApplication()("Insufficient parameters for function 'abs'")
     testInvalidApplication(CTFloat, CTFloat)("Too many parameters for function 'abs'")
   }
 
-  @Test
-  def shouldHandleAllSpecializations() {
+  test("shouldHandleAllSpecializations") {
     testValidTypes(CTInteger)(CTInteger)
     testValidTypes(CTFloat)(CTFloat)
   }
 
-  @Test
-  def shouldHandleCombinedSpecializations() {
+  test("shouldHandleCombinedSpecializations") {
     testValidTypes(CTFloat | CTInteger)(CTFloat | CTInteger)
   }
 
-  @Test
-  def shouldReturnErrorIfInvalidArgumentTypes() {
+  test("shouldReturnErrorIfInvalidArgumentTypes") {
     testInvalidApplication(CTNode)("Type mismatch: expected Float or Integer but was Node")
   }
 }

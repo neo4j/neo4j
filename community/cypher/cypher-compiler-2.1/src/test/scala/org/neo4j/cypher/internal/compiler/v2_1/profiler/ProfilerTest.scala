@@ -19,21 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.profiler
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{DbHits, Rows}
 import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes._
-import symbols.SymbolTable
+import org.neo4j.cypher.internal.compiler.v2_1.pipes._
 import org.neo4j.cypher.internal.compiler.v2_1.spi.QueryContext
-import org.junit.Test
-import org.scalatest.mock.MockitoSugar
-import org.scalatest.Assertions
-import org.neo4j.cypher.internal.compiler.v2_1.PlanDescription.Arguments.{Rows, DbHits}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
-class ProfilerTest extends Assertions with MockitoSugar {
+class ProfilerTest extends CypherFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
 
-  @Test
-  def should_report_simplest_case() {
+  test("should_report_simplest_case") {
     //GIVEN
     val start = NullPipe()
     val pipe = new ProfilerPipe(start, "foo", rows = 10, dbAccess = 20)
@@ -49,8 +46,7 @@ class ProfilerTest extends Assertions with MockitoSugar {
     assertRecorded(decoratedResult, "foo", expectedRows = 10, expectedDbHits = 20)
   }
 
-  @Test
-  def should_report_multiple_pipes_case() {
+  test("should_report_multiple_pipes_case") {
     //GIVEN
     val start = NullPipe()
     val pipe1 = new ProfilerPipe(start, "foo", rows = 10, dbAccess = 25)
@@ -70,8 +66,7 @@ class ProfilerTest extends Assertions with MockitoSugar {
     assertRecorded(decoratedResult, "baz", expectedRows = 1, expectedDbHits = 2)
   }
 
-  @Test
-  def should_ignore_null_pipe_in_profile() {
+  test("should_ignore_null_pipe_in_profile") {
     // GIVEN
     val pipes = UnionPipe(List(NullPipe(), NullPipe()), List())
     val queryContext = mock[QueryContext]
@@ -87,12 +82,12 @@ class ProfilerTest extends Assertions with MockitoSugar {
     val pipeArgs: Seq[Argument] = result.find(name).flatMap(_.arguments)
 
     pipeArgs.foreach {
-      case DbHits(count) => assert(count === expectedDbHits)
+      case DbHits(count) => count should equal(expectedDbHits)
       case _ =>
     }
 
     pipeArgs.collectFirst {
-      case Rows(seenRows) => assert(seenRows === expectedRows)
+      case Rows(seenRows) => seenRows should equal(expectedRows)
     }
   }
 

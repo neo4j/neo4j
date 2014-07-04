@@ -19,18 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.Literal
-import org.junit.Test
-import org.scalatest.Assertions
-import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Literal
 
-class SlicePipeTest extends Assertions with MockitoSugar {
+class SlicePipeTest extends CypherFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
 
-  @Test
-  def should_handle_longs() {
+  test("should_handle_longs") {
     //given
     val ctx = ExecutionContext.empty
     val input = new FakePipe(Iterator(ctx, ctx, ctx))
@@ -40,6 +37,6 @@ class SlicePipeTest extends Assertions with MockitoSugar {
     val result = pipe.createResults(QueryStateHelper.empty).toList
 
     //then
-    assert(result.size == 3)
+    result should have size 3
   }
 }

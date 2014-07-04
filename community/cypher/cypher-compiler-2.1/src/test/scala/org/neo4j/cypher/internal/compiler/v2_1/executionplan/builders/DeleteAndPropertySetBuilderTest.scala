@@ -19,53 +19,47 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
-import org.junit.Test
-import org.junit.Assert._
-import org.neo4j.cypher.internal.compiler.v2_1.mutation.DeleteEntityAction
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
-import org.mockito.Mockito
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.DeleteEntityAction
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.PipeMonitor
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
 
 class DeleteAndPropertySetBuilderTest extends BuilderTest {
 
   private implicit val monitor = mock[PipeMonitor]
 
   val builder = new UpdateActionBuilder
-  val planContext = Mockito.mock(classOf[PlanContext])
+  val planContext = mock[PlanContext]
 
-  @Test
-  def does_not_offer_to_solve_done_queries() {
+  test("does_not_offer_to_solve_done_queries") {
     val q = PartiallySolvedQuery().
       copy(updates = Seq(Solved(DeleteEntityAction(Identifier("x")))))
 
-    assertFalse("Should not be able to build on this", builder.canWorkWith(plan(q), planContext))
+    withClue("Should not be able to build on this")(builder.canWorkWith(plan(q), planContext)) should equal(false)
   }
 
-  @Test
-  def offers_to_solve_queries() {
+  test("offers_to_solve_queries") {
     val q = PartiallySolvedQuery().
       copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x")))))
 
     val pipe = createPipe(nodes = Seq("x"))
 
     val executionPlan = plan(pipe, q)
-    assertTrue("Should accept this", builder.canWorkWith(executionPlan, planContext))
+    withClue("Should accept this")(builder.canWorkWith(executionPlan, planContext)) should equal(true)
 
     val resultPlan = builder(executionPlan, planContext)
     val resultQ = resultPlan.query
 
-    assert(resultQ === q.copy(updates = q.updates.map(_.solve)))
-    assertTrue("Execution plan should contain transaction", resultPlan.isUpdating)
+    resultQ should equal(q.copy(updates = q.updates.map(_.solve)))
+    withClue("Execution plan should contain transaction")(resultPlan.isUpdating) should equal(true)
   }
 
-  @Test
-  def does_not_offer_to_delete_something_not_yet_there() {
+  test("does_not_offer_to_delete_something_not_yet_there") {
     val q = PartiallySolvedQuery().
       copy(updates = Seq(Unsolved(DeleteEntityAction(Identifier("x")))))
 
     val executionPlan = plan(q)
-    assertFalse("Should not accept this", builder.canWorkWith(executionPlan, planContext))
+    withClue("Should not accept this")(builder.canWorkWith(executionPlan, planContext)) should equal(false)
   }
 }

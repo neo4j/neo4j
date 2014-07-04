@@ -19,18 +19,19 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
-import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.ArithmeticException
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1._
 import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-class DivideTest extends Assertions {
-  @Test
-  def should_throw_arithmetic_exception_for_divide_by_zero() {
-    intercept[ArithmeticException](Divide(Literal(1), Literal(0))(ExecutionContext.empty)(QueryStateHelper.empty))
-    intercept[ArithmeticException](Divide(Literal(1.4), Literal(0))(ExecutionContext.empty)(QueryStateHelper.empty))
-    intercept[ArithmeticException](Divide(Literal(1), Literal(0.0))(ExecutionContext.empty)(QueryStateHelper.empty))
-    intercept[ArithmeticException](Divide(Literal(3.4), Literal(0.0))(ExecutionContext.empty)(QueryStateHelper.empty))
+class DivideTest extends CypherFunSuite {
+  test("should_throw_arithmetic_exception_for_divide_by_zero") {
+    val ctx = ExecutionContext.empty
+    val state = QueryStateHelper.empty
+
+    intercept[ArithmeticException](Divide(Literal(1), Literal(0))(ctx)(state))
+    intercept[ArithmeticException](Divide(Literal(1.4), Literal(0))(ctx)(state))
+    intercept[ArithmeticException](Divide(Literal(1), Literal(0.0))(ctx)(state))
+    intercept[ArithmeticException](Divide(Literal(3.4), Literal(0.0))(ctx)(state))
   }
 }

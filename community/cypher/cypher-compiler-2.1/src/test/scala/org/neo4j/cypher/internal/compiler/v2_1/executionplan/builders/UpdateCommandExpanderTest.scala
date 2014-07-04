@@ -20,14 +20,13 @@
 
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_1.mutation._
-import org.scalatest.Assertions
-import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal}
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.UnresolvedLabel
+import org.neo4j.cypher.internal.compiler.v2_1.mutation._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols.SymbolTable
 
-class UpdateCommandExpanderTest extends UpdateCommandExpander with Assertions {
+class UpdateCommandExpanderTest extends CypherFunSuite with UpdateCommandExpander {
   // (a)-[r1]->(b), (b)-[r2]->(c), (c)-[r3]->(d)
   val bareB = RelationshipEndpoint("b")
   val createRelationship1 = CreateRelationship("r1", RelationshipEndpoint("a"), bareB, "REL", Map.empty)
@@ -44,8 +43,7 @@ class UpdateCommandExpanderTest extends UpdateCommandExpander with Assertions {
   val lushCreateA = CreateNode("a", Map("x"->Literal(42)), Seq(UnresolvedLabel("LABEL")))
   val lushCreateB = CreateNode("b", Map("x"->Literal(23)), Seq(UnresolvedLabel("LABEL2")))
 
-  @Test
-  def should_expand_with_nodes_when_asking_for_a_relationship() {
+  test("should_expand_with_nodes_when_asking_for_a_relationship") {
     // given
     val actions = Seq(createRelationship1)
 
@@ -53,11 +51,10 @@ class UpdateCommandExpanderTest extends UpdateCommandExpander with Assertions {
     val expanded = expandCommands(actions, new SymbolTable()).toList
 
     // then
-    assert(expanded === List(createA, createB, createRelationship1))
+    expanded should equal(List(createA, createB, createRelationship1))
   }
 
-  @Test
-  def should_expand_with_nodes_when_asking_for_two_disconnected_relationships() {
+  test("should_expand_with_nodes_when_asking_for_two_disconnected_relationships") {
     // given
     val actions = Seq(createRelationship1, createRelationship3)
 
@@ -65,11 +62,10 @@ class UpdateCommandExpanderTest extends UpdateCommandExpander with Assertions {
     val expanded = expandCommands(actions, new SymbolTable()).toList
 
     // then
-    assert(expanded === List(createA, createB, createRelationship1, createC, createD, createRelationship3))
+    expanded should equal(List(createA, createB, createRelationship1, createC, createD, createRelationship3))
   }
 
-  @Test
-  def should_expand_with_nodes_when_asking_for_two_connected_relationships() {
+  test("should_expand_with_nodes_when_asking_for_two_connected_relationships") {
     // given
     val actions = Seq(createRelationship1, createRelationship2)
 
@@ -77,11 +73,10 @@ class UpdateCommandExpanderTest extends UpdateCommandExpander with Assertions {
     val expanded = expandCommands(actions, new SymbolTable()).toList
 
     // then
-    assert(expanded === List(createA, createB, createRelationship1, createC, createRelationship2))
+    expanded should equal(List(createA, createB, createRelationship1, createC, createRelationship2))
   }
 
-  @Test
-  def should_not_create_already_existing_nodes_with_foreach() {
+  test("should_not_create_already_existing_nodes_with_foreach") {
     // given
     val actions = Seq(createA, createForeach(createRelationship1))
 
@@ -89,11 +84,10 @@ class UpdateCommandExpanderTest extends UpdateCommandExpander with Assertions {
     val expanded = expandCommands(actions, new SymbolTable()).toList
 
     // then
-    assert(expanded === List(createA, createForeach(createB, createRelationship1)))
+    expanded should equal(List(createA, createForeach(createB, createRelationship1)))
   }
 
-  @Test
-  def should_handle_foreach_in_foreach() {
+  test("should_handle_foreach_in_foreach") {
     // given
     val actions = Seq(createA, createForeach(createRelationship1, createForeach(createRelationship2)))
 
@@ -101,11 +95,10 @@ class UpdateCommandExpanderTest extends UpdateCommandExpander with Assertions {
     val expanded = expandCommands(actions, new SymbolTable()).toList
 
     // then
-    assert(expanded === List(createA, createForeach(createB, createRelationship1, createForeach(createC, createRelationship2))))
+    expanded should equal(List(createA, createForeach(createB, createRelationship1, createForeach(createC, createRelationship2))))
   }
 
-  @Test
-  def should_remove_properties_from_relationship_when_making_create_node_objects() {
+  test("should_remove_properties_from_relationship_when_making_create_node_objects") {
     // given
     val actions = Seq(createRelationshipWithLushNodes)
 
@@ -113,11 +106,10 @@ class UpdateCommandExpanderTest extends UpdateCommandExpander with Assertions {
     val expanded = expandCommands(actions, new SymbolTable()).toList
 
     // then
-    assert(expanded === List(lushCreateA, lushCreateB, createRelationship1))
+    expanded should equal(List(lushCreateA, lushCreateB, createRelationship1))
   }
 
-  @Test
-  def should_only_remove_properties_from_relationship_when_making_create_node_objects() {
+  test("should_only_remove_properties_from_relationship_when_making_create_node_objects") {
     // given CREATE (a {prop:42}), (a {prop:42})-[:REL]->(b {prop:43}) ==>
     // CREATE (a {prop:42}), (b {prop:43}), (a {prop:42})-[:REL]->(b)
     val actions = Seq(lushCreateA, createRelationshipWithLushNodes)
@@ -126,7 +118,7 @@ class UpdateCommandExpanderTest extends UpdateCommandExpander with Assertions {
     val expanded = expandCommands(actions, new SymbolTable()).toList
 
     // then
-    assert(expanded === List(lushCreateA, lushCreateB, createRelationshipWithLushNodes.copy(to = bareB)))
+    expanded should equal(List(lushCreateA, lushCreateB, createRelationshipWithLushNodes.copy(to = bareB)))
   }
 
   private def createForeach(actions: UpdateAction*) = ForeachAction(Literal(Seq(1, 2, 3)), "x", actions)
