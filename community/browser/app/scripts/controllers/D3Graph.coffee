@@ -134,6 +134,37 @@ angular.module('neo4jApp.controllers')
       clickHandler.on 'click', onNodeClick
       clickHandler.on 'dblclick', onNodeDblClick
 
+      zoomHandlers = {}
+      zoomEl = d3.select(el.node().parentNode)
+
+      applyZoom = ->
+        el.select(".nodes").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")")
+        el.select(".relationships").attr("transform", "translate(" + d3.event.translate + ")scale(" + d3.event.scale + ")")
+
+      enableZoomHandlers = ->
+        zoomEl.on("wheel.zoom",zoomHandlers.wheel)
+        zoomEl.on("mousewheel.zoom",zoomHandlers.mousewheel)
+        zoomEl.on("mousedown.zoom",zoomHandlers.mousedown)
+        zoomEl.on("DOMMouseScroll.zoom",zoomHandlers.DOMMouseScroll)
+        zoomEl.on("touchstart.zoom",zoomHandlers.touchstart)
+        zoomEl.on("touchmove.zoom",zoomHandlers.touchmove)
+        zoomEl.on("touchend.zoom",zoomHandlers.touchend)
+
+      disableZoomHandlers = ->
+        zoomEl.on("wheel.zoom",null)
+        zoomEl.on("mousewheel.zoom",null)
+        zoomEl.on("mousedown.zoom", null)
+        zoomEl.on("DOMMouseScroll.zoom", null)
+        zoomEl.on("touchstart.zoom",null)
+        zoomEl.on("touchmove.zoom",null)
+        zoomEl.on("touchend.zoom",null)
+      
+      keyHandler = ->
+        if d3.event.altKey || d3.event.shiftKey
+          enableZoomHandlers()
+        else
+          disableZoomHandlers()
+
       accelerateLayout = (force, render) ->
         maxStepsPerTick = 100
         maxAnimationFramesPerSecond = 60
@@ -175,6 +206,8 @@ angular.module('neo4jApp.controllers')
         .charge(-1000)
 
       accelerateLayout(force, render)
+
+      zoomBehavior = d3.behavior.zoom().on("zoom", applyZoom).scaleExtent([0.2, 6])
 
       #
       # Public methods
@@ -224,6 +257,21 @@ angular.module('neo4jApp.controllers')
         .attr("class", "node")
         .call(force.drag)
         .call(clickHandler)
+
+        zoomEl.call(zoomBehavior)
+
+        zoomEl.on("dblclick.zoom", null)
+        zoomHandlers.wheel = zoomEl.on("wheel.zoom")
+        zoomHandlers.mousewheel = zoomEl.on("mousewheel.zoom")
+        zoomHandlers.mousedown = zoomEl.on("mousedown.zoom")
+        zoomHandlers.DOMMouseScroll = zoomEl.on("DOMMouseScroll.zoom")
+        zoomHandlers.touchstart = zoomEl.on("touchstart.zoom")
+        zoomHandlers.touchmove = zoomEl.on("touchmove.zoom")
+        zoomHandlers.touchend = zoomEl.on("touchend.zoom")
+        disableZoomHandlers()
+
+        # only apply zoom when mouse over graph
+        zoomEl.on("mouseover", (d) -> d3.select('body').on("keydown", keyHandler).on("keyup", keyHandler))
 
         for renderer in GraphRenderer.nodeRenderers
           nodeGroups.call(renderer.onGraphChange);
