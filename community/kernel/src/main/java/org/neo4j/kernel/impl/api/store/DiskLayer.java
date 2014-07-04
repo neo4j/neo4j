@@ -27,6 +27,7 @@ import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.PrimitiveIntCollections;
 import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveLongCollections.PrimitiveLongBaseIterator;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.graphdb.TransactionFailureException;
 import org.neo4j.helpers.Function;
@@ -57,11 +58,13 @@ import org.neo4j.kernel.impl.core.TokenNotFoundException;
 import org.neo4j.kernel.impl.nioneo.store.IndexRule;
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PrimitiveRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyBlock;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.SchemaStorage;
@@ -72,6 +75,7 @@ import org.neo4j.kernel.impl.util.PrimitiveLongResourceIterator;
 import static org.neo4j.helpers.collection.Iterables.filter;
 import static org.neo4j.helpers.collection.Iterables.map;
 import static org.neo4j.helpers.collection.IteratorUtil.resourceIterator;
+import static org.neo4j.kernel.impl.nioneo.store.RecordLoad.CHECK;
 import static org.neo4j.kernel.impl.nioneo.store.labels.NodeLabelsField.parseLabelsField;
 import static org.neo4j.kernel.impl.util.IoPrimitiveUtils.safeCastLongToInt;
 
@@ -133,7 +137,6 @@ public class DiskLayer
     {
         this.relationshipTokenHolder = relationshipTokenHolder;
         this.schemaStorage = schemaStorage;
-
         this.indexService = indexService;
         this.propertyKeyTokenHolder = propertyKeyTokenHolder;
         this.labelTokenHolder = labelTokenHolder;
@@ -141,7 +144,7 @@ public class DiskLayer
         this.nodeStore = this.neoStore.getNodeStore();
         this.relationshipStore = this.neoStore.getRelationshipStore();
         this.propertyStore = this.neoStore.getPropertyStore();
-        this.propertyStoreProvider = new PropertyStoreProvider(neoStoreProvider);
+        this.propertyStoreProvider = new PropertyStoreProvider( neoStoreProvider );
     }
 
     public int labelGetOrCreateForName( String label ) throws TooManyLabelsException
@@ -513,5 +516,110 @@ public class DiskLayer
     public long highestNodeIdInUse()
     {
         return nodeStore.getHighestPossibleIdInUse();
+    }
+
+    public PrimitiveLongIterator nodesGetAll()
+    {
+        return new PrimitiveLongBaseIterator()
+        {
+            private final NodeStore store = neoStore.getNodeStore();
+            private long highId = store.getHighestPossibleIdInUse();
+            private long currentId;
+            private final NodeRecord reusableNodeRecord = new NodeRecord( -1 ); // reused
+
+            @Override
+            protected boolean fetchNext()
+            {
+                while ( true )
+                {   // This outer loop is for checking if highId has changed since we started.
+                    while ( currentId <= highId )
+                    {
+                        try
+                        {
+                            try
+                            {
+                                NodeRecord record = store.getRecord( currentId, reusableNodeRecord );
+                                if ( record != null && record.inUse() )
+                                {
+                                    return next( record.getId() );
+                                }
+                            }
+                            catch ( InvalidRecordException e )
+                            {
+                                // TODO please don't rely on exceptions for flow control
+                                // OK, just continue
+                            }
+                        }
+                        finally
+                        {
+                            currentId++;
+                        }
+                    }
+
+                    long newHighId = store.getHighestPossibleIdInUse();
+                    if ( newHighId > highId )
+                    {
+                        highId = newHighId;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                return false;
+            }
+        };
+    }
+
+    public PrimitiveLongIterator relationshipsGetAll()
+    {
+        return new PrimitiveLongBaseIterator()
+        {
+            private final RelationshipStore store = neoStore.getRelationshipStore();
+            private long highId = store.getHighestPossibleIdInUse();
+            private long currentId;
+            private final RelationshipRecord reusableNodeRecord = new RelationshipRecord( -1 ); // reused
+
+            @Override
+            protected boolean fetchNext()
+            {
+                while ( true )
+                {   // This outer loop is for checking if highId has changed since we started.
+                    while ( currentId <= highId )
+                    {
+                        try
+                        {
+                            try
+                            {
+                                RelationshipRecord record = store.getRecord( currentId, reusableNodeRecord, CHECK );
+                                if ( record != null && record.inUse() )
+                                {
+                                    return next( record.getId() );
+                                }
+                            }
+                            catch ( InvalidRecordException e )
+                            {
+                                // OK, just continue
+                            }
+                        }
+                        finally
+                        {
+                            currentId++;
+                        }
+                    }
+
+                    long newHighId = store.getHighestPossibleIdInUse();
+                    if ( newHighId > highId )
+                    {
+                        highId = newHighId;
+                    }
+                    else
+                    {
+                        break;
+                    }
+                }
+                return false;
+            }
+        };
     }
 }

@@ -19,6 +19,8 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.kernel.impl.util.Bits.numbersToBitString;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.ObjectInputStream;
@@ -35,8 +37,6 @@ import org.jboss.netty.buffer.ChannelBufferFactory;
 import org.jboss.netty.buffer.ChannelBufferIndexFinder;
 import org.jboss.netty.buffer.ChannelBuffers;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
-
-import static org.neo4j.kernel.impl.util.Bits.numbersToBitString;
 
 public class DechunkingChannelBuffer implements ChannelBuffer
 {

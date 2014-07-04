@@ -35,7 +35,6 @@ public class CommandMatchers
             public boolean matchesSafely( LogEntry.Command entry )
             {
                 if( entry != null
-                        && entry.getIdentifier() == identifier
                         && entry.getXaCommand() != null
                         && entry.getXaCommand() instanceof org.neo4j.kernel.impl.nioneo.xa.command.Command.NodeCommand)
                 {

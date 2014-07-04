@@ -22,6 +22,7 @@ package org.neo4j.kernel.impl.nioneo.xa;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Set;
 
@@ -29,10 +30,10 @@ import org.junit.Before;
 import org.junit.Test;
 
 import org.neo4j.graphdb.ResourceIterator;
+import org.neo4j.graphdb.index.IndexImplementation;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
+import org.neo4j.kernel.impl.api.LegacyIndexApplier.ProviderLookup;
 import org.neo4j.kernel.impl.api.index.IndexingService;
-import org.neo4j.kernel.impl.transaction.xaframework.XaContainer;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog;
 
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.Matchers.equalTo;
@@ -44,14 +45,13 @@ import static org.mockito.Mockito.when;
 import static org.neo4j.helpers.collection.IteratorUtil.asResourceIterator;
 import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 import static org.neo4j.helpers.collection.IteratorUtil.asUniqueSet;
-import static org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLog.getHistoryFileNamePattern;
 
 public class NeoStoreFileListingTest
 {
-    private XaContainer xaContainer;
     private LabelScanStore labelScanStore;
     private IndexingService indexingService;
     private File storeDir;
+    private ProviderLookup legacyIndexes;
 
     private final static String[] STANDARD_STORE_DIR_FILES = new String[]{
            "active_tx_log",
@@ -98,14 +98,11 @@ public class NeoStoreFileListingTest
     @Before
     public void setUp() throws IOException
     {
-        xaContainer = mock( XaContainer.class );
         labelScanStore = mock( LabelScanStore.class );
         indexingService = mock( IndexingService.class );
+        legacyIndexes = mock( ProviderLookup.class );
+        when( legacyIndexes.providers() ).thenReturn( Arrays.<IndexImplementation>asList() );
         storeDir = mock( File.class );
-
-        XaLogicalLog xaLogicalLog = mock( XaLogicalLog.class );
-        when( xaLogicalLog.getHistoryFileNamePattern()).thenReturn( getHistoryFileNamePattern( "nioneo_logical.log" ) );
-        when( xaContainer.getLogicalLog() ).thenReturn( xaLogicalLog );
 
         // Defaults, overridden in individual tests
         filesInStoreDirAre( new String[]{}, new String[]{} );
@@ -113,22 +110,22 @@ public class NeoStoreFileListingTest
         indexFilesAre( new String[]{} );
     }
 
-    @Test
-    public void shouldOnlyListLogicalLogs() throws Exception
-    {
-        // Given
-        filesInStoreDirAre( STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
-        NeoStoreFileListing fileListing = newFileListing();
-
-        // When
-        ResourceIterator<File> result = fileListing.listLogicalLogs();
-
-        // Then
-        assertThat( asSetOfPaths( result ), equalTo( asSet(
-                "nioneo_logical.log.v0",
-                "nioneo_logical.log.v1",
-                "nioneo_logical.log.v2") ) );
-    }
+//    @Test
+//    public void shouldOnlyListLogicalLogs() throws Exception
+//    {
+//        // Given
+//        filesInStoreDirAre( STANDARD_STORE_DIR_FILES, STANDARD_STORE_DIR_DIRECTORIES );
+//        NeoStoreFileListing fileListing = newFileListing();
+//
+//        // When
+//        ResourceIterator<File> result = fileListing.listLogicalLogs();
+//
+//        // Then
+//        assertThat( asSetOfPaths( result ), equalTo( asSet(
+//                "nioneo_logical.log.v0",
+//                "nioneo_logical.log.v1",
+//                "nioneo_logical.log.v2") ) );
+//    }
 
     @Test
     public void shouldOnlyListNeoStoreFiles() throws Exception
@@ -166,7 +163,7 @@ public class NeoStoreFileListingTest
         NeoStoreFileListing fileListing = newFileListing();
 
         // When
-        ResourceIterator<File> result = fileListing.listStoreFiles( false );
+        ResourceIterator<File> result = fileListing.listStoreFiles();
 
         // Then
         assertThat( asSetOfPaths( result ), equalTo( asSet(
@@ -194,7 +191,7 @@ public class NeoStoreFileListingTest
         NeoStoreFileListing fileListing = newFileListing();
 
         // When
-        ResourceIterator<File> result = fileListing.listStoreFiles( true );
+        ResourceIterator<File> result = fileListing.listStoreFiles();
 
         // Then
         assertThat( asSetOfPaths( result ), equalTo(asSet(
@@ -211,10 +208,7 @@ public class NeoStoreFileListingTest
                 "neostore.relationshiptypestore.db",
                 "neostore.relationshiptypestore.db.names",
                 "neostore.schemastore.db",
-                "neostore",
-                "nioneo_logical.log.v0",
-                "nioneo_logical.log.v1",
-                "nioneo_logical.log.v2" )));
+                "neostore" )));
     }
 
     @Test
@@ -227,7 +221,7 @@ public class NeoStoreFileListingTest
         NeoStoreFileListing fileListing = newFileListing();
 
         // When
-        ResourceIterator<File> result = fileListing.listStoreFiles( false );
+        ResourceIterator<File> result = fileListing.listStoreFiles();
 
         // Then
         assertThat( asSetOfPaths( result ), equalTo(asSet(
@@ -260,7 +254,7 @@ public class NeoStoreFileListingTest
         ResourceIterator<File> indexSnapshot = indexFilesAre( new String[]{"schema/index/my.index" } );
         NeoStoreFileListing fileListing = newFileListing();
 
-        ResourceIterator<File> result = fileListing.listStoreFiles( false );
+        ResourceIterator<File> result = fileListing.listStoreFiles();
 
         // When
         result.close();
@@ -272,7 +266,7 @@ public class NeoStoreFileListingTest
 
     private NeoStoreFileListing newFileListing()
     {
-        return new NeoStoreFileListing( xaContainer, storeDir, labelScanStore, indexingService );
+        return new NeoStoreFileListing( storeDir, labelScanStore, indexingService, legacyIndexes );
     }
 
     private Set<String> asSetOfPaths( ResourceIterator<File> result )
@@ -327,5 +321,4 @@ public class NeoStoreFileListingTest
             files.add( file );
         }
     }
-
 }

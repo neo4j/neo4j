@@ -29,13 +29,7 @@ public interface LogHandler
 
     void startEntry( LogEntry.Start startEntry ) throws IOException;
 
-    void prepareEntry( LogEntry.Prepare prepareEntry ) throws IOException;
-
     void onePhaseCommitEntry( LogEntry.OnePhaseCommit onePhaseCommitEntry ) throws IOException;
-
-    void twoPhaseCommitEntry( LogEntry.TwoPhaseCommit twoPhaseCommitEntry ) throws IOException;
-
-    void doneEntry( LogEntry.Done doneEntry ) throws IOException;
 
     void commandEntry( LogEntry.Command commandEntry ) throws IOException;
 
@@ -63,27 +57,9 @@ public interface LogHandler
         }
 
         @Override
-        public void prepareEntry( LogEntry.Prepare prepareEntry ) throws IOException
-        {
-            delegate.prepareEntry( prepareEntry );
-        }
-
-        @Override
         public void onePhaseCommitEntry( LogEntry.OnePhaseCommit onePhaseCommitEntry ) throws IOException
         {
             delegate.onePhaseCommitEntry( onePhaseCommitEntry );
-        }
-
-        @Override
-        public void twoPhaseCommitEntry( LogEntry.TwoPhaseCommit twoPhaseCommitEntry ) throws IOException
-        {
-            delegate.twoPhaseCommitEntry( twoPhaseCommitEntry );
-        }
-
-        @Override
-        public void doneEntry( LogEntry.Done doneEntry ) throws IOException
-        {
-            delegate.doneEntry( doneEntry );
         }
 
         @Override

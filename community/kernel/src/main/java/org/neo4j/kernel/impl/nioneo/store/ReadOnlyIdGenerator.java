@@ -25,33 +25,38 @@ public class ReadOnlyIdGenerator implements IdGenerator
 {
     private final String fileName;
     private final long highId;
-    
+
     public ReadOnlyIdGenerator( String fileName, long highId )
     {
         this.fileName = fileName;
         this.highId = highId;
     }
 
+    @Override
     public long nextId()
     {
         throw new ReadOnlyDbException();
     }
-    
+
+    @Override
     public IdRange nextIdBatch( int size )
     {
         throw new ReadOnlyDbException();
     }
-    
+
+    @Override
     public void setHighId( long id )
     {
         throw new ReadOnlyDbException();
     }
 
+    @Override
     public long getHighId()
     {
         return highId;
     }
 
+    @Override
     public void freeId( long id )
     {
         throw new ReadOnlyDbException();
@@ -67,19 +72,27 @@ public class ReadOnlyIdGenerator implements IdGenerator
         return this.fileName;
     }
 
+    @Override
     public long getNumberOfIdsInUse()
     {
         return highId;
     }
-    
+
+    @Override
     public long getDefragCount()
     {
         return 0;
     }
-    
+
     @Override
     public void delete()
     {
         throw new ReadOnlyDbException();
+    }
+
+    @Override
+    public long getHighestPossibleIdInUse()
+    {
+        return getHighId()-1;
     }
 }

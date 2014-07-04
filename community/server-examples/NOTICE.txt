@@ -33,7 +33,6 @@ Apache Software License, Version 2.0
   Commons Digester
   Commons Lang
   Commons Logging
-  JTA 1.1
 
 Common Development and Distribution License Version 1.1
   jersey-client

@@ -19,14 +19,6 @@
  */
 package org.neo4j.kernel.api.exceptions;
 
-import javax.transaction.HeuristicMixedException;
-import javax.transaction.HeuristicRollbackException;
-import javax.transaction.RollbackException;
-import javax.transaction.SystemException;
-import javax.transaction.xa.XAException;
-
-import static org.neo4j.helpers.Exceptions.withCause;
-
 /**
  * This class (in its current form - 2013-05-07) is a vector for exceptions thrown by a transaction manager, for
  * carrying the exception through the Kernel API stack to be rethrown on a higher level.
@@ -35,54 +27,21 @@ import static org.neo4j.helpers.Exceptions.withCause;
  * change into something completely different. Most likely this different thing will emerge alongside this exception
  * type while the transaction system is being refactored, and thus this class will disappear.
  */
-public class TransactionFailureException extends TransactionalException
+public class TransactionFailureException extends KernelException
 {
-    private static final int NO_CODE = 0;
-    private final int errorCode;
-
-    public TransactionFailureException( HeuristicMixedException cause )
+    public TransactionFailureException( Status statusCode, Throwable cause, String message, Object... parameters )
     {
-        super( cause );
-        errorCode = XAException.XA_HEURMIX;
+        super( statusCode, cause, message, parameters );
     }
 
-    public TransactionFailureException( HeuristicRollbackException cause )
+    public TransactionFailureException( Status statusCode, String message, Object... parameters )
     {
-        super( cause );
-        errorCode = XAException.XA_HEURRB;
+        super( statusCode, message, parameters );
     }
 
-    public TransactionFailureException( RollbackException cause )
+    // To satisfy KernelHealth
+    public TransactionFailureException( String message, Throwable cause )
     {
-        super( cause );
-        errorCode = XAException.XA_RBROLLBACK;
-    }
-
-    public TransactionFailureException( SystemException cause )
-    {
-        super( cause );
-        errorCode = XAException.XAER_RMERR;
-    }
-
-    public TransactionFailureException( TransactionHookException e )
-    {
-        super(e);
-        errorCode = XAException.XA_RBOTHER;
-    }
-
-    public TransactionFailureException( Exception e )
-    {
-        super(e);
-        errorCode = NO_CODE;
-    }
-
-    public RuntimeException unBoxedForCommit() throws XAException
-    {
-        Throwable cause = getCause();
-        if ( errorCode == NO_CODE)
-        {
-            return (cause instanceof RuntimeException)? (RuntimeException) cause : new RuntimeException( cause );
-        }
-        throw withCause( new XAException( errorCode ), cause );
+        super( Status.Transaction.CouldNotBegin, cause, message );
     }
 }

@@ -19,15 +19,18 @@
  */
 package org.neo4j.kernel.ha.com.master;
 
+import java.io.IOException;
+
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.id.IdAllocation;
 import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 
 /**
  * Represents the master-side of the HA communication between master and slave.
@@ -48,8 +51,7 @@ public interface Master
      */
     Response<Void> initializeTx( RequestContext context );
 
-    Response<Long> commitSingleResourceTransaction( RequestContext context,
-                                                    String resource, TxExtractor txGetter );
+    Response<Long> commitSingleResourceTransaction( RequestContext context, TransactionRepresentation channel ) throws IOException, TransactionFailureException;
 
     Response<Void> finishTransaction( RequestContext context, boolean success );
 
@@ -61,7 +63,7 @@ public interface Master
      * @return the master id for a given txId, also a checksum for that tx.
      */
     Response<HandshakeResult> handshake( long txId, StoreId myStoreId );
-    Response<Void> pushTransaction( RequestContext context, String resourceName, long tx );
+    Response<Void> pushTransaction( RequestContext context, long tx );
 
     Response<Void> pullUpdates( RequestContext context );
 

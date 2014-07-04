@@ -19,10 +19,12 @@
  */
 package org.neo4j.cypher.javacompat;
 
-import java.util.Map;
+import static org.hamcrest.MatcherAssert.assertThat;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.core.IsNull.notNullValue;
+import static org.hamcrest.core.IsNull.nullValue;
 
-import javax.transaction.SystemException;
-import javax.transaction.TransactionManager;
+import java.util.Map;
 
 import org.junit.Before;
 import org.junit.Test;
@@ -30,12 +32,8 @@ import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.ResourceIterator;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.test.TestGraphDatabaseFactory;
-
-import static org.hamcrest.MatcherAssert.assertThat;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.core.IsNull.notNullValue;
-import static org.hamcrest.core.IsNull.nullValue;
 
 public class ExecutionResultTest
 {
@@ -95,9 +93,9 @@ public class ExecutionResultTest
         }
     }
 
-    private javax.transaction.Transaction activeTransaction() throws SystemException
+    private org.neo4j.kernel.TopLevelTransaction activeTransaction()
     {
-        TransactionManager txManager = db.getDependencyResolver().resolveDependency( TransactionManager.class );
-        return txManager.getTransaction();
+        ThreadToStatementContextBridge bridge = db.getDependencyResolver().resolveDependency( ThreadToStatementContextBridge.class );
+        return bridge.getTopLevelTransactionBoundToThisThread( false );
     }
 }

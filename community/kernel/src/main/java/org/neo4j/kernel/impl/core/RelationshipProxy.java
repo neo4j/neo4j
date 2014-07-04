@@ -47,9 +47,12 @@ public class RelationshipProxy implements Relationship
     public interface RelationshipLookups
     {
         Node newNodeProxy( long nodeId );
-        RelationshipImpl lookupRelationship(long relationshipId);
+
+        RelationshipData getRelationshipData( long relationshipId );
+
+        RelationshipType getRelationshipTypeById( int type );
+
         GraphDatabaseService getGraphDatabaseService();
-        NodeManager getNodeManager();
     }
 
     private final long relId;
@@ -97,22 +100,24 @@ public class RelationshipProxy implements Relationship
     public Node[] getNodes()
     {
         assertInTransaction();
-        RelationshipImpl relationship = relationshipLookups.lookupRelationship( relId );
-        return new Node[]{ relationshipLookups.newNodeProxy( relationship.getStartNodeId() ), relationshipLookups.newNodeProxy( relationship.getEndNodeId() )};
+        RelationshipData data = relationshipLookups.getRelationshipData( relId );
+        return new Node[] {
+                relationshipLookups.newNodeProxy( data.getStartNode() ),
+                relationshipLookups.newNodeProxy( data.getEndNode() ) };
     }
 
     @Override
     public Node getOtherNode( Node node )
     {
         assertInTransaction();
-        RelationshipImpl relationship = relationshipLookups.lookupRelationship( relId );
-        if ( relationship.getStartNodeId() == node.getId() )
+        RelationshipData data = relationshipLookups.getRelationshipData( relId );
+        if ( data.getStartNode() == node.getId() )
         {
-            return relationshipLookups.newNodeProxy( relationship.getEndNodeId() );
+            return relationshipLookups.newNodeProxy( data.getEndNode() );
         }
-        if ( relationship.getEndNodeId() == node.getId() )
+        if ( data.getEndNode() == node.getId() )
         {
-            return relationshipLookups.newNodeProxy( relationship.getStartNodeId() );
+            return relationshipLookups.newNodeProxy( data.getStartNode() );
         }
         throw new NotFoundException( "Node[" + node.getId()
             + "] not connected to this relationship[" + getId() + "]" );
@@ -122,29 +127,22 @@ public class RelationshipProxy implements Relationship
     public Node getStartNode()
     {
         assertInTransaction();
-        return relationshipLookups.newNodeProxy( relationshipLookups.lookupRelationship( relId ).getStartNodeId() );
+        return relationshipLookups.newNodeProxy( relationshipLookups.getRelationshipData( relId ).getStartNode() );
     }
 
     @Override
     public Node getEndNode()
     {
         assertInTransaction();
-        return relationshipLookups.newNodeProxy( relationshipLookups.lookupRelationship( relId ).getEndNodeId() );
+        return relationshipLookups.newNodeProxy( relationshipLookups.getRelationshipData( relId ).getEndNode() );
     }
 
     @Override
     public RelationshipType getType()
     {
         assertInTransaction();
-        try
-        {
-            return relationshipLookups.getNodeManager().getRelationshipTypeById( relationshipLookups.lookupRelationship( relId )
-                                                                                     .getTypeId() );
-        }
-        catch ( TokenNotFoundException e )
-        {
-            throw new NotFoundException( e );
-        }
+        int type = relationshipLookups.getRelationshipData( relId ).getType();
+        return relationshipLookups.getRelationshipTypeById( type );
     }
 
     @Override
@@ -240,12 +238,16 @@ public class RelationshipProxy implements Relationship
     @Override
     public void setProperty( String key, Object value )
     {
-        boolean success = false;
         try ( Statement statement = statementContextProvider.instance() )
         {
             int propertyKeyId = statement.tokenWriteOperations().propertyKeyGetOrCreateForName( key );
             statement.dataWriteOperations().relationshipSetProperty( relId, Property.property( propertyKeyId, value ) );
-            success = true;
+        }
+        catch ( IllegalArgumentException e )
+        {
+            // Trying to set an illegal value is a critical error - fail this transaction
+            statementContextProvider.getKernelTransactionBoundToThisThread( true ).failure();
+            throw e;
         }
         catch ( EntityNotFoundException e )
         {
@@ -263,13 +265,6 @@ public class RelationshipProxy implements Relationship
         catch ( ReadOnlyDatabaseKernelException e )
         {
             throw new ReadOnlyDbException();
-        }
-        finally
-        {
-            if ( !success )
-            {
-                relationshipLookups.getNodeManager().setRollbackOnly();
-            }
         }
     }
 
@@ -304,15 +299,8 @@ public class RelationshipProxy implements Relationship
     public boolean isType( RelationshipType type )
     {
         assertInTransaction();
-        try
-        {
-            return relationshipLookups.getNodeManager().getRelationshipTypeById(
-                    relationshipLookups.lookupRelationship( relId ).getTypeId() ).name().equals( type.name() );
-        }
-        catch ( TokenNotFoundException e )
-        {
-            throw new NotFoundException( e );
-        }
+        int typeId = relationshipLookups.getRelationshipData( relId ).getType();
+        return relationshipLookups.getRelationshipTypeById( typeId ).name().equals( type.name() );
     }
 
     public int compareTo( Object rel )

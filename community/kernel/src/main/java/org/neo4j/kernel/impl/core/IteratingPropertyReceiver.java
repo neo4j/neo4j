@@ -23,7 +23,7 @@ import java.util.Arrays;
 
 import org.neo4j.helpers.collection.PrefetchingIterator;
 import org.neo4j.kernel.api.properties.DefinedProperty;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreTransaction.PropertyReceiver;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState.PropertyReceiver;
 
 /**
  * A {@link PropertyReceiver} which can be iterated over once populated. The receiver and iterator is the

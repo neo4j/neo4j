@@ -62,7 +62,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
         assertSize( 0,gen().expectedStatus( 200 ).payload( "" ).post(
                 getTraverseUriNodes( getNode( "I" ) ) ).entity());
     }
-    
+
     /**
      * In order to return relationships,
      * simply specify the return type as part of the URL.
@@ -75,7 +75,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
                 getTraverseUriRelationships( getNode( "I" ) ) ).entity());
     }
 
-    
+
     /**
      * In order to return paths from a traversal,
      * specify the +Path+ return type as part of the URL.
@@ -87,8 +87,8 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
         assertSize( 3, gen().expectedStatus( 200 ).payload( "{\"order\":\"breadth_first\",\"uniqueness\":\"none\",\"return_filter\":{\"language\":\"builtin\",\"name\":\"all\"}}" ).post(
                 getTraverseUriPaths( getNode( "I" ) ) ).entity());
     }
-    
-    
+
+
     private String getTraverseUriRelationships( Node node )
     {
         return getNodeUri( node) + "/traverse/relationship";
@@ -135,7 +135,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Traversal using a return filter.
-     * 
+     *
      * In this example, the +none+ prune evaluator is used and a return filter
      * is supplied in order to return all names containing "t".
      * The result is to be returned as nodes and the max depth is
@@ -169,7 +169,7 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
 
     /**
      * Traversal returning nodes below a certain depth.
-     * 
+     *
      * Here, all nodes at a traversal depth below 3 are returned.
      */
     @Documented
@@ -231,8 +231,8 @@ public class TraverserDocIT extends AbstractRestFunctionalTestBase
         assertThat( nodes.size(), is( 5 ) );
         assertThat( getName( nodes.get( 0 ) ), is( "Root" ) );
         assertThat( getName( nodes.get( 1 ) ), is( "Cork" ) );
-        assertThat( getName( nodes.get( 2 ) ), is( "Mattias" ) );
-        assertThat( getName( nodes.get( 3 ) ), is( "Johan" ) );
+        assertThat( getName( nodes.get( 2 ) ), is( "Johan" ) );
+        assertThat( getName( nodes.get( 3 ) ), is( "Mattias" ) );
         assertThat( getName( nodes.get( 4 ) ), is( "Banana" ) );
     }
 

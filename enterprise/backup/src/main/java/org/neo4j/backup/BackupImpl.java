@@ -19,78 +19,74 @@
  */
 package org.neo4j.backup;
 
-import java.util.concurrent.CountDownLatch;
-
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.Response;
-import org.neo4j.com.ServerUtil;
+import org.neo4j.com.storecopy.ResponsePacker;
+import org.neo4j.com.storecopy.StoreCopyServer;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.helpers.Settings;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
-import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.monitoring.BackupMonitor;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static java.lang.Math.max;
+
+import static org.neo4j.com.RequestContext.anonymous;
 
 class BackupImpl implements TheBackupInterface
 {
     private final BackupMonitor backupMonitor;
+    private final StoreCopyServer storeCopyServer;
+    private final ResponsePacker incrementalResponsePacker;
+    private final LogicalTransactionStore logicalTransactionStore;
+    private final GraphDatabaseAPI db;
+    private final TransactionIdStore transactionIdStore;
+    private final LogFileInformation logFileInformation;
 
-    public interface SPI
+    public BackupImpl( StoreCopyServer storeCopyServer, Monitors monitors,
+            LogicalTransactionStore logicalTransactionStore, TransactionIdStore transactionIdStore,
+            LogFileInformation logFileInformation, GraphDatabaseAPI db )
     {
-        String getStoreDir();
-        StoreId getStoreId();
-    }
-
-    private final StringLogger logger;
-    private final SPI spi;
-    private final XaDataSourceManager xaDataSourceManager;
-    private final KernelPanicEventGenerator kpeg;
-    private CountDownLatch countDownLatch;
-
-    public BackupImpl( StringLogger logger, SPI spi, XaDataSourceManager xaDataSourceManager,
-                       KernelPanicEventGenerator kpeg,
-                       Monitors monitors )
-    {
-        this.logger = logger;
-        this.spi = spi;
-        this.xaDataSourceManager = xaDataSourceManager;
-        this.kpeg = kpeg;
+        this.storeCopyServer = storeCopyServer;
+        this.logicalTransactionStore = logicalTransactionStore;
+        this.transactionIdStore = transactionIdStore;
+        this.logFileInformation = logFileInformation;
+        this.db = db;
         this.backupMonitor = monitors.newMonitor( BackupMonitor.class, getClass() );
+        this.incrementalResponsePacker = new ResponsePacker( logicalTransactionStore, transactionIdStore, db );
     }
 
     @Override
     public Response<Void> fullBackup( StoreWriter writer )
     {
-        backupMonitor.startCopyingFiles();
-        RequestContext context = ServerUtil.rotateLogsAndStreamStoreFiles( spi.getStoreDir(),
-                xaDataSourceManager,
-                kpeg, logger, false, writer, new DefaultFileSystemAbstraction(), backupMonitor );
-        writer.done();
-        backupMonitor.finishedCopyingStoreFiles();
-        return packResponse( context );
+        try ( StoreWriter storeWriter = writer )
+        {
+            backupMonitor.startCopyingFiles();
+            RequestContext copyStartContext = storeCopyServer.flushStoresAndStreamStoreFiles( storeWriter );
+            ResponsePacker responsePacker = new StoreCopyResponsePacker( logicalTransactionStore,
+                    transactionIdStore, logFileInformation, db,
+                    copyStartContext.lastAppliedTransaction()+1 ); // mandatory transaction id
+            long optionalTransactionId = boBackACoupleOfTransactionsIfRequired(
+                    copyStartContext.lastAppliedTransaction() ); // optional transaction id
+            return responsePacker.packResponse( anonymous( optionalTransactionId ), null/*no response object*/ );
+        }
+    }
+
+    private long boBackACoupleOfTransactionsIfRequired( long transactionWhenStartingCopy )
+    {
+        int atLeast = 10;
+        if ( transactionIdStore.getLastCommittingTransactionId()-transactionWhenStartingCopy < atLeast )
+        {
+            return max( 1, transactionIdStore.getLastCommittingTransactionId()-atLeast );
+        }
+        return transactionWhenStartingCopy;
     }
 
     @Override
     public Response<Void> incrementalBackup( RequestContext context )
     {
-        return packResponse( context );
-    }
-
-    private Response<Void> packResponse( RequestContext context )
-    {
-        // On Windows there's a problem extracting logs from the current log version
-        // where a rotation is requested during the time of extracting transactions
-        // from it, especially if the extraction process is waiting for the client
-        // to catch up on reading them. On Linux/Mac this isn't a due to a more flexible
-        // file handling system. Solution: rotate before doing an incremental backup
-        // in Windows to avoid running into that problem.
-        if ( Settings.osIsWindows() )
-        {
-            ServerUtil.rotateLogs( xaDataSourceManager, kpeg, logger );
-        }
-        return ServerUtil.packResponse( spi.getStoreId(), xaDataSourceManager, context, null, ServerUtil.ALL );
+        return incrementalResponsePacker.packResponse( context, null );
     }
 }

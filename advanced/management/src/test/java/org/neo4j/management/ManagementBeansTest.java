@@ -19,22 +19,23 @@
  */
 package org.neo4j.management;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
-
-import java.io.File;
 import java.util.Collection;
 import java.util.Map;
 
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.jmx.Kernel;
 import org.neo4j.jmx.Primitives;
 import org.neo4j.jmx.impl.JmxKernelExtension;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.test.TargetDirectory;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 public class ManagementBeansTest
 {
@@ -43,8 +44,8 @@ public class ManagementBeansTest
     @BeforeClass
     public static synchronized void startGraphDb()
     {
-        graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( "target" + File.separator + "var"
-                + File.separator + ManagementBeansTest.class.getSimpleName() );
+        String directory = TargetDirectory.forTest( ManagementBeansTest.class ).makeGraphDbDir().getAbsolutePath();
+        graphDb = (GraphDatabaseAPI) new GraphDatabaseFactory().newEmbeddedDatabase( directory );
     }
 
     @AfterClass
@@ -141,20 +142,8 @@ public class ManagementBeansTest
     }
 
     @Test
-    public void canGetXaManagerBean() throws Exception
-    {
-        assertNotNull( getManager().getXaManagerBean() );
-    }
-
-    @Test
     public void canAccessMemoryMappingCompositData() throws Exception
     {
         assertNotNull( "MemoryPools is null", getManager().getMemoryMappingBean().getMemoryPools() );
-    }
-
-    @Test
-    public void canAccessXaManagerCompositData() throws Exception
-    {
-        assertNotNull( "MemoryPools is null", getManager().getXaManagerBean().getXaResources() );
     }
 }

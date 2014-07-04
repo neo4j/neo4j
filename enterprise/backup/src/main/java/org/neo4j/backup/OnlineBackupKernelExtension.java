@@ -19,8 +19,7 @@
  */
 package org.neo4j.backup;
 
-import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
-
+import java.io.File;
 import java.net.URI;
 
 import org.neo4j.cluster.BindingListener;
@@ -31,14 +30,21 @@ import org.neo4j.cluster.member.ClusterMemberAvailability;
 import org.neo4j.cluster.member.ClusterMemberEvents;
 import org.neo4j.cluster.member.ClusterMemberListener;
 import org.neo4j.com.ServerUtil;
+import org.neo4j.com.storecopy.StoreCopyServer;
+import org.neo4j.graphdb.DependencyResolver;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.core.KernelPanicEventGenerator;
-import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.LogFileInformation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
+
+import static org.neo4j.backup.OnlineBackupSettings.online_backup_server;
 
 public class OnlineBackupKernelExtension implements Lifecycle
 {
@@ -52,38 +58,36 @@ public class OnlineBackupKernelExtension implements Lifecycle
     // In this context, the IPv4 zero-address is understood as "any address on this host."
     public static final String INADDR_ANY = "0.0.0.0";
 
-    private Config config;
-    private GraphDatabaseAPI graphDatabaseAPI;
-    private Logging logging;
+    private final Config config;
+    private final GraphDatabaseAPI graphDatabaseAPI;
+    private final Logging logging;
     private final Monitors monitors;
     private BackupServer server;
     private final BackupProvider backupProvider;
     private volatile URI me;
 
-    public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI, final XaDataSourceManager
-            xaDataSourceManager, final KernelPanicEventGenerator kpeg, final Logging logging, final Monitors monitors )
+    public OnlineBackupKernelExtension( Config config, final GraphDatabaseAPI graphDatabaseAPI,
+                                        final KernelPanicEventGenerator kpeg, final Logging logging,
+                                        final Monitors monitors )
     {
-        this(config, graphDatabaseAPI, new BackupProvider()
+        this( config, graphDatabaseAPI, new BackupProvider()
         {
             @Override
             public TheBackupInterface newBackup()
             {
-                return new BackupImpl( logging.getMessagesLog( BackupImpl.class ), new BackupImpl.SPI()
-                {
-                    @Override
-                    public String getStoreDir()
-                    {
-                        return graphDatabaseAPI.getStoreDir();
-                    }
-
-                    @Override
-                    public StoreId getStoreId()
-                    {
-                        return graphDatabaseAPI.storeId();
-                    }
-                }, xaDataSourceManager, kpeg, monitors );
+                DependencyResolver resolver = graphDatabaseAPI.getDependencyResolver();
+                TransactionIdStore transactionIdStore = resolver.resolveDependency( TransactionIdStore.class );
+                StoreCopyServer copier = new StoreCopyServer(
+                        transactionIdStore,
+                        resolver.resolveDependency( DataSourceManager.class ).getDataSource(),
+                        resolver.resolveDependency( FileSystemAbstraction.class ),
+                        new File( graphDatabaseAPI.getStoreDir() ) );
+                LogicalTransactionStore logicalTransactionStore = resolver.resolveDependency( LogicalTransactionStore.class );
+                LogFileInformation logFileInformation = resolver.resolveDependency( LogFileInformation.class );
+                return new BackupImpl( copier, monitors,
+                        logicalTransactionStore, transactionIdStore, logFileInformation, graphDatabaseAPI );
             }
-        }, monitors, logging);
+        }, monitors, logging );
     }
 
     public OnlineBackupKernelExtension( Config config, GraphDatabaseAPI graphDatabaseAPI, BackupProvider provider,

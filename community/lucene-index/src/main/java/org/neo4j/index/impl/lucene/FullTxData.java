@@ -104,7 +104,7 @@ class FullTxData extends TxData
             boolean add = false;
             if ( document == null )
             {
-                document = index.getIdentifier().entityType.newDocument( entityId );
+                document = IndexType.newDocument( entityId );
                 cachedDocuments.put( id, document );
                 add = true;
             }

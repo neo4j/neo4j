@@ -20,6 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 
@@ -27,21 +28,25 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.Triplet;
 import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.nioneo.xa.RelationshipChainLoader;
 import org.neo4j.kernel.impl.util.ArrayMap;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
 import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 
+/**
+ * Loads relationships from store, instantiating high level cache objects as it goes.
+ * Grunt work is done by {@link RelationshipChainLoader}.
+ */
 public class RelationshipLoader
 {
-    private final PersistenceManager persistenceManager;
     private final Cache<RelationshipImpl> relationshipCache;
+    private final RelationshipChainLoader chainLoader;
 
-    public RelationshipLoader(PersistenceManager persistenceManager, Cache<RelationshipImpl> relationshipCache )
+    public RelationshipLoader( Cache<RelationshipImpl> relationshipCache, RelationshipChainLoader chainLoader )
     {
-        this.persistenceManager = persistenceManager;
         this.relationshipCache = relationshipCache;
+        this.chainLoader = chainLoader;
     }
 
     public Triplet<ArrayMap<Integer, RelIdArray>, List<RelationshipImpl>, RelationshipLoadingPosition>
@@ -50,7 +55,7 @@ public class RelationshipLoader
         long nodeId = node.getId();
         RelationshipLoadingPosition position = node.getRelChainPosition();
         Pair<Map<RelIdArray.DirectionWrapper, Iterable<RelationshipRecord>>,RelationshipLoadingPosition> rels =
-                persistenceManager.getMoreRelationships( nodeId, position, direction, types );
+                chainLoader.getMoreRelationships( nodeId, position, direction, types );
         ArrayMap<Integer, RelIdArray> newRelationshipMap = new ArrayMap<>();
 
         List<RelationshipImpl> relsList = new ArrayList<>( 150 );
@@ -95,7 +100,8 @@ public class RelationshipLoader
         }
     }
 
-    private RelIdArray getOrCreateRelationships( boolean hasLoops, int typeId, ArrayMap<Integer, RelIdArray> loadedRelationships )
+    private RelIdArray getOrCreateRelationships( boolean hasLoops, int typeId,
+            ArrayMap<Integer, RelIdArray> loadedRelationships )
     {
         RelIdArray relIdArray = loadedRelationships.get( typeId );
         if ( relIdArray != null )
@@ -108,7 +114,7 @@ public class RelationshipLoader
     }
 
     private RelationshipImpl getOrCreateRelationshipFromCache( List<RelationshipImpl> newlyCreatedRelationships,
-                                                               RelationshipRecord rel, long relId )
+            RelationshipRecord rel, long relId )
     {
         RelationshipImpl relImpl = relationshipCache.get( relId );
         if (relImpl != null)
@@ -117,8 +123,28 @@ public class RelationshipLoader
         }
 
         RelationshipImpl loadedRelImpl = new RelationshipImpl( relId, rel.getFirstNode(), rel.getSecondNode(),
-                rel.getType(), false );
+                rel.getType()  );
         newlyCreatedRelationships.add( loadedRelImpl );
         return loadedRelImpl;
+    }
+
+    public void putAllInRelCache( Collection<RelationshipImpl> relationships )
+    {
+        relationshipCache.putAll( relationships );
+    }
+
+    public int getRelationshipCount( long id, int i, DirectionWrapper direction )
+    {
+        return chainLoader.getRelationshipCount( id, i, direction );
+    }
+
+    public Integer[] getRelationshipTypes( long id )
+    {
+        return chainLoader.getRelationshipTypes( id );
+    }
+
+    public RelationshipLoadingPosition getRelationshipChainPosition( long id )
+    {
+        return chainLoader.getRelationshipChainPosition( id );
     }
 }

@@ -19,6 +19,7 @@
  */
 package org.neo4j.ext.udc.impl;
 
+import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -38,18 +39,21 @@ import org.neo4j.graphdb.index.IndexManager;
 import org.neo4j.graphdb.schema.Schema;
 import org.neo4j.graphdb.traversal.BidirectionalTraversalDescription;
 import org.neo4j.graphdb.traversal.TraversalDescription;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.KernelData;
-import org.neo4j.kernel.TransactionBuilder;
 import org.neo4j.kernel.Version;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.impl.core.StartupStatistics;
+import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
+import org.neo4j.kernel.impl.nioneo.store.IdRange;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
+import static org.mockito.Mockito.mock;
 
 public class DefaultUdcInformationCollectorTest
 {
@@ -83,30 +87,25 @@ public class DefaultUdcInformationCollectorTest
     @Test
     public void shouldIncludeNodeIdsInUse()
     {
-        assertEquals( expectedIdsInUse( Node.class ), collector.getUdcParams().get( UdcConstants.NODE_IDS_IN_USE ) );
+        assertEquals( "100", collector.getUdcParams().get( UdcConstants.NODE_IDS_IN_USE ) );
     }
 
     @Test
     public void shouldIncludeRelationshipIdsInUse()
     {
-        assertEquals( expectedIdsInUse( Relationship.class ), collector.getUdcParams().get( UdcConstants.RELATIONSHIP_IDS_IN_USE ) );
+        assertEquals( "200", collector.getUdcParams().get( UdcConstants.RELATIONSHIP_IDS_IN_USE ) );
     }
 
     @Test
     public void shouldIncludePropertyIdsInUse()
     {
-        assertEquals( expectedIdsInUse( PropertyStore.class ), collector.getUdcParams().get( UdcConstants.PROPERTY_IDS_IN_USE ) );
+        assertEquals( "400", collector.getUdcParams().get( UdcConstants.PROPERTY_IDS_IN_USE ) );
     }
 
     @Test
     public void shouldIncludeLabelIdsInUse()
     {
-        assertEquals( expectedIdsInUse( Label.class ), collector.getUdcParams().get( UdcConstants.LABEL_IDS_IN_USE ) );
-    }
-
-    private static String expectedIdsInUse( Class<?> clazz )
-    {
-        return Long.toString(new StubIdGenerator().getNumberOfIdsInUse( clazz ));
+        assertEquals( "300", collector.getUdcParams().get( UdcConstants.LABEL_IDS_IN_USE ) );
     }
 
     @SuppressWarnings("deprecation")
@@ -136,20 +135,16 @@ public class DefaultUdcInformationCollectorTest
     @SuppressWarnings("deprecation")
     private static class StubDatabase implements GraphDatabaseAPI
     {
+        private final IdGeneratorFactory idGeneratorFactory = new StubIdGeneratorFactory();
+
         @Override
         public DependencyResolver getDependencyResolver()
         {
-            return new StubDependencyResolver();
+            return new StubDependencyResolver( idGeneratorFactory );
         }
 
         @Override
         public StoreId storeId()
-        {
-            return null;
-        }
-
-        @Override
-        public TransactionBuilder tx()
         {
             return null;
         }
@@ -273,17 +268,26 @@ public class DefaultUdcInformationCollectorTest
 
     private static class StubDependencyResolver implements DependencyResolver
     {
+        private final IdGeneratorFactory idGeneratorFactory;
+
+        public StubDependencyResolver( IdGeneratorFactory idGeneratorFactory )
+        {
+            this.idGeneratorFactory = idGeneratorFactory;
+        }
+
         @Override
         public <T> T resolveDependency( Class<T> type ) throws IllegalArgumentException
         {
-            if ( type == NodeManager.class )
+            if ( IdGeneratorFactory.class.isAssignableFrom( type ) )
             {
-                //noinspection unchecked
-                return (T) new NodeManager( null, null, null, null, new StubIdGenerator(), null, null, null, null,
-                        null, null, null,
-                        null, null, null );
+                return (T) idGeneratorFactory;
             }
-            throw new IllegalArgumentException();
+            else if ( StartupStatistics.class.isAssignableFrom( type ) )
+            {
+                return (T) mock( StartupStatistics.class );
+            }
+
+            throw new IllegalArgumentException( type.getName() );
         }
 
         @Override
@@ -294,32 +298,98 @@ public class DefaultUdcInformationCollectorTest
 
     }
 
-    private static class StubIdGenerator implements EntityIdGenerator
+    private static class StubIdGeneratorFactory implements IdGeneratorFactory
     {
-        private final Map<Class<?>, Long> idsInUse = new HashMap<Class<?>, Long>()
-        {{
-            put( Node.class, 100l );
-            put( Relationship.class, 200l );
-            put( Label.class, 300l );
-            put( PropertyStore.class, 400l );
-        }};
+        private final Map<IdType,Long> idsInUse = new HashMap<>();
+        {
+            idsInUse.put( IdType.NODE, 100l );
+            idsInUse.put( IdType.RELATIONSHIP, 200l );
+            idsInUse.put( IdType.LABEL_TOKEN, 300l );
+            idsInUse.put( IdType.PROPERTY, 400l );
+        }
 
         @Override
-        public long nextId( Class<?> clazz )
+        public IdGenerator open( FileSystemAbstraction fs, File fileName, int grabSize, IdType idType, long highId )
+        {
+            return get( idType );
+        }
+
+        @Override
+        public void create( FileSystemAbstraction fs, File fileName, long highId )
+        {   // Ignore
+        }
+
+        @Override
+        public IdGenerator get( IdType idType )
+        {
+            return new StubIdGenerator( idsInUse.get( idType ) );
+        }
+    }
+
+    private static class StubIdGenerator implements IdGenerator
+    {
+        private final long numberOfIdsInUse;
+
+        public StubIdGenerator( long numberOfIdsInUse )
+        {
+            this.numberOfIdsInUse = numberOfIdsInUse;
+        }
+
+        @Override
+        public long nextId()
+        {
+            throw new UnsupportedOperationException( "Please implement" );
+        }
+
+        @Override
+        public IdRange nextIdBatch( int size )
+        {
+            throw new UnsupportedOperationException( "Please implement" );
+        }
+
+        @Override
+        public void setHighId( long id )
+        {
+            throw new UnsupportedOperationException( "Please implement" );
+        }
+
+        @Override
+        public long getHighId()
         {
             return 0;
         }
 
         @Override
-        public long getHighestPossibleIdInUse( Class<?> clazz )
+        public long getHighestPossibleIdInUse()
         {
             return 0;
         }
 
         @Override
-        public long getNumberOfIdsInUse( Class<?> clazz )
+        public void freeId( long id )
+        {   // Ignore
+        }
+
+        @Override
+        public void close()
+        {   // Ignore
+        }
+
+        @Override
+        public long getNumberOfIdsInUse()
         {
-            return idsInUse.get( clazz );
+            return numberOfIdsInUse;
+        }
+
+        @Override
+        public long getDefragCount()
+        {
+            return 0;
+        }
+
+        @Override
+        public void delete()
+        {   // Ignore
         }
     }
 }

@@ -21,10 +21,6 @@ package org.neo4j.kernel.ha.com.master;
 
 import org.neo4j.kernel.ha.cluster.member.ClusterMember;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.DataSourceRegistrationListener;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -35,12 +31,11 @@ public class DefaultSlaveFactory implements SlaveFactory
     private final int chunkSize;
     private StoreId storeId;
 
-    public DefaultSlaveFactory( XaDataSourceManager xaDsm, Logging logging, Monitors monitors, int chunkSize )
+    public DefaultSlaveFactory( Logging logging, Monitors monitors, int chunkSize )
     {
         this.logging = logging;
         this.monitors = monitors;
         this.chunkSize = chunkSize;
-        xaDsm.addDataSourceRegistrationListener( new StoreIdSettingListener() );
     }
 
     @Override
@@ -52,13 +47,9 @@ public class DefaultSlaveFactory implements SlaveFactory
                 chunkSize );
     }
 
-    private class StoreIdSettingListener extends DataSourceRegistrationListener.Adapter
+    @Override
+    public void setStoreId( StoreId storeId )
     {
-        @Override
-        public void registeredDataSource( XaDataSource ds )
-        {
-            if ( ds instanceof NeoStoreXaDataSource)
-                storeId = ((NeoStoreXaDataSource) ds).getStoreId();
-        }
+        this.storeId = storeId;
     }
 }

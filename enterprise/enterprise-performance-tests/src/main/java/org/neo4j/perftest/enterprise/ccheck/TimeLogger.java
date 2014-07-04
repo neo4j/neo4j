@@ -38,6 +38,7 @@ class TimeLogger implements TimingProgress.Visitor
     @Override
     public void beginTimingProgress( long totalElementCount, long totalTimeNanos ) throws IOException
     {
+        // TODO please pass the PrintStream as an argument
         System.out.printf( "Processed %d elements in %.3f ms%n",
                 totalElementCount, nanosToMillis( totalTimeNanos ) );
         next.beginTimingProgress( totalElementCount, totalTimeNanos );

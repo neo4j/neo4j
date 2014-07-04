@@ -25,9 +25,9 @@ import org.neo4j.helpers.Service;
 import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
+import org.neo4j.kernel.impl.nioneo.xa.DataSourceManager;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.TxManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.management.TransactionManager;
 
 @Service.Implementation(ManagementBeanProvider.class)
@@ -46,54 +46,55 @@ public final class TransactionManagerBean extends ManagementBeanProvider
 
     private static class TransactionManagerImpl extends Neo4jMBean implements TransactionManager
     {
-        private final TxManager txManager;
-        private final XaDataSourceManager xadsm;
+        private final TransactionMonitor txMonitor;
+        private final DataSourceManager xadsm;
 
         TransactionManagerImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.txManager = management.getKernelData().graphDatabase().getDependencyResolver()
-                    .resolveDependency( TxManager.class );
-            this.xadsm = management.getKernelData().graphDatabase().getDependencyResolver().resolveDependency(
-                    XaDataSourceManager.class );
+            this.txMonitor = management.resolveDependency( TransactionMonitor.class );
+            this.xadsm = management.resolveDependency( DataSourceManager.class );
         }
 
+        @Override
         public int getNumberOfOpenTransactions()
         {
-            return txManager.getActiveTxCount();
+            return txMonitor.getNumberOfActiveTransactions();
         }
 
+        @Override
         public int getPeakNumberOfConcurrentTransactions()
         {
-            return txManager.getPeakConcurrentTxCount();
+            return txMonitor.getPeakConcurrentNumberOfTransactions();
         }
 
+        @Override
         public int getNumberOfOpenedTransactions()
         {
-            return txManager.getStartedTxCount();
+            return txMonitor.getNumberOfStartedTransactions();
         }
 
+        @Override
         public long getNumberOfCommittedTransactions()
         {
-            return txManager.getCommittedTxCount();
+            return txMonitor.getNumberOfCommittedTransactions();
         }
 
+        @Override
         public long getNumberOfRolledBackTransactions()
         {
-            return txManager.getRolledbackTxCount();
+            return txMonitor.getNumberOfRolledbackTransactions();
         }
 
+        @Override
         public long getLastCommittedTxId()
         {
-            NeoStoreXaDataSource neoStoreDataSource = xadsm.getNeoStoreDataSource();
+            NeoStoreXaDataSource neoStoreDataSource = xadsm.getDataSource();
             if ( neoStoreDataSource == null )
             {
                 return -1;
             }
-            else
-            {
-                return neoStoreDataSource.getNeoStore().getLastCommittedTx();
-            }
+            return neoStoreDataSource.getNeoStore().getLastCommittingTransactionId();
         }
     }
 }

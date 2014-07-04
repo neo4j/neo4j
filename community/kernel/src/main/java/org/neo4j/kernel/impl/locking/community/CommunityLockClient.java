@@ -200,6 +200,12 @@ public class CommunityLockClient implements Locks.Client
         releaseAll();
     }
 
+    @Override
+    public long getIdentifier()
+    {
+        return lockTransaction.getId();
+    }
+
     private Map<Long, LockResource> localShared( Locks.ResourceType resourceType )
     {
         Map<Long, LockResource> map = sharedLocks.get( resourceType );

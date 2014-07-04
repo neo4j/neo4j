@@ -19,10 +19,8 @@
  */
 package org.neo4j.kernel;
 
-import javax.transaction.TransactionManager;
-
 import org.neo4j.helpers.Clock;
-import org.neo4j.kernel.impl.transaction.TxManager;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 import org.neo4j.kernel.lifecycle.Lifecycle;
 
 /**
@@ -33,13 +31,13 @@ import org.neo4j.kernel.lifecycle.Lifecycle;
 public class DatabaseAvailability
         implements Lifecycle, AvailabilityGuard.AvailabilityRequirement
 {
-    private TransactionManager txManager;
-    private AvailabilityGuard availabilityGuard;
+    private final AvailabilityGuard availabilityGuard;
+    private final TransactionMonitor transactionMonitor;
 
-    public DatabaseAvailability( TransactionManager txManager, AvailabilityGuard availabilityGuard )
+    public DatabaseAvailability( AvailabilityGuard availabilityGuard, TransactionMonitor transactionMonitor )
     {
-        this.txManager = txManager;
         this.availabilityGuard = availabilityGuard;
+        this.transactionMonitor = transactionMonitor;
     }
 
     @Override
@@ -63,17 +61,13 @@ public class DatabaseAvailability
         // Deny beginning new transactions
         availabilityGuard.deny(this);
 
-        // If possible, wait until current transactions finish before continuing the shutdown
-        if ( txManager instanceof TxManager )
-        {
-            // TODO make stop-deadline configurable
-            long deadline = Clock.SYSTEM_CLOCK.currentTimeMillis() + 20 * 1000;
+        // TODO make stop-deadline configurable
+        long deadline = Clock.SYSTEM_CLOCK.currentTimeMillis() + 20 * 1000;
 
-            TxManager realTxManager = (TxManager) txManager;
-            while ( realTxManager.getActiveTxCount() > 0 && Clock.SYSTEM_CLOCK.currentTimeMillis() < deadline)
-            {
-                Thread.yield();
-            }
+        while ( transactionMonitor.getNumberOfActiveTransactions() > 0 &&
+                Clock.SYSTEM_CLOCK.currentTimeMillis() < deadline)
+        {
+            Thread.yield();
         }
     }
 

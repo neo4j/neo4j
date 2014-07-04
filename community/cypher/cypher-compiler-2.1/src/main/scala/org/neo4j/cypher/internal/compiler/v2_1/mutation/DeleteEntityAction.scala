@@ -26,7 +26,8 @@ import symbols._
 import org.neo4j.cypher.CypherTypeException
 import org.neo4j.graphdb.{PropertyContainer, Path, Relationship, Node}
 import collection.JavaConverters._
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge
+import org.neo4j.kernel.impl.api.KernelStatement
 
 case class DeleteEntityAction(elementToDelete: Expression)
   extends UpdateAction {
@@ -43,13 +44,15 @@ case class DeleteEntityAction(elementToDelete: Expression)
   }
 
   private def delete(x: PropertyContainer, state: QueryState) {
-    val nodeManager: NodeManager = state.graphDatabaseAPI.getDependencyResolver.resolveDependency(classOf[NodeManager])
+    val nodeManager: ThreadToStatementContextBridge = state.graphDatabaseAPI.getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+
+    val statement : KernelStatement = nodeManager.getKernelTransactionBoundToThisThread( true ).acquireStatement().asInstanceOf[KernelStatement]
 
     x match {
-      case n: Node if !nodeManager.isDeleted(n) =>
+      case n: Node if !statement.txState().nodeIsDeletedInThisTx(n.getId) =>
         state.query.nodeOps.delete(n)
 
-      case r: Relationship if !nodeManager.isDeleted(r) =>
+      case r: Relationship if !statement.txState().relationshipIsDeletedInThisTx(r.getId) =>
         state.query.relationshipOps.delete(r)
 
       case _ => // Entity is already deleted. No need to do anything

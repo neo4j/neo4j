@@ -31,13 +31,15 @@ public class DefaultCaches implements Caches
     private Config config;
     private final StringLogger logger;
     private final Monitors monitors;
-    
+    private Cache<NodeImpl> nodeCache;
+    private Cache<RelationshipImpl> relCache;
+
     public DefaultCaches( StringLogger logger, Monitors monitors )
     {
         this.logger = logger;
         this.monitors = monitors;
     }
-    
+
     @Override
     public void configure( CacheProvider provider, Config config )
     {
@@ -48,17 +50,44 @@ public class DefaultCaches implements Caches
     @Override
     public Cache<NodeImpl> node()
     {
-        return provider.newNodeCache( logger, config, monitors );
+        if ( nodeCache == null )
+        {
+            nodeCache = provider.newNodeCache( logger, config, monitors );
+        }
+        return nodeCache;
     }
 
     @Override
     public Cache<RelationshipImpl> relationship()
     {
-        return provider.newRelationshipCache( logger, config, monitors );
+        if ( relCache == null )
+        {
+            relCache = provider.newRelationshipCache( logger, config, monitors );
+        }
+        return relCache;
+    }
+
+    @Override
+    public void clear()
+    {
+        if ( nodeCache != null )
+        {
+            nodeCache.clear();
+        }
+        if ( relCache != null )
+        {
+            relCache.clear();
+        }
     }
 
     @Override
     public void invalidate()
     {
+    }
+
+    @Override
+    public CacheProvider getProvider()
+    {
+        return provider;
     }
 }

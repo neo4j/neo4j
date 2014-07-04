@@ -41,7 +41,7 @@ public abstract class FutureAdapter<V> implements Future<V>
     {
         throw new UnsupportedOperationException();
     }
-    
+
     public static class Present<V> extends FutureAdapter<V>
     {
         private final V value;
@@ -50,7 +50,7 @@ public abstract class FutureAdapter<V> implements Future<V>
         {
             this.value = value;
         }
-        
+
         @Override
         public boolean isDone()
         {
@@ -68,10 +68,15 @@ public abstract class FutureAdapter<V> implements Future<V>
         {
             return value;
         }
-    };
-    
+    }
+
+    public static <T> Present<T> present( T value )
+    {
+        return new Present<>( value );
+    }
+
     public static final Future<Void> VOID = new Present<>( null );
-    
+
     public static <T> Future<T> latchGuardedValue( final ValueGetter<T> value, final CountDownLatch guardedByLatch )
     {
         return new FutureAdapter<T>()
@@ -94,13 +99,15 @@ public abstract class FutureAdapter<V> implements Future<V>
                     TimeoutException
             {
                 if ( !guardedByLatch.await( timeout, unit ) )
+                {
                     throw new TimeoutException( "Index population job cancel didn't complete within " +
                             timeout + " " + unit );
+                }
                 return value.get();
             }
         };
     }
-    
+
     public static Future<Integer> processFuture( final Process process )
     {
         return new FutureAdapter<Integer>()
@@ -147,7 +154,7 @@ public abstract class FutureAdapter<V> implements Future<V>
             }
         };
     }
-    
+
     public static <T> Future<T> future( final Callable<T> task )
     {
         ExecutorService executor = Executors.newSingleThreadExecutor();

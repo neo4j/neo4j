@@ -19,9 +19,12 @@
  */
 package org.neo4j.com;
 
+import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
+import java.util.LinkedList;
+import java.util.List;
 
 import org.jboss.netty.buffer.ChannelBuffer;
 import org.jboss.netty.channel.Channel;
@@ -30,8 +33,22 @@ import org.jboss.netty.handler.codec.frame.LengthFieldBasedFrameDecoder;
 import org.jboss.netty.handler.codec.frame.LengthFieldPrepender;
 import org.jboss.netty.handler.queue.BlockingReadHandler;
 import org.neo4j.com.storecopy.StoreWriter;
-import org.neo4j.helpers.Triplet;
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.transaction.xaframework.CommandWriter;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntry;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryReader;
+import org.neo4j.kernel.impl.transaction.xaframework.LogEntryWriterv1;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionCursor;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.ReadableLogChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.VersionAwareLogEntryReader;
+import org.neo4j.kernel.impl.util.DumpLogicalLog;
 
 /**
  * Contains the logic for serializing requests and deserializing responses. Still missing the inverse, serializing
@@ -66,17 +83,26 @@ public class Protocol
         chunkingBuffer.done();
     }
 
-    public <PAYLOAD> Response<PAYLOAD> deserializeResponse(BlockingReadHandler<ChannelBuffer> reader, ByteBuffer input, long timeout,
-                                                           Deserializer<PAYLOAD> payloadDeserializer,
-                                                           ResourceReleaser channelReleaser) throws IOException
+    public <PAYLOAD> Response<PAYLOAD> deserializeResponse( BlockingReadHandler<ChannelBuffer> reader,
+            ByteBuffer input, long timeout, Deserializer<PAYLOAD> payloadDeserializer,
+            ResourceReleaser channelReleaser) throws IOException
     {
-        DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
+        final DechunkingChannelBuffer dechunkingBuffer = new DechunkingChannelBuffer( reader, timeout,
                 internalProtocolVersion, applicationProtocolVersion );
 
         PAYLOAD response = payloadDeserializer.read( dechunkingBuffer, input );
         StoreId storeId = readStoreId( dechunkingBuffer, input );
-        TransactionStream txStreams = readTransactionStreams( dechunkingBuffer );
-        return new Response<PAYLOAD>( response, storeId, txStreams, channelReleaser );
+        TransactionStream transactions = new TransactionStream()
+        {
+            @Override
+            public void accept( Visitor<CommittedTransactionRepresentation, IOException> visitor ) throws IOException
+            {
+                LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+                NetworkReadableLogChannel channel = new NetworkReadableLogChannel( dechunkingBuffer );
+                exhaustAndClose( new PhysicalTransactionCursor( channel, reader, visitor ) );
+            }
+        };
+        return new Response<PAYLOAD>( response, storeId, transactions, channelReleaser );
     }
 
     private void writeContext( RequestContext context, ChannelBuffer targetBuffer )
@@ -84,60 +110,16 @@ public class Protocol
         targetBuffer.writeLong( context.getEpoch() );
         targetBuffer.writeInt( context.machineId() );
         targetBuffer.writeInt( context.getEventIdentifier() );
-        RequestContext.Tx[] txs = context.lastAppliedTransactions();
-        targetBuffer.writeByte( txs.length );
-        for ( RequestContext.Tx tx : txs )
-        {
-            writeString( targetBuffer, tx.getDataSourceName() );
-            targetBuffer.writeLong( tx.getTxId() );
-        }
+        long tx = context.lastAppliedTransaction();
+        targetBuffer.writeLong( tx );
         targetBuffer.writeInt( context.getMasterId() );
         targetBuffer.writeLong( context.getChecksum() );
     }
 
-    private TransactionStream readTransactionStreams( final ChannelBuffer buffer )
+    private Iterable<CommittedTransactionRepresentation> readTransactionStreams( final ChannelBuffer buffer )
+            throws IOException
     {
-        final String[] datasources = readTransactionStreamHeader( buffer );
-
-        if ( datasources.length == 1 )
-        {
-            return TransactionStream.EMPTY;
-        }
-
-        return new TransactionStream()
-        {
-            @Override
-            protected Triplet<String, Long, TxExtractor> fetchNextOrNull()
-            {
-                makeSureNextTransactionIsFullyFetched( buffer );
-                String datasource = datasources[buffer.readUnsignedByte()];
-                if ( datasource == null )
-                {
-                    return null;
-                }
-                long txId = buffer.readLong();
-                TxExtractor extractor = TxExtractor.create( new BlockLogReader( buffer ) );
-                return Triplet.of( datasource, txId, extractor );
-            }
-
-            @Override
-            public String[] dataSourceNames()
-            {
-                return Arrays.copyOfRange( datasources, 1, datasources.length );
-            }
-        };
-    }
-
-    private String[] readTransactionStreamHeader( ChannelBuffer buffer )
-    {
-        short numberOfDataSources = buffer.readUnsignedByte();
-        final String[] datasources = new String[numberOfDataSources + 1];
-        datasources[0] = null; // identifier for "no more transactions"
-        for ( int i = 1; i < datasources.length; i++ )
-        {
-            datasources[i] = readString( buffer );
-        }
-        return datasources;
+        return COMMITTED_TRANSACTION_DESERIALIZER.read( buffer, null );
     }
 
     private static void makeSureNextTransactionIsFullyFetched( ChannelBuffer buffer )
@@ -177,6 +159,7 @@ public class Protocol
 
     public static final ObjectSerializer<Integer> INTEGER_SERIALIZER = new ObjectSerializer<Integer>()
     {
+        @Override
         @SuppressWarnings( "boxing" )
         public void write( Integer responseObject, ChannelBuffer result ) throws IOException
         {
@@ -185,6 +168,7 @@ public class Protocol
     };
     public static final ObjectSerializer<Long> LONG_SERIALIZER = new ObjectSerializer<Long>()
     {
+        @Override
         @SuppressWarnings( "boxing" )
         public void write( Long responseObject, ChannelBuffer result ) throws IOException
         {
@@ -193,12 +177,14 @@ public class Protocol
     };
     public static final ObjectSerializer<Void> VOID_SERIALIZER = new ObjectSerializer<Void>()
     {
+        @Override
         public void write( Void responseObject, ChannelBuffer result ) throws IOException
         {
         }
     };
     public static final Deserializer<Integer> INTEGER_DESERIALIZER = new Deserializer<Integer>()
     {
+        @Override
         public Integer read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             return buffer.readInt();
@@ -206,6 +192,7 @@ public class Protocol
     };
     public static final Deserializer<Void> VOID_DESERIALIZER = new Deserializer<Void>()
     {
+        @Override
         public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             return null;
@@ -213,6 +200,7 @@ public class Protocol
     };
     public static final Serializer EMPTY_SERIALIZER = new Serializer()
     {
+        @Override
         public void write( ChannelBuffer buffer ) throws IOException
         {
         }
@@ -225,8 +213,9 @@ public class Protocol
         {
             this.writer = writer;
         }
-        
+
         // NOTICE: this assumes a "smart" ChannelBuffer that continues to next chunk
+        @Override
         public Void read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws IOException
         {
             int pathLength;
@@ -236,11 +225,111 @@ public class Protocol
                 boolean hasData = buffer.readByte() == 1;
                 writer.write( path, hasData ? new BlockLogReader( buffer ) : null, temporaryBuffer, hasData );
             }
-            writer.done();
+            writer.close();
             return null;
         }
+    }
+
+    public static class TransactionSerializer implements Serializer
+    {
+        private final TransactionRepresentation tx;
+
+        public TransactionSerializer( TransactionRepresentation tx )
+        {
+            this.tx = tx;
+        }
+
+        @Override
+        public void write( ChannelBuffer buffer ) throws IOException
+        {
+            NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
+
+            writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            channel.putInt( tx.getAuthorId() );
+            channel.putInt( tx.getMasterId() );
+            channel.putLong( tx.getLatestCommittedTxWhenStarted() );
+            channel.putLong( tx.getTimeWritten() );
+            channel.putInt( tx.additionalHeader().length );
+            channel.put( tx.additionalHeader(), tx.additionalHeader().length );
+            new LogEntryWriterv1( channel, new CommandWriter( channel ) ).serialize( tx );
+        }
+    }
+
+    public static final Deserializer<TransactionRepresentation> TRANSACTION_REPRESENTATION_DESERIALIZER =
+            new Deserializer<TransactionRepresentation>()
+    {
+        @Override
+        public TransactionRepresentation read( ChannelBuffer buffer, ByteBuffer temporaryBuffer ) throws
+                IOException
+        {
+            LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+            NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
+
+            int authorId = channel.getInt();
+            int masterId = channel.getInt();
+            long latestCommittedTxWhenStarted = channel.getLong();
+            long timeWritten = channel.getLong();
+
+            int headerLength = channel.getInt();
+            byte[] header = new byte[headerLength];
+
+            channel.get( header, headerLength );
+
+            LogEntry.Command entryRead;
+            List<Command> commands = new LinkedList<>();
+            while (  (entryRead = (LogEntry.Command) reader.readLogEntry( channel )) != null )
+            {
+                commands.add( entryRead.getXaCommand() );
+            }
+
+            PhysicalTransactionRepresentation toReturn = new PhysicalTransactionRepresentation( commands );
+            toReturn.setHeader( header, masterId, authorId, timeWritten, latestCommittedTxWhenStarted );
+            return toReturn;
+        }
     };
-    
+
+    public static final Deserializer<Iterable<CommittedTransactionRepresentation>> COMMITTED_TRANSACTION_DESERIALIZER =
+            new Deserializer<Iterable<CommittedTransactionRepresentation>>()
+    {
+        @Override
+        public Iterable<CommittedTransactionRepresentation> read( ChannelBuffer buffer, ByteBuffer temporaryBuffer )
+                throws IOException
+        {
+            LogEntryReader<ReadableLogChannel> reader = new VersionAwareLogEntryReader( CommandReaderFactory.DEFAULT );
+            NetworkReadableLogChannel channel = new NetworkReadableLogChannel( buffer );
+            AccumulatorVisitor<CommittedTransactionRepresentation> accumulator = new AccumulatorVisitor<>();
+            exhaustAndClose( new PhysicalTransactionCursor( channel, reader, accumulator ) );
+            return accumulator.getAccumulator();
+        }
+    };
+
+    public static class CommittedTransactionRepresentationSerializer implements Serializer
+    {
+        private final Iterable<CommittedTransactionRepresentation> txs;
+
+        public CommittedTransactionRepresentationSerializer( Iterable<CommittedTransactionRepresentation> txs )
+        {
+            this.txs = txs;
+        }
+
+        @Override
+        public void write( ChannelBuffer buffer ) throws IOException
+        {
+            NetworkWritableLogChannel channel = new NetworkWritableLogChannel( buffer );
+            LogEntryWriterv1 writer = new LogEntryWriterv1( channel, new CommandWriter( channel ) );
+            for ( CommittedTransactionRepresentation tx : txs )
+            {
+                LogEntry.Start startEntry = tx.getStartEntry();
+                writer.writeStartEntry( startEntry.getMasterId(), startEntry.getLocalId(),
+                        startEntry.getTimeWritten(), startEntry.getLastCommittedTxWhenTransactionStarted(),
+                        startEntry.getAdditionalHeader() );
+                writer.serialize( tx.getTransactionRepresentation() );
+                LogEntry.Commit commitEntry = tx.getCommitEntry();
+                writer.writeCommitEntry( commitEntry.getTxId(), commitEntry.getTimeWritten() );
+            }
+        }
+    }
+
     public static void addLengthFieldPipes( ChannelPipeline pipeline, int frameLength )
     {
         pipeline.addLast( "frameDecoder",
@@ -279,7 +368,7 @@ public class Protocol
         default: throw new ComException( "Invalid boolean value " + value );
         }
     }
-    
+
     public static String readString( ChannelBuffer buffer, int length )
     {
         char[] chars = new char[length];
@@ -293,7 +382,9 @@ public class Protocol
     public static void assertChunkSizeIsWithinFrameSize( int chunkSize, int frameLength )
     {
         if ( chunkSize > frameLength )
+        {
             throw new IllegalArgumentException( "Chunk size " + chunkSize +
                     " needs to be equal or less than frame length " + frameLength );
+        }
     }
 }

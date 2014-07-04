@@ -30,7 +30,6 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.EphemeralFileSystemRule;
@@ -42,7 +41,6 @@ import static org.junit.Assert.assertEquals;
 
 import static org.neo4j.helpers.collection.IteratorUtil.asCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.first;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.api.index.TestSchemaIndexProviderDescriptor.PROVIDER_DESCRIPTOR;
 import static org.neo4j.kernel.impl.util.StringLogger.DEV_NULL;
 
@@ -149,7 +147,9 @@ public class SchemaStoreTest
     @Before
     public void before() throws Exception
     {
-        config = new Config( stringMap() );
+        File storeDir = new File( "dir" );
+        fs.get().mkdirs( storeDir );
+        config = StoreFactory.configForStoreDir( new Config(), storeDir );
         DefaultIdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Monitors monitors = new Monitors();
         storeFactory = new StoreFactory(
@@ -158,11 +158,9 @@ public class SchemaStoreTest
                 pageCacheRule.getPageCache( fs.get(), config ),
                 fs.get(),
                 DEV_NULL,
-                new DefaultTxHook(),
                 monitors );
-        File file = new File( "schema-store" );
-        storeFactory.createSchemaStore( file );
-        store = storeFactory.newSchemaStore( file );
+        storeFactory.createSchemaStore();
+        store = storeFactory.newSchemaStore();
     }
 
     @After

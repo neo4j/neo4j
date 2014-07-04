@@ -19,8 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
-import static java.lang.String.format;
-
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -28,6 +26,8 @@ import java.nio.ByteBuffer;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
+
+import static java.lang.String.format;
 
 public class NeoStoreUtil
 {
@@ -47,6 +47,11 @@ public class NeoStoreUtil
             System.exit( 1 );
         }
         System.out.println( new NeoStoreUtil( new File( args[0] ) ) );
+    }
+
+    public static boolean neoStoreExists( FileSystemAbstraction fs, File storeDir )
+    {
+        return fs.fileExists( neoStoreFile( storeDir ) );
     }
 
     public NeoStoreUtil( File storeDir )

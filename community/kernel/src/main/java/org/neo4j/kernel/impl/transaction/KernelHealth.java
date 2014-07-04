@@ -43,6 +43,13 @@ public class KernelHealth
         this.log = logging.getMessagesLog( getClass() );
     }
 
+    /**
+     * Asserts that the kernel is in good health. If that is not the case then the cause of the
+     * unhealthy state is wrapped in an exception of the given type, i.e. the panic disguise.
+     *
+     * @param panicDisguise the cause of the unhealthy state wrapped in an exception of this type.
+     * @throws EXCEPTION exception type to wrap cause in.
+     */
     public <EXCEPTION extends Throwable> void assertHealthy( Class<EXCEPTION> panicDisguise )
             throws EXCEPTION
     {

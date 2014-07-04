@@ -32,6 +32,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.helpers.collection.IteratorUtil;
+import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.impl.AbstractNeo4jTestCase;
 import org.neo4j.kernel.impl.MyRelTypes;
 import org.neo4j.tooling.GlobalGraphOperations;
@@ -119,48 +120,6 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         return false;
     }
 
-//    private static enum RelTypes implements RelationshipType
-//    {
-//        ONE_MORE_RELATIONSHIP;
-//    }
-
-    // TODO: fix this testcase
-    @Test
-    public void testIdUsageInfo()
-    {
-        NodeManager nm = getGraphDbAPI().getDependencyResolver().resolveDependency( NodeManager.class );
-        long nodeCount = nm.getNumberOfIdsInUse( Node.class );
-        long relCount = nm.getNumberOfIdsInUse( Relationship.class );
-        if ( nodeCount > nm.getHighestPossibleIdInUse( Node.class ) )
-        {
-            // fail( "Node count greater than highest id " + nodeCount );
-        }
-        if ( relCount > nm.getHighestPossibleIdInUse( Relationship.class ) )
-        {
-            // fail( "Rel count greater than highest id " + relCount );
-        }
-        // assertTrue( nodeCount <= nm.getHighestPossibleIdInUse( Node.class )
-        // );
-        // assertTrue( relCount <= nm.getHighestPossibleIdInUse(
-        // Relationship.class ) );
-        Node n1 = nm.newNodeProxyById(nm.createNode());
-        Node n2 = nm.newNodeProxyById(nm.createNode());
-        Relationship r1 = n1.createRelationshipTo( n2, MyRelTypes.TEST );
-        // assertEquals( nodeCount + 2, nm.getNumberOfIdsInUse( Node.class ) );
-        // assertEquals( relCount + 1, nm.getNumberOfIdsInUse(
-        // Relationship.class ) );
-        r1.delete();
-        n1.delete();
-        n2.delete();
-        // must commit for ids to be reused
-        getTransaction().success();
-        getTransaction().finish();
-        // assertEquals( nodeCount, nm.getNumberOfIdsInUse( Node.class ) );
-        // assertEquals( relCount, nm.getNumberOfIdsInUse( Relationship.class )
-        // );
-        setTransaction( getGraphDb().beginTx() );
-    }
-
     @Test
     public void testRandomPropertyName()
     {
@@ -223,11 +182,11 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         tx2.finish();
         graphDb2.shutdown();
     }
-    
+
     @Test
     public void testGetAllNodes()
     {
-        long highId = getNodeManager().getHighestPossibleIdInUse( Node.class );
+        long highId = getIdGenerator( IdType.NODE ).getHighestPossibleIdInUse();
         if ( highId >= 0 && highId < 10000 )
         {
             int count = IteratorUtil.count( GlobalGraphOperations.at( getGraphDb() ).getAllNodes() );
@@ -246,11 +205,11 @@ public class TestNeo4j extends AbstractNeo4jTestCase
             }
             assertTrue( found );
             assertEquals( count, oldCount + 1 );
-            
+
             // Tests a bug in the "all nodes" iterator
             Iterator<Node> allNodesIterator = GlobalGraphOperations.at( getGraphDb() ).getAllNodes().iterator();
             assertNotNull( allNodesIterator.next() );
-            
+
             newNode.delete();
             newTransaction();
             found = false;
@@ -268,7 +227,7 @@ public class TestNeo4j extends AbstractNeo4jTestCase
         }
         // else we skip test, takes too long
     }
-    
+
     @Test
     public void testMultipleShutdown()
     {

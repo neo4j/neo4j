@@ -27,7 +27,7 @@ import org.neo4j.jmx.impl.ManagementBeanProvider;
 import org.neo4j.jmx.impl.ManagementData;
 import org.neo4j.jmx.impl.Neo4jMBean;
 import org.neo4j.kernel.impl.cache.Cache;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Caches;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public class CacheBean extends ManagementBeanProvider
@@ -41,13 +41,11 @@ public class CacheBean extends ManagementBeanProvider
     protected Iterable<? extends Neo4jMBean> createMBeans( ManagementData management )
             throws NotCompliantMBeanException
     {
-        NodeManager nm = management.getKernelData().graphDatabase().getDependencyResolver()
-                .resolveDependency( NodeManager.class );
+        Caches caches = management.getKernelData().graphDatabase().getDependencyResolver()
+                .resolveDependency( Caches.class );
         Collection<CacheManager> cacheBeans = new LinkedList<>();
-        for ( Cache<?> cache : nm.caches() )
-        {
-            cacheBeans.add( new CacheManager( management, nm, cache ) );
-        }
+        cacheBeans.add( new CacheManager( management, caches.getProvider().getDescription(), caches.node() ) );
+        cacheBeans.add( new CacheManager( management, caches.getProvider().getDescription(), caches.relationship() ) );
         return cacheBeans;
     }
 
@@ -60,19 +58,19 @@ public class CacheBean extends ManagementBeanProvider
     private class CacheManager extends Neo4jMBean implements org.neo4j.management.Cache
     {
         private final Cache cache;
-        private final NodeManager nodeManager;
+        private final String description;
 
-        CacheManager( ManagementData management, NodeManager nodeManager, Cache cache )
+        CacheManager( ManagementData management, String description, Cache cache )
                 throws NotCompliantMBeanException
         {
             super( management, cache.getName() );
-            this.nodeManager = nodeManager;
             this.cache = cache;
+            this.description = description;
         }
 
         public String getCacheType()
         {
-            return nodeManager.getCacheType().getDescription();
+            return description;
         }
 
         public void clear()

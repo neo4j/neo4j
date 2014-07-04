@@ -25,26 +25,19 @@ import org.neo4j.graphdb.event.ErrorState;
 import org.neo4j.graphdb.event.KernelEventHandler;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.master.Master;
-import org.neo4j.kernel.impl.transaction.TxManager;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
 public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGuard.AvailabilityRequirement
 {
-    private final XaDataSourceManager dataSourceManager;
-    private final TxManager txManager;
     private final AtomicInteger epoch = new AtomicInteger();
     private final AvailabilityGuard availabilityGuard;
     private final DelegateInvocationHandler<Master> masterDelegateInvocationHandler;
     private final StringLogger logger;
 
-    public HaKernelPanicHandler( XaDataSourceManager dataSourceManager, TxManager txManager,
-                                 AvailabilityGuard availabilityGuard, Logging logging,
+    public HaKernelPanicHandler( AvailabilityGuard availabilityGuard, Logging logging,
                                  DelegateInvocationHandler<Master> masterDelegateInvocationHandler )
     {
-        this.dataSourceManager = dataSourceManager;
-        this.txManager = txManager;
         this.availabilityGuard = availabilityGuard;
         this.logger = logging.getMessagesLog( getClass() );
         this.masterDelegateInvocationHandler = masterDelegateInvocationHandler;
@@ -64,7 +57,8 @@ public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGua
             try
             {
                 int myEpoch = epoch.get();
-                synchronized ( dataSourceManager )
+                // TODO 2.2-future needs synchronized on tx application?
+//                synchronized ( dataSourceManager )
                 {
                     if ( myEpoch != epoch.get() )
                     {
@@ -76,11 +70,12 @@ public class HaKernelPanicHandler implements KernelEventHandler, AvailabilityGua
                     availabilityGuard.deny(this);
                     try
                     {
-                        txManager.stop();
-                        dataSourceManager.stop();
-                        dataSourceManager.start();
-                        txManager.start();
-                        txManager.doRecovery();
+                        // TODO 2.2-future needs to do something similar?
+//                        txManager.stop();
+//                        dataSourceManager.stop();
+//                        dataSourceManager.start();
+//                        txManager.start();
+//                        txManager.doRecovery();
                         masterDelegateInvocationHandler.harden();
                     }
                     finally

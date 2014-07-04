@@ -24,13 +24,12 @@ import java.rmi.RemoteException;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
-import javax.transaction.Transaction;
-import javax.transaction.TransactionManager;
-
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.TopLevelTransaction;
+import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.shell.Output;
 import org.neo4j.shell.Response;
 import org.neo4j.shell.Session;
@@ -52,7 +51,7 @@ public class GraphDatabaseShellServer extends AbstractAppServer
 {
     private final GraphDatabaseAPI graphDb;
     private boolean graphDbCreatedHere;
-    protected final Map<Serializable, Transaction> transactions = new ConcurrentHashMap<Serializable, Transaction>();
+    protected final Map<Serializable, TopLevelTransaction> transactions = new ConcurrentHashMap<>();
 
     /**
      * @throws RemoteException if an RMI error occurs.
@@ -102,7 +101,11 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     {
         try
         {
-            Transaction tx = getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).suspend();
+            ThreadToStatementContextBridge threadToStatementContextBridge = getDb().getDependencyResolver()
+                    .resolveDependency(
+                            ThreadToStatementContextBridge.class );
+            TopLevelTransaction tx = threadToStatementContextBridge.getTopLevelTransactionBoundToThisThread( false );
+            threadToStatementContextBridge.unbindTransactionFromCurrentThread();
             if ( tx == null )
             {
                 transactions.remove( clientId );
@@ -120,12 +123,14 @@ public class GraphDatabaseShellServer extends AbstractAppServer
 
     private void restoreTransaction( Serializable clientId ) throws ShellException
     {
-        Transaction tx = transactions.get( clientId );
+        TopLevelTransaction tx = transactions.get( clientId );
         if ( tx != null )
         {
             try
             {
-                getDb().getDependencyResolver().resolveDependency( TransactionManager.class ).resume( tx );
+                getDb().getDependencyResolver()
+                        .resolveDependency(
+                                ThreadToStatementContextBridge.class ).bindTransactionToCurrentThread( tx );
             }
             catch ( Exception e )
             {

@@ -19,28 +19,32 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
+import static org.mockito.Mockito.mock;
+import static org.mockito.Mockito.times;
+import static org.mockito.Mockito.verify;
+import static org.mockito.Mockito.when;
+import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
+
 import org.junit.Before;
 import org.junit.Test;
+import org.mockito.Matchers;
+import org.neo4j.com.RequestContext;
+import org.neo4j.com.ResourceReleaser;
+import org.neo4j.com.Response;
+import org.neo4j.com.TransactionStream;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.AvailabilityGuard;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.Locks;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-import org.neo4j.kernel.impl.transaction.TxManager;
-
-import static org.mockito.Matchers.anyLong;
-import static org.mockito.Matchers.anyObject;
-import static org.mockito.Mockito.*;
-import static org.neo4j.kernel.impl.locking.ResourceTypes.NODE;
 
 public class SlaveLocksClientTest
 {
     private SlaveLocksClient client;
     private Master master;
     private AvailabilityGuard availabilityGuard;
-    private HaXaDataSourceManager xaDsm;
     private Locks.Client local;
 
     @Before
@@ -51,25 +55,36 @@ public class SlaveLocksClientTest
         master = mock( Master.class );
         local = mock(Locks.Client.class);
 
-        when(local.tryExclusiveLock(any( Locks.ResourceType.class ), any(long.class) )).thenReturn( true );
-        when(local.trySharedLock( any( Locks.ResourceType.class ), any( long.class ) )).thenReturn( true );
+        when(local.tryExclusiveLock(any( Locks.ResourceType.class ), any( long.class ) ) ).thenReturn( true );
+        when(local.trySharedLock( any( Locks.ResourceType.class ), any( long.class ) ) ).thenReturn( true );
 
         when(localLockManager.newClient()).thenReturn( local );
 
         RequestContextFactory requestContextFactory = mock( RequestContextFactory.class );
-        xaDsm = mock( HaXaDataSourceManager.class );
-        when( xaDsm.applyTransactions(
-                (org.neo4j.com.Response<LockResult>) anyObject() )).thenReturn(
-                new LockResult( LockStatus.OK_LOCKED ) );
-        AbstractTransactionManager txManager = mock( TxManager.class );
-        RemoteTxHook txHook = mock( RemoteTxHook.class );
+
+        // TODO 2.2-future
+//        when( xaDsm.applyTransactions(
+//                (org.neo4j.com.Response<LockResult>) anyObject() )).thenReturn(
+//                new LockResult( LockStatus.OK_LOCKED ) );
+        when( master.acquireSharedLock( Matchers.<RequestContext>anyObject(),
+                Matchers.<Locks.ResourceType>anyObject(), Matchers.<long[]>anyVararg() ) ).thenReturn( new Response
+                <LockResult>(new LockResult( LockStatus.OK_LOCKED ), null,
+                TransactionStream.EMPTY, ResourceReleaser.NO_OP  ));
+
+        when( master.acquireExclusiveLock( Matchers.<RequestContext>anyObject(),
+                Matchers.<Locks.ResourceType>anyObject(), Matchers.<long[]>anyVararg() ) ).thenReturn( new Response
+                <LockResult>(new LockResult( LockStatus.OK_LOCKED ), null,
+                TransactionStream.EMPTY, ResourceReleaser.NO_OP  ));
         AvailabilityGuard availabilityGuard = mock( AvailabilityGuard.class );
         when( availabilityGuard.isAvailable( anyLong() )).thenReturn( true );
         SlaveLockManager.Configuration config = mock( SlaveLockManager.Configuration.class );
 
+        TransactionCommittingResponseUnpacker unpacker = mock( TransactionCommittingResponseUnpacker.class );
+        when( unpacker.unpackResponse( Matchers.<Response>any() ) ).thenReturn( new LockResult( LockStatus.OK_LOCKED ) );
+
         client = new SlaveLocksClient(
-                master, local, localLockManager, requestContextFactory, xaDsm,
-                txManager, txHook, availabilityGuard, config );
+                master, local, localLockManager, requestContextFactory, availabilityGuard,
+                unpacker, config );
     }
 
     @Test

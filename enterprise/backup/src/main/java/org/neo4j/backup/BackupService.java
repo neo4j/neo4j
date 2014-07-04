@@ -19,67 +19,68 @@
  */
 package org.neo4j.backup;
 
+import static org.neo4j.com.RequestContext.anonymous;
+
 import java.io.File;
 import java.io.FilenameFilter;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.TreeMap;
 
 import org.neo4j.com.RequestContext;
-import org.neo4j.com.RequestContext.Tx;
 import org.neo4j.com.Response;
-import org.neo4j.com.ServerUtil;
-import org.neo4j.com.ServerUtil.TxHandler;
-import org.neo4j.com.TxExtractor;
-import org.neo4j.com.storecopy.RemoteStoreCopier;
+import org.neo4j.com.storecopy.ResponseUnpacker.TxHandler;
+import org.neo4j.com.storecopy.StoreCopyClient;
 import org.neo4j.com.storecopy.StoreWriter;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.consistency.ConsistencyCheckService;
 import org.neo4j.consistency.checking.full.ConsistencyCheckIncompleteException;
+import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.Settings;
-import org.neo4j.helpers.Triplet;
 import org.neo4j.helpers.progress.ProgressListener;
 import org.neo4j.helpers.progress.ProgressMonitorFactory;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.configuration.ConfigParam;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
-import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.NoSuchLogVersionException;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.transaction.xaframework.CommittedTransactionRepresentation;
+import org.neo4j.kernel.impl.transaction.xaframework.MissingLogDataException;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.ConsoleLogger;
 import org.neo4j.kernel.logging.DevNullLoggingService;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 
+/**
+ * Client-side convenience service for doing backups from a running database instance.
+ */
 class BackupService
 {
     class BackupOutcome
     {
-        private final Map<String, Long> lastCommittedTxs;
         private final boolean consistent;
+        private final long lastCommittedTx;
 
-        BackupOutcome( Map<String, Long> lastCommittedTxs, boolean consistent )
+        BackupOutcome( long lastCommittedTx, boolean consistent )
         {
-            this.lastCommittedTxs = lastCommittedTxs;
+            this.lastCommittedTx = lastCommittedTx;
             this.consistent = consistent;
         }
 
-        public Map<String, Long> getLastCommittedTxs()
+        public long getLastCommittedTx()
         {
-            return Collections.unmodifiableMap( lastCommittedTxs );
+            return lastCommittedTx;
         }
 
         public boolean isConsistent()
@@ -91,7 +92,8 @@ class BackupService
     private final FileSystemAbstraction fileSystem;
     private final StringLogger logger;
 
-    BackupService() {
+    BackupService()
+    {
         this( new DefaultFileSystemAbstraction(), StringLogger.SYSTEM );
     }
 
@@ -107,29 +109,27 @@ class BackupService
     }
 
     BackupOutcome doFullBackup( final String sourceHostNameOrIp, final int sourcePort, String targetDirectory,
-                                boolean checkConsistency, Config tuningConfiguration )
+            boolean checkConsistency, Config tuningConfiguration )
     {
         if ( directoryContainsDb( targetDirectory ) )
         {
             throw new RuntimeException( targetDirectory + " already contains a database" );
         }
-
         Map<String, String> params = tuningConfiguration.getParams();
-        params.put( GraphDatabaseSettings.store_dir.name(), targetDirectory);
+        params.put( GraphDatabaseSettings.store_dir.name(), targetDirectory );
         tuningConfiguration.applyChanges( params );
-
         long timestamp = System.currentTimeMillis();
-        Map<String, Long> lastCommittedTxs = new TreeMap<>();
+        long lastCommittedTx = -1;
         boolean consistent = !checkConsistency; // default to true if we're not checking consistency
-
         GraphDatabaseAPI targetDb = null;
         try
         {
-            RemoteStoreCopier storeCopier = new RemoteStoreCopier( tuningConfiguration, loadKernelExtensions(),
+            StoreCopyClient storeCopier = new StoreCopyClient( tuningConfiguration, loadKernelExtensions(),
                     new ConsoleLogger( StringLogger.SYSTEM ), new DefaultFileSystemAbstraction() );
-            storeCopier.copyStore( new RemoteStoreCopier.StoreCopyRequester()
+            storeCopier.copyStore( new StoreCopyClient.StoreCopyRequester()
             {
                 private BackupClient client;
+
                 @Override
                 public Response<?> copyStore( StoreWriter writer )
                 {
@@ -144,10 +144,8 @@ class BackupService
                 {
                     client.stop();
                 }
-            });
-
-            targetDb = startTemporaryDb( targetDirectory, VerificationLevel.NONE /* run full check instead */ );
-            new LogicalLogSeeder(logger).ensureAtLeastOneLogicalLogPresent( sourceHostNameOrIp, sourcePort, targetDb );
+            } );
+            targetDb = startTemporaryDb( targetDirectory );
         }
         catch ( IOException e )
         {
@@ -155,21 +153,18 @@ class BackupService
         }
         finally
         {
-            if(targetDb != null)
+            if ( targetDb != null )
             {
                 targetDb.shutdown();
             }
         }
-        bumpLogFile( targetDirectory, timestamp );
+        bumpMessagesDotLogFile( targetDirectory, timestamp );
         if ( checkConsistency )
         {
             try
             {
-                consistent = new ConsistencyCheckService().runFullConsistencyCheck(
-                        targetDirectory,
-                        tuningConfiguration,
-                        ProgressMonitorFactory.textual( System.err ),
-                        logger ).isSuccessful();
+                consistent = new ConsistencyCheckService().runFullConsistencyCheck( targetDirectory,
+                        tuningConfiguration, ProgressMonitorFactory.textual( System.err ), logger ).isSuccessful();
             }
             catch ( ConsistencyCheckIncompleteException e )
             {
@@ -180,17 +175,16 @@ class BackupService
                 logger.flush();
             }
         }
-        return new BackupOutcome( lastCommittedTxs, consistent );
+        return new BackupOutcome( lastCommittedTx, consistent );
     }
 
     BackupOutcome doIncrementalBackup( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
-                                       boolean verification ) throws IncrementalBackupNotPossibleException
+            boolean verification ) throws IncrementalBackupNotPossibleException
     {
         if ( !directoryContainsDb( targetDirectory ) )
         {
             throw new RuntimeException( targetDirectory + " doesn't contain a database" );
         }
-
         // In case someone deleted the logical log from a full backup
         ConfigParam keepLogs = new ConfigParam()
         {
@@ -200,10 +194,7 @@ class BackupService
                 config.put( GraphDatabaseSettings.keep_logical_logs.name(), Settings.TRUE );
             }
         };
-
-        GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory,
-                VerificationLevel.valueOf( verification ), keepLogs );
-
+        GraphDatabaseAPI targetDb = startTemporaryDb( targetDirectory, keepLogs );
         long backupStartTime = System.currentTimeMillis();
         BackupOutcome outcome = null;
         try
@@ -214,40 +205,36 @@ class BackupService
         {
             targetDb.shutdown();
         }
-
-        bumpLogFile( targetDirectory, backupStartTime );
+        bumpMessagesDotLogFile( targetDirectory, backupStartTime );
         return outcome;
     }
 
-    BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort, String targetDirectory,
-                                                       boolean verification, Config config )
+    BackupOutcome doIncrementalBackupOrFallbackToFull( String sourceHostNameOrIp, int sourcePort,
+            String targetDirectory, boolean verification, Config config )
     {
-        if(!directoryContainsDb( targetDirectory ))
+        if ( !directoryContainsDb( targetDirectory ) )
         {
             return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification, config );
         }
-
         try
         {
             return doIncrementalBackup( sourceHostNameOrIp, sourcePort, targetDirectory, verification );
         }
-        catch(IncrementalBackupNotPossibleException e)
+        catch ( IncrementalBackupNotPossibleException e )
         {
             try
             {
                 // Our existing backup is out of date.
                 logger.info( "Existing backup is too far out of date, a new full backup will be performed." );
-
                 File targetDirFile = new File( targetDirectory );
                 FileUtils.deleteRecursively( targetDirFile );
-
-                return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(),
-                                                      verification, config );
+                return doFullBackup( sourceHostNameOrIp, sourcePort, targetDirFile.getAbsolutePath(), verification,
+                        config );
             }
             catch ( Exception fullBackupFailure )
             {
-                throw new RuntimeException( "Failed to perform incremental backup, fell back to full backup, " +
-                        "but that failed as well: '" + fullBackupFailure.getMessage() + "'.", fullBackupFailure );
+                throw new RuntimeException( "Failed to perform incremental backup, fell back to full backup, "
+                        + "but that failed as well: '" + fullBackupFailure.getMessage() + "'.", fullBackupFailure );
             }
         }
     }
@@ -260,13 +247,9 @@ class BackupService
 
     private RequestContext slaveContextOf( GraphDatabaseAPI graphDb )
     {
-        XaDataSourceManager dsManager = dsManager( graphDb );
-        List<Tx> txs = new ArrayList<Tx>();
-        for ( XaDataSource ds : dsManager.getAllRegisteredDataSources() )
-        {
-            txs.add( RequestContext.lastAppliedTx( ds.getName(), ds.getLastCommittedTxId() ) );
-        }
-        return RequestContext.anonymous( txs.toArray( new Tx[txs.size()] ) );
+        TransactionIdStore transactionIdStore =
+                graphDb.getDependencyResolver().resolveDependency( TransactionIdStore.class );
+        return anonymous( transactionIdStore.getLastCommittingTransactionId() );
     }
 
     boolean directoryContainsDb( String targetDirectory )
@@ -295,46 +278,50 @@ class BackupService
      * Performs an incremental backup based off the given context. This means
      * receiving and applying selectively (i.e. irrespective of the actual state
      * of the target db) a set of transactions starting at the desired txId and
-     * spanning up to the latest of the master, for every data source
-     * registered.
+     * spanning up to the latest of the master
      *
      * @param targetDb           The database that contains a previous full copy
-     * @param context            The context, i.e. a mapping of data source name to txid
-     *                           which will be the first in the returned stream
+     * @param context            The context, containing transaction id to start streaming transaction from
      * @return A backup context, ready to perform
      */
-    private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort, GraphDatabaseAPI targetDb,
-                                                  RequestContext context ) throws IncrementalBackupNotPossibleException
+    private BackupOutcome incrementalWithContext( String sourceHostNameOrIp, int sourcePort,
+            GraphDatabaseAPI targetDb, RequestContext context ) throws IncrementalBackupNotPossibleException
     {
+        DependencyResolver resolver = targetDb.getDependencyResolver();
         BackupClient client = new BackupClient( sourceHostNameOrIp, sourcePort,
-                targetDb.getDependencyResolver().resolveDependency( Logging.class ),
-                targetDb.getDependencyResolver().resolveDependency( Monitors.class ),
-                targetDb.storeId() );
+                resolver.resolveDependency( Logging.class ),
+                resolver.resolveDependency( Monitors.class ), targetDb.storeId() );
         client.start();
-        Map<String, Long> lastCommittedTxs;
         boolean consistent = false;
+        ProgressTxHandler handler = new ProgressTxHandler();
         try
         {
-            lastCommittedTxs = unpackResponse( client.incrementalBackup( context ),
-                    targetDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class ),
-                    new ProgressTxHandler() );
-            trimLogicalLogCount( targetDb );
+            Response<Void> response = client.incrementalBackup( context );
+            TransactionCommittingResponseUnpacker unpacker = new TransactionCommittingResponseUnpacker( resolver );
+            unpacker.start();
+            unpacker.unpackResponse( response, handler );
             consistent = true;
         }
-        catch(RuntimeException e)
+        catch ( RuntimeException e )
         {
-            if(e.getCause() != null && e.getCause() instanceof NoSuchLogVersionException )
+            if ( e.getCause() != null && e.getCause() instanceof MissingLogDataException )
             {
-                throw new IncrementalBackupNotPossibleException("It's been too long since this backup was last updated, and it has " +
-                        "fallen too far behind the database transaction stream for incremental backup to be possible. " +
-                        "You need to perform a full backup at this point. You can modify this time interval by setting " +
-                        "the '" + GraphDatabaseSettings.keep_logical_logs.name() + "' configuration on the database to a " +
-                        "higher value.", e.getCause());
+                throw new IncrementalBackupNotPossibleException(
+                        "It's been too long since this backup was last updated, and it has "
+                                + "fallen too far behind the database transaction stream for incremental backup to be possible. "
+                                + "You need to perform a full backup at this point. You can modify this time interval by setting "
+                                + "the '" + GraphDatabaseSettings.keep_logical_logs.name()
+                                + "' configuration on the database to a " + "higher value.", e.getCause() );
             }
-            else
-            {
-                throw new RuntimeException("Failed to perform incremental backup.", e);
-            }
+            throw new RuntimeException( "Failed to perform incremental backup.", e );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( "Failed to perform incremental backup.", e );
+        }
+        catch ( Throwable throwable )
+        {
+            throw new RuntimeException( throwable );
         }
         finally
         {
@@ -347,80 +334,10 @@ class BackupService
                 throw new RuntimeException( throwable );
             }
         }
-        return new BackupOutcome( lastCommittedTxs, consistent );
+        return new BackupOutcome( handler.getLastSeenTransactionId(), consistent );
     }
 
-    private void trimLogicalLogCount( GraphDatabaseAPI targetDb )
-    {
-        for ( XaDataSource ds : dsManager( targetDb ).getAllRegisteredDataSources() )
-        {
-            try
-            {
-                ds.rotateLogicalLog();
-            }
-            catch ( IOException e )
-            {
-                throw new RuntimeException( e );
-            }
-
-            long currentVersion = ds.getCurrentLogVersion() - 1;
-
-            // TODO
-            /*
-             * Checking the file size to determine if transactions exist in
-             * a log feels hack-ish. Maybe fix this to read the header
-             * and check latest txid?
-             */
-            while ( ds.getLogicalLogLength( currentVersion ) <= 16
-                    && currentVersion > 0 )
-            {
-                currentVersion--;
-            }
-            /*
-             * Ok, we skipped all logs that have no transactions in them. Current is the
-             * one with the tx in it. Skip it.
-             */
-            currentVersion--;
-            /*
-             * Now delete the rest.
-             */
-            while ( ds.getLogicalLogLength( currentVersion ) > 0 )
-            {
-                ds.deleteLogicalLog( currentVersion );
-                currentVersion--;
-            }
-        }
-    }
-
-    private XaDataSourceManager dsManager( GraphDatabaseAPI targetDb )
-    {
-        return targetDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
-    }
-
-    private Map<String, Long> unpackResponse( Response<Void> response, XaDataSourceManager xaDsm, TxHandler txHandler )
-    {
-        try
-        {
-            ServerUtil.applyReceivedTransactions( response, xaDsm, txHandler );
-            return extractLastCommittedTxs( xaDsm );
-        }
-        catch ( IOException e )
-        {
-            throw new RuntimeException( "Unable to apply received transactions", e );
-        }
-    }
-
-    private Map<String, Long> extractLastCommittedTxs( XaDataSourceManager xaDsm )
-    {
-        TreeMap<String, Long> lastCommittedTxs = new TreeMap<String, Long>();
-        for ( XaDataSource ds : xaDsm.getAllRegisteredDataSources() )
-        {
-            lastCommittedTxs.put( ds.getName(), ds.getLastCommittedTxId() );
-        }
-        return lastCommittedTxs;
-    }
-
-    private static boolean bumpLogFile( String targetDirectory, long toTimestamp )
+    private static boolean bumpMessagesDotLogFile( String targetDirectory, long toTimestamp )
     {
         File dbDirectory = new File( targetDirectory );
         File[] candidates = dbDirectory.listFiles( new FilenameFilter()
@@ -442,8 +359,7 @@ class BackupService
         // candidates has a unique member, the right one
         File previous = candidates[0];
         // Build to, from existing parent + new filename
-        File to = new File( previous.getParentFile(), StringLogger.DEFAULT_NAME
-                + "." + toTimestamp );
+        File to = new File( previous.getParentFile(), StringLogger.DEFAULT_NAME + "." + toTimestamp );
         return previous.renameTo( to );
     }
 
@@ -459,18 +375,26 @@ class BackupService
 
     private static class ProgressTxHandler implements TxHandler
     {
-        private final ProgressListener progress = ProgressMonitorFactory.textual( System.out ).openEnded( "Transactions applied", 1000 );
+        private final ProgressListener progress = ProgressMonitorFactory.textual( System.out ).openEnded(
+                "Transactions applied", 1000 );
+        private long lastSeenTransactionId;
 
         @Override
-        public void accept( Triplet<String, Long, TxExtractor> tx, XaDataSource dataSource )
+        public void accept( CommittedTransactionRepresentation tx )
         {
             progress.add( 1 );
+            lastSeenTransactionId = tx.getCommitEntry().getTxId();
         }
 
         @Override
         public void done()
         {
             progress.done();
+        }
+
+        public long getLastSeenTransactionId()
+        {
+            return lastSeenTransactionId;
         }
     }
 }

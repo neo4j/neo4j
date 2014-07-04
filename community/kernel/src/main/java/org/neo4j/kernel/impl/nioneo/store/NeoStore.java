@@ -19,9 +19,14 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static java.lang.String.format;
+import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
+import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.neo4j.graphdb.config.Setting;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
@@ -32,15 +37,10 @@ import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.IdType;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
+import org.neo4j.kernel.impl.transaction.xaframework.LogVersionRepository;
 import org.neo4j.kernel.impl.util.Bits;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static java.lang.String.format;
-
-import static org.neo4j.io.pagecache.PagedFile.PF_EXCLUSIVE_LOCK;
-import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
 
 /**
  * This class contains the references to the "NodeStore,RelationshipStore,
@@ -48,7 +48,7 @@ import static org.neo4j.io.pagecache.PagedFile.PF_SHARED_LOCK;
  * anything but extends the AbstractStore for the "type and version" validation
  * performed in there.
  */
-public class NeoStore extends AbstractStore
+public class NeoStore extends AbstractStore implements TransactionIdStore, LogVersionRepository
 {
     public static abstract class Configuration
         extends AbstractStore.Configuration
@@ -58,14 +58,13 @@ public class NeoStore extends AbstractStore
     }
 
     public static final String TYPE_DESCRIPTOR = "NeoStore";
-
+    // This value means the field has not been refreshed from the store. Normally, this should happen only once
+    public static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
     /*
      *  7 longs in header (long + in use), time | random | version | txid | store version | graph next prop | latest constraint tx
      */
     public static final int RECORD_SIZE = 9;
-
     public static final String DEFAULT_NAME = "neostore";
-
     // Positions of meta-data records
     private static final int TIME_POSITION = 0;
     private static final int RANDOM_POSITION = 1;
@@ -91,32 +90,31 @@ public class NeoStore extends AbstractStore
     private SchemaStore schemaStore;
     private RelationshipGroupStore relGroupStore;
 
-    private volatile long creationTimeField = -1;
-    private volatile long randomNumberField = -1;
-    private volatile long versionField = -1;
-    private volatile long lastCommittedTxField = -1;
-    private volatile long storeVersionField = -1;
-    private volatile long graphNextPropField = -1;
-    private volatile long latestConstraintIntroducingTxField = -1;
+    // Fields the neostore keeps cached and must be initialized on startup
+    private volatile long creationTimeField = FIELD_NOT_INITIALIZED;
+    private volatile long randomNumberField = FIELD_NOT_INITIALIZED;
+    private volatile long versionField = FIELD_NOT_INITIALIZED;
+    // This is an atomic long since we, when incrementing last tx id, won't set the record in the page,
+    // we do that when flushing, which is more performant and fine from a recovery POV.
+    private final AtomicLong lastCommittedTxField = new AtomicLong( FIELD_NOT_INITIALIZED );
+    private volatile long storeVersionField = FIELD_NOT_INITIALIZED;
+    private volatile long graphNextPropField = FIELD_NOT_INITIALIZED;
+    private volatile long latestConstraintIntroducingTxField = FIELD_NOT_INITIALIZED;
 
-    private final RemoteTxHook txHook;
+    // This is not a field in the store, but something keeping track of which of the committed
+    // transactions have been closed. Useful in rotation and shutdown.
+    private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200 );
 
     private final int relGrabSize;
 
-    public NeoStore( File fileName,
-                     Config conf,
-                     IdGeneratorFactory idGeneratorFactory,
-                     PageCache pageCache,
-                     FileSystemAbstraction fileSystemAbstraction,
-                     StringLogger stringLogger, RemoteTxHook txHook,
-                     RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore,
-                     PropertyStore propStore, RelationshipStore relStore,
-                     NodeStore nodeStore, SchemaStore schemaStore, RelationshipGroupStore relGroupStore,
-                     StoreVersionMismatchHandler versionMismatchHandler,
-                     Monitors monitors )
+    public NeoStore( File fileName, Config conf, IdGeneratorFactory idGeneratorFactory, PageCache pageCache,
+            FileSystemAbstraction fileSystemAbstraction, StringLogger stringLogger,
+            RelationshipTypeTokenStore relTypeStore, LabelTokenStore labelTokenStore, PropertyStore propStore,
+            RelationshipStore relStore, NodeStore nodeStore, SchemaStore schemaStore,
+            RelationshipGroupStore relGroupStore, StoreVersionMismatchHandler versionMismatchHandler, Monitors monitors )
     {
-        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache,
-                fileSystemAbstraction, stringLogger, versionMismatchHandler, monitors );
+        super( fileName, conf, IdType.NEOSTORE_BLOCK, idGeneratorFactory, pageCache, fileSystemAbstraction,
+                stringLogger, versionMismatchHandler, monitors );
         this.relTypeStore = relTypeStore;
         this.labelTokenStore = labelTokenStore;
         this.propStore = propStore;
@@ -125,8 +123,6 @@ public class NeoStore extends AbstractStore
         this.schemaStore = schemaStore;
         this.relGroupStore = relGroupStore;
         relGrabSize = conf.get( Configuration.relationship_grab_size );
-        this.txHook = txHook;
-
         /* [MP:2012-01-03] Fix for the problem in 1.5.M02 where store version got upgraded but
          * corresponding store version record was not added. That record was added in the release
          * thereafter so this missing record doesn't trigger an upgrade of the neostore file and so any
@@ -140,8 +136,7 @@ public class NeoStore extends AbstractStore
         initialiseFields();
         try
         {
-            if ( getCreationTime() != 0 /*Store that wasn't just now created*/ &&
-                    getStoreVersion() == 0 /*Store is missing the store version record*/ )
+            if ( getCreationTime() != 0 /*Store that wasn't just now created*/&& getStoreVersion() == 0 /*Store is missing the store version record*/)
             {
                 setStoreVersion( versionStringToLong( CommonAbstractStore.ALL_STORES_VERSION ) );
                 updateHighId();
@@ -179,20 +174,21 @@ public class NeoStore extends AbstractStore
                  * in garbage.
                  * Yes, this has to be fixed to be prettier.
                  */
-                String foundVersion = versionLongToString( getStoreVersion(fileSystemAbstraction, configuration.get( org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration.neo_store) ));
+                String foundVersion = versionLongToString( getStoreVersion( fileSystemAbstraction,
+                        configuration
+                                .get( org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.Configuration.neo_store ) ) );
                 if ( !CommonAbstractStore.ALL_STORES_VERSION.equals( foundVersion ) )
                 {
-                    throw new IllegalStateException( format(
-                            "Mismatching store version found (%s while expecting %s). The store cannot be automatically upgraded since it isn't cleanly shutdown." +
-                            " Recover by starting the database using the previous Neo4j version, followed by a clean shutdown. Then start with this version again.",
-                            foundVersion, CommonAbstractStore.ALL_STORES_VERSION ) );
+                    throw new IllegalStateException(
+                            format( "Mismatching store version found (%s while expecting %s). The store cannot be automatically upgraded since it isn't cleanly shutdown."
+                                    + " Recover by starting the database using the previous Neo4j version, followed by a clean shutdown. Then start with this version again.",
+                                    foundVersion, CommonAbstractStore.ALL_STORES_VERSION ) );
                 }
             }
         }
         catch ( IOException e )
         {
-            throw new UnderlyingStorageException( "Unable to check version "
-                    + getStorageFileName(), e );
+            throw new UnderlyingStorageException( "Unable to check version " + getStorageFileName(), e );
         }
     }
 
@@ -200,7 +196,6 @@ public class NeoStore extends AbstractStore
     protected void verifyFileSizeAndTruncate() throws IOException
     {
         super.verifyFileSizeAndTruncate();
-
         /* MP: 2011-11-23
          * A little silent upgrade for the "next prop" record. It adds one record last to the neostore file.
          * It's backwards compatible, that's why it can be a silent and automatic upgrade.
@@ -210,7 +205,6 @@ public class NeoStore extends AbstractStore
             insertRecord( NEXT_GRAPH_PROP_POSITION, -1 );
             registerIdFromUpdateRecord( NEXT_GRAPH_PROP_POSITION );
         }
-
         /* Silent upgrade for latest constraint introducing tx
          */
         if ( getFileChannel().size() == RECORD_SIZE * 6 )
@@ -226,35 +220,28 @@ public class NeoStore extends AbstractStore
      */
     private void insertRecord( int recordPosition, long value ) throws IOException
     {
-        try
+        StoreChannel channel = getFileChannel();
+        long previousPosition = channel.position();
+        channel.position( RECORD_SIZE * recordPosition );
+        int trail = (int) (channel.size() - channel.position());
+        ByteBuffer trailBuffer = null;
+        if ( trail > 0 )
         {
-            StoreChannel channel = getFileChannel();
-            long previousPosition = channel.position();
-            channel.position( RECORD_SIZE * recordPosition );
-            int trail = (int) (channel.size()-channel.position());
-            ByteBuffer trailBuffer = null;
-            if ( trail > 0 )
-            {
-                trailBuffer = ByteBuffer.allocate( trail );
-                channel.read( trailBuffer );
-                trailBuffer.flip();
-            }
-            ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
-            buffer.put( Record.IN_USE.byteValue() );
-            buffer.putLong( value );
-            buffer.flip();
-            channel.position( RECORD_SIZE * recordPosition );
-            channel.write( buffer );
-            if ( trail > 0 )
-            {
-                channel.write( trailBuffer );
-            }
-            channel.position( previousPosition );
+            trailBuffer = ByteBuffer.allocate( trail );
+            channel.read( trailBuffer );
+            trailBuffer.flip();
         }
-        catch ( IOException e )
+        ByteBuffer buffer = ByteBuffer.allocate( RECORD_SIZE );
+        buffer.put( Record.IN_USE.byteValue() );
+        buffer.putLong( value );
+        buffer.flip();
+        channel.position( RECORD_SIZE * recordPosition );
+        channel.write( buffer );
+        if ( trail > 0 )
         {
-            throw new RuntimeException( e );
+            channel.write( trailBuffer );
         }
+        channel.position( previousPosition );
     }
 
     /**
@@ -300,8 +287,24 @@ public class NeoStore extends AbstractStore
         }
     }
 
+    @Override
+    public void flush()
+    {
+        flushNeoStoreOnly();
+        try
+        {
+            pageCache.flush();
+        }
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( "Failed to flush", e );
+        }
+    }
+
     public void flushNeoStoreOnly()
     {
+        getLastCommittingTransactionId(); // ensures that field is read
+        setRecord( LATEST_TX_POSITION, lastCommittedTxField.get() );
         try
         {
             storeFile.flush();
@@ -322,11 +325,6 @@ public class NeoStore extends AbstractStore
     public int getRecordSize()
     {
         return RECORD_SIZE;
-    }
-
-    public boolean freeIdsDuringRollback()
-    {
-        return txHook.freeIdsDuringRollback();
     }
 
     /**
@@ -355,12 +353,12 @@ public class NeoStore extends AbstractStore
     {
         try ( StoreChannel channel = fileSystem.open( neoStore, "rw" ) )
         {
-            channel.position( RECORD_SIZE * position + 1/*inUse*/ );
+            channel.position( RECORD_SIZE * position + 1/*inUse*/);
             ByteBuffer buffer = ByteBuffer.allocate( 8 );
             channel.read( buffer );
             buffer.flip();
             long previous = buffer.getLong();
-            channel.position( RECORD_SIZE * position + 1/*inUse*/ );
+            channel.position( RECORD_SIZE * position + 1/*inUse*/);
             buffer.clear();
             buffer.putLong( value ).flip();
             channel.write( buffer );
@@ -446,13 +444,8 @@ public class NeoStore extends AbstractStore
 
     public long getCreationTime()
     {
-        long time = creationTimeField;
-        if ( time == -1 )
-        {
-            refreshFields();
-            time = creationTimeField;
-        }
-        return time;
+        checkInitialized( creationTimeField );
+        return creationTimeField;
     }
 
     public synchronized void setCreationTime( long time )
@@ -463,13 +456,8 @@ public class NeoStore extends AbstractStore
 
     public long getRandomNumber()
     {
-        long random = randomNumberField;
-        if ( random == -1 )
-        {
-            refreshFields();
-            random = randomNumberField;
-        }
-        return random;
+        checkInitialized( randomNumberField );
+        return randomNumberField;
     }
 
     public synchronized void setRandomNumber( long nr )
@@ -478,55 +466,51 @@ public class NeoStore extends AbstractStore
         randomNumberField = nr;
     }
 
-    public long getVersion()
+    @Override
+    public long getCurrentLogVersion()
     {
-        long version = versionField;
-        if ( version == -1 )
-        {
-            refreshFields();
-            version = versionField;
-        }
-        return version;
+        checkInitialized( versionField );
+        return versionField;
     }
 
-    public synchronized void setVersion( long version )
+    public void setCurrentLogVersion( long version )
     {
         setRecord( VERSION_POSITION, version );
         versionField = version;
     }
 
-    public synchronized void setLastCommittedTx( long txId )
+    @Override
+    public long incrementAndGetVersion()
     {
-        long current = getLastCommittedTx();
-        if ( (current + 1) != txId && !isInRecoveryMode() )
+        // This method can expect synchronisation at a higher level,
+        // and be effectively single-threaded.
+        // The call to getVersion() will most likely optimise to a volatile-read.
+        long pageId = pageIdForRecord( VERSION_POSITION );
+        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
         {
-            throw new InvalidRecordException( "Could not set tx commit id[" +
-                txId + "] since the current one is[" + current + "]" );
+            if ( cursor.next() )
+            {
+                incrementVersion( cursor );
+            }
+            return versionField;
         }
-        setRecord( LATEST_TX_POSITION, txId );
-        lastCommittedTxField = txId;
+        catch ( IOException e )
+        {
+            throw new UnderlyingStorageException( e );
+        }
     }
 
-    public long getLastCommittedTx()
+    @Override
+    public void incrementVersion()
     {
-        long txId = lastCommittedTxField;
-        if ( txId == -1 )
-        {
-            refreshFields();
-            txId = lastCommittedTxField;
-        }
-        return txId;
+        incrementAndGetVersion();
     }
 
     public long getStoreVersion()
     {
-        long storeVersion = storeVersionField;
-        if ( storeVersion == -1 )
-        {
-            refreshFields();
-            storeVersion = storeVersionField;
-        }
-        return storeVersion;
+        checkInitialized( storeVersionField );
+        return storeVersionField;
+
     }
 
     public void setStoreVersion( long version )
@@ -537,13 +521,8 @@ public class NeoStore extends AbstractStore
 
     public long getGraphNextProp()
     {
-        long nextProp = graphNextPropField;
-        if ( nextProp == -1 )
-        {
-            refreshFields();
-            nextProp = graphNextPropField;
-        }
-        return nextProp;
+        checkInitialized( graphNextPropField );
+        return graphNextPropField;
     }
 
     public void setGraphNextProp( long propId )
@@ -554,13 +533,8 @@ public class NeoStore extends AbstractStore
 
     public long getLatestConstraintIntroducingTx()
     {
-        long txId = latestConstraintIntroducingTxField;
-        if ( txId == -1)
-        {
-            refreshFields();
-            txId = latestConstraintIntroducingTxField;
-        }
-        return txId;
+        checkInitialized( latestConstraintIntroducingTxField );
+        return latestConstraintIntroducingTxField;
     }
 
     public void setLatestConstraintIntroducingTx( long latestConstraintIntroducingTx )
@@ -569,18 +543,19 @@ public class NeoStore extends AbstractStore
         latestConstraintIntroducingTxField = latestConstraintIntroducingTx;
     }
 
-    private void readAllFields( PageCursor cursor ) throws IOException
+    private void readAllFields( PageCursor cursor )
     {
-        // We're assuming all our records/fields fit in a single page.
         do
         {
             creationTimeField = getRecordValue( cursor, TIME_POSITION );
             randomNumberField = getRecordValue( cursor, RANDOM_POSITION );
             versionField = getRecordValue( cursor, VERSION_POSITION );
-            lastCommittedTxField = getRecordValue( cursor, LATEST_TX_POSITION );
+            long lastCommittedTxId = getRecordValue( cursor, LATEST_TX_POSITION );
+            lastCommittedTxField.set( lastCommittedTxId );
             storeVersionField = getRecordValue( cursor, STORE_VERSION_POSITION );
             graphNextPropField = getRecordValue( cursor, NEXT_GRAPH_PROP_POSITION );
             latestConstraintIntroducingTxField = getRecordValue( cursor, LATEST_CONSTRAINT_TX_POSITION );
+            lastClosedTx.set( lastCommittedTxId );
         } while ( cursor.retry() );
     }
 
@@ -653,26 +628,6 @@ public class NeoStore extends AbstractStore
         }
     }
 
-    public long incrementVersion()
-    {
-        // This method can expect synchronisation at a higher level,
-        // and be effectively single-threaded.
-        // The call to getVersion() will most likely optimise to a volatile-read.
-        long pageId = pageIdForRecord( VERSION_POSITION );
-        try ( PageCursor cursor = storeFile.io( pageId, PF_EXCLUSIVE_LOCK ) )
-        {
-            if ( cursor.next() )
-            {
-                incrementVersion( cursor );
-            }
-            return versionField - 1; // we return the version as it were before we incremented it
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException( e );
-        }
-    }
-
     /**
      * Returns the node store.
      *
@@ -706,7 +661,7 @@ public class NeoStore extends AbstractStore
      *
      * @return The relationship type store
      */
-    public RelationshipTypeTokenStore getRelationshipTypeStore()
+    public RelationshipTypeTokenStore getRelationshipTypeTokenStore()
     {
         return relTypeStore;
     }
@@ -737,11 +692,6 @@ public class NeoStore extends AbstractStore
     public PropertyKeyTokenStore getPropertyKeyTokenStore()
     {
         return propStore.getPropertyKeyTokenStore();
-    }
-
-    public RelationshipTypeTokenStore getRelationshipTypeTokenStore()
-    {
-        return relTypeStore;
     }
 
     /**
@@ -797,16 +747,15 @@ public class NeoStore extends AbstractStore
 
     public boolean isStoreOk()
     {
-        return getStoreOk() && relTypeStore.getStoreOk() && labelTokenStore.getStoreOk() &&
-            propStore.getStoreOk() && relStore.getStoreOk() && nodeStore.getStoreOk() && schemaStore.getStoreOk() &&
-            relGroupStore.getStoreOk();
+        return getStoreOk() && relTypeStore.getStoreOk() && labelTokenStore.getStoreOk() && propStore.getStoreOk()
+                && relStore.getStoreOk() && nodeStore.getStoreOk() && schemaStore.getStoreOk()
+                && relGroupStore.getStoreOk();
     }
 
     @Override
-    public void logVersions( StringLogger.LineLogger msgLog)
+    public void logVersions( StringLogger.LineLogger msgLog )
     {
         msgLog.logLine( "Store versions:" );
-
         super.logVersions( msgLog );
         schemaStore.logVersions( msgLog );
         nodeStore.logVersions( msgLog );
@@ -815,7 +764,6 @@ public class NeoStore extends AbstractStore
         labelTokenStore.logVersions( msgLog );
         propStore.logVersions( msgLog );
         relGroupStore.logVersions( msgLog );
-
         stringLogger.flush();
     }
 
@@ -830,7 +778,6 @@ public class NeoStore extends AbstractStore
         labelTokenStore.logIdUsage( msgLog );
         propStore.logIdUsage( msgLog );
         relGroupStore.logIdUsage( msgLog );
-
         stringLogger.flush();
     }
 
@@ -851,21 +798,18 @@ public class NeoStore extends AbstractStore
      * helicopters. Anyway, it should suffice for some time and by then
      * it should have become SEP.
      */
-
     public static long versionStringToLong( String storeVersion )
     {
         if ( CommonAbstractStore.UNKNOWN_VERSION.equals( storeVersion ) )
         {
             return -1;
         }
-        Bits bits = Bits.bits(8);
+        Bits bits = Bits.bits( 8 );
         int length = storeVersion.length();
         if ( length == 0 || length > 7 )
         {
-            throw new IllegalArgumentException(
-                    String.format(
-                            "The given string %s is not of proper size for a store version string",
-                            storeVersion ) );
+            throw new IllegalArgumentException( String.format(
+                    "The given string %s is not of proper size for a store version string", storeVersion ) );
         }
         bits.put( length, 8 );
         for ( int i = 0; i < length; i++ )
@@ -873,10 +817,8 @@ public class NeoStore extends AbstractStore
             char c = storeVersion.charAt( i );
             if ( c < 0 || c >= 256 )
             {
-                throw new IllegalArgumentException(
-                        String.format(
-                                "Store version strings should be encode-able as Latin1 - %s is not",
-                                storeVersion ) );
+                throw new IllegalArgumentException( String.format(
+                        "Store version strings should be encode-able as Latin1 - %s is not", storeVersion ) );
             }
             bits.put( c, 8 ); // Just the lower byte
         }
@@ -889,12 +831,11 @@ public class NeoStore extends AbstractStore
         {
             return CommonAbstractStore.UNKNOWN_VERSION;
         }
-        Bits bits = Bits.bitsFromLongs( new long[]{storeVersion} );
+        Bits bits = Bits.bitsFromLongs( new long[] { storeVersion } );
         int length = bits.getShort( 8 );
         if ( length == 0 || length > 7 )
         {
-            throw new IllegalArgumentException( String.format(
-                    "The read in version string length %d is not proper.",
+            throw new IllegalArgumentException( String.format( "The read version string length %d is not proper.",
                     length ) );
         }
         char[] result = new char[length];
@@ -908,5 +849,48 @@ public class NeoStore extends AbstractStore
     public int getDenseNodeThreshold()
     {
         return getRelationshipGroupStore().getDenseNodeThreshold();
+    }
+
+    @Override
+    public long nextCommittingTransactionId()
+    {
+        getLastCommittingTransactionId(); // this ensures that the field is initialized
+        return lastCommittedTxField.incrementAndGet();
+    }
+
+    @Override
+    public long getLastCommittingTransactionId()
+    {
+        checkInitialized( lastCommittedTxField.get() );
+        return lastCommittedTxField.get();
+    }
+
+    // Ensures that all fields are read from the store, by checking the initial value of the field in question
+    private void checkInitialized( long field )
+    {
+        if ( field == FIELD_NOT_INITIALIZED )
+        {
+            refreshFields();
+        }
+    }
+
+    @Override
+    public void setLastCommittingAndClosedTransactionId( long transactionId )
+    {
+        getLastCommittingTransactionId(); // this ensures that the field is initialized
+        lastCommittedTxField.set( transactionId );
+        lastClosedTx.set( transactionId );
+    }
+
+    @Override
+    public void transactionClosed( long transactionId )
+    {
+        lastClosedTx.offer( transactionId );
+    }
+
+    @Override
+    public boolean closedTransactionIdIsOnParWithCommittingTransactionId()
+    {
+        return lastClosedTx.get() == lastCommittedTxField.get();
     }
 }

@@ -134,19 +134,14 @@ public class EnterpriseServerHelper
         }
     }
 
-    public static EnterpriseNeoServer createNonPersistentServer() throws IOException
+    public static EnterpriseNeoServer createNonPersistentServer( File databaseDir ) throws IOException
     {
-        return createServer( false );
+        return createServer( databaseDir, false );
     }
 
-    public static EnterpriseNeoServer createPersistentServer() throws IOException
+    private static EnterpriseNeoServer createServer( File databaseDir, boolean persistent ) throws IOException
     {
-        return createServer( true );
-    }
-
-    private static EnterpriseNeoServer createServer( boolean persistent ) throws IOException
-    {
-        EnterpriseServerBuilder builder = EnterpriseServerBuilder.server();
+        EnterpriseServerBuilder builder = EnterpriseServerBuilder.server().usingDatabaseDir( databaseDir.getAbsolutePath() );
         configureHostname( builder );
         if ( persistent ) builder = (EnterpriseServerBuilder) builder.persistent();
         EnterpriseNeoServer server = builder.build();

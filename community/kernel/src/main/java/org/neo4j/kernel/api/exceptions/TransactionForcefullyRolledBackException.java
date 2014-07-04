@@ -27,6 +27,6 @@ public class TransactionForcefullyRolledBackException extends TransactionFailure
 {
     public TransactionForcefullyRolledBackException( RuntimeException cause )
     {
-        super( cause );
+        super( Status.Transaction.CouldNotRollback, cause, "" );
     }
 }

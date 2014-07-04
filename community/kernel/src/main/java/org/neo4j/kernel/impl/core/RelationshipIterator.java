@@ -24,6 +24,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -35,7 +36,7 @@ class RelationshipIterator implements PrimitiveLongIterator
     private int currentTypeIndex;
     private final NodeImpl fromNode;
     private final DirectionWrapper direction;
-    private final NodeManager nodeManager;
+    private final RelationshipLoader relationshipLoader;
 
     private boolean lastTimeILookedThereWasMoreToLoad;
     private final boolean allTypes;
@@ -44,17 +45,19 @@ class RelationshipIterator implements PrimitiveLongIterator
     private boolean nextHasBeenComputed = false;
     private boolean hasNext;
     private long nextElement;
+    private final CacheUpdateListener cacheUpdateListener;
 
     RelationshipIterator( RelIdIterator[] rels, NodeImpl fromNode,
-        DirectionWrapper direction, int[] types, NodeManager nodeManager,
-        boolean hasMoreToLoad, boolean allTypes )
+        DirectionWrapper direction, int[] types, RelationshipLoader relationshipLoader,
+        boolean hasMoreToLoad, boolean allTypes, CacheUpdateListener cacheUpdateListener )
     {
+        this.cacheUpdateListener = cacheUpdateListener;
         initializeRels( rels );
         this.lastTimeILookedThereWasMoreToLoad = hasMoreToLoad;
         this.fromNode = fromNode;
         this.direction = direction;
         this.types = types;
-        this.nodeManager = nodeManager;
+        this.relationshipLoader = relationshipLoader;
         this.allTypes = allTypes;
     }
 
@@ -108,7 +111,8 @@ class RelationshipIterator implements PrimitiveLongIterator
                     // There are other relationship types to try to get relationships from, go to the next type
                     currentTypeIterator = rels[++currentTypeIndex];
                 }
-                else if ( (status = fromNode.getMoreRelationships( nodeManager, direction, types )).loaded()
+                else if ( (status = fromNode.getMoreRelationships( relationshipLoader, direction, types,
+                        cacheUpdateListener )).loaded()
                         // This is here to guard for that someone else might have loaded
                         // stuff in this relationship chain (and exhausted it) while I
                         // iterated over my batch of relationships. It will only happen

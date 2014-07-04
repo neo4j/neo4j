@@ -24,13 +24,14 @@ import java.lang.reflect.Field;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.TestShortString;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.GraphTransactionRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
@@ -39,6 +40,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
+
 import static org.neo4j.graphdb.DynamicRelationshipType.withName;
 import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
 import static org.neo4j.graphdb.Neo4jMatchers.inTx;
@@ -47,10 +49,10 @@ public class TestShortStringProperties extends TestShortString
 {
     @ClassRule
     public static DatabaseRule graphdb = new ImpermanentDatabaseRule();
-    
+
     @Rule
     public GraphTransactionRule tx = new GraphTransactionRule( graphdb );
-    
+
     public void commit()
     {
         tx.success();
@@ -245,8 +247,6 @@ public class TestShortStringProperties extends TestShortString
 
     private PropertyStore propertyStore()
     {
-        XaDataSourceManager dsMgr = graphdb.getGraphDatabaseAPI().getDependencyResolver()
-                .resolveDependency( XaDataSourceManager.class );
-        return dsMgr.getNeoStoreDataSource().getXaConnection().getPropertyStore();
+        return graphdb.getGraphDatabaseAPI().getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class).getNeoStore().getPropertyStore();
     }
 }

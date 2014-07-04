@@ -24,7 +24,6 @@ import java.io.File;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
@@ -64,7 +63,6 @@ public class BatchFriendlyNeoStore implements AutoCloseable
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private final StringLogger logger;
     private final Config neo4jConfig;
-    private final File neoStoreFileName;
     private final LifecycledPageCache pageCache;
 
     public BatchFriendlyNeoStore( FileSystemAbstraction fileSystem, String storeDir,
@@ -72,7 +70,6 @@ public class BatchFriendlyNeoStore implements AutoCloseable
     {
         this.monitors = monitors;
         this.fileSystem = life.add( new ChannelReusingFileSystemAbstraction( fileSystem ) );
-        this.neoStoreFileName = new File( storeDir, NeoStore.DEFAULT_NAME );
 
         this.logger = logging.getMessagesLog( getClass() );
         this.neo4jConfig = configForStoreDir(
@@ -86,25 +83,15 @@ public class BatchFriendlyNeoStore implements AutoCloseable
         this.propertyKeyRepository = new BatchingPropertyKeyTokenRepository( neoStore.getPropertyKeyTokenStore() );
         this.labelRepository = new BatchingLabelTokenRepository( neoStore.getLabelTokenStore() );
         this.relationshipTypeRepository =
-                new BatchingRelationshipTypeTokenRepository( neoStore.getRelationshipTypeStore() );
+                new BatchingRelationshipTypeTokenRepository( neoStore.getRelationshipTypeTokenStore() );
         life.start();
     }
 
     private NeoStore newNeoStore( PageCache pageCache )
     {
-        StoreFactory storeFactory = new StoreFactory(
-                neo4jConfig,
-                new BatchingIdGeneratorFactory(),
-                pageCache,
-                fileSystem,
-                logger,
-                new DefaultTxHook(),
-                monitors );
-        if ( fileSystem.fileExists( neoStoreFileName ) )
-        {
-            return storeFactory.newNeoStore( neoStoreFileName );
-        }
-        return storeFactory.createNeoStore( neoStoreFileName );
+        StoreFactory storeFactory = new StoreFactory( neo4jConfig, new BatchingIdGeneratorFactory(),
+                pageCache, fileSystem, logger, monitors );
+        return storeFactory.newNeoStore( true );
     }
 
     private NeoStore newBatchWritingNeoStore( PageCache pageCache )

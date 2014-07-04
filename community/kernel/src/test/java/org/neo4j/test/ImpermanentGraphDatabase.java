@@ -27,11 +27,10 @@ import java.util.concurrent.ConcurrentHashMap;
 import org.neo4j.graphdb.factory.GraphDatabaseFactoryState;
 import org.neo4j.helpers.Service;
 import org.neo4j.helpers.collection.Iterables;
+import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.logging.SingleLoggingService;
@@ -98,8 +97,7 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
         this( storeDir, withForcedInMemoryConfiguration( params ),
                 Iterables.<KernelExtensionFactory<?>, KernelExtensionFactory>cast( Service.load(
                         KernelExtensionFactory.class ) ),
-                Service.load( CacheProvider.class ),
-                Service.load( TransactionInterceptorProvider.class )
+                Service.load( CacheProvider.class )
         );
     }
 
@@ -109,10 +107,9 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Deprecated
     public ImpermanentGraphDatabase( Map<String, String> params,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                     Iterable<CacheProvider> cacheProviders,
-                                     Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+                                     Iterable<CacheProvider> cacheProviders )
     {
-        this( PATH, params, kernelExtensions, cacheProviders, transactionInterceptorProviders );
+        this( PATH, params, kernelExtensions, cacheProviders );
     }
 
     /**
@@ -121,22 +118,19 @@ public class ImpermanentGraphDatabase extends EmbeddedGraphDatabase
     @Deprecated
     public ImpermanentGraphDatabase( String storeDir, Map<String, String> params,
                                      Iterable<KernelExtensionFactory<?>> kernelExtensions,
-                                     Iterable<CacheProvider> cacheProviders,
-                                     Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+                                     Iterable<CacheProvider> cacheProviders )
     {
         this( storeDir, withForcedInMemoryConfiguration( params ),
-                getDependencies( kernelExtensions, cacheProviders, transactionInterceptorProviders ) );
+                getDependencies( kernelExtensions, cacheProviders ) );
     }
 
     private static Dependencies getDependencies(
             Iterable<KernelExtensionFactory<?>> kernelExtensions,
-            Iterable<CacheProvider> cacheProviders,
-            Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+            Iterable<CacheProvider> cacheProviders )
     {
         GraphDatabaseFactoryState state = new GraphDatabaseFactoryState();
         state.setKernelExtensions( kernelExtensions );
         state.setCacheProviders( cacheProviders );
-        state.setTransactionInterceptorProviders( transactionInterceptorProviders );
         return state.databaseDependencies();
     }
 

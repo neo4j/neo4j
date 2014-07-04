@@ -24,9 +24,9 @@ import java.io.IOException;
 import java.util.TimeZone;
 
 import org.neo4j.helpers.Args;
-import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
+import org.neo4j.kernel.DefaultFileSystemAbstraction;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
 
 public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
 {
@@ -34,7 +34,7 @@ public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
     {
         super( fileSystem );
     }
-    
+
     public static void main( String[] args ) throws IOException
     {
         FileSystemAbstraction fs = new DefaultFileSystemAbstraction();
@@ -55,9 +55,11 @@ public class DumpLogicalLog extends org.neo4j.kernel.impl.util.DumpLogicalLog
         }
     }
 
-    protected XaCommandReaderFactory instantiateCommandReaderFactory()
+    @Override
+    protected CommandReaderFactory instantiateCommandReaderFactory()
     {
-        return new LuceneDataSource.LuceneCommandReaderFactory( null, null );
+        // TODO 2.2-future
+        return null;
     }
 
     @Override

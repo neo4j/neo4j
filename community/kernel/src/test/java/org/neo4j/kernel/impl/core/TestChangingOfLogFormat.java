@@ -25,42 +25,41 @@ import java.nio.ByteBuffer;
 
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.helpers.Pair;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFile;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.fail;
 
-import static org.neo4j.kernel.impl.nioneo.store.TestXa.copyLogicalLog;
-import static org.neo4j.kernel.impl.nioneo.store.TestXa.renameCopiedLogicalLog;
-
+// TODO 2.2-future
+@Ignore("We don't have active log files anymore")
 public class TestChangingOfLogFormat
 {
     @Test
     public void inabilityToStartFromOldFormatFromNonCleanShutdown() throws Exception
     {
-        File storeDir = new File( "target/var/oldlog" );
+        File storeDir = new File( "target/var/oldlog" ).getAbsoluteFile();
         GraphDatabaseService db = factory.newImpermanentDatabase( storeDir.getPath() );
-        File logBaseFileName = ((GraphDatabaseAPI)db).getDependencyResolver().resolveDependency( XaDataSourceManager
-                .class ).getNeoStoreDataSource().getXaContainer().getLogicalLog().getBaseFileName();
+        File logBaseFileName = new File( storeDir, PhysicalLogFile.DEFAULT_NAME );
         Transaction tx = db.beginTx();
         db.createNode();
         tx.success();
         tx.finish();
-        
-        Pair<Pair<File, File>, Pair<File, File>> copy = copyLogicalLog( fs.get(), logBaseFileName );
+
+        Pair<Pair<File, File>, Pair<File, File>> copy = copyLogicalLog( logBaseFileName );
         decrementLogFormat( copy.other().other() );
         db.shutdown();
-        renameCopiedLogicalLog( fs.get(), copy );
-        
+        renameCopiedLogicalLog( copy );
+
         try
         {
             db = factory.newImpermanentDatabase( storeDir.getPath() );
@@ -70,7 +69,7 @@ public class TestChangingOfLogFormat
         {   // Good
         }
     }
-    
+
     private void decrementLogFormat( File file ) throws IOException
     {
         // Gotten from LogIoUtils class
@@ -89,10 +88,54 @@ public class TestChangingOfLogFormat
         channel.write( buffer );
         channel.close();
     }
-    
+
+    public  Pair<Pair<File, File>, Pair<File, File>> copyLogicalLog( File logBaseFileName ) throws IOException
+    {
+        EphemeralFileSystemAbstraction fileSystem = fs.get();
+        File activeLog = new File( logBaseFileName.getPath() + ".active" ).getAbsoluteFile();
+        StoreChannel af = fileSystem.open( activeLog, "r" );
+        ByteBuffer buffer = ByteBuffer.allocate( 1024 );
+        af.read( buffer );
+        buffer.flip();
+        File activeLogBackup = new File( logBaseFileName.getPath() + ".bak.active" ).getAbsoluteFile();
+        StoreChannel activeCopy = fileSystem.open( activeLogBackup, "rw" );
+        activeCopy.write( buffer );
+        activeCopy.close();
+        af.close();
+        buffer.flip();
+        char active = buffer.asCharBuffer().get();
+        buffer.clear();
+        File currentLog = new File( logBaseFileName.getPath() + "." + active ).getAbsoluteFile();
+        StoreChannel source = fileSystem.open( currentLog, "r" );
+        File currentLogBackup = new File( logBaseFileName.getPath() + ".bak." + active ).getAbsoluteFile();
+        StoreChannel dest = fileSystem.open( currentLogBackup, "rw" );
+        int read;
+        do
+        {
+            read = source.read( buffer );
+            buffer.flip();
+            dest.write( buffer );
+            buffer.clear();
+        }
+        while ( read == 1024 );
+        source.close();
+        dest.close();
+        return Pair.of( Pair.of( activeLog, activeLogBackup ), Pair.of( currentLog, currentLogBackup ) );
+    }
+
+    public void renameCopiedLogicalLog( Pair<Pair<File, File>, Pair<File, File>> files ) throws IOException
+    {
+        EphemeralFileSystemAbstraction fileSystem = fs.get();
+        fileSystem.deleteFile( files.first().first() );
+        fileSystem.renameFile( files.first().other(), files.first().first() );
+
+        fileSystem.deleteFile( files.other().first() );
+        fileSystem.renameFile( files.other().other(), files.other().first() );
+    }
+
     @Rule public EphemeralFileSystemRule fs = new EphemeralFileSystemRule();
     private TestGraphDatabaseFactory factory;
-    
+
     @Before
     public void before() throws Exception
     {

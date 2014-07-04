@@ -22,6 +22,7 @@ package org.neo4j.kernel.ha.transaction;
 import org.neo4j.kernel.InternalAbstractGraphDatabase;
 import org.neo4j.kernel.impl.core.LastTxIdGetter;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 
 public class OnDiskLastTxIdGetter implements LastTxIdGetter
@@ -36,8 +37,8 @@ public class OnDiskLastTxIdGetter implements LastTxIdGetter
     @Override
     public long getLastTxId()
     {
-        NeoStore neoStore = getNeoStore();
-        return neoStore.getLastCommittedTx();
+        TransactionIdStore neoStore = getNeoStore();
+        return neoStore.getLastCommittingTransactionId();
     }
 
     private NeoStore getNeoStore()

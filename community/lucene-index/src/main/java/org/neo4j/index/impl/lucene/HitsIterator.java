@@ -28,7 +28,7 @@ public class HitsIterator extends AbstractIndexHits<Document>
     private final int size;
     private final Hits hits;
     private int index;
-    
+
     public HitsIterator( Hits hits )
     {
         this.size = hits.length();
@@ -48,7 +48,8 @@ public class HitsIterator extends AbstractIndexHits<Document>
             throw new RuntimeException( e );
         }
     }
-    
+
+    @Override
     public float currentScore()
     {
         int i = index-1;
@@ -61,7 +62,8 @@ public class HitsIterator extends AbstractIndexHits<Document>
             throw new RuntimeException( e );
         }
     }
-    
+
+    @Override
     public int size()
     {
         return this.size;

@@ -22,21 +22,35 @@ package org.neo4j.kernel.impl.api.store;
 import java.util.Collection;
 import java.util.Iterator;
 
+import org.neo4j.collection.primitive.PrimitiveIntCollections;
+import org.neo4j.collection.primitive.PrimitiveIntIterator;
+import org.neo4j.collection.primitive.PrimitiveIntObjectMap;
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
+import org.neo4j.collection.primitive.PrimitiveLongSet;
 import org.neo4j.graphdb.Direction;
-import org.neo4j.helpers.Thunk;
 import org.neo4j.kernel.api.EntityType;
 import org.neo4j.kernel.api.KernelAPI;
+import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.state.RelationshipChangesForNode;
 import org.neo4j.kernel.impl.cache.AutoLoadingCache;
+import org.neo4j.kernel.impl.core.EntityFactory;
 import org.neo4j.kernel.impl.core.GraphPropertiesImpl;
+import org.neo4j.kernel.impl.core.LabelTokenHolder;
 import org.neo4j.kernel.impl.core.NodeImpl;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.core.Primitive;
+import org.neo4j.kernel.impl.core.PropertyKeyTokenHolder;
 import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.core.RelationshipLoader;
+import org.neo4j.kernel.impl.core.RelationshipLoadingPosition;
+import org.neo4j.kernel.impl.core.RelationshipTypeTokenHolder;
+import org.neo4j.kernel.impl.core.Token;
+import org.neo4j.kernel.impl.util.RelIdArray;
+import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
+import org.neo4j.kernel.impl.util.RelIdArrayWithLoops;
 
 import static org.neo4j.kernel.impl.api.store.CacheUpdateListener.NO_UPDATES;
 
@@ -72,19 +86,29 @@ public class PersistenceCache
     };
     private final AutoLoadingCache<NodeImpl> nodeCache;
     private final AutoLoadingCache<RelationshipImpl> relationshipCache;
-    private final Thunk<GraphPropertiesImpl> graphProperties;
-    private final NodeManager nodeManager;
+    private GraphPropertiesImpl graphProperties;
+    private final RelationshipLoader relationshipLoader;
+    private final PropertyKeyTokenHolder propertyKeyTokenHolder;
+    private final RelationshipTypeTokenHolder relationshipTypeTokenHolder;
+    private final LabelTokenHolder labelTokenHolder;
+    private final EntityFactory entityFactory;
 
     public PersistenceCache(
             AutoLoadingCache<NodeImpl> nodeCache,
             AutoLoadingCache<RelationshipImpl> relationshipCache,
-            Thunk<GraphPropertiesImpl> graphProperties,
-            NodeManager nodeManager)
+            EntityFactory entityFactory, RelationshipLoader relationshipLoader,
+            PropertyKeyTokenHolder propertyKeyTokenHolder,
+            RelationshipTypeTokenHolder relationshipTypeTokenHolder,
+            LabelTokenHolder labelTokenHolder )
     {
         this.nodeCache = nodeCache;
         this.relationshipCache = relationshipCache;
-        this.graphProperties = graphProperties;
-        this.nodeManager = nodeManager;
+        this.entityFactory = entityFactory;
+        this.graphProperties = entityFactory.newGraphProperties();
+        this.relationshipLoader = relationshipLoader;
+        this.propertyKeyTokenHolder = propertyKeyTokenHolder;
+        this.relationshipTypeTokenHolder = relationshipTypeTokenHolder;
+        this.labelTokenHolder = labelTokenHolder;
     }
 
     public boolean nodeHasLabel( long nodeId, int labelId, CacheLoader<int[]> cacheLoader )
@@ -119,6 +143,162 @@ public class PersistenceCache
         return relationship;
     }
 
+    /**
+     * Applies changes made by a transaction that was just committed.
+     *
+     * TODO you know what? the argument here shouldn't be a TxState, because that means that only transactions
+     * made on this machine by client code will be applied to cache. We could make PersistenceCache a
+     * NeoCommandVisitor where each visited command would update the cache accordingly. But for the time being
+     * we just do this and invalidate data made by "other" machines.
+     */
+    public void apply( TxState txState )
+    {
+        // Apply everything except labels, which is done in the other apply method. TODO sort this out later.
+        txState.accept( new TxState.VisitorAdapter()
+        {
+            // For now just have these methods convert their data into whatever NodeImpl (and friends)
+            // expects. We can optimize later.
+
+            @Override
+            public void visitNodePropertyChanges( long id, Iterator<DefinedProperty> added,
+                    Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+            {
+                NodeImpl node = nodeCache.getIfCached( id );
+                if ( node != null )
+                {
+                    node.commitPropertyMaps( translateAddedAndChangedProperties( added, changed ), removed );
+                }
+            }
+
+            @Override
+            public void visitNodeRelationshipChanges( long id,
+                    RelationshipChangesForNode added, RelationshipChangesForNode removed )
+            {
+                NodeImpl node = nodeCache.getIfCached( id );
+                if ( node != null )
+                {
+                    node.commitRelationshipMaps( translateAddedRelationships( added ),
+                            translateRemovedRelationships( removed ) );
+                }
+            }
+
+            @Override
+            public void visitRelPropertyChanges( long id, Iterator<DefinedProperty> added,
+                    Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+            {
+                RelationshipImpl relationship = relationshipCache.getIfCached( id );
+                if ( relationship != null )
+                {
+                    relationship.commitPropertyMaps( translateAddedAndChangedProperties( added, changed ), removed );
+                }
+            }
+
+            @Override
+            public void visitGraphPropertyChanges( Iterator<DefinedProperty> added,
+                    Iterator<DefinedProperty> changed, Iterator<Integer> removed )
+            {
+                graphProperties.commitPropertyMaps( translateAddedAndChangedProperties( added, changed ), removed );
+            }
+
+            // TODO Below are translators from TxState into what Primitive and friends expects.
+            // Ideally there should not be any translation since it's a bit unnecessary and costly.
+            private PrimitiveIntObjectMap<DefinedProperty> translateAddedAndChangedProperties(
+                    Iterator<DefinedProperty> added, Iterator<DefinedProperty> changed )
+            {
+                if ( added == null && changed == null )
+                {
+                    return null;
+                }
+
+                PrimitiveIntObjectMap<DefinedProperty> result = org.neo4j.collection.primitive.Primitive.intObjectMap();
+                translateProperties( added, result );
+                translateProperties( changed, result );
+                return result;
+            }
+
+            private void translateProperties( Iterator<DefinedProperty> properties,
+                    PrimitiveIntObjectMap<DefinedProperty> result )
+            {
+                if ( properties != null )
+                {
+                    while ( properties.hasNext() )
+                    {
+                        DefinedProperty property = properties.next();
+                        result.put( property.propertyKeyId(), property );
+                    }
+                }
+            }
+
+            private PrimitiveIntObjectMap<RelIdArray> translateAddedRelationships(
+                    RelationshipChangesForNode added )
+            {
+                if ( added == null )
+                {
+                    return null;
+                }
+
+                PrimitiveIntObjectMap<RelIdArray> result = org.neo4j.collection.primitive.Primitive.intObjectMap();
+                PrimitiveIntIterator types = added.getTypesChanged();
+                while ( types.hasNext() )
+                {
+                    int type = types.next();
+                    Iterator<Long> loopsChanges = added.loopsChanges( type );
+                    RelIdArray idArray = loopsChanges == null ? new RelIdArray( type ) :
+                        new RelIdArrayWithLoops( type );
+                    addIds( idArray, added.outgoingChanges( type ), DirectionWrapper.OUTGOING );
+                    addIds( idArray, added.incomingChanges( type ), DirectionWrapper.INCOMING );
+                    addIds( idArray, loopsChanges, DirectionWrapper.BOTH );
+                    result.put( type, idArray );
+                }
+                return result;
+            }
+
+            private void addIds( RelIdArray idArray, Iterator<Long> ids, DirectionWrapper direction )
+            {
+                if ( ids != null )
+                {
+                    while ( ids.hasNext() )
+                    {
+                        idArray.add( ids.next(), direction );
+                    }
+                }
+            }
+
+            private PrimitiveIntObjectMap<PrimitiveLongSet> translateRemovedRelationships(
+                    RelationshipChangesForNode removed )
+            {
+                if ( removed == null )
+                {
+                    return null;
+                }
+
+                PrimitiveIntObjectMap<PrimitiveLongSet> result =
+                        org.neo4j.collection.primitive.Primitive.intObjectMap();
+                PrimitiveIntIterator types = removed.getTypesChanged();
+                while ( types.hasNext() )
+                {
+                    int type = types.next();
+                    PrimitiveLongSet ids = org.neo4j.collection.primitive.Primitive.longSet();
+                    addIds( ids, removed.outgoingChanges( type ) );
+                    addIds( ids, removed.incomingChanges( type ) );
+                    addIds( ids, removed.loopsChanges( type ) );
+                }
+                return result;
+            }
+
+            private void addIds( PrimitiveLongSet set, Iterator<Long> ids )
+            {
+                if ( ids != null )
+                {
+                    while ( ids.hasNext() )
+                    {
+                        set.add( ids.next() );
+                    }
+                }
+            }
+        } );
+    }
+
     public void apply( Collection<NodeLabelUpdate> updates )
     {
         for ( NodeLabelUpdate update : updates )
@@ -142,6 +322,31 @@ public class PersistenceCache
     public void evictNode( long nodeId )
     {
         nodeCache.remove( nodeId );
+    }
+
+    public void evictRelationship( long relId )
+    {
+        relationshipCache.remove( relId );
+    }
+
+    public void evictGraphProperties()
+    {
+        graphProperties = entityFactory.newGraphProperties();
+    }
+
+    public void evictPropertyKey( int id )
+    {
+        propertyKeyTokenHolder.removeToken( id );
+    }
+
+    public void evictRelationshipType( int id )
+    {
+        relationshipTypeTokenHolder.removeToken( id );
+    }
+
+    public void evictLabel( int id )
+    {
+        labelTokenHolder.removeToken( id );
     }
 
     public Iterator<DefinedProperty> nodeGetProperties( long nodeId,
@@ -181,27 +386,85 @@ public class PersistenceCache
 
     public Iterator<DefinedProperty> graphGetProperties( CacheLoader<Iterator<DefinedProperty>> cacheLoader )
     {
-        return graphProperties.evaluate().getProperties( cacheLoader, NO_UPDATES );
+        return graphProperties.getProperties( cacheLoader, NO_UPDATES );
     }
 
     public PrimitiveLongIterator graphGetPropertyKeys( CacheLoader<Iterator<DefinedProperty>> cacheLoader )
     {
-        return graphProperties.evaluate().getPropertyKeys( cacheLoader, NO_UPDATES );
+        return graphProperties.getPropertyKeys( cacheLoader, NO_UPDATES );
     }
 
     public Property graphGetProperty( CacheLoader<Iterator<DefinedProperty>> cacheLoader,
                                       int propertyKeyId )
     {
-        return graphProperties.evaluate().getProperty( cacheLoader, NO_UPDATES, propertyKeyId );
+        return graphProperties.getProperty( cacheLoader, NO_UPDATES, propertyKeyId );
     }
 
-    public PrimitiveLongIterator nodeGetRelationships( long node, Direction direction, int[] relTypes ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetRelationships( long node,
+            Direction direction, int[] relTypes ) throws EntityNotFoundException
     {
-        return getNode( node ).getRelationships( nodeManager, direction, relTypes );
+        return getNode( node ).getRelationships( relationshipLoader, direction, relTypes,
+                NODE_CACHE_SIZE_LISTENER );
     }
 
-    public PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction ) throws EntityNotFoundException
+    public PrimitiveLongIterator nodeGetRelationships( long nodeId, Direction direction )
+            throws EntityNotFoundException
     {
-        return getNode( nodeId ).getRelationships( nodeManager, direction );
+        return getNode( nodeId ).getRelationships( relationshipLoader, direction,
+                NODE_CACHE_SIZE_LISTENER );
+    }
+
+    public int nodeGetDegree( long nodeId, Direction direction )
+            throws EntityNotFoundException
+    {
+        return getNode( nodeId ).getDegree( relationshipLoader, direction, NODE_CACHE_SIZE_LISTENER );
+    }
+
+    public int nodeGetDegree( long nodeId, int type, Direction direction )
+            throws EntityNotFoundException
+    {
+        return getNode( nodeId ).getDegree( relationshipLoader, type, direction, NODE_CACHE_SIZE_LISTENER );
+    }
+
+    public PrimitiveIntIterator nodeGetRelationshipTypes( long nodeId )
+            throws EntityNotFoundException
+    {
+        return PrimitiveIntCollections.toPrimitiveIterator( getNode( nodeId )
+                .getRelationshipTypes( relationshipLoader, NODE_CACHE_SIZE_LISTENER ) );
+    }
+
+    public void cachePropertyKey( Token token )
+    {
+        propertyKeyTokenHolder.addToken( token );
+    }
+
+    public void cacheRelationshipType( Token token )
+    {
+        relationshipTypeTokenHolder.addToken( token );
+    }
+
+    public void cacheLabel( Token token )
+    {
+        labelTokenHolder.addToken( token );
+    }
+
+    public void patchDeletedRelationshipNodes( long relId, long firstNodeId, long firstNodeNextRelId,
+            long secondNodeId, long secondNodeNextRelId )
+    {
+        invalidateNode( firstNodeId, relId, firstNodeNextRelId );
+        invalidateNode( secondNodeId, relId, secondNodeNextRelId );
+    }
+
+    private void invalidateNode( long nodeId, long relIdDeleted, long nextRelId )
+    {
+        NodeImpl node = nodeCache.getIfCached( nodeId );
+        if ( node != null )
+        {
+            RelationshipLoadingPosition position = node.getRelChainPosition();
+            if ( position != null )
+            {
+                position.compareAndAdvance( relIdDeleted, nextRelId );
+            }
+        }
     }
 }

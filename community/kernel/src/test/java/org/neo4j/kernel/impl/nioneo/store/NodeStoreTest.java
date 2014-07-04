@@ -28,7 +28,6 @@ import org.junit.ClassRule;
 import org.junit.Test;
 
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.configuration.Config;
 import org.neo4j.kernel.monitoring.Monitors;
@@ -106,7 +105,9 @@ public class NodeStoreTest
         // GIVEN
         // -- a store
         EphemeralFileSystemAbstraction fs = new EphemeralFileSystemAbstraction();
-        Config config = new Config();
+        File storeDir = new File( "dir" );
+        fs.mkdirs( storeDir );
+        Config config = StoreFactory.configForStoreDir( new Config(), storeDir );
         IdGeneratorFactory idGeneratorFactory = new DefaultIdGeneratorFactory();
         Monitors monitors = new Monitors();
         StoreFactory factory = new StoreFactory(
@@ -115,11 +116,9 @@ public class NodeStoreTest
                 pageCacheRule.getPageCache( fs, config ),
                 fs,
                 DEV_NULL,
-                new DefaultTxHook(),
                 monitors );
-        File nodeStoreFileName = new File( "nodestore" );
-        factory.createNodeStore( nodeStoreFileName );
-        NodeStore nodeStore = factory.newNodeStore( nodeStoreFileName );
+        factory.createNodeStore();
+        NodeStore nodeStore = factory.newNodeStore();
 
         // -- a record with the msb carrying a negative value
         long nodeId = 0, labels = 0x8000000001L;

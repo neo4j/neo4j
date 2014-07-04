@@ -22,112 +22,72 @@ package org.neo4j.kernel.impl.transaction.xaframework;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import javax.transaction.xa.Xid;
-
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandWriter;
+import org.neo4j.helpers.collection.Visitor;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+import org.neo4j.kernel.impl.nioneo.xa.command.NeoCommandHandler;
 
 public class LogEntryWriterv1 implements LogEntryWriter
 {
-    private static final short CURRENT_FORMAT_VERSION = ( LogEntry.CURRENT_LOG_VERSION) & 0xFF;
+    private static final short CURRENT_FORMAT_VERSION = (LogEntry.CURRENT_LOG_VERSION) & 0xFF;
     static final int LOG_HEADER_SIZE = 16;
+    private final WritableLogChannel channel;
+    private final NeoCommandHandler commandWriter;
 
-    public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion,
-            long previousCommittedTxId )
+    public LogEntryWriterv1( WritableLogChannel channel, NeoCommandHandler commandWriter )
+    {
+        this.channel = channel;
+        this.commandWriter = commandWriter;
+    }
+
+    public static ByteBuffer writeLogHeader( ByteBuffer buffer, long logVersion, long previousCommittedTxId )
     {
         buffer.clear();
-        buffer.putLong( logVersion | ( ( (long) CURRENT_FORMAT_VERSION ) << 56 ) );
+        buffer.putLong( logVersion | (((long) CURRENT_FORMAT_VERSION) << 56) );
         buffer.putLong( previousCommittedTxId );
         buffer.flip();
         return buffer;
     }
 
-    public void writeLogEntry( LogEntry entry, LogBuffer buffer ) throws IOException
+    private void writeLogEntryHeader( byte type ) throws IOException
     {
-        if ( entry.getVersion() == LogEntry.CURRENT_LOG_ENTRY_VERSION )
+        channel.put( LogEntry.CURRENT_LOG_ENTRY_VERSION ).put( type );
+    }
+
+    @Override
+    public void writeStartEntry( int masterId, int authorId, long timeWritten, long latestCommittedTxWhenStarted,
+            byte[] additionalHeaderData ) throws IOException
+    {
+        writeLogEntryHeader( LogEntry.TX_START );
+        channel.putInt( masterId ).putInt( authorId ).putLong( timeWritten ).putLong( latestCommittedTxWhenStarted )
+                .putInt( additionalHeaderData.length ).put( additionalHeaderData, additionalHeaderData.length );
+    }
+
+    @Override
+    public void writeCommitEntry( long transactionId, long timeWritten ) throws IOException
+    {
+        writeLogEntryHeader( LogEntry.TX_1P_COMMIT );
+        channel.putLong( transactionId ).putLong( timeWritten );
+    }
+
+    @Override
+    public void serialize( TransactionRepresentation tx ) throws IOException
+    {
+        tx.accept( new CommandSerializer() );
+    }
+
+    public void writeCommandEntry( Command command ) throws IOException
+    {
+        writeLogEntryHeader( LogEntry.COMMAND );
+        command.handle( commandWriter );
+    }
+
+    private class CommandSerializer implements Visitor<Command, IOException>
+    {
+        @Override
+        public boolean visit( Command command ) throws IOException
         {
-            buffer.put( entry.getVersion() );
+            writeCommandEntry( command );
+            return true;
         }
-        switch ( entry.getType() )
-        {
-            case LogEntry.TX_START:
-                writeStart( entry.getIdentifier(), ((LogEntry.Start) entry).getXid(),
-                        ((LogEntry.Start) entry).getMasterId(), ((LogEntry.Start) entry).getLocalId(),
-                        ((LogEntry.Start) entry).getTimeWritten(),
-                        ((LogEntry.Start) entry).getLastCommittedTxWhenTransactionStarted(), buffer );
-                break;
-            case LogEntry.COMMAND:
-                writeCommand( entry.getIdentifier(), ((LogEntry.Command) entry).getXaCommand(), buffer );
-                break;
-            case LogEntry.TX_PREPARE:
-                writePrepare( entry.getIdentifier(), ((LogEntry.Prepare) entry).getTimeWritten(), buffer );
-                break;
-            case LogEntry.TX_1P_COMMIT:
-                LogEntry.Commit commit1PC = (LogEntry.Commit) entry;
-                writeCommit( false, commit1PC.getIdentifier(), commit1PC.getTxId(),
-                        ((LogEntry.OnePhaseCommit) entry).getTimeWritten(), buffer );
-                break;
-            case LogEntry.TX_2P_COMMIT:
-                LogEntry.Commit commit2PC = (LogEntry.Commit) entry;
-                writeCommit( true, commit2PC.getIdentifier(), commit2PC.getTxId(),
-                        ((LogEntry.TwoPhaseCommit) entry).getTimeWritten(), buffer );
-                break;
-            case LogEntry.DONE:
-                writeDone( entry.getIdentifier(), buffer );
-                break;
-            default:
-                throw new IllegalArgumentException("Unknown entry type " + entry.getType() );
-
-        }
-    }
-
-    private void writePrepare( int identifier, long timeWritten, LogBuffer logBuffer ) throws IOException
-    {
-        logBuffer.put( LogEntry.TX_PREPARE ).putInt( identifier ).putLong( timeWritten );
-    }
-
-    private void writeCommit( boolean twoPhase, int identifier, long txId,
-            long timeWritten, LogBuffer logBuffer ) throws IOException
-    {
-        logBuffer.put( twoPhase ? LogEntry.TX_2P_COMMIT : LogEntry.TX_1P_COMMIT )
-              .putInt( identifier ).putLong( txId ).putLong( timeWritten );
-    }
-
-    private void writeDone( int identifier, LogBuffer logBuffer ) throws IOException
-    {
-        logBuffer.put( LogEntry.DONE ).putInt( identifier );
-    }
-
-    private void writeStart( int identifier, Xid xid, int masterId, int myId, long timeWritten,
-                                   long latestCommittedTxWhenStarted, LogBuffer logBuffer )
-            throws IOException
-    {
-        byte globalId[] = xid.getGlobalTransactionId();
-        byte branchId[] = xid.getBranchQualifier();
-        int formatId = xid.getFormatId();
-        logBuffer
-              .put( LogEntry.TX_START )
-              .put( (byte) globalId.length )
-              .put( (byte) branchId.length )
-              .put( globalId ).put( branchId )
-              .putInt( identifier )
-              .putInt( formatId )
-              .putInt( masterId )
-              .putInt( myId )
-              .putLong( timeWritten )
-              .putLong( latestCommittedTxWhenStarted );
-    }
-
-    private void writeCommand( int identifier, XaCommand command, LogBuffer logBuffer )
-            throws IOException
-    {
-        logBuffer.put( LogEntry.COMMAND ).putInt( identifier );
-        commandWriter.write( command, logBuffer );
-    }
-
-    private XaCommandWriter commandWriter;
-
-    public void setCommandWriter( XaCommandWriter commandWriter )
-    {
-        this.commandWriter = commandWriter;
     }
 }

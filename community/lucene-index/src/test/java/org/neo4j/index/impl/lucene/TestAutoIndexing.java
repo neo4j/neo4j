@@ -35,7 +35,6 @@ import org.neo4j.graphdb.index.AutoIndexer;
 import org.neo4j.graphdb.index.Index;
 import org.neo4j.graphdb.index.ReadableIndex;
 import org.neo4j.graphdb.index.RelationshipIndex;
-import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.test.ImpermanentGraphDatabase;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -124,10 +123,18 @@ public class TestAutoIndexing
     public void testAutoIndexesReportReadOnly()
     {
         AutoIndexer<Node> autoIndexer = graphDb.index().getNodeAutoIndexer();
-        assertFalse( autoIndexer.getAutoIndex().isWriteable() );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            assertFalse( autoIndexer.getAutoIndex().isWriteable() );
+            tx.success();
+        }
         autoIndexer.startAutoIndexingProperty( "test_uuid" );
         autoIndexer.setEnabled( true );
-        assertFalse( autoIndexer.getAutoIndex().isWriteable() );
+        try ( Transaction tx = graphDb.beginTx() )
+        {
+            assertFalse( autoIndexer.getAutoIndex().isWriteable() );
+            tx.success();
+        }
     }
 
     @Test
@@ -653,7 +660,8 @@ public class TestAutoIndexing
                 1 } );
 
         newTransaction();
-        graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        // TODO 2.2-future
+//        graphDb.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
         node1.removeProperty( "nodeProp" );
         newTransaction();
         assertFalse( node1.hasProperty( "nodeProp" ) );

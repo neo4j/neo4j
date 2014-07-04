@@ -23,15 +23,15 @@ import java.io.File;
 import java.io.IOException;
 import java.util.Map;
 
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.io.fs.FileSystemAbstraction;
+import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultFileSystemAbstraction;
 import org.neo4j.kernel.DefaultGraphDatabaseDependencies;
 import org.neo4j.kernel.EmbeddedGraphDatabase;
-import org.neo4j.kernel.configuration.Config;
-import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogFiles;
-import org.neo4j.kernel.impl.transaction.xaframework.XaLogicalLogRecoveryCheck;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
+import org.neo4j.kernel.impl.nioneo.store.NeoStoreUtil;
+import org.neo4j.kernel.impl.transaction.xaframework.LogRecoveryCheck;
+import org.neo4j.kernel.impl.transaction.xaframework.PhysicalLogFiles;
 import org.neo4j.kernel.logging.Logging;
 
 /**
@@ -40,7 +40,6 @@ import org.neo4j.kernel.logging.Logging;
  */
 public class StoreRecoverer
 {
-
     private final FileSystemAbstraction fs;
 
     public StoreRecoverer()
@@ -53,66 +52,40 @@ public class StoreRecoverer
         this.fs = fs;
     }
 
-    public boolean recoveryNeededAt( File dataDir, Map<String, String> params ) throws IOException
+    public boolean recoveryNeededAt( File dataDir ) throws IOException
+    {
+        long logVersion = fs.fileExists( new File( dataDir, NeoStore.DEFAULT_NAME ) ) ?
+                new NeoStoreUtil( dataDir, fs ).getLogVersion() : 0;
+        return recoveryNeededAt( dataDir, logVersion );
+    }
+
+    public boolean recoveryNeededAt( File dataDir, long currentLogVersion )
+            throws IOException
     {
         // We need config to determine where the logical log files are
-        params.put( GraphDatabaseSettings.store_dir.name(), dataDir.getPath() );
-        Config config = new Config( params, GraphDatabaseSettings.class );
-
-        File neoStorePath = config.get( GraphDatabaseSettings.neo_store );
-
-        if(!fs.fileExists( neoStorePath ))
+        File neoStorePath = new File( dataDir, NeoStore.DEFAULT_NAME );
+        if ( !fs.fileExists( neoStorePath ) )
         {
             // No database in the specified directory.
             return false;
         }
 
-        File baseLogPath = config.get( GraphDatabaseSettings.logical_log );
-        XaLogicalLogFiles logFiles = new XaLogicalLogFiles( baseLogPath, fs );
+        PhysicalLogFiles logFiles = new PhysicalLogFiles( dataDir, fs );
+        File log = logFiles.getVersionFileName( currentLogVersion );
 
-        File log;
-        switch ( logFiles.determineState() )
+        if ( !fs.fileExists( log ) )
         {
-        case CLEAN:
+            // This most likely means that the db has been cleanly shut down, i.e. force then inc log version,
+            // then NOT creating a new log file (will be done the next startup)
             return false;
-
-        case NO_ACTIVE_FILE:
-        case DUAL_LOGS_LOG_1_ACTIVE:
-        case DUAL_LOGS_LOG_2_ACTIVE:
-            return true;
-
-        case LEGACY_WITHOUT_LOG_ROTATION:
-            log = baseLogPath;
-            break;
-
-        case LOG_1_ACTIVE:
-            log = logFiles.getLog1FileName();
-            break;
-
-        case LOG_2_ACTIVE:
-            log = logFiles.getLog2FileName();
-            break;
-
-        default:
-            return true;
         }
-
-        StoreChannel logChannel = null;
-        try
+        try ( StoreChannel logChannel = fs.open( log, "r" ) )
         {
-            logChannel = fs.open( log, "r" );
-            return new XaLogicalLogRecoveryCheck( logChannel ).recoveryRequired();
-        }
-        finally
-        {
-            if ( logChannel != null )
-            {
-                logChannel.close();
-            }
+            return new LogRecoveryCheck( logChannel ).recoveryRequired();
         }
     }
 
-    public void recover( File dataDir, Map<String, String> params, Logging logging ) throws IOException
+    public void recover( File dataDir, Map<String, String> params, Logging logging )
     {
         // For now, just launch a full embedded database on top of the
         // directory.

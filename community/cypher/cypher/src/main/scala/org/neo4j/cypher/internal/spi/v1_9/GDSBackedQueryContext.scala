@@ -27,7 +27,8 @@ import java.lang.{Iterable=>JIterable}
 import org.neo4j.tooling.GlobalGraphOperations
 import org.neo4j.cypher.EntityNotFoundException
 import org.neo4j.kernel.GraphDatabaseAPI
-import org.neo4j.kernel.impl.core.NodeManager
+import org.neo4j.kernel.impl.core.{ThreadToStatementContextBridge, NodeManager}
+import org.neo4j.kernel.impl.api.KernelStatement
 
 class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
 
@@ -89,9 +90,10 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
         GlobalGraphOperations.at(graph).getAllNodes.iterator().asScala
 
       def isDeleted(node: Node): Boolean = {
-        val nodeManager: NodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver
-          .resolveDependency(classOf[NodeManager])
-        nodeManager.isDeleted(node)
+        val nodeManager: ThreadToStatementContextBridge = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+
+        val statement : KernelStatement = nodeManager.getKernelTransactionBoundToThisThread( true ).acquireStatement().asInstanceOf[KernelStatement]
+        statement.txState().nodeIsDeletedInThisTx(node.getId)
       }
     }
   }
@@ -135,9 +137,10 @@ class GDSBackedQueryContext(graph: GraphDatabaseService) extends QueryContext {
         GlobalGraphOperations.at(graph).getAllRelationships.iterator().asScala
 
       def isDeleted(rel: Relationship): Boolean = {
-        val nodeManager: NodeManager = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver
-          .resolveDependency(classOf[NodeManager])
-        nodeManager.isDeleted(rel)
+        val nodeManager: ThreadToStatementContextBridge = graph.asInstanceOf[GraphDatabaseAPI].getDependencyResolver.resolveDependency(classOf[ThreadToStatementContextBridge])
+
+        val statement : KernelStatement = nodeManager.getKernelTransactionBoundToThisThread( true ).acquireStatement().asInstanceOf[KernelStatement]
+        statement.txState().relationshipIsDeletedInThisTx(rel.getId)
       }
     }
   }

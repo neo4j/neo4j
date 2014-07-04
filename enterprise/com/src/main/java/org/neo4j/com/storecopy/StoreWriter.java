@@ -23,7 +23,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
-public interface StoreWriter
+public interface StoreWriter extends AutoCloseable
 {
     // "hasData" is an effect of the block format not supporting a zero length block
     // whereas a neostore file may actually be 0 bytes we'll have to keep track
@@ -31,5 +31,6 @@ public interface StoreWriter
     int write( String path, ReadableByteChannel data, ByteBuffer temporaryBuffer, boolean hasData )
             throws IOException;
 
-    void done();
+    @Override
+    void close();
 }

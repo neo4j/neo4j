@@ -32,8 +32,7 @@ import org.junit.Test;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.kernel.ha.HaSettings;
 import org.neo4j.kernel.ha.HighlyAvailableGraphDatabase;
-import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
 import org.neo4j.test.LoggerRule;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
@@ -75,7 +74,6 @@ public class PullStormIT
             // Create data
             final HighlyAvailableGraphDatabase master = cluster.getMaster();
             {
-                System.out.println( "Creating data" );
                 Transaction tx = master.beginTx();
                 for ( int i = 0; i < 1000; i++ )
                 {
@@ -87,11 +85,9 @@ public class PullStormIT
 
             // Slave goes down
             HighlyAvailableGraphDatabase slave = cluster.getAnySlave();
-            System.out.println( "Slave failed" );
             ClusterManager.RepairKit repairKit = cluster.fail( slave );
 
             // Create more data
-            System.out.println( "Creating more data" );
             for ( int i = 0; i < 1000; i++ )
             {
                 {
@@ -107,7 +103,6 @@ public class PullStormIT
             }
 
             // Slave comes back online
-            System.out.println( "Slave comes up" );
             repairKit.repair();
 
             cluster.await( ClusterManager.masterSeesSlavesAsAvailable( 1 ) );
@@ -155,8 +150,7 @@ public class PullStormIT
 
     private long lastCommittedTxId( HighlyAvailableGraphDatabase highlyAvailableGraphDatabase )
     {
-        return ((NeoStoreXaDataSource)highlyAvailableGraphDatabase.getDependencyResolver()
-                .resolveDependency( XaDataSourceManager.class )
-                .getXaDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME )).getNeoStore().getLastCommittedTx();
+        return highlyAvailableGraphDatabase.getDependencyResolver()
+                .resolveDependency( TransactionIdStore.class ).getLastCommittingTransactionId();
     }
 }

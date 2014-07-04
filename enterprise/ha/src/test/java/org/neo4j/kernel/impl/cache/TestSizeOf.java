@@ -19,30 +19,7 @@
  */
 package org.neo4j.kernel.impl.cache;
 
-import java.lang.reflect.Array;
-import java.util.Map;
-
-import org.junit.AfterClass;
-import org.junit.Before;
-import org.junit.BeforeClass;
-import org.junit.Test;
-
-import org.neo4j.graphdb.DynamicRelationshipType;
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.PropertyContainer;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
-import org.neo4j.graphdb.Transaction;
-import org.neo4j.graphdb.factory.GraphDatabaseSettings;
-import org.neo4j.helpers.collection.IteratorUtil;
-import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.MyRelTypes;
-import org.neo4j.kernel.impl.core.NodeImpl;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.test.TestGraphDatabaseFactory;
-
 import static org.junit.Assert.assertEquals;
-
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.helpers.collection.MapUtil.map;
 import static org.neo4j.kernel.impl.cache.SizeOfs.REFERENCE_SIZE;
@@ -52,6 +29,28 @@ import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withArrayOverheadIncludingReferences;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withObjectOverhead;
 import static org.neo4j.kernel.impl.cache.SizeOfs.withReference;
+
+import java.lang.reflect.Array;
+import java.util.Map;
+
+import org.junit.AfterClass;
+import org.junit.Before;
+import org.junit.BeforeClass;
+import org.junit.Test;
+import org.neo4j.graphdb.DynamicRelationshipType;
+import org.neo4j.graphdb.Node;
+import org.neo4j.graphdb.PropertyContainer;
+import org.neo4j.graphdb.Relationship;
+import org.neo4j.graphdb.RelationshipType;
+import org.neo4j.graphdb.Transaction;
+import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.impl.MyRelTypes;
+import org.neo4j.kernel.impl.core.Caches;
+import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
+import org.neo4j.test.TestGraphDatabaseFactory;
 
 public class TestSizeOf
 {
@@ -76,19 +75,18 @@ public class TestSizeOf
     @Before
     public void clearCache()
     {
-        nodeManager().clearCache();
+        db.getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 
     @SuppressWarnings( "unchecked" )
     private Cache<NodeImpl> getNodeCache()
     {
-        // This is a bit fragile because we depend on the order of caches() returns its caches.
-        return (Cache<NodeImpl>) IteratorUtil.first( nodeManager().caches() );
+        return db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class ).getNodeCache();
     }
 
-    private NodeManager nodeManager()
+    private Cache<RelationshipImpl> getRelationshipCache()
     {
-        return db.getDependencyResolver().resolveDependency( NodeManager.class );
+        return db.getDependencyResolver().resolveDependency( NeoStoreXaDataSource.class ).getRelationshipCache();
     }
 
     private Node createNodeAndLoadFresh( Map<String, Object> properties, int nrOfRelationships, int nrOfTypes )
@@ -220,14 +218,15 @@ public class TestSizeOf
         countRelationships( node );
 
         // Now the node cache size should be the same as doing node.size()
-        assertEquals( nodeManager().getNodeForProxy( node.getId() ).sizeOfObjectInBytesIncludingOverhead(), nodeCache.size() );
+
+        assertEquals( getNodeCache().get( node.getId() ).sizeOfObjectInBytesIncludingOverhead(), nodeCache.size() );
     }
 
     private int sizeOfNode( Node node )
     {
         try(Transaction ignore = db.beginTx())
         {
-            return nodeManager().getNodeForProxy( node.getId() ).sizeOfObjectInBytesIncludingOverhead();
+            return getNodeCache().get( node.getId() ).sizeOfObjectInBytesIncludingOverhead();
         }
     }
 
@@ -235,8 +234,7 @@ public class TestSizeOf
     {
         try(Transaction ignore = db.beginTx())
         {
-            return nodeManager().getRelationshipForProxy( relationship.getId() )
-                    .sizeOfObjectInBytesIncludingOverhead();
+            return getRelationshipCache().get( relationship.getId() ).sizeOfObjectInBytesIncludingOverhead();
         }
     }
 

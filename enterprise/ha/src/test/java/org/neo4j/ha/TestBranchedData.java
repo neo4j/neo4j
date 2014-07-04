@@ -19,12 +19,18 @@
  */
 package org.neo4j.ha;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.helpers.SillyUtils.nonNull;
+import static org.neo4j.helpers.collection.MapUtil.stringMap;
+import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
+import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
+
 import java.io.File;
 import java.io.IOException;
 
 import org.junit.After;
 import org.junit.Test;
-
 import org.neo4j.cluster.ClusterSettings;
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
@@ -39,14 +45,6 @@ import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.ha.ClusterManager;
 import org.neo4j.test.ha.ClusterManager.ManagedCluster;
 import org.neo4j.test.ha.ClusterManager.RepairKit;
-
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.helpers.SillyUtils.nonNull;
-import static org.neo4j.helpers.collection.MapUtil.stringMap;
-import static org.neo4j.test.ha.ClusterManager.allSeesAllAsAvailable;
-import static org.neo4j.test.ha.ClusterManager.clusterOfSize;
 
 public class TestBranchedData
 {
@@ -82,7 +80,7 @@ public class TestBranchedData
     public void shouldCopyStoreFromMasterIfBranched() throws Throwable
     {
         // GIVEN
-        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( 3 ), dir, stringMap() ) );
+        ClusterManager clusterManager = life.add( new ClusterManager( clusterOfSize( 2 ), dir, stringMap() ) );
         life.start();
         ManagedCluster cluster = clusterManager.getDefaultCluster();
         cluster.await( allSeesAllAsAvailable() );
@@ -94,20 +92,18 @@ public class TestBranchedData
         String storeDir = slave.getStoreDir();
         RepairKit starter = cluster.shutdown( slave );
         HighlyAvailableGraphDatabase master = cluster.getMaster();
-        HighlyAvailableGraphDatabase otherSlave = cluster.getAnySlave();
         createNode( master, "B1" );
         createNode( master, "C" );
         createTransaction( storeDir, "B2" );
-        starter.repair();
-        
+        slave = starter.repair();
+
         // THEN
         cluster.await( allSeesAllAsAvailable() );
-        slave = cluster.getAnySlave( otherSlave );
         slave.beginTx().finish();
     }
     
     private final LifeSupport life = new LifeSupport();
-    
+
     @After
     public void after()
     {
@@ -132,7 +128,7 @@ public class TestBranchedData
         Transaction tx = db.beginTx();
         try
         {
-            db.createNode().setProperty( "name", name );
+            db.createNode();//.setProperty( "name", name );
             tx.success();
         }
         finally

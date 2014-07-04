@@ -38,6 +38,7 @@ import org.neo4j.kernel.api.index.IndexDescriptor;
 import org.neo4j.kernel.api.index.InternalIndexState;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.api.properties.Property;
+import org.neo4j.kernel.impl.api.operations.EntityReadOperations;
 import org.neo4j.kernel.impl.api.operations.EntityWriteOperations;
 import org.neo4j.kernel.impl.api.operations.LockOperations;
 import org.neo4j.kernel.impl.api.operations.SchemaReadOperations;
@@ -56,17 +57,20 @@ public class LockingStatementOperations implements
     SchemaStateOperations,
     LockOperations
 {
+    private final EntityReadOperations entityReadDelegate;
     private final EntityWriteOperations entityWriteDelegate;
     private final SchemaReadOperations schemaReadDelegate;
     private final SchemaWriteOperations schemaWriteDelegate;
     private final SchemaStateOperations schemaStateDelegate;
 
     public LockingStatementOperations(
+            EntityReadOperations entityReadDelegate,
             EntityWriteOperations entityWriteDelegate,
             SchemaReadOperations schemaReadDelegate,
             SchemaWriteOperations schemaWriteDelegate,
             SchemaStateOperations schemaStateDelegate )
     {
+        this.entityReadDelegate = entityReadDelegate;
         this.entityWriteDelegate = entityWriteDelegate;
         this.schemaReadDelegate = schemaReadDelegate;
         this.schemaWriteDelegate = schemaWriteDelegate;
@@ -204,21 +208,37 @@ public class LockingStatementOperations implements
 
     @Override
     public long nodeCreate( KernelStatement statement )
-    {
+    {   // TODO 2.2-future Don't lock it, it's a new node so it isn't seen by anyone else anyway
         return entityWriteDelegate.nodeCreate( statement );
     }
 
     @Override
     public long relationshipCreate( KernelStatement state, int relationshipTypeId, long startNodeId, long endNodeId )
-    {
+    {   // TODO 2.2-future Don't lock it, it's a new relationship so it isn't seen by anyone else anyway
         state.locks().acquireExclusive( ResourceTypes.NODE, startNodeId );
         state.locks().acquireExclusive( ResourceTypes.NODE, endNodeId );
         return entityWriteDelegate.relationshipCreate( state, relationshipTypeId, startNodeId, endNodeId );
     }
 
     @Override
-    public void relationshipDelete( KernelStatement state, long relationshipId )
+    public void relationshipDelete( final KernelStatement state, long relationshipId )
     {
+        try
+        {
+            entityReadDelegate.relationshipVisit( state, relationshipId, new RelationshipVisitor<RuntimeException>()
+            {
+                @Override
+                public void visit( long relId, long startNode, long endNode, int type )
+                {
+                    state.locks().acquireExclusive( ResourceTypes.NODE, startNode );
+                    state.locks().acquireExclusive( ResourceTypes.NODE, endNode );
+                }
+            });
+        }
+        catch ( EntityNotFoundException e )
+        {
+            throw new IllegalStateException( "Unable to delete relationship[" + relationshipId+ "] since it is already deleted." );
+        }
         state.locks().acquireExclusive( ResourceTypes.RELATIONSHIP, relationshipId );
         entityWriteDelegate.relationshipDelete( state, relationshipId );
     }

@@ -19,19 +19,25 @@
  */
 package org.neo4j.kernel.ha;
 
+import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
+import static org.neo4j.com.Protocol.LONG_SERIALIZER;
+import static org.neo4j.com.Protocol.VOID_SERIALIZER;
+import static org.neo4j.com.Protocol.readBoolean;
+import static org.neo4j.com.Protocol.readString;
+import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
+
 import java.io.IOException;
-import java.nio.channels.ReadableByteChannel;
 
 import org.jboss.netty.buffer.ChannelBuffer;
-import org.neo4j.com.BlockLogReader;
 import org.neo4j.com.ObjectSerializer;
+import org.neo4j.com.Protocol;
 import org.neo4j.com.RequestContext;
 import org.neo4j.com.RequestType;
 import org.neo4j.com.Response;
 import org.neo4j.com.TargetCaller;
 import org.neo4j.com.storecopy.ToNetworkStoreWriter;
-import org.neo4j.com.TxExtractor;
 import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.ha.com.master.HandshakeResult;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.ha.id.IdAllocation;
@@ -39,14 +45,8 @@ import org.neo4j.kernel.ha.lock.LockResult;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
 import org.neo4j.kernel.impl.nioneo.store.IdRange;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionRepresentation;
 import org.neo4j.kernel.monitoring.Monitors;
-
-import static org.neo4j.com.Protocol.INTEGER_SERIALIZER;
-import static org.neo4j.com.Protocol.LONG_SERIALIZER;
-import static org.neo4j.com.Protocol.VOID_SERIALIZER;
-import static org.neo4j.com.Protocol.readBoolean;
-import static org.neo4j.com.Protocol.readString;
-import static org.neo4j.kernel.ha.com.slave.MasterClient.LOCK_SERIALIZER;
 
 public enum HaRequestType210 implements RequestType<Master>
 {
@@ -134,11 +134,21 @@ public enum HaRequestType210 implements RequestType<Master>
     {
         @Override
         public Response<Long> call( Master master, RequestContext context, ChannelBuffer input,
-                ChannelBuffer target )
+                                    ChannelBuffer target ) throws IOException, TransactionFailureException
         {
-            String resource = readString( input );
-            final ReadableByteChannel reader = new BlockLogReader( input );
-            return master.commitSingleResourceTransaction( context, resource, TxExtractor.create( reader ) );
+            readString( input ); // Always neostorexadatasource
+
+            TransactionRepresentation tx = null;
+            try
+            {
+                tx = Protocol.TRANSACTION_REPRESENTATION_DESERIALIZER.read( input, null );
+            }
+            catch ( IOException e )
+            {
+                throw new RuntimeException( e );
+            }
+
+            return master.commitSingleResourceTransaction( context, tx );
         }
     }, LONG_SERIALIZER ),
 
@@ -226,7 +236,8 @@ public enum HaRequestType210 implements RequestType<Master>
         public Response<Void> call( Master master, RequestContext context, ChannelBuffer input,
                 ChannelBuffer target )
         {
-            return master.pushTransaction( context, readString( input ), input.readLong() );
+            readString( input ); // always neostorexadatasource
+            return master.pushTransaction( context, input.readLong() );
         }
     }, VOID_SERIALIZER ),
 

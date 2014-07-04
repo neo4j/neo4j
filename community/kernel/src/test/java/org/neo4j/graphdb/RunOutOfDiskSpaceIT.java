@@ -19,18 +19,18 @@
  */
 package org.neo4j.graphdb;
 
-import static org.hamcrest.CoreMatchers.instanceOf;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.isA;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.fail;
-
 import java.io.IOException;
 
-import javax.transaction.SystemException;
-
 import org.junit.Test;
+
 import org.neo4j.graphdb.mockfs.LimitedFileSystemGraphDatabase;
+import org.neo4j.helpers.Exceptions;
+
+import static org.hamcrest.CoreMatchers.instanceOf;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class RunOutOfDiskSpaceIT
 {
@@ -59,9 +59,7 @@ public class RunOutOfDiskSpaceIT
         }
 
         // Then
-        assertThat( exceptionThrown.getCause(), isA( Throwable.class ) );
-        assertThat( exceptionThrown.getCause().getCause(), isA( Throwable.class ) );
-        assertThat( exceptionThrown.getCause().getCause().getCause(), is( instanceOf( IOException.class ) ) );
+        assertTrue( Exceptions.contains( exceptionThrown, IOException.class ) );
     }
 
     @Test
@@ -99,6 +97,6 @@ public class RunOutOfDiskSpaceIT
         }
 
         // Then
-        assertThat( errorCaught.getCause(), is( instanceOf( SystemException.class ) ) );
+        assertThat( errorCaught.getCause(), is( instanceOf( org.neo4j.kernel.api.exceptions.TransactionFailureException.class ) ) );
     }
 }

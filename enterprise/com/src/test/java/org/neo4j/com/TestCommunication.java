@@ -19,22 +19,25 @@
  */
 package org.neo4j.com;
 
-import static java.lang.System.currentTimeMillis;
-import static java.lang.Thread.yield;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
-import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
-
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
+
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.lifecycle.LifeSupport;
+
+import static java.lang.System.currentTimeMillis;
+import static java.lang.Thread.yield;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
+import static org.neo4j.com.MadeUpServer.FRAME_LENGTH;
+import static org.neo4j.com.TxChecksumVerifier.ALWAYS_MATCH;
 
 public class TestCommunication
 {
@@ -43,7 +46,7 @@ public class TestCommunication
 
     private static final int PORT = 1234;
     private StoreId storeIdToUse;
-    private LifeSupport life = new LifeSupport();
+    private final LifeSupport life = new LifeSupport();
     private Builder builder;
 
     @Before
@@ -58,7 +61,7 @@ public class TestCommunication
     {
         life.shutdown();
     }
-    
+
     @Test
     public void clientGetResponseFromServerViaComLayer() throws Throwable
     {
@@ -286,7 +289,10 @@ public class TestCommunication
         assertTrue( writer.getSizeRead() >= failAtSize );
 
         long maxWaitUntil = System.currentTimeMillis()+2*1000;
-        while ( !server.responseFailureEncountered() && System.currentTimeMillis() < maxWaitUntil ) yield();
+        while ( !server.responseFailureEncountered() && System.currentTimeMillis() < maxWaitUntil )
+        {
+            yield();
+        }
         assertTrue( "Failure writing the response should have been encountered", server.responseFailureEncountered() );
         assertFalse( "Response shouldn't have been successful", server.responseHasBeenWritten() );
     }
@@ -320,7 +326,7 @@ public class TestCommunication
             // one instead of getting a "channel closed".
         }
     }
-    
+
     @Test
     public void clientCanReadChunkSizeBiggerThanItsOwn() throws Throwable
     {   // Given that frameLength is the same for both client and server.
@@ -354,7 +360,7 @@ public class TestCommunication
         // from server are 10 times bigger than the clients chunk size.
         client.sendDataStream( new DataProducer( clientChunkSize*2 ) );
     }
-    
+
     @Test
     public void impossibleToHaveBiggerChunkSizeThanFrameSize() throws Throwable
     {
@@ -377,7 +383,7 @@ public class TestCommunication
         {   // Good
         }
     }
-    
+
     class Builder
     {
         private final int port;
@@ -386,13 +392,13 @@ public class TestCommunication
         private final byte applicationProtocolVersion;
         private final TxChecksumVerifier verifier;
         private final StoreId storeId;
-        
+
         public Builder()
         {
             this( PORT, FRAME_LENGTH, INTERNAL_PROTOCOL_VERSION, APPLICATION_PROTOCOL_VERSION,
                     ALWAYS_MATCH, storeIdToUse );
         }
-        
+
         public Builder( int port, int chunkSize, byte internalProtocolVersion, byte applicationProtocolVersion,
                 TxChecksumVerifier verifier, StoreId storeId )
         {
@@ -403,53 +409,53 @@ public class TestCommunication
             this.verifier = verifier;
             this.storeId = storeId;
         }
-        
+
         public Builder port( int port )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public Builder chunkSize( int chunkSize )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public Builder internalProtocolVersion( byte internalProtocolVersion )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public Builder applicationProtocolVersion( byte applicationProtocolVersion )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public Builder verifier( TxChecksumVerifier verifier )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public Builder storeId( StoreId storeId )
         {
             return new Builder( port, chunkSize, internalProtocolVersion, applicationProtocolVersion, verifier, storeId );
         }
-        
+
         public MadeUpServer server()
         {
             return new MadeUpServer( new MadeUpServerImplementation( storeId ), port,
                     internalProtocolVersion, applicationProtocolVersion, verifier, chunkSize );
         }
-        
+
         public MadeUpServer server( MadeUpCommunicationInterface target )
         {
             return new MadeUpServer( target, port, internalProtocolVersion, applicationProtocolVersion, verifier, chunkSize );
         }
-        
+
         public MadeUpClient client()
         {
             return new MadeUpClient( port, storeId, internalProtocolVersion, applicationProtocolVersion, chunkSize );
         }
-        
+
         public ServerInterface serverInOtherJvm()
         {
             ServerInterface server = new MadeUpServerProcess().start( new StartupData(

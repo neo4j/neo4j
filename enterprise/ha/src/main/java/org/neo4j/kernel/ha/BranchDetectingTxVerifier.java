@@ -23,57 +23,51 @@ import java.io.IOException;
 
 import org.neo4j.com.TxChecksumVerifier;
 import org.neo4j.graphdb.DependencyResolver;
-import org.neo4j.helpers.Pair;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreXaDataSource;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.kernel.impl.transaction.xaframework.XaDataSource;
+import org.neo4j.kernel.impl.transaction.xaframework.LogicalTransactionStore;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMetadataCache;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.logging.Logging;
 
 public class BranchDetectingTxVerifier implements TxChecksumVerifier
 {
     private final StringLogger logger;
-    private XaDataSource dataSource;
     private DependencyResolver resolver;
+    private LogicalTransactionStore txStore;
 
-    public BranchDetectingTxVerifier( DependencyResolver resolver /* I'd like to get in StringLogger, XaDataSource instead */ )
+    public BranchDetectingTxVerifier( DependencyResolver resolver )
     {
         this.resolver = resolver;
-        /* We cannot pass in XaResourceManager because it this time we don't have a
-         * proper db, merely the HA graph db which is a layer around a not-yet-started db
-         * Rickards restructuring will of course fix this */
         this.logger = resolver.resolveDependency( Logging.class ).getMessagesLog( getClass() );
+        this.txStore = resolver.resolveDependency( NeoStoreXaDataSource.class ).getDependencyResolver().
+                resolveDependency( LogicalTransactionStore.class );
     }
-    
+
     @Override
     public void assertMatch( long txId, int masterId, long checksum )
     {
+        if ( txId == 0 )
+        {
+            return;
+        }
+        TransactionMetadataCache.TransactionMetadata metadata = null;
         try
         {
-            Pair<Integer, Long> readChecksum = dataSource().getMasterForCommittedTx( txId );
-            boolean match = masterId == readChecksum.first() && checksum == readChecksum.other();
-            
-            if ( !match )
-            {
-                throw new BranchedDataException( stringify( txId, masterId, checksum ) +
-                        " doesn't match " + readChecksum );
-            }
+            metadata = txStore.getMetadataFor( txId );
         }
         catch ( IOException e )
         {
-            logger.logMessage( "Couldn't verify checksum for " + stringify( txId, masterId, checksum ), e );
-            throw new BranchedDataException( e );
+            throw new RuntimeException( e );
         }
-    }
-    
-    private XaDataSource dataSource()
-    {
-        if ( dataSource == null )
+        int readMaster = metadata.getMasterId();
+        long readChecksum = metadata.getChecksum();
+        boolean match = masterId == readMaster && checksum == readChecksum;
+
+        if ( !match )
         {
-            dataSource = resolver.resolveDependency( XaDataSourceManager.class )
-                    .getXaDataSource( NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
+            throw new BranchedDataException( stringify( txId, masterId, checksum ) +
+                    " doesn't match " + stringify( txId, readMaster, readChecksum ) );
         }
-        return dataSource;
     }
 
     private String stringify( long txId, int masterId, long checksum )

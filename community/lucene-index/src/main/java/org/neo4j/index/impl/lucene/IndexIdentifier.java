@@ -19,21 +19,21 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import org.neo4j.kernel.impl.index.IndexEntityType;
+
 class IndexIdentifier
 {
+    final IndexEntityType entityType;
     final String indexName;
-    final EntityType entityType;
-    final byte entityTypeByte;
     private final int hashCode;
-    
-    public IndexIdentifier( byte entityTypeByte, EntityType entityType, String indexName )
+
+    public IndexIdentifier( IndexEntityType entityType, String indexName )
     {
-        this.entityTypeByte = entityTypeByte;
         this.entityType = entityType;
         this.indexName = indexName;
         this.hashCode = calculateHashCode();
     }
-    
+
     @Override
     public boolean equals( Object o )
     {
@@ -42,26 +42,26 @@ class IndexIdentifier
             return false;
         }
         IndexIdentifier i = (IndexIdentifier) o;
-        return entityTypeByte == i.entityTypeByte && indexName.equals( i.indexName );
+        return entityType == i.entityType && indexName.equals( i.indexName );
     }
-    
+
     private int calculateHashCode()
     {
         int code = 17;
-        code += 7*entityTypeByte;
+        code += 7*entityType.hashCode();
         code += 7*indexName.hashCode();
         return code;
     }
-    
+
     @Override
     public int hashCode()
     {
         return this.hashCode;
     }
-    
+
     @Override
     public String toString()
     {
-        return "Index[" + indexName + "," + (entityTypeByte==LuceneCommand.NODE?"Node":"Relationship") + "]";
+        return "Index[" + indexName + "," + entityType.name() + "]";
     }
 }

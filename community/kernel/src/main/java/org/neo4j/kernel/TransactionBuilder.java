@@ -27,14 +27,14 @@ import org.neo4j.graphdb.Transaction;
  * with the updated configuration that the method call modified.
  * When the behavior is as desired a call to {@link #begin()} will
  * begin the transaction and return a {@link Transaction}.
- * 
+ *
  * <pre>
  * // To begin a transaction with default behavior
  * Transaction tx = graphDb.tx().begin();
- * 
+ *
  * // To begin a transaction with relaxed force
  * Transaction tx = graphDb.tx().unforced().begin();
- * 
+ *
  * // To have relaxed force optionally set by a condition
  * TransactionBuilder txBuilder = graphDb.tx();
  * if ( condition )
@@ -53,36 +53,8 @@ public interface TransactionBuilder
 {
     /**
      * Starts a new transaction and associates it with the current thread.
-     * 
+     *
      * @return a new transaction instance
      */
     Transaction begin();
-    
-    /**
-     * Relaxes the forcing constraint of the logical logs for this transaction
-     * so that the data is written out, but not forced to disk.
-     * 
-     * Pros
-     * <ul>
-     * <li>The overhead of committing a transaction is lowered due to the removal
-     * of the force, i.e. I/O waiting for the disk to actually write the bytes down.
-     * The smaller the transaction the bigger percentage of it is spent forcing
-     * the logical logs to disk, so small transactions get most benefit from
-     * being unforced.</li>
-     * </ul>
-     * 
-     * Cons
-     * <ul>
-     * <li>Since there's no guarantee that the data is actually written down to disk
-     * the data provided in this transaction could be lost in the event of power failure
-     * or similar. It is however guaranteed that the data that has been written to disk
-     * is consistent so the worst case scenario for unforced transactions is that a couple
-     * of seconds (depending on write load) worth of data might be lost in an event of
-     * power failure, but the database will still get back to a consistent state after
-     * a recovery.</li>
-     * </ul>
-     * 
-     * @return a {@link TransactionBuilder} instance with relaxed force set.
-     */
-    TransactionBuilder unforced();
 }

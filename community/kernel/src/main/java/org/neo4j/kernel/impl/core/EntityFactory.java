@@ -25,6 +25,9 @@ import org.neo4j.graphdb.Relationship;
 public interface EntityFactory
 {
     Node newNodeProxyById( long id );
-    
+
     Relationship newRelationshipProxyById( long id );
+
+    // TODO shouldn't be impl, please fix
+    GraphPropertiesImpl newGraphProperties();
 }

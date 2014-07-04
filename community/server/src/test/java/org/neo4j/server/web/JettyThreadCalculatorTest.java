@@ -19,22 +19,14 @@
  */
 package org.neo4j.server.web;
 
-import junit.framework.TestCase;
-import org.junit.Rule;
 import org.junit.Test;
-import org.neo4j.test.Mute;
-
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
-import static org.neo4j.test.Mute.muteAll;
 
 public class JettyThreadCalculatorTest
 {
-
     @Test
     public void shouldHaveCorrectAmountOfThreads()
     {
-
         JettyThreadCalculator jtc = new JettyThreadCalculator(1);
         assertEquals("Wrong acceptor value for 1 core", 1, jtc.getAcceptors());
         assertEquals("Wrong selector value for 1 core", 1, jtc.getSelectors());
@@ -62,9 +54,5 @@ public class JettyThreadCalculatorTest
         assertEquals("Wrong maxThreads value for 64 cores", 52, jtc.getMaxThreads());
         assertEquals("Wrong minThreads value for 64 cores", 12, jtc.getMinThreads());
         assertEquals("Wrong capacity value for 64 cores", 3120000, jtc.getMaxCapacity());
-
-
     }
-
-
 }

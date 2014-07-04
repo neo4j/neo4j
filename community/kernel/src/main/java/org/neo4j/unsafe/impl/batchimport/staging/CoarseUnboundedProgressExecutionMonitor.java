@@ -19,9 +19,9 @@
  */
 package org.neo4j.unsafe.impl.batchimport.staging;
 
-import org.neo4j.unsafe.impl.batchimport.stats.Keys;
-
 import static org.neo4j.helpers.collection.IteratorUtil.last;
+
+import org.neo4j.unsafe.impl.batchimport.stats.Keys;
 
 /**
  * {@link ExecutionMonitor} that prints progress, e.g. a dot every N batches completed.
@@ -59,12 +59,14 @@ public class CoarseUnboundedProgressExecutionMonitor extends PollingExecutionMon
 
     protected void progress()
     {
+        // TODO An execution monitor that does not accept the writer? A kitten dies every time this happens, you know
         System.out.print( "." );
     }
 
     @Override
     public void done()
     {
+        // TODO Seriously. Two kittens died. Don't you love kittens?
         System.out.println();
     }
 }

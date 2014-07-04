@@ -19,18 +19,8 @@
  */
 package org.neo4j.unsafe.impl.batchimport.cache;
 
-import java.util.Random;
-
-import org.junit.Before;
-import org.junit.Test;
-import org.mockito.InOrder;
-
-import org.neo4j.graphdb.Direction;
-import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink.GroupVisitor;
-
 import static java.lang.Math.max;
 import static java.lang.System.currentTimeMillis;
-
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
@@ -38,6 +28,14 @@ import static org.mockito.Mockito.inOrder;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.verify;
 import static org.mockito.Mockito.verifyNoMoreInteractions;
+
+import java.util.Random;
+
+import org.junit.Before;
+import org.junit.Test;
+import org.mockito.InOrder;
+import org.neo4j.graphdb.Direction;
+import org.neo4j.unsafe.impl.batchimport.cache.NodeRelationshipLink.GroupVisitor;
 
 public class NodeRelationshipLinkImplTest
 {
@@ -202,7 +200,6 @@ public class NodeRelationshipLinkImplTest
     {
         long seed = currentTimeMillis();
         random = new Random( seed );
-        System.out.println( "Seed:" + seed );
     }
 
     private void increment( NodeRelationshipLink cache, long node, int count )

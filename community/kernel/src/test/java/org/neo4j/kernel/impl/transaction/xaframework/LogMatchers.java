@@ -30,19 +30,21 @@ import javax.transaction.xa.Xid;
 
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-
 import org.hamcrest.TypeSafeMatcher;
+
+import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
-import org.neo4j.kernel.impl.nioneo.xa.XaCommandReaderFactory;
-import org.neo4j.kernel.impl.util.Consumer;
-import org.neo4j.kernel.impl.util.Cursor;
 import org.neo4j.io.fs.StoreChannel;
+import org.neo4j.kernel.impl.nioneo.xa.CommandReaderFactory;
+import org.neo4j.kernel.impl.nioneo.xa.LogDeserializer;
+import org.neo4j.kernel.impl.nioneo.xa.command.Command;
+
+import static org.neo4j.kernel.impl.util.Cursors.exhaustAndClose;
 
 /**
  * A set of hamcrest matchers for asserting logical logs look in certain ways.
  * Please expand as necessary.
- * 
+ *
  * Please note: Matching specific commands is done by matchers found in
  * {@link org.neo4j.kernel.impl.nioneo.xa.CommandMatchers}.
  */
@@ -60,23 +62,21 @@ public class LogMatchers
 
             // Read all log entries
             final List<LogEntry> entries = new ArrayList<>();
-            LogDeserializer deserializer = new LogDeserializer( buffer, XaCommandReaderFactory.DEFAULT );
+            LogDeserializer deserializer = new LogDeserializer( CommandReaderFactory.DEFAULT );
 
-
-            Consumer<LogEntry, IOException> consumer = new Consumer<LogEntry, IOException>()
+            Visitor<LogEntry, IOException> consumer = new Visitor<LogEntry, IOException>()
             {
                 @Override
-                public boolean accept( LogEntry entry ) throws IOException
+                public boolean visit( LogEntry entry ) throws IOException
                 {
                     entries.add( entry );
                     return true;
                 }
             };
 
-            try( Cursor<LogEntry, IOException> cursor = deserializer.cursor( fileChannel ) )
-            {
-                while ( cursor.next( consumer ) );
-            }
+            ReadableLogChannel logChannel = new ReadAheadLogChannel(
+                    new PhysicalLogVersionedStoreChannel( fileChannel ), LogVersionBridge.NO_MORE_CHANNELS, 4096 );
+            exhaustAndClose( deserializer.cursor( logChannel, consumer ) );
 
             return entries;
         }
@@ -138,81 +138,66 @@ public class LogMatchers
         };
     }
 
-    public static Matcher<? extends LogEntry> startEntry( final Integer identifier, final int masterId,
-            final int localId )
+    public static Matcher<? extends LogEntry> startEntry( final int masterId, final int localId )
     {
         return new TypeSafeMatcher<LogEntry.Start>()
         {
-
             @Override
             public boolean matchesSafely( LogEntry.Start entry )
             {
-                return entry != null && entry.getIdentifier() == identifier && entry.getMasterId() == masterId
+                return entry != null && entry.getMasterId() == masterId
                         && entry.getLocalId() == localId;
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( "Start[" + identifier + ",xid=<Any Xid>,master=" + masterId + ",me=" + localId
+                description.appendText( "Start[" + "xid=<Any Xid>,master=" + masterId + ",me=" + localId
                         + ",time=<Any Date>]" );
             }
         };
     }
 
-    public static Matcher<? extends LogEntry> onePhaseCommitEntry( final int identifier, final int txId )
+    public static Matcher<? extends LogEntry> commitEntry( final long txId )
     {
         return new TypeSafeMatcher<LogEntry.OnePhaseCommit>()
         {
-
             @Override
             public boolean matchesSafely( LogEntry.OnePhaseCommit onePC )
             {
-                return onePC != null && onePC.getIdentifier() == identifier && onePC.getTxId() == txId;
+                return onePC != null && onePC.getTxId() == txId;
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( String.format( "1PC[%d, txId=%d, <Any Date>],", identifier, txId ) );
+                description.appendText( String.format( "Commit[txId=%d, <Any Date>]", txId ) );
             }
         };
     }
 
-    public static Matcher<? extends LogEntry> doneEntry( final int identifier )
-    {
-        return new TypeSafeMatcher<LogEntry.Done>()
-        {
-
-            @Override
-            public boolean matchesSafely( LogEntry.Done done )
-            {
-                return done != null && done.getIdentifier() == identifier;
-            }
-
-            @Override
-            public void describeTo( Description description )
-            {
-                description.appendText( String.format( "Done[%d]", identifier ) );
-            }
-        };
-    }
-
-    public static Matcher<? extends LogEntry> commandEntry( final int identifier )
+    public static Matcher<? extends LogEntry> commandEntry( final long key,
+            final Class<? extends Command> commandClass )
     {
         return new TypeSafeMatcher<LogEntry.Command>()
         {
-
             @Override
-            public boolean matchesSafely( LogEntry.Command cmd )
+            public boolean matchesSafely( LogEntry.Command commandEntry )
             {
-                return cmd != null && cmd.getIdentifier() == identifier;
+                if ( commandEntry == null )
+                {
+                    return false;
+                }
+
+                Command command = commandEntry.getXaCommand();
+                return command.getKey() == key &&
+                       command.getClass().equals( commandClass );
             }
 
             @Override
             public void describeTo( Description description )
             {
-                description.appendText( String.format( "Command[%d]", identifier ) );
+                description.appendText( String.format( "Command[key=%d, cls=%s]", key, commandClass.getSimpleName() ) );
             }
         };
     }

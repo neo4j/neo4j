@@ -53,7 +53,7 @@ import org.neo4j.kernel.impl.api.KernelSchemaStateStore;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 import org.neo4j.kernel.impl.locking.LockService;
 import org.neo4j.kernel.impl.nioneo.xa.NeoStoreIndexStoreView;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.impl.util.TestLogger;
 import org.neo4j.kernel.logging.SingleLoggingService;
@@ -68,9 +68,9 @@ import static java.lang.String.format;
 import static org.hamcrest.MatcherAssert.assertThat;
 import static org.hamcrest.core.IsEqual.equalTo;
 import static org.junit.Assert.assertEquals;
+import static org.mockito.Matchers.any;
+import static org.mockito.Matchers.anyLong;
 import static org.mockito.Mockito.RETURNS_MOCKS;
-import static org.mockito.Mockito.any;
-import static org.mockito.Mockito.anyLong;
 import static org.mockito.Mockito.doThrow;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.times;
@@ -622,7 +622,6 @@ public class IndexPopulationJobTest
     private NeoStoreIndexStoreView newStoreView()
     {
         return new NeoStoreIndexStoreView( mock( LockService.class, RETURNS_MOCKS ),
-                db.getDependencyResolver().resolveDependency( XaDataSourceManager.class )
-                        .getNeoStoreDataSource().getNeoStore() );
+                db.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate() );
     }
 }

@@ -24,12 +24,16 @@ import java.util.ArrayList;
 import org.junit.Test;
 
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.configuration.Config;
+import org.neo4j.kernel.impl.cache.Cache;
 import org.neo4j.kernel.impl.cache.CacheProvider;
 import org.neo4j.kernel.impl.cache.SoftCacheProvider;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.NodeImpl;
+import org.neo4j.kernel.impl.core.RelationshipImpl;
+import org.neo4j.kernel.impl.util.StringLogger;
+import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
 public class SetCacheProvidersTest
@@ -57,11 +61,45 @@ public class SetCacheProvidersTest
     {
         ArrayList<CacheProvider> cacheList = new ArrayList<>();
         TestGraphDatabaseFactory gdbf = new TestGraphDatabaseFactory();
-        cacheList.add( new SoftCacheProvider() );
+        CacheProvider cacheProvider = new SoftCacheProvider();
+        CapturingCacheProvider capturingProvider = new CapturingCacheProvider( cacheProvider );
+        cacheList.add( capturingProvider );
         gdbf.setCacheProviders( cacheList );
         GraphDatabaseAPI db = (GraphDatabaseAPI) gdbf.newImpermanentDatabase();
-        assertEquals( SoftCacheProvider.NAME, db.getDependencyResolver().resolveDependency( NodeManager.class )
-                .getCacheType().getName() );
-        db.shutdown();
+        try
+        {
+            assertTrue( capturingProvider.nodeCacheCalled );
+            assertTrue( capturingProvider.relCacheCalled );
+        }
+        finally
+        {
+            db.shutdown();
+        }
+    }
+
+    public class CapturingCacheProvider extends CacheProvider
+    {
+        private final CacheProvider cacheProvider;
+        private boolean nodeCacheCalled, relCacheCalled;
+
+        public CapturingCacheProvider( CacheProvider cacheProvider )
+        {
+            super( cacheProvider.getName(), cacheProvider.getDescription() );
+            this.cacheProvider = cacheProvider;
+        }
+
+        @Override
+        public Cache<NodeImpl> newNodeCache( StringLogger logger, Config config, Monitors monitors )
+        {
+            nodeCacheCalled = true;
+            return cacheProvider.newNodeCache( logger, config, monitors );
+        }
+
+        @Override
+        public Cache<RelationshipImpl> newRelationshipCache( StringLogger logger, Config config, Monitors monitors )
+        {
+            relCacheCalled = true;
+            return cacheProvider.newRelationshipCache( logger, config, monitors );
+        }
     }
 }

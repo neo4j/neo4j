@@ -37,6 +37,9 @@ public final class NodeState extends PropertyContainerState
     public interface Visitor extends PropertyContainerState.Visitor
     {
         void visitLabelChanges( long nodeId, Iterator<Integer> added, Iterator<Integer> removed );
+
+        void visitRelationshipChanges( long nodeId,
+                RelationshipChangesForNode added, RelationshipChangesForNode removed );
     }
 
     public NodeState( long id )
@@ -150,6 +153,10 @@ public final class NodeState extends PropertyContainerState
         {
             visitor.visitLabelChanges( getId(), labelDiffSets.getAdded().iterator(),
                                                 labelDiffSets.getRemoved().iterator() );
+        }
+        if ( relationshipsAdded != null || relationshipsRemoved != null )
+        {
+            visitor.visitRelationshipChanges( getId(), relationshipsAdded, relationshipsRemoved );
         }
     }
 

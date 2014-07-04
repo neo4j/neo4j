@@ -27,8 +27,6 @@ import java.util.Map;
 import java.util.Stack;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import javax.transaction.Transaction;
-
 import org.neo4j.helpers.collection.Visitor;
 import org.neo4j.kernel.DeadlockDetectedException;
 import org.neo4j.kernel.impl.util.ArrayMap;
@@ -72,11 +70,10 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
     // o When the transaction wakes up from waiting on a resource the
     // stopWaitOn( resource ) method must be invoked
 
-    private final Map<Object,List<Transaction>> resourceMap =
-        new HashMap<Object,List<Transaction>>();
+    private final Map<Object,List<Object>> resourceMap = new HashMap<>();
 
-    private final ArrayMap<Transaction,Object> waitingTxMap =
-        new ArrayMap<Transaction,Object>( (byte)5, false, true );
+    private final ArrayMap<Object,Object> waitingTxMap =
+        new ArrayMap<>( (byte)5, false, true );
 
     private final AtomicInteger deadlockCount = new AtomicInteger();
 
@@ -85,9 +82,9 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
         return deadlockCount.longValue();
     }
 
-    synchronized void lockAcquired( Object resource, Transaction tx )
+    synchronized void lockAcquired( Object resource, Object tx )
     {
-        List<Transaction> lockingTxList = resourceMap.get( resource );
+        List<Object> lockingTxList = resourceMap.get( resource );
         if ( lockingTxList != null )
         {
             assert !lockingTxList.contains( tx );
@@ -95,15 +92,15 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
         }
         else
         {
-            lockingTxList = new LinkedList<Transaction>();
+            lockingTxList = new LinkedList<>();
             lockingTxList.add( tx );
             resourceMap.put( resource, lockingTxList );
         }
     }
 
-    synchronized void lockReleased( Object resource, Transaction tx )
+    synchronized void lockReleased( Object resource, Object tx )
     {
-        List<Transaction> lockingTxList = resourceMap.get( resource );
+        List<Object> lockingTxList = resourceMap.get( resource );
         if ( lockingTxList == null )
         {
             throw new LockException( resource + " not found in resource map" );
@@ -119,7 +116,7 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
         }
     }
 
-    synchronized void stopWaitOn( Object resource, Transaction tx )
+    synchronized void stopWaitOn( Object resource, Object tx )
     {
         if ( waitingTxMap.remove( tx ) == null )
         {
@@ -128,10 +125,10 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
     }
 
     // after invoke the transaction must wait on the resource
-    synchronized void checkWaitOn( Object resource, Transaction tx )
+    synchronized void checkWaitOn( Object resource, Object tx )
         throws DeadlockDetectedException
     {
-        List<Transaction> lockingTxList = resourceMap.get( resource );
+        List<Object> lockingTxList = resourceMap.get( resource );
         if ( lockingTxList == null )
         {
             throw new LockException( "Illegal resource[" + resource
@@ -143,14 +140,14 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
             throw new LockException( tx + " already waiting for resource" );
         }
 
-        Iterator<Transaction> itr = lockingTxList.iterator();
-        List<Transaction> checkedTransactions = new LinkedList<Transaction>();
-        Stack<Object> graphStack = new Stack<Object>();
+        Iterator<Object> itr = lockingTxList.iterator();
+        List<Object> checkedTransactions = new LinkedList<>();
+        Stack<Object> graphStack = new Stack<>();
         // has resource,transaction interleaved
         graphStack.push( resource );
         while ( itr.hasNext() )
         {
-            Transaction lockingTx = itr.next();
+            Object lockingTx = itr.next();
             // the if statement bellow is valid because:
             // t1 -> r1 -> t1 (can happened with RW locks) is ok but,
             // t1 -> r1 -> t1&t2 where t2 -> r1 is a deadlock
@@ -184,9 +181,9 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
         waitingTxMap.put( tx, resource );
     }
 
-    private synchronized void checkWaitOnRecursive( Transaction lockingTx,
-        Transaction waitingTx, List<Transaction> checkedTransactions,
-        Stack<Object> graphStack ) throws DeadlockDetectedException
+    private synchronized void checkWaitOnRecursive( Object lockingTx,
+            Object waitingTx, List<Object> checkedTransactions,
+            Stack<Object> graphStack ) throws DeadlockDetectedException
     {
         if ( lockingTx.equals( waitingTx ) )
         {
@@ -194,7 +191,7 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
             Object resource;
             do
             {
-                lockingTx = (Transaction) graphStack.pop();
+                lockingTx = graphStack.pop();
                 resource = graphStack.pop();
                 if ( circle == null )
                 {
@@ -225,10 +222,10 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
             // this is ok since current tx or any other tx will wake
             // in the synchronized block and will be forced to do the deadlock
             // check once more if lock cannot be acquired
-            List<Transaction> lockingTxList = resourceMap.get( resource );
+            List<Object> lockingTxList = resourceMap.get( resource );
             if ( lockingTxList != null )
             {
-                for ( Transaction aLockingTxList : lockingTxList )
+                for ( Object aLockingTxList : lockingTxList )
                 {
                     lockingTx = aLockingTxList;
                     // so we don't
@@ -249,7 +246,7 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
     public synchronized boolean visit( LineLogger logger )
     {
         logger.logLine( "Waiting list: " );
-        Iterator<Transaction> transactions = waitingTxMap.keySet().iterator();
+        Iterator<Object> transactions = waitingTxMap.keySet().iterator();
         if ( !transactions.hasNext() )
         {
             logger.logLine( "No transactions waiting on resources" );
@@ -260,7 +257,7 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
         }
         while ( transactions.hasNext() )
         {
-            Transaction tx = transactions.next();
+            Object tx = transactions.next();
             logger.logLine( "" + tx + "->" + waitingTxMap.get( tx ) );
         }
         logger.logLine( "Resource lock list: " );
@@ -277,7 +274,7 @@ public class RagManager implements Visitor<LineLogger, RuntimeException>
         {
             Object resource = resources.next();
             logger.logLine( "" + resource + "->" );
-            Iterator<Transaction> itr = resourceMap.get( resource ).iterator();
+            Iterator<Object> itr = resourceMap.get( resource ).iterator();
             if ( !itr.hasNext() )
             {
                 logger.logLine( " Error empty list found" );

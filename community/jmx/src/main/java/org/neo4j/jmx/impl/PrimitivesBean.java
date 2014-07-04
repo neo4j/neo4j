@@ -21,13 +21,10 @@ package org.neo4j.jmx.impl;
 
 import javax.management.NotCompliantMBeanException;
 
-import org.neo4j.graphdb.Node;
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.helpers.Service;
 import org.neo4j.jmx.Primitives;
-import org.neo4j.kernel.impl.core.NodeManager;
-import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
 
 @Service.Implementation( ManagementBeanProvider.class )
 public final class PrimitivesBean extends ManagementBeanProvider
@@ -45,33 +42,36 @@ public final class PrimitivesBean extends ManagementBeanProvider
 
     private static class PrimitivesImpl extends Neo4jMBean implements Primitives
     {
+        private final IdGeneratorFactory idGeneratorFactory;
+
         PrimitivesImpl( ManagementData management ) throws NotCompliantMBeanException
         {
             super( management );
-            this.nodeManager = management.getKernelData().graphDatabase().getDependencyResolver()
-                    .resolveDependency( NodeManager.class );
+            this.idGeneratorFactory = management.resolveDependency( IdGeneratorFactory.class );
         }
 
-        private final NodeManager nodeManager;
-
+        @Override
         public long getNumberOfNodeIdsInUse()
         {
-            return nodeManager.getNumberOfIdsInUse( Node.class );
+            return idGeneratorFactory.get( IdType.NODE ).getNumberOfIdsInUse();
         }
 
+        @Override
         public long getNumberOfRelationshipIdsInUse()
         {
-            return nodeManager.getNumberOfIdsInUse( Relationship.class );
+            return idGeneratorFactory.get( IdType.RELATIONSHIP ).getNumberOfIdsInUse();
         }
 
+        @Override
         public long getNumberOfPropertyIdsInUse()
         {
-            return nodeManager.getNumberOfIdsInUse( PropertyStore.class );
+            return idGeneratorFactory.get( IdType.PROPERTY ).getNumberOfIdsInUse();
         }
 
+        @Override
         public long getNumberOfRelationshipTypeIdsInUse()
         {
-            return nodeManager.getNumberOfIdsInUse( RelationshipType.class );
+            return idGeneratorFactory.get( IdType.RELATIONSHIP_TYPE_TOKEN ).getNumberOfIdsInUse();
         }
     }
 }

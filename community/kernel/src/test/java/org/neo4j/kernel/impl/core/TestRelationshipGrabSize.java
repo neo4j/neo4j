@@ -25,6 +25,7 @@ import java.util.HashSet;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
 import org.neo4j.graphdb.DynamicRelationshipType;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -35,7 +36,10 @@ import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static java.lang.String.valueOf;
-import static org.junit.Assert.*;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
 import static org.neo4j.helpers.collection.IteratorUtil.count;
 import static org.neo4j.kernel.impl.MyRelTypes.TEST;
@@ -54,18 +58,18 @@ public class TestRelationshipGrabSize
                 .setConfig( GraphDatabaseSettings.relationship_grab_size, valueOf( GRAB_SIZE ) )
                 .newGraphDatabase();
     }
-    
+
     @AfterClass
     public static void doAfter() throws Exception
     {
         db.shutdown();
     }
-    
+
     private void beginTx()
     {
         tx = db.beginTx();
     }
-    
+
     private void finishTx( boolean success )
     {
         if ( success )
@@ -74,15 +78,10 @@ public class TestRelationshipGrabSize
         }
         tx.close();
     }
-    
+
     private void clearCache()
     {
-        nodeManager().clearCache();
-    }
-
-    private NodeManager nodeManager()
-    {
-        return db.getDependencyResolver().resolveDependency( NodeManager.class );
+        db.getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 
     @Test
@@ -104,7 +103,7 @@ public class TestRelationshipGrabSize
         }
         finishTx( true );
 
-        nodeManager().clearCache();
+        clearCache();
 
         /*
          * Here node1 has grabSize+1 relationships. The first grabSize to be loaded will be
@@ -151,7 +150,7 @@ public class TestRelationshipGrabSize
         tx.success();
         tx.finish();
 
-        nodeManager().clearCache();
+        clearCache();
 
         tx = db.beginTx();
 
@@ -236,7 +235,7 @@ public class TestRelationshipGrabSize
             RelationshipType createType, RelationshipType deleteType, int expectedCount )
     {
         Transaction tx = db.beginTx();
-        db.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        clearCache();
 
         node1.createRelationshipTo( node2, createType );
         node1.getRelationships( deleteType ).iterator().next().delete();

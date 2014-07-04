@@ -19,12 +19,8 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import static java.lang.String.format;
-
-import javax.transaction.xa.XAException;
-
-import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.helpers.Exceptions;
+import org.neo4j.kernel.api.exceptions.Status;
+import org.neo4j.kernel.api.exceptions.TransactionFailureException;
 import org.neo4j.kernel.api.exceptions.index.IndexNotFoundKernelException;
 import org.neo4j.kernel.api.exceptions.index.IndexPopulationFailedKernelException;
 import org.neo4j.kernel.api.exceptions.schema.ConstraintVerificationFailedKernelException;
@@ -36,7 +32,7 @@ import org.neo4j.kernel.impl.nioneo.store.SchemaRule;
 import org.neo4j.kernel.impl.nioneo.store.UniquenessConstraintRule;
 
 /**
- * Validates data integrity during the prepare phase of {@link NeoStoreTransaction}.
+ * Validates data integrity during the prepare phase of {@link TransactionRecordState}.
  */
 public class IntegrityValidator
 {
@@ -49,21 +45,21 @@ public class IntegrityValidator
         this.indexes = indexes;
     }
 
-    public void validateNodeRecord( NodeRecord record ) throws XAException
+    public void validateNodeRecord( NodeRecord record ) throws TransactionFailureException
     {
         if ( !record.inUse() && record.getNextRel() != Record.NO_NEXT_RELATIONSHIP.intValue() )
         {
-            throw Exceptions.withCause( new XAException( XAException.XA_RBINTEGRITY ),
-                    new ConstraintViolationException(
-                            "Node record " + record + " still has relationships" ) );
+            // TODO 2.2-future tx manager checks INTEGRITY XA code specifically
+            throw new TransactionFailureException( Status.Transaction.ValidationFailed,
+                    "Node record " + record + " still has relationships" );
         }
     }
 
     public void validateTransactionStartKnowledge( long lastCommittedTxWhenTransactionStarted )
-            throws XAException
+            throws TransactionFailureException
     {
         long latestConstraintIntroducingTx = neoStore.getLatestConstraintIntroducingTx();
-        if( lastCommittedTxWhenTransactionStarted < latestConstraintIntroducingTx )
+        if ( lastCommittedTxWhenTransactionStarted < latestConstraintIntroducingTx )
         {
             // Constraints have changed since the transaction begun
 
@@ -71,18 +67,17 @@ public class IntegrityValidator
             // explicitly creates a constraint, after the index has been populated. We can improve this later on by
             // replicating the constraint validation logic down here, or rethinking where we validate constraints.
             // For now, we just kill these transactions.
-            throw Exceptions.withCause( new XAException( XAException.XA_RBINTEGRITY ),
-                    new ConstraintViolationException( format(
+            throw new TransactionFailureException( Status.Transaction.ValidationFailed,
                             "Database constraints have changed (txId=%d) after this transaction (txId=%d) started, " +
                             "which is not yet supported. Please retry your transaction to ensure all " +
                             "constraints are executed.", latestConstraintIntroducingTx,
-                            lastCommittedTxWhenTransactionStarted ) ) );
+                            lastCommittedTxWhenTransactionStarted );
         }
     }
 
-    public void validateSchemaRule( SchemaRule schemaRule ) throws XAException
+    public void validateSchemaRule( SchemaRule schemaRule ) throws TransactionFailureException
     {
-        if(schemaRule instanceof UniquenessConstraintRule )
+        if ( schemaRule instanceof UniquenessConstraintRule )
         {
             try
             {
@@ -90,14 +85,14 @@ public class IntegrityValidator
             }
             catch ( ConstraintVerificationFailedKernelException e )
             {
-                throw Exceptions.withCause( new XAException( XAException.XA_RBINTEGRITY ), e);
+                throw new TransactionFailureException( Status.Transaction.ValidationFailed, e, "Index valiation failed" );
             }
             catch ( IndexNotFoundKernelException | IndexPopulationFailedKernelException e )
             {
                 // We don't expect this to occur, and if they do, it is because we are in a very bad state - out of
                 // disk or index corruption, or similar. This will kill the database such that it can be shut down
                 // and have recovery performed. It's the safest bet to avoid loosing data.
-                throw Exceptions.withCause( new XAException( XAException.XAER_RMERR ), e);
+                throw new TransactionFailureException( Status.Transaction.ValidationFailed, e, "Index population failure" );
             }
         }
     }

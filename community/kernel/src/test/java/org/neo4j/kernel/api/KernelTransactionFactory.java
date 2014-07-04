@@ -22,25 +22,35 @@ package org.neo4j.kernel.api;
 import org.neo4j.kernel.impl.api.KernelTransactionImplementation;
 import org.neo4j.kernel.impl.api.SchemaWriteGuard;
 import org.neo4j.kernel.impl.api.StatementOperationParts;
+import org.neo4j.kernel.impl.api.TransactionHeaderInformation;
 import org.neo4j.kernel.impl.api.TransactionHooks;
-import org.neo4j.kernel.impl.core.TransactionState;
+import org.neo4j.kernel.impl.api.TransactionRepresentationCommitProcess;
+import org.neo4j.kernel.impl.api.state.ConstraintIndexCreator;
+import org.neo4j.kernel.impl.api.state.LegacyIndexTransactionState;
+import org.neo4j.kernel.impl.api.store.PersistenceCache;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
+import org.neo4j.kernel.impl.locking.NoOpClient;
 import org.neo4j.kernel.impl.nioneo.store.NeoStore;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.persistence.PersistenceManager.ResourceHolder;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
+import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
+import org.neo4j.kernel.impl.transaction.xaframework.TransactionMonitor;
 
-import static org.mockito.Mockito.*;
+import static org.mockito.Mockito.mock;
 
 public class KernelTransactionFactory
 {
     static KernelTransaction kernelTransaction()
     {
-        PersistenceManager pm = mock( PersistenceManager.class );
-        when( pm.getResource() ).thenReturn( mock( ResourceHolder.class ) );
+        TransactionHeaderInformation headerInformation = new TransactionHeaderInformation( -1, -1, new byte[0] );
 
         return new KernelTransactionImplementation( mock( StatementOperationParts.class ), false,
                 mock( SchemaWriteGuard.class ), null, null,
-                mock( AbstractTransactionManager.class ), null, null, pm,
-                null, mock( NeoStore.class ), mock(TransactionState.class), new TransactionHooks() );
+                null, mock( TransactionRecordState.class ),
+                null, mock( NeoStore.class ), new NoOpClient(), new TransactionHooks(),
+                mock( ConstraintIndexCreator.class ), headerInformation,
+                mock( TransactionRepresentationCommitProcess.class ), mock( TransactionMonitor.class ),
+                mock( TransactionIdStore.class ), mock( PersistenceCache.class ),
+                mock( StoreReadLayer.class ),
+                mock( LegacyIndexTransactionState.class ) );
     }
 }

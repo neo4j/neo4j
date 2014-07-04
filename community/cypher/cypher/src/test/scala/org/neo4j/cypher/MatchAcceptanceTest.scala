@@ -81,7 +81,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       s"match (n1)-[rel:KNOWS]->(n2) RETURN n1, n2"
     )
 
-    result.toList should equal(List(Map("n1" -> n1, "n2" -> n2)))
+    result.toSet should equal(Set(Map("n1" -> n1, "n2" -> n2)))
   }
 
   test("should get two related nodes") {
@@ -95,7 +95,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
       s"match (start)-[rel:KNOWS]->(x) return x"
     )
 
-    result.toList should equal(List(Map("x" -> n2), Map("x" -> n3)))
+    result.toSet should equal(Set(Map("x" -> n2), Map("x" -> n3)))
   }
 
   test("should get related to related to") {
@@ -107,7 +107,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val result = executeWithNewPlanner("match n-->a-->b RETURN b").toList
 
-    result.toList should equal(List(Map("b" -> n3)))
+    result.toSet should equal(Set(Map("b" -> n3)))
   }
 
   test("should handle comparison between node properties") {
@@ -169,7 +169,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
 
     val result = execute("start r=rel(0) match a-[r]-b return a,b")
 
-    result.toList should equal(List(Map("a" -> a, "b" -> b), Map("a" -> b, "b" -> a)))
+    result.toSet should equal(Set(Map("a" -> a, "b" -> b), Map("a" -> b, "b" -> a)))
   }
 
   test("should return two subgraphs with bound undirected relationship and optional relationship") {
@@ -180,7 +180,7 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     relate(b, c, "rel", "r2")
 
     val result = execute("start r=rel(0) match (a)-[r]-(b) optional match (b)-[r2]-(c) where r<>r2 return a,b,c")
-    result.toList should equal(List(Map("a" -> a, "b" -> b, "c" -> c), Map("a" -> b, "b" -> a, "c" -> null)))
+    result.toSet should equal(Set(Map("a" -> a, "b" -> b, "c" -> c), Map("a" -> b, "b" -> a, "c" -> null)))
   }
 
   test("magic rel type works as expected") {
@@ -404,9 +404,9 @@ class MatchAcceptanceTest extends ExecutionEngineFunSuite with QueryStatisticsTe
     createNodes("A", "B", "C")
     relate("A" -> "KNOWS" -> "B")
 
-    val result = executeWithNewPlanner("MATCH (a {name:'A'}),(c {name:'C'}) match a-->b return a,b,c").toList
+    val result = executeWithNewPlanner("MATCH (a {name:'A'}),(c {name:'C'}) match a-->b return a,b,c").toSet
 
-    result should equal (List(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))))
+    result should equal (Set(Map("a" -> node("A"), "b" -> node("B"), "c" -> node("C"))))
   }
 
   test("should return shortest path") {
@@ -465,7 +465,7 @@ MATCH (a {name:'A'}), (b {name:'B'})
 MATCH a-[rA]->x<-[rB]->b
 return x""")
 
-    result.columnAs("x").toList should equal (List(x1, x2))
+    result.columnAs("x").toList should equal (List(x2, x1))
   }
 
   test("three bound nodes pointing to one") {
@@ -489,7 +489,7 @@ MATCH (a {name:'A'}), (b {name:'B'}), (c {name:'C'})
 match a-[rA]->x, b-[rB]->x, c-[rC]->x
 return x""")
 
-    result.columnAs("x").toList should equal (List(x1, x2))
+    result.columnAs("x").toList should equal (List(x2, x1))
   }
 
   test("three bound nodes pointing to one with a bunch of extra connections") {
@@ -528,7 +528,7 @@ MATCH (a {name:'a'}), (b {name:'b'}), (c {name:'c'})
 match a-->x, b-->x, c-->x
 return x""")
 
-    result.columnAs("x").toList should equal (List(d, e))
+    result.columnAs("x").toList should equal (List(e, d))
   }
 
   test("should split optional mandatory cleverly") {
@@ -573,9 +573,9 @@ return x, p""")
     val result = execute( """
 start a  = node(0), x = node(1,2)
 optional match p = shortestPath(a -[*]-> x)
-return x, p""").toList
+return x, p""").toSet
 
-    graph.inTx(assert(List(
+    graph.inTx(assert(Set(
       Map("x" -> b, "p" -> PathImpl(a, r, b)),
       Map("x" -> c, "p" -> null)
     ) === result))
@@ -591,9 +591,9 @@ start a  = node(0)
 optional match p = a-->b-[*]->c
 return p""")
 
-    assert(List(
+    assert(Set(
       Map("p" -> null)
-    ) === result.toList)
+    ) === result.toSet)
   }
 
   test("should handle optional paths from var length path") {
@@ -607,10 +607,10 @@ start a = node(0), x = node(1,2)
 optional match p = (a)-[r*]->(x)
 return r, x, p""")
 
-    assert(List(
+    assert(Set(
       Map("r" -> Seq(r), "x" -> b, "p" -> PathImpl(a, r, b)),
       Map("r" -> null, "x" -> c, "p" -> null)
-    ) === result.toList)
+    ) === result.toSet)
   }
 
   test("should return an iterable with all relationships from a var length") {
@@ -654,10 +654,10 @@ match p = root-[*]->leaf
 where not(leaf-->())
 return p, leaf""")
 
-    assert(List(
+    assert(Set(
       Map("leaf" -> b, "p" -> PathImpl(a, rab, b)),
       Map("leaf" -> d, "p" -> PathImpl(a, rac, c, rcd, d))
-    ) === result.toList)
+    ) === result.toSet)
   }
 
   test("should exclude connected nodes") {
@@ -706,7 +706,7 @@ RETURN a.name""")
     val a = createNode()
     relate(a, n, "Admin")
     val result = execute( """start n = node(0) match (n) -[:Admin]- (b) return id(n), id(b)""")
-    result.toList should equal (List(Map("id(n)" -> 0, "id(b)" -> 1)))
+    result.toSet should equal (Set(Map("id(n)" -> 0, "id(b)" -> 1)))
   }
 
 
@@ -715,7 +715,7 @@ RETURN a.name""")
     val b = createNode()
 
     val result = executeWithNewPlanner("match n return n")
-    result.columnAs[Node]("n").toList should equal (List(a, b))
+    result.columnAs[Node]("n").toSet should equal (Set(a, b))
   }
 
   test("should allow comparisons of nodes") {
@@ -758,9 +758,9 @@ RETURN a.name""")
     relate(a, x, "A")
     relate(b, x, "B")
 
-    val result = executeWithNewPlanner("match a where a-[:A|:B]->() return a").toList
+    val result = executeWithNewPlanner("match a where a-[:A|:B]->() return a").toSet
 
-    result should equal (List(Map("a" -> a), Map("a" -> b)))
+    result should equal (Set(Map("a" -> a), Map("a" -> b)))
   }
 
   test("relationship predicate") {

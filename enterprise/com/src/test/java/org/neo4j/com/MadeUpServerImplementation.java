@@ -56,7 +56,7 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
         return new Response<Void>( null, storeIdToRespondWith,
                 TransactionStream.EMPTY, ResourceReleaser.NO_OP );
     }
-    
+
     @Override
     public Response<Void> sendDataStream( ReadableByteChannel data )
     {
@@ -74,7 +74,9 @@ public class MadeUpServerImplementation implements MadeUpCommunicationInterface
             {
                 buffer.clear();
                 if ( data.read( buffer ) == -1 )
+                {
                     break;
+                }
             }
         }
         catch ( IOException e )

@@ -21,22 +21,21 @@ package org.neo4j.kernel.impl.api.integrationtest;
 
 import org.junit.Test;
 
-import org.neo4j.graphdb.ConstraintViolationException;
-import org.neo4j.graphdb.Node;
+import org.neo4j.collection.primitive.PrimitiveLongCollections;
 import org.neo4j.kernel.api.DataWriteOperations;
 import org.neo4j.kernel.api.SchemaWriteOperations;
+import org.neo4j.kernel.api.StatementTokenNameLookup;
+import org.neo4j.kernel.api.TokenNameLookup;
 import org.neo4j.kernel.api.exceptions.KernelException;
+import org.neo4j.kernel.api.exceptions.schema.UniqueConstraintViolationKernelException;
 import org.neo4j.kernel.api.index.IndexDescriptor;
-import org.neo4j.tooling.GlobalGraphOperations;
+import org.neo4j.kernel.api.properties.Property;
 
 import static org.hamcrest.CoreMatchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.fail;
-
-import static org.neo4j.graphdb.DynamicLabel.label;
-import static org.neo4j.helpers.collection.Iterables.count;
 
 public class UniquenessConstraintValidationIT extends KernelIntegrationTest
 {
@@ -46,20 +45,21 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        dataWriteOperationsInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        Node node = db.createNode( label( "Label1" ) );
+        long node = createLabeledNode( statement, "Label1" );
         try
         {
-            node.setProperty( "key1", "value1" );
+            statement.nodeSetProperty( node, Property.property(
+                    statement.propertyKeyGetOrCreateForName( "key1" ), "value1" ) );
 
             fail( "should have thrown exception" );
         }
         // then
-        catch ( ConstraintViolationException e )
+        catch ( UniqueConstraintViolationKernelException e )
         {
-            assertThat( e.getMessage(), containsString( "\"key1\"=[value1]" ) );
+            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value1]" ) );
         }
     }
 
@@ -69,21 +69,20 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        dataWriteOperationsInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        Node node = db.createNode();
-        node.setProperty( "key1", "value1" );
+        long node = createNode( statement, "key1", "value1" );
         try
         {
-            node.addLabel( label( "Label1" ) );
+            statement.nodeAddLabel( node, statement.labelGetOrCreateForName( "Label1" ) );
 
             fail( "should have thrown exception" );
         }
         // then
-        catch ( ConstraintViolationException e )
+        catch ( UniqueConstraintViolationKernelException e )
         {
-            assertThat( e.getMessage(), containsString( "\"key1\"=[value1]" ) );
+            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value1]" ) );
         }
     }
 
@@ -91,27 +90,52 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_DeleteNode() throws Exception
     {
         // given
-        Node node = constrainedNode( "Label1", "key1", "value1" );
+        long node = constrainedNode( "Label1", "key1", "value1" );
 
-        dataWriteOperationsInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        node.delete();
-        db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+        statement.nodeDelete( node );
+        createLabeledNode( statement, "Label1", "key1", "value1" );
         commit();
+    }
+
+    private long createLabeledNode( DataWriteOperations statement, String label )
+            throws KernelException
+    {
+        long node = statement.nodeCreate();
+        statement.nodeAddLabel( node, statement.labelGetOrCreateForName( label ) );
+        return node;
+    }
+
+    private long createNode( DataWriteOperations statement, String key, Object value ) throws KernelException
+    {
+        long node = statement.nodeCreate();
+        statement.nodeSetProperty( node, Property.property(
+                statement.propertyKeyGetOrCreateForName( key ), value ) );
+        return node;
+    }
+
+    private long createLabeledNode( DataWriteOperations statement, String label, String key, Object value )
+            throws KernelException
+    {
+        long node = createLabeledNode( statement, label );
+        statement.nodeSetProperty( node, Property.property(
+                statement.propertyKeyGetOrCreateForName( key ), value ) );
+        return node;
     }
 
     @Test
     public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveLabel() throws Exception
     {
         // given
-        Node node = constrainedNode( "Label1", "key1", "value1" );
+        long node = constrainedNode( "Label1", "key1", "value1" );
 
-        dataWriteOperationsInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        node.removeLabel( label( "Label1" ) );
-        db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+        statement.nodeRemoveLabel( node, statement.labelGetOrCreateForName( "Label1" ) );
+        createLabeledNode( statement, "Label1", "key1", "value1" );
         commit();
     }
 
@@ -119,13 +143,13 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_RemoveProperty() throws Exception
     {
         // given
-        Node node = constrainedNode( "Label1", "key1", "value1" );
+        long node = constrainedNode( "Label1", "key1", "value1" );
 
-        dataWriteOperationsInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        node.removeProperty( "key1" );
-        db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+        statement.nodeRemoveProperty( node, statement.propertyKeyGetForName( "key1" ) );
+        createLabeledNode( statement, "Label1", "key1", "value1" );
         commit();
     }
 
@@ -133,13 +157,14 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     public void shouldAllowRemoveAndAddConflictingDataInOneTransaction_ChangeProperty() throws Exception
     {
         // given
-        Node node = constrainedNode( "Label1", "key1", "value1" );
+        long node = constrainedNode( "Label1", "key1", "value1" );
 
-        dataWriteOperationsInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        node.setProperty( "key1", "value2" );
-        db.createNode( label( "Label1" ) ).setProperty( "key1", "value1" );
+        statement.nodeSetProperty( node, Property.property(
+                statement.propertyKeyGetOrCreateForName( "key1" ), "value2" ) );
+        createLabeledNode( statement, "Label1", "key1", "value1" );
         commit();
     }
 
@@ -149,33 +174,39 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        dataWriteOperationsInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        db.createNode( label( "Label1" ) ).setProperty( "key1", "value2" );
+        createLabeledNode( statement, "Label1", "key1", "value2" );
         try
         {
-            db.createNode( label( "Label1" ) ).setProperty( "key1", "value2" );
+            createLabeledNode( statement, "Label1", "key1", "value2" );
 
             fail( "expected exception" );
         }
         // then
-        catch ( ConstraintViolationException e )
+        catch ( UniqueConstraintViolationKernelException e )
         {
-            assertThat( e.getMessage(), containsString( "\"key1\"=[value2]" ) );
+            assertThat( e.getUserMessage( tokenLookup( statement ) ), containsString( "\"key1\"=[value2]" ) );
         }
+    }
+
+    private TokenNameLookup tokenLookup( DataWriteOperations statement )
+    {
+        return new StatementTokenNameLookup( statement );
     }
 
     @Test
     public void shouldAllowNoopPropertyUpdate() throws KernelException
     {
         // given
-        Node node = constrainedNode( "Label1", "key1", "value1" );
+        long node = constrainedNode( "Label1", "key1", "value1" );
 
-        dataWriteOperationsInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        node.setProperty( "key1", "value1" );
+        statement.nodeSetProperty( node, Property.property(
+                statement.propertyKeyGetOrCreateForName( "key1" ), "value1" ) );
 
         // then should not throw exception
     }
@@ -184,12 +215,12 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
     public void shouldAllowNoopLabelUpdate() throws KernelException
     {
         // given
-        Node node = constrainedNode( "Label1", "key1", "value1" );
+        long node = constrainedNode( "Label1", "key1", "value1" );
 
-        dataWriteOperationsInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        node.addLabel( label( "Label1" ) );
+        statement.nodeAddLabel( node, statement.labelGetOrCreateForName( "Label1" ) );
 
         // then should not throw exception
     }
@@ -200,19 +231,19 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         constrainedNode( "Label1", "key1", "value1" );
 
-        dataWriteOperationsInNewTransaction();
+        DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
         // when
-        db.createNode().setProperty( "key1", "value1" );
-        db.createNode( label( "Label2" ) ).setProperty( "key1", "value1" );
-        db.createNode( label( "Label1" ) ).setProperty( "key1", "value2" );
-        db.createNode( label( "Label1" ) ).setProperty( "key2", "value1" );
+        createNode( statement, "key1", "value1" );
+        createLabeledNode( statement, "Label2", "key1", "value1" );
+        createLabeledNode( statement, "Label1", "key1", "value2" );
+        createLabeledNode( statement, "Label1", "key2", "value1" );
 
         commit();
 
         // then
-        dataWriteOperationsInNewTransaction();
-        assertEquals( "number of nodes", 5, count( GlobalGraphOperations.at( db ).getAllNodes() ) );
+        statement = dataWriteOperationsInNewTransaction();
+        assertEquals( "number of nodes", 5, PrimitiveLongCollections.count( statement.nodesGetAll() ) );
         rollback();
     }
 
@@ -222,13 +253,12 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         createConstraint( "Person", "id" );
 
-        Node ourNode;
+        long ourNode;
         {
-            dataWriteOperationsInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
-            ourNode = db.createNode( label( "Person" ) );
-            ourNode.setProperty( "id", 1 );
-            db.createNode( label( "Item" ) ).setProperty( "id", 2 );
+            ourNode = createLabeledNode( statement, "Person", "id", 1 );
+            createLabeledNode( statement, "Item", "id", 2 );
 
             commit();
         }
@@ -238,10 +268,10 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
                 .labelGetForName( "Person" ), statement.propertyKeyGetForName( "id" ) );
 
         // when
-        db.createNode( label( "Item" ) ).setProperty( "id", 2 );
+        createLabeledNode( statement, "Item", "id", 2 );
 
         // then I should find the original node
-        assertThat( statement.nodeGetUniqueFromIndexLookup( idx, 1 ), equalTo( ourNode.getId() ));
+        assertThat( statement.nodeGetUniqueFromIndexLookup( idx, 1 ), equalTo( ourNode ) );
     }
 
     @Test
@@ -250,12 +280,11 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
         // given
         createConstraint( "Person", "id" );
 
-        Node ourNode;
+        long ourNode;
         {
-            dataWriteOperationsInNewTransaction();
+            DataWriteOperations statement = dataWriteOperationsInNewTransaction();
 
-            ourNode = db.createNode( label( "Person" ) );
-            ourNode.setProperty( "id", 1 );
+            ourNode = createLabeledNode( statement, "Person", "id", 1 );
             commit();
         }
 
@@ -264,20 +293,23 @@ public class UniquenessConstraintValidationIT extends KernelIntegrationTest
                 .labelGetForName( "Person" ), statement.propertyKeyGetForName( "id" ) );
 
         // when
-        db.createNode( label( "Person" ) ).setProperty( "id", 2 );
+        createLabeledNode( statement, "Person", "id", 2 );
 
         // then I should find the original node
-        assertThat( statement.nodeGetUniqueFromIndexLookup( idx, 1 ), equalTo( ourNode.getId() ));
+        assertThat( statement.nodeGetUniqueFromIndexLookup( idx, 1 ), equalTo( ourNode ));
     }
 
-    private Node constrainedNode( String labelName, String propertyKey, Object propertyValue )
+    private long constrainedNode( String labelName, String propertyKey, Object propertyValue )
             throws KernelException
     {
-        Node node;
+        long node;
         {
-            dataWriteOperationsInNewTransaction();
-            node = db.createNode( label( labelName ) );
-            node.setProperty( propertyKey, propertyValue );
+            DataWriteOperations dataStatement = dataWriteOperationsInNewTransaction();
+            int label = dataStatement.labelGetOrCreateForName( labelName );
+            node = dataStatement.nodeCreate();
+            dataStatement.nodeAddLabel( node, label );
+            int key = dataStatement.propertyKeyGetOrCreateForName( propertyKey );
+            dataStatement.nodeSetProperty( node, Property.property( key, propertyValue ) );
             commit();
         }
         createConstraint( labelName, propertyKey );

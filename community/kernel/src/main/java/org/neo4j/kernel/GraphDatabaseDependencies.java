@@ -21,7 +21,6 @@ package org.neo4j.kernel;
 
 import org.neo4j.kernel.extension.KernelExtensionFactory;
 import org.neo4j.kernel.impl.cache.CacheProvider;
-import org.neo4j.kernel.impl.transaction.xaframework.TransactionInterceptorProvider;
 import org.neo4j.kernel.logging.Logging;
 
 public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.Dependencies
@@ -30,19 +29,16 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
     private final Iterable<Class<?>> settingsClasses;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final Iterable<CacheProvider> cacheProviders;
-    private final Iterable<TransactionInterceptorProvider> transactionInterceptorProviders;
 
     public GraphDatabaseDependencies(
             Logging logging,
             Iterable<Class<?>> settingsClasses,
-            Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable<CacheProvider> cacheProviders,
-            Iterable<TransactionInterceptorProvider> transactionInterceptorProviders )
+            Iterable<KernelExtensionFactory<?>> kernelExtensions, Iterable<CacheProvider> cacheProviders )
     {
         this.logging = logging;
         this.settingsClasses = settingsClasses;
         this.kernelExtensions = kernelExtensions;
         this.cacheProviders = cacheProviders;
-        this.transactionInterceptorProviders = transactionInterceptorProviders;
     }
 
     @Override
@@ -67,11 +63,5 @@ public class GraphDatabaseDependencies implements InternalAbstractGraphDatabase.
     public Iterable<CacheProvider> cacheProviders()
     {
         return cacheProviders;
-    }
-
-    @Override
-    public Iterable<TransactionInterceptorProvider> transactionInterceptorProviders()
-    {
-        return transactionInterceptorProviders;
     }
 }

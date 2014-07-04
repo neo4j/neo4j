@@ -42,9 +42,9 @@ class FunctionsTest extends DocumentingTestBase {
     "E" -> Map("name" -> "Eskil", "age" -> 41, "eyes" -> "blue", "array" -> Array("one", "two", "three"))
   )
 
-  override protected def getGraphvizStyle: GraphStyle = 
+  override protected def getGraphvizStyle: GraphStyle =
     AsciiDocSimpleStyle.withAutomaticRelationshipTypeColors()
-  
+
   def section = "functions"
 
   val common_arguments = List(
@@ -793,7 +793,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       text = "`ENDNODE` returns the end node of a relationship",
       queryText = "MATCH (x:foo)-[r]-() return endNode(r)",
       returns = "",
-      assertions = (p) => assert(p.toList.head("endNode(r)") === node("B")))
+      assertions = (p) => assert(p.toList.head("endNode(r)") === node("C")))
   }
 
   private def testThis(title: String, syntax: String, arguments: List[(String, String)], text: String, queryText: String, returns: String, assertions: (ExecutionResult => Unit)*) {

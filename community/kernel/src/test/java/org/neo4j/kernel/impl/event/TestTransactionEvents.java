@@ -42,7 +42,7 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.graphdb.event.TransactionEventHandler;
 import org.neo4j.graphdb.factory.GraphDatabaseBuilder;
 import org.neo4j.kernel.GraphDatabaseAPI;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 
@@ -106,7 +106,7 @@ public class TestTransactionEvents
             db.createNode().delete();
             tx.success();
         }
-        
+
         assertNotNull( handler1.beforeCommit );
         assertNotNull( handler1.afterCommit );
         assertNull( handler1.afterRollback );
@@ -150,34 +150,34 @@ public class TestTransactionEvents
             {
                 node1 = db.createNode();
                 expectedData.expectedCreatedNodes.add( node1 );
-    
+
                 node2 = db.createNode();
                 expectedData.expectedCreatedNodes.add( node2 );
-    
+
                 rel1 = node1.createRelationshipTo( node2, RelTypes.TXEVENT );
                 expectedData.expectedCreatedRelationships.add( rel1 );
-    
+
                 node1.setProperty( "name", "Mattias" );
                 expectedData.assignedProperty( node1, "name", "Mattias", null );
-    
+
                 node1.setProperty( "last name", "Persson" );
                 expectedData.assignedProperty( node1, "last name", "Persson", null );
-    
+
                 node1.setProperty( "counter", 10 );
                 expectedData.assignedProperty( node1, "counter", 10, null );
-    
+
                 rel1.setProperty( "description", "A description" );
                 expectedData.assignedProperty( rel1, "description",
                         "A description", null );
-    
+
                 rel1.setProperty( "number", 4.5D );
                 expectedData.assignedProperty( rel1, "number", 4.5D, null );
-    
+
                 node3 = db.createNode();
                 expectedData.expectedCreatedNodes.add( node3 );
                 rel2 = node3.createRelationshipTo( node2, RelTypes.TXEVENT );
                 expectedData.expectedCreatedRelationships.add( rel2 );
-    
+
                 node3.setProperty( "name", "Node 3" );
                 expectedData.assignedProperty( node3, "name", "Node 3", null );
                 tx.success();
@@ -204,20 +204,20 @@ public class TestTransactionEvents
             {
                 Node newNode = db.createNode();
                 expectedData.expectedCreatedNodes.add( newNode );
-                
+
                 Node tempNode = db.createNode();
                 Relationship tempRel = tempNode.createRelationshipTo( node1,
                         RelTypes.TXEVENT );
                 tempNode.setProperty( "something", "Some value" );
                 tempRel.setProperty( "someproperty", 101010 );
                 tempNode.removeProperty( "nothing" );
-    
+
                 node3.setProperty( "test", "hello" );
                 node3.setProperty( "name", "No name" );
                 node3.delete();
                 expectedData.expectedDeletedNodes.add( node3 );
                 expectedData.removedProperty( node3, "name", null, "Node 3" );
-    
+
                 node1.setProperty( "new name", "A name" );
                 node1.setProperty( "new name", "A better name" );
                 expectedData.assignedProperty( node1, "new name", "A better name",
@@ -231,10 +231,10 @@ public class TestTransactionEvents
                 node1.removeProperty( "last name" );
                 node1.setProperty( "last name", "Hi" );
                 expectedData.assignedProperty( node1, "last name", "Hi", "Persson" );
-    
+
                 rel2.delete();
                 expectedData.expectedDeletedRelationships.add( rel2 );
-    
+
                 rel1.removeProperty( "number" );
                 expectedData.removedProperty( rel1, "number", null, 4.5D );
                 rel1.setProperty( "description", "Ignored" );
@@ -308,13 +308,13 @@ public class TestTransactionEvents
             }
         }
     }
-    
+
     @Test
     public void shouldBeAbleToAccessExceptionThrownInEventHook()
     {
-        class MyFancyException extends Exception 
+        class MyFancyException extends Exception
         {
-        	
+
         }
 
         ExceptionThrowingEventHandler handler = new ExceptionThrowingEventHandler( new MyFancyException(), null, null );
@@ -351,7 +351,7 @@ public class TestTransactionEvents
             db.unregisterTransactionEventHandler( handler );
         }
     }
-    
+
     @Test
     public void deleteNodeRelTriggerPropertyRemoveEvents()
     {
@@ -371,16 +371,16 @@ public class TestTransactionEvents
             rel.setProperty( "test3", new int[] { 1, 2, 3 } );
             tx.success();
         }
-        MyTxEventHandler handler = new MyTxEventHandler(); 
+        MyTxEventHandler handler = new MyTxEventHandler();
         db.registerTransactionEventHandler( handler );
         try ( Transaction tx = db.beginTx() )
         {
             GraphDatabaseAPI dbApi = dbRule.getGraphDatabaseAPI();
-            dbApi.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+            dbApi.getDependencyResolver().resolveDependency( Caches.class ).clear();
             rel.delete();
             node1.delete();
             node2.delete();
-            dbApi.getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+            dbApi.getDependencyResolver().resolveDependency( Caches.class ).clear();
             tx.success();
         }
         assertEquals( "stringvalue", handler.nodeProps.get( "test1" ) );
@@ -393,12 +393,12 @@ public class TestTransactionEvents
         assertEquals( 2, intArray[1] );
         assertEquals( 3, intArray[2] );
     }
-        
+
     private static class MyTxEventHandler implements TransactionEventHandler<Object>
     {
         Map<String,Object> nodeProps = new HashMap<>();
         Map<String,Object> relProps = new HashMap<>();
-        
+
         @Override
 		public void afterCommit( TransactionData data, Object state )
         {
@@ -426,7 +426,7 @@ public class TestTransactionEvents
             return null;
         }
     }
-    
+
     private void verifyHandlerCalls(
             List<TransactionEventHandler<Object>> handlers, boolean txSuccess )
     {
@@ -490,14 +490,14 @@ public class TestTransactionEvents
             return source.beforeCommit( data );
         }
     }
-    
+
     private static class ExceptionThrowingEventHandler implements TransactionEventHandler<Object>
     {
 
     	private final Exception beforeCommitException;
     	private final Exception afterCommitException;
     	private final Exception afterRollbackException;
-    	
+
 		public ExceptionThrowingEventHandler(Exception beforeCommitException,
 				Exception afterCommitException, Exception afterRollbackException) {
 			super();
@@ -507,7 +507,7 @@ public class TestTransactionEvents
 		}
 
 		@Override
-		public Object beforeCommit(TransactionData data) throws Exception 
+		public Object beforeCommit(TransactionData data) throws Exception
 		{
 			if(beforeCommitException != null)
             {
@@ -517,7 +517,7 @@ public class TestTransactionEvents
 		}
 
 		@Override
-		public void afterCommit(TransactionData data, Object state) 
+		public void afterCommit(TransactionData data, Object state)
 		{
 			if(afterCommitException != null)
             {
@@ -526,14 +526,14 @@ public class TestTransactionEvents
 		}
 
 		@Override
-		public void afterRollback(TransactionData data, Object state) 
+		public void afterRollback(TransactionData data, Object state)
 		{
 			if(afterRollbackException != null)
             {
                 throw new RuntimeException(afterRollbackException);
             }
 		}
-    	
+
     }
 
     private static class DummyTransactionEventHandler<T> implements
@@ -612,7 +612,7 @@ public class TestTransactionEvents
             db.unregisterTransactionEventHandler( handler );
         }
     }
-    
+
     @Test
     public void modifiedPropertyCanByFurtherModifiedInBeforeCommit() throws Exception
     {
@@ -642,7 +642,7 @@ public class TestTransactionEvents
             }
         };
         db.registerTransactionEventHandler( handler );
-        
+
         try ( Transaction tx = db.beginTx() )
         {
             // When
@@ -804,7 +804,7 @@ public class TestTransactionEvents
             active = false;
         }
     }
-    
+
     public static final @ClassRule DatabaseRule dbRule = new ImpermanentDatabaseRule()
     {
         @Override

@@ -19,14 +19,13 @@
  */
 package org.neo4j.server.rrd.sampler;
 
-import org.neo4j.graphdb.Relationship;
-import org.neo4j.kernel.impl.core.NodeManager;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 
 public class RelationshipCountSampleable extends DatabasePrimitivesSampleableBase
 {
-    public RelationshipCountSampleable( NodeManager nodeManager )
+    public RelationshipCountSampleable( NeoStore neoStore )
     {
-        super( nodeManager );
+        super( neoStore );
     }
 
     @Override public String getName()
@@ -36,6 +35,6 @@ public class RelationshipCountSampleable extends DatabasePrimitivesSampleableBas
 
     @Override public double getValue()
     {
-        return getNodeManager().getNumberOfIdsInUse( Relationship.class );
+        return getNeoStore().getRelationshipStore().getNumberOfIdsInUse();
     }
 }

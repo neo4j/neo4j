@@ -23,17 +23,15 @@ import java.io.File;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
 import org.neo4j.helpers.Settings;
 import org.neo4j.io.fs.DefaultFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
-import org.neo4j.kernel.DefaultTxHook;
 import org.neo4j.kernel.GraphDatabaseAPI;
 import org.neo4j.kernel.configuration.Config;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.monitoring.Monitors;
 
@@ -72,14 +70,13 @@ public class StoreAccess
     @SuppressWarnings( "deprecation" )
     private static NeoStore getNeoStoreFrom( GraphDatabaseAPI graphdb )
     {
-        DependencyResolver resolver = graphdb.getDependencyResolver();
-        return resolver.resolveDependency( XaDataSourceManager.class ).getNeoStoreDataSource().getNeoStore();
+        return graphdb.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
     }
 
     public StoreAccess( NeoStore store )
     {
         this( store.getSchemaStore(), store.getNodeStore(), store.getRelationshipStore(), store.getPropertyStore(),
-                store.getRelationshipTypeStore(), store.getLabelTokenStore(), store.getRelationshipGroupStore() );
+                store.getRelationshipTypeTokenStore(), store.getLabelTokenStore(), store.getRelationshipGroupStore() );
         this.neoStore = store;
     }
 
@@ -115,19 +112,14 @@ public class StoreAccess
 
     private StoreAccess( FileSystemAbstraction fileSystem, PageCache pageCache, String path, Config config, Monitors monitors )
     {
-        this( new StoreFactory( config,
-                new DefaultIdGeneratorFactory(),
-                pageCache,
-                fileSystem, StringLogger.DEV_NULL,
-                new DefaultTxHook(), monitors ).newNeoStore( new File( path, "neostore" ) ) );
+        this( new StoreFactory( config, new DefaultIdGeneratorFactory(), pageCache,
+                fileSystem, StringLogger.DEV_NULL, monitors ).newNeoStore( false ) );
         this.closeable = true;
     }
 
     private static Map<String, String> requiredParams( Map<String, String> params, String path )
     {
-        params = new HashMap<>( params );
-        params.put( "neo_store", new File( path, "neostore" ).getPath() );
-        return params;
+        return StoreFactory.configForStoreDir( new Config(), new File( path ) ).getParams();
     }
 
     public NeoStore getRawNeoStore()

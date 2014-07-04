@@ -5,7 +5,6 @@ libraries. For an overview of the licenses see the NOTICE.txt file.
 Apache Software License, Version 2.0
   Apache ServiceMix Bundles: jline-0.9.94
   ConcurrentLinkedHashMap
-  JTA 1.1
   Lucene Core
   opencsv
   parboiled-core

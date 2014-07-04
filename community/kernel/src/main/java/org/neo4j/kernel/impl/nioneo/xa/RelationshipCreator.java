@@ -19,9 +19,6 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.util.ArrayList;
-import java.util.Collection;
-
 import org.neo4j.kernel.impl.nioneo.store.InvalidRecordException;
 import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.Record;
@@ -36,19 +33,12 @@ public class RelationshipCreator
     private final RelationshipLocker locker;
     private final int denseNodeThreshold;
 
-    private Collection<NodeRecord> upgradedDenseNodes;
-
     public RelationshipCreator( RelationshipLocker locker, RelationshipGroupGetter relGroupGetter,
             int denseNodeThreshold )
     {
         this.locker = locker;
         this.relGroupGetter = relGroupGetter;
         this.denseNodeThreshold = denseNodeThreshold;
-    }
-
-    public Collection<NodeRecord> getUpgradedDenseNodes()
-    {
-        return upgradedDenseNodes;
     }
 
     /**
@@ -102,7 +92,7 @@ public class RelationshipCreator
         {
             RecordProxy<Long, RelationshipRecord, Void> relChange = relRecords.getOrLoad( relId, null );
             RelationshipRecord rel = relChange.forReadingLinkage();
-            if ( RelationshipCounter.relCount( node.getId(), rel ) >= denseNodeThreshold )
+            if ( RelationshipChainLoader.relCount( node.getId(), rel ) >= denseNodeThreshold )
             {
                 locker.getWriteLock( relId );
                 // Re-read the record after we've locked it since another transaction might have
@@ -207,11 +197,6 @@ public class RelationshipCreator
                 relRecord = relRecords.getOrLoad( relId, null ).forChangingLinkage();
             }
         }
-        if ( upgradedDenseNodes == null )
-        {
-            upgradedDenseNodes = new ArrayList<>();
-        }
-        upgradedDenseNodes.add( node );
     }
 
     private void connect( long nodeId, long firstRelId, RelationshipRecord rel,

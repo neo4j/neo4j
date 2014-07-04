@@ -22,9 +22,10 @@ package org.neo4j.kernel.impl.core;
 import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.helpers.Provider;
+import org.neo4j.kernel.TopLevelTransaction;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
+import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
 import org.neo4j.kernel.lifecycle.LifecycleAdapter;
 
 /**
@@ -33,38 +34,48 @@ import org.neo4j.kernel.lifecycle.LifecycleAdapter;
  */
 public class ThreadToStatementContextBridge extends LifecycleAdapter implements Provider<Statement>
 {
-    private final PersistenceManager persistenceManager;
+    private final ThreadLocal<TopLevelTransaction> threadToTransactionMap = new ThreadLocal<>();
     private boolean isShutdown;
-
-    public ThreadToStatementContextBridge( PersistenceManager persistenceManager )
-    {
-        this.persistenceManager = persistenceManager;
-        this.isShutdown = false;
-    }
 
     public boolean hasTransaction()
     {
         checkIfShutdown();
-        return persistenceManager.hasCurrentTransaction();
+        return threadToTransactionMap.get() != null;
+    }
+
+    public void bindTransactionToCurrentThread( TopLevelTransaction transaction )
+    {
+        if ( threadToTransactionMap.get() != null )
+        {
+            throw new IllegalStateException( Thread.currentThread() + " already has a transaction bound" );
+        }
+        threadToTransactionMap.set( transaction );
+    }
+
+    public void unbindTransactionFromCurrentThread()
+    {
+        threadToTransactionMap.remove();
     }
 
     @Override
     public Statement instance()
     {
         checkIfShutdown();
-        KernelTransaction transaction = persistenceManager.currentKernelTransactionForReading();
-        if ( null == transaction )
+        return getKernelTransactionBoundToThisThread( true ).acquireStatement();
+    }
+
+    private void assertInTransaction( TopLevelTransaction transaction )
+    {
+        if ( transaction == null )
         {
             throw new NotInTransactionException();
         }
-        return transaction.acquireStatement();
     }
 
     public void assertInTransaction()
     {
         checkIfShutdown();
-        // Contract: Persistence manager throws NotInTransactionException if we are not in a transaction.
-        persistenceManager.getCurrentTransaction();
+        assertInTransaction( threadToTransactionMap.get() );
     }
 
     @Override
@@ -81,4 +92,25 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
         }
     }
 
+    public TopLevelTransaction getTopLevelTransactionBoundToThisThread( boolean strict )
+    {
+        TopLevelTransaction transaction = threadToTransactionMap.get();
+        if ( strict )
+        {
+            assertInTransaction( transaction );
+        }
+        return transaction;
+    }
+
+    public KernelTransaction getKernelTransactionBoundToThisThread( boolean strict )
+    {
+        TopLevelTransaction tx = getTopLevelTransactionBoundToThisThread( strict );
+        return tx != null ? tx.getTransaction() : null;
+    }
+
+    public TransactionRecordState getTransactionRecordStateBoundToThisThread( boolean strict )
+    {
+        KernelTransaction tx = getKernelTransactionBoundToThisThread( strict );
+        return tx != null ? tx.getTransactionRecordState() : null;
+    }
 }

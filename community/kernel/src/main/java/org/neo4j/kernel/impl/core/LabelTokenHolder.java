@@ -19,17 +19,11 @@
  */
 package org.neo4j.kernel.impl.core;
 
-import org.neo4j.kernel.impl.persistence.EntityIdGenerator;
-import org.neo4j.kernel.impl.persistence.PersistenceManager;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
-
 public class LabelTokenHolder extends TokenHolder<Token>
 {
-    public LabelTokenHolder( AbstractTransactionManager transactionManager,
-                             PersistenceManager persistenceManager, EntityIdGenerator idGenerator,
-                             TokenCreator tokenCreator )
+    public LabelTokenHolder( TokenCreator tokenCreator )
     {
-        super( transactionManager, persistenceManager, idGenerator, tokenCreator );
+        super( tokenCreator );
     }
 
     @Override

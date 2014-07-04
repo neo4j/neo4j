@@ -45,12 +45,17 @@ import org.junit.runners.model.Statement;
 
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Transaction;
+import org.neo4j.io.fs.FileUtils;
 import org.neo4j.kernel.GraphDatabaseAPI;
+import org.neo4j.kernel.IdGeneratorFactory;
+import org.neo4j.kernel.IdType;
+import org.neo4j.kernel.impl.core.Caches;
 import org.neo4j.kernel.impl.core.NodeManager;
 import org.neo4j.kernel.impl.nioneo.store.AbstractDynamicStore;
+import org.neo4j.kernel.impl.nioneo.store.IdGenerator;
+import org.neo4j.kernel.impl.nioneo.store.NeoStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
-import org.neo4j.kernel.impl.transaction.XaDataSourceManager;
-import org.neo4j.io.fs.FileUtils;
+import org.neo4j.kernel.impl.nioneo.xa.NeoStoreProvider;
 import org.neo4j.test.TargetDirectory;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
@@ -199,9 +204,15 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( tx != null )
         {
-            tx.success();
-            tx.finish();
-            tx = null;
+            try
+            {
+                tx.success();
+                tx.finish();
+            }
+            finally
+            {
+                tx = null;
+            }
         }
     }
 
@@ -209,8 +220,14 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( tx != null )
         {
-            tx.finish();
-            tx = null;
+            try
+            {
+                tx.finish();
+            }
+            finally
+            {
+                tx = null;
+            }
         }
     }
 
@@ -218,15 +235,26 @@ public abstract class AbstractNeo4jTestCase
     {
         if ( tx != null )
         {
-            tx.failure();
-            tx.finish();
-            tx = null;
+            try
+            {
+                tx.failure();
+                tx.finish();
+            }
+            finally
+            {
+                tx = null;
+            }
         }
     }
 
     public NodeManager getNodeManager()
     {
         return graphDb.getDependencyResolver().resolveDependency( NodeManager.class );
+    }
+
+    public IdGenerator getIdGenerator( IdType idType )
+    {
+        return graphDb.getDependencyResolver().resolveDependency( IdGeneratorFactory.class ).get( idType );
     }
 
     public static void deleteFileOrDirectory( String dir )
@@ -256,7 +284,7 @@ public abstract class AbstractNeo4jTestCase
 
     protected void clearCache()
     {
-        getGraphDbAPI().getDependencyResolver().resolveDependency( NodeManager.class ).clearCache();
+        getGraphDbAPI().getDependencyResolver().resolveDependency( Caches.class ).clear();
     }
 
     protected long propertyRecordsInUse()
@@ -290,8 +318,8 @@ public abstract class AbstractNeo4jTestCase
 
     protected PropertyStore propertyStore()
     {
-        XaDataSourceManager dsMgr = graphDb.getDependencyResolver().resolveDependency( XaDataSourceManager.class );
-        return dsMgr.getNeoStoreDataSource().getXaConnection().getPropertyStore();
+        NeoStore neoStore = graphDb.getDependencyResolver().resolveDependency( NeoStoreProvider.class ).evaluate();
+        return neoStore.getPropertyStore();
     }
 
     public static File unzip( Class<?> testClass, String resource ) throws IOException

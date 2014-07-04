@@ -27,9 +27,8 @@ import java.util.NoSuchElementException;
 import java.util.Queue;
 
 import org.junit.Test;
-import org.mockito.invocation.InvocationOnMock;
-import org.mockito.stubbing.Answer;
 
+import org.neo4j.kernel.impl.api.store.CacheUpdateListener;
 import org.neo4j.kernel.impl.core.NodeImpl.LoadStatus;
 import org.neo4j.kernel.impl.util.RelIdArray;
 import org.neo4j.kernel.impl.util.RelIdArray.DirectionWrapper;
@@ -37,7 +36,6 @@ import org.neo4j.kernel.impl.util.RelIdIterator;
 
 import static org.junit.Assert.assertEquals;
 import static org.mockito.Matchers.any;
-import static org.mockito.Matchers.anyLong;
 import static org.mockito.Matchers.eq;
 import static org.mockito.Mockito.mock;
 import static org.mockito.Mockito.when;
@@ -54,18 +52,18 @@ public class RelationshipIteratorIssuesTest
     {
         // GIVEN
         // -- a node manager capable of serving light-weight RelationshipProxy capable of answering getId()
-        NodeManager nodeManager = mock( NodeManager.class );
-        when( nodeManager.newRelationshipProxyById( anyLong() ) ).thenAnswer( relationshipProxyWithId() );
+        CacheUpdateListener cacheUpdateListener = mock( CacheUpdateListener.class );
+        RelationshipLoader loader = mock( RelationshipLoader.class );
 
         // -- a node that says it cannot load any more relationships
         NodeImpl node = mock( NodeImpl.class );
-        when( node.getMoreRelationships( eq( nodeManager ), any( DirectionWrapper.class ),
-                any( int[].class )) ).thenReturn( LoadStatus.NOTHING );
+        when( node.getMoreRelationships( eq( loader ), any( DirectionWrapper.class ),
+                any( int[].class ), any( CacheUpdateListener.class ) ) ).thenReturn( LoadStatus.NOTHING );
 
         // -- a type iterator that at this point contains one relationship (0)
         ControlledRelIdIterator typeIterator = new ControlledRelIdIterator( 0L );
         RelationshipIterator iterator = new RelationshipIterator( new RelIdIterator[] { typeIterator },
-                node, OUTGOING, new int[0], nodeManager, false, false );
+                node, OUTGOING, new int[0], loader, false, false, cacheUpdateListener );
         // -- go forth one step in the iterator
         iterator.next();
 
@@ -87,20 +85,6 @@ public class RelationshipIteratorIssuesTest
 
         // THEN
         assertEquals( thirdRelationship, returnedThirdRelationship );
-    }
-
-    private Answer<RelationshipProxy> relationshipProxyWithId()
-    {
-        return new Answer<RelationshipProxy>()
-        {
-            @Override
-            public RelationshipProxy answer( InvocationOnMock invocation ) throws Throwable
-            {
-                RelationshipProxy relationship = mock( RelationshipProxy.class );
-                when( relationship.getId() ).thenReturn( (Long) invocation.getArguments()[0] );
-                return relationship;
-            }
-        };
     }
 
     private static class ControlledRelIdIterator implements RelIdIterator

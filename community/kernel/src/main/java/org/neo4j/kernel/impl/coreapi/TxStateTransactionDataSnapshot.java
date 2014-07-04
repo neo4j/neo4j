@@ -34,8 +34,6 @@ import org.neo4j.graphdb.event.TransactionData;
 import org.neo4j.helpers.Function;
 import org.neo4j.helpers.ThisShouldNotHappenError;
 import org.neo4j.helpers.collection.Iterables;
-import org.neo4j.kernel.api.ReadOperations;
-import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.api.TxState;
 import org.neo4j.kernel.api.exceptions.EntityNotFoundException;
 import org.neo4j.kernel.api.exceptions.LabelNotFoundKernelException;
@@ -44,6 +42,7 @@ import org.neo4j.kernel.api.exceptions.PropertyNotFoundException;
 import org.neo4j.kernel.api.properties.DefinedProperty;
 import org.neo4j.kernel.impl.api.state.NodeState;
 import org.neo4j.kernel.impl.api.state.RelationshipState;
+import org.neo4j.kernel.impl.api.store.StoreReadLayer;
 import org.neo4j.kernel.impl.core.NodeProxy;
 import org.neo4j.kernel.impl.core.RelationshipProxy;
 import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
@@ -57,7 +56,6 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final TxState state;
     private final NodeProxy.NodeLookup nodeLookup;
     private final RelationshipProxy.RelationshipLookups relLookup;
-    private final ThreadToStatementContextBridge bridge;
 
     private final Collection<PropertyEntry<Node>> assignedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> assignedRelationshipProperties = new ArrayList<>();
@@ -66,9 +64,11 @@ public class TxStateTransactionDataSnapshot implements TransactionData
     private final Collection<PropertyEntry<Node>> removedNodeProperties = new ArrayList<>();
     private final Collection<PropertyEntry<Relationship>> removedRelationshipProperties = new ArrayList<>();
     private final Collection<LabelEntry> removedLabels = new ArrayList<>();
+    private final ThreadToStatementContextBridge bridge;
 
-    public TxStateTransactionDataSnapshot( TxState state, NodeProxy.NodeLookup nodeLookup, RelationshipProxy
-            .RelationshipLookups relLookup, ThreadToStatementContextBridge bridge )
+    public TxStateTransactionDataSnapshot( TxState state, NodeProxy.NodeLookup nodeLookup,
+            RelationshipProxy.RelationshipLookups relLookup, ThreadToStatementContextBridge bridge,
+            StoreReadLayer storeReadLayer )
     {
         this.state = state;
         this.nodeLookup = nodeLookup;
@@ -76,7 +76,7 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         this.bridge = bridge;
 
         // Load all changes eagerly, because we won't have access to the after state after the tx has been committed.
-        takeSnapshot( state, bridge );
+        takeSnapshot( state, storeReadLayer );
     }
 
     @Override
@@ -151,36 +151,35 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         return assignedLabels;
     }
 
-    private void takeSnapshot( TxState state, ThreadToStatementContextBridge bridge )
+    private void takeSnapshot( TxState state, StoreReadLayer storeReadLayer )
     {
-        try(Statement stmt = bridge.instance())
+        try
         {
-            ReadOperations ops = stmt.readOperations();
             for ( Long nodeId : state.addedAndRemovedNodes().getRemoved() )
             {
-                Iterator<DefinedProperty> props = ops.nodeGetAllCommittedProperties( nodeId );
+                Iterator<DefinedProperty> props = storeReadLayer.nodeGetAllProperties( nodeId );
                 while(props.hasNext())
                 {
                     DefinedProperty prop = props.next();
                     removedNodeProperties.add( new NodePropertyEntryView( nodeId,
-                            ops.propertyKeyGetName( prop.propertyKeyId() ), null, prop.value() ) );
+                            storeReadLayer.propertyKeyGetName( prop.propertyKeyId() ), null, prop.value() ) );
                 }
 
-                PrimitiveIntIterator labels = ops.nodeGetCommittedLabels( nodeId );
+                PrimitiveIntIterator labels = storeReadLayer.nodeGetLabels( nodeId );
                 while(labels.hasNext())
                 {
-                    removedLabels.add( new LabelEntryView( nodeId, ops.labelGetName( labels.next() ) ) );
+                    removedLabels.add( new LabelEntryView( nodeId, storeReadLayer.labelGetName( labels.next() ) ) );
                 }
 
             }
             for ( Long relId : state.addedAndRemovedRels().getRemoved() )
             {
-                Iterator<DefinedProperty> props = ops.relationshipGetAllCommittedProperties( relId );
+                Iterator<DefinedProperty> props = storeReadLayer.relationshipGetAllProperties( relId );
                 while(props.hasNext())
                 {
                     DefinedProperty prop = props.next();
                     removedRelationshipProperties.add( new RelationshipPropertyEntryView( relId,
-                            ops.propertyKeyGetName( prop.propertyKeyId() ), null, prop.value() ) );
+                            storeReadLayer.propertyKeyGetName( prop.propertyKeyId() ), null, prop.value() ) );
                 }
             }
             for ( NodeState nodeState : state.modifiedNodes() )
@@ -190,25 +189,25 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 {
                     DefinedProperty property = added.next();
                     assignedNodeProperties.add( new NodePropertyEntryView( nodeState.getId(),
-                            ops.propertyKeyGetName( property.propertyKeyId() ), property.value(),
-                            committedValue( ops, nodeState, property.propertyKeyId() ) ) );
+                            storeReadLayer.propertyKeyGetName( property.propertyKeyId() ), property.value(),
+                            committedValue( storeReadLayer, nodeState, property.propertyKeyId() ) ) );
                 }
                 Iterator<Integer> removed = nodeState.removedProperties();
                 while ( removed.hasNext()  )
                 {
                     Integer property = removed.next();
                     removedNodeProperties.add( new NodePropertyEntryView( nodeState.getId(),
-                            ops.propertyKeyGetName( property ), null,
-                            committedValue( ops, nodeState, property ) ) );
+                            storeReadLayer.propertyKeyGetName( property ), null,
+                            committedValue( storeReadLayer, nodeState, property ) ) );
                 }
                 DiffSets<Integer> labels = nodeState.labelDiffSets();
                 for ( Integer label : labels.getAdded() )
                 {
-                    assignedLabels.add( new LabelEntryView( nodeState.getId(), ops.labelGetName( label ) ) );
+                    assignedLabels.add( new LabelEntryView( nodeState.getId(), storeReadLayer.labelGetName( label ) ) );
                 }
                 for ( Integer label : labels.getRemoved() )
                 {
-                    removedLabels.add( new LabelEntryView( nodeState.getId(), ops.labelGetName( label ) ) );
+                    removedLabels.add( new LabelEntryView( nodeState.getId(), storeReadLayer.labelGetName( label ) ) );
                 }
             }
             for ( RelationshipState relState : state.modifiedRelationships() )
@@ -218,22 +217,22 @@ public class TxStateTransactionDataSnapshot implements TransactionData
                 {
                     DefinedProperty property = added.next();
                     assignedRelationshipProperties.add( new RelationshipPropertyEntryView( relState.getId(),
-                            ops.propertyKeyGetName( property.propertyKeyId() ), property.value(),
-                            committedValue( ops, relState, property.propertyKeyId() ) ) );
+                            storeReadLayer.propertyKeyGetName( property.propertyKeyId() ), property.value(),
+                            committedValue( storeReadLayer, relState, property.propertyKeyId() ) ) );
                 }
                 Iterator<Integer> removed = relState.removedProperties();
                 while ( removed.hasNext()  )
                 {
                     Integer property = removed.next();
                     removedRelationshipProperties.add( new RelationshipPropertyEntryView( relState.getId(),
-                            ops.propertyKeyGetName( property ), null,
-                            committedValue( ops, relState, property ) ) );
+                            storeReadLayer.propertyKeyGetName( property ), null,
+                            committedValue( storeReadLayer, relState, property ) ) );
                 }
             }
         }
         catch ( EntityNotFoundException | PropertyKeyIdNotFoundKernelException | LabelNotFoundKernelException e )
         {
-            throw new ThisShouldNotHappenError( "Jake", "An entity that does not exist was modified.", e);
+            throw new ThisShouldNotHappenError( "Jake", "An entity that does not exist was modified.", e );
         }
     }
 
@@ -259,15 +258,15 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }, added);
     }
 
-    private Object committedValue( ReadOperations ops, NodeState nodeState, int property )
+    private Object committedValue( StoreReadLayer storeReadLayer, NodeState nodeState, int property )
     {
         try
         {
-            if(state.nodeIsAddedInThisTx( nodeState.getId() ))
+            if ( state.nodeIsAddedInThisTx( nodeState.getId() ) )
             {
                 return null;
             }
-            return ops.nodeGetCommittedProperty( nodeState.getId(), property ).value();
+            return storeReadLayer.nodeGetProperty( nodeState.getId(), property ).value();
         }
         catch ( EntityNotFoundException | PropertyNotFoundException e )
         {
@@ -275,15 +274,15 @@ public class TxStateTransactionDataSnapshot implements TransactionData
         }
     }
 
-    private Object committedValue( ReadOperations ops, RelationshipState relState, int property )
+    private Object committedValue( StoreReadLayer storeReadLayer, RelationshipState relState, int property )
     {
         try
         {
-            if(state.relationshipIsAddedInThisTx( relState.getId() ))
+            if ( state.relationshipIsAddedInThisTx( relState.getId() ) )
             {
                 return null;
             }
-            return ops.relationshipGetCommittedProperty( relState.getId(), property ).value();
+            return storeReadLayer.relationshipGetProperty( relState.getId(), property ).value();
         }
         catch ( EntityNotFoundException | PropertyNotFoundException e )
         {

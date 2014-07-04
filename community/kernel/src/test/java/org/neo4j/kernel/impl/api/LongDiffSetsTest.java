@@ -19,28 +19,22 @@
  */
 package org.neo4j.kernel.impl.api;
 
+import static java.util.Arrays.asList;
+import static org.junit.Assert.assertThat;
+import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
+import static org.neo4j.graphdb.Neo4jMatchers.hasSamePrimitiveItems;
+
 import java.util.Iterator;
 
 import org.junit.Test;
-
 import org.neo4j.collection.primitive.PrimitiveLongIterator;
 import org.neo4j.kernel.impl.util.DiffSets;
-
-import static java.util.Arrays.asList;
-
-import static org.junit.Assert.assertThat;
-
-import static org.neo4j.collection.primitive.PrimitiveLongCollections.iterator;
-import static org.neo4j.graphdb.Neo4jMatchers.hasSamePrimitiveItems;
 
 public class LongDiffSetsTest
 {
 
     // TODO empty diffset EMPTY
     // TODO null/isEmpty elements
-
-//        System.out.println( asCollection( iteratorResult ) );
-//        System.out.println( asCollection( toJavaIterator( primitiveResult ) ) );
 
     @Test
     public void shouldContainSourceForEmptyDiffSets() throws Exception

@@ -19,26 +19,25 @@
  */
 package org.neo4j.kernel.ha.lock;
 
+import static org.neo4j.kernel.impl.transaction.LockType.READ;
+import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
+
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.neo4j.com.Response;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.DeadlockDetectedException;
-import org.neo4j.kernel.ha.HaXaDataSourceManager;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.locking.AcquireLockTimeoutException;
 import org.neo4j.kernel.impl.locking.Locks;
 import org.neo4j.kernel.impl.locking.ResourceTypes;
-import org.neo4j.kernel.impl.transaction.AbstractTransactionManager;
 import org.neo4j.kernel.impl.transaction.LockManager;
-import org.neo4j.kernel.impl.transaction.RemoteTxHook;
-
-import static org.neo4j.kernel.impl.transaction.LockType.READ;
-import static org.neo4j.kernel.impl.transaction.LockType.WRITE;
 
 class SlaveLocksClient implements Locks.Client
 {
@@ -46,35 +45,29 @@ class SlaveLocksClient implements Locks.Client
     private final Locks.Client client;
     private final Locks localLockManager;
     private final RequestContextFactory requestContextFactory;
-    private final HaXaDataSourceManager xaDsm;
-    private final AbstractTransactionManager txManager;
-    private final RemoteTxHook txHook;
     private final AvailabilityGuard availabilityGuard;
+    private final TransactionCommittingResponseUnpacker unpacker;
     private final SlaveLockManager.Configuration config;
 
     // Using atomic ints to avoid creating garbage through boxing.
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> sharedLocks;
     private final Map<Locks.ResourceType, Map<Long, AtomicInteger>> exclusiveLocks;
+    private boolean initialized = false;
 
     public SlaveLocksClient(
             Master master,
             Locks.Client local,
             Locks localLockManager,
             RequestContextFactory requestContextFactory,
-            HaXaDataSourceManager xaDsm,
-            AbstractTransactionManager txManager,
-            RemoteTxHook txHook,
             AvailabilityGuard availabilityGuard,
-            SlaveLockManager.Configuration config )
+            TransactionCommittingResponseUnpacker unpacker, SlaveLockManager.Configuration config )
     {
         this.master = master;
         this.client = local;
         this.localLockManager = localLockManager;
         this.requestContextFactory = requestContextFactory;
-        this.xaDsm = xaDsm;
-        this.txManager = txManager;
-        this.txHook = txHook;
         this.availabilityGuard = availabilityGuard;
+        this.unpacker = unpacker;
         this.config = config;
         sharedLocks = new HashMap<>();
         exclusiveLocks = new HashMap<>();
@@ -243,7 +236,17 @@ class SlaveLocksClient implements Locks.Client
     {
         sharedLocks.clear();
         exclusiveLocks.clear();
+        if ( initialized )
+        {
+            master.finishTransaction( requestContextFactory.newRequestContext( (int) client.getIdentifier() ), true );
+        }
         client.close();
+    }
+
+    @Override
+    public long getIdentifier()
+    {
+        return client.getIdentifier();
     }
 
     private boolean getReadLockOnMaster( Locks.ResourceType resourceType, long ... resourceId )
@@ -255,7 +258,7 @@ class SlaveLocksClient implements Locks.Client
         {
             makeSureTxHasBeenInitialized();
             return receiveLockResponse(
-                master.acquireSharedLock( requestContextFactory.newRequestContext(), resourceType, resourceId ));
+                master.acquireSharedLock( requestContextFactory.newRequestContext( (int) getIdentifier() ), resourceType, resourceId ));
         }
         else
         {
@@ -267,12 +270,21 @@ class SlaveLocksClient implements Locks.Client
     {
         makeSureTxHasBeenInitialized();
         return receiveLockResponse(
-                master.acquireExclusiveLock( requestContextFactory.newRequestContext(), resourceType, resourceId ));
+                master.acquireExclusiveLock( requestContextFactory.newRequestContext( (int) getIdentifier() ), resourceType, resourceId ));
     }
 
     private boolean receiveLockResponse( Response<LockResult> response )
     {
-        LockResult result = xaDsm.applyTransactions( response );
+        LockResult result = null;
+        try
+        {
+            result = unpacker.unpackResponse( response );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
+
         switch ( result.getStatus() )
         {
             case DEAD_LOCKED:
@@ -288,7 +300,6 @@ class SlaveLocksClient implements Locks.Client
         return true;
     }
 
-
     private void makeSureTxHasBeenInitialized()
     {
         if ( !availabilityGuard.isAvailable( config.getAvailabilityTimeout() ) )
@@ -297,8 +308,11 @@ class SlaveLocksClient implements Locks.Client
             throw new RuntimeException( "Timed out waiting for database to allow operations to proceed. "
                     + availabilityGuard.describeWhoIsBlocking() );
         }
-
-        txHook.remotelyInitializeTransaction( txManager.getEventIdentifier(), txManager.getTransactionState() );
+        if ( !initialized )
+        {
+            master.initializeTx( requestContextFactory.newRequestContext( (int) client.getIdentifier() ) );
+            initialized = true;
+        }
     }
 
     private UnsupportedOperationException newUnsupportedDirectTryLockUsageException()

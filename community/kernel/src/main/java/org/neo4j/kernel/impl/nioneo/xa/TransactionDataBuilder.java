@@ -19,284 +19,271 @@
  */
 package org.neo4j.kernel.impl.nioneo.xa;
 
-import java.io.IOException;
-import java.util.Collection;
-
-import org.neo4j.helpers.ThisShouldNotHappenError;
-import org.neo4j.kernel.impl.nioneo.store.DynamicRecord;
-import org.neo4j.kernel.impl.nioneo.store.LabelTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.NeoStoreRecord;
-import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyKeyTokenRecord;
-import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupRecord;
-import org.neo4j.kernel.impl.nioneo.store.RelationshipRecord;
-import org.neo4j.kernel.impl.nioneo.xa.command.Command;
 
 public class TransactionDataBuilder
 {
-    private final TransactionWriter writer;
-
-    public TransactionDataBuilder( TransactionWriter writer )
-    {
-        this.writer = writer;
-    }
-
-    public void createSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords )
-    {
-        try
-        {
-            writer.createSchema( beforeRecords, afterRecords );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void propertyKey( int id, String key )
-    {
-        try
-        {
-            writer.propertyKey( id, key, id );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void nodeLabel( int id, String name )
-    {
-        try
-        {
-            writer.label( id, name, id );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void relationshipType( int id, String relationshipType )
-    {
-        try
-        {
-            writer.relationshipType( id, relationshipType, id );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void create( NodeRecord node )
-    {
-        try
-        {
-            writer.create( node );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void create( LabelTokenRecord labelToken )
-    {
-        try
-        {
-            writer.create( labelToken );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void create( PropertyKeyTokenRecord token )
-    {
-        try
-        {
-            writer.create( token );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-
-        }
-    }
-
-    public void create( RelationshipGroupRecord group )
-    {
-        try
-        {
-            writer.create( group );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void update( Command.SchemaRuleCommand command )
-    {
-        try
-        {
-            writer.updateSchema( command.getRecordsBefore(), command.getRecordsAfter() );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void create( Command.RelationshipTypeTokenCommand command )
-    {
-        try
-        {
-            writer.add( command.getRecord() );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void update( RelationshipGroupRecord group )
-    {
-        try
-        {
-            writer.update( group );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void delete( RelationshipGroupRecord group )
-    {
-        try
-        {
-            writer.delete( group );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void update( NeoStoreRecord record )
-    {
-        try
-        {
-            writer.update( record );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void update( NodeRecord before, NodeRecord after )
-    {
-        try
-        {
-            writer.update( before, after );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void delete( NodeRecord node )
-    {
-        try
-        {
-            writer.delete( node );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void create( RelationshipRecord relationship )
-    {
-        try
-        {
-            writer.create( relationship );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void update( RelationshipRecord relationship )
-    {
-        try
-        {
-            writer.update( relationship );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void delete( RelationshipRecord relationship )
-    {
-        try
-        {
-            writer.delete( relationship );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void create( PropertyRecord property )
-    {
-        try
-        {
-            writer.create( property );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void update( PropertyRecord before, PropertyRecord property )
-    {
-        try
-        {
-            writer.update( before, property );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    public void delete( PropertyRecord before, PropertyRecord property )
-    {
-        try
-        {
-            writer.delete( before, property );
-        }
-        catch ( IOException e )
-        {
-            throw ioError( e );
-        }
-    }
-
-    private Error ioError( IOException e )
-    {
-        return new ThisShouldNotHappenError( "Mattias", "In-memory stuff should not throw IOException", e );
-    }
+//    private final TransactionWriter writer;
+//
+//    public TransactionDataBuilder( TransactionWriter writer )
+//    {
+//        this.writer = writer;
+//    }
+//
+//    public void createSchema( Collection<DynamicRecord> beforeRecords, Collection<DynamicRecord> afterRecords )
+//    {
+//        try
+//        {
+//            writer.createSchema( beforeRecords, afterRecords );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void propertyKey( int id, String key )
+//    {
+//        try
+//        {
+//            writer.propertyKey( id, key, id );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void nodeLabel( int id, String name )
+//    {
+//        try
+//        {
+//            writer.label( id, name, id );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void relationshipType( int id, String relationshipType )
+//    {
+//        try
+//        {
+//            writer.relationshipType( id, relationshipType, id );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void create( NodeRecord node )
+//    {
+//        try
+//        {
+//            writer.create( node );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void create( LabelTokenRecord labelToken )
+//    {
+//        try
+//        {
+//            writer.create( labelToken );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void create( PropertyKeyTokenRecord token )
+//    {
+//        try
+//        {
+//            writer.create( token );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//
+//        }
+//    }
+//
+//    public void create( RelationshipGroupRecord group )
+//    {
+//        try
+//        {
+//            writer.create( group );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void update( Command.SchemaRuleCommand command )
+//    {
+//        try
+//        {
+//            writer.updateSchema( command.getRecordsBefore(), command.getRecordsAfter() );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void create( Command.RelationshipTypeTokenCommand command )
+//    {
+//        try
+//        {
+//            writer.add( command.getRecord() );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void update( RelationshipGroupRecord group )
+//    {
+//        try
+//        {
+//            writer.update( group );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void delete( RelationshipGroupRecord group )
+//    {
+//        try
+//        {
+//            writer.delete( group );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void update( NeoStoreRecord record )
+//    {
+//        try
+//        {
+//            writer.update( record );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void update( NodeRecord before, NodeRecord after )
+//    {
+//        try
+//        {
+//            writer.update( before, after );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void delete( NodeRecord node )
+//    {
+//        try
+//        {
+//            writer.delete( node );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void create( RelationshipRecord relationship )
+//    {
+//        try
+//        {
+//            writer.create( relationship );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void update( RelationshipRecord relationship )
+//    {
+//        try
+//        {
+//            writer.update( relationship );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void delete( RelationshipRecord relationship )
+//    {
+//        try
+//        {
+//            writer.delete( relationship );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void create( PropertyRecord property )
+//    {
+//        try
+//        {
+//            writer.create( property );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void update( PropertyRecord before, PropertyRecord property )
+//    {
+//        try
+//        {
+//            writer.update( before, property );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    public void delete( PropertyRecord before, PropertyRecord property )
+//    {
+//        try
+//        {
+//            writer.delete( before, property );
+//        }
+//        catch ( IOException e )
+//        {
+//            throw ioError( e );
+//        }
+//    }
+//
+//    private Error ioError( IOException e )
+//    {
+//        return new ThisShouldNotHappenError( "Mattias", "In-memory stuff should not throw IOException", e );
+//    }
 }

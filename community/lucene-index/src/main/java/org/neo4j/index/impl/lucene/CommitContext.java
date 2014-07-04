@@ -19,36 +19,35 @@
  */
 package org.neo4j.index.impl.lucene;
 
+import java.io.Closeable;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.Map;
 
 import org.apache.lucene.document.Document;
 import org.apache.lucene.index.IndexWriter;
-import org.neo4j.index.impl.lucene.LuceneTransaction.CommandList;
 
 /**
  * This presents a context for each {@link LuceneCommand} when they are
  * committing its data.
  */
-class CommitContext
+class CommitContext implements Closeable
 {
     final LuceneDataSource dataSource;
     final IndexIdentifier identifier;
     final IndexType indexType;
-    final Map<Long, DocumentContext> documents = new HashMap<Long, DocumentContext>();
-    final CommandList commandList;
+    final Map<Long, DocumentContext> documents = new HashMap<>();
     final boolean recovery;
 
     IndexReference searcher;
     IndexWriter writer;
 
-    CommitContext( LuceneDataSource dataSource, IndexIdentifier identifier, IndexType indexType, CommandList commandList )
+    CommitContext( LuceneDataSource dataSource, IndexIdentifier identifier, IndexType indexType, boolean isRecovery )
     {
         this.dataSource = dataSource;
         this.identifier = identifier;
         this.indexType = indexType;
-        this.commandList = commandList;
-        this.recovery = commandList.isRecovery();
+        this.recovery = isRecovery;
     }
 
     void ensureWriterInstantiated()
@@ -77,16 +76,48 @@ class CommitContext
         }
         else if ( allowCreate )
         {
-            context = new DocumentContext( identifier.entityType.newDocument( entityId ), false, id );
+            context = new DocumentContext( IndexType.newDocument( entityId ), false, id );
             documents.put( id, context );
         }
         return context;
     }
 
-    public void close()
+    private void applyDocuments( IndexWriter writer, IndexType type,
+            Map<Long, DocumentContext> documents ) throws IOException
     {
+        for ( Map.Entry<Long, DocumentContext> entry : documents.entrySet() )
+        {
+            DocumentContext context = entry.getValue();
+            if ( context.exists )
+            {
+                if ( LuceneDataSource.documentIsEmpty( context.document ) )
+                {
+                    writer.deleteDocuments( type.idTerm( context.entityId ) );
+                }
+                else
+                {
+                    writer.updateDocument( type.idTerm( context.entityId ), context.document );
+                }
+            }
+            else
+            {
+                writer.addDocument( context.document );
+            }
+        }
+    }
+
+    @Override
+    public void close() throws IOException
+    {
+        applyDocuments( writer, indexType, documents );
+        if ( writer != null )
+        {
+            dataSource.invalidateIndexSearcher( identifier );
+        }
         if ( searcher != null )
+        {
             searcher.close();
+        }
     }
 
     static class DocumentContext

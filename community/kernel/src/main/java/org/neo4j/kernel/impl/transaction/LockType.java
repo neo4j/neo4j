@@ -19,7 +19,7 @@
  */
 package org.neo4j.kernel.impl.transaction;
 
-import javax.transaction.Transaction;
+import org.neo4j.kernel.api.KernelTransaction;
 
 /**
  * Enum defining the <CODE>READ</CODE> lock and the <CODE>WRITE</CODE> lock.
@@ -29,7 +29,7 @@ public enum LockType
     READ
     {
         @Override
-        public void release( LockManager lockManager, Object resource, Transaction tx )
+        public void release( LockManager lockManager, Object resource, KernelTransaction tx )
         {
             lockManager.releaseReadLock( resource, tx );
         }
@@ -37,11 +37,11 @@ public enum LockType
     WRITE
     {
         @Override
-        public void release( LockManager lockManager, Object resource, Transaction tx )
+        public void release( LockManager lockManager, Object resource, KernelTransaction tx )
         {
             lockManager.releaseWriteLock( resource, tx );
         }
     };
 
-    public abstract void release( LockManager lockManager, Object resource, Transaction tx );
+    public abstract void release( LockManager lockManager, Object resource, KernelTransaction tx );
 }

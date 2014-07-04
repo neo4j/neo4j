@@ -36,20 +36,18 @@ public class NodeRecord extends PrimitiveRecord
     private long labels;
     private Collection<DynamicRecord> dynamicLabelRecords = emptyList();
     private boolean isLight = true;
-    private final boolean committedDense;
     private boolean dense;
 
     public NodeRecord( long id )
     {
         super( id, Record.NO_NEXT_PROPERTY.intValue() );
-        this.committedDense = false;
     }
 
     public NodeRecord( long id, boolean dense, long nextRel, long nextProp )
     {
         super( id, nextProp );
         this.nextRel = nextRel;
-        this.committedDense = this.dense = dense;
+        this.dense = dense;
     }
 
     public long getNextRel()
@@ -97,17 +95,12 @@ public class NodeRecord extends PrimitiveRecord
 
     public Iterable<DynamicRecord> getUsedDynamicLabelRecords()
     {
-        return filter( RECORD_IN_USE, dynamicLabelRecords );
+        return filter( RECORDS_IN_USE, dynamicLabelRecords );
     }
 
     public boolean isDense()
     {
         return dense;
-    }
-
-    public boolean isCommittedDense()
-    {
-        return committedDense;
     }
 
     public void setDense( boolean dense )
@@ -140,7 +133,7 @@ public class NodeRecord extends PrimitiveRecord
     @Override
     public NodeRecord clone()
     {
-        NodeRecord clone = new NodeRecord( getId(), committedDense, nextRel, getNextProp() );
+        NodeRecord clone = new NodeRecord( getId(), dense, nextRel, getNextProp() );
         clone.labels = labels;
         clone.isLight = isLight;
         clone.setInUse( inUse() );
@@ -157,7 +150,7 @@ public class NodeRecord extends PrimitiveRecord
         return clone;
     }
 
-    public static final Predicate<DynamicRecord> RECORD_IN_USE = new Predicate<DynamicRecord>()
+    private static final Predicate<DynamicRecord> RECORDS_IN_USE = new Predicate<DynamicRecord>()
     {
         @Override
         public boolean accept( DynamicRecord item )
@@ -165,13 +158,4 @@ public class NodeRecord extends PrimitiveRecord
             return item.inUse();
         }
     };
-
-    public void copyFrom( NodeRecord from )
-    {
-        this.nextRel = from.nextRel;
-        this.labels = from.labels;
-        this.isLight = from.isLight;
-        this.dense = from.dense;
-        this.setNextProp( from.getNextProp() );
-    }
 }

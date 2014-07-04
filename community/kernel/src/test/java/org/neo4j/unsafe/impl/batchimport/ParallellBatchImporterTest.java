@@ -19,12 +19,14 @@
  */
 package org.neo4j.unsafe.impl.batchimport;
 
+import static org.junit.Assert.assertEquals;
+import static org.neo4j.helpers.collection.IteratorUtil.count;
+
 import java.io.File;
 import java.util.Iterator;
 import java.util.Random;
 
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Transaction;
@@ -39,10 +41,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.DetailedExecutionMonitor;
 
-import static org.junit.Assert.assertEquals;
-
-import static org.neo4j.helpers.collection.IteratorUtil.count;
-
 //@Ignore
 public class ParallellBatchImporterTest
 {
@@ -51,7 +49,6 @@ public class ParallellBatchImporterTest
     @Test
     public void shouldImportCsvData() throws Exception
     {
-        System.out.println( directory.getAbsolutePath() );
 
         // GIVEN
         Configuration config = new Configuration.Default()

@@ -20,10 +20,7 @@
 package org.neo4j.kernel.impl.core;
 
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
-import java.util.Set;
 
 import org.junit.After;
 import org.junit.Before;
@@ -39,16 +36,12 @@ import org.neo4j.kernel.PropertyTracker;
 import org.neo4j.test.TestGraphDatabaseFactory;
 import org.neo4j.tooling.GlobalGraphOperations;
 
-import static java.util.Arrays.asList;
-
 import static org.hamcrest.CoreMatchers.is;
 import static org.hamcrest.CoreMatchers.not;
 import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
 import static org.neo4j.helpers.collection.IteratorUtil.addToCollection;
-import static org.neo4j.helpers.collection.IteratorUtil.asSet;
 
 public class NodeManagerTest
 {
@@ -59,7 +52,7 @@ public class NodeManagerTest
     {
         db = (GraphDatabaseAPI) new TestGraphDatabaseFactory().newImpermanentDatabase();
     }
-    
+
     @After
     public void stop()
     {
@@ -98,7 +91,7 @@ public class NodeManagerTest
         node.removeProperty( "wut" );
         node.delete();
         tx.success();
-        tx.finish();
+        tx.close();
 
         //THEN prop is removed only once
         assertThat( tracker.removed, is( "0:wut" ) );
@@ -120,71 +113,6 @@ public class NodeManagerTest
         //THEN prop is removed from tracker
         assertThat( tracker.removed, is( "0:wut" ) );
     }
-    
-    @Test
-    public void getAllNodesShouldConsiderTxState() throws Exception
-    {
-        // GIVEN
-        // Three nodes
-        Transaction tx = db.beginTx();
-        Node firstCommittedNode = db.createNode();
-        Node secondCommittedNode = db.createNode();
-        Node thirdCommittedNode = db.createNode();
-        tx.success();
-        tx.finish();
-        
-        // Second one deleted, just to create a hole
-        tx = db.beginTx();
-        secondCommittedNode.delete();
-        tx.success();
-        tx.finish();
-        
-        // WHEN
-        tx = db.beginTx();
-        Node firstAdditionalNode = db.createNode();
-        Node secondAdditionalNode = db.createNode();
-        thirdCommittedNode.delete();
-        List<Node> allNodes = addToCollection( getNodeManager().getAllNodes(), new ArrayList<Node>() );
-        Set<Node> allNodesSet = new HashSet<>( allNodes );
-        tx.finish();
-
-        // THEN
-        assertEquals( allNodes.size(), allNodesSet.size() );
-        assertEquals( asSet( firstCommittedNode, firstAdditionalNode, secondAdditionalNode ), allNodesSet );
-    }
-    
-    @Test
-    public void getAllRelationshipsShouldConsiderTxState() throws Exception
-    {
-        // GIVEN
-        // Three relationships
-        Transaction tx = db.beginTx();
-        Relationship firstCommittedRelationship = createRelationshipAssumingTxWith( "committed", 1 );
-        Relationship secondCommittedRelationship = createRelationshipAssumingTxWith( "committed", 2 );
-        Relationship thirdCommittedRelationship = createRelationshipAssumingTxWith( "committed", 3 );
-        tx.success();
-        tx.finish();
-        
-        tx = db.beginTx();
-        secondCommittedRelationship.delete();
-        tx.success();
-        tx.finish();
-        
-        // WHEN
-        tx = db.beginTx();
-        Relationship firstAdditionalRelationship = createRelationshipAssumingTxWith( "additional", 1 );
-        Relationship secondAdditionalRelationship = createRelationshipAssumingTxWith( "additional", 2 );
-        thirdCommittedRelationship.delete();
-        List<Relationship> allRelationships = addToCollection( getNodeManager().getAllRelationships(),
-                new ArrayList<Relationship>() );
-        Set<Relationship> allRelationshipsSet = new HashSet<>( allRelationships );
-        tx.finish();
-
-        // THEN
-        assertEquals( allRelationships.size(), allRelationshipsSet.size() );
-        assertEquals( asSet( firstCommittedRelationship, firstAdditionalRelationship, secondAdditionalRelationship ),
-                allRelationshipsSet );
-    }
 
     @Test
     public void getAllNodesIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
@@ -195,7 +123,7 @@ public class NodeManagerTest
             db.createNode();
             db.createNode();
             tx.success();
-            tx.finish();
+            tx.close();
         }
 
         // WHEN iterator is started
@@ -213,7 +141,7 @@ public class NodeManagerTest
                 assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
                 db.createNode();
                 newTx.success();
-                newTx.finish();
+                newTx.close();
             }
         } );
         thread.start();
@@ -222,29 +150,42 @@ public class NodeManagerTest
 
         // THEN the new node is picked up by the iterator
         assertThat( addToCollection( allNodes, new ArrayList<Node>() ).size(), is( 2 ) );
-        transaction.finish();
+        transaction.close();
     }
-    
+
     @Test
     public void getAllRelationshipsIteratorShouldPickUpHigherIdsThanHighIdWhenStarted() throws Exception
     {
         // GIVEN
         Transaction tx = db.beginTx();
-        Relationship relationship1 = createRelationshipAssumingTxWith( "key", 1 );
-        Relationship relationship2 = createRelationshipAssumingTxWith( "key", 2 );
+        createRelationshipAssumingTxWith( "key", 1 );
+        createRelationshipAssumingTxWith( "key", 2 );
         tx.success();
-        tx.finish();
-        
+        tx.close();
+
         // WHEN
         tx = db.beginTx();
         Iterator<Relationship> allRelationships = GlobalGraphOperations.at( db ).getAllRelationships().iterator();
-        Relationship relationship3 = createRelationshipAssumingTxWith( "key", 3 );
+
+        Thread thread = new Thread( new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                Transaction newTx = db.beginTx();
+                assertThat( newTx, not( instanceOf( PlaceboTransaction.class ) ) );
+                createRelationshipAssumingTxWith( "key", 3 );
+                newTx.success();
+                newTx.close();
+            }
+        } );
+        thread.start();
+        thread.join();
 
         // THEN
-        assertEquals( asList( relationship1, relationship2, relationship3 ),
-                addToCollection( allRelationships, new ArrayList<Relationship>() ) );
+        assertThat( addToCollection( allRelationships, new ArrayList<Relationship>() ).size(), is(3) );
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private void delete( Relationship relationship )
@@ -252,7 +193,7 @@ public class NodeManagerTest
         Transaction tx = db.beginTx();
         relationship.delete();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private Node createNodeWith( String key, Object value )
@@ -261,7 +202,7 @@ public class NodeManagerTest
         Node node = db.createNode();
         node.setProperty( key, value );
         tx.success();
-        tx.finish();
+        tx.close();
         return node;
     }
 
@@ -271,7 +212,7 @@ public class NodeManagerTest
         Transaction tx = db.beginTx();
         Relationship relationship = createRelationshipAssumingTxWith( key, value );
         tx.success();
-        tx.finish();
+        tx.close();
         return relationship;
     }
 
@@ -289,7 +230,7 @@ public class NodeManagerTest
         Transaction tx = db.beginTx();
         node.delete();
         tx.success();
-        tx.finish();
+        tx.close();
     }
 
     private class NodeLoggingTracker implements PropertyTracker<Node>
