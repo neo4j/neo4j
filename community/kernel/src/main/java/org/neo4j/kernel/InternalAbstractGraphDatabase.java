@@ -356,8 +356,6 @@ public abstract class InternalAbstractGraphDatabase
             @Override
             public void notifyStatusChanged( Object instance, LifecycleStatus from, LifecycleStatus to )
             {
-                // TODO do not explicitly depend on order of start() calls in txManager and XaDatasourceManager
-                // use two booleans instead
                 if ( instance instanceof KernelExtensions && to.equals( LifecycleStatus.STARTED ) )
                 {
                     InternalAbstractGraphDatabase.this.doAfterRecoveryAndStartup( true );
