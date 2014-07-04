@@ -251,46 +251,6 @@ public class HaBeanIT
     }
 
     @Test
-    @Ignore //Temporary ignore since this doesn't work well on Linux 2011-04-08
-    public void canGetInstanceConnectionInformation() throws Throwable
-    {
-        startCluster( 1 );
-        ClusterMemberInfo[] clusterMembers = ha( cluster.getMaster() ).getInstancesInCluster();
-        assertNotNull( clusterMembers );
-        assertEquals( 1, clusterMembers.length );
-        ClusterMemberInfo clusterMember = clusterMembers[0];
-        assertNotNull( clusterMember );
-//        String address = clusterMember.getAddress();
-//        assertNotNull( "No JMX address for instance", address );
-        String id = clusterMember.getInstanceId();
-        assertNotNull( "No instance id", id );
-    }
-
-    @Test
-    @Ignore //Temporary ignore since this doesn't work well on Linux 2011-04-08
-    public void canConnectToInstance() throws Throwable
-    {
-        startCluster( 1 );
-        ClusterMemberInfo[] clusterMembers = ha( cluster.getMaster() ).getInstancesInCluster();
-        assertNotNull( clusterMembers );
-        assertEquals( 1, clusterMembers.length );
-        ClusterMemberInfo clusterMember = clusterMembers[0];
-        assertNotNull( clusterMember );
-        Pair<Neo4jManager, HighAvailability> proc = clusterMember.connect();
-        assertNotNull( "could not connect", proc );
-        Neo4jManager neo4j = proc.first();
-        HighAvailability ha = proc.other();
-        assertNotNull( neo4j );
-        assertNotNull( ha );
-
-        clusterMembers = ha.getInstancesInCluster();
-        assertNotNull( clusterMembers );
-        assertEquals( 1, clusterMembers.length );
-//        assertEquals( clusterMember.getAddress(), clusterMembers[0].getAddress() );
-        assertEquals( clusterMember.getInstanceId(), clusterMembers[0].getInstanceId() );
-    }
-
-    @Test
     public void joinedInstanceShowsUpAsSlave() throws Throwable
     {
         startCluster( 2 );
