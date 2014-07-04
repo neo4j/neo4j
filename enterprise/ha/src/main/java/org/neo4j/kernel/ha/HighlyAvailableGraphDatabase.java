@@ -110,7 +110,6 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
 {
     private static final Iterable<Class<?>> SETTINGS_CLASSES
             = iterable( GraphDatabaseSettings.class, HaSettings.class, ClusterSettings.class );
-    // TODO 2.2-future this must be initialized somewhere
     private RequestContextFactory requestContextFactory;
     private Slaves slaves;
     private ClusterMembers members;
@@ -133,6 +132,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     private HighAvailabilityModeSwitcher highAvailabilityModeSwitcher;
     private DefaultSlaveFactory slaveFactory;
     private TransactionCommittingResponseUnpacker unpacker;
+    private Provider<KernelAPI> kernelProvider;
 
     public HighlyAvailableGraphDatabase( String storeDir, Map<String, String> params,
                                          Iterable<KernelExtensionFactory<?>> kernelExtensions,
@@ -160,6 +160,15 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 getDependencyResolver() );
 
         this.unpacker = new TransactionCommittingResponseUnpacker( dependencyResolver );
+
+        kernelProvider = new Provider<KernelAPI>()
+        {
+            @Override
+            public KernelAPI instance()
+            {
+                return neoDataSource.getKernel();
+            }
+        };
 
         super.create();
 
@@ -431,19 +440,21 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
     {
         idGeneratorFactory = new HaIdGeneratorFactory( masterDelegateInvocationHandler, logging,
                 requestContextFactory );
+        SwitchToSlave switchToSlaveInstance = new SwitchToSlave( logging.getConsoleLog(
+                HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
+                (HaIdGeneratorFactory) idGeneratorFactory,
+                logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
+                monitors, kernelExtensions.listFactories()
+        );
+
+        SwitchToMaster switchToMasterInstance = new SwitchToMaster( logging, msgLog, this,
+                (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
+                masterDelegateInvocationHandler, clusterMemberAvailability, monitors );
+
         highAvailabilityModeSwitcher =
-                new HighAvailabilityModeSwitcher( new SwitchToSlave( logging.getConsoleLog(
-                        HighAvailabilityModeSwitcher.class ), config, getDependencyResolver(),
-                        (HaIdGeneratorFactory) idGeneratorFactory,
-                        logging, masterDelegateInvocationHandler, clusterMemberAvailability, requestContextFactory,
-                        updateableSchemaState, monitors, kernelExtensions.listFactories()
-                ),
-                        new SwitchToMaster( logging, msgLog, this,
-                                (HaIdGeneratorFactory) idGeneratorFactory, config, getDependencyResolver(),
-                                masterDelegateInvocationHandler, clusterMemberAvailability, monitors ),
+                new HighAvailabilityModeSwitcher( switchToSlaveInstance, switchToMasterInstance,
                         clusterClient, clusterMemberAvailability,
-                        logging.getMessagesLog( HighAvailabilityModeSwitcher.class )
-                );
+                        logging.getMessagesLog( HighAvailabilityModeSwitcher.class ) );
 
         clusterClient.addBindingListener( highAvailabilityModeSwitcher );
         memberStateMachine.addHighAvailabilityMemberListener( highAvailabilityModeSwitcher );
@@ -490,16 +501,11 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
         TokenCreator relationshipTypeCreator =
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, relationshipTypeCreatorDelegate );
-        // TODO 2.2-future i have no idea what is needed here in terms of dependencies
+
+
+
         new RelationshipTypeCreatorModeSwitcher( memberStateMachine, relationshipTypeCreatorDelegate,
-                masterDelegateInvocationHandler, requestContextFactory, new Provider<KernelAPI>()
-        {
-            @Override
-            public KernelAPI instance()
-            {
-                return neoDataSource.getKernel();
-            }
-        }, idGeneratorFactory );
+                masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory, unpacker );
         return relationshipTypeCreator;
     }
 
@@ -512,14 +518,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, propertyKeyCreatorDelegate );
         new PropertyKeyCreatorModeSwitcher( memberStateMachine, propertyKeyCreatorDelegate,
-                masterDelegateInvocationHandler, requestContextFactory, new Provider<KernelAPI>()
-        {
-            @Override
-            public KernelAPI instance()
-            {
-                return neoDataSource.getKernel();
-            }
-        }, idGeneratorFactory );
+                masterDelegateInvocationHandler, requestContextFactory, kernelProvider, idGeneratorFactory, unpacker );
         return propertyTokenCreator;
     }
 
@@ -532,14 +531,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
                 (TokenCreator) Proxy.newProxyInstance( TokenCreator.class.getClassLoader(),
                         new Class[]{TokenCreator.class}, labelIdCreatorDelegate );
         new LabelTokenCreatorModeSwitcher( memberStateMachine, labelIdCreatorDelegate,
-                masterDelegateInvocationHandler, requestContextFactory,  new Provider<KernelAPI>()
-        {
-            @Override
-            public KernelAPI instance()
-            {
-                return neoDataSource.getKernel();
-            }
-        }, idGeneratorFactory );
+                masterDelegateInvocationHandler, requestContextFactory,  kernelProvider, idGeneratorFactory, unpacker );
         return labelIdCreator;
     }
 
@@ -598,11 +590,7 @@ public class HighlyAvailableGraphDatabase extends InternalAbstractGraphDatabase
             {
                 try
                 {
-                    // TODO 2.2-future this means it needs to synchronize on tx application (i guess). verify
-//                    synchronized ( xaDataSourceManager )
-                    {
-                        HighlyAvailableGraphDatabase.this.doAfterRecoveryAndStartup( isMaster );
-                    }
+                    HighlyAvailableGraphDatabase.this.doAfterRecoveryAndStartup( isMaster );
                 }
                 catch ( Throwable throwable )
                 {

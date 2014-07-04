@@ -19,7 +19,10 @@
  */
 package org.neo4j.kernel.ha;
 
+import java.io.IOException;
+
 import org.neo4j.com.Response;
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
 import org.neo4j.kernel.impl.core.TokenCreator;
@@ -28,19 +31,28 @@ public class SlaveLabelTokenCreator implements TokenCreator
 {
     private final Master master;
     private final RequestContextFactory requestContextFactory;
+    private final TransactionCommittingResponseUnpacker committer;
 
-    public SlaveLabelTokenCreator( Master master, RequestContextFactory requestContextFactory )
+    // TODO 2.2-future write some tests for this, especially the application part
+    public SlaveLabelTokenCreator( Master master, RequestContextFactory requestContextFactory,
+                                   TransactionCommittingResponseUnpacker committer )
     {
         this.master = master;
         this.requestContextFactory = requestContextFactory;
+        this.committer = committer;
     }
 
     @Override
     public int getOrCreate( String name )
     {
         Response<Integer> response = master.createLabel( requestContextFactory.newRequestContext(), name );
-        // TODO 2.2-future find a way to apply transactions
-//        xaDsm.applyTransactions( response );
-        return response.response().intValue();
+        try
+        {
+            return committer.unpackResponse( response );
+        }
+        catch ( IOException e )
+        {
+            throw new RuntimeException( e );
+        }
     }
 }

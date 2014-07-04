@@ -265,7 +265,6 @@ public class MasterClient201 extends Client<Master> implements MasterClient
 //                    {
 //                        writeString( buffer, NeoStoreXaDataSource.DEFAULT_DATA_SOURCE_NAME );
 //                        BlockLogBuffer blockLogBuffer = new BlockLogBuffer( buffer, monitor );
-//                        // TODO 2.2-future figure out how to push stuff
 ////                        txGetter.extract( blockLogBuffer );
 ////                        fds
 //                        blockLogBuffer.done();

@@ -51,6 +51,13 @@ public class RequestContextFactory extends LifecycleAdapter
         this.txIdStore = resolver.resolveDependency( NeoStoreXaDataSource.class ).getDependencyResolver().resolveDependency( TransactionIdStore.class );
     }
 
+    @Override
+    public void stop() throws Throwable
+    {
+        this.txStore = null;
+        this.txIdStore = null;
+    }
+
     public void setEpoch( long epoch )
     {
         this.epoch = epoch;
@@ -58,16 +65,6 @@ public class RequestContextFactory extends LifecycleAdapter
 
     public RequestContext newRequestContext( long sessionId, int machineId, int eventIdentifier )
     {
-        try
-        {
-            // TODO 2.2-future seriously? start()? Seriously?
-            // TODO 2.2-future we should probably (spelled fucking definitely) restart the RCF when restarting the neoDS
-            start();
-        }
-        catch ( Throwable throwable )
-        {
-            throw new RuntimeException( throwable );
-        }
         long latestTxId = txIdStore.getLastCommittingTransactionId();
         if ( latestTxId == 0 )
         {

@@ -50,6 +50,7 @@ public class HANewSnapshotFunction
                     existing.getRole().equals( HighAvailabilityModeSwitcher.SLAVE ) ) ||
                         existing.getRole().equals( HighAvailabilityModeSwitcher.MASTER )
                         // TODO 2.2-future is this necessary?
+                        // TODO 2.2-future please refer back here once we have a decision for the future of HA backup
 //                         || existing.getRole().equals( OnlineBackupKernelExtension.BACKUP )
                         )
                 {

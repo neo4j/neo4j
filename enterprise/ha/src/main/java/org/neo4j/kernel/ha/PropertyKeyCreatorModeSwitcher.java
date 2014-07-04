@@ -21,6 +21,7 @@ package org.neo4j.kernel.ha;
 
 import java.net.URI;
 
+import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.IdGeneratorFactory;
 import org.neo4j.kernel.api.KernelAPI;
@@ -37,18 +38,21 @@ public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<TokenCr
     private final RequestContextFactory requestContextFactory;
     private final Provider<KernelAPI> kernelProvider;
     private final IdGeneratorFactory idGeneratorFactory;
+    private final TransactionCommittingResponseUnpacker unpacker;
 
     public PropertyKeyCreatorModeSwitcher( HighAvailabilityMemberStateMachine stateMachine,
                                            DelegateInvocationHandler<TokenCreator> delegate,
                                            DelegateInvocationHandler<Master> master,
                                            RequestContextFactory requestContextFactory,
-                                           Provider<KernelAPI> kernelProvider, IdGeneratorFactory idGeneratorFactory )
+                                           Provider<KernelAPI> kernelProvider, IdGeneratorFactory idGeneratorFactory,
+                                           TransactionCommittingResponseUnpacker unpacker )
     {
         super( stateMachine, delegate );
         this.master = master;
         this.requestContextFactory = requestContextFactory;
         this.kernelProvider = kernelProvider;
         this.idGeneratorFactory = idGeneratorFactory;
+        this.unpacker = unpacker;
     }
 
     @Override
@@ -60,6 +64,6 @@ public class PropertyKeyCreatorModeSwitcher extends AbstractModeSwitcher<TokenCr
     @Override
     protected TokenCreator getSlaveImpl( URI serverHaUri )
     {
-        return new SlavePropertyTokenCreator( master.cement(), requestContextFactory );
+        return new SlavePropertyTokenCreator( master.cement(), requestContextFactory, unpacker );
     }
 }

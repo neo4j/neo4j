@@ -63,7 +63,6 @@ import org.neo4j.kernel.ha.com.slave.MasterClientResolver;
 import org.neo4j.kernel.ha.com.slave.SlaveImpl;
 import org.neo4j.kernel.ha.com.slave.SlaveServer;
 import org.neo4j.kernel.ha.id.HaIdGeneratorFactory;
-import org.neo4j.kernel.impl.api.UpdateableSchemaState;
 import org.neo4j.kernel.impl.nioneo.store.MismatchingStoreIdException;
 import org.neo4j.kernel.impl.nioneo.store.StoreId;
 import org.neo4j.kernel.impl.nioneo.store.TransactionIdStore;
@@ -88,10 +87,6 @@ public class SwitchToSlave
             NeoStoreXaDataSource.class,
             RequestContextFactory.class,
             TransactionCommittingResponseUnpacker.class,
-//            NodeManager.class,
-            // TODO 2.2-future what is this next line?
-//            IndexStore.class
-
     };
 
     private final Logging logging;
@@ -103,7 +98,7 @@ public class SwitchToSlave
     private final DelegateInvocationHandler<Master> masterDelegateHandler;
     private final ClusterMemberAvailability clusterMemberAvailability;
     private final RequestContextFactory requestContextFactory;
-    private final UpdateableSchemaState updateableSchemaState;
+    // TODO 2.2-future add something to monitor
     private final Monitors monitors;
     private final Iterable<KernelExtensionFactory<?>> kernelExtensions;
     private final MasterClientResolver masterClientResolver;
@@ -111,8 +106,7 @@ public class SwitchToSlave
     public SwitchToSlave( ConsoleLogger console, Config config, DependencyResolver resolver, HaIdGeneratorFactory
             idGeneratorFactory, Logging logging, DelegateInvocationHandler<Master> masterDelegateHandler,
                           ClusterMemberAvailability clusterMemberAvailability, RequestContextFactory
-            requestContextFactory, UpdateableSchemaState updateableSchemaState, Monitors monitors,
-                          Iterable<KernelExtensionFactory<?>> kernelExtensions )
+            requestContextFactory, Monitors monitors, Iterable<KernelExtensionFactory<?>> kernelExtensions )
     {
         this.console = console;
         this.config = config;
@@ -121,7 +115,6 @@ public class SwitchToSlave
         this.logging = logging;
         this.clusterMemberAvailability = clusterMemberAvailability;
         this.requestContextFactory = requestContextFactory;
-        this.updateableSchemaState = updateableSchemaState;
         this.monitors = monitors;
         this.kernelExtensions = kernelExtensions;
         this.msgLog = logging.getMessagesLog( getClass() );
