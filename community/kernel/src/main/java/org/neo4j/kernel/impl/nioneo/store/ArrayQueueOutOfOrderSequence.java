@@ -38,7 +38,7 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
     @Override
     public synchronized void offer( long number )
     {
-        if ( highestGapFreeNumber+1 == number )
+        if ( highestGapFreeNumber + 1 == number )
         {
             highestGapFreeNumber = outOfOrderQueue.pollHighestGapFree( number );
         }
@@ -61,9 +61,10 @@ public class ArrayQueueOutOfOrderSequence implements OutOfOrderSequence
         outOfOrderQueue.clear();
     }
 
-    private class SortedArray
+    private static class SortedArray
     {
         private static final long UNSET = -1L;
+        // This is the backing store, treated as a ring courtesy of cursor
         private long[] array;
         private int cursor;
         private int length;

@@ -19,6 +19,20 @@
  */
 package org.neo4j.kernel.impl.nioneo.store;
 
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
+import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
+import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
+import static org.neo4j.graphdb.Neo4jMatchers.inTx;
+import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
+import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+import static org.neo4j.test.TargetDirectory.forTest;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -29,12 +43,12 @@ import org.junit.Before;
 import org.junit.ClassRule;
 import org.junit.Rule;
 import org.junit.Test;
-
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.PropertyContainer;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseSettings;
+import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
 import org.neo4j.io.fs.FileSystemAbstraction;
 import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.kernel.DefaultIdGeneratorFactory;
@@ -48,22 +62,6 @@ import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.OtherThreadExecutor;
 import org.neo4j.test.PageCacheRule;
 import org.neo4j.test.TestGraphDatabaseFactory;
-import org.neo4j.graphdb.mockfs.EphemeralFileSystemAbstraction;
-
-import static org.hamcrest.Matchers.not;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import static org.neo4j.graphdb.Neo4jMatchers.containsOnly;
-import static org.neo4j.graphdb.Neo4jMatchers.getPropertyKeys;
-import static org.neo4j.graphdb.Neo4jMatchers.hasProperty;
-import static org.neo4j.graphdb.Neo4jMatchers.inTx;
-import static org.neo4j.graphdb.Neo4jMatchers.isEmpty;
-import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
-import static org.neo4j.test.TargetDirectory.forTest;
 
 public class TestGraphProperties
 {
@@ -381,7 +379,7 @@ public class TestGraphProperties
                 public Void doWork( State state )
                 {
                     state.tx.success();
-                    state.tx.finish();
+                    state.tx.close();
                     return null;
                 }
             } );

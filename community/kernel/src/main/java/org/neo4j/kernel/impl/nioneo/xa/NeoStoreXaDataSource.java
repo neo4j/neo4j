@@ -382,7 +382,6 @@ public class NeoStoreXaDataSource implements NeoStoreProvider, Lifecycle, LogRot
     @Override
     public void start() throws IOException
     {
-//        new Exception("Starting neo store " ).printStackTrace();
         life = new LifeSupport();
         readOnly = config.get( Configuration.read_only );
         storeDir = config.get( Configuration.store_dir );

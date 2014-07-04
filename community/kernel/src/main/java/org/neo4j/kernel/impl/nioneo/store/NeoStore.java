@@ -58,6 +58,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     }
 
     public static final String TYPE_DESCRIPTOR = "NeoStore";
+    // This value means the field has not been refreshed from the store. Normally, this should happen only once
+    public static final long FIELD_NOT_INITIALIZED = Long.MIN_VALUE;
     /*
      *  7 longs in header (long + in use), time | random | version | txid | store version | graph next prop | latest constraint tx
      */
@@ -88,15 +90,17 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     private SchemaStore schemaStore;
     private RelationshipGroupStore relGroupStore;
 
-    private volatile long creationTimeField = -1;
-    private volatile long randomNumberField = -1;
-    private volatile long versionField = -1;
+    // Fields the neostore keeps cached and must be initialized on startup
+    private volatile long creationTimeField = FIELD_NOT_INITIALIZED;
+    private volatile long randomNumberField = FIELD_NOT_INITIALIZED;
+    private volatile long versionField = FIELD_NOT_INITIALIZED;
     // This is an atomic long since we, when incrementing last tx id, won't set the record in the page,
     // we do that when flushing, which is more performant and fine from a recovery POV.
-    private final AtomicLong lastCommittedTxField = new AtomicLong( -1 );
-    private volatile long storeVersionField = -1;
-    private volatile long graphNextPropField = -1;
-    private volatile long latestConstraintIntroducingTxField = -1;
+    private final AtomicLong lastCommittedTxField = new AtomicLong( FIELD_NOT_INITIALIZED );
+    private volatile long storeVersionField = FIELD_NOT_INITIALIZED;
+    private volatile long graphNextPropField = FIELD_NOT_INITIALIZED;
+    private volatile long latestConstraintIntroducingTxField = FIELD_NOT_INITIALIZED;
+
     // This is not a field in the store, but something keeping track of which of the committed
     // transactions have been closed. Useful in rotation and shutdown.
     private final OutOfOrderSequence lastClosedTx = new ArrayQueueOutOfOrderSequence( -1, 200 );
@@ -440,13 +444,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public long getCreationTime()
     {
-        long time = creationTimeField;
-        if ( time == -1 )
-        {
-            refreshFields();
-            time = creationTimeField;
-        }
-        return time;
+        checkInitialized( creationTimeField );
+        return creationTimeField;
     }
 
     public synchronized void setCreationTime( long time )
@@ -457,13 +456,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public long getRandomNumber()
     {
-        long random = randomNumberField;
-        if ( random == -1 )
-        {
-            refreshFields();
-            random = randomNumberField;
-        }
-        return random;
+        checkInitialized( randomNumberField );
+        return randomNumberField;
     }
 
     public synchronized void setRandomNumber( long nr )
@@ -475,13 +469,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public long getCurrentLogVersion()
     {
-        long version = versionField;
-        if ( version == -1 )
-        {
-            refreshFields();
-            version = versionField;
-        }
-        return version;
+        checkInitialized( versionField );
+        return versionField;
     }
 
     public void setCurrentLogVersion( long version )
@@ -519,13 +508,9 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public long getStoreVersion()
     {
-        long storeVersion = storeVersionField;
-        if ( storeVersion == -1 )
-        {
-            refreshFields();
-            storeVersion = storeVersionField;
-        }
-        return storeVersion;
+        checkInitialized( storeVersionField );
+        return storeVersionField;
+
     }
 
     public void setStoreVersion( long version )
@@ -536,13 +521,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public long getGraphNextProp()
     {
-        long nextProp = graphNextPropField;
-        if ( nextProp == -1 )
-        {
-            refreshFields();
-            nextProp = graphNextPropField;
-        }
-        return nextProp;
+        checkInitialized( graphNextPropField );
+        return graphNextPropField;
     }
 
     public void setGraphNextProp( long propId )
@@ -553,13 +533,8 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
 
     public long getLatestConstraintIntroducingTx()
     {
-        long txId = latestConstraintIntroducingTxField;
-        if ( txId == -1)
-        {
-            refreshFields();
-            txId = latestConstraintIntroducingTxField;
-        }
-        return txId;
+        checkInitialized( latestConstraintIntroducingTxField );
+        return latestConstraintIntroducingTxField;
     }
 
     public void setLatestConstraintIntroducingTx( long latestConstraintIntroducingTx )
@@ -886,13 +861,17 @@ public class NeoStore extends AbstractStore implements TransactionIdStore, LogVe
     @Override
     public long getLastCommittingTransactionId()
     {
-        long txId = lastCommittedTxField.get();
-        if ( txId == -1 )
+        checkInitialized( lastCommittedTxField.get() );
+        return lastCommittedTxField.get();
+    }
+
+    // Ensures that all fields are read from the store, by checking the initial value of the field in question
+    private void checkInitialized( long field )
+    {
+        if ( field == FIELD_NOT_INITIALIZED )
         {
             refreshFields();
-            txId = lastCommittedTxField.get();
         }
-        return txId;
     }
 
     @Override
