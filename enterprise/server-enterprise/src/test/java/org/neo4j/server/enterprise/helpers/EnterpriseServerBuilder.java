@@ -19,6 +19,8 @@
  */
 package org.neo4j.server.enterprise.helpers;
 
+import static org.neo4j.server.helpers.LoggingFactory.IMPERMANENT_LOGGING;
+
 import java.io.File;
 import java.io.IOException;
 
@@ -29,8 +31,6 @@ import org.neo4j.server.helpers.CommunityServerBuilder;
 import org.neo4j.server.helpers.LoggingFactory;
 import org.neo4j.server.preflight.PreFlightTasks;
 import org.neo4j.server.rest.web.DatabaseActions;
-
-import static org.neo4j.server.helpers.LoggingFactory.IMPERMANENT_LOGGING;
 
 public class EnterpriseServerBuilder extends CommunityServerBuilder
 {
@@ -53,6 +53,13 @@ public class EnterpriseServerBuilder extends CommunityServerBuilder
     public EnterpriseNeoServer build() throws IOException
     {
         return (EnterpriseNeoServer) super.build();
+    }
+
+    @Override
+    public EnterpriseServerBuilder usingDatabaseDir( String dbDir )
+    {
+        super.usingDatabaseDir( dbDir );
+        return this;
     }
 
     @Override
