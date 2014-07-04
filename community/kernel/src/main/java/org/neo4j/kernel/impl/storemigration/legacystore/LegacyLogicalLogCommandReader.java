@@ -45,7 +45,7 @@ import static org.neo4j.kernel.impl.nioneo.xa.Command.RelationshipTypeTokenComma
 /**
  * Reads log files from legacy (1.9) stores, and produces current (2.0) command objects from them.
  */
-public class LegacyCommandReader
+public class LegacyLogicalLogCommandReader implements LegacyLogCommandReader
 {
     static PropertyBlock readPropertyBlock( ReadableByteChannel byteChannel,
                                             ByteBuffer buffer ) throws IOException
@@ -465,7 +465,8 @@ public class LegacyCommandReader
         return new RelationshipTypeTokenCommand( null, record );
     }
 
-    public static Command readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
+    @Override
+    public Command readCommand( ReadableByteChannel byteChannel, ByteBuffer buffer ) throws IOException
     {
         buffer.clear();
         buffer.limit( 1 );

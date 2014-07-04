@@ -113,7 +113,7 @@ public class StoreUpgrader
         fileSystem.mkdir( upgradeDirectory );
 
         File upgradeFileName = new File( upgradeDirectory, NeoStore.DEFAULT_NAME );
-        Map<String, String> upgradeConfig = new HashMap<String, String>( originalConfig.getParams() );
+        Map<String, String> upgradeConfig = new HashMap<>( originalConfig.getParams() );
         upgradeConfig.put( "neo_store", upgradeFileName.getPath() );
 
         Config upgradeConfiguration = new Config( upgradeConfig );

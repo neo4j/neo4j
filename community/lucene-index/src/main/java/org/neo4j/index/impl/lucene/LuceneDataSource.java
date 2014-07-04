@@ -22,8 +22,6 @@ package org.neo4j.index.impl.lucene;
 import java.io.File;
 import java.io.IOException;
 import java.io.Reader;
-import java.nio.ByteBuffer;
-import java.nio.channels.ReadableByteChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -251,7 +249,7 @@ public class LuceneDataSource extends LogBackedXaDataSource
             }
         };
 
-        XaCommandFactory cf = new LuceneCommandFactory();
+        XaCommandFactory cf = new LuceneCommandFactory( this );
         XaTransactionFactory tf = new LuceneTransactionFactory();
         DependencyResolver dummy = new DependencyResolver.Adapter()
         {
@@ -380,21 +378,6 @@ public class LuceneDataSource extends LogBackedXaDataSource
     {
         return new LuceneXaConnection( baseStorePath, xaContainer
                 .getResourceManager(), getBranchId() );
-    }
-
-    private class LuceneCommandFactory extends XaCommandFactory
-    {
-        LuceneCommandFactory()
-        {
-            super();
-        }
-
-        @Override
-        public XaCommand readCommand( ReadableByteChannel channel,
-                                      ByteBuffer buffer ) throws IOException
-        {
-            return LuceneCommand.readCommand( channel, buffer, LuceneDataSource.this );
-        }
     }
 
     private class LuceneTransactionFactory extends XaTransactionFactory

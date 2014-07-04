@@ -35,7 +35,9 @@ import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.test.EphemeralFileSystemRule;
 import org.neo4j.test.impl.EphemeralFileSystemAbstraction;
 
+import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -43,7 +45,7 @@ import static org.neo4j.kernel.impl.nioneo.store.CommonAbstractStore.ALL_STORES_
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.allStoreFilesHaveVersion;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.alwaysAllowed;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.changeVersionNumber;
-import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.containsAnyLogicalLogs;
+import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.countLogicalLogs;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.containsAnyStoreFiles;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.defaultConfig;
 import static org.neo4j.kernel.impl.storemigration.MigrationTestUtils.isolatedMigrationDirectoryOf;
@@ -65,7 +67,7 @@ public class StoreUpgraderTestIT
 
         assertTrue( allStoreFilesHaveVersion( fileSystem, dbDirectory, ALL_STORES_VERSION ) );
 
-        assertFalse( containsAnyLogicalLogs( fileSystem, dbDirectory ) );
+        assertThat( countLogicalLogs( fileSystem, dbDirectory ), is( 1 ) );
         
         assertFalse( containsAnyStoreFiles( fileSystem, isolatedMigrationDirectoryOf( dbDirectory ) ) );
     }
@@ -81,7 +83,8 @@ public class StoreUpgraderTestIT
 
         verifyFilesHaveSameContent( fileSystem, MigrationTestUtils.findOldFormatStoreDirectory(), backupDirectory );
 
-        assertTrue( containsAnyLogicalLogs( fileSystem, backupDirectory ) );
+        // .v0, .v1 and .active
+        assertThat( countLogicalLogs( fileSystem, backupDirectory ), is( 3 ) );
     }
 
     @Test
