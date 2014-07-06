@@ -22,7 +22,6 @@ package org.neo4j.kernel.ha.lock;
 import java.net.URI;
 
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.helpers.Factory;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.configuration.Config;

@@ -20,7 +20,6 @@
 package org.neo4j.kernel.ha.lock;
 
 import org.neo4j.com.storecopy.TransactionCommittingResponseUnpacker;
-import org.neo4j.graphdb.DependencyResolver;
 import org.neo4j.kernel.AvailabilityGuard;
 import org.neo4j.kernel.ha.com.RequestContextFactory;
 import org.neo4j.kernel.ha.com.master.Master;
