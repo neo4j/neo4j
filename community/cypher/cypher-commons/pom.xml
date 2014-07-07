@@ -4,14 +4,14 @@
     <parent>
         <groupId>org.neo4j</groupId>
         <artifactId>cypher-parent</artifactId>
-        <version>2.0.4-SNAPSHOT</version>
+        <version>2.0.4</version>
         <relativePath>../</relativePath>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
     <artifactId>neo4j-cypher-commons</artifactId>
     <packaging>jar</packaging>
-    <version>2.0.4-SNAPSHOT</version>
+    <version>2.0.4</version>
     <name>Neo4j - Cypher Commons</name>
     <description>Common code shared between all Neo4j Cypher modules</description>
     <url>http://components.neo4j.org/${project.artifactId}/${project.version}</url>

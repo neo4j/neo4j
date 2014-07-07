@@ -3,14 +3,14 @@
   <parent>
     <groupId>org.neo4j</groupId>
     <artifactId>parent</artifactId>
-    <version>2.0.4-SNAPSHOT</version>
+    <version>2.0.4</version>
     <relativePath>../..</relativePath>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
   <artifactId>neo4j-udc-integration</artifactId>
   <name>Neo4j - UDC Integration</name>
-  <version>2.0.4-SNAPSHOT</version>
+  <version>2.0.4</version>
 
   <properties>
     <license-text.header>GPL-3-header.txt</license-text.header>
