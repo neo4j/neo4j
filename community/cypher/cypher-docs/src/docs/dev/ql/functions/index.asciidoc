@@ -28,6 +28,8 @@ include::none.asciidoc[]
 
 include::single.asciidoc[]
 
+include::has.asciidoc[]
+
 :leveloffset: 1
 
 [[query-functions-scalar]]

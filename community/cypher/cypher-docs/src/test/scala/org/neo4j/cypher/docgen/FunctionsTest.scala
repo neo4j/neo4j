@@ -97,6 +97,17 @@ class FunctionsTest extends DocumentingTestBase {
       assertions = (p) => assertEquals(1, p.toSeq.length))
   }
 
+  @Test def has() {
+    testThis(
+      title = "HAS",
+      syntax = "HAS( pattern-or-property )",
+      arguments = List("pattern-or-property" -> "A pattern or a property (in the form 'identifier.prop')."),
+      text = """Returns true if a match for the pattern exists in the graph, or the property exists in the node, relationship or map.""",
+      queryText = """match (n) where HAS(n.name) return n.name AS name, HAS( (n)-[:MARRIED]->() ) AS is_married""",
+      returns = """This query returns all the nodes with a name property allong with a boolean true/false indicating if they are married.""",
+      assertions = (p) => assertEquals(5, p.toSeq.length))
+  }
+
   @Test def relationship_type() {
     testThis(
       title = "TYPE",
@@ -425,7 +436,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       title = "HAVERSIN",
       syntax = "HAVERSIN( expression )",
       arguments = List("expression" -> "A numeric expression."),
-      text = "`HAVERSIN` returns the half versine of the expression.",
+      text = "`HAVERSIN` returns half the versine of the expression.",
       queryText = """return haversin(0.5)""",
       returns = "The haversine of 0.5 is returned.",
       assertions = (p) => assertEquals(0.061208719054813, p.toList.head("haversin(0.5)").asInstanceOf[Double], 0.000001)
@@ -475,7 +486,7 @@ In case all arguments are +NULL+, +NULL+ will be returned.""",
       title = "PI",
       syntax = "PI()",
       arguments = List.empty,
-      text = "`PI` returns the mathmatical constant pi.",
+      text = "`PI` returns the mathematical constant pi.",
       queryText = """return pi()""",
       returns = "The constant pi is returned.",
       assertions = (p) => assertEquals(3.141592653589793, p.toList.head("pi()").asInstanceOf[Double], 0.000001)
