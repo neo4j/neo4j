@@ -31,6 +31,7 @@ import org.neo4j.kernel.api.labelscan.LabelScanStore;
 import org.neo4j.kernel.api.labelscan.NodeLabelUpdate;
 import org.neo4j.kernel.impl.api.index.IndexingService;
 import org.neo4j.kernel.impl.core.CacheAccessBackDoor;
+import org.neo4j.kernel.impl.nioneo.store.NodeRecord;
 import org.neo4j.kernel.impl.nioneo.store.NodeStore;
 import org.neo4j.kernel.impl.nioneo.store.PropertyRecord;
 import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
@@ -94,7 +95,7 @@ public class NeoTransactionIndexApplier extends NeoCommandHandler.Adapter
         if ( !nodeCommands.isEmpty() || !propertyCommands.isEmpty() )
         {
             indexingService.updateIndexes( new LazyIndexUpdates(
-                    nodeStore, propertyStore, propertyCommands.values(), nodeCommands, propertyLoader ) );
+                    nodeStore, propertyStore, propertyCommands, nodeCommands, propertyLoader ) );
         }
     }
 
@@ -121,11 +122,14 @@ public class NeoTransactionIndexApplier extends NeoCommandHandler.Adapter
         // for index updates
         nodeCommands.put( command.getKey(), command );
 
+        NodeRecord before = command.getBefore();
+        NodeRecord after = command.getAfter();
+
         // for label store updates
-        NodeLabels labelFieldBefore = parseLabelsField( command.getBefore() );
-        NodeLabels labelFieldAfter = parseLabelsField( command.getAfter() );
+        NodeLabels labelFieldBefore = parseLabelsField( before );
+        NodeLabels labelFieldAfter = parseLabelsField( after );
         if ( !(labelFieldBefore.isInlined() && labelFieldAfter.isInlined()
-             && command.getBefore().getLabelField() == command.getAfter().getLabelField()) )
+                && before.getLabelField() == after.getLabelField()) )
         {
             long[] labelsBefore = labelFieldBefore.getIfLoaded();
             long[] labelsAfter = labelFieldAfter.getIfLoaded();

@@ -33,12 +33,12 @@ public class NodeLabelUpdate
         this.labelsBefore = labelsBefore;
         this.labelsAfter = labelsAfter;
     }
-    
+
     public long getNodeId()
     {
         return nodeId;
     }
-    
+
     public long[] getLabelsBefore()
     {
         return labelsBefore;
@@ -48,7 +48,7 @@ public class NodeLabelUpdate
     {
         return labelsAfter;
     }
-    
+
     @Override
     public String toString()
     {
@@ -59,5 +59,44 @@ public class NodeLabelUpdate
     public static NodeLabelUpdate labelChanges( long nodeId, long[] labelsBeforeChange, long[] labelsAfterChange )
     {
         return new NodeLabelUpdate( nodeId, labelsBeforeChange, labelsAfterChange );
+    }
+
+    @Override
+    public boolean equals( Object o )
+    {
+        if ( this == o )
+        {
+            return true;
+        }
+        if ( o == null || getClass() != o.getClass() )
+        {
+            return false;
+        }
+
+        NodeLabelUpdate that = (NodeLabelUpdate) o;
+
+        if ( nodeId != that.nodeId )
+        {
+            return false;
+        }
+        if ( !Arrays.equals( labelsAfter, that.labelsAfter ) )
+        {
+            return false;
+        }
+        if ( !Arrays.equals( labelsBefore, that.labelsBefore ) )
+        {
+            return false;
+        }
+
+        return true;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        int result = (int) (nodeId ^ (nodeId >>> 32));
+        result = 31 * result + (labelsBefore != null ? Arrays.hashCode( labelsBefore ) : 0);
+        result = 31 * result + (labelsAfter != null ? Arrays.hashCode( labelsAfter ) : 0);
+        return result;
     }
 }
