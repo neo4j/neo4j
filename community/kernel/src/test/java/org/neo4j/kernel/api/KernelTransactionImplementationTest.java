@@ -118,7 +118,7 @@ public class KernelTransactionImplementationTest
         {
             // WHEN
             transaction.success();
-            transaction.markForInterrupt();
+            transaction.markForTermination();
         }
         catch ( TransactionFailureException e )
         {
@@ -131,7 +131,7 @@ public class KernelTransactionImplementationTest
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionInterrupted();
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -141,13 +141,13 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
-            transaction.markForInterrupt();
-            assertTrue( transaction.shouldBeInterrupted() );
+            transaction.markForTermination();
+            assertTrue( transaction.shouldBeTerminated() );
         }
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionInterrupted();
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -159,9 +159,9 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
-            transaction.markForInterrupt();
+            transaction.markForTermination();
             transaction.success();
-            assertTrue( transaction.shouldBeInterrupted() );
+            assertTrue( transaction.shouldBeTerminated() );
         }
         catch ( TransactionFailureException e )
         {
@@ -172,7 +172,7 @@ public class KernelTransactionImplementationTest
         // THEN
         assertTrue( exceptionReceived );
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionInterrupted();
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -182,14 +182,14 @@ public class KernelTransactionImplementationTest
         try ( KernelTransaction transaction = newTransaction() )
         {
             // WHEN
-            transaction.markForInterrupt();
+            transaction.markForTermination();
             transaction.failure();
-            assertTrue( transaction.shouldBeInterrupted() );
+            assertTrue( transaction.shouldBeTerminated() );
         }
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionInterrupted();
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -199,11 +199,11 @@ public class KernelTransactionImplementationTest
         KernelTransaction transaction = newTransaction();
         transaction.success();
         transaction.close();
-        transaction.markForInterrupt();
+        transaction.markForTermination();
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( true );
-        verify( transactionMonitor, times( 1 ) ).transactionInterrupted();
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -212,11 +212,11 @@ public class KernelTransactionImplementationTest
     {
         KernelTransaction transaction = newTransaction();
         transaction.close();
-        transaction.markForInterrupt();
+        transaction.markForTermination();
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionInterrupted();
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -225,7 +225,7 @@ public class KernelTransactionImplementationTest
     {
         KernelTransaction transaction = newTransaction();
         transaction.success();
-        transaction.markForInterrupt();
+        transaction.markForTermination();
         try
         {
             transaction.close();
@@ -241,12 +241,12 @@ public class KernelTransactionImplementationTest
     public void shouldIgnoreInterruptDuringRollback() throws Exception
     {
         KernelTransaction transaction = newTransaction();
-        transaction.markForInterrupt();
+        transaction.markForTermination();
         transaction.close();
 
         // THEN
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionInterrupted();
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 
@@ -261,7 +261,7 @@ public class KernelTransactionImplementationTest
             public void run()
             {
                 latch.awaitStart();
-                transaction.markForInterrupt();
+                transaction.markForTermination();
                 latch.finish();
             }
         });
@@ -284,7 +284,7 @@ public class KernelTransactionImplementationTest
         // THEN
         assertTrue( exceptionReceived );
         verify( transactionMonitor, times( 1 ) ).transactionFinished( false );
-        verify( transactionMonitor, times( 1 ) ).transactionInterrupted();
+        verify( transactionMonitor, times( 1 ) ).transactionTerminated();
         verifyNoMoreInteractions( transactionMonitor );
     }
 

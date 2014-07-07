@@ -21,7 +21,7 @@ package org.neo4j.kernel.impl.api;
 
 import org.junit.Test;
 
-import org.neo4j.kernel.TransactionInterruptException;
+import org.neo4j.kernel.TransactionTerminatedException;
 import org.neo4j.kernel.api.labelscan.LabelScanReader;
 import org.neo4j.kernel.api.labelscan.LabelScanStore;
 
@@ -67,7 +67,7 @@ public class KernelStatementTest
     public void shouldThrowInterruptExceptionWhenTransactionInterrupted() throws Exception
     {
         KernelTransactionImplementation transaction = mock( KernelTransactionImplementation.class );
-        when( transaction.shouldBeInterrupted() ).thenReturn( true );
+        when( transaction.shouldBeTerminated() ).thenReturn( true );
 
         KernelStatement statement = new KernelStatement(
             transaction, mock( IndexReaderFactory.class ),
@@ -77,7 +77,7 @@ public class KernelStatementTest
         try {
             statement.readOperations().nodeExists( 0 );
             fail("Did not throw a TransactionInterruptException");
-        } catch (TransactionInterruptException ignored) {
+        } catch (TransactionTerminatedException ignored) {
             // ignore
         }
     }

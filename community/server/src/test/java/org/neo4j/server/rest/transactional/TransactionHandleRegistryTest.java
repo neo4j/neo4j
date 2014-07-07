@@ -211,11 +211,11 @@ public class TransactionHandleRegistryTest
         long id = registry.begin( handle );
 
         // When
-        TransactionInterruptHandle interruptHandler = registry.interruptHandler( id );
-        interruptHandler.interrupt();
+        TransactionTerminationHandle interruptHandler = registry.terminationHandle( id );
+        interruptHandler.terminate();
 
         // Then
-        verify( handle, times( 1 ) ).interrupt();
+        verify( handle, times( 1 ) ).terminate();
         verifyNoMoreInteractions( handle );
     }
 
@@ -235,11 +235,11 @@ public class TransactionHandleRegistryTest
         registry.release( id, handle );
 
         // When
-        TransactionInterruptHandle interruptHandler = registry.interruptHandler( id );
-        interruptHandler.interrupt();
+        TransactionTerminationHandle interruptHandler = registry.terminationHandle( id );
+        interruptHandler.terminate();
 
         // Then
-        verify( handle, times( 1 ) ).interrupt();
+        verify( handle, times( 1 ) ).terminate();
         verifyNoMoreInteractions( handle );
     }
 
@@ -256,7 +256,7 @@ public class TransactionHandleRegistryTest
         // When
         try
         {
-            registry.interruptHandler( 456 );
+            registry.terminationHandle( 456 );
             fail( "Expected InvalidTransactionId to be thrown" );
         }
         catch ( InvalidTransactionId e )

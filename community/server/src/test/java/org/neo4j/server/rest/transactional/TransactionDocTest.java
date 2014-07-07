@@ -261,7 +261,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
      * Rollback an open transaction
      *
      * Given that you have an open transaction, you can send a roll back request. The server will roll back the
-     * transaction.
+     * transaction. Any further statements trying to run in this transaction will fail immediately.
      */
     @Test
     @Documented
@@ -276,36 +276,7 @@ public class TransactionDocTest extends AbstractRestFunctionalTestBase
         ResponseEntity response = gen.get()
                 .noGraph()
                 .expectedStatus( 200 )
-                .delete( location + "" );
-
-        // Then
-        Map<String, Object> result = jsonToMap( response.entity() );
-        assertNoErrors( result );
-
-        Integer id = resultCell( firstReq, 0, 0 );
-        assertThat( GET( getNodeUri( id ) ).status(), is( 404 ) );
-    }
-
-    /**
-     * Interrupt an open transaction
-     *
-     * Given that you have an open transaction, you can send an interrupt to it. The server will mark the transaction
-     * for rollback and all subsequent operations carried out within that transaction to throw an exception.
-     */
-    @Test
-    @Documented
-    public void interrupt_an_open_transaction() throws PropertyValueException
-    {
-        // Given
-        HTTP.Response firstReq = POST( getDataUri() + "transaction",
-                HTTP.RawPayload.quotedJson( "{ 'statements': [ { 'statement': 'CREATE n RETURN id(n)' } ] }" ) );
-        String location = firstReq.location();
-
-        // Document
-        ResponseEntity response = gen.get()
-                .noGraph()
-                .expectedStatus( 200 )
-                .post( location + "/interrupt" );
+                .delete( location );
 
         // Then
         Map<String, Object> result = jsonToMap( response.entity() );

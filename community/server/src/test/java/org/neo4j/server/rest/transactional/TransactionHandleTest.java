@@ -416,7 +416,7 @@ public class TransactionHandleTest
         handle.execute( statements(), output );
 
         // when
-        handle.interrupt();
+        handle.terminate();
 
         // then
         verify( tx, times( 1 ) ).interrupt();

@@ -205,13 +205,13 @@ public class ConstraintIndexCreatorTest
                     return true;
                 }
 
-                public boolean shouldBeInterrupted()
+                public boolean shouldBeTerminated()
                 {
                     return false;
                 }
 
                 @Override
-                public void markForInterrupt()
+                public void markForTermination()
                 {
                 }
 

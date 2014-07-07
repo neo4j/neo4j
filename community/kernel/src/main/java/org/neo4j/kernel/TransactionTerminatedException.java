@@ -17,8 +17,12 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.server.rest.transactional;
+package org.neo4j.kernel;
 
-public interface TransactionInterruptHandle {
-    void interrupt();
+public class TransactionTerminatedException extends RuntimeException
+{
+    public TransactionTerminatedException()
+    {
+        super( "The transaction has been terminated." );
+    }
 }

@@ -63,16 +63,16 @@ public class TransactionHandleRegistry implements TransactionRegistry
 
     private static class ActiveTransaction extends TransactionMarker
     {
-        final TransactionInterruptHandle interruptHandle;
+        final TransactionTerminationHandle terminationHandle;
 
-        private ActiveTransaction( TransactionInterruptHandle interruptHandle )
+        private ActiveTransaction( TransactionTerminationHandle terminationHandle )
         {
-            this.interruptHandle = interruptHandle;
+            this.terminationHandle = terminationHandle;
         }
 
-        TransactionInterruptHandle getInterruptHandler()
+        TransactionTerminationHandle getTerminationHandle()
         {
-            return interruptHandle;
+            return terminationHandle;
         }
 
         @Override
@@ -222,7 +222,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
     }
 
     @Override
-    public TransactionInterruptHandle interruptHandler( long id ) throws TransactionLifecycleException
+    public TransactionTerminationHandle terminationHandle( long id ) throws TransactionLifecycleException
     {
         TransactionMarker marker = registry.get( id );
 
@@ -232,7 +232,7 @@ public class TransactionHandleRegistry implements TransactionRegistry
         }
         else
         {
-            return marker.getActiveTransaction().getInterruptHandler();
+            return marker.getActiveTransaction().getTerminationHandle();
         }
     }
 

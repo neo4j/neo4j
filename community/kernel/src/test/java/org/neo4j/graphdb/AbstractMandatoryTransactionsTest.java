@@ -22,7 +22,7 @@ package org.neo4j.graphdb;
 import org.junit.Rule;
 
 import org.neo4j.function.Function;
-import org.neo4j.kernel.TransactionInterruptException;
+import org.neo4j.kernel.TransactionTerminatedException;
 import org.neo4j.test.EmbeddedDatabaseRule;
 
 import static org.junit.Assert.fail;
@@ -52,7 +52,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
         try ( Transaction tx = graphDatabaseService.beginTx() )
         {
             T result = obtainEntityInTransaction( graphDatabaseService );
-            tx.interrupt();
+            tx.terminate();
 
             return f.apply(result);
         }
@@ -92,7 +92,7 @@ public abstract class AbstractMandatoryTransactionsTest<T>
 
                         fail( "Transaction was interrupted, yet not exception thrown in: " + method );
                     }
-                    catch ( TransactionInterruptException e )
+                    catch ( TransactionTerminatedException e )
                     {
                         // awesome
                     }

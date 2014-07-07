@@ -31,7 +31,7 @@ import org.neo4j.graphdb.RelationshipType;
 import org.neo4j.graphdb.Transaction;
 import org.neo4j.graphdb.factory.GraphDatabaseFactory;
 import org.neo4j.io.fs.FileUtils;
-import org.neo4j.kernel.TransactionInterruptException;
+import org.neo4j.kernel.TransactionTerminatedException;
 
 public class InterruptTransactions
 {
@@ -79,7 +79,7 @@ public class InterruptTransactions
                 }
             }
         }
-        catch (TransactionInterruptException e)
+        catch (TransactionTerminatedException e)
         {
             return String.format( "Created tree up to depth %s in 1 sec", depth );
         }
@@ -115,7 +115,7 @@ public class InterruptTransactions
                 while ( (System.currentTimeMillis() - startTime) < millis );
 
                 // interrupt transaction
-                tx.interrupt();
+                tx.terminate();
             }
         } );
     }

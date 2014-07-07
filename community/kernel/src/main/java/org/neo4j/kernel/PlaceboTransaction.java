@@ -38,9 +38,9 @@ public class PlaceboTransaction implements Transaction
     }
 
     @Override
-    public void interrupt()
+    public void terminate()
     {
-        parentTransaction.interrupt();
+        parentTransaction.terminate();
     }
 
     @Override

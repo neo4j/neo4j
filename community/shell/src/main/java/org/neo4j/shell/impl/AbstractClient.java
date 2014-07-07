@@ -77,7 +77,7 @@ public abstract class AbstractClient implements ShellClient
             {
                 try
                 {
-                    getServer().interrupt( getId() );
+                    getServer().terminate( getId() );
                 }
                 catch ( Exception e )
                 {

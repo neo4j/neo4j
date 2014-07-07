@@ -81,9 +81,9 @@ public class TransactionFacade
        return registry.acquire( txId );
     }
 
-    public TransactionInterruptHandle findTransactionInterruptHandle( long txId ) throws TransactionLifecycleException
+    public TransactionTerminationHandle findTransactionInterruptHandle( long txId ) throws TransactionLifecycleException
     {
-        return registry.interruptHandler( txId );
+        return registry.terminationHandle( txId );
     }
 
     public StatementDeserializer deserializer( InputStream input )

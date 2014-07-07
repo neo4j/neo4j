@@ -27,7 +27,7 @@ import org.hamcrest.CoreMatchers;
 import org.junit.Assert;
 import org.junit.Test;
 
-import org.neo4j.kernel.TransactionInterruptException;
+import org.neo4j.kernel.TransactionTerminatedException;
 import org.neo4j.test.TestGraphDatabaseFactory;
 
 import static org.junit.Assert.fail;
@@ -104,13 +104,13 @@ public class GraphDatabaseServiceTest
 
         try ( Transaction tx = db.beginTx() )
         {
-            tx.interrupt();
+            tx.terminate();
             try
             {
                 db.createNode();
                 fail( "Failed to throw TransactionInterruptException" );
             }
-            catch ( TransactionInterruptException ignored )
+            catch ( TransactionTerminatedException ignored )
             {
             }
         }
@@ -126,14 +126,14 @@ public class GraphDatabaseServiceTest
         {
             try ( Transaction nested = db.beginTx() )
             {
-                tx.interrupt();
+                tx.terminate();
             }
             try
             {
                 db.createNode();
                 fail( "Failed to throw TransactionInterruptException" );
             }
-            catch ( TransactionInterruptException ignored )
+            catch ( TransactionTerminatedException ignored )
             {
             }
         }
@@ -149,13 +149,13 @@ public class GraphDatabaseServiceTest
         {
             try ( Transaction nested = db.beginTx() )
             {
-                tx.interrupt();
+                tx.terminate();
                 try
                 {
                     db.createNode();
                     fail( "Failed to throw TransactionInterruptException" );
                 }
-                catch ( TransactionInterruptException ignored )
+                catch ( TransactionTerminatedException ignored )
                 {
                 }
             }

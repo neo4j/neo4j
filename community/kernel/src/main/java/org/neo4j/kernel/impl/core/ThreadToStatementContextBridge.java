@@ -23,7 +23,7 @@ import org.neo4j.graphdb.DatabaseShutdownException;
 import org.neo4j.graphdb.NotInTransactionException;
 import org.neo4j.helpers.Provider;
 import org.neo4j.kernel.TopLevelTransaction;
-import org.neo4j.kernel.TransactionInterruptException;
+import org.neo4j.kernel.TransactionTerminatedException;
 import org.neo4j.kernel.api.KernelTransaction;
 import org.neo4j.kernel.api.Statement;
 import org.neo4j.kernel.impl.nioneo.xa.TransactionRecordState;
@@ -75,9 +75,9 @@ public class ThreadToStatementContextBridge extends LifecycleAdapter implements 
 
     private void assertNotInterrupted( TopLevelTransaction transaction )
     {
-        if ( transaction.getTransaction().shouldBeInterrupted() )
+        if ( transaction.getTransaction().shouldBeTerminated() )
         {
-            throw new TransactionInterruptException();
+            throw new TransactionTerminatedException();
         }
     }
 

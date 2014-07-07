@@ -17,12 +17,21 @@
  * You should have received a copy of the GNU General Public License
  * along with this program.  If not, see <http://www.gnu.org/licenses/>.
  */
-package org.neo4j.kernel;
+package org.neo4j.server.rest.transactional;
 
-public class TransactionInterruptException extends RuntimeException
+import org.neo4j.graphdb.Transaction;
+
+public class TransactionTerminator
 {
-    public TransactionInterruptException()
+    private final Transaction transaction;
+
+    public TransactionTerminator( Transaction transaction )
     {
-        super( "The transaction has been interrupted." );
+        this.transaction = transaction;
+    }
+
+    public void interrupt()
+    {
+        transaction.terminate();
     }
 }

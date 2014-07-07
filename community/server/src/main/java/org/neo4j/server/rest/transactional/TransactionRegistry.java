@@ -34,7 +34,7 @@ public interface TransactionRegistry
 
     public TransactionHandle acquire( long id ) throws TransactionLifecycleException;
 
-    public TransactionInterruptHandle interruptHandler( long id ) throws TransactionLifecycleException;
+    public TransactionTerminationHandle terminationHandle( long id ) throws TransactionLifecycleException;
 
     public void forget( long id );
 

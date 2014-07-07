@@ -423,7 +423,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertHasTxInterruptHeader( begin );
         String commitResource = begin.stringFromContent( "commit" );
 
-        // interrupt
+        // terminate
         String interruptResource = begin.firstXHeader( "Transaction-Interrupt" );
         Response interrupt = http.POST( interruptResource, quotedJson( "{}" ) );
         assertThat( interrupt.status(), equalTo( 200 ) );
@@ -446,7 +446,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertHasTxLocation( begin );
         assertHasTxInterruptHeader( begin );
 
-        // interrupt
+        // terminate
         String interruptResource = begin.firstXHeader( "Transaction-Interrupt" );
         Response interrupt = http.POST( interruptResource, quotedJson( "{}" ) );
         assertThat( interrupt.status(), equalTo( 200 ) );
@@ -469,7 +469,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         assertThat( commit.status(), equalTo( 200 ) );
         assertHasTxInterruptHeader( commit );
 
-        // interrupt
+        // terminate
         String interruptResource = commit.firstXHeader( "Transaction-Interrupt" );
         Response interrupt = http.POST( interruptResource, quotedJson( "{}" ) );
         assertThat( interrupt.status(), equalTo( 404 ) );
@@ -500,7 +500,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             }
         });
 
-        // interrupt
+        // terminate
         final String interruptResource = begin.firstXHeader( "Transaction-Interrupt" );
         final Future<Response> interruptFuture = Executors.newSingleThreadExecutor().submit( new Callable<Response>() {
             public Response call()
@@ -531,7 +531,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
         // given
         cleanDatabase();
         TransactionMonitor txMonitor = ((GraphDatabaseAPI) graphdb()).getDependencyResolver().resolveDependency( TransactionMonitor.class );
-        long initialInterrupts = txMonitor.getNumberOfTransactionInterrupts();
+        long initialInterrupts = txMonitor.getNumberOfTransactionTerminations();
 
         // when sending a request and aborting in the middle of receiving the result
         Socket socket = new Socket( "localhost", 7474 );
@@ -563,7 +563,7 @@ public class TransactionIT extends AbstractRestFunctionalTestBase
             assertEquals( 0, numNodes );
         }
 
-        long numInterrupts = txMonitor.getNumberOfTransactionInterrupts() - initialInterrupts;
+        long numInterrupts = txMonitor.getNumberOfTransactionTerminations() - initialInterrupts;
         assertEquals( 1, numInterrupts );
     }
 

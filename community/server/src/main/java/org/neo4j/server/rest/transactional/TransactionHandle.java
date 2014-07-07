@@ -54,7 +54,7 @@ import org.neo4j.server.rest.web.TransactionUriScheme;
  * All of the public methods on this class are "single-shot"; once you have called one method, the handle returns itself
  * to the registry. If you want to use it again, you'll need to acquire it back from the registry to ensure exclusive use.
  */
-public class TransactionHandle implements TransactionInterruptHandle
+public class TransactionHandle implements TransactionTerminationHandle
 {
     private final TransitionalPeriodTransactionMessContainer txManagerFacade;
     private final ServerExecutionEngine engine;
@@ -101,7 +101,7 @@ public class TransactionHandle implements TransactionInterruptHandle
     }
 
     @Override
-    public void interrupt()
+    public void terminate()
     {
         if ( context != null ) {
             context.interrupt();

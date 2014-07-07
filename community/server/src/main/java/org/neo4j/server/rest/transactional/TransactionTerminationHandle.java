@@ -19,19 +19,7 @@
  */
 package org.neo4j.server.rest.transactional;
 
-import org.neo4j.graphdb.Transaction;
-
-public class TransactionInterruptor
+public interface TransactionTerminationHandle
 {
-    private final Transaction transaction;
-
-    public TransactionInterruptor( Transaction transaction )
-    {
-        this.transaction = transaction;
-    }
-
-    public void interrupt()
-    {
-        transaction.interrupt();
-    }
+    void terminate();
 }

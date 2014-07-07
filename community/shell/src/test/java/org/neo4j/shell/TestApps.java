@@ -999,7 +999,7 @@ public class TestApps extends AbstractShellTest
                 try
                 {
                     Thread.sleep(100);
-                    server.interrupt( clientId );
+                    server.terminate( clientId );
                 }
                 catch ( Exception e )
                 {

@@ -19,7 +19,6 @@
  */
 package org.neo4j.server.rest.web;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -38,15 +37,12 @@ import javax.ws.rs.core.StreamingOutput;
 import javax.ws.rs.core.UriBuilder;
 import javax.ws.rs.core.UriInfo;
 
-import org.eclipse.jetty.io.EofException;
-
 import org.neo4j.server.rest.transactional.ExecutionResultSerializer;
 import org.neo4j.server.rest.transactional.TransactionFacade;
 import org.neo4j.server.rest.transactional.TransactionHandle;
-import org.neo4j.server.rest.transactional.TransactionInterruptHandle;
+import org.neo4j.server.rest.transactional.TransactionTerminationHandle;
 import org.neo4j.server.rest.transactional.error.Neo4jError;
 import org.neo4j.server.rest.transactional.error.TransactionLifecycleException;
-import org.neo4j.shell.Output;
 
 import static java.util.Arrays.asList;
 
@@ -138,39 +134,21 @@ public class TransactionalService
         return okResponseWithTxInfo( transactionHandle, streamingResults );
     }
 
-    @POST
-    @Path("/{id}/interrupt")
+    @DELETE
+    @Path("/{id}")
     @Consumes({MediaType.APPLICATION_JSON})
-    @Produces({MediaType.APPLICATION_JSON})
-    public Response interruptTransaction( @PathParam("id") final long id, final InputStream input )
+    public Response rollbackTransaction( @PathParam("id") final long id )
     {
         try
         {
-            TransactionInterruptHandle interruptHandle = facade.findTransactionInterruptHandle( id );
-            interruptHandle.interrupt();
+            TransactionTerminationHandle interruptHandle = facade.findTransactionInterruptHandle( id );
+            interruptHandle.terminate();
         }
         catch ( TransactionLifecycleException e )
         {
             return invalidTransaction( e );
         }
         return Response.ok().build();
-    }
-
-    @DELETE
-    @Path("/{id}")
-    @Consumes({MediaType.APPLICATION_JSON})
-    public Response rollbackTransaction( @PathParam("id") final long id )
-    {
-        final TransactionHandle transactionHandle;
-        try
-        {
-            transactionHandle = facade.findTransactionHandle( id );
-        }
-        catch ( TransactionLifecycleException e )
-        {
-            return invalidTransaction( e );
-        }
-        return okResponse( rollback( transactionHandle ) );
     }
 
     private Response invalidTransaction( TransactionLifecycleException e )
@@ -289,9 +267,9 @@ public class TransactionalService
 
     private class InterruptingOutputStream extends OutputStream {
         private final OutputStream delegate;
-        private final TransactionInterruptHandle interruptHandle;
+        private final TransactionTerminationHandle interruptHandle;
 
-        private InterruptingOutputStream( OutputStream delegate, TransactionInterruptHandle interruptHandle )
+        private InterruptingOutputStream( OutputStream delegate, TransactionTerminationHandle interruptHandle )
         {
             this.delegate = delegate;
             this.interruptHandle = interruptHandle;
@@ -369,7 +347,7 @@ public class TransactionalService
 
         private void interrupt()
         {
-            interruptHandle.interrupt();
+            interruptHandle.terminate();
         }
     }
 }

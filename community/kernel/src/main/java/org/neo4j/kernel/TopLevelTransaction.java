@@ -97,9 +97,9 @@ public class TopLevelTransaction implements Transaction
     }
 
     @Override
-    public final void interrupt()
+    public final void terminate()
     {
-        this.transaction.markForInterrupt();
+        this.transaction.markForTermination();
     }
 
     @Override

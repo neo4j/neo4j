@@ -26,12 +26,12 @@ import org.neo4j.kernel.impl.core.ThreadToStatementContextBridge;
 
 class TransitionalTxManagementKernelTransaction
 {
-    private final TransactionInterruptor txInterruptor;
+    private final TransactionTerminator txInterruptor;
     private final ThreadToStatementContextBridge bridge;
 
     private TopLevelTransaction suspendedTransaction;
 
-    TransitionalTxManagementKernelTransaction( TransactionInterruptor txInterruptor, ThreadToStatementContextBridge bridge )
+    TransitionalTxManagementKernelTransaction( TransactionTerminator txInterruptor, ThreadToStatementContextBridge bridge )
     {
         this.txInterruptor = txInterruptor;
         this.bridge = bridge;

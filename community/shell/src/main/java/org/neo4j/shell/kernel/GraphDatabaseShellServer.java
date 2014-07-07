@@ -98,12 +98,12 @@ public class GraphDatabaseShellServer extends AbstractAppServer
     }
 
     @Override
-    public void interrupt( Serializable clientId ) throws ShellException
+    public void terminate( Serializable clientId ) throws ShellException
     {
         TopLevelTransaction tx = clients.get( clientId );
         if ( tx != null )
         {
-            tx.interrupt();
+            tx.terminate();
         }
     }
 
