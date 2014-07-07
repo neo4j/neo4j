@@ -19,13 +19,12 @@
  */
 package org.neo4j.visualization.graphviz;
 
-import static java.util.Arrays.asList;
-
 import java.io.ByteArrayOutputStream;
 import java.io.OutputStream;
 
 import org.junit.Rule;
 import org.junit.Test;
+
 import org.neo4j.graphdb.GraphDatabaseService;
 import org.neo4j.graphdb.Node;
 import org.neo4j.graphdb.Relationship;
@@ -34,6 +33,8 @@ import org.neo4j.graphdb.Transaction;
 import org.neo4j.test.DatabaseRule;
 import org.neo4j.test.ImpermanentDatabaseRule;
 import org.neo4j.visualization.SubgraphMapper;
+
+import static java.util.Arrays.asList;
 
 public class TestGraphvizSubgraphOutput
 {

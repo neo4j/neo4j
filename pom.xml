@@ -479,25 +479,14 @@ public class ComponentVersion extends Version
         <version>${powermock.version}</version>
         <scope>test</scope>
       </dependency>
-      <dependency>
-        <groupId>org.jmock</groupId>
-        <artifactId>jmock</artifactId>
-        <version>2.6.0</version>
-        <scope>test</scope>
-      </dependency>
-      <dependency>
-        <groupId>org.jmock</groupId>
-        <artifactId>jmock-junit4</artifactId>
-        <version>2.6.0</version>
-        <!-- 2.6.0 ? -->
-        <scope>test</scope>
-      </dependency>
+<!--
       <dependency>
         <groupId>org.ow2.jotm</groupId>
         <artifactId>jotm-core</artifactId>
         <version>2.2.3</version>
         <scope>test</scope>
       </dependency>
+-->
       <dependency>
         <groupId>geronimo-spec</groupId>
         <artifactId>geronimo-spec-j2ee</artifactId>
