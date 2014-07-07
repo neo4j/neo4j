@@ -197,8 +197,7 @@ public class StoreMigratorIT
             // The dataset has been specifically constructed such that these two transactions are
             // contained in the last transaction log:
             InMemoryLogBuffer buf = new InMemoryLogBuffer();
-            LogExtractor logExtractor = logicalLog.getLogExtractor( 5, 6 );
-            try
+            try ( LogExtractor logExtractor = logicalLog.getLogExtractor( 5, 6 ) )
             {
                 // The first transaction must have the correct checksum
                 assertThat( logExtractor.extractNext( buf ), is( 5L ) );
@@ -214,10 +213,6 @@ public class StoreMigratorIT
 
                 // And then we reach the end of the file
                 assertThat( logExtractor.extractNext( buf ), is( -1L ) );
-            }
-            finally
-            {
-                logExtractor.close();
             }
         }
         finally
