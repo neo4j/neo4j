@@ -31,13 +31,12 @@ import org.neo4j.kernel.impl.nioneo.store.PropertyStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipGroupStore;
 import org.neo4j.kernel.impl.nioneo.store.RelationshipStore;
 import org.neo4j.kernel.impl.nioneo.store.StoreFactory;
-import org.neo4j.kernel.impl.pagecache.LifecycledPageCache;
-import org.neo4j.kernel.impl.util.Neo4jJobScheduler;
 import org.neo4j.kernel.impl.util.StringLogger;
 import org.neo4j.kernel.lifecycle.LifeSupport;
 import org.neo4j.kernel.logging.Logging;
 import org.neo4j.kernel.monitoring.Monitors;
 import org.neo4j.unsafe.impl.batchimport.Configuration;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.Mode;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingLabelTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingPropertyKeyTokenRepository;
 import org.neo4j.unsafe.impl.batchimport.store.BatchingTokenRepository.BatchingRelationshipTypeTokenRepository;
@@ -47,12 +46,13 @@ import static java.lang.String.valueOf;
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.dense_node_threshold;
 import static org.neo4j.helpers.collection.MapUtil.stringMap;
 import static org.neo4j.kernel.impl.nioneo.store.StoreFactory.configForStoreDir;
+import static org.neo4j.unsafe.impl.batchimport.store.BatchingPageCache.SYNCHRONOUS;
 
 /**
  * Creator and accessor of {@link NeoStore} with some logic to provide very batch friendly services to the
  * {@link NeoStore} when instantiating it. Different services for specific purposes.
  */
-public class BatchFriendlyNeoStore implements AutoCloseable
+public class BatchingNeoStore implements AutoCloseable
 {
     private final LifeSupport life = new LifeSupport();
     private final ChannelReusingFileSystemAbstraction fileSystem;
@@ -63,12 +63,15 @@ public class BatchFriendlyNeoStore implements AutoCloseable
     private final BatchingRelationshipTypeTokenRepository relationshipTypeRepository;
     private final StringLogger logger;
     private final Config neo4jConfig;
-    private final LifecycledPageCache pageCache;
+    private final Configuration config;
+    private final Monitor writeMonitor;
 
-    public BatchFriendlyNeoStore( FileSystemAbstraction fileSystem, String storeDir,
-                                  Configuration config, Logging logging, Monitors monitors )
+    public BatchingNeoStore( FileSystemAbstraction fileSystem, String storeDir,
+                                  Configuration config, Logging logging, Monitors monitors, Monitor writeMonitor )
     {
+        this.config = config;
         this.monitors = monitors;
+        this.writeMonitor = writeMonitor;
         this.fileSystem = life.add( new ChannelReusingFileSystemAbstraction( fileSystem ) );
 
         this.logger = logging.getMessagesLog( getClass() );
@@ -76,10 +79,8 @@ public class BatchFriendlyNeoStore implements AutoCloseable
                 new Config( stringMap( dense_node_threshold.name(), valueOf( config.denseNodeThreshold() ) ),
                         GraphDatabaseSettings.class ),
                 new File( storeDir ) );
-        Neo4jJobScheduler jobScheduler = life.add( new Neo4jJobScheduler() );
-        pageCache = life.add( new LifecycledPageCache( fileSystem, jobScheduler, neo4jConfig ) );
 
-        this.neoStore = newBatchWritingNeoStore( pageCache );
+        this.neoStore = newBatchWritingNeoStore();
         this.propertyKeyRepository = new BatchingPropertyKeyTokenRepository( neoStore.getPropertyKeyTokenStore() );
         this.labelRepository = new BatchingLabelTokenRepository( neoStore.getLabelTokenStore() );
         this.relationshipTypeRepository =
@@ -94,9 +95,26 @@ public class BatchFriendlyNeoStore implements AutoCloseable
         return storeFactory.newNeoStore( true );
     }
 
-    private NeoStore newBatchWritingNeoStore( PageCache pageCache )
+    private NeoStore newBatchWritingNeoStore()
     {
-        return newNeoStore( pageCache );
+        return newNeoStore( batchingPageCache( Mode.APPEND_ONLY ) );
+    }
+
+    private BatchingPageCache batchingPageCache( Mode mode )
+    {
+        return new BatchingPageCache( fileSystem, config.fileChannelBufferSize(),
+                SYNCHRONOUS, writeMonitor, mode );
+    }
+
+    private NeoStore newReverseUpdatingNeoStore()
+    {
+        TailoredPageCache factory = new TailoredPageCache( batchingPageCache( Mode.APPEND_ONLY ) );
+
+        PageCache batchUpdatingFactory = batchingPageCache( Mode.UPDATE );
+        factory.override( StoreFactory.NODE_STORE_NAME, batchUpdatingFactory );
+        factory.override( StoreFactory.RELATIONSHIP_STORE_NAME, batchUpdatingFactory );
+
+        return newNeoStore( factory );
     }
 
     public NodeStore getNodeStore()
@@ -145,7 +163,7 @@ public class BatchFriendlyNeoStore implements AutoCloseable
         neoStore = null;
 
         // Open store optimized for reverse update batching
-        neoStore = newNeoStore( pageCache );
+        neoStore = newReverseUpdatingNeoStore();
     }
 
     public void flushAll()

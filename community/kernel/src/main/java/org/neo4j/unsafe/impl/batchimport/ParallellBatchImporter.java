@@ -42,7 +42,7 @@ import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.ExecutionMonitor;
 import org.neo4j.unsafe.impl.batchimport.staging.ProducerStep;
 import org.neo4j.unsafe.impl.batchimport.staging.Stage;
-import org.neo4j.unsafe.impl.batchimport.store.BatchFriendlyNeoStore;
+import org.neo4j.unsafe.impl.batchimport.store.BatchingNeoStore;
 import org.neo4j.unsafe.impl.batchimport.store.IoMonitor;
 
 import static org.neo4j.graphdb.factory.GraphDatabaseSettings.store_dir;
@@ -87,8 +87,8 @@ public class ParallellBatchImporter implements BatchImporter
     {
         // TODO log about import starting
 
-        try ( BatchFriendlyNeoStore neoStore = new BatchFriendlyNeoStore( fileSystem, storeDir, config,
-                logging, monitors ) )
+        try ( BatchingNeoStore neoStore = new BatchingNeoStore( fileSystem, storeDir, config,
+                logging, monitors, writeMonitor ) )
         {
             NodeIdMapper nodeIdMapper = nodeIdMapping.mapper( neoStore.getNodeStore() );
 
@@ -140,7 +140,7 @@ public class ParallellBatchImporter implements BatchImporter
 
     public class NodeStage extends Stage<Iterator<InputNode>>
     {
-        public NodeStage( Iterator<InputNode> input, BatchFriendlyNeoStore neoStore )
+        public NodeStage( Iterator<InputNode> input, BatchingNeoStore neoStore )
         {
             super( logging, "Nodes", config );
             input( new ProducerStep<InputNode>( control(), "INPUT", config.batchSize() ), input );
@@ -156,7 +156,7 @@ public class ParallellBatchImporter implements BatchImporter
     public class CalculateDenseNodesStage extends Stage<Iterator<InputRelationship>>
     {
         public CalculateDenseNodesStage( Iterator<InputRelationship> input,
-                BatchFriendlyNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
+                BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Calculate dense nodes", config );
             input( new ProducerStep<InputRelationship>( control(), "INPUT", config.batchSize() ), input );
@@ -167,7 +167,7 @@ public class ParallellBatchImporter implements BatchImporter
 
     public class RelationshipStage extends Stage<Iterator<InputRelationship>>
     {
-        public RelationshipStage( Iterable<InputRelationship> input, BatchFriendlyNeoStore neoStore,
+        public RelationshipStage( Iterable<InputRelationship> input, BatchingNeoStore neoStore,
                 NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Relationships", config );
@@ -184,7 +184,7 @@ public class ParallellBatchImporter implements BatchImporter
 
     public class NodeFirstRelationshipStage extends Stage<Void>
     {
-        public NodeFirstRelationshipStage( BatchFriendlyNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
+        public NodeFirstRelationshipStage( BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Node first rel", config );
             input( new NodeFirstRelationshipStep( control(), config.batchSize(),
@@ -194,7 +194,7 @@ public class ParallellBatchImporter implements BatchImporter
 
     public class RelationshipLinkbackStage extends Stage<Void>
     {
-        public RelationshipLinkbackStage( BatchFriendlyNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
+        public RelationshipLinkbackStage( BatchingNeoStore neoStore, NodeRelationshipLink nodeRelationshipLink )
         {
             super( logging, "Relationship back link", config );
             input( new RelationshipLinkbackStep( control(), config.batchSize(),

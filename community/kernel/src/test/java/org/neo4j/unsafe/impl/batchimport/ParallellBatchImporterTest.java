@@ -41,7 +41,6 @@ import org.neo4j.unsafe.impl.batchimport.input.InputNode;
 import org.neo4j.unsafe.impl.batchimport.input.InputRelationship;
 import org.neo4j.unsafe.impl.batchimport.staging.DetailedExecutionMonitor;
 
-//@Ignore
 public class ParallellBatchImporterTest
 {
     private static final long seed = 12345L;
