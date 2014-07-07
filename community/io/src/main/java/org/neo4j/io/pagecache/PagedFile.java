@@ -61,4 +61,6 @@ public interface PagedFile
 
     /** Force all changes to this file handle down to disk. Does not flush dirty pages. */
     void force() throws IOException;
+
+    long getLastPageId() throws IOException;
 }

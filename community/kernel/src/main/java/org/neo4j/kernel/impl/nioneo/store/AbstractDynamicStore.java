@@ -33,7 +33,6 @@ import org.neo4j.helpers.Pair;
 import org.neo4j.helpers.UTF8;
 import org.neo4j.helpers.collection.IteratorUtil;
 import org.neo4j.io.fs.FileSystemAbstraction;
-import org.neo4j.io.fs.StoreChannel;
 import org.neo4j.io.pagecache.PageCache;
 import org.neo4j.io.pagecache.PageCursor;
 import org.neo4j.kernel.IdGeneratorFactory;
@@ -449,11 +448,6 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         }
     }
 
-    protected boolean isRecordInUse( ByteBuffer buffer )
-    {
-        return ( ( buffer.get() & (byte) 0xF0 ) >> 4 ) == Record.IN_USE.byteValue();
-    }
-
     @Override
     public DynamicRecord getRecord( long id )
     {
@@ -563,106 +557,22 @@ public abstract class AbstractDynamicStore extends CommonAbstractStore implement
         return buffer;
     }
 
-    private long findHighIdBackwards() throws IOException
+    @Override
+    protected boolean isInUse( byte inUseByte )
     {
-        StoreChannel fileChannel = getFileChannel();
-        int recordSize = getBlockSize();
-        long fileSize = fileChannel.size();
-        long highId = fileSize / recordSize;
-        ByteBuffer byteBuffer = ByteBuffer.allocate( 1 );
-        for ( long i = highId; i > 0; i-- )
-        {
-            fileChannel.position( i * recordSize );
-            if ( fileChannel.read( byteBuffer ) > 0 )
-            {
-                byteBuffer.flip();
-                boolean isInUse = isRecordInUse( byteBuffer );
-                byteBuffer.clear();
-                if ( isInUse )
-                {
-                    return i;
-                }
-            }
-        }
-        return 0;
+        return ( ( inUseByte & (byte) 0xF0 ) >> 4 ) == Record.IN_USE.byteValue();
     }
 
-    /**
-     * Rebuilds the internal id generator keeping track of what blocks are free
-     * or taken.
-     */
     @Override
-    protected void rebuildIdGenerator()
+    protected boolean useFastIdGeneratorRebuilding()
     {
-        if ( getBlockSize() <= 0 )
-        {
-            throw new InvalidRecordException( "Illegal blockSize: " +
-                getBlockSize() );
-        }
-        stringLogger.debug( "Rebuilding id generator for[" + getStorageFileName() + "] ..." );
-        closeIdGenerator();
-        File idFile = new File( getStorageFileName().getPath() + ".id" );
-        if ( fileSystemAbstraction.fileExists( idFile) )
-        {
-            boolean success = fileSystemAbstraction.deleteFile( idFile );
-            assert success : "Couldn't delete " + idFile.getPath() + ", still open?";
-        }
-        createIdGenerator( idFile);
-        openIdGenerator();
-        setHighId( 1 ); // reserved first block containing blockSize
-        StoreChannel fileChannel = getFileChannel();
-        long highId = 0;
-        long defraggedCount = 0;
-        try
-        {
-            long fileSize = fileChannel.size();
-            boolean fullRebuild = true;
+        return conf.get( Configuration.rebuild_idgenerators_fast );
+    }
 
-            if ( conf.get( Configuration.rebuild_idgenerators_fast ) )
-            {
-                fullRebuild = false;
-                highId = findHighIdBackwards();
-            }
-
-            ByteBuffer byteBuffer = ByteBuffer.wrap( new byte[1] );
-            LinkedList<Long> freeIdList = new LinkedList<>();
-            if ( fullRebuild )
-            {
-                for ( long i = 1; i * getBlockSize() < fileSize; i++ )
-                {
-                    fileChannel.position( i * getBlockSize() );
-                    byteBuffer.clear();
-                    fileChannel.read( byteBuffer );
-                    byteBuffer.flip();
-                    if ( !isRecordInUse( byteBuffer ) )
-                    {
-                        freeIdList.add( i );
-                    }
-                    else
-                    {
-                        highId = i;
-                        setHighId( highId + 1 );
-                        while ( !freeIdList.isEmpty() )
-                        {
-                            freeId( freeIdList.removeFirst() );
-                            defraggedCount++;
-                        }
-                    }
-                }
-            }
-        }
-        catch ( IOException e )
-        {
-            throw new UnderlyingStorageException(
-                "Unable to rebuild id generator " + getStorageFileName(), e );
-        }
-        setHighId( highId + 1 );
-        stringLogger.debug( "[" + getStorageFileName() + "] high id=" + getHighId()
-            + " (defragged=" + defraggedCount + ")" );
-        stringLogger.logMessage( getStorageFileName() + " rebuild id generator, highId=" + getHighId() +
-                " defragged count=" + defraggedCount, true );
-        closeIdGenerator();
-        openIdGenerator();
+    @Override
+    protected boolean firstRecordIsHeader()
+    {
+        return true;
     }
 
     @Override
