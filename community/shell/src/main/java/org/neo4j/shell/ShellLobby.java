@@ -67,6 +67,17 @@ public abstract class ShellLobby
     {
 	    return newClient( server, new HashMap<String, Serializable>(), signalHandler );
 	}
+
+    /**
+     * Creates a client and "starts" it, i.e. grabs the console prompt.
+     * @param server the server (in the same JVM) which the client will
+     * communicate with.
+     * @return the new shell client.
+     */
+    public static ShellClient newClient( ShellServer server ) throws ShellException
+    {
+        return newClient( server, new HashMap<String, Serializable>(), InterruptSignalHandler.getHandler() );
+    }
 	
     /**
      * Creates a client and "starts" it, i.e. grabs the console prompt.
@@ -74,9 +85,11 @@ public abstract class ShellLobby
      * communicate with.
      * @param initialSession the initial session variables the shell will have,
      * in addition to those provided by the server initially.
+     * @param signalHandler
      * @return the new shell client.
      */
-    public static ShellClient newClient( ShellServer server, Map<String, Serializable> initialSession, CtrlCHandler signalHandler ) throws ShellException
+    public static ShellClient newClient( ShellServer server, Map<String, Serializable> initialSession,
+                                         CtrlCHandler signalHandler ) throws ShellException
     {
         return new SameJvmClient( initialSession, server, signalHandler );
     }
