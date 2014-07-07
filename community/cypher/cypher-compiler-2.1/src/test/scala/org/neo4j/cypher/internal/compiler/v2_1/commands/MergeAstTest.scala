@@ -19,32 +19,24 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions._
-import values.{TokenType, KeyToken}
-import values.TokenType._
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import mutation._
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.TokenType._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, TokenType}
+import org.neo4j.cypher.internal.compiler.v2_1.mutation._
 
-class MergeAstTest extends Assertions {
+class MergeAstTest extends CypherFunSuite {
 
-  def mergeAst(patterns: Seq[AbstractPattern] = Seq.empty,
-               onActions: Seq[OnAction] = Seq.empty,
-               matches: Seq[Pattern] = Seq.empty,
-               create: Seq[UpdateAction] = Seq.empty) = MergeAst(patterns, onActions, matches, create)
-
-  @Test
-  def simple_node_without_labels_or_properties() {
+  test("simple_node_without_labels_or_properties") {
     // given
     val from = mergeAst(patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty)))
 
     // then
-    assert(from.nextStep() === Seq(MergeNodeAction(A, Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
+    from.nextStep() should equal(Seq(MergeNodeAction(A, Map.empty, Seq.empty, Seq.empty, Seq.empty, Seq.empty, None)))
   }
 
-  @Test
-  def node_with_labels() {
+  test("node_with_labels") {
     // given
     val from = mergeAst(patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq(KeyToken.Unresolved(labelName, Label)))))
 
@@ -58,15 +50,14 @@ class MergeAstTest extends Assertions {
       onMatch = Seq.empty,
       maybeNodeProducer = NO_PRODUCER)).head
 
-    assert(a === b)
+    a should equal(b)
   }
 
-  @Test
-  def node_with_properties() {
+  test("node_with_properties") {
     // given
     val from = mergeAst(patterns = Seq(ParsedEntity(A, Identifier(A), Map(propertyKey.name -> expression), Seq.empty)))
 
-    assert(from.nextStep() === Seq(MergeNodeAction(A,
+    from.nextStep() should equal(Seq(MergeNodeAction(A,
       props = Map(propertyKey -> expression),
       labels = Seq.empty,
       expectations = Seq(Equals(Property(Identifier(A), propertyKey), expression)),
@@ -75,15 +66,14 @@ class MergeAstTest extends Assertions {
       maybeNodeProducer = NO_PRODUCER)))
   }
 
-  @Test
-  def node_with_on_create() {
+  test("node_with_on_create") {
     // given MERGE A ON CREATE SET A.prop = exp
     val from = mergeAst(
       patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty)),
       onActions = Seq(OnAction(On.Create, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
 
     // then
-    assert(from.nextStep() === Seq(MergeNodeAction(A,
+    from.nextStep() should equal(Seq(MergeNodeAction(A,
       props = Map.empty,
       labels = Seq.empty,
       expectations = Seq.empty,
@@ -92,15 +82,14 @@ class MergeAstTest extends Assertions {
       maybeNodeProducer = NO_PRODUCER)))
   }
 
-  @Test
-  def node_with_on_match() {
+  test("node_with_on_match") {
     // given MERGE A ON MATCH SET A.prop = exp
     val from = mergeAst(
       patterns = Seq(ParsedEntity(A, Identifier(A), Map.empty, Seq.empty)),
       onActions = Seq(OnAction(On.Match, Seq(PropertySetAction(Property(Identifier(A), propertyKey), expression)))))
 
     // then
-    assert(from.nextStep() === Seq(MergeNodeAction(A,
+    from.nextStep() should equal(Seq(MergeNodeAction(A,
       props = Map.empty,
       labels = Seq.empty,
       expectations = Seq.empty,
@@ -123,4 +112,8 @@ class MergeAstTest extends Assertions {
 
   def setProperty(id: String) = PropertySetAction(Property(Identifier(id), propertyKey), expression)
 
+  def mergeAst(patterns: Seq[AbstractPattern] = Seq.empty,
+               onActions: Seq[OnAction] = Seq.empty,
+               matches: Seq[Pattern] = Seq.empty,
+               create: Seq[UpdateAction] = Seq.empty) = MergeAst(patterns, onActions, matches, create)
 }

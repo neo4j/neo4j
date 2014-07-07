@@ -19,19 +19,17 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.functions
 
-import org.junit.Test
 import org.neo4j.cypher.internal.compiler.v2_1.symbols._
+
 import scala.languageFeature.existentials
 
 class SplitTest extends FunctionTestBase("split")  {
 
-  @Test
-  def shouldAcceptCorrectTypes() {
+  test("shouldAcceptCorrectTypes") {
     testValidTypes(CTString,CTString)(CTCollection(CTString))
   }
 
-  @Test
-  def shouldFailTypeCheckForIncompatibleArguments() {
+  test("shouldFailTypeCheckForIncompatibleArguments") {
     testInvalidApplication(CTString, CTBoolean)(
       "Type mismatch: expected String but was Boolean"
     )
@@ -41,8 +39,7 @@ class SplitTest extends FunctionTestBase("split")  {
     )
   }
 
-  @Test
-  def shouldFailIfWrongNumberOfArguments() {
+  test("shouldFailIfWrongNumberOfArguments") {
     testInvalidApplication()(
       "Insufficient parameters for function 'split'"
     )

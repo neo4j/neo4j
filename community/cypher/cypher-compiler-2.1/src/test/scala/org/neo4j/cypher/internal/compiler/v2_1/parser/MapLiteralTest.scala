@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import ast.convert.ExpressionConverters._
-import commands.{expressions => legacy}
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
 import org.parboiled.scala._
 
 class MapLiteralTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
   implicit val parserToTest = MapLiteral ~ EOI
 
-  @Test def literal_maps() {
+  test("literal_maps") {
     parsing("{ name: 'Andres' }") shouldGive
       legacy.LiteralMap(Map("name" -> legacy.Literal("Andres")))
 
@@ -39,7 +38,7 @@ class MapLiteralTest extends ParserTest[ast.Expression, legacy.Expression] with 
       legacy.LiteralMap(Map())
   }
 
-  @Test def nested_map_support() {
+  test("nested_map_support") {
     parsing("{ key: 'value' }") shouldGive
       legacy.LiteralMap(Map("key" -> legacy.Literal("value")))
 

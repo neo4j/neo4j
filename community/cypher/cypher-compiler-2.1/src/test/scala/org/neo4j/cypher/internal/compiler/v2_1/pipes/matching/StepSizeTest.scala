@@ -19,44 +19,43 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.matching
 
-import org.scalatest.Assertions
-import org.junit.Test
-import org.neo4j.graphdb.Direction
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1.commands.True
+import org.neo4j.graphdb.Direction
 
+class StepSizeTest extends CypherFunSuite {
 
-class StepSizeTest extends Assertions {
-  @Test def single_step_is_1() {
+  test("single_step_is_1") {
     val step = SingleStep(0, Seq(), Direction.OUTGOING, None, True(), True())
 
-    assert(step.size === Some(1))
+    step.size should equal(Some(1))
   }
 
-  @Test def two_single_step_is_2() {
+  test("two_single_step_is_2") {
     val second = SingleStep(1, Seq(), Direction.OUTGOING, None, True(), True())
     val step = SingleStep(0, Seq(), Direction.OUTGOING, Some(second), True(), True())
-    assert(step.size === Some(2))
+    step.size should equal(Some(2))
   }
 
-  @Test def unlimited_varlength_is_none() {
+  test("unlimited_varlength_is_none") {
     val step = VarLengthStep(0, Seq(), Direction.OUTGOING, 0, None, None, True(), True())
-    assert(step.size === None)
+    step.size should equal(None)
   }
 
-  @Test def limited_varlength_is_max() {
+  test("limited_varlength_is_max") {
     val step = VarLengthStep(0, Seq(), Direction.OUTGOING, 0, Some(42), None, True(), True())
-    assert(step.size === Some(42))
+    step.size should equal(Some(42))
   }
 
-  @Test def limited_varlength_plus_unlimited_is_none() {
+  test("limited_varlength_plus_unlimited_is_none") {
     val second = VarLengthStep(01, Seq(), Direction.OUTGOING, 0, None, None, True(), True())
     val step = VarLengthStep(0, Seq(), Direction.OUTGOING, 0, Some(42), Some(second), True(), True())
-    assert(step.size === None)
+    step.size should equal(None)
   }
 
-  @Test def limited_varlength_plus_single_step_is_max_plus_1() {
+  test("limited_varlength_plus_single_step_is_max_plus_1") {
     val second = SingleStep(1, Seq(), Direction.OUTGOING, None, True(), True())
     val step = VarLengthStep(0, Seq(), Direction.OUTGOING, 0, Some(42), Some(second), True(), True())
-    assert(step.size === Some(43))
+    step.size should equal(Some(43))
   }
 }

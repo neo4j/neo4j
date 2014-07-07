@@ -20,15 +20,14 @@
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import ast.convert.ExpressionConverters._
-import commands.{expressions => legacy}
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.ExpressionConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.{expressions => legacy}
 import org.parboiled.scala._
 
 class CaseExpressionTest extends ParserTest[ast.Expression, legacy.Expression] with Expressions {
   implicit val parserToTest = CaseExpression ~ EOI
 
-  @Test def simple_cases() {
+  test("simple_cases") {
     parsing("CASE 1 WHEN 1 THEN 'ONE' END") shouldGive
       legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE"))), None)
 
@@ -48,7 +47,7 @@ class CaseExpressionTest extends ParserTest[ast.Expression, legacy.Expression] w
       legacy.SimpleCase(legacy.Literal(1), Seq((legacy.Literal(1), legacy.Literal("ONE")), (legacy.Literal(2), legacy.Literal("TWO"))), Some(legacy.Literal("DEFAULT")))
   }
 
-  @Test def generic_cases() {
+  test("generic_cases") {
     parsing("CASE WHEN true THEN 'ONE' END") shouldGive
       legacy.GenericCase(Seq((commands.True(), legacy.Literal("ONE"))), None)
 

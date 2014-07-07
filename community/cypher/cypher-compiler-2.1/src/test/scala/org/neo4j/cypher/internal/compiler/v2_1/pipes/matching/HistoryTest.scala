@@ -19,18 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.matching
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.graphdb.{Relationship, DynamicRelationshipType, Direction}
-import org.scalatest.Assertions
-import org.junit.Test
-import org.junit.Assert._
-import org.scalatest.mock.MockitoSugar
+import org.neo4j.graphdb.{Direction, DynamicRelationshipType, Relationship}
 
-class HistoryTest extends Assertions with MockitoSugar {
+class HistoryTest extends CypherFunSuite {
 
   val typ = DynamicRelationshipType.withName("REL")
 
-  @Test def excludingPatternRelsWorksAsExpected() {
+  test("excludingPatternRelsWorksAsExpected") {
     val a = new PatternNode("a")
     val b = new PatternNode("b")
     val pr: PatternRelationship = a.relateTo("r", b, Seq(), Direction.BOTH)
@@ -38,18 +35,18 @@ class HistoryTest extends Assertions with MockitoSugar {
     val mp = new MatchingPair(pr, r)
     val history = new InitialHistory(ExecutionContext.empty, Seq.empty).add(mp)
 
-    assert(history.removeSeen(Set[PatternRelationship](pr)) === Set())
+    history.removeSeen(Set[PatternRelationship](pr)) shouldBe empty
   }
 
-  @Test def should_known_that_it_has_seen_a_relationship() {
+  test("should_known_that_it_has_seen_a_relationship") {
     val r = mock[Relationship]
     val history = new InitialHistory(ExecutionContext.empty, Seq(r))
-    assertTrue("Expected relationship to already have been seen " + r, history.hasSeen(r))
+    history.hasSeen(r) should equal(true)
   }
 
-  @Test def should_know_that_it_has_not_seen_a_relationship() {
+  test("should_know_that_it_has_not_seen_a_relationship") {
     val r = mock[Relationship]
     val history = new InitialHistory(ExecutionContext.empty, Seq.empty)
-    assertFalse("Expected relationship to not have been seen " + r, history.hasSeen(r))
+    history.hasSeen(r) should equal(false)
   }
 }

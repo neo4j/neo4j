@@ -19,41 +19,36 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
-import org.scalatest.Assertions
-import org.junit.Assert._
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class CollectionSliceTest extends Assertions {
+class CollectionSliceTest extends CypherFunSuite {
   val dummyCollection = DummyExpression(
     CTCollection(CTNode) | CTNode | CTCollection(CTString))
 
-  @Test
-  def shouldReturnCollectionTypesOfExpression() {
+  test("shouldReturnCollectionTypesOfExpression") {
     val slice = CollectionSlice(dummyCollection,
       Some(SignedDecimalIntegerLiteral("1")(DummyPosition(5))),
       Some(SignedDecimalIntegerLiteral("2")(DummyPosition(7)))
     )(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(), result.errors)
-    assertEquals(CTCollection(CTNode) | CTCollection(CTString), slice.types(result.state))
+    result.errors shouldBe empty
+    slice.types(result.state) should equal(CTCollection(CTNode) | CTCollection(CTString))
   }
 
-  @Test
-  def shouldRaiseErrorWhenNeitherFromOrTwoSpecified() {
+  test("shouldRaiseErrorWhenNeitherFromOrTwoSpecified") {
     val slice = CollectionSlice(dummyCollection,
       None,
       None
     )(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("The start or end (or both) is required for a collection slice", slice.position)), result.errors)
+    result.errors should equal(Seq(SemanticError("The start or end (or both) is required for a collection slice", slice.position)))
   }
 
-  @Test
-  def shouldRaiseErrorIfStartingFromFraction() {
+  test("shouldRaiseErrorIfStartingFromFraction") {
     val to = DecimalDoubleLiteral("1.3")(DummyPosition(5))
     val slice = CollectionSlice(dummyCollection,
       None,
@@ -61,6 +56,6 @@ class CollectionSliceTest extends Assertions {
     )(DummyPosition(4))
 
     val result = slice.semanticCheck(Expression.SemanticContext.Simple)(SemanticState.clean)
-    assertEquals(Seq(SemanticError("Type mismatch: expected Integer but was Float", to.position)), result.errors)
+    result.errors should equal(Seq(SemanticError("Type mismatch: expected Integer but was Float", to.position)))
   }
 }

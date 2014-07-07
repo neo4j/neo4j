@@ -20,28 +20,23 @@
 package org.neo4j.cypher.internal.compiler.v2_1.ast
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import symbols._
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
 class LessThanOrEqualTest extends InfixExpressionTestBase(LessThanOrEqual(_, _)(DummyPosition(0))) {
 
-  @Test
-  def shouldSupportComparingIntegers() {
+  test("shouldSupportComparingIntegers") {
     testValidTypes(CTInteger, CTInteger)(CTBoolean)
   }
 
-  @Test
-  def shouldSupportComparingDoubles() {
+  test("shouldSupportComparingDoubles") {
     testValidTypes(CTFloat, CTFloat)(CTBoolean)
   }
 
-  @Test
-  def shouldSupportComparingStrings() {
+  test("shouldSupportComparingStrings") {
     testValidTypes(CTString, CTString)(CTBoolean)
   }
 
-  @Test
-  def shouldReturnErrorIfInvalidArgumentTypes() {
+  test("shouldReturnErrorIfInvalidArgumentTypes") {
     testInvalidApplication(CTNode, CTInteger)("Type mismatch: expected Float, Integer or String but was Node")
     testInvalidApplication(CTInteger, CTNode)("Type mismatch: expected Integer but was Node")
   }

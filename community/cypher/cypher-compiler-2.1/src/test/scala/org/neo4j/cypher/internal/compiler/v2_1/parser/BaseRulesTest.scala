@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import org.junit.Test
 import org.parboiled.scala._
 
 class BaseRulesTest extends ParserTest[Any, Any] with Base {
 
-  @Test def testWhitespaceHandling() {
+  test("testWhitespaceHandling") {
     implicit val parserToTest: Rule1[Boolean] = "a" ~ WS ~ "b" ~ push(true)
 
     parsing("a b") shouldGive true

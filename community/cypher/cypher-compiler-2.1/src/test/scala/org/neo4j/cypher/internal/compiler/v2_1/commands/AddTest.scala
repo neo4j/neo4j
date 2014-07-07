@@ -19,44 +19,45 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions.{Literal, Add}
-import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.QueryStateHelper
 import org.neo4j.cypher.CypherTypeException
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Add, Literal}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-class AddTest extends Assertions {
+class AddTest extends CypherFunSuite {
 
   val m = ExecutionContext.empty
   val s = QueryStateHelper.empty
 
-  @Test def numbers() {
+  test("numbers") {
     val expr = Add(Literal(1), Literal(1))
-    assert(expr(m)(s) === 2)
+    expr(m)(s) should equal(2)
   }
 
-  @Test def with_null() {
-    assert(Add(Literal(null), Literal(1))(m)(s) === null)
-    assert(Add(Literal(2), Literal(null))(m)(s) === null)
+  test("with_null") {
+    val expected = null.asInstanceOf[Any]
+
+    Add(Literal(null), Literal(1))(m)(s) should equal(expected)
+    Add(Literal(2), Literal(null))(m)(s) should equal(expected)
   }
 
-  @Test def strings() {
+  test("strings") {
     val expr = Add(Literal("hello"), Literal("world"))
-    assert(expr(m)(s) === "helloworld")
+    expr(m)(s) should equal("helloworld")
   }
 
-  @Test def stringPlusNumber() {
+  test("stringPlusNumber") {
     val expr = Add(Literal("hello"), Literal(1))
-    assert(expr(m)(s) === "hello1")
+    expr(m)(s) should equal("hello1")
   }
 
-  @Test def numberPlusString() {
+  test("numberPlusString") {
     val expr = Add(Literal(1), Literal("world"))
-    assert(expr(m)(s) === "1world")
+    expr(m)(s) should equal("1world")
   }
 
-  @Test def numberPlusBool() {
+  test("numberPlusBool") {
     val expr = Add(Literal("1"), Literal(true))
     intercept[CypherTypeException](expr(m)(s))
   }

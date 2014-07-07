@@ -19,23 +19,18 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.prepare
 
-import org.junit.Test
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.BuilderTest
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PlanBuilder
-import org.neo4j.cypher.internal.compiler.v2_1.commands._
-import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, TokenType, UnresolvedLabel}
-import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
-import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
-import org.scalatest.mock.MockitoSugar
 import org.mockito.Mockito._
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.commands.SingleNode
+import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.Identifier
 import org.neo4j.cypher.internal.compiler.v2_1.commands.values.KeyToken.Resolved
-import org.neo4j.cypher.internal.compiler.v2_1.commands.HasLabel
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.Unsolved
-import org.neo4j.cypher.internal.compiler.v2_1.mutation.{NamedExpectation, UniqueLink, CreateUniqueAction}
+import org.neo4j.cypher.internal.compiler.v2_1.commands.values.{KeyToken, TokenType, UnresolvedLabel}
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PlanBuilder
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders.{BuilderTest, Unsolved}
+import org.neo4j.cypher.internal.compiler.v2_1.mutation.{CreateUniqueAction, NamedExpectation, UniqueLink}
+import org.neo4j.cypher.internal.compiler.v2_1.spi.PlanContext
+import org.neo4j.graphdb.Direction
 
-class KeyTokenResolverTest extends BuilderTest with MockitoSugar {
+class KeyTokenResolverTest extends BuilderTest {
 
   val builder: PlanBuilder = new KeyTokenResolver
   context = mock[PlanContext]
@@ -46,15 +41,13 @@ class KeyTokenResolverTest extends BuilderTest with MockitoSugar {
   when(context.getOptLabelId("Foo")).thenReturn(Some(0))
   when(context.getOptLabelId("Bar")).thenReturn(Some(1))
 
-  @Test
-  def should_not_accept_empty_query() {
+  test("should_not_accept_empty_query") {
     val q = Query.empty
 
     assertRejects(q)
   }
 
-  @Test
-  def should_resolve_label_keytoken_on_label_predicate() {
+  test("should_resolve_label_keytoken_on_label_predicate") {
     val q = Query.
       matches(SingleNode("a")).
       where(HasLabel(Identifier("a"), unresolvedFoo)).
@@ -62,51 +55,46 @@ class KeyTokenResolverTest extends BuilderTest with MockitoSugar {
 
     val result = assertAccepts(q)
 
-    assert(result.query.where === Seq(Unsolved(HasLabel(Identifier("a"), resolvedFoo))))
+    result.query.where should equal(Seq(Unsolved(HasLabel(Identifier("a"), resolvedFoo))))
   }
 
-  @Test
-  def should_resolve_label_keytoken_on_single_node_pattern() {
+  test("should_resolve_label_keytoken_on_single_node_pattern") {
     val q = Query.
       matches(SingleNode("a", Seq(unresolvedFoo))).
       returns()
 
     val result = assertAccepts(q)
-    assert(result.query.patterns === Seq(Unsolved(SingleNode("a", Seq(resolvedFoo)))))
+    result.query.patterns should equal(Seq(Unsolved(SingleNode("a", Seq(resolvedFoo)))))
   }
 
-  @Test
-  def should_resolve_label_keytoken_on_related_to_pattern() {
+  test("should_resolve_label_keytoken_on_related_to_pattern") {
     val q = Query.
       matches(RelatedTo(SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, Map.empty)).
       returns()
 
     val result = assertAccepts(q)
-    assert(result.query.patterns === Seq(Unsolved(RelatedTo(SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, Map.empty))))
+    result.query.patterns should equal(Seq(Unsolved(RelatedTo(SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), "r", Seq("KNOWS"), Direction.OUTGOING, Map.empty))))
   }
 
-  @Test
-  def should_resolve_label_keytoken_on_var_length_pattern() {
+  test("should_resolve_label_keytoken_on_var_length_pattern") {
     val q = Query.
       matches(VarLengthRelatedTo("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), None, None, Seq.empty, Direction.OUTGOING, None, Map.empty)).
       returns()
 
     val result = assertAccepts(q)
-    assert(result.query.patterns === Seq(Unsolved(VarLengthRelatedTo("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), None, None, Seq.empty, Direction.OUTGOING, None, Map.empty))))
+    result.query.patterns should equal(Seq(Unsolved(VarLengthRelatedTo("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), None, None, Seq.empty, Direction.OUTGOING, None, Map.empty))))
   }
 
-  @Test
-  def should_resolve_label_keytoken_on_shortest_path_length_pattern() {
+  test("should_resolve_label_keytoken_on_shortest_path_length_pattern") {
     val q = Query.
       matches(ShortestPath("p", SingleNode("a", Seq(unresolvedFoo)), SingleNode("b", Seq(unresolvedBar)), Seq.empty, Direction.OUTGOING, None, single = false, relIterator = None)).
       returns()
 
     val result = assertAccepts(q)
-    assert(result.query.patterns === Seq(Unsolved(ShortestPath("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), Seq.empty, Direction.OUTGOING, None, single = false, relIterator = None))))
+    result.query.patterns should equal(Seq(Unsolved(ShortestPath("p", SingleNode("a", Seq(resolvedFoo)), SingleNode("b", Seq(resolvedBar)), Seq.empty, Direction.OUTGOING, None, single = false, relIterator = None))))
   }
 
-  @Test
-  def should_resolve_label_keytoken_on_unique_link_pattern() {
+  test("should_resolve_label_keytoken_on_unique_link_pattern") {
     val aNode = NamedExpectation("a", properties = Map.empty, Seq(unresolvedFoo))
     val bNode = NamedExpectation("b", properties = Map.empty, Seq(unresolvedBar))
     val rel = NamedExpectation("r")
@@ -117,7 +105,7 @@ class KeyTokenResolverTest extends BuilderTest with MockitoSugar {
 
     val result = assertAccepts(q)
     val resolvedLink = UniqueLink(aNode.copy(labels = Seq(resolvedFoo)), bNode.copy(labels = Seq(resolvedBar)), rel, "KNOWS", Direction.OUTGOING)
-    assert(result.query.start === Seq(Unsolved(CreateUniqueStartItem(CreateUniqueAction(resolvedLink)))))
+    result.query.start should equal(Seq(Unsolved(CreateUniqueStartItem(CreateUniqueAction(resolvedLink)))))
   }
 
   private def labelToken(name: String, id: Int): (KeyToken, KeyToken) =

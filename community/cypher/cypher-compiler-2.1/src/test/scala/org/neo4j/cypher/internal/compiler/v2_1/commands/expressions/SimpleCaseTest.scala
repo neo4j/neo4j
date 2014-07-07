@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands.expressions
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.QueryStateHelper
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-class SimpleCaseTest extends Assertions {
-  @Test
-  def case_with_single_alternative_works() {
+class SimpleCaseTest extends CypherFunSuite {
+
+  test("case_with_single_alternative_works") {
     //GIVEN
     val caseExpr = case_(1,
       1 -> "one"
@@ -36,11 +35,10 @@ class SimpleCaseTest extends Assertions {
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
-    assert(result === "one")
+    result should equal("one")
   }
 
-  @Test
-  def case_with_two_alternatives_picks_the_second() {
+  test("case_with_two_alternatives_picks_the_second") {
     //GIVEN
     val caseExpr = case_(2,
       1 -> "one",
@@ -51,11 +49,10 @@ class SimpleCaseTest extends Assertions {
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
-    assert(result === "two")
+    result should equal("two")
   }
 
-  @Test
-  def case_with_no_match_returns_null() {
+  test("case_with_no_match_returns_null") {
     //GIVEN
     val caseExpr = case_(3,
       1 -> "one",
@@ -66,11 +63,10 @@ class SimpleCaseTest extends Assertions {
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
-    assert(result === null)
+    result should equal(null.asInstanceOf[Any])
   }
 
-  @Test
-  def case_with_no_match_returns_default() {
+  test("case_with_no_match_returns_default") {
     //GIVEN
     val caseExpr = case_(3,
       1 -> "one",
@@ -81,7 +77,7 @@ class SimpleCaseTest extends Assertions {
     val result = caseExpr(ExecutionContext.empty)(QueryStateHelper.empty)
 
     //THEN
-    assert(result === "default")
+    result should equal("default")
   }
 
   private def case_(in: Any, alternatives: (Any, Any)*): SimpleCase = {

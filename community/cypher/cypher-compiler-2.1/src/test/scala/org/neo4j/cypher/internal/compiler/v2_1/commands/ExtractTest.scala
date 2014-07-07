@@ -19,14 +19,13 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.commands
 
-import expressions.{ExtractFunction, Identifier, LengthFunction}
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import pipes.QueryStateHelper
-import org.scalatest.Assertions
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{ExtractFunction, Identifier, LengthFunction}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-class ExtractTest extends Assertions {
-  @Test def canReturnSomethingFromAnIterable() {
+class ExtractTest extends CypherFunSuite {
+  test("canReturnSomethingFromAnIterable") {
     val l = Seq("x", "xxx", "xx")
     val expression = LengthFunction(Identifier("n"))
     val collection = Identifier("l")
@@ -34,6 +33,6 @@ class ExtractTest extends Assertions {
 
     val extract = ExtractFunction(collection, "n", expression)
 
-    assert(extract.apply(m)(QueryStateHelper.empty) === Seq(1, 3, 2))
+    extract.apply(m)(QueryStateHelper.empty) should equal(Seq(1, 3, 2))
   }
 }

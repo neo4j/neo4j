@@ -19,13 +19,11 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.junit.Test
-import org.scalatest.Assertions
-import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-class QueryStateTest extends Assertions with MockitoSugar {
-  @Test
-  def should_keep_time_stamp() {
+class QueryStateTest extends CypherFunSuite {
+
+  test("should_keep_time_stamp") {
     //GIVEN
     val state = QueryStateHelper.empty
 
@@ -35,11 +33,10 @@ class QueryStateTest extends Assertions with MockitoSugar {
     val ts2 = state.readTimeStamp()
 
     //THEN
-    assert(ts1 === ts2, "Time has changed")
+    ts1 should equal(ts2)
   }
 
-  @Test
-  def case_class_copying_should_still_see_same_time() {
+  test("case_class_copying_should_still_see_same_time") {
     //GIVEN
     val state = QueryStateHelper.empty
 
@@ -48,13 +45,11 @@ class QueryStateTest extends Assertions with MockitoSugar {
     Thread.sleep(10)
     val stateCopy = state.copy(params = Map.empty)
 
-
     //THEN
-    assert(ts1 === stateCopy.readTimeStamp(), "Time has changed")
+    ts1 should equal(stateCopy.readTimeStamp())
   }
 
-  @Test
-  def if_state_is_copied_and_time_seen_in_one_querystate_it_should_be_reflected_in_copies() {
+  test("if_state_is_copied_and_time_seen_in_one_querystate_it_should_be_reflected_in_copies") {
     //GIVEN
     val state = QueryStateHelper.empty
 
@@ -63,8 +58,7 @@ class QueryStateTest extends Assertions with MockitoSugar {
     val ts1 = state.readTimeStamp()
     Thread.sleep(10)
 
-
     //THEN
-    assert(ts1 === stateCopy.readTimeStamp(), "Time has changed")
+    ts1 should equal(stateCopy.readTimeStamp())
   }
 }

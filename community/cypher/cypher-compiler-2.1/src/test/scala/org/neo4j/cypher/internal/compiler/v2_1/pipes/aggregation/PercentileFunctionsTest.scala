@@ -19,13 +19,12 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.aggregation
 
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.{Expression, Identifier, Literal, NumericHelper}
-import pipes.QueryStateHelper
-import org.junit.Test
-import org.junit.Assert._
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression, Identifier, Literal, NumericHelper}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-abstract class PercentileTest {
+trait PercentileTest {
   def createAggregator(inner: Expression, percentile: Expression): AggregationFunction
 
   def getPercentile(percentile: Double, values: List[Any]): Any = {
@@ -37,162 +36,162 @@ abstract class PercentileTest {
   }
 }
 
-class PercentileDiscTest extends PercentileTest {
+class PercentileDiscTest extends CypherFunSuite with PercentileTest {
   def createAggregator(inner: Expression, perc:Expression) = new PercentileDiscFunction(inner, perc)
 
-  @Test def singleOne() {
+  test("singleOne") {
     val values = List(1.0)
-    assertEquals(1.0, getPercentile(0.0, values))
-    assertEquals(1.0, getPercentile(0.50, values))
-    assertEquals(1.0, getPercentile(0.99, values))
-    assertEquals(1.0, getPercentile(1.00, values))
+    getPercentile(0.0, values) should equal(1.0)
+    getPercentile(0.50, values) should equal(1.0)
+    getPercentile(0.99, values) should equal(1.0)
+    getPercentile(1.00, values) should equal(1.0)
   }
 
-  @Test def manyOnes() {
+  test("manyOnes") {
     val values = List(1.0, 1.0)
-    assertEquals(1.0, getPercentile(0.0, values))
-    assertEquals(1.0, getPercentile(0.50, values))
-    assertEquals(1.0, getPercentile(0.99, values))
-    assertEquals(1.0, getPercentile(1.00, values))
+    getPercentile(0.0, values) should equal(1.0)
+    getPercentile(0.50, values) should equal(1.0)
+    getPercentile(0.99, values) should equal(1.0)
+    getPercentile(1.00, values) should equal(1.0)
   }
 
-  @Test def oneTwoThree() {
+  test("oneTwoThree") {
     val values = List(1.0, 2.0, 3.0)
-    assertEquals("0.00", 1.0, getPercentile(0.0, values))
-    assertEquals("0.25", 1.0, getPercentile(0.25, values))
-    assertEquals("0.33", 1.0, getPercentile(0.33, values))
-    assertEquals("0.50", 2.0, getPercentile(0.50, values))
-    assertEquals("0.66", 2.0, getPercentile(0.66, values))
-    assertEquals("0.75", 3.0, getPercentile(0.75, values))
-    assertEquals("0.99", 3.0, getPercentile(0.99, values))
-    assertEquals("1.00", 3.0, getPercentile(1.00, values))
+    getPercentile(0.0, values) should equal(1.0)
+    getPercentile(0.25, values) should equal(1.0)
+    getPercentile(0.33, values) should equal(1.0)
+    getPercentile(0.50, values) should equal(2.0)
+    getPercentile(0.66, values) should equal(2.0)
+    getPercentile(0.75, values) should equal(3.0)
+    getPercentile(0.99, values) should equal(3.0)
+    getPercentile(1.00, values) should equal(3.0)
   }
 
-  @Test def oneTwoThreeFour() {
+  test("oneTwoThreeFour") {
     val values = List(1.0, 2.0, 3.0, 4.0)
-    assertEquals("0.00", 1.0, getPercentile(0.0, values))
-    assertEquals("0.25", 1.0, getPercentile(0.25, values))
-    assertEquals("0.33", 2.0, getPercentile(0.33, values))
-    assertEquals("0.50", 2.0, getPercentile(0.50, values))
-    assertEquals("0.66", 3.0, getPercentile(0.66, values))
-    assertEquals("0.75", 3.0, getPercentile(0.75, values))
-    assertEquals("0.99", 4.0, getPercentile(0.99, values))
-    assertEquals("1.00", 4.0, getPercentile(1.00, values))
+    getPercentile(0.0, values) should equal(1.0)
+    getPercentile(0.25, values) should equal(1.0)
+    getPercentile(0.33, values) should equal(2.0)
+    getPercentile(0.50, values) should equal(2.0)
+    getPercentile(0.66, values) should equal(3.0)
+    getPercentile(0.75, values) should equal(3.0)
+    getPercentile(0.99, values) should equal(4.0)
+    getPercentile(1.00, values) should equal(4.0)
   }
 
-  @Test def oneTwoThreeFourFive() {
+  test("oneTwoThreeFourFive") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0)
-    assertEquals("0.0", 1.0, getPercentile(0.0, values))
-    assertEquals("0.25", 2.0, getPercentile(0.25, values))
-    assertEquals("0.33", 2.0, getPercentile(0.33, values))
-    assertEquals("0.50", 3.0, getPercentile(0.50, values))
-    assertEquals("0.66", 4.0, getPercentile(0.66, values))
-    assertEquals("0.75", 4.0, getPercentile(0.75, values))
-    assertEquals("0.99", 5.0, getPercentile(0.99, values))
-    assertEquals("1.00", 5.0, getPercentile(1.00, values))
+    getPercentile(0.0, values) should equal(1.0)
+    getPercentile(0.25, values) should equal(2.0)
+    getPercentile(0.33, values) should equal(2.0)
+    getPercentile(0.50, values) should equal(3.0)
+    getPercentile(0.66, values) should equal(4.0)
+    getPercentile(0.75, values) should equal(4.0)
+    getPercentile(0.99, values) should equal(5.0)
+    getPercentile(1.00, values) should equal(5.0)
   }
 
-  @Test def oneTwoThreeFourFiveSix() {
+  test("oneTwoThreeFourFiveSix") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
-    assertEquals("0.0", 1.0, getPercentile(0.0, values))
-    assertEquals("0.25", 2.0, getPercentile(0.25, values))
-    assertEquals("0.33", 2.0, getPercentile(0.33, values))
-    assertEquals("0.50", 3.0, getPercentile(0.50, values))
-    assertEquals("0.66", 4.0, getPercentile(0.66, values))
-    assertEquals("0.75", 5.0, getPercentile(0.75, values))
-    assertEquals("0.99", 6.0, getPercentile(0.99, values))
-    assertEquals("1.00", 6.0, getPercentile(1.00, values))
+    getPercentile(0.0, values) should equal(1.0)
+    getPercentile(0.25, values) should equal(2.0)
+    getPercentile(0.33, values) should equal(2.0)
+    getPercentile(0.50, values) should equal(3.0)
+    getPercentile(0.66, values) should equal(4.0)
+    getPercentile(0.75, values) should equal(5.0)
+    getPercentile(0.99, values) should equal(6.0)
+    getPercentile(1.00, values) should equal(6.0)
   }
 
-  @Test def oneTwoThreeFourFiveSixSeven() {
+  test("oneTwoThreeFourFiveSixSeven") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0)
-    assertEquals("0.0", 1.0, getPercentile(0.0, values))
-    assertEquals("0.25", 2.0, getPercentile(0.25, values))
-    assertEquals("0.33", 3.0, getPercentile(0.33, values))
-    assertEquals("0.50", 4.0, getPercentile(0.50, values))
-    assertEquals("0.66", 5.0, getPercentile(0.66, values))
-    assertEquals("0.75", 6.0, getPercentile(0.75, values))
-    assertEquals("0.99", 7.0, getPercentile(0.99, values))
-    assertEquals("1.00", 7.0, getPercentile(1.00, values))
+    getPercentile(0.0, values) should equal(1.0)
+    getPercentile(0.25, values) should equal(2.0)
+    getPercentile(0.33, values) should equal(3.0)
+    getPercentile(0.50, values) should equal(4.0)
+    getPercentile(0.66, values) should equal(5.0)
+    getPercentile(0.75, values) should equal(6.0)
+    getPercentile(0.99, values) should equal(7.0)
+    getPercentile(1.00, values) should equal(7.0)
   }
 }
 
-class PercentileContTest extends PercentileTest with NumericHelper{
+class PercentileContTest extends CypherFunSuite with PercentileTest with NumericHelper {
   def createAggregator(inner: Expression, perc:Expression) = new PercentileContFunction(inner, perc)
 
-  @Test def singleOne() {
+  test("singleOne") {
     val values = List(1.0)
-    assertEquals("0.0", 1.0, asDouble(getPercentile(0.0, values)), .01)
-    assertEquals("0.50", 1.0, asDouble(getPercentile(0.50, values)), .01)
-    assertEquals("0.99", 1.0, asDouble(getPercentile(0.99, values)), .01)
-    assertEquals("1.00", 1.0, asDouble(getPercentile(1.00, values)), .01)
+    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(0.50, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(0.99, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(1.00, values)) should equal(1.0 +- .01)
   }
 
-  @Test def manyOnes() {
+  test("manyOnes") {
     val values = List(1.0, 1.0)
-    assertEquals("0.0", 1.0, asDouble(getPercentile(0.0, values)), .01)
-    assertEquals("0.5", 1.0, asDouble(getPercentile(0.50, values)), .01)
-    assertEquals("0.99", 1.0, asDouble(getPercentile(0.99, values)), .01)
-    assertEquals("1.00", 1.0, asDouble(getPercentile(1.00, values)), .01)
+    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(0.50, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(0.99, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(1.00, values)) should equal(1.0 +- .01)
   }
 
-  @Test def oneTwoThree() {
+  test("oneTwoThree") {
     val values = List(1.0, 2.0, 3.0)
-    assertEquals("0.0", 1.0, asDouble(getPercentile(0.0, values)), .01)
-    assertEquals("0.25", 1.5, asDouble(getPercentile(0.25, values)), .01)
-    assertEquals("0.33", 1.66, asDouble(getPercentile(0.33, values)), .01)
-    assertEquals("0.50", 2.0, asDouble(getPercentile(0.50, values)), .01)
-    assertEquals("0.66", 2.32, asDouble(getPercentile(0.66, values)), .01)
-    assertEquals("0.75", 2.5, asDouble(getPercentile(0.75, values)), .01)
-    assertEquals("0.99", 2.98, asDouble(getPercentile(0.99, values)), .01)
-    assertEquals("1.00", 3.0, asDouble(getPercentile(1.00, values)), .01)
+    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(0.25, values)) should equal(1.5 +- .01)
+    asDouble(getPercentile(0.33, values)) should equal(1.66 +- .01)
+    asDouble(getPercentile(0.50, values)) should equal(2.0 +- .01)
+    asDouble(getPercentile(0.66, values)) should equal(2.32 +- .01)
+    asDouble(getPercentile(0.75, values)) should equal(2.5 +- .01)
+    asDouble(getPercentile(0.99, values)) should equal(2.98 +- .01)
+    asDouble(getPercentile(1.00, values)) should equal(3.0 +- .01)
   }
 
-  @Test def oneTwoThreeFour() {
+  test("oneTwoThreeFour") {
     val values = List(1.0, 2.0, 3.0, 4.0)
-    assertEquals("0.0", 1.0, asDouble(getPercentile(0.0, values)), .01)
-    assertEquals("0.25", 1.75, asDouble(getPercentile(0.25, values)), .01)
-    assertEquals("0.33", 1.99, asDouble(getPercentile(0.33, values)), .01)
-    assertEquals("0.50", 2.5, asDouble(getPercentile(0.50, values)), .01)
-    assertEquals("0.66", 2.98, asDouble(getPercentile(0.66, values)), .01)
-    assertEquals("0.75", 3.25, asDouble(getPercentile(0.75, values)), .01)
-    assertEquals("0.99", 3.97, asDouble(getPercentile(0.99, values)), .01)
-    assertEquals("1.00", 4.0, asDouble(getPercentile(1.00, values)), .01)
+    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(0.25, values)) should equal(1.75 +- .01)
+    asDouble(getPercentile(0.33, values)) should equal(1.99 +- .01)
+    asDouble(getPercentile(0.50, values)) should equal(2.5 +- .01)
+    asDouble(getPercentile(0.66, values)) should equal(2.98 +- .01)
+    asDouble(getPercentile(0.75, values)) should equal(3.25 +- .01)
+    asDouble(getPercentile(0.99, values)) should equal(3.97 +- .01)
+    asDouble(getPercentile(1.00, values)) should equal(4.0 +- .01)
   }
 
-  @Test def oneTwoThreeFourFive() {
+  test("oneTwoThreeFourFive") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0)
-    assertEquals("0.0", 1.0, asDouble(getPercentile(0.0, values)), .01)
-    assertEquals("0.25", 2.0, asDouble(getPercentile(0.25, values)), .01)
-    assertEquals("0.33", 2.32, asDouble(getPercentile(0.33, values)), .01)
-    assertEquals("0.50", 3.0, asDouble(getPercentile(0.50, values)), .01)
-    assertEquals("0.66", 3.64, asDouble(getPercentile(0.66, values)), .01)
-    assertEquals("0.75", 4.0, asDouble(getPercentile(0.75, values)), .01)
-    assertEquals("0.99", 4.96, asDouble(getPercentile(0.99, values)), .01)
-    assertEquals("1.00", 5.0, asDouble(getPercentile(1.00, values)), .01)
+    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(0.25, values)) should equal(2.0 +- .01)
+    asDouble(getPercentile(0.33, values)) should equal(2.32 +- .01)
+    asDouble(getPercentile(0.50, values)) should equal(3.0 +- .01)
+    asDouble(getPercentile(0.66, values)) should equal(3.64 +- .01)
+    asDouble(getPercentile(0.75, values)) should equal(4.0 +- .01)
+    asDouble(getPercentile(0.99, values)) should equal(4.96 +- .01)
+    asDouble(getPercentile(1.00, values)) should equal(5.0 +- .01)
   }
 
-  @Test def oneTwoThreeFourFiveSix() {
+  test("oneTwoThreeFourFiveSix") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0)
-    assertEquals("0.0", 1.0, asDouble(getPercentile(0.0, values)), .01)
-    assertEquals("0.25", 2.25, asDouble(getPercentile(0.25, values)), .01)
-    assertEquals("0.33", 2.65, asDouble(getPercentile(0.33, values)), .01)
-    assertEquals("0.50", 3.5, asDouble(getPercentile(0.50, values)), .01)
-    assertEquals("0.66", 4.3, asDouble(getPercentile(0.66, values)), .01)
-    assertEquals("0.75", 4.75, asDouble(getPercentile(0.75, values)), .01)
-    assertEquals("0.99", 5.95, asDouble(getPercentile(0.99, values)), .01)
-    assertEquals("1.00", 6.0, asDouble(getPercentile(1.00, values)), .01)
+    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(0.25, values)) should equal(2.25 +- .01)
+    asDouble(getPercentile(0.33, values)) should equal(2.65 +- .01)
+    asDouble(getPercentile(0.50, values)) should equal(3.5 +- .01)
+    asDouble(getPercentile(0.66, values)) should equal(4.3 +- .01)
+    asDouble(getPercentile(0.75, values)) should equal(4.75 +- .01)
+    asDouble(getPercentile(0.99, values)) should equal(5.95 +- .01)
+    asDouble(getPercentile(1.00, values)) should equal(6.0 +- .01)
   }
 
-  @Test def oneTwoThreeFourFiveSixSeven() {
+  test("oneTwoThreeFourFiveSixSeven") {
     val values = List(1.0, 2.0, 3.0, 4.0, 5.0, 6.0, 7.0)
-    assertEquals("0.0", 1.0, asDouble(getPercentile(0.0, values)), .01)
-    assertEquals("0.25", 2.5, asDouble(getPercentile(0.25, values)), .01)
-    assertEquals("0.33", 2.98, asDouble(getPercentile(0.33, values)), .01)
-    assertEquals("0.50", 4.0, asDouble(getPercentile(0.50, values)), .01)
-    assertEquals("0.66", 4.96, asDouble(getPercentile(0.66, values)), .01)
-    assertEquals("0.75", 5.5, asDouble(getPercentile(0.75, values)), .01)
-    assertEquals("0.99", 6.94, asDouble(getPercentile(0.99, values)), .01)
-    assertEquals("1.00", 7.0, asDouble(getPercentile(1.00, values)), .01)
+    asDouble(getPercentile(0.0, values)) should equal(1.0 +- .01)
+    asDouble(getPercentile(0.25, values)) should equal(2.5 +- .01)
+    asDouble(getPercentile(0.33, values)) should equal(2.98 +- .01)
+    asDouble(getPercentile(0.50, values)) should equal(4.0 +- .01)
+    asDouble(getPercentile(0.66, values)) should equal(4.96 +- .01)
+    asDouble(getPercentile(0.75, values)) should equal(5.5 +- .01)
+    asDouble(getPercentile(0.99, values)) should equal(6.94 +- .01)
+    asDouble(getPercentile(1.00, values)) should equal(7.0 +- .01)
   }
 }

@@ -20,18 +20,17 @@
 package org.neo4j.cypher.internal.compiler.v2_1.pipes.aggregation
 
 import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.expressions.{Identifier, Expression}
-import pipes.QueryStateHelper
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Expression, Identifier}
+import org.neo4j.cypher.internal.compiler.v2_1.pipes.QueryStateHelper
 
-abstract class AggregateTest {
+trait AggregateTest {
   def createAggregator(inner: Expression): AggregationFunction
 
   def aggregateOn(values: Any*): Any = {
     implicit val state = QueryStateHelper.empty
+
     val func: AggregationFunction = createAggregator(Identifier("x"))
-
     values.foreach(value => func(ExecutionContext.from("x" -> value)))
-
     func.result
   }
 }

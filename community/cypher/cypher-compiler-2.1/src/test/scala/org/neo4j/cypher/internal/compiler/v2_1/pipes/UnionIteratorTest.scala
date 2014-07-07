@@ -19,40 +19,36 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.junit.Test
-import org.scalatest.Assertions
+import org.neo4j.cypher.internal.commons.CypherFunSuite
 
-
-class UnionIteratorTest extends Assertions {
+class UnionIteratorTest extends CypherFunSuite {
   val state = QueryStateHelper.empty
 
-  @Test def empty_plus_empty_is_empty() {
+  test("empty_plus_empty_is_empty") {
     //GIVEN
     val union = createUnion(Iterator.empty, Iterator.empty)
 
     //THEN
-    assert(union.isEmpty, "Union of empty inputs should be empty")
+    union shouldBe empty
   }
 
-  @Test
-  def single_element() {
+  test("single_element") {
     // GIVEN
     val singleMap = Map("x" -> 1)
     val union = createUnion(Iterator(singleMap), Iterator.empty)
 
     //THEN
-    assert(union.toList === List(singleMap))
+    union.toList should equal(List(singleMap))
   }
 
-  @Test
-  def two_elements() {
+  test("two_elements") {
     //GIVEN
     val aMap = Map("x" -> 1)
     val bMap = Map("x" -> 2)
     val union = createUnion(Iterator(aMap), Iterator(bMap))
 
     //THEN
-    assert(union.toList === List(aMap, bMap))
+    union.toList should equal(List(aMap, bMap))
   }
 
   private def createUnion(aIt: Iterator[Map[String, Any]], bIt: Iterator[Map[String, Any]]): UnionIterator = {

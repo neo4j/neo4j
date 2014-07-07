@@ -19,97 +19,95 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.pipes
 
-import org.neo4j.cypher.internal.compiler.v2_1._
-import commands.SortItem
-import commands.expressions.{Literal, Identifier}
-import symbols._
-import org.scalatest.Assertions
-import org.junit.Test
-import util.Random
-import org.scalatest.mock.MockitoSugar
+import org.neo4j.cypher.internal.commons.CypherFunSuite
+import org.neo4j.cypher.internal.compiler.v2_1.commands.SortItem
+import org.neo4j.cypher.internal.compiler.v2_1.commands.expressions.{Identifier, Literal}
+import org.neo4j.cypher.internal.compiler.v2_1.symbols._
 
-class TopPipeTest extends Assertions with MockitoSugar {
+import scala.util.Random
+
+class TopPipeTest extends CypherFunSuite {
 
   private implicit val monitor = mock[PipeMonitor]
 
-  @Test def top10From5ReturnsAll() {
+  test("top10From5ReturnsAll") {
     val input = createFakePipeWith(5)
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(10))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    assert(result === List(0, 1, 2, 3, 4))
+    result should equal(List(0, 1, 2, 3, 4))
   }
 
-  @Test def top10From3ReturnsAllDesc() {
+  test("top10From3ReturnsAllDesc") {
     val input = createFakePipeWith(3)
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(10))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    assert(result === List(2, 1, 0))
+    result should equal(List(2, 1, 0))
   }
 
-  @Test def top5From20ReturnsAll() {
+  test("top5From20ReturnsAll") {
     val input = createFakePipeWith(20)
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    assert(result === List(0, 1, 2, 3, 4))
+    result should equal(List(0, 1, 2, 3, 4))
   }
 
-  @Test def top3From10ReturnsAllDesc() {
+  test("top3From10ReturnsAllDesc") {
     val input = createFakePipeWith(10)
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(3))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    assert(result === List(9, 8, 7))
+    result should equal(List(9, 8, 7))
   }
 
-  @Test def reversedTop5From10ReturnsAll() {
+  test("reversedTop5From10ReturnsAll") {
     val in = (0 until 100).toSeq.map(i => Map("a" -> i)).reverse
     val input = new FakePipe(in, "a" -> CTInteger)
 
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    assert(result === List(0, 1, 2, 3, 4))
+    result should equal(List(0, 1, 2, 3, 4))
   }
 
-  @Test def sortDuplicateValuesCorrectly() {
+  test("sortDuplicateValuesCorrectly") {
     val in = ((0 until 5).toSeq ++ (0 until 5).toSeq).map(i => Map("a" -> i)).reverse
     val input = new FakePipe(in, "a" -> CTInteger)
 
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(5))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    assert(result === List(4, 4, 3, 3, 2))
+    result should equal(List(4, 4, 3, 3, 2))
   }
 
-  @Test def sortDuplicateValuesCorrectlyForSmallList() {
+  test("sortDuplicateValuesCorrectlyForSmallList") {
     val in = List(Map("a" -> 0),Map("a" -> 1),Map("a" -> 1))
     val input = new FakePipe(in, "a" -> CTInteger)
 
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = false)), Literal(2))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    assert(result === List(1,1))
+    result should equal(List(1,1))
   }
 
-  @Test def emptyInputIsNotAProblem() {
+  test("emptyInputIsNotAProblem") {
     val input = new FakePipe(Iterator.empty, "a" -> CTInteger)
 
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    assert(result === List.empty)
+    result should equal(List.empty)
   }
 
-  @Test def nullInputIsNotAProblem() {
+  test("nullInputIsNotAProblem") {
     val input = new FakePipe(Seq(Map("a"->10),Map("a"->null)), "a" -> CTInteger)
 
     val pipe = new TopPipe(input, List(SortItem(Identifier("a"), ascending = true)), Literal(5))
     val result = pipe.createResults(QueryStateHelper.empty).map(ctx => ctx("a")).toList
 
-    assert(result === List(10,null))
+    result should equal(List(10,null))
   }
 
   private def createFakePipeWith(count: Int): FakePipe = {

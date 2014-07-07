@@ -19,18 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.parser
 
-import org.neo4j.cypher.internal.compiler.v2_1.{commands => legacyCommands}
-import org.neo4j.cypher.internal.compiler.v2_1._
-import ast.convert.StatementConverters._
-import org.junit.Test
+import org.neo4j.cypher.internal.compiler.v2_1.ast.convert.StatementConverters._
+import org.neo4j.cypher.internal.compiler.v2_1.{commands => legacyCommands, _}
 import org.parboiled.scala._
 import org.parboiled.scala.rules.Rule1
 
 class ConstraintTest extends ParserTest[ast.Command, legacyCommands.AbstractQuery] with Command {
   implicit val parserToTest = Command ~ EOI
 
-  @Test
-  def create_uniqueness_constraint() {
+  test("create_uniqueness_constraint") {
     parsing("CREATE CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE") or
       parsing("CREATE CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE") or
       parsing("create constraint on (foo:Foo) assert foo.name is unique") shouldGive
@@ -40,8 +37,7 @@ class ConstraintTest extends ParserTest[ast.Command, legacyCommands.AbstractQuer
       legacyCommands.CreateUniqueConstraint("foo", "Foo", "bar", "name")
   }
 
-  @Test
-  def drop_uniqueness_constraint() {
+  test("drop_uniqueness_constraint") {
     parsing("DROP CONSTRAINT ON (foo:Foo) ASSERT foo.name IS UNIQUE") or
       parsing("DROP CONSTRAINT ON (foo:Foo) foo.name IS UNIQUE") or
       parsing("drop constraint on (foo:Foo) assert foo.name is unique") shouldGive

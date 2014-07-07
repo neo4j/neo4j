@@ -19,18 +19,16 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.planner
 
-import org.neo4j.cypher.internal.commons.{CypherTestSuite, CypherTestSupport}
-
+import org.neo4j.cypher.internal.commons.{CypherFunSuite, CypherTestSupport}
 import org.neo4j.cypher.internal.compiler.v2_1._
-import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
-import org.neo4j.cypher.internal.compiler.v2_1.parser.{ParserMonitor, CypherParser}
 import org.neo4j.cypher.internal.compiler.v2_1.ast._
+import org.neo4j.cypher.internal.compiler.v2_1.parser.{CypherParser, ParserMonitor}
+import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical._
 import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.plans._
-import org.neo4j.cypher.internal.compiler.v2_1.planner.logical.Metrics._
+import org.neo4j.cypher.internal.compiler.v2_1.spi.{GraphStatistics, PlanContext}
 import org.neo4j.kernel.api.constraints.UniquenessConstraint
 import org.neo4j.kernel.api.index.IndexDescriptor
-import org.scalatest.mock.MockitoSugar
 import org.scalatest.matchers._
 
 trait BeLikeMatcher {
@@ -53,8 +51,7 @@ object BeLikeMatcher extends BeLikeMatcher
 case class SemanticPlan(plan: QueryPlan, semanticTable: SemanticTable)
 
 trait LogicalPlanningTestSupport2 extends CypherTestSupport with AstConstructionTestSupport {
-
-  self: CypherTestSuite with MockitoSugar =>
+  self: CypherFunSuite =>
 
   var kernelMonitors = new org.neo4j.kernel.monitoring.Monitors
   var monitors = new Monitors(kernelMonitors)

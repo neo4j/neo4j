@@ -19,17 +19,15 @@
  */
 package org.neo4j.cypher.internal.compiler.v2_1.executionplan.builders
 
-import org.junit.Test
-import org.neo4j.graphdb.Direction
-import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
 import org.neo4j.cypher.internal.compiler.v2_1.commands._
+import org.neo4j.cypher.internal.compiler.v2_1.executionplan.PartiallySolvedQuery
+import org.neo4j.graphdb.Direction
 
 class ShortestPathBuilderTest extends BuilderTest {
 
   val builder = new ShortestPathBuilder
 
-  @Test
-  def should_not_accept_if_no_shortest_paths_exist() {
+  test("should_not_accept_if_no_shortest_paths_exist") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("l", 0))),
       patterns = Seq(Unsolved(RelatedTo(SingleNode("l"), SingleNode("r"), "rel", Seq(), Direction.OUTGOING, Map.empty))))
@@ -39,8 +37,7 @@ class ShortestPathBuilderTest extends BuilderTest {
     assertRejects(p, q)
   }
 
-  @Test
-  def should_accept_if_both_start_and_end_have_been_solved() {
+  test("should_accept_if_both_start_and_end_have_been_solved") {
     val q = PartiallySolvedQuery().
       copy(start = Seq(Solved(NodeById("a", 0)), Solved(NodeById("b", 0))),
       patterns = Seq(Unsolved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
@@ -49,6 +46,6 @@ class ShortestPathBuilderTest extends BuilderTest {
 
     val resultQ = assertAccepts(p, q).query
 
-    assert(resultQ.patterns == Seq(Solved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
+    resultQ.patterns should equal(Seq(Solved(ShortestPath("p", SingleNode("a"), SingleNode("b"), Seq(), Direction.OUTGOING, None, single = true, None))))
   }
 }
